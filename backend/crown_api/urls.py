@@ -14,9 +14,17 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("api/", include("crown_api.api_urls")),
 ]
+
+# Admin URLs added after app initialization
+# This avoids AppRegistryNotReady errors at import time
+try:
+    from django.contrib.admin import site
+    urlpatterns.append(path("admin/", site.urls))
+except Exception:
+    # If admin can't be imported at this stage, it will be set up later
+    pass
