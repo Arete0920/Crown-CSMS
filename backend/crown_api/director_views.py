@@ -68,8 +68,48 @@ def resolve_academic_year(school_id, academic_year_id=None):
     return AcademicYear.objects.filter(school_id=school_id, is_current=True).order_by("-start_date").first()
 
 
+def build_director_priority_snapshot(school_id, academic_year):
+    """
+    Build a lightweight snapshot of priority items for the UI.
+    Called after director actions to refresh the queue without a second API call.
+    """
+    if not academic_year:
+        return None
+    
+    return {
+        "aid": {
+            "needs_info": list(
+                AidApplication.objects.filter(
+                    school_id=school_id,
+                    academic_year=academic_year,
+                    status=AidApplication.STATUS_NEEDS_INFO,
+                )
+                .order_by("-submitted_at")
+                .values("id", "status")[:10]
+            ),
+            "accepted_not_posted": list(
+                AidAward.objects.filter(
+                    school_id=school_id,
+                    academic_year=academic_year,
+                    decision_status=AidAward.DECISION_ACCEPTED,
+                    ledger_entry__isnull=True,
+                )
+                .order_by("-decided_at", "-created_at")
+                .values("id", "awarded_cents")[:10]
+            ),
+        },
+        "finance": {
+            "balance_due": list(
+                LedgerEntry.objects
+                .filter(school_id=school_id, academic_year=academic_year, family__isnull=False)
+                .values("family_id", "family__family_name")
+                .annotate(balance_cents=Sum("amount_cents"))
+                .filter(balance_cents__gt=0)
+                .order_by("-balance_cents")[:10]
+            )
+        }
+    }
 
-@api_view(["GET"])
 @permission_classes([AllowAny])
 def aid_summary(request):
     school_id = request.GET.get("school_id")
@@ -638,6 +678,7 @@ Crown Financial Aid Office
                 "failure_count": len(failures),
                 "drafts": drafts,
                 "failures": failures if failures else None,
+                "priority_refresh": build_director_priority_snapshot(school_id, academic_year),
             }, status=status.HTTP_200_OK)
         
         elif action == "AID_MARK_NEEDS_INFO_EMAIL_SENT":
@@ -700,6 +741,7 @@ Crown Financial Aid Office
                 "failure_count": len(failures),
                 "successes": successes,
                 "failures": failures if failures else None,
+                "priority_refresh": build_director_priority_snapshot(school_id, academic_year),
             }, status=status.HTTP_200_OK)
         
         else:
