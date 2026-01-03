@@ -223,3 +223,37 @@ def registrar_summary(request):
     }
 
     return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def director_dashboard(request):
+    """
+    Unified dashboard payload for Head of School / Directors.
+    Combines aid, finance, registrar summaries into one response.
+    Requires: school_id and year_id query parameters.
+    """
+    if not crown_director_allowed(request):
+        return Response(
+            {"error": "Unauthorized. Director access required."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    
+    school_id = request.query_params.get("school_id")
+    year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
+
+    aid_resp = aid_summary(request)
+    finance_resp = finance_summary(request)
+    registrar_resp = registrar_summary(request)
+
+    return Response({
+        "meta": {
+            "school_id": school_id,
+            "year_id": year_id,
+        },
+        "sections": {
+            "aid": getattr(aid_resp, "data", aid_resp.data if hasattr(aid_resp, "data") else aid_resp),
+            "finance": getattr(finance_resp, "data", finance_resp.data if hasattr(finance_resp, "data") else finance_resp),
+            "registrar": getattr(registrar_resp, "data", registrar_resp.data if hasattr(registrar_resp, "data") else registrar_resp),
+        },
+    })
