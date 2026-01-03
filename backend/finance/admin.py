@@ -1,3 +1,4 @@
 from django.contrib import admin
 
-# Register your models here.
+# Finance models (TuitionPlan, StudentTuition, LedgerEntry) are registered in core.admin
+# ChartAccount and JournalBatch models to be added in future iteration
