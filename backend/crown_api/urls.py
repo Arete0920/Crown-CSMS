@@ -15,9 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import include, path
+from crown_api.views import director_dashboard_page
 
 urlpatterns = [
     path("api/", include("crown_api.api_urls")),
+    path("director/", director_dashboard_page, name="director_dashboard_page"),
 ]
 
 # Admin URLs added after app initialization

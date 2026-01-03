@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crown2026 – Director Dashboard</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #f6f7fb; }
+    header { background: #0b2a5a; color: white; padding: 16px 20px; }
+    header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    header .meta { opacity: .85; font-size: 12px; margin-top: 4px; }
+    .wrap { padding: 16px 20px; display: grid; gap: 14px; }
+    .grid { display: grid; gap: 14px; grid-template-columns: 2fr 1fr; }
+    .row { display: grid; gap: 14px; grid-template-columns: repeat(6, 1fr); }
+    .card { background: white; border: 1px solid #e6e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+    .kpi .label { font-size: 12px; color: #5b6476; }
+    .kpi .value { font-size: 22px; font-weight: 800; margin-top: 6px; }
+    .kpi .sub { font-size: 12px; color: #5b6476; margin-top: 6px; }
+    h2 { margin: 0 0 10px 0; font-size: 14px; color: #111827; }
+    .muted { color: #5b6476; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eef0f6; font-size: 12px; vertical-align: top; }
+    th { color: #5b6476; font-weight: 700; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; border: 1px solid #e6e8f0; background: #fafbff; }
+    .btn { padding: 6px 10px; border-radius: 10px; border: 1px solid #d7dbea; background: #ffffff; cursor: pointer; font-size: 12px; }
+    .btn.primary { background: #0b2a5a; color: white; border-color: #0b2a5a; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ok { color: #067647; }
+    .warn { color: #a16207; }
+    .err { color: #b42318; }
+    .split { display: grid; gap: 14px; grid-template-columns: 1fr 1fr 1fr; }
+    pre { margin: 0; font-size: 11px; background: #0b1020; color: #d7e0ff; padding: 10px; border-radius: 10px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Crown Director Dashboard</h1>
+    <div class="meta" id="metaLine">Loading…</div>
+  </header>
+
+  <div class="wrap">
+
+    <div class="row" id="kpis">
+      <!-- KPI cards injected -->
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Priority Worklist (Top 10)</h2>
+        <div class="muted" id="priorityHint">Loading…</div>
+        <div class="actions" style="margin:10px 0;">
+          <button class="btn primary" id="btnRefresh">Refresh</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Score</th>
+              <th>Type</th>
+              <th>Summary</th>
+              <th>Amount</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="worklistBody"></tbody>
+        </table>
+        <div class="muted" style="margin-top:10px;">Tip: This is the "director's next 10 moves," sorted by urgency.</div>
+      </div>
+
+      <div class="card">
+        <h2>Director Timeline (Recent)</h2>
+        <div class="muted" id="timelineHint">Loading…</div>
+        <table>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Type</th>
+              <th>Summary</th>
+            </tr>
+          </thead>
+          <tbody id="timelineBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Debug (for build only)</h2>
+      <div class="muted">If something breaks, copy/paste this JSON into chat.</div>
+      <pre id="debugOut">{}</pre>
+    </div>
+
+  </div>
+
+<script>
+  // ======= CONFIG (demo IDs) =======
+  // Replace these with your current demo UUIDs:
+  const CONFIG = {
+    school_id: "0c0d109f-3752-496b-906b-3b45e16a91fd",
+    year_id:   "31cf07c5-38ee-4d0d-aef6-e6adb2704d13",
+  };
+
+  const endpoints = {
+    dashboard: () => `/api/director/dashboard/?school_id=${CONFIG.school_id}&year_id=${CONFIG.year_id}`,
+    priority:  () => `/api/director/priority/?school_id=${CONFIG.school_id}&year_id=${CONFIG.year_id}`,
+    timeline:  () => `/api/director/timeline/?school_id=${CONFIG.school_id}&year_id=${CONFIG.year_id}&limit=20`,
+    actions:   () => `/api/director/actions/`,
+  };
+
+  const el = (id) => document.getElementById(id);
+
+  function money(cents){
+    if (cents === null || cents === undefined) return "";
+    const dollars = (Number(cents) / 100);
+    return dollars.toLocaleString(undefined, { style: "currency", currency: "USD" });
+  }
+
+  function safeDate(x){
+    if (!x) return "";
+    const d = new Date(x);
+    if (isNaN(d)) return String(x);
+    return d.toLocaleString();
+  }
+
+  function setDebug(obj){
+    el("debugOut").textContent = JSON.stringify(obj, null, 2);
+  }
+
+  async function getJSON(url){
+    const res = await fetch(url, { headers: { "Accept": "application/json" }});
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
+    return await res.json();
+  }
+
+  async function postJSON(url, body){
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${JSON.stringify(data)}`);
+    return data;
+  }
+
+  function renderKPIs(d){
+    // Expecting d.sections.aid / d.sections.finance / d.sections.registrar (per your unified dashboard)
+    const aid = d.sections?.aid || d.aid || {};
+    const fin = d.sections?.finance || d.finance || {};
+    const reg = d.sections?.registrar || d.registrar || {};
+
+    const cards = [
+      { label: "Aid Applications", value: aid.applications?.total ?? "—", sub: `Needs Info: ${aid.applications?.needs_info ?? 0}` },
+      { label: "Awards Posted", value: aid.awards?.posted_to_ledger ?? "—", sub: `Accepted not posted: ${aid.awards?.accepted_not_posted ?? 0}` },
+      { label: "Aid Awarded", value: money(aid.awards?.total_awarded_cents ?? 0), sub: `Total awards: ${aid.awards?.total_awards ?? 0}` },
+      { label: "Tuition Gross", value: money(fin.tuition?.gross_tuition_cents ?? fin.tuition_gross_cents ?? 0), sub: "PK–12 / $12k demo" },
+      { label: "Net Receivable", value: money(fin.ledger?.net_receivables_cents ?? fin.net_receivables_cents ?? 0), sub: "After aid credits" },
+      { label: "Enrollment", value: reg.enrollment?.total ?? reg.total ?? "—", sub: "Students" },
+    ];
+
+    const html = cards.map(c => `
+      <div class="card kpi">
+        <div class="label">${c.label}</div>
+        <div class="value">${c.value}</div>
+        <div class="sub">${c.sub}</div>
+      </div>
+    `).join("");
+
+    el("kpis").innerHTML = html;
+  }
+
+  function renderWorklist(p){
+    const worklist = p.worklist_top_10 || [];
+    el("priorityHint").textContent = `${worklist.length} items loaded • sorted by urgency`;
+
+    const rows = worklist.map(item => {
+      const amt = item.awarded_cents ?? item.balance_cents ?? item.amount_cents;
+      const actionBtn = buildActionButton(item);
+      return `
+        <tr>
+          <td><span class="pill">${item.score ?? "—"}</span></td>
+          <td>${item.type ?? ""}</td>
+          <td>${item.summary ?? ""}</td>
+          <td>${money(amt)}</td>
+          <td>${actionBtn}</td>
+        </tr>
+      `;
+    }).join("");
+
+    el("worklistBody").innerHTML = rows || `<tr><td colspan="5" class="muted">No priority items (seed may be too clean).</td></tr>`;
+  }
+
+  function buildActionButton(item){
+    // Minimal actions for demo:
+    // - AID_AWARD_ACCEPTED_NOT_POSTED -> post awards
+    // - AID_APPLICATION_NEEDS_INFO -> generate email + mark sent
+    if (item.type === "AID_AWARD_ACCEPTED_NOT_POSTED") {
+      return `<button class="btn" onclick='runAction("AID_POST_ACCEPTED_AWARDS", ["${item.id}"])'>Post</button>`;
+    }
+    if (item.type === "AID_APPLICATION_NEEDS_INFO") {
+      return `
+        <div class="actions">
+          <button class="btn" onclick='runAction("AID_GENERATE_NEEDS_INFO_EMAILS", ["${item.id}"])'>Draft Email</button>
+          <button class="btn" onclick='runAction("AID_MARK_NEEDS_INFO_EMAIL_SENT", ["${item.id}"], {move_to_under_review:false})'>Mark Sent</button>
+        </div>
+      `;
+    }
+    return `<span class="muted">—</span>`;
+  }
+
+  function renderTimeline(t){
+    const rows = (t.timeline || []).map(x => `
+      <tr>
+        <td>${safeDate(x.ts)}</td>
+        <td><span class="pill">${x.type}</span></td>
+        <td>${x.summary}</td>
+      </tr>
+    `).join("");
+
+    el("timelineBody").innerHTML = rows || `<tr><td colspan="3" class="muted">No recent events yet.</td></tr>`;
+    el("timelineHint").textContent = `${(t.timeline || []).length} events`;
+  }
+
+  async function runAction(action, ids, extra={}){
+    try{
+      const payload = { action, school_id: CONFIG.school_id, year_id: CONFIG.year_id, ids, ...extra };
+      const res = await postJSON(endpoints.actions(), payload);
+      setDebug(res);
+
+      // If your actions return priority_refresh, use it immediately:
+      if (res.priority_refresh) {
+        // Your refresh snapshot may not match full priority payload shape; safest: full refresh:
+        await refreshAll();
+      } else {
+        await refreshAll();
+      }
+
+      alert(`✅ ${action} complete\nSuccess: ${res.success_count ?? res.draft_count ?? 0}\nFailures: ${res.failure_count ?? 0}`);
+    } catch(e){
+      alert(`❌ Action failed:\n${e.message}`);
+      console.error(e);
+    }
+  }
+
+  async function refreshAll(){
+    try{
+      el("metaLine").textContent = `School: ${CONFIG.school_id} • Year: ${CONFIG.year_id}`;
+      const [dash, prio, time] = await Promise.all([
+        getJSON(endpoints.dashboard()),
+        getJSON(endpoints.priority()),
+        getJSON(endpoints.timeline()),
+      ]);
+      setDebug({ dashboard: dash, priority: prio, timeline: time });
+      renderKPIs(dash);
+      renderWorklist(prio);
+      renderTimeline(time);
+    } catch(e){
+      setDebug({ error: e.message });
+      console.error(e);
+      el("priorityHint").textContent = "Error loading priority.";
+      el("timelineHint").textContent = "Error loading timeline.";
+    }
+  }
+
+  el("btnRefresh").addEventListener("click", refreshAll);
+  refreshAll();
+</script>
+</body>
+</html>
