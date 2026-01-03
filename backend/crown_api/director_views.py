@@ -110,6 +110,7 @@ def build_director_priority_snapshot(school_id, academic_year):
         }
     }
 
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def aid_summary(request):
     school_id = request.GET.get("school_id")
@@ -284,33 +285,108 @@ def director_dashboard(request):
     school_id = request.query_params.get("school_id")
     year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
 
-    try:
-        # Get summaries from the underlying view functions (which call helper functions)
-        # We pass the original request object to maintain compatibility
-        from django.test import RequestFactory
-        from django.http import QueryDict
-        
-        # Build a raw request for the sub-views
-        factory = RequestFactory()
-        query_string = f"school_id={school_id}&year_id={year_id}"
-        
-        raw_aid_request = factory.get(f'/api/director/aid/summary/?{query_string}')
-        raw_finance_request = factory.get(f'/api/director/finance/summary/?{query_string}')
-        raw_registrar_request = factory.get(f'/api/director/registrar/summary/?{query_string}')
-        
-        aid_resp = aid_summary(raw_aid_request)
-        finance_resp = finance_summary(raw_finance_request)
-        registrar_resp = registrar_summary(raw_registrar_request)
+    if not school_id:
+        return Response({"detail": "school_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Extract data from Response objects
-        def extract_data(resp):
-            if hasattr(resp, 'data'):
-                return resp.data
-            elif hasattr(resp, 'content'):
-                import json
-                return json.loads(resp.content)
-            else:
-                return resp
+    try:
+        # Resolve academic year
+        academic_year = resolve_academic_year(school_id, year_id)
+        if not academic_year:
+            return Response({"detail": "academic_year not found for school"}, status=status.HTTP_400_BAD_REQUEST)
+
+        ay_id = academic_year.id
+
+        # --- AID SUMMARY ---
+        apps = AidApplication.objects.filter(school_id=school_id, academic_year_id=ay_id)
+        awards = AidAward.objects.filter(school_id=school_id, academic_year_id=ay_id)
+        docs_missing = AidDocument.objects.filter(
+            school_id=school_id,
+            aid_application__academic_year_id=ay_id,
+            received=False,
+        )
+
+        aid_data = {
+            "applications": {
+                "total": apps.count(),
+                "submitted": apps.filter(status=AidApplication.STATUS_SUBMITTED).count(),
+                "needs_info": apps.filter(status=AidApplication.STATUS_NEEDS_INFO).count(),
+                "under_review": apps.filter(status=AidApplication.STATUS_UNDER_REVIEW).count(),
+                "approved": apps.filter(status=AidApplication.STATUS_APPROVED).count(),
+                "denied": apps.filter(status=AidApplication.STATUS_DENIED).count(),
+            },
+            "awards": {
+                "total_awards": awards.count(),
+                "offered_not_accepted": awards.filter(decision_status=AidAward.DECISION_OFFERED).count(),
+                "accepted_not_posted": awards.filter(decision_status=AidAward.DECISION_ACCEPTED, ledger_entry__isnull=True).count(),
+                "posted_to_ledger": awards.filter(ledger_entry__isnull=False).count(),
+                "total_awarded_cents": int(
+                    awards.aggregate(total=Coalesce(Sum("awarded_cents"), 0)).get("total", 0)
+                ),
+            },
+            "documents": {
+                "missing_documents_count": docs_missing.count(),
+            },
+        }
+
+        # --- FINANCE SUMMARY ---
+        tuition_qs = StudentTuition.objects.filter(school_id=school_id, academic_year_id=ay_id)
+        awards_qs = AidAward.objects.filter(school_id=school_id, academic_year_id=ay_id)
+        ledger_qs = LedgerEntry.objects.filter(school_id=school_id, academic_year_id=ay_id)
+
+        gross_tuition = tuition_qs.aggregate(total=Coalesce(Sum("net_annual_cents"), 0)).get("total", 0)
+        total_aid_awarded = awards_qs.aggregate(total=Coalesce(Sum("awarded_cents"), 0)).get("total", 0)
+        total_aid_posted = (
+            ledger_qs.filter(account__code="AID").aggregate(total=Coalesce(Sum("amount_cents"), 0)).get("total", 0)
+        )
+        credits = ledger_qs.aggregate(total=Coalesce(Sum("amount_cents", filter=Q(amount_cents__lt=0)), 0)).get(
+            "total", 0
+        )
+        debits = ledger_qs.aggregate(total=Coalesce(Sum("amount_cents", filter=Q(amount_cents__gt=0)), 0)).get(
+            "total", 0
+        )
+
+        finance_data = {
+            "tuition": {
+                "students_billed": tuition_qs.count(),
+                "gross_tuition_cents": int(gross_tuition),
+            },
+            "aid": {
+                "total_aid_awarded_cents": int(total_aid_awarded),
+                "total_aid_posted_cents": int(total_aid_posted),
+            },
+            "ledger": {
+                "net_receivables_cents": int(debits + credits),
+                "total_credits_cents": int(credits),
+                "total_debits_cents": int(debits),
+            },
+        }
+
+        # --- REGISTRAR SUMMARY ---
+        enrollments = Enrollment.objects.filter(
+            school_id=school_id,
+            academic_year_id=ay_id,
+            status="ENROLLED",
+        )
+
+        grade_codes = [code for code, _ in GradeLevel.GRADE_CHOICES]
+        grade_counts = {code: 0 for code in grade_codes}
+
+        for row in enrollments.values("grade_level__code").annotate(c=Count("id")):
+            code = row.get("grade_level__code")
+            if code:
+                grade_counts[code] = row.get("c", 0)
+
+        families_count = Family.objects.filter(school_id=school_id).count()
+
+        registrar_data = {
+            "enrollment": {
+                "total_students": enrollments.count(),
+                "by_grade": grade_counts,
+            },
+            "families": {
+                "total_families": families_count,
+            },
+        }
 
         return Response({
             "meta": {
@@ -318,12 +394,14 @@ def director_dashboard(request):
                 "year_id": year_id,
             },
             "sections": {
-                "aid": extract_data(aid_resp),
-                "finance": extract_data(finance_resp),
-                "registrar": extract_data(registrar_resp),
+                "aid": aid_data,
+                "finance": finance_data,
+                "registrar": registrar_data,
             },
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return Response(
             {"error": f"Dashboard error: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
