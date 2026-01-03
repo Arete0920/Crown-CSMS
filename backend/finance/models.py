@@ -1,3 +1,1 @@
-from django.db import models
-
-# Create your models here.
+# Finance models are in core.models

@@ -180,7 +180,7 @@ class Staff(BaseModel):
 # 8. UserAccount
 class UserAccount(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='user_accounts')
+    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='user_accounts', null=True, blank=True)
     staff = models.OneToOneField(Staff, on_delete=models.SET_NULL, blank=True, null=True)
     guardian = models.OneToOneField(Guardian, on_delete=models.SET_NULL, blank=True, null=True)
     
