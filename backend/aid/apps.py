@@ -2,4 +2,6 @@ from django.apps import AppConfig
 
 
 class AidConfig(AppConfig):
-    name = 'aid'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "aid"
+    verbose_name = "Financial Aid"

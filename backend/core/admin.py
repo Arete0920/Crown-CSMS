@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin.sites import NotRegistered
 from .models import (
     School,
     AcademicYear,
@@ -10,10 +11,8 @@ from .models import (
     UserAccount,
     UserRole,
     Enrollment,
-    TuitionPlan,
-    StudentTuition,
-    LedgerEntry,
 )
+from .models import LedgerEntry, StudentTuition, TuitionPlan
 
 
 @admin.register(School)
@@ -85,23 +84,11 @@ class EnrollmentAdmin(admin.ModelAdmin):
     search_fields = ("student__last_name", "student__first_name", "student__student_number")
 
 
-@admin.register(TuitionPlan)
-class TuitionPlanAdmin(admin.ModelAdmin):
-    list_display = ("school", "academic_year", "name", "annual_amount_cents", "is_active")
-    list_filter = ("school", "academic_year", "is_active")
-    search_fields = ("name",)
+# Ensure finance-owned views do not appear under Core
+for model in (LedgerEntry, TuitionPlan, StudentTuition):
+    try:
+        admin.site.unregister(model)
+    except NotRegistered:
+        pass
 
 
-@admin.register(StudentTuition)
-class StudentTuitionAdmin(admin.ModelAdmin):
-    list_display = ("school", "student", "academic_year", "annual_amount_cents", "discounts_cents", "net_annual_cents")
-    list_filter = ("school", "academic_year")
-    search_fields = ("student__student_number", "student__last_name")
-
-
-@admin.register(LedgerEntry)
-class LedgerEntryAdmin(admin.ModelAdmin):
-    list_display = ("school", "family", "student", "entry_date", "account", "amount_cents", "source", "batch", "is_reversal")
-    list_filter = ("school", "academic_year", "account", "source", "entry_date", "is_reversal")
-    search_fields = ("family__family_name", "student__student_number", "memo", "account__code")
-    readonly_fields = ("created_by_user",)

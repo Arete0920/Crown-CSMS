@@ -347,7 +347,7 @@ class Command(BaseCommand):
             ua, created = UserAccount.objects.get_or_create(
                 school=school,
                 email=email,
-                defaults={"username": email, "is_active": True, "staff": staff},
+                defaults={"username": email, "is_active": True, "is_staff": True, "is_superuser": True, "staff": staff},
             )
             if created:
                 ua.set_password("demo1234")

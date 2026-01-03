@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import Coalesce
 from rest_framework import status
@@ -25,6 +26,32 @@ ALLOWED_ROLE_CODES = {
 }
 
 
+def crown_director_allowed(request):
+    """
+    Check if user is allowed to access director APIs.
+    
+    Allows:
+    1. Dev mode (CROWN_DEV_OPEN_API=1 env var)
+    2. Superuser
+    3. Users with director role codes
+    """
+    user = request.user
+    
+    # Dev override (explicit toggle)
+    if getattr(settings, "CROWN_DEV_OPEN_API", False):
+        return True
+    
+    # Superuser always allowed
+    if user and getattr(user, "is_superuser", False):
+        return True
+    
+    # Check authenticated + role
+    if not user or not user.is_authenticated:
+        return False
+    
+    return UserRole.objects.filter(user=user, role_code__in=ALLOWED_ROLE_CODES).exists()
+
+
 def user_has_director_role(user):
     if not user or not user.is_authenticated:
         return False
@@ -39,6 +66,7 @@ def resolve_academic_year(school_id, academic_year_id=None):
     return AcademicYear.objects.filter(school_id=school_id, is_current=True).order_by("-start_date").first()
 
 
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def aid_summary(request):
@@ -48,9 +76,9 @@ def aid_summary(request):
     if not school_id:
         return Response({"detail": "school_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # DEVELOPMENT: Role check disabled for testing
-    # if not user_has_director_role(request.user):
-    #     return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    # Check authorization (dev mode + superuser + role-based)
+    if not crown_director_allowed(request):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     academic_year = resolve_academic_year(school_id, academic_year_id)
     if not academic_year:
@@ -101,9 +129,9 @@ def finance_summary(request):
     if not school_id:
         return Response({"detail": "school_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # DEVELOPMENT: Role check disabled for testing
-    # if not user_has_director_role(request.user):
-    #     return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    # Check authorization (dev mode + superuser + role-based)
+    if not crown_director_allowed(request):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     academic_year = resolve_academic_year(school_id, academic_year_id)
     if not academic_year:
@@ -158,9 +186,9 @@ def registrar_summary(request):
     if not school_id:
         return Response({"detail": "school_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # DEVELOPMENT: Role check disabled for testing
-    # if not user_has_director_role(request.user):
-    #     return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+    # Check authorization (dev mode + superuser + role-based)
+    if not crown_director_allowed(request):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
     academic_year = resolve_academic_year(school_id, academic_year_id)
     if not academic_year:
