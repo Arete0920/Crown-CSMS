@@ -284,21 +284,50 @@ def director_dashboard(request):
     school_id = request.query_params.get("school_id")
     year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
 
-    aid_resp = aid_summary(request)
-    finance_resp = finance_summary(request)
-    registrar_resp = registrar_summary(request)
+    try:
+        # Get summaries from the underlying view functions (which call helper functions)
+        # We pass the original request object to maintain compatibility
+        from django.test import RequestFactory
+        from django.http import QueryDict
+        
+        # Build a raw request for the sub-views
+        factory = RequestFactory()
+        query_string = f"school_id={school_id}&year_id={year_id}"
+        
+        raw_aid_request = factory.get(f'/api/director/aid/summary/?{query_string}')
+        raw_finance_request = factory.get(f'/api/director/finance/summary/?{query_string}')
+        raw_registrar_request = factory.get(f'/api/director/registrar/summary/?{query_string}')
+        
+        aid_resp = aid_summary(raw_aid_request)
+        finance_resp = finance_summary(raw_finance_request)
+        registrar_resp = registrar_summary(raw_registrar_request)
 
-    return Response({
-        "meta": {
-            "school_id": school_id,
-            "year_id": year_id,
-        },
-        "sections": {
-            "aid": getattr(aid_resp, "data", aid_resp.data if hasattr(aid_resp, "data") else aid_resp),
-            "finance": getattr(finance_resp, "data", finance_resp.data if hasattr(finance_resp, "data") else finance_resp),
-            "registrar": getattr(registrar_resp, "data", registrar_resp.data if hasattr(registrar_resp, "data") else registrar_resp),
-        },
-    })
+        # Extract data from Response objects
+        def extract_data(resp):
+            if hasattr(resp, 'data'):
+                return resp.data
+            elif hasattr(resp, 'content'):
+                import json
+                return json.loads(resp.content)
+            else:
+                return resp
+
+        return Response({
+            "meta": {
+                "school_id": school_id,
+                "year_id": year_id,
+            },
+            "sections": {
+                "aid": extract_data(aid_resp),
+                "finance": extract_data(finance_resp),
+                "registrar": extract_data(registrar_resp),
+            },
+        })
+    except Exception as e:
+        return Response(
+            {"error": f"Dashboard error: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @api_view(["GET"])
@@ -761,7 +790,8 @@ Crown Financial Aid Office
 def director_timeline(request):
     """
     Unified audit-style timeline of recent director-relevant events.
-    Read-only. Pulls from Aid + Ledger activity.
+    Tightened for director storytelling: high-impact events first,
+    noisy GL entries suppressed.
     
     Params:
     - school_id: UUID of school
@@ -788,33 +818,7 @@ def director_timeline(request):
     
     items = []
     
-    # --- Aid: Needs-info outreach contacts ---
-    recent_contacts = (
-        AidApplication.objects
-        .filter(
-            school_id=school_id,
-            academic_year=academic_year,
-            last_contacted_at__isnull=False,
-        )
-        .select_related("family", "last_contacted_by")
-        .order_by("-last_contacted_at")[:limit]
-    )
-    
-    for a in recent_contacts:
-        actor = getattr(getattr(a, "last_contacted_by", None), "username", None) or "System"
-        family_name = getattr(getattr(a, "family", None), "family_name", "Family")
-        reason = getattr(a, "last_contacted_reason", None) or "CONTACT"
-        
-        items.append({
-            "ts": a.last_contacted_at,
-            "type": "AID_CONTACT",
-            "actor": actor,
-            "entity": "AidApplication",
-            "entity_id": str(a.id),
-            "summary": f"{reason}: contacted {family_name} about financial aid application.",
-        })
-    
-    # --- Aid: Awards posted to ledger ---
+    # --- Aid: Awards posted to ledger (director actions, high-impact) ---
     posted_awards = (
         AidAward.objects
         .filter(
@@ -829,12 +833,18 @@ def director_timeline(request):
     for w in posted_awards:
         student = getattr(w, "student", None)
         student_name = (f"{getattr(student,'first_name','')} {getattr(student,'last_name','')}".strip() if student else "Student")
-        fam = getattr(student, "family", None) if student else None
-        family_name = getattr(fam, "family_name", "Family")
         le = getattr(w, "ledger_entry", None)
         
         # timestamp fallback chain
         ts = getattr(w, "posted_at", None) or getattr(le, "created_at", None) or getattr(le, "entry_date", None) or timezone.now()
+        amt_cents = getattr(w, "awarded_cents", None)
+        
+        # Format amount as currency if present
+        if amt_cents:
+            amt_dollars = amt_cents / 100.0
+            summary = f"${amt_dollars:,.0f} aid posted: {student_name}"
+        else:
+            summary = f"Aid posted: {student_name}"
         
         items.append({
             "ts": ts,
@@ -842,11 +852,41 @@ def director_timeline(request):
             "actor": "Director Action" if getattr(w, "posted_by_id", None) else "System",
             "entity": "AidAward",
             "entity_id": str(w.id),
-            "amount_cents": getattr(w, "awarded_cents", None),
-            "summary": f"Aid award posted for {student_name} ({family_name}).",
+            "amount_cents": amt_cents,
+            "summary": summary,
         })
     
-    # --- Finance: Recent ledger activity ---
+    # --- Aid: Needs-info outreach contacts (non-routine contacts only) ---
+    recent_contacts = (
+        AidApplication.objects
+        .filter(
+            school_id=school_id,
+            academic_year=academic_year,
+            last_contacted_at__isnull=False,
+        )
+        .select_related("family", "last_contacted_by")
+        .order_by("-last_contacted_at")[:limit]
+    )
+    
+    for a in recent_contacts:
+        actor = getattr(getattr(a, "last_contacted_by", None), "username", None) or "System"
+        family_name = getattr(getattr(a, "family", None), "family_name", "Family")
+        reason = getattr(a, "last_contacted_reason", None) or "Contacted"
+        
+        # Skip generic/routine contact reasons
+        if reason.upper() in ["CONTACT", "ROUTINE"]:
+            continue
+        
+        items.append({
+            "ts": a.last_contacted_at,
+            "type": "AID_CONTACT",
+            "actor": actor,
+            "entity": "AidApplication",
+            "entity_id": str(a.id),
+            "summary": f"{reason}: {family_name}",
+        })
+    
+    # --- Finance: Significant ledger activity (payments, major charges, exclude routine GL) ---
     recent_ledger = (
         LedgerEntry.objects
         .filter(
@@ -854,20 +894,35 @@ def director_timeline(request):
             academic_year=academic_year,
         )
         .select_related("family", "student")
-        .order_by("-created_at")[:limit]
+        .order_by("-created_at")[:limit * 2]  # Fetch more to filter
     )
     
     for le in recent_ledger:
+        amt = getattr(le, "amount_cents", None)
+        
+        # Suppress zero-amount and routine GL entries
+        if amt is None or amt == 0:
+            continue
+        
+        acct = getattr(le, "account_code", None) or getattr(getattr(le, "account", None), "code", None) or "LEDGER"
+        
+        # Suppress routine GL codes (adjustments, temporary entries)
+        if acct.upper() in ["GL_ADJUSTMENT", "TEMP", "PENDING"]:
+            continue
+        
         fam = getattr(le, "family", None)
         student = getattr(le, "student", None)
         family_name = getattr(fam, "family_name", None)
         student_name = (f"{getattr(student,'first_name','')} {getattr(student,'last_name','')}".strip() if student else None)
         
         ts = getattr(le, "created_at", None) or getattr(le, "entry_date", None) or timezone.now()
-        acct = getattr(le, "account_code", None) or getattr(getattr(le, "account", None), "code", None) or "LEDGER"
-        amt = getattr(le, "amount_cents", None)
-        
         who = family_name or student_name or "Account"
+        
+        # Tighten summary with amount
+        amt_dollars = amt / 100.0
+        sign = "+" if amt > 0 else "-"
+        summary = f"{sign}${abs(amt_dollars):,.0f} {acct}: {who}"
+        
         items.append({
             "ts": ts,
             "type": "LEDGER_ENTRY",
@@ -875,10 +930,10 @@ def director_timeline(request):
             "entity": "LedgerEntry",
             "entity_id": str(le.id),
             "amount_cents": amt,
-            "summary": f"Ledger entry {acct} for {who}.",
+            "summary": summary,
         })
     
-    # Sort + trim
+    # Sort by timestamp (reverse chrono), trim
     items = [i for i in items if i.get("ts") is not None]
     items.sort(key=lambda x: x["ts"], reverse=True)
     items = items[:limit]

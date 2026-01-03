@@ -15,9 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import include, path
+from django.views.generic import RedirectView
 from crown_api.views import director_dashboard_page
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="director/", permanent=False)),
     path("api/", include("crown_api.api_urls")),
     path("director/", director_dashboard_page, name="director_dashboard_page"),
 ]
