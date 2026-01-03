@@ -273,35 +273,66 @@ class StudentTuition(BaseModel):
 
 # 13. LedgerEntry
 class LedgerEntry(BaseModel):
-    ACCOUNT_CODE_CHOICES = [
-        ('TUITION', 'Tuition'),
-        ('AID', 'Aid'),
-        ('FEE', 'Fee'),
-        ('PAYMENT', 'Payment'),
-    ]
-    
     SOURCE_CHOICES = [
         ('TUITION_SET', 'Tuition Set'),
         ('AID_AWARD', 'Aid Award'),
+        ('FEE', 'Fee'),
         ('PAYMENT', 'Payment'),
+        ('ADJUSTMENT', 'Adjustment'),
     ]
     
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='ledger_entries')
     family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='ledger_entries')
     student = models.ForeignKey(Student, on_delete=models.SET_NULL, blank=True, null=True)
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
+    # Now points to ChartAccount instead of hardcoded string choices
+    account = models.ForeignKey('finance.ChartAccount', on_delete=models.PROTECT, related_name='ledger_entries')
+    batch = models.ForeignKey('finance.JournalBatch', on_delete=models.SET_NULL, null=True, blank=True, related_name='ledger_entries')
     entry_date = models.DateField()
-    account_code = models.CharField(max_length=20, choices=ACCOUNT_CODE_CHOICES)
-    amount_cents = models.IntegerField()
-    memo = models.TextField()
+    amount_cents = models.IntegerField()  # can be +/- depending on debit/credit
+    memo = models.TextField(blank=True, default='')
     source = models.CharField(max_length=50, choices=SOURCE_CHOICES)
     created_by_user = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, blank=True, null=True)
     
+    # Reversal mechanism for immutable audit trail
+    is_reversal = models.BooleanField(default=False)
+    reversal_of = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reversals'
+    )
+    
     class Meta:
-        ordering = ['-entry_date']
+        ordering = ['-entry_date', '-created_at']
     
     def __str__(self):
-        return f"{self.family.family_name} - {self.account_code} - {self.entry_date}"
+        account_code = self.account.code if self.account_id else 'NoAccount'
+        return f"{self.family.family_name} - {account_code} - {self.entry_date}"
+    
+    @staticmethod
+    def create_reversal(original_entry, created_by=None, memo_suffix=" (REVERSAL)"):
+        """
+        Convenience method to reverse an existing entry.
+        Creates a new LedgerEntry with negated amount, linking back to the original.
+        """
+        from django.utils import timezone
+        return LedgerEntry.objects.create(
+            school=original_entry.school,
+            family=original_entry.family,
+            student=original_entry.student,
+            academic_year=original_entry.academic_year,
+            account=original_entry.account,
+            batch=original_entry.batch,
+            entry_date=timezone.now().date(),
+            amount_cents=-original_entry.amount_cents,
+            memo=original_entry.memo + memo_suffix,
+            source=original_entry.source,
+            created_by_user=created_by,
+            is_reversal=True,
+            reversal_of=original_entry,
+        )
 
 
 # 14. AidApplication

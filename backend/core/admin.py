@@ -106,9 +106,9 @@ class StudentTuitionAdmin(admin.ModelAdmin):
 
 @admin.register(LedgerEntry)
 class LedgerEntryAdmin(admin.ModelAdmin):
-    list_display = ("school", "family", "student", "entry_date", "account_code", "amount_cents", "source")
-    list_filter = ("school", "academic_year", "account_code", "source", "entry_date")
-    search_fields = ("family__family_name", "student__student_number", "memo")
+    list_display = ("school", "family", "student", "entry_date", "account", "amount_cents", "source", "batch", "is_reversal")
+    list_filter = ("school", "academic_year", "account", "source", "entry_date", "is_reversal")
+    search_fields = ("family__family_name", "student__student_number", "memo", "account__code")
     readonly_fields = ("created_by_user",)
 
 
