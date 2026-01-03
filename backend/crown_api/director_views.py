@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -454,3 +455,199 @@ def director_priority(request):
             "enrollments_missing_grade_count": enrollments_missing_grade,
         }
     })
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def director_actions(request):
+    """
+    Endpoint for director/Head of School actions.
+    
+    Supported actions:
+    - POST_ACCEPTED_AWARDS: Post accepted award(s) to ledger
+    
+    Request body:
+    {
+        "action": "POST_ACCEPTED_AWARDS",
+        "school_id": "...",
+        "year_id": "...",
+        "ids": ["award_id1", "award_id2", ...]
+    }
+    """
+    if not crown_director_allowed(request):
+        return Response(
+            {"error": "Unauthorized. Director access required."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    
+    try:
+        action = request.data.get("action")
+        school_id = request.data.get("school_id")
+        year_id = request.data.get("year_id")
+        ids = request.data.get("ids", [])
+        
+        if not action:
+            return Response(
+                {"error": "Missing required field: action"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        if action == "POST_ACCEPTED_AWARDS":
+            if not ids:
+                return Response(
+                    {"error": "Missing required field: ids"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            from crown_api.models import StudentAid
+            from crown_api.ledger_helpers import post_award_to_ledger
+            
+            with transaction.atomic():
+                posted_count = 0
+                errors = []
+                
+                for award_id in ids:
+                    try:
+                        award = StudentAid.objects.get(id=award_id)
+                        
+                        # Verify this award belongs to the specified school/year
+                        if school_id and str(award.student.school_id) != str(school_id):
+                            errors.append({
+                                "award_id": award_id,
+                                "error": "Award does not belong to specified school",
+                            })
+                            continue
+                        
+                        # Post the award to ledger
+                        post_award_to_ledger(award)
+                        posted_count += 1
+                    except StudentAid.DoesNotExist:
+                        errors.append({
+                            "award_id": award_id,
+                            "error": "Award not found",
+                        })
+                    except Exception as e:
+                        errors.append({
+                            "award_id": award_id,
+                            "error": str(e),
+                        })
+                
+                return Response({
+                    "action": action,
+                    "posted_count": posted_count,
+                    "total_requested": len(ids),
+                    "errors": errors if errors else None,
+                })
+        
+        elif action == "AID_GENERATE_NEEDS_INFO_EMAILS":
+            # Generate email drafts for needs-info applications (no sending)
+            drafts = []
+            failures = []
+            
+            # Fetch academic year if provided
+            academic_year = None
+            if year_id:
+                from crown_api.models import AcademicYear
+                try:
+                    academic_year = AcademicYear.objects.get(id=year_id)
+                except AcademicYear.DoesNotExist:
+                    academic_year = None
+            
+            from crown_api.models import AidApplication
+            
+            # Build query
+            query = AidApplication.objects.filter(id__in=ids)
+            if school_id:
+                query = query.filter(school_id=school_id)
+            
+            apps = query.select_related("family").select_related("academic_year")
+            apps_by_id = {str(a.id): a for a in apps}
+            
+            for raw_id in ids:
+                app = apps_by_id.get(str(raw_id))
+                if not app:
+                    failures.append({
+                        "id": str(raw_id),
+                        "reason": "Application not found for school/year"
+                    })
+                    continue
+                
+                # Enforce NEEDS_INFO status
+                if app.status != "NEEDS_INFO":
+                    failures.append({
+                        "id": str(app.id),
+                        "reason": f"Application is in {app.status} status, not NEEDS_INFO"
+                    })
+                    continue
+                
+                family = getattr(app, "family", None)
+                family_name = getattr(family, "family_name", "Family") if family else "Family"
+                
+                # Try to fetch missing documents
+                missing = []
+                try:
+                    # Attempt to find missing documents
+                    from crown_api.models import AidDocument
+                    missing_qs = AidDocument.objects.filter(
+                        application=app,
+                        received=False
+                    ).order_by("doc_type")
+                    for d in missing_qs:
+                        label = getattr(d, "doc_label", None) or getattr(d, "doc_type", None) or "Document"
+                        missing.append(str(label))
+                except Exception:
+                    # If AidDocument doesn't exist or different structure, use generic
+                    missing = []
+                
+                missing_lines = "\n".join([f"- {m}" for m in missing]) if missing else "- One or more required documents (see your portal checklist)"
+                
+                subject = "Financial Aid Application – Additional Information Needed"
+                
+                ay_name = getattr(academic_year or app.academic_year, "name", "current school year")
+                
+                body = f"""Hello {family_name},
+
+Thank you for submitting your financial aid application for the {ay_name}.
+
+Before we can complete your review, we still need the following item(s):
+
+{missing_lines}
+
+What to do next:
+1) Log into the Crown Family Portal
+2) Open your Financial Aid Application
+3) Upload the missing document(s) under "Documents"
+4) Submit updates when finished
+
+If you have questions, reply to this email and we will help you.
+
+With appreciation,
+Crown Financial Aid Office
+"""
+                
+                drafts.append({
+                    "application_id": str(app.id),
+                    "family": family_name,
+                    "subject": subject,
+                    "body": body,
+                })
+            
+            return Response({
+                "action": action,
+                "draft_count": len(drafts),
+                "failure_count": len(failures),
+                "drafts": drafts,
+                "failures": failures if failures else None,
+            }, status=status.HTTP_200_OK)
+        
+        else:
+            return Response(
+                {"error": f"Unknown action: {action}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
