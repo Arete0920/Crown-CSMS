@@ -188,7 +188,8 @@ class UserAccount(AbstractUser):
         unique_together = ('school', 'email')
     
     def __str__(self):
-        return f"{self.email} ({self.school.name})"
+        school_name = self.school.name if self.school else "No School"
+        return f"{self.email} ({school_name})"
 
 
 # 9. UserRole
