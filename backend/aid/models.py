@@ -43,6 +43,17 @@ class AidApplication(TimeStampedModel):
     income_annual_cents = models.IntegerField(default=0)
     notes_internal = models.TextField(blank=True, default="")
 
+    # Audit trail: when director last contacted family (e.g., needs-info email sent)
+    last_contacted_at = models.DateTimeField(null=True, blank=True)
+    last_contacted_by = models.ForeignKey(
+        UserAccount,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="aid_contacts_initiated",
+    )
+    last_contacted_reason = models.CharField(max_length=64, null=True, blank=True)
+
     class Meta:
         indexes = [
             models.Index(fields=["school", "academic_year", "status"]),

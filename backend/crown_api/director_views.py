@@ -640,6 +640,68 @@ Crown Financial Aid Office
                 "failures": failures if failures else None,
             }, status=status.HTTP_200_OK)
         
+        elif action == "AID_MARK_NEEDS_INFO_EMAIL_SENT":
+            # Mark needs-info email sent + optionally move to under review
+            from django.utils import timezone
+            move_to_under_review = bool(payload.get("move_to_under_review", False))
+            
+            successes = []
+            failures = []
+            
+            from aid.models import AidApplication
+            
+            query = AidApplication.objects.filter(id__in=ids)
+            if school_id:
+                query = query.filter(school_id=school_id)
+            if year_id:
+                query = query.filter(academic_year_id=year_id)
+            
+            apps = query.select_related("family")
+            apps_by_id = {str(a.id): a for a in apps}
+            
+            now = timezone.now()
+            
+            for raw_id in ids:
+                app = apps_by_id.get(str(raw_id))
+                if not app:
+                    failures.append({"id": str(raw_id), "reason": "Application not found for school/year"})
+                    continue
+                
+                if app.status != AidApplication.STATUS_NEEDS_INFO:
+                    failures.append({"id": str(app.id), "reason": f"Application is in {app.status} status, not NEEDS_INFO"})
+                    continue
+                
+                # Update audit fields
+                app.last_contacted_at = now
+                app.last_contacted_by = request.user if getattr(request.user, "is_authenticated", False) else None
+                app.last_contacted_reason = "NEEDS_INFO_EMAIL"
+                
+                # Optional: director can move it along after sending message
+                if move_to_under_review:
+                    app.status = AidApplication.STATUS_UNDER_REVIEW
+                
+                app.save(update_fields=[
+                    "last_contacted_at",
+                    "last_contacted_by",
+                    "last_contacted_reason",
+                    "status",
+                ])
+                
+                successes.append({
+                    "application_id": str(app.id),
+                    "family": getattr(getattr(app, "family", None), "family_name", None),
+                    "moved_to_under_review": move_to_under_review,
+                    "last_contacted_at": app.last_contacted_at,
+                })
+            
+            return Response({
+                "action": action,
+                "success_count": len(successes),
+                "failure_count": len(failures),
+                "successes": successes,
+                "failures": failures if failures else None,
+            }, status=status.HTTP_200_OK)
+        
         else:
             return Response(
                 {"error": f"Unknown action: {action}"},
