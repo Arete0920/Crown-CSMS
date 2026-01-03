@@ -587,9 +587,9 @@ def director_actions(request):
                 missing = []
                 try:
                     # Attempt to find missing documents
-                    from crown_api.models import AidDocument
+                    from aid.models import AidDocument
                     missing_qs = AidDocument.objects.filter(
-                        application=app,
+                        aid_application=app,
                         received=False
                     ).order_by("doc_type")
                     for d in missing_qs:
