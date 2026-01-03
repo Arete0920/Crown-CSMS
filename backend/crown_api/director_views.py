@@ -257,3 +257,114 @@ def director_dashboard(request):
             "registrar": getattr(registrar_resp, "data", registrar_resp.data if hasattr(registrar_resp, "data") else registrar_resp),
         },
     })
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def director_priority(request):
+    """
+    Priority queue for directors: the next items to work, ordered and limited.
+    Shows top 10 actionable items for aid, finance, and registrar directors.
+    """
+    if not crown_director_allowed(request):
+        return Response(
+            {"error": "Unauthorized. Director access required."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    
+    school_id = request.query_params.get("school_id")
+    academic_year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
+
+    academic_year = resolve_academic_year(school_id, academic_year_id)
+
+    # --- Aid priorities ---
+    needs_info_apps = (
+        AidApplication.objects
+        .filter(school_id=school_id, academic_year=academic_year, status=AidApplication.STATUS_NEEDS_INFO)
+        .select_related("family")
+        .order_by("-submitted_at")[:10]
+    )
+
+    under_review_apps = (
+        AidApplication.objects
+        .filter(school_id=school_id, academic_year=academic_year, status=AidApplication.STATUS_UNDER_REVIEW)
+        .select_related("family")
+        .order_by("-submitted_at")[:10]
+    )
+
+    accepted_not_posted_awards = (
+        AidAward.objects
+        .filter(
+            school_id=school_id,
+            academic_year=academic_year,
+            decision_status=AidAward.DECISION_ACCEPTED,
+            ledger_entry__isnull=True,
+        )
+        .select_related("student", "student__family")
+        .order_by("-decided_at", "-created_at")[:10]
+    )
+
+    # --- Finance priorities ---
+    # Families with largest net balance due (positive receivable)
+    # Assumes LedgerEntry.amount_cents: debits positive, credits negative
+    family_balances = (
+        LedgerEntry.objects
+        .filter(school_id=school_id, academic_year=academic_year, family__isnull=False)
+        .values("family_id", "family__family_name")
+        .annotate(balance_cents=Sum("amount_cents"))
+        .order_by("-balance_cents")[:10]
+    )
+
+    # Students billed check
+    billed_count = StudentTuition.objects.filter(school_id=school_id, academic_year=academic_year).count()
+
+    # --- Registrar priorities ---
+    # Enrollment with missing grade
+    enrollments_missing_grade = (
+        Enrollment.objects
+        .filter(school_id=school_id, academic_year=academic_year, status='ENROLLED')
+        .filter(grade_level__isnull=True)
+        .count()
+    )
+
+    # Build payload
+    return Response({
+        "meta": {
+            "school_id": school_id,
+            "year_id": academic_year_id,
+        },
+        "aid": {
+            "needs_info_applications": [
+                {
+                    "application_id": str(a.id),
+                    "family": getattr(a.family, "family_name", None),
+                    "submitted_at": a.submitted_at,
+                }
+                for a in needs_info_apps
+            ],
+            "under_review_applications": [
+                {
+                    "application_id": str(a.id),
+                    "family": getattr(a.family, "family_name", None),
+                    "submitted_at": a.submitted_at,
+                }
+                for a in under_review_apps
+            ],
+            "accepted_not_posted_awards": [
+                {
+                    "award_id": str(w.id),
+                    "student": f"{w.student.first_name} {w.student.last_name}" if w.student else None,
+                    "family": getattr(getattr(w.student, "family", None), "family_name", None),
+                    "awarded_cents": w.awarded_cents,
+                }
+                for w in accepted_not_posted_awards
+            ],
+        },
+        "finance": {
+            "top_balances_due": list(family_balances),
+            "students_billed_count": billed_count,
+        },
+        "registrar": {
+            "enrollments_missing_grade_count": enrollments_missing_grade,
+        }
+    })

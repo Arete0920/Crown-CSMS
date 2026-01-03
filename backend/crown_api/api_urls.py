@@ -22,9 +22,15 @@ def get_director_dashboard(request):
     return director_dashboard(request)
 
 
+def get_director_priority(request):
+    from crown_api.director_views import director_priority
+    return director_priority(request)
+
+
 urlpatterns = [
     path("director/aid/summary/", get_aid_summary, name="aid_summary"),
     path("director/finance/summary/", get_finance_summary, name="finance_summary"),
     path("director/registrar/summary/", get_registrar_summary, name="registrar_summary"),
     path("director/dashboard/", get_director_dashboard, name="director_dashboard"),
+    path("director/priority/", get_director_priority, name="director_priority"),
 ]
