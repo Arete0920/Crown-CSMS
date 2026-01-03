@@ -755,3 +755,140 @@ Crown Financial Aid Office
             {"error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def director_timeline(request):
+    """
+    Unified audit-style timeline of recent director-relevant events.
+    Read-only. Pulls from Aid + Ledger activity.
+    
+    Params:
+    - school_id: UUID of school
+    - year_id (or academic_year_id): UUID of academic year
+    - limit: max items to return (default 50)
+    """
+    if not crown_director_allowed(request):
+        return Response(
+            {"error": "Unauthorized. Director access required."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    
+    school_id = request.query_params.get("school_id")
+    year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
+    limit = int(request.query_params.get("limit") or 50)
+    
+    academic_year = resolve_academic_year(school_id, year_id)
+    
+    if not academic_year:
+        return Response(
+            {"error": "Academic year not found"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    
+    items = []
+    
+    # --- Aid: Needs-info outreach contacts ---
+    recent_contacts = (
+        AidApplication.objects
+        .filter(
+            school_id=school_id,
+            academic_year=academic_year,
+            last_contacted_at__isnull=False,
+        )
+        .select_related("family", "last_contacted_by")
+        .order_by("-last_contacted_at")[:limit]
+    )
+    
+    for a in recent_contacts:
+        actor = getattr(getattr(a, "last_contacted_by", None), "username", None) or "System"
+        family_name = getattr(getattr(a, "family", None), "family_name", "Family")
+        reason = getattr(a, "last_contacted_reason", None) or "CONTACT"
+        
+        items.append({
+            "ts": a.last_contacted_at,
+            "type": "AID_CONTACT",
+            "actor": actor,
+            "entity": "AidApplication",
+            "entity_id": str(a.id),
+            "summary": f"{reason}: contacted {family_name} about financial aid application.",
+        })
+    
+    # --- Aid: Awards posted to ledger ---
+    posted_awards = (
+        AidAward.objects
+        .filter(
+            school_id=school_id,
+            academic_year=academic_year,
+            ledger_entry__isnull=False,
+        )
+        .select_related("student", "student__family", "ledger_entry")
+        .order_by("-ledger_entry__created_at")[:limit]
+    )
+    
+    for w in posted_awards:
+        student = getattr(w, "student", None)
+        student_name = (f"{getattr(student,'first_name','')} {getattr(student,'last_name','')}".strip() if student else "Student")
+        fam = getattr(student, "family", None) if student else None
+        family_name = getattr(fam, "family_name", "Family")
+        le = getattr(w, "ledger_entry", None)
+        
+        # timestamp fallback chain
+        ts = getattr(w, "posted_at", None) or getattr(le, "created_at", None) or getattr(le, "entry_date", None) or timezone.now()
+        
+        items.append({
+            "ts": ts,
+            "type": "AID_POSTED_TO_LEDGER",
+            "actor": "Director Action" if getattr(w, "posted_by_id", None) else "System",
+            "entity": "AidAward",
+            "entity_id": str(w.id),
+            "amount_cents": getattr(w, "awarded_cents", None),
+            "summary": f"Aid award posted for {student_name} ({family_name}).",
+        })
+    
+    # --- Finance: Recent ledger activity ---
+    recent_ledger = (
+        LedgerEntry.objects
+        .filter(
+            school_id=school_id,
+            academic_year=academic_year,
+        )
+        .select_related("family", "student")
+        .order_by("-created_at")[:limit]
+    )
+    
+    for le in recent_ledger:
+        fam = getattr(le, "family", None)
+        student = getattr(le, "student", None)
+        family_name = getattr(fam, "family_name", None)
+        student_name = (f"{getattr(student,'first_name','')} {getattr(student,'last_name','')}".strip() if student else None)
+        
+        ts = getattr(le, "created_at", None) or getattr(le, "entry_date", None) or timezone.now()
+        acct = getattr(le, "account_code", None) or getattr(getattr(le, "account", None), "code", None) or "LEDGER"
+        amt = getattr(le, "amount_cents", None)
+        
+        who = family_name or student_name or "Account"
+        items.append({
+            "ts": ts,
+            "type": "LEDGER_ENTRY",
+            "actor": "System",
+            "entity": "LedgerEntry",
+            "entity_id": str(le.id),
+            "amount_cents": amt,
+            "summary": f"Ledger entry {acct} for {who}.",
+        })
+    
+    # Sort + trim
+    items = [i for i in items if i.get("ts") is not None]
+    items.sort(key=lambda x: x["ts"], reverse=True)
+    items = items[:limit]
+    
+    return Response({
+        "meta": {
+            "school_id": school_id,
+            "year_id": year_id,
+            "limit": limit,
+            "count": len(items),
+        },
+        "timeline": items,
+    }, status=status.HTTP_200_OK)
