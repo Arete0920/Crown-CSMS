@@ -10,10 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Dev API open toggle (for development ONLY; default FALSE/closed)
+# For now, set to True for demo. Set to False and use env var CROWN_DEV_OPEN_API=1 for production-like behavior.
+CROWN_DEV_OPEN_API = True  # os.getenv("CROWN_DEV_OPEN_API", "0") == "1"
 
 
 # Quick-start development settings - unsuitable for production
@@ -39,8 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'core',
-    'finance',
-    'aid',
+    'finance.apps.FinanceConfig',
+    'aid.apps.AidConfig',
 ]
 
 MIDDLEWARE = [
