@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -327,12 +328,97 @@ def director_priority(request):
         .count()
     )
 
+    # --- Priority scoring formula ---
+    now = timezone.now()
+
+    def days_waiting(dt):
+        if not dt:
+            return 0
+        delta = now - dt
+        return max(0, int(delta.total_seconds() // 86400))
+
+    # Build scored items (Aid)
+    aid_items = []
+
+    for a in needs_info_apps:
+        score = 100 + (days_waiting(a.submitted_at) * 3)  # missing docs are urgent
+        aid_items.append({
+            "type": "AID_APPLICATION_NEEDS_INFO",
+            "score": score,
+            "id": str(a.id),
+            "family": getattr(a.family, "family_name", None),
+            "submitted_at": a.submitted_at,
+            "summary": "Application needs info (missing documents).",
+        })
+
+    for a in under_review_apps:
+        score = 60 + (days_waiting(a.submitted_at) * 2)
+        aid_items.append({
+            "type": "AID_APPLICATION_UNDER_REVIEW",
+            "score": score,
+            "id": str(a.id),
+            "family": getattr(a.family, "family_name", None),
+            "submitted_at": a.submitted_at,
+            "summary": "Application under review.",
+        })
+
+    for w in accepted_not_posted_awards:
+        # Bigger awards should rise (posting impacts billing immediately)
+        award_dollars = (w.awarded_cents or 0) / 100
+        score = 90 + min(40, int(award_dollars // 500))  # +1 per $500 up to +40
+        aid_items.append({
+            "type": "AID_AWARD_ACCEPTED_NOT_POSTED",
+            "score": score,
+            "id": str(w.id),
+            "student": (f"{w.student.first_name} {w.student.last_name}" if w.student else None),
+            "family": getattr(getattr(w.student, "family", None), "family_name", None),
+            "awarded_cents": w.awarded_cents,
+            "summary": "Accepted award not posted to ledger.",
+        })
+
+    # Build scored items (Finance)
+    finance_items = []
+    for row in list(family_balances):
+        balance_cents = row.get("balance_cents") or 0
+        # Only balances > 0 are receivables to chase
+        if balance_cents <= 0:
+            continue
+        balance_dollars = balance_cents / 100
+        score = 70 + min(60, int(balance_dollars // 500))  # +1 per $500 up to +60
+        finance_items.append({
+            "type": "FINANCE_BALANCE_DUE",
+            "score": score,
+            "family_id": str(row.get("family_id")),
+            "family": row.get("family__family_name"),
+            "balance_cents": balance_cents,
+            "summary": "Family balance due requires follow-up.",
+        })
+
+    # Build scored items (Registrar)
+    registrar_items = []
+    if enrollments_missing_grade > 0:
+        score = 50 + min(50, enrollments_missing_grade)  # scale with count
+        registrar_items.append({
+            "type": "REGISTRAR_MISSING_GRADE",
+            "score": score,
+            "count": enrollments_missing_grade,
+            "summary": "Enrollments missing grade assignment.",
+        })
+
+    # Merge + sort by score
+    worklist = sorted(
+        aid_items + finance_items + registrar_items,
+        key=lambda x: x["score"],
+        reverse=True
+    )[:10]
+
     # Build payload
     return Response({
         "meta": {
             "school_id": school_id,
             "year_id": academic_year_id,
         },
+        "worklist_top_10": worklist,
         "aid": {
             "needs_info_applications": [
                 {
