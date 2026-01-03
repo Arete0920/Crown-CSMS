@@ -273,12 +273,18 @@ class StudentTuition(BaseModel):
 
 # 13. LedgerEntry
 class LedgerEntry(BaseModel):
+    SOURCE_TUITION_SET = 'TUITION_SET'
+    SOURCE_AID_AWARD = 'AID_AWARD'
+    SOURCE_FEE = 'FEE'
+    SOURCE_PAYMENT = 'PAYMENT'
+    SOURCE_ADJUSTMENT = 'ADJUSTMENT'
+    
     SOURCE_CHOICES = [
-        ('TUITION_SET', 'Tuition Set'),
-        ('AID_AWARD', 'Aid Award'),
-        ('FEE', 'Fee'),
-        ('PAYMENT', 'Payment'),
-        ('ADJUSTMENT', 'Adjustment'),
+        (SOURCE_TUITION_SET, 'Tuition Set'),
+        (SOURCE_AID_AWARD, 'Aid Award'),
+        (SOURCE_FEE, 'Fee'),
+        (SOURCE_PAYMENT, 'Payment'),
+        (SOURCE_ADJUSTMENT, 'Adjustment'),
     ]
     
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='ledger_entries')
@@ -333,134 +339,3 @@ class LedgerEntry(BaseModel):
             is_reversal=True,
             reversal_of=original_entry,
         )
-
-
-# 14. AidApplication
-class AidApplication(BaseModel):
-    STATUS_CHOICES = [
-        ('DRAFT', 'Draft'),
-        ('SUBMITTED', 'Submitted'),
-        ('UNDER_REVIEW', 'Under Review'),
-        ('NEEDS_INFO', 'Needs Info'),
-        ('APPROVED', 'Approved'),
-        ('DENIED', 'Denied'),
-        ('WITHDRAWN', 'Withdrawn'),
-    ]
-    
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='aid_applications')
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
-    family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='aid_applications')
-    submitted_at = models.DateTimeField(blank=True, null=True)
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='DRAFT')
-    household_size = models.IntegerField(blank=True, null=True)
-    income_annual_cents = models.IntegerField(blank=True, null=True)
-    notes_internal = models.TextField(blank=True, null=True)
-    
-    class Meta:
-        unique_together = ('school', 'family', 'academic_year')
-        ordering = ['-submitted_at']
-    
-    def __str__(self):
-        return f"{self.family.family_name} - {self.academic_year.name} - {self.status}"
-
-
-# 15. AidDocument
-class AidDocument(BaseModel):
-    DOC_TYPE_CHOICES = [
-        ('W2', 'W2'),
-        ('TAX_RETURN', 'Tax Return'),
-        ('PAY_STUB', 'Pay Stub'),
-        ('OTHER', 'Other'),
-    ]
-    
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='aid_documents')
-    aid_application = models.ForeignKey(AidApplication, on_delete=models.CASCADE, related_name='documents')
-    doc_type = models.CharField(max_length=50, choices=DOC_TYPE_CHOICES)
-    received = models.BooleanField(default=False)
-    received_at = models.DateTimeField(blank=True, null=True)
-    
-    def __str__(self):
-        return f"{self.aid_application.family.family_name} - {self.doc_type}"
-
-
-# 16. AidReview
-class AidReview(BaseModel):
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='aid_reviews')
-    aid_application = models.ForeignKey(AidApplication, on_delete=models.CASCADE, related_name='reviews')
-    reviewer_user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
-    started_at = models.DateTimeField(auto_now_add=True)
-    completed_at = models.DateTimeField(blank=True, null=True)
-    recommendation_cents = models.IntegerField(blank=True, null=True)
-    recommendation_notes = models.TextField(blank=True, null=True)
-    
-    def __str__(self):
-        return f"Review: {self.aid_application.family.family_name} by {self.reviewer_user.email}"
-
-
-# 17. AidAward
-class AidAward(BaseModel):
-    AWARD_TYPE_CHOICES = [
-        ('NEED', 'Need'),
-        ('MISSION', 'Mission'),
-        ('MERIT', 'Merit'),
-        ('HARDSHIP', 'Hardship'),
-    ]
-    
-    DECISION_STATUS_CHOICES = [
-        ('OFFERED', 'Offered'),
-        ('ACCEPTED', 'Accepted'),
-        ('DECLINED', 'Declined'),
-    ]
-    
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='aid_awards')
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='aid_awards')
-    awarded_cents = models.IntegerField()
-    award_type = models.CharField(max_length=50, choices=AWARD_TYPE_CHOICES)
-    decision_status = models.CharField(max_length=50, choices=DECISION_STATUS_CHOICES, default='OFFERED')
-    decided_by_user = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, blank=True, null=True)
-    decided_at = models.DateTimeField(blank=True, null=True)
-    
-    class Meta:
-        unique_together = ('school', 'student', 'academic_year')
-    
-    def __str__(self):
-        return f"{self.student.student_number} - {self.award_type} - {self.decision_status}"
-
-
-# 18. AidAuditEvent
-class AidAuditEvent(BaseModel):
-    ENTITY_TYPE_CHOICES = [
-        ('APPLICATION', 'Application'),
-        ('REVIEW', 'Review'),
-        ('AWARD', 'Award'),
-    ]
-    
-    ACTION_CHOICES = [
-        ('CREATED', 'Created'),
-        ('UPDATED', 'Updated'),
-        ('SUBMITTED', 'Submitted'),
-        ('SET_UNDER_REVIEW', 'Set Under Review'),
-        ('NEEDS_INFO', 'Needs Info'),
-        ('APPROVED', 'Approved'),
-        ('DENIED', 'Denied'),
-        ('AWARD_OFFERED', 'Award Offered'),
-        ('AWARD_ACCEPTED', 'Award Accepted'),
-        ('AWARD_DECLINED', 'Award Declined'),
-        ('LETTER_READY', 'Letter Ready'),
-        ('LETTER_SENT', 'Letter Sent'),
-    ]
-    
-    school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='aid_audit_events')
-    entity_type = models.CharField(max_length=50, choices=ENTITY_TYPE_CHOICES)
-    entity_id = models.UUIDField()
-    action = models.CharField(max_length=50, choices=ACTION_CHOICES)
-    actor_user = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, blank=True, null=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    details_json = models.JSONField(blank=True, null=True)
-    
-    class Meta:
-        ordering = ['-timestamp']
-    
-    def __str__(self):
-        return f"{self.entity_type} - {self.action} - {self.timestamp}"
