@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f8f9fc; color: #111827; }
+        header { background: #0b2a5a; color: white; padding: 16px 20px; }
+        header h1 { margin: 0; font-size: 20px; font-weight: 800; }
+        header .meta { color: #a5b4cb; font-size: 12px; margin-top: 4px; }
+        .wrap { padding: 16px 20px; display: grid; gap: 14px; }
+        .card { background: white; border: 1px solid #e6e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+        h2 { margin: 0 0 12px 0; font-size: 16px; color: #111827; font-weight: 700; }
+        .muted { color: #5b6476; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eef0f6; font-size: 13px; }
+        th { color: #5b6476; font-weight: 700; background: #fafbff; }
+        .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; border: 1px solid #e6e8f0; background: #fafbff; }
+        .btn { padding: 6px 12px; border-radius: 8px; border: 1px solid #d7dbea; background: #ffffff; cursor: pointer; font-size: 12px; text-decoration: none; color: #111827; }
+        .btn:hover { background: #f8f9fc; }
+        .empty { padding: 40px; text-align: center; color: #5b6476; }
+        .status-submitted { background: #eff6ff; color: #1e40af; border-color: #dbeafe; }
+        .status-review { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .status-needs-info { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>{{ page_title }}</h1>
+        <div class="meta">
+            {% if school %}{{ school.name }}{% endif %}
+            {% if academic_year %}  {{ academic_year.name }}{% endif %}
+        </div>
+    </header>
+
+    <div class="wrap">
+        <div class="card">
+            <h2>Priority Queue</h2>
+            <div class="muted">Applications requiring attention  Sorted by urgency</div>
+
+            {% if priority_queue %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Family</th>
+                        <th>Grade</th>
+                        <th>GPA</th>
+                        <th>Test Score</th>
+                        <th>Submitted</th>
+                        <th>Days Waiting</th>
+                        <th>Status</th>
+                        <th>Priority Reason</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in priority_queue %}
+                    <tr>
+                        <td><strong>{{ app.family_name }}</strong></td>
+                        <td>{{ app.grade_applying }}</td>
+                        <td>{{ app.gpa }}</td>
+                        <td>{{ app.test_score }}</td>
+                        <td>{{ app.submitted_date }}</td>
+                        <td>{{ app.days_waiting }}</td>
+                        <td><span class="pill status-{{ app.status_label|lower|cut:' ' }}">{{ app.status_label }}</span></td>
+                        <td>{{ app.priority_reason }}</td>
+                        <td><a href="{{ app.next_action_url }}" class="btn">{{ app.next_action_label }}</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">
+                <p><strong>No priority items</strong></p>
+                <p class="muted">All applications are up to date or no applications exist yet.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Quick Actions</h2>
+            <div class="muted">Common workflows</div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <a href="/admissions/applications/" class="btn">View All Applications</a>
+                <a href="/admin/admissions/admissionsapplication/add/" class="btn">New Application</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
