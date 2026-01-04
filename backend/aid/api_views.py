@@ -162,7 +162,7 @@ def aid_metrics(request):
     
     accepted_count = AidApplication.objects.filter(
         school_id=school_id, academic_year_id=year_id,
-        status=AidApplication.STATUS_ACCEPTED
+        status=AidApplication.STATUS_APPROVED
     ).count()
     
     # Sum total awarded
@@ -210,7 +210,7 @@ def aid_timeline(request):
     recent_apps = (
         AidApplication.objects
         .filter(school_id=school_id, academic_year_id=year_id)
-        .select_related("family", "submitted_by")
+        .select_related("family")
         .order_by("-submitted_at")[:50]
     )
     
@@ -219,7 +219,7 @@ def aid_timeline(request):
         events.append({
             "timestamp": app.submitted_at.isoformat() if app.submitted_at else None,
             "type": "AID_APPLICATION_SUBMITTED",
-            "actor": app.submitted_by.email if app.submitted_by else None,
+            "actor": None,  # AidApplication doesn't have submitted_by field
             "summary": f"Application submitted by {getattr(app.family, 'family_name', 'Unknown')} family",
             "id": str(app.id),
         })

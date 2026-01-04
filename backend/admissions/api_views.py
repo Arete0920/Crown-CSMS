@@ -183,7 +183,7 @@ def admissions_timeline(request):
     recent_apps = (
         AdmissionsApplication.objects
         .filter(school_id=school_id, academic_year_id=year_id)
-        .select_related("family", "submitted_by")
+        .select_related("family")
         .order_by("-submitted_at")[:50]
     )
     
@@ -192,7 +192,7 @@ def admissions_timeline(request):
         events.append({
             "timestamp": app.submitted_at.isoformat() if app.submitted_at else None,
             "type": "ADMISSIONS_APPLICATION_SUBMITTED",
-            "actor": app.submitted_by.email if app.submitted_by else None,
+            "actor": None,  # AdmissionsApplication doesn't have submitted_by field
             "summary": f"Application submitted by {getattr(app.family, 'family_name', 'Unknown')} family",
             "id": str(app.id),
         })
