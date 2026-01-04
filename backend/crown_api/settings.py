@@ -142,3 +142,8 @@ STATIC_URL = 'static/'
 
 # Custom User Model
 AUTH_USER_MODEL = 'core.UserAccount'
+
+# Authentication redirects
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/director/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
