@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from aid.models import AidApplication, AidAward, AidDocument
+from admissions.models import AdmissionsApplication
 from core.models import (
     AcademicYear,
     Enrollment,
@@ -97,6 +98,24 @@ def build_director_priority_snapshot(school_id, academic_year):
                 .order_by("-decided_at", "-created_at")
                 .values("id", "awarded_cents")[:10]
             ),
+        },
+        "admissions": {
+            "needs_info_applications": [
+                {
+                    "application_id": str(a.id),
+                    "family": getattr(a.family, "family_name", None),
+                    "submitted_at": a.submitted_at,
+                }
+                for a in admissions_needs_info_apps
+            ],
+            "under_review_applications": [
+                {
+                    "application_id": str(a.id),
+                    "family": getattr(a.family, "family_name", None),
+                    "submitted_at": a.submitted_at,
+                }
+                for a in admissions_under_review_apps
+            ],
         },
         "finance": {
             "balance_due": list(
@@ -453,6 +472,21 @@ def director_priority(request):
         .order_by("-decided_at", "-created_at")[:10]
     )
 
+    # --- Admissions priorities (cloned from Aid pattern) ---
+    admissions_needs_info_apps = (
+        AdmissionsApplication.objects
+        .filter(school_id=school_id, academic_year=academic_year, status=AdmissionsApplication.STATUS_NEEDS_INFO)
+        .select_related("family")
+        .order_by("-submitted_at")[:10]
+    )
+
+    admissions_under_review_apps = (
+        AdmissionsApplication.objects
+        .filter(school_id=school_id, academic_year=academic_year, status=AdmissionsApplication.STATUS_UNDER_REVIEW)
+        .select_related("family")
+        .order_by("-submitted_at")[:10]
+    )
+
     # --- Finance priorities ---
     # Families with largest net balance due (positive receivable)
     # Assumes LedgerEntry.amount_cents: debits positive, credits negative
@@ -524,6 +558,31 @@ def director_priority(request):
             "summary": "Accepted award not posted to ledger.",
         })
 
+    # Build scored items (Admissions - cloned from Aid pattern)
+    admissions_items = []
+
+    for a in admissions_needs_info_apps:
+        score = 100 + (days_waiting(a.submitted_at) * 3)  # missing docs are urgent
+        admissions_items.append({
+            "type": "ADMISSIONS_APPLICATION_NEEDS_INFO",
+            "score": score,
+            "id": str(a.id),
+            "family": getattr(a.family, "family_name", None),
+            "submitted_at": a.submitted_at,
+            "summary": "Admissions application needs info (missing documents).",
+        })
+
+    for a in admissions_under_review_apps:
+        score = 60 + (days_waiting(a.submitted_at) * 2)
+        admissions_items.append({
+            "type": "ADMISSIONS_APPLICATION_UNDER_REVIEW",
+            "score": score,
+            "id": str(a.id),
+            "family": getattr(a.family, "family_name", None),
+            "submitted_at": a.submitted_at,
+            "summary": "Admissions application under review.",
+        })
+
     # Build scored items (Finance)
     finance_items = []
     for row in list(family_balances):
@@ -555,7 +614,7 @@ def director_priority(request):
 
     # Merge + sort by score
     worklist = sorted(
-        aid_items + finance_items + registrar_items,
+        aid_items + admissions_items + finance_items + registrar_items,
         key=lambda x: x["score"],
         reverse=True
     )[:10]
@@ -592,6 +651,24 @@ def director_priority(request):
                     "awarded_cents": w.awarded_cents,
                 }
                 for w in accepted_not_posted_awards
+            ],
+        },
+        "admissions": {
+            "needs_info_applications": [
+                {
+                    "application_id": str(a.id),
+                    "family": getattr(a.family, "family_name", None),
+                    "submitted_at": a.submitted_at,
+                }
+                for a in admissions_needs_info_apps
+            ],
+            "under_review_applications": [
+                {
+                    "application_id": str(a.id),
+                    "family": getattr(a.family, "family_name", None),
+                    "submitted_at": a.submitted_at,
+                }
+                for a in admissions_under_review_apps
             ],
         },
         "finance": {
