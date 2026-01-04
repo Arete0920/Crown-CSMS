@@ -22,6 +22,7 @@ urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
     path("api/", include("crown_api.api_urls")),
     path("director/", director_dashboard_page, name="director_dashboard_page"),
+    path('admissions/', include('admissions.urls')),
 ]
 
 # Admin URLs added after app initialization
