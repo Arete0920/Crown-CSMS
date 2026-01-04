@@ -59,7 +59,7 @@ def _get_active_persona(request) -> str | None:
     # 1) Demo-mode session persona (common pattern)
     persona = request.session.get("active_persona") or request.session.get("demo_persona")
     if persona:
-        return str(persona).strip().lower()
+        return str(persona).strip().lower().replace(" ", "_")
 
     user = request.user
 
