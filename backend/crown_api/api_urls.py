@@ -1,4 +1,19 @@
-from django.urls import path
+"""
+URL configuration for Director APIs
+
+PERSONA-SPECIFIC APIs (per user's spec):
+- /api/aid/priority-queue/
+- /api/aid/metrics/
+- /api/aid/timeline/
+- /api/admissions/priority-queue/
+- /api/admissions/metrics/
+- /api/admissions/timeline/
+
+LEGACY unified APIs (deprecated):
+- /api/director/* (returns merged data for all personas)
+"""
+
+from django.urls import path, include
 from crown_api.director_views import (
     aid_summary,
     finance_summary,
@@ -10,6 +25,11 @@ from crown_api.director_views import (
 )
 
 urlpatterns = [
+    # Persona-specific API routes (NEW - per user spec)
+    path("aid/", include("aid.api_urls")),
+    path("admissions/", include("admissions.api_urls")),
+    
+    # Legacy unified routes (DEPRECATED - kept for backwards compatibility)
     path("director/aid/summary/", aid_summary, name="aid_summary"),
     path("director/finance/summary/", finance_summary, name="finance_summary"),
     path("director/registrar/summary/", registrar_summary, name="registrar_summary"),
