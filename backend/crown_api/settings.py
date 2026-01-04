@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'core',
     'finance.apps.FinanceConfig',
     'aid.apps.AidConfig',
+    'admissions.apps.AdmissionsConfig',
 ]
 
 MIDDLEWARE = [
