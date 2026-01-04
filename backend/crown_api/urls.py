@@ -9,6 +9,9 @@ urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
     path("api/", include("crown_api.api_urls")),
     
+    # Authentication URLs (login, logout, password reset, etc.)
+    path("accounts/", include("django.contrib.auth.urls")),
+    
     # Director routing - persona-specific URLs all use same view
     path("director/", director_router, name="director_router"),
     path("director/aid/", director_dashboard_page, {'persona': 'aid'}, name="director_aid"),
