@@ -171,6 +171,10 @@ Before deploying to production:
 - [ ] Create user documentation
 - [ ] Set up monitoring/alerts
 
+### Recovery checkpoint
+- [x] Production recovery baseline tag created: `prod-recovery-2026-01-24`
+- [x] Repo hygiene: stop tracking `__pycache__/` artifacts (commit `48da99cd`)
+
 ## 📞 Support References
 
 ### Documentation Files
