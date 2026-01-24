@@ -1,0 +1,170 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+
+name: Build and deploy Python app to Azure Web App - crown-api-dev
+
+on:
+  push:
+    branches:
+      - stabilization-20260116-spine
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (commit SHA / tag / branch) to deploy (for rollback)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
+    outputs:
+      deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
+          fetch-depth: 0
+
+      - name: Determine deploy SHA
+        id: vars
+        run: |
+          echo "deploy_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 🛠️ Local Build Section (Optional)
+      # The following section in your workflow is designed to catch build issues early on the client side, before deployment. This can be helpful for debugging and validation. However, if this step significantly increases deployment time and early detection is not critical for your workflow, you may remove this section to streamline the deployment process.
+      - name: Create and Start virtual environment and Install dependencies
+        run: |
+          python -m venv antenv
+          source antenv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Preflight gate (Django tests)
+        run: |
+          source antenv/bin/activate
+          python manage.py test -q
+                
+      # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: |
+            .
+            !antenv/
+
+      # 🚫 Opting Out of Oryx Build
+      # If you prefer to disable the Oryx build process during deployment, follow these steps:
+      # 1. Remove the SCM_DO_BUILD_DURING_DEPLOYMENT app setting from your Azure App Service Environment variables.
+      # 2. Refer to sample workflows for alternative deployment strategies: https://github.com/Azure/actions-workflow-samples/tree/master/AppService
+      
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5F6489EF235D4B29B45391CF7A85C437 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E80381B625D540C79C1F0B3D47E8917B }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_220ABB97921D499FB9EE96E001EFFA80 }}
+
+      - name: Set BUILD_SHA (runtime deploy proof)
+        run: |
+          az webapp config appsettings set \
+            --resource-group crown-rg \
+            --name crown-api-dev \
+            --settings BUILD_SHA=${{ needs.build.outputs.deploy_sha_short }} \
+            --output none \
+            --only-show-errors
+
+      - name: Show repo root files (proof of structure)
+        run: |
+          pwd
+          ls -la
+          ls -la crown_api || true
+          ls -la manage.py || true
+
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'crown-api-dev'
+          slot-name: 'Production'
+          package: .
+
+      - name: Post-deploy verify BUILD_SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://crown-api-dev.azurewebsites.net/api/health/"
+          expected="${{ needs.build.outputs.deploy_sha_short }}"
+
+          echo "Verifying ${url} reports build_sha=${expected}"
+
+          export EXPECTED="${expected}"
+
+          for i in {1..30}; do
+            echo "Attempt ${i}/30"
+            if response="$(curl -fsS "${url}" 2>/dev/null)"; then
+              export RESPONSE="${response}"
+              python - <<'PY'
+import json
+import os
+import sys
+
+expected = os.environ.get("EXPECTED")
+raw = os.environ.get("RESPONSE")
+
+try:
+    payload = json.loads(raw)
+except Exception:
+    print("Invalid JSON from /api/health/")
+    print(raw)
+    sys.exit(1)
+
+data = payload.get("data") if isinstance(payload, dict) else None
+build_sha = (data or {}).get("build_sha")
+
+if not build_sha:
+    print("Missing data.build_sha")
+    print(json.dumps(payload, indent=2))
+    sys.exit(1)
+
+if build_sha != expected:
+    print("build_sha mismatch")
+    print(f"Expected: {expected}")
+    print(f"Actual:   {build_sha}")
+    sys.exit(1)
+
+print(f"Verified build_sha: {build_sha}")
+PY
+              echo "✅ Post-deploy verification passed"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "❌ Post-deploy verification failed (build_sha missing or mismatched)"
+          exit 1
+          

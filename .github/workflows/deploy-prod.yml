@@ -1,0 +1,232 @@
+name: Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (commit SHA / tag / branch) to deploy (for rollback)'
+        required: false
+        default: ''
+
+env:
+  REGISTRY: crownregistry.azurecr.io
+  IMAGE_NAME: crown-api
+  RESOURCE_GROUP: crown-rg
+  WEBAPP_NAME: crown-api-prod
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
+          fetch-depth: 0
+
+      - name: Determine deploy SHA
+        id: vars
+        run: |
+          echo "deploy_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+          echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run security scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-django
+
+      - name: Preflight gate (Django deploy checks)
+        run: |
+          export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          python manage.py check --deploy
+
+      - name: Run tests
+        run: |
+          python manage.py test -q
+          pytest --cov=. --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set BUILD_SHA (runtime deploy proof)
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --settings BUILD_SHA=${{ env.DEPLOY_SHA_SHORT }} \
+            --output none \
+            --only-show-errors
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+
+      - name: Run database migrations
+        run: |
+          az webapp remote-build-enabled set --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.WEBAPP_NAME }} --remote-build-enabled false
+          az webapp config appsettings set --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.WEBAPP_NAME }} --settings RUN_MIGRATIONS=true
+
+      - name: Health check
+        run: |
+          sleep 30
+          for i in {1..30}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health)
+            if [ "$response" == "200" ]; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "Health check attempt $i - response code: $response"
+            sleep 10
+          done
+          echo "❌ Health check failed"
+          exit 1
+
+      - name: Post-deploy verify BUILD_SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/"
+          expected="${{ env.DEPLOY_SHA_SHORT }}"
+
+          echo "Verifying ${url} reports build_sha=${expected}"
+
+          export EXPECTED="${expected}"
+
+          for i in {1..30}; do
+            echo "Attempt ${i}/30"
+            if response="$(curl -fsS "${url}" 2>/dev/null)"; then
+              export RESPONSE="${response}"
+              python - <<'PY'
+import json
+import os
+import sys
+
+expected = os.environ.get("EXPECTED")
+raw = os.environ.get("RESPONSE")
+
+try:
+    payload = json.loads(raw)
+except Exception:
+    print("Invalid JSON from /api/health/")
+    print(raw)
+    sys.exit(1)
+
+data = payload.get("data") if isinstance(payload, dict) else None
+build_sha = (data or {}).get("build_sha")
+
+if not build_sha:
+    print("Missing data.build_sha")
+    print(json.dumps(payload, indent=2))
+    sys.exit(1)
+
+if build_sha != expected:
+    print("build_sha mismatch")
+    print(f"Expected: {expected}")
+    print(f"Actual:   {build_sha}")
+    sys.exit(1)
+
+print(f"Verified build_sha: {build_sha}")
+PY
+              echo "✅ Post-deploy verification passed"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "❌ Post-deploy verification failed (build_sha missing or mismatched)"
+          exit 1
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ Deployment successful"
+          echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed - rolling back"
+          # Azure will handle automatic rollback based on health check
+          exit 1
+
+  notification:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        if: vars.SLACK_WEBHOOK_URL != ''
+        with:
+          payload: |
+            {
+              "text": "Crown Academy Production Deployment",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status:* ${{ job.status }}\n*Branch:* main\n*Commit:* ${{ needs.build-and-deploy.outputs.deploy_sha_short }}\n*Author:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
