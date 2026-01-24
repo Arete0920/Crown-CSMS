@@ -10,7 +10,7 @@ on:
 
 env:
   REGISTRY: crownregistry.azurecr.io
-  IMAGE_NAME: crown-api
+  IMAGE_NAME: crown2026
   RESOURCE_GROUP: crown-rg
   WEBAPP_NAME: crown-api-prod
 
