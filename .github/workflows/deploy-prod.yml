@@ -196,7 +196,7 @@ jobs:
     steps:
       - name: Send Slack notification
         uses: slackapi/slack-github-action@v1.24.0
-        if: vars.SLACK_WEBHOOK_URL != ''
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         with:
           payload: |
             {
