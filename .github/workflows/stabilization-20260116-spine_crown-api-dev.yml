@@ -127,38 +127,22 @@ jobs:
           for i in {1..30}; do
             echo "Attempt ${i}/30"
             if response="$(curl -fsS "${url}" 2>/dev/null)"; then
-              export RESPONSE="${response}"
-              python - <<'PY'
-import json
-import os
-import sys
+              build_sha="$(echo "${response}" | jq -r '.data.build_sha // empty' 2>/dev/null || true)"
 
-expected = os.environ.get("EXPECTED")
-raw = os.environ.get("RESPONSE")
+              if [ -z "${build_sha}" ]; then
+                echo "Missing data.build_sha (or invalid JSON)"
+                echo "${response}"
+                exit 1
+              fi
 
-try:
-    payload = json.loads(raw)
-except Exception:
-    print("Invalid JSON from /api/health/")
-    print(raw)
-    sys.exit(1)
+              if [ "${build_sha}" != "${expected}" ]; then
+                echo "build_sha mismatch"
+                echo "Expected: ${expected}"
+                echo "Actual:   ${build_sha}"
+                exit 1
+              fi
 
-data = payload.get("data") if isinstance(payload, dict) else None
-build_sha = (data or {}).get("build_sha")
-
-if not build_sha:
-    print("Missing data.build_sha")
-    print(json.dumps(payload, indent=2))
-    sys.exit(1)
-
-if build_sha != expected:
-    print("build_sha mismatch")
-    print(f"Expected: {expected}")
-    print(f"Actual:   {build_sha}")
-    sys.exit(1)
-
-print(f"Verified build_sha: {build_sha}")
-PY
+              echo "Verified build_sha: ${build_sha}"
               echo "✅ Post-deploy verification passed"
               exit 0
             fi
