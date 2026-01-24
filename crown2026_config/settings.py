@@ -10,7 +10,23 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _env_list(name: str) -> list[str]:
+    value = os.getenv(name)
+    if not value:
+        return []
+    parts = [p.strip() for p in value.replace(";", ",").split(",")]
+    return [p for p in parts if p]
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +36,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rbuzh^u+h9kn&e4jw5olet8b4a!x4x+-3b28ik0jr&-lp2j--l'
+_is_azure = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
+SECRET_KEY = (
+    os.getenv("DJANGO_SECRET_KEY")
+    or os.getenv("SECRET_KEY")
+    or "django-insecure-rbuzh^u+h9kn&e4jw5olet8b4a!x4x+-3b28ik0jr&-lp2j--l"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _env_bool(
+    "DEBUG", default=False
+)
 
-ALLOWED_HOSTS = []
+_allowed_hosts = _env_list("ALLOWED_HOSTS") or _env_list("DJANGO_ALLOWED_HOSTS")
+if not _allowed_hosts and _is_azure:
+    hostname = os.getenv("WEBSITE_HOSTNAME")
+    if hostname:
+        _allowed_hosts = [hostname]
+
+ALLOWED_HOSTS = _allowed_hosts
 
 
 # Application definition
