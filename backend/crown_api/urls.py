@@ -3,10 +3,13 @@ URL configuration for crown_api project.
 """
 from django.urls import include, path
 from django.views.generic import RedirectView
+from crown_api.health_views import health
 from crown_api.views import director_dashboard_page, director_router
 
 urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
+    path("health/", health, name="health"),
+    path("api/health/", health, name="api_health"),
     path("api/", include("crown_api.api_urls")),
     
     # Authentication URLs (login, logout, password reset, etc.)
