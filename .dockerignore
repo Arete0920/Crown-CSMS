@@ -1,0 +1,19 @@
+.git
+.github
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+.venv/
+venv/
+node_modules/
+frontend/
+staticfiles/
+media/
+CROWN BINDER/
+Marketing Brand/
+Capstone Project/
+Crown2026_docs/
