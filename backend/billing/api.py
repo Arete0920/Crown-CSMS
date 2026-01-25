@@ -114,11 +114,31 @@ def billing_run_detail(request: HttpRequest, billing_run_id: str):
     data = _run_to_dict(run)
     data["invoices"] = []
     for inv in invoices:
+        from django.db.models import Sum
+        from ledger.models import Allocation as PaymentAllocation
+
+        aid_applied = Decimal("0.00")
+        if inv.ledger_charge_id:
+            aid_applied = (
+                PaymentAllocation.objects.filter(
+                    school_id=sid,
+                    charge_id=inv.ledger_charge_id,
+                    payment__source="FINANCIAL_AID",
+                ).aggregate(total=Sum("amount"))["total"]
+                or Decimal("0.00")
+            )
+
+        net_due = Decimal(str(inv.total_amount)) - Decimal(str(aid_applied))
+        if net_due < Decimal("0.00"):
+            net_due = Decimal("0.00")
+
         data["invoices"].append(
             {
                 "id": str(inv.id),
                 "household_id": str(inv.household_id),
                 "total_amount": str(inv.total_amount),
+                "aid_applied": str(aid_applied),
+                "net_due": str(net_due),
                 "ledger_charge_id": str(inv.ledger_charge_id) if inv.ledger_charge_id else None,
                 "lines": [
                     {

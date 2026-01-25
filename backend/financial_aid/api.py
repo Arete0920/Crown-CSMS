@@ -13,6 +13,7 @@ from households.models import Household
 from households.scoping import get_request_school_id
 from .models import AidApplication, AidAward
 from .services import submit_aid_application, decide_aid_application, create_disbursement
+from .services import apply_financial_aid_to_billing_run
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -191,3 +192,18 @@ def aid_disburse(request: HttpRequest, award_id: str):
         {"award_id": str(award.id), "amount": str(disb.amount), "disbursed_on": str(disb.disbursed_on)},
         status=201,
     )
+
+
+@login_required
+@require_http_methods(["POST"])
+def disburse_to_billing_run(request: HttpRequest, billing_run_id: str):
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        result = apply_financial_aid_to_billing_run(school_id=sid, billing_run_id=UUID(billing_run_id))
+    except Exception as e:
+        return _json_error(str(e), status=400)
+
+    return _envelope(result, status=200)

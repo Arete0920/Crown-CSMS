@@ -98,3 +98,32 @@ class AidEvent(TimeStampedModel):
             models.Index(fields=["school_id", "event_type"]),
             models.Index(fields=["school_id", "aid_application", "created_at"]),
         ]
+
+
+from billing.models import BillingRun, Invoice
+from ledger.models import Payment
+
+
+class FinancialAidDisbursement(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    award = models.ForeignKey("AidAward", on_delete=models.PROTECT, related_name="billing_disbursements")
+    billing_run = models.ForeignKey(BillingRun, on_delete=models.CASCADE, related_name="aid_disbursements")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="aid_disbursements")
+
+    payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name="aid_disbursements")
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "financial_aid_disbursement"
+        constraints = [
+            models.UniqueConstraint(fields=["award", "billing_run"], name="uniq_award_billingrun_disbursement"),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "billing_run"]),
+            models.Index(fields=["school_id", "invoice"]),
+        ]
