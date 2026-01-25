@@ -97,6 +97,12 @@ urlpatterns = [
         name="aid-disburse",
     ),
 
+    path(
+        "financial-aid/billing-runs/<str:billing_run_id>/disburse/",
+        financial_aid_api.disburse_to_billing_run,
+        name="financial-aid-disburse-billing-run",
+    ),
+
     path("academics/courses/", academics_api.courses, name="academics-courses"),
     path("academics/sections/", academics_api.sections, name="academics-sections"),
     path("academics/enroll/", academics_api.enroll, name="academics-enroll"),

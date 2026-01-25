@@ -59,7 +59,8 @@ class Payment(TimeStampedModel):
 	school_id = models.UUIDField(db_index=True)
 	account = models.ForeignKey(LedgerAccount, on_delete=models.PROTECT, related_name="payments")
 
-	reference = models.CharField(max_length=120, blank=True, default="")
+	source = models.CharField(max_length=32, default="EXTERNAL", db_index=True)
+	reference = models.CharField(max_length=64, blank=True, default="", db_index=True)
 	amount = models.DecimalField(max_digits=10, decimal_places=2)
 
 	class Meta:

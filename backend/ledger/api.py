@@ -210,7 +210,7 @@ def record_payment(request: HttpRequest):
     p = Payment.objects.create(
         school_id=sid,
         account=acct,
-        reference=str(reference)[:120],
+        reference=str(reference)[:64],
         amount=amt,
     )
 
