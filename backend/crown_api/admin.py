@@ -8,6 +8,8 @@ from crown_api.models import (
     HouseholdMember,
     GradeRecord,
     Invoice,
+    Message,
+    MessageThread,
     Payment,
     Person,
     Student,
@@ -126,3 +128,16 @@ class SectionEnrollmentAdmin(admin.ModelAdmin):
     list_display = ("section", "student", "active", "created_at")
     list_filter = ("active",)
     search_fields = ("student__person__last_name", "section__course__course_code", "section__term__code")
+
+
+@admin.register(MessageThread)
+class MessageThreadAdmin(admin.ModelAdmin):
+    list_display = ("household", "student", "subject", "thread_type", "last_message_at", "updated_at")
+    list_filter = ("thread_type",)
+    search_fields = ("household__household_name", "subject")
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ("thread", "sender_person", "sent_at", "created_at")
+    search_fields = ("thread__subject", "sender_person__first_name", "sender_person__last_name")

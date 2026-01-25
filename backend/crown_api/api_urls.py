@@ -28,6 +28,7 @@ from crown_api.views_students import student_detail, students_list
 from crown_api.views_academics import student_attendance_list, student_grades_list
 from crown_api.views_billing import household_billing_summary
 from crown_api.views_scheduling import terms_list, term_sections, student_schedule
+from crown_api.views_comms import threads_list, thread_detail
 
 urlpatterns = [
     # Persona-specific API routes (NEW - per user spec)
@@ -49,6 +50,10 @@ urlpatterns = [
     path("terms/", terms_list, name="terms_list"),
     path("terms/<uuid:term_id>/sections/", term_sections, name="term_sections"),
     path("students/<uuid:student_id>/schedule/", student_schedule, name="student_schedule"),
+
+    # Communications (Block H spine) - read-only
+    path("threads/", threads_list, name="threads_list"),
+    path("threads/<uuid:thread_id>/", thread_detail, name="thread_detail"),
 
     # Students (SIS Student Core) - read-only
     path("students/", students_list, name="students_list"),
