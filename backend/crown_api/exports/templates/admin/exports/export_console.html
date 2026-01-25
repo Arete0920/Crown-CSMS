@@ -1,0 +1,119 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  <p style="opacity:.8;">
+    Window: {{ since }} → {{ now }}
+  </p>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap; margin: 12px 0 18px 0;">
+    <div style="padding:12px 14px; border:1px solid #ddd; border-radius:10px;">
+      <div style="font-size:12px; opacity:.8;">Total</div>
+      <div style="font-size:22px; font-weight:700;">{{ totals.total }}</div>
+    </div>
+    <div style="padding:12px 14px; border:1px solid #ddd; border-radius:10px;">
+      <div style="font-size:12px; opacity:.8;">200 OK</div>
+      <div style="font-size:22px; font-weight:700;">{{ totals.ok }}</div>
+    </div>
+    <div style="padding:12px 14px; border:1px solid #ddd; border-radius:10px;">
+      <div style="font-size:12px; opacity:.8;">403 Forbidden</div>
+      <div style="font-size:22px; font-weight:700;">{{ totals.forbidden }}</div>
+    </div>
+    <div style="padding:12px 14px; border:1px solid #ddd; border-radius:10px;">
+      <div style="font-size:12px; opacity:.8;">429 Throttled</div>
+      <div style="font-size:22px; font-weight:700;">{{ totals.throttled }}</div>
+    </div>
+    <div style="padding:12px 14px; border:1px solid #ddd; border-radius:10px;">
+      <div style="font-size:12px; opacity:.8;">5xx Errors</div>
+      <div style="font-size:22px; font-weight:700;">{{ totals.errors }}</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 18px;">
+    <div style="border:1px solid #ddd; border-radius:10px; padding:12px;">
+      <h2 style="margin-top:0;">Top Exports</h2>
+      <table class="admin-table" style="width:100%;">
+        <thead>
+          <tr><th>Export</th><th style="text-align:right;">Count</th></tr>
+        </thead>
+        <tbody>
+        {% for row in top_exports %}
+          <tr><td>{{ row.export_name }}</td><td style="text-align:right;">{{ row.count }}</td></tr>
+        {% empty %}
+          <tr><td colspan="2">No data.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="border:1px solid #ddd; border-radius:10px; padding:12px;">
+      <h2 style="margin-top:0;">Top Users</h2>
+      <table class="admin-table" style="width:100%;">
+        <thead>
+          <tr><th>User</th><th style="text-align:right;">Count</th></tr>
+        </thead>
+        <tbody>
+        {% for row in top_users %}
+          <tr><td>{{ row.user__username|default:"(anonymous)" }}</td><td style="text-align:right;">{{ row.count }}</td></tr>
+        {% empty %}
+          <tr><td colspan="2">No data.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="border:1px solid #ddd; border-radius:10px; padding:12px;">
+      <h2 style="margin-top:0;">Top Schools</h2>
+      <table class="admin-table" style="width:100%;">
+        <thead>
+          <tr><th>School</th><th style="text-align:right;">Count</th></tr>
+        </thead>
+        <tbody>
+        {% for row in top_schools %}
+          <tr><td>{{ row.school_id }}</td><td style="text-align:right;">{{ row.count }}</td></tr>
+        {% empty %}
+          <tr><td colspan="2">No data.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="border:1px solid #ddd; border-radius:10px; padding:12px;">
+    <h2 style="margin-top:0;">Recent Exports (last 50)</h2>
+    <table class="admin-table" style="width:100%;">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Export</th>
+          <th>Status</th>
+          <th>School</th>
+          <th>Rows</th>
+          <th>IP</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in recent %}
+        <tr>
+          <td>{{ r.created_at }}</td>
+          <td>{{ r.user.username|default:"(anonymous)" }}</td>
+          <td>{{ r.export_name }}</td>
+          <td>{{ r.status_code }}</td>
+          <td>{{ r.school_id }}</td>
+          <td>{{ r.row_count|default:"" }}</td>
+          <td>{{ r.ip|default:"" }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">No exports in this window.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:14px;">
+    Tip: You can still use the standard list view filters/search for deeper queries.
+  </p>
+{% endblock %}
