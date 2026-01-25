@@ -61,6 +61,11 @@ urlpatterns = [
     path("applications/", applications_api.applications, name="applications"),
     path("applications/<str:application_id>/", applications_api.application_detail, name="application-detail"),
     path("applications/<str:application_id>/submit/", applications_api.application_submit, name="application-submit"),
+    path(
+        "applications/<str:application_id>/decision/",
+        applications_api.application_decision,
+        name="application-decision",
+    ),
     path("applicants/", applications_api.applicants, name="applicants"),
 
     path("ledger/accounts/ensure/", ledger_api.ensure_account, name="ledger-ensure-account"),

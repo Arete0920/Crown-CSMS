@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+from decimal import Decimal
 from uuid import UUID
 
 from django.http import JsonResponse, HttpRequest
@@ -12,6 +13,7 @@ from households.models import Household
 from households.scoping import get_request_school_id
 from .models import Application, Applicant, ApplicationEvent, ApplicationStatus
 from .services import submit_application
+from .services import decide_application
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -199,3 +201,55 @@ def applicants(request: HttpRequest):
     )
 
     return _envelope(_applicant_to_dict(a), status=201)
+
+
+@login_required
+@require_http_methods(["POST"])
+def application_decision(request: HttpRequest, application_id: str):
+    """
+    Body:
+    {
+      "decision": "ACCEPT" | "DENY",
+      "enrollment_fee": "100.00"   # optional, ACCEPT only
+    }
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    payload = _parse_json(request)
+    if payload is None:
+        return _json_error("Invalid JSON body", status=400)
+
+    decision = payload.get("decision")
+    fee = payload.get("enrollment_fee")
+
+    try:
+        app = Application.objects.get(id=UUID(application_id), school_id=sid)
+    except Application.DoesNotExist:
+        return _json_error("Not found", status=404)
+
+    fee_amt = None
+    if fee is not None:
+        try:
+            fee_amt = Decimal(str(fee))
+        except Exception:
+            return _json_error("enrollment_fee must be a decimal", status=400)
+
+    try:
+        students = decide_application(
+            application=app,
+            decision=decision,
+            enrollment_fee_amount=fee_amt,
+        )
+    except ValueError as e:
+        return _json_error(str(e), status=400)
+
+    return _envelope(
+        {
+            "application_id": str(app.id),
+            "decision": decision,
+            "students_created": [str(s.id) for s in students],
+        },
+        status=200,
+    )
