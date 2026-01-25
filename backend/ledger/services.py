@@ -115,3 +115,137 @@ def allocate_payment_fifo(*, school_id, payment: Payment) -> AllocationResult:
         ),
         allocations_created=allocations_created,
     )
+
+
+from decimal import Decimal
+from django.db.models import Sum
+
+from .models import Charge, Payment
+from .models import Allocation as PaymentAllocation
+
+
+def _d(x) -> Decimal:
+    return Decimal(str(x))
+
+
+def build_account_statement(*, school_id, account) -> dict:
+    """
+    Read-only statement.
+    - Entries: CHARGE, PAYMENT_ALLOCATION (with payment source)
+    - Sorted by timestamp (created_at) then id
+    - Running balance = charges - allocations applied to charges
+    """
+    charges = (
+        Charge.objects.filter(school_id=school_id, account=account)
+        .order_by("created_at", "id")
+    )
+
+    allocs = (
+        PaymentAllocation.objects.filter(school_id=school_id, charge__account=account)
+        .select_related("payment", "charge")
+        .order_by("created_at", "id")
+    )
+
+    entries = []
+    running = Decimal("0.00")
+
+    for ch in charges:
+        amt = _d(ch.amount)
+        running += amt
+        entries.append(
+            {
+                "type": "CHARGE",
+                "id": str(ch.id),
+                "charge_id": str(ch.id),
+                "payment_id": None,
+                "source": None,
+                "description": getattr(ch, "description", ""),
+                "amount": str(amt),
+                "direction": "DEBIT",
+                "created_at": ch.created_at.isoformat() if getattr(ch, "created_at", None) else None,
+                "running_balance": str(running),
+            }
+        )
+
+    for al in allocs:
+        amt = _d(al.amount)
+        running -= amt
+        p = al.payment
+        entries.append(
+            {
+                "type": "PAYMENT_ALLOCATION",
+                "id": str(al.id),
+                "charge_id": str(al.charge_id),
+                "payment_id": str(al.payment_id),
+                "source": getattr(p, "source", "EXTERNAL"),
+                "reference": getattr(p, "reference", ""),
+                "description": getattr(p, "reference", "") or getattr(p, "source", "EXTERNAL"),
+                "amount": str(amt),
+                "direction": "CREDIT",
+                "created_at": al.created_at.isoformat() if getattr(al, "created_at", None) else None,
+                "running_balance": None,  # computed after sorting
+            }
+        )
+
+    # Re-sort merged events by created_at then id, then recompute running
+    def _sort_key(e):
+        return (e["created_at"] or "", e["id"])
+
+    entries = sorted(entries, key=_sort_key)
+
+    running = Decimal("0.00")
+    for e in entries:
+        amt = _d(e["amount"])
+        if e["direction"] == "DEBIT":
+            running += amt
+        else:
+            running -= amt
+        e["running_balance"] = str(running)
+
+    return {
+        "account_id": str(account.id),
+        "school_id": str(school_id),
+        "balance": str(running),
+        "entries": entries,
+    }
+
+
+def billing_run_summary(*, school_id, billing_run) -> dict:
+    """
+    Read-only billing run summary (gross vs aid vs net due).
+    - gross_total: sum(invoice.total_amount)
+    - aid_applied_total: allocations where payment.source == FINANCIAL_AID against invoice charge
+    - net_due_total: gross_total - aid_applied_total (clamped >= 0)
+    """
+    from django.db.models import Sum
+    from billing.models import Invoice
+
+    invoices = Invoice.objects.filter(school_id=school_id, billing_run=billing_run)
+
+    gross = invoices.aggregate(total=Sum("total_amount"))["total"] or Decimal("0.00")
+
+    # collect charge ids from invoices
+    charge_ids = [inv.ledger_charge_id for inv in invoices if inv.ledger_charge_id]
+    aid_total = Decimal("0.00")
+    if charge_ids:
+        aid_total = (
+            PaymentAllocation.objects.filter(
+                school_id=school_id,
+                charge_id__in=charge_ids,
+                payment__source="FINANCIAL_AID",
+            ).aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+
+    net = _d(gross) - _d(aid_total)
+    if net < Decimal("0.00"):
+        net = Decimal("0.00")
+
+    return {
+        "billing_run_id": str(billing_run.id),
+        "term": getattr(billing_run, "term", ""),
+        "gross_total": str(_d(gross)),
+        "aid_applied_total": str(_d(aid_total)),
+        "net_due_total": str(net),
+        "invoice_count": invoices.count(),
+    }

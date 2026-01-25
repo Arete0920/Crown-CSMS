@@ -73,6 +73,8 @@ urlpatterns = [
 
     path("ledger/accounts/ensure/", ledger_api.ensure_account, name="ledger-ensure-account"),
     path("ledger/accounts/<str:account_id>/", ledger_api.account_detail, name="ledger-account-detail"),
+    # Ledger statement
+    path("ledger/accounts/<str:account_id>/statement/", ledger_api.ledger_account_statement, name="ledger-account-statement"),
     path("ledger/charges/", ledger_api.create_charge, name="ledger-create-charge"),
     path("ledger/payments/", ledger_api.record_payment, name="ledger-record-payment"),
 
@@ -114,6 +116,8 @@ urlpatterns = [
 
     path("billing/runs/", billing_api.billing_runs, name="billing-runs"),
     path("billing/runs/<str:billing_run_id>/", billing_api.billing_run_detail, name="billing-run-detail"),
+    # Billing run summary
+    path("billing/runs/<str:billing_run_id>/summary/", billing_api.billing_run_summary_view, name="billing-run-summary"),
 
     # Students (SIS Student Core) - read-only
     path("students/", students_list, name="students_list"),
