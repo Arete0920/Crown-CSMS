@@ -1,4 +1,5 @@
 import csv
+import logging
 from datetime import date
 from typing import Iterable, List
 
@@ -21,6 +22,24 @@ from .model_resolver import (
     resolve_model,
     default_export_fields,
 )
+
+
+EXPORT_AUDIT_LOGGER = logging.getLogger("crown.exports")
+
+
+def _log_export_access(request, export_name: str, school_id):
+    try:
+        user = getattr(request, "user", None)
+        EXPORT_AUDIT_LOGGER.info(
+            "export_access name=%s path=%s school_id=%s user_id=%s",
+            export_name,
+            getattr(request, "path", ""),
+            str(school_id or ""),
+            str(getattr(user, "id", "")),
+        )
+    except Exception:
+        # Never break exports on audit logging.
+        return
 
 
 class Echo:
@@ -68,6 +87,7 @@ class InvoicesCSVExportView(APIView):
 
     def get(self, request):
         sid = get_request_school_id(request)
+        _log_export_access(request, "invoices.csv", sid)
         if not sid:
             # Stay safe: no scoping => no data
             return StreamingHttpResponse(_csv_stream([]), status=403)
@@ -139,6 +159,7 @@ class InstallmentScheduleCSVExportView(APIView):
 
     def get(self, request):
         sid = get_request_school_id(request)
+        _log_export_access(request, "installment-schedule.csv", sid)
         if not sid:
             return StreamingHttpResponse(_csv_stream([]), status=403)
 
@@ -246,6 +267,7 @@ class _BaseModelCSVExportView(APIView):
             return resp
 
         sid = get_request_school_id(request)
+        _log_export_access(request, f"{self.filename_prefix}.csv", sid)
         if _model_has_field(model, "school_id") and not sid:
             # Stay safe: a school-scoped model without a school context => no data.
             return StreamingHttpResponse(_csv_stream([]), status=403)
@@ -558,6 +580,7 @@ class StatementsCSVExportView(APIView):
 
         # Tenant safety: apply school scoping if possible.
         sid = get_request_school_id(request)
+        _log_export_access(request, "statements.csv", sid)
         if "school_id" in inv_fields:
             if not sid:
                 return StreamingHttpResponse(_csv_stream([]), status=403)
@@ -752,6 +775,7 @@ class StatementLinesCSVExportView(APIView):
         school_id = None
         if "school_id" in inv_fields:
             school_id = get_request_school_id(request)
+            _log_export_access(request, "statement-lines.csv", school_id)
             if not school_id:
                 resp = StreamingHttpResponse(
                     _csv_stream([["error"], ["Missing school context"]]),
@@ -760,6 +784,8 @@ class StatementLinesCSVExportView(APIView):
                 )
                 resp["Content-Disposition"] = 'attachment; filename="error.csv"'
                 return resp
+        else:
+            _log_export_access(request, "statement-lines.csv", "")
 
         # Build base invoice queryset for scope + optional filters
         inv_qs = InvoiceModel.objects.all()
@@ -1073,6 +1099,215 @@ class StatementLinesCSVExportView(APIView):
                 ]
 
         filename = f"statement_lines_{as_of_val}.csv"
+        resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return resp
+
+
+class YearEndTuitionPaidCSVExportView(APIView):
+    """0095-A: Tuition paid by calendar year.
+
+    Endpoint:
+      /api/exports/year-end/tuition-paid.csv?year=2025
+
+    Optional params for *non-guessing* tuition classification:
+      - include_tuition=1
+      - tuition_account_id=<id>
+      - tuition_account_code=<code>
+      - tuition_account_name=<name>
+
+    If no classifier is provided (or models don't support it),
+    `applied_to_tuition_amount` will be blank.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    payment_candidates = [
+        ModelCandidate("ledger", "Payment"),
+        ModelCandidate("payments", "Payment"),
+        ModelCandidate("crown_api", "Payment"),
+        ModelCandidate("billing", "Payment"),
+        ModelCandidate("finance", "Payment"),
+        ModelCandidate("accounting", "Payment"),
+    ]
+
+    allocation_candidates = [
+        ModelCandidate("ledger", "Allocation"),
+        ModelCandidate("ledger", "LedgerAllocation"),
+        ModelCandidate("accounting", "Allocation"),
+        ModelCandidate("accounting", "LedgerAllocation"),
+    ]
+
+    charge_candidates = [
+        ModelCandidate("ledger", "Charge"),
+        ModelCandidate("ledger", "LedgerCharge"),
+        ModelCandidate("accounting", "Charge"),
+        ModelCandidate("accounting", "LedgerCharge"),
+    ]
+
+    def get(self, request):
+        year_raw = request.query_params.get("year")
+        try:
+            year = int(year_raw)
+        except Exception:
+            resp = StreamingHttpResponse(
+                _csv_stream([["error"], ["Missing or invalid year"]]),
+                content_type="text/csv; charset=utf-8",
+                status=400,
+            )
+            resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            return resp
+
+        try:
+            PaymentModel = resolve_model(self.payment_candidates)
+        except ModelNotFound as e:
+            resp = StreamingHttpResponse(
+                _csv_stream([["error"], [str(e)]]),
+                content_type="text/csv; charset=utf-8",
+                status=500,
+            )
+            resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            return resp
+
+        pay_fields = _field_names(PaymentModel)
+        sid = get_request_school_id(request)
+        _log_export_access(request, "year-end/tuition-paid.csv", sid)
+
+        qs = PaymentModel.objects.all()
+
+        if "school_id" in pay_fields:
+            if not sid:
+                return StreamingHttpResponse(_csv_stream([]), status=403)
+            qs = qs.filter(school_id=sid)
+
+        # Find best available date field to interpret "received_on" and filter by year.
+        pay_date_field = _pick_first(pay_fields, ["payment_date", "received_on", "posted_on", "created_at", "timestamp"])
+        if pay_date_field:
+            try:
+                qs = qs.filter(**{f"{pay_date_field}__year": year})
+            except Exception:
+                # If the field isn't date-like, fall back to no date filtering.
+                pass
+
+        if "id" in pay_fields:
+            qs = qs.order_by("id")
+
+        include_tuition = request.query_params.get("include_tuition") in ("1", "true", "True")
+        tuition_account_id = request.query_params.get("tuition_account_id")
+        tuition_account_code = request.query_params.get("tuition_account_code")
+        tuition_account_name = request.query_params.get("tuition_account_name")
+
+        tuition_by_payment: dict[str, Decimal] = {}
+
+        if include_tuition and (tuition_account_id or tuition_account_code or tuition_account_name):
+            AllocationModel = None
+            ChargeModel = None
+            alloc_fields: set[str] = set()
+            charge_fields: set[str] = set()
+
+            try:
+                AllocationModel = resolve_model(self.allocation_candidates)
+                alloc_fields = _field_names(AllocationModel)
+            except ModelNotFound:
+                AllocationModel = None
+
+            try:
+                ChargeModel = resolve_model(self.charge_candidates)
+                charge_fields = _field_names(ChargeModel)
+            except ModelNotFound:
+                ChargeModel = None
+
+            alloc_amount_field = _pick_first(alloc_fields, ["amount", "applied_amount", "allocated_amount"])
+            alloc_payment_group_field = "payment_id" if ("payment" in alloc_fields or "payment_id" in alloc_fields) else None
+            alloc_charge_fk = _pick_first(alloc_fields, ["charge", "ledger_charge"])
+
+            if AllocationModel and ChargeModel and alloc_amount_field and alloc_payment_group_field and alloc_charge_fk:
+                alloc_qs = AllocationModel.objects.all()
+
+                if "school_id" in alloc_fields and sid:
+                    alloc_qs = alloc_qs.filter(school_id=sid)
+
+                # Filter allocations to the requested calendar year using the payment relation if possible.
+                if "payment" in alloc_fields and pay_date_field:
+                    try:
+                        alloc_qs = alloc_qs.filter(**{f"payment__{pay_date_field}__year": year})
+                    except Exception:
+                        pass
+
+                # Apply tuition classification filters via charge->account fields when present.
+                if "account" in charge_fields:
+                    if tuition_account_id:
+                        try:
+                            alloc_qs = alloc_qs.filter(**{f"{alloc_charge_fk}__account_id": tuition_account_id})
+                        except Exception:
+                            pass
+                    if tuition_account_code:
+                        try:
+                            alloc_qs = alloc_qs.filter(**{f"{alloc_charge_fk}__account__code": tuition_account_code})
+                        except Exception:
+                            pass
+                    if tuition_account_name:
+                        try:
+                            alloc_qs = alloc_qs.filter(**{f"{alloc_charge_fk}__account__name": tuition_account_name})
+                        except Exception:
+                            pass
+
+                agg = alloc_qs.values(alloc_payment_group_field).annotate(total=Sum(alloc_amount_field))
+                for row in agg.iterator():
+                    pid = row.get(alloc_payment_group_field)
+                    if pid is None:
+                        continue
+                    tuition_by_payment[str(pid)] = _to_decimal(row.get("total"))
+
+        method_field = _pick_first(pay_fields, ["method", "payment_method", "source"])
+        memo_field = _pick_first(pay_fields, ["memo", "notes", "reference", "payment_reference"])
+        amount_field = _pick_first(pay_fields, ["amount", "amount_cents"])  # amount_cents handled as-is
+
+        header = [
+            "school_id",
+            "household_id",
+            "payment_id",
+            "received_on",
+            "method",
+            "amount_received",
+            "applied_to_tuition_amount",
+            "notes_memo",
+        ]
+
+        def _household_id_for_payment(p) -> str:
+            if hasattr(p, "household_id"):
+                return _as_str(getattr(p, "household_id", ""))
+            hh = getattr(p, "household", None)
+            if hh is not None:
+                return _as_str(getattr(hh, "id", ""))
+            acct = getattr(p, "account", None)
+            if acct is not None:
+                if hasattr(acct, "household_id"):
+                    return _as_str(getattr(acct, "household_id", ""))
+                hh2 = getattr(acct, "household", None)
+                if hh2 is not None:
+                    return _as_str(getattr(hh2, "id", ""))
+            return ""
+
+        def rows():
+            yield header
+            for p in qs.iterator():
+                pid = getattr(p, "id", "")
+                school_val = getattr(p, "school_id", sid) if "school_id" in pay_fields else sid
+                received_on_val = getattr(p, pay_date_field, "") if pay_date_field else ""
+
+                yield [
+                    _as_str(school_val),
+                    _household_id_for_payment(p),
+                    _as_str(pid),
+                    _as_iso(received_on_val),
+                    _as_str(getattr(p, method_field, "") if method_field else ""),
+                    _as_str(getattr(p, amount_field, "") if amount_field else ""),
+                    _as_str(tuition_by_payment.get(str(pid), "")),
+                    _as_str(getattr(p, memo_field, "") if memo_field else ""),
+                ]
+
+        filename = f"tuition_paid_{year}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
         return resp

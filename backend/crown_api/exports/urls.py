@@ -11,6 +11,7 @@ from .views import (
     PaymentsCSVExportView,
     StatementsCSVExportView,
     StatementLinesCSVExportView,
+    YearEndTuitionPaidCSVExportView,
 )
 
 urlpatterns = [
@@ -43,5 +44,12 @@ urlpatterns = [
         "exports/statement-lines.csv",
         StatementLinesCSVExportView.as_view(),
         name="exports-statement-lines-csv",
+    ),
+
+    # 0095-A
+    path(
+        "exports/year-end/tuition-paid.csv",
+        YearEndTuitionPaidCSVExportView.as_view(),
+        name="exports-year-end-tuition-paid-csv",
     ),
 ]
