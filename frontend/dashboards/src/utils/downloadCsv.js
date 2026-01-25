@@ -1,6 +1,15 @@
+import { getAccessToken } from "./authClient.js";
+
 export async function downloadCsv(url, { filename = 'export.csv' } = {}) {
+  const token = getAccessToken();
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const resp = await fetch(url, {
     credentials: 'include',
+    headers,
   });
 
   const blob = await resp.blob();
