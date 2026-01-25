@@ -474,3 +474,205 @@ class PaymentsCSVExportView(_BaseModelCSVExportView):
             qs = qs.filter(status=status)
 
         return qs
+
+
+from decimal import Decimal, InvalidOperation
+
+from django.db.models import Sum
+
+
+def _to_decimal(x) -> Decimal:
+    if x is None or x == "":
+        return Decimal("0")
+    try:
+        return Decimal(str(x))
+    except (InvalidOperation, ValueError):
+        return Decimal("0")
+
+
+def _field_names(model) -> set[str]:
+    return {f.name for f in model._meta.get_fields() if getattr(f, "concrete", False)}
+
+
+def _pick_first(existing: set[str], options: list[str]) -> str | None:
+    for o in options:
+        if o in existing:
+            return o
+    return None
+
+
+class StatementsCSVExportView(APIView):
+    """0093: Household Statements (as-of) export.
+
+    Output is ONE ROW PER INVOICE, enriched with:
+      - paid_amount (from allocations if ledger models exist)
+      - balance (amount_due - paid_amount)
+
+    Query params:
+      - household_id (optional)
+      - as_of (YYYY-MM-DD, optional; defaults to today)
+      - due_on_from (optional)
+      - due_on_to (optional)
+      - status (optional)
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    invoice_candidates = [
+        ModelCandidate("billing", "Invoice"),
+        ModelCandidate("finance", "Invoice"),
+        ModelCandidate("ledger", "Invoice"),
+        ModelCandidate("accounting", "Invoice"),
+    ]
+
+    allocation_candidates = [
+        ModelCandidate("ledger", "LedgerAllocation"),
+        ModelCandidate("accounting", "LedgerAllocation"),
+        ModelCandidate("billing", "LedgerAllocation"),
+        ModelCandidate("finance", "LedgerAllocation"),
+        ModelCandidate("ledger", "Allocation"),
+        ModelCandidate("accounting", "Allocation"),
+    ]
+
+    def get(self, request):
+        household_id = request.query_params.get("household_id")
+        as_of = request.query_params.get("as_of")  # YYYY-MM-DD
+        due_on_from = request.query_params.get("due_on_from")
+        due_on_to = request.query_params.get("due_on_to")
+        status_filter = request.query_params.get("status")
+
+        # Resolve Invoice model (required)
+        try:
+            InvoiceModel = resolve_model(self.invoice_candidates)
+        except ModelNotFound as e:
+            resp = StreamingHttpResponse(
+                _csv_stream([["error"], [str(e)]]),
+                content_type="text/csv; charset=utf-8",
+                status=500,
+            )
+            resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            return resp
+
+        inv_fields = _field_names(InvoiceModel)
+        qs = InvoiceModel.objects.all()
+
+        # Tenant safety: apply school scoping if possible.
+        sid = get_request_school_id(request)
+        if "school_id" in inv_fields:
+            if not sid:
+                return StreamingHttpResponse(_csv_stream([]), status=403)
+            qs = qs.filter(school_id=sid)
+
+        # Household filter if field exists
+        if household_id and "household_id" in inv_fields:
+            qs = qs.filter(household_id=household_id)
+
+        # as_of cutoff only if due_on exists
+        if as_of and "due_on" in inv_fields:
+            qs = qs.filter(due_on__lte=as_of)
+
+        if due_on_from and "due_on" in inv_fields:
+            qs = qs.filter(due_on__gte=due_on_from)
+        if due_on_to and "due_on" in inv_fields:
+            qs = qs.filter(due_on__lte=due_on_to)
+
+        if status_filter and "status" in inv_fields:
+            qs = qs.filter(status=status_filter)
+
+        # Stable ordering
+        if "due_on" in inv_fields:
+            qs = qs.order_by("due_on", "id")
+        else:
+            qs = qs.order_by("id")
+
+        # Optional: resolve Allocation model
+        AllocationModel = None
+        alloc_fields: set[str] = set()
+        try:
+            AllocationModel = resolve_model(self.allocation_candidates)
+            alloc_fields = _field_names(AllocationModel)
+        except ModelNotFound:
+            AllocationModel = None
+
+        inv_has_ledger_charge_id = "ledger_charge_id" in inv_fields
+        inv_total_field = _pick_first(inv_fields, ["total_amount", "amount_total", "amount"])
+        inv_due_field = _pick_first(inv_fields, ["amount_due", "balance_due", "due_amount"])
+        inv_status_field = "status" if "status" in inv_fields else None
+        inv_due_on_field = "due_on" if "due_on" in inv_fields else None
+        inv_issued_on_field = "issued_on" if "issued_on" in inv_fields else None
+
+        alloc_amount_field = (
+            _pick_first(alloc_fields, ["amount", "applied_amount", "allocated_amount"]) if AllocationModel else None
+        )
+        alloc_charge_link = _pick_first(alloc_fields, ["ledger_charge_id", "charge_id"]) if AllocationModel else None
+
+        paid_by_charge: dict[str, Decimal] = {}
+        if AllocationModel and alloc_amount_field and alloc_charge_link:
+            alloc_qs = AllocationModel.objects.all()
+
+            # Apply school scoping to allocations if possible.
+            if "school_id" in alloc_fields and sid:
+                alloc_qs = alloc_qs.filter(school_id=sid)
+
+            # Apply as_of cutoff to allocations if possible.
+            if as_of and "applied_on" in alloc_fields:
+                alloc_qs = alloc_qs.filter(applied_on__lte=as_of)
+
+            agg = alloc_qs.values(alloc_charge_link).annotate(paid=Sum(alloc_amount_field))
+            for row in agg.iterator():
+                cid = row.get(alloc_charge_link)
+                if cid is None:
+                    continue
+                paid_by_charge[str(cid)] = _to_decimal(row.get("paid"))
+
+        header = [
+            "as_of",
+            "household_id",
+            "invoice_id",
+            "due_on",
+            "issued_on",
+            "status",
+            "total_amount",
+            "amount_due",
+            "ledger_charge_id",
+            "paid_amount",
+            "balance",
+        ]
+
+        def rows():
+            as_of_val = as_of or now().date().isoformat()
+            yield header
+            for inv in qs.iterator():
+                inv_id = getattr(inv, "id", "")
+                hh_id = getattr(inv, "household_id", "") if "household_id" in inv_fields else ""
+                due_on_val = getattr(inv, inv_due_on_field, "") if inv_due_on_field else ""
+                issued_on_val = getattr(inv, inv_issued_on_field, "") if inv_issued_on_field else ""
+                status_val = getattr(inv, inv_status_field, "") if inv_status_field else ""
+
+                total_val = getattr(inv, inv_total_field, "") if inv_total_field else ""
+                due_val = getattr(inv, inv_due_field, "") if inv_due_field else ""
+
+                ledger_charge_id = getattr(inv, "ledger_charge_id", "") if inv_has_ledger_charge_id else ""
+                paid = paid_by_charge.get(str(ledger_charge_id), Decimal("0")) if ledger_charge_id not in ("", None) else Decimal("0")
+
+                amount_due_dec = _to_decimal(due_val)
+                balance = amount_due_dec - paid
+
+                yield [
+                    str(as_of_val),
+                    str(hh_id),
+                    str(inv_id),
+                    str(due_on_val) if due_on_val is not None else "",
+                    str(issued_on_val) if issued_on_val is not None else "",
+                    str(status_val),
+                    str(total_val),
+                    str(due_val),
+                    str(ledger_charge_id),
+                    str(paid),
+                    str(balance),
+                ]
+
+        filename = f"statements_{(as_of or now().date().isoformat())}.csv"
+        resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return resp
