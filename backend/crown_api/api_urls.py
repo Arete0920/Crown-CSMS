@@ -76,6 +76,10 @@ urlpatterns = [
     path("ledger/charges/", ledger_api.create_charge, name="ledger-create-charge"),
     path("ledger/payments/", ledger_api.record_payment, name="ledger-record-payment"),
 
+    path("ledger/payments/<str:payment_id>/allocate/", ledger_api.payment_allocate, name="ledger-payment-allocate"),
+    path("ledger/accounts/<str:account_id>/balance/", ledger_api.ledger_account_balance, name="ledger-account-balance"),
+    path("ledger/charges/<str:charge_id>/balance/", ledger_api.charge_balance, name="ledger-charge-balance"),
+
     path("financial-aid/applications/", financial_aid_api.aid_applications, name="aid-applications"),
     path(
         "financial-aid/applications/<str:aid_application_id>/submit/",

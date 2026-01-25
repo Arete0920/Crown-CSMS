@@ -5,12 +5,15 @@ from decimal import Decimal
 from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
 from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
 
 from households.models import Household
 from households.scoping import get_request_school_id
-from .models import Allocation, Charge, LedgerAccount, Payment, compute_account_balance
+from .models import Payment, PaymentAllocation, Charge, LedgerAccount
+from .models import Allocation, compute_account_balance
+from .services import allocate_payment_fifo, account_balance, charge_remaining_balance
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -236,3 +239,63 @@ def record_payment(request: HttpRequest):
         )
 
     return _envelope(_payment_to_dict(p), status=201)
+
+
+@login_required
+@require_http_methods(["POST"])
+def payment_allocate(request: HttpRequest, payment_id: str):
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        p = Payment.objects.select_related("account").get(id=UUID(payment_id), school_id=sid)
+    except Payment.DoesNotExist:
+        return _json_error("Not found", status=404)
+
+    try:
+        result = allocate_payment_fifo(school_id=sid, payment=p)
+    except ValueError as e:
+        return _json_error(str(e), status=400)
+
+    return _envelope(
+        {
+            "payment_id": str(result.payment_id),
+            "allocated_total": str(result.allocated_total),
+            "remaining_unallocated": str(result.remaining_unallocated),
+            "allocations_created": result.allocations_created,
+        },
+        status=200,
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def ledger_account_balance(request: HttpRequest, account_id: str):
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+    except LedgerAccount.DoesNotExist:
+        return _json_error("Not found", status=404)
+
+    bal = account_balance(acct)
+    return _envelope({"account_id": str(acct.id), "balance": str(bal)}, status=200)
+
+
+@login_required
+@require_http_methods(["GET"])
+def charge_balance(request: HttpRequest, charge_id: str):
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        ch = Charge.objects.get(id=UUID(charge_id), school_id=sid)
+    except Charge.DoesNotExist:
+        return _json_error("Not found", status=404)
+
+    rem = charge_remaining_balance(ch)
+    return _envelope({"charge_id": str(ch.id), "remaining_balance": str(rem)}, status=200)
