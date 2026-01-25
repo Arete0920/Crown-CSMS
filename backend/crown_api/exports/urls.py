@@ -6,6 +6,9 @@ from .views import (
     HouseholdsCSVExportView,
     StudentsCSVExportView,
     StaffCSVExportView,
+    LedgerChargesCSVExportView,
+    LedgerAllocationsCSVExportView,
+    PaymentsCSVExportView,
 )
 
 urlpatterns = [
@@ -20,4 +23,13 @@ urlpatterns = [
     path("exports/households.csv", HouseholdsCSVExportView.as_view(), name="exports-households-csv"),
     path("exports/students.csv", StudentsCSVExportView.as_view(), name="exports-students-csv"),
     path("exports/staff.csv", StaffCSVExportView.as_view(), name="exports-staff-csv"),
+
+    # 0092
+    path("exports/ledger-charges.csv", LedgerChargesCSVExportView.as_view(), name="exports-ledger-charges-csv"),
+    path(
+        "exports/ledger-allocations.csv",
+        LedgerAllocationsCSVExportView.as_view(),
+        name="exports-ledger-allocations-csv",
+    ),
+    path("exports/payments.csv", PaymentsCSVExportView.as_view(), name="exports-payments-csv"),
 ]

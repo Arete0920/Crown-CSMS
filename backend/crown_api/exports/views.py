@@ -215,10 +215,10 @@ class _BaseModelCSVExportView(APIView):
     filename_prefix: str = "export"
     order_by: list[str] = ["id"]
 
-    def get_queryset(self, request, model):
+    def get_queryset(self, model):
         qs = model.objects.all()
 
-        sid = get_request_school_id(request)
+        sid = get_request_school_id(self.request)
         if _model_has_field(model, "school_id"):
             if not sid:
                 return model.objects.none()
@@ -251,7 +251,7 @@ class _BaseModelCSVExportView(APIView):
             return StreamingHttpResponse(_csv_stream([]), status=403)
 
         fields = default_export_fields(model)
-        qs = self.get_queryset(request, model)
+        qs = self.get_queryset(model)
 
         def rows():
             yield fields
@@ -312,3 +312,165 @@ class StaffCSVExportView(_BaseModelCSVExportView):
         ModelCandidate("people", "StaffMember"),
         ModelCandidate("people", "Staff"),
     ]
+
+
+class LedgerChargesCSVExportView(_BaseModelCSVExportView):
+    """0092: Ledger Charges export (A/R charges).
+
+    Optional query params:
+      - household_id
+      - invoice_id
+      - due_on_from (YYYY-MM-DD)
+      - due_on_to (YYYY-MM-DD)
+    """
+
+    filename_prefix = "ledger_charges"
+    order_by = ["posted_on", "due_on", "id"]
+
+    model_candidates = [
+        ModelCandidate("ledger", "LedgerCharge"),
+        ModelCandidate("accounting", "LedgerCharge"),
+        ModelCandidate("billing", "LedgerCharge"),
+        ModelCandidate("finance", "LedgerCharge"),
+        ModelCandidate("ledger", "Charge"),
+        ModelCandidate("accounting", "Charge"),
+    ]
+
+    def get_queryset(self, model):
+        field_names = {f.name for f in model._meta.get_fields() if getattr(f, "concrete", False)}
+        self.order_by = [f for f in self.order_by if f in field_names] + ["id"]
+
+        qs = super().get_queryset(model)
+
+        household_id = self.request.query_params.get("household_id")
+        invoice_id = self.request.query_params.get("invoice_id")
+        due_on_from = self.request.query_params.get("due_on_from")
+        due_on_to = self.request.query_params.get("due_on_to")
+
+        if household_id and "household_id" in field_names:
+            qs = qs.filter(household_id=household_id)
+
+        if invoice_id and "invoice_id" in field_names:
+            qs = qs.filter(invoice_id=invoice_id)
+
+        if due_on_from and "due_on" in field_names:
+            qs = qs.filter(due_on__gte=due_on_from)
+
+        if due_on_to and "due_on" in field_names:
+            qs = qs.filter(due_on__lte=due_on_to)
+
+        return qs
+
+
+class LedgerAllocationsCSVExportView(_BaseModelCSVExportView):
+    """0092: Allocations export (payment allocations to charges/invoices).
+
+    Optional query params:
+      - household_id
+      - payment_id
+      - charge_id
+      - applied_on_from (YYYY-MM-DD)
+      - applied_on_to (YYYY-MM-DD)
+    """
+
+    filename_prefix = "ledger_allocations"
+    order_by = ["applied_on", "id"]
+
+    model_candidates = [
+        ModelCandidate("ledger", "LedgerAllocation"),
+        ModelCandidate("accounting", "LedgerAllocation"),
+        ModelCandidate("billing", "LedgerAllocation"),
+        ModelCandidate("finance", "LedgerAllocation"),
+        ModelCandidate("ledger", "Allocation"),
+        ModelCandidate("accounting", "Allocation"),
+    ]
+
+    def get_queryset(self, model):
+        field_names = {f.name for f in model._meta.get_fields() if getattr(f, "concrete", False)}
+        self.order_by = [f for f in self.order_by if f in field_names] + ["id"]
+
+        qs = super().get_queryset(model)
+
+        household_id = self.request.query_params.get("household_id")
+        payment_id = self.request.query_params.get("payment_id")
+        charge_id = self.request.query_params.get("charge_id")
+        applied_on_from = self.request.query_params.get("applied_on_from")
+        applied_on_to = self.request.query_params.get("applied_on_to")
+
+        if household_id and "household_id" in field_names:
+            qs = qs.filter(household_id=household_id)
+
+        if payment_id and "payment_id" in field_names:
+            qs = qs.filter(payment_id=payment_id)
+
+        if charge_id:
+            if "ledger_charge_id" in field_names:
+                qs = qs.filter(ledger_charge_id=charge_id)
+            elif "charge_id" in field_names:
+                qs = qs.filter(charge_id=charge_id)
+
+        if applied_on_from and "applied_on" in field_names:
+            qs = qs.filter(applied_on__gte=applied_on_from)
+
+        if applied_on_to and "applied_on" in field_names:
+            qs = qs.filter(applied_on__lte=applied_on_to)
+
+        return qs
+
+
+class PaymentsCSVExportView(_BaseModelCSVExportView):
+    """0092: Payments export (cash receipts).
+
+    Optional query params:
+      - household_id
+      - posted_on_from (YYYY-MM-DD)
+      - posted_on_to (YYYY-MM-DD)
+      - method
+      - status
+    """
+
+    filename_prefix = "payments"
+    order_by = ["posted_on", "received_on", "id"]
+
+    model_candidates = [
+        ModelCandidate("payments", "Payment"),
+        ModelCandidate("ledger", "Payment"),
+        ModelCandidate("billing", "Payment"),
+        ModelCandidate("finance", "Payment"),
+        ModelCandidate("accounting", "Payment"),
+    ]
+
+    def get_queryset(self, model):
+        field_names = {f.name for f in model._meta.get_fields() if getattr(f, "concrete", False)}
+        self.order_by = [f for f in self.order_by if f in field_names] + ["id"]
+
+        qs = super().get_queryset(model)
+
+        household_id = self.request.query_params.get("household_id")
+        posted_on_from = self.request.query_params.get("posted_on_from")
+        posted_on_to = self.request.query_params.get("posted_on_to")
+        method = self.request.query_params.get("method")
+        status = self.request.query_params.get("status")
+
+        if household_id and "household_id" in field_names:
+            qs = qs.filter(household_id=household_id)
+
+        if posted_on_from:
+            if "posted_on" in field_names:
+                qs = qs.filter(posted_on__gte=posted_on_from)
+            elif "received_on" in field_names:
+                qs = qs.filter(received_on__gte=posted_on_from)
+
+        if posted_on_to:
+            if "posted_on" in field_names:
+                qs = qs.filter(posted_on__lte=posted_on_to)
+            elif "received_on" in field_names:
+                qs = qs.filter(received_on__lte=posted_on_to)
+
+        if method and "method" in field_names:
+            qs = qs.filter(method=method)
+
+        if status and "status" in field_names:
+            qs = qs.filter(status=status)
+
+        return qs
