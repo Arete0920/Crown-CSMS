@@ -33,6 +33,7 @@ from applications import api as applications_api
 from ledger import api as ledger_api
 from financial_aid import api as financial_aid_api
 from academics import api as academics_api
+from billing import api as billing_api
 
 urlpatterns = [
     # Persona-specific API routes (NEW - per user spec)
@@ -100,6 +101,9 @@ urlpatterns = [
         academics_api.section_roster,
         name="academics-section-roster",
     ),
+
+    path("billing/runs/", billing_api.billing_runs, name="billing-runs"),
+    path("billing/runs/<str:billing_run_id>/", billing_api.billing_run_detail, name="billing-run-detail"),
 
     # Students (SIS Student Core) - read-only
     path("students/", students_list, name="students_list"),
