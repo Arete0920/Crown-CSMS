@@ -1,6 +1,7 @@
 from .models_households import Household, HouseholdMember, Person, Student
 from .models_identity import UserPersonLink
 from .models_student_core import StudentProfile
+from .models_academics_core import Course, CourseEnrollment, AttendanceRecord, GradeRecord
 
 __all__ = [
     "Person",
@@ -9,4 +10,8 @@ __all__ = [
     "Student",
     "UserPersonLink",
     "StudentProfile",
+    "Course",
+    "CourseEnrollment",
+    "AttendanceRecord",
+    "GradeRecord",
 ]

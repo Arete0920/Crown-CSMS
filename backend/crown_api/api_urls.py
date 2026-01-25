@@ -25,6 +25,7 @@ from crown_api.director_views import (
 )
 from crown_api.views_households import household_detail, households_list
 from crown_api.views_students import student_detail, students_list
+from crown_api.views_academics import student_attendance_list, student_grades_list
 
 urlpatterns = [
     # Persona-specific API routes (NEW - per user spec)
@@ -38,6 +39,18 @@ urlpatterns = [
     # Students (SIS Student Core) - read-only
     path("students/", students_list, name="students_list"),
     path("students/<uuid:student_id>/", student_detail, name="student_detail"),
+
+    # Academics (Module 6 spine) - read-only
+    path(
+        "students/<uuid:student_id>/attendance/",
+        student_attendance_list,
+        name="student_attendance_list",
+    ),
+    path(
+        "students/<uuid:student_id>/grades/",
+        student_grades_list,
+        name="student_grades_list",
+    ),
     
     # Legacy unified routes (DEPRECATED - kept for backwards compatibility)
     path("director/aid/summary/", aid_summary, name="aid_summary"),
