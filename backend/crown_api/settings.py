@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'aid.apps.AidConfig',
     'admissions.apps.AdmissionsConfig',
     'households',
+    'applications',
 ]
 
 MIDDLEWARE = [
