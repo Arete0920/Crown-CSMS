@@ -11,6 +11,7 @@ urlpatterns = [
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     path("api/", include("crown_api.api_urls")),
+    path("api/v1/", include("households.urls")),
     
     # Authentication URLs (login, logout, password reset, etc.)
     path("accounts/", include("django.contrib.auth.urls")),
