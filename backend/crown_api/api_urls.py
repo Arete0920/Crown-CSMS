@@ -32,6 +32,7 @@ from crown_api.views_comms import threads_list, thread_detail
 from applications import api as applications_api
 from ledger import api as ledger_api
 from financial_aid import api as financial_aid_api
+from academics import api as academics_api
 
 urlpatterns = [
     # Persona-specific API routes (NEW - per user spec)
@@ -89,6 +90,15 @@ urlpatterns = [
         "financial-aid/awards/<str:award_id>/disburse/",
         financial_aid_api.aid_disburse,
         name="aid-disburse",
+    ),
+
+    path("academics/courses/", academics_api.courses, name="academics-courses"),
+    path("academics/sections/", academics_api.sections, name="academics-sections"),
+    path("academics/enroll/", academics_api.enroll, name="academics-enroll"),
+    path(
+        "academics/sections/<str:section_id>/roster/",
+        academics_api.section_roster,
+        name="academics-section-roster",
     ),
 
     # Students (SIS Student Core) - read-only
