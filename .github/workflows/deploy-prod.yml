@@ -105,7 +105,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python backend/manage.py test -q
+          python backend/manage.py test
           pytest --cov=. --cov-report=xml
 
       - name: Upload coverage
