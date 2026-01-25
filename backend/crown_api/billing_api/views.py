@@ -289,12 +289,17 @@ class PaymentsRecordView(APIView):
 
         payload = request.data or {}
         invoice_id = payload.get("invoice_id")
+        household_id = payload.get("household_id")
         amount_cents = payload.get("amount_cents")
         method = (payload.get("method") or "").strip()
         reference = (payload.get("reference") or "").strip()
         received_on_raw = payload.get("received_on")
+        allocations = payload.get("allocations")
 
-        if not invoice_id:
+        # 0110: allocations[] is optional. If present, it drives charge application.
+        # If absent, we keep 0108 behavior: invoice_id is required.
+        has_allocations = isinstance(allocations, list) and len(allocations) > 0
+        if not has_allocations and not invoice_id:
             return Response({"detail": "invoice_id is required"}, status=400)
         if amount_cents is None:
             return Response({"detail": "amount_cents is required"}, status=400)
@@ -306,8 +311,10 @@ class PaymentsRecordView(APIView):
             return Response({"detail": "amount_cents must be > 0"}, status=400)
         if not method:
             return Response({"detail": "method is required"}, status=400)
-        if not reference:
-            return Response({"detail": "reference is required"}, status=400)
+
+        # 0110: reference is optional, but if provided we enforce idempotency.
+        if reference and Payment.objects.filter(school_id=school_id, reference=reference[:64]).exists():
+            return Response({"detail": "duplicate reference"}, status=409)
 
         received_on = None
         if received_on_raw:
@@ -317,6 +324,105 @@ class PaymentsRecordView(APIView):
                 return Response({"detail": "received_on must be YYYY-MM-DD"}, status=400)
         if not received_on:
             received_on = now().date()
+
+        if has_allocations:
+            if not household_id:
+                return Response({"detail": "household_id is required when allocations are provided"}, status=400)
+
+            # no-leak: ensure household exists in-scope
+            if not Household.objects.filter(id=household_id, school_id=school_id).exists():
+                return Response({"detail": "household not found"}, status=404)
+
+            acct = LedgerAccount.objects.filter(school_id=school_id, household_id=household_id).first()
+            if not acct:
+                return Response({"detail": "ledger account not found for household"}, status=400)
+
+            total_alloc_cents = 0
+            parsed_allocs: list[tuple[Charge, Decimal, int]] = []
+
+            for a in allocations:
+                if not isinstance(a, dict):
+                    return Response({"detail": "allocations must be objects"}, status=400)
+
+                charge_id = a.get("ledger_charge_id")
+                a_cents = a.get("amount_cents")
+                if not charge_id:
+                    return Response({"detail": "each allocation requires ledger_charge_id"}, status=400)
+                if a_cents is None:
+                    return Response({"detail": "each allocation requires amount_cents"}, status=400)
+                try:
+                    a_cents_int = int(a_cents)
+                except (TypeError, ValueError):
+                    return Response({"detail": "allocation amount_cents must be an integer"}, status=400)
+                if a_cents_int <= 0:
+                    return Response({"detail": "allocation amount_cents must be > 0"}, status=400)
+
+                ch = Charge.objects.filter(school_id=school_id, id=charge_id, account=acct).first()
+                if not ch:
+                    return Response({"detail": f"ledger_charge_id {charge_id} not found"}, status=400)
+                if ch.is_void:
+                    return Response({"detail": f"ledger_charge_id {charge_id} is void"}, status=400)
+
+                a_amount = _cents_to_amount(a_cents_int)
+                total_alloc_cents += a_cents_int
+                parsed_allocs.append((ch, a_amount, a_cents_int))
+
+            if total_alloc_cents != amount_cents_int:
+                return Response({"detail": "allocations sum must equal amount_cents"}, status=400)
+
+            payment_amount = _cents_to_amount(amount_cents_int)
+            p = Payment.objects.create(
+                school_id=school_id,
+                account=acct,
+                source=(method or "manual")[:32],
+                reference=reference[:64],
+                amount=payment_amount,
+            )
+
+            created_allocs = []
+            for ch, a_amount, a_cents_int in parsed_allocs:
+                alloc = Allocation.objects.create(
+                    school_id=school_id,
+                    payment=p,
+                    charge=ch,
+                    amount=a_amount,
+                )
+                created_allocs.append(
+                    {
+                        "allocation_id": str(alloc.id),
+                        "ledger_charge_id": str(ch.id),
+                        "amount_cents": int(a_cents_int),
+                    }
+                )
+
+            BillingAuditEvent.log(
+                school_id=school_id,
+                entity_type=BillingAuditEvent.ENTITY_PAYMENT,
+                entity_id=p.id,
+                action="PAYMENT_RECORDED",
+                actor_user=getattr(request, "user", None),
+                details={
+                    "household_id": str(household_id),
+                    "amount_cents": int(amount_cents_int),
+                    "method": method,
+                    "reference": reference,
+                    "received_on": received_on.isoformat(),
+                    "allocations": created_allocs,
+                },
+            )
+
+            return Response(
+                {
+                    "payment_id": str(p.id),
+                    "household_id": str(household_id),
+                    "amount_cents": int(amount_cents_int),
+                    "reference": reference,
+                    "method": method,
+                    "received_on": received_on.isoformat(),
+                    "allocations": created_allocs,
+                },
+                status=201,
+            )
 
         inv = (
             BillingInvoice.objects.select_related("household")
@@ -338,10 +444,6 @@ class PaymentsRecordView(APIView):
             return Response({"detail": "linked ledger charge not found"}, status=400)
         if ch.is_void:
             return Response({"detail": "linked ledger charge is void"}, status=400)
-
-        # Idempotency: reference is a lockout key within a school.
-        if Payment.objects.filter(school_id=school_id, reference=reference[:64]).exists():
-            return Response({"detail": "duplicate reference"}, status=409)
 
         amount = _cents_to_amount(amount_cents_int)
 
