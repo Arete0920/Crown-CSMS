@@ -31,6 +31,7 @@ from crown_api.views_scheduling import terms_list, term_sections, student_schedu
 from crown_api.views_comms import threads_list, thread_detail
 from applications import api as applications_api
 from ledger import api as ledger_api
+from financial_aid import api as financial_aid_api
 
 urlpatterns = [
     # Persona-specific API routes (NEW - per user spec)
@@ -72,6 +73,23 @@ urlpatterns = [
     path("ledger/accounts/<str:account_id>/", ledger_api.account_detail, name="ledger-account-detail"),
     path("ledger/charges/", ledger_api.create_charge, name="ledger-create-charge"),
     path("ledger/payments/", ledger_api.record_payment, name="ledger-record-payment"),
+
+    path("financial-aid/applications/", financial_aid_api.aid_applications, name="aid-applications"),
+    path(
+        "financial-aid/applications/<str:aid_application_id>/submit/",
+        financial_aid_api.aid_submit,
+        name="aid-submit",
+    ),
+    path(
+        "financial-aid/applications/<str:aid_application_id>/decide/",
+        financial_aid_api.aid_decide,
+        name="aid-decide",
+    ),
+    path(
+        "financial-aid/awards/<str:award_id>/disburse/",
+        financial_aid_api.aid_disburse,
+        name="aid-disburse",
+    ),
 
     # Students (SIS Student Core) - read-only
     path("students/", students_list, name="students_list"),
