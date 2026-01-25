@@ -5,6 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Sum
 from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
@@ -15,6 +16,19 @@ from .models import Payment, PaymentAllocation, Charge, LedgerAccount
 from .models import Allocation, compute_account_balance
 from .services import allocate_payment_fifo, account_balance, charge_remaining_balance
 from .services import build_account_statement
+
+
+def _get_account_for_scope(*, sid, account_id: str | None, household_id: str | None):
+    acct = None
+    if account_id:
+        acct = LedgerAccount.objects.get(id=_parse_uuid(account_id, "account_id"), school_id=sid)
+    if household_id:
+        hh = Household.objects.get(id=_parse_uuid(household_id, "household_id"), school_id=sid)
+        acct2, _ = LedgerAccount.objects.get_or_create(school_id=sid, household=hh)
+        if acct is not None and acct.id != acct2.id:
+            raise ValueError("account_id does not match household_id")
+        acct = acct2
+    return acct
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -32,6 +46,24 @@ def _parse_json(request: HttpRequest):
         return json.loads(request.body.decode("utf-8"))
     except Exception:
         return None
+
+
+def _parse_uuid(value, field_name: str):
+    if value in (None, ""):
+        raise ValueError(f"{field_name} is required")
+    try:
+        return UUID(str(value))
+    except Exception:
+        raise ValueError(f"{field_name} must be a uuid")
+
+
+def _parse_decimal(value, field_name: str) -> Decimal:
+    if value is None or value == "":
+        raise ValueError(f"{field_name} is required")
+    try:
+        return Decimal(str(value))
+    except Exception:
+        raise ValueError(f"{field_name} must be a decimal")
 
 
 def _acct_to_dict(a: LedgerAccount):
@@ -63,6 +95,7 @@ def _payment_to_dict(p: Payment):
         "id": str(p.id),
         "school_id": str(p.school_id),
         "account_id": str(p.account_id),
+        "source": getattr(p, "source", "EXTERNAL"),
         "reference": p.reference,
         "amount": str(p.amount),
         "created_at": p.created_at.isoformat() if p.created_at else None,
@@ -189,57 +222,133 @@ def record_payment(request: HttpRequest):
     if payload is None:
         return _json_error("Invalid JSON body", status=400)
 
+    # Payload supports either account_id or household_id (or both).
     account_id = payload.get("account_id")
+    household_id = payload.get("household_id")
     amount = payload.get("amount")
-    reference = payload.get("reference") or ""
+    reference = payload.get("reference") or payload.get("payment_reference") or ""
+    source = payload.get("source") or "EXTERNAL"
 
-    if not account_id:
-        return _json_error("account_id is required", status=400)
-    if amount is None:
-        return _json_error("amount is required", status=400)
+    # Accept payment_date in payload for UI parity, but do not store it in ledger.Payment
+    # (ledger.Payment is currently timestamped by created_at).
+    _payment_date = payload.get("payment_date")
+
+    if not account_id and not household_id:
+        return _json_error("account_id or household_id is required", status=400)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(str(account_id)), school_id=sid)
+        amt = _parse_decimal(amount, "amount")
+    except ValueError as e:
+        return _json_error(str(e), status=400)
+
+    if amt <= Decimal("0"):
+        return _json_error("amount must be > 0", status=400)
+
+    try:
+        acct: LedgerAccount | None = None
+
+        if account_id:
+            acct = LedgerAccount.objects.get(id=_parse_uuid(account_id, "account_id"), school_id=sid)
+
+        if household_id:
+            hh = Household.objects.get(id=_parse_uuid(household_id, "household_id"), school_id=sid)
+            acct2, _ = LedgerAccount.objects.get_or_create(school_id=sid, household=hh)
+            if acct is not None and acct.id != acct2.id:
+                return _json_error("account_id does not match household_id", status=400)
+            acct = acct2
+
+        if acct is None:
+            return _json_error("Not found", status=404)
+    except Household.DoesNotExist:
+        return _json_error("Not found", status=404)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
+    except ValueError as e:
+        return _json_error(str(e), status=400)
 
+    allocs_in = payload.get("allocations") or []
+    allow_partial = bool(payload.get("allow_partial"))
+    allow_overpay = bool(payload.get("allow_overpay"))
+
+    # Validate + aggregate allocations by charge_id (no silent skipping).
+    requested_by_charge: dict[UUID, Decimal] = {}
     try:
-        amt = Decimal(str(amount))
-    except Exception:
-        return _json_error("amount must be a decimal", status=400)
+        for item in allocs_in:
+            if not isinstance(item, dict):
+                raise ValueError("allocations must be objects")
+            cid = _parse_uuid(item.get("charge_id"), "charge_id")
+            a_amt = _parse_decimal(item.get("amount"), "allocation.amount")
+            if a_amt <= Decimal("0"):
+                raise ValueError("allocation.amount must be > 0")
+            requested_by_charge[cid] = requested_by_charge.get(cid, Decimal("0")) + a_amt
+    except ValueError as e:
+        return _json_error(str(e), status=400)
 
-    p = Payment.objects.create(
-        school_id=sid,
-        account=acct,
-        reference=str(reference)[:64],
-        amount=amt,
-    )
+    total_requested = sum(requested_by_charge.values(), Decimal("0"))
+    if requested_by_charge:
+        if total_requested > amt:
+            return _json_error("allocations total exceeds payment amount", status=400)
+        if (not allow_partial) and total_requested != amt:
+            return _json_error("allocations total must equal payment amount (or set allow_partial=true)", status=400)
 
-    allocs = payload.get("allocations") or []
-    for item in allocs:
-        charge_id = item.get("charge_id")
-        a_amount = item.get("amount")
-        if not charge_id or a_amount is None:
-            continue
-
-        try:
-            ch = Charge.objects.get(id=UUID(str(charge_id)), school_id=sid, account=acct)
-        except Charge.DoesNotExist:
-            continue
-
-        try:
-            a_amt = Decimal(str(a_amount))
-        except Exception:
-            continue
-
-        Allocation.objects.create(
+    with transaction.atomic():
+        p = Payment.objects.create(
             school_id=sid,
-            payment=p,
-            charge=ch,
-            amount=a_amt,
+            account=acct,
+            source=str(source)[:32],
+            reference=str(reference)[:64],
+            amount=amt,
         )
 
-    return _envelope(_payment_to_dict(p), status=201)
+        created_allocations = []
+        for charge_id, a_amt in requested_by_charge.items():
+            try:
+                ch = Charge.objects.get(id=charge_id, school_id=sid, account=acct)
+            except Charge.DoesNotExist:
+                return _json_error("charge not found", status=404)
+
+            if getattr(ch, "is_void", False):
+                return _json_error("cannot allocate to void charge", status=400)
+
+            if not allow_overpay:
+                remaining = charge_remaining_balance(ch)
+                if a_amt > remaining:
+                    return _json_error("allocation exceeds charge remaining balance", status=400)
+
+            alloc, created = Allocation.objects.get_or_create(
+                school_id=sid,
+                payment=p,
+                charge=ch,
+                defaults={"amount": a_amt},
+            )
+            if not created:
+                alloc.amount = Decimal(str(alloc.amount)) + a_amt
+                alloc.save(update_fields=["amount"])
+
+            created_allocations.append(
+                {
+                    "id": str(alloc.id),
+                    "charge_id": str(alloc.charge_id),
+                    "amount": str(alloc.amount),
+                }
+            )
+
+        allocated_total = (
+            Allocation.objects.filter(school_id=sid, payment=p).aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+        remaining_unallocated = Decimal(str(amt)) - Decimal(str(allocated_total))
+        if remaining_unallocated < Decimal("0"):
+            remaining_unallocated = Decimal("0")
+
+        data = _payment_to_dict(p)
+        data["allocations"] = created_allocations
+        data["allocated_total"] = str(allocated_total)
+        data["remaining_unallocated"] = str(remaining_unallocated)
+        if _payment_date is not None:
+            data["payment_date_input"] = str(_payment_date)
+
+        return _envelope(data, status=201)
 
 
 @login_required
@@ -316,3 +425,130 @@ def ledger_account_statement(request: HttpRequest, account_id: str):
 
     data = build_account_statement(school_id=sid, account=acct)
     return _envelope(data, status=200)
+
+
+@login_required
+@require_http_methods(["GET"])
+def open_charges(request: HttpRequest):
+    """List open (unpaid) charges for an account/household.
+
+    Query params:
+      - account_id=<uuid> OR household_id=<uuid>
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    account_id = request.GET.get("account_id")
+    household_id = request.GET.get("household_id")
+    if not account_id and not household_id:
+        return _json_error("account_id or household_id is required", status=400)
+
+    try:
+        acct = _get_account_for_scope(sid=sid, account_id=account_id, household_id=household_id)
+        if acct is None:
+            return _envelope([], status=200)
+    except Household.DoesNotExist:
+        return _json_error("Not found", status=404)
+    except LedgerAccount.DoesNotExist:
+        return _json_error("Not found", status=404)
+    except ValueError as e:
+        return _json_error(str(e), status=400)
+
+    charges = Charge.objects.filter(school_id=sid, account=acct, is_void=False).order_by("created_at", "id")
+
+    open_rows = []
+    charge_ids = []
+    for ch in charges.iterator():
+        remaining = charge_remaining_balance(ch)
+        if remaining <= Decimal("0.00"):
+            continue
+        charge_ids.append(ch.id)
+        open_rows.append(
+            {
+                "charge": _charge_to_dict(ch),
+                "remaining_balance": str(remaining),
+            }
+        )
+
+    # Optional invoice enrichment (no guessing): only if billing.Invoice exists.
+    invoice_by_charge = {}
+    try:
+        from billing.models import Invoice
+
+        if charge_ids:
+            for inv in Invoice.objects.filter(school_id=sid, ledger_charge_id__in=charge_ids).iterator():
+                invoice_by_charge[str(inv.ledger_charge_id)] = {
+                    "invoice_id": str(inv.id),
+                    "due_on": inv.due_on.isoformat() if inv.due_on else None,
+                    "total_amount": str(inv.total_amount),
+                }
+    except Exception:
+        invoice_by_charge = {}
+
+    for row in open_rows:
+        cid = row["charge"]["id"]
+        row["invoice"] = invoice_by_charge.get(cid)
+
+    return _envelope(open_rows, status=200)
+
+
+@login_required
+@require_http_methods(["GET"])
+def open_invoices(request: HttpRequest):
+    """List open invoices (via billing.Invoice) with computed balances from ledger allocations.
+
+    Query params:
+      - household_id=<uuid> (optional)
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        from billing.models import Invoice
+    except Exception:
+        return _json_error("Invoice model not available", status=500)
+
+    household_id = request.GET.get("household_id")
+    qs = Invoice.objects.filter(school_id=sid).exclude(ledger_charge_id=None)
+    if household_id:
+        try:
+            qs = qs.filter(household_id=_parse_uuid(household_id, "household_id"))
+        except ValueError as e:
+            return _json_error(str(e), status=400)
+
+    invoices = list(qs.order_by("due_on", "id"))
+    charge_ids = [inv.ledger_charge_id for inv in invoices if inv.ledger_charge_id]
+
+    paid_by_charge = {}
+    if charge_ids:
+        agg = (
+            Allocation.objects.filter(school_id=sid, charge_id__in=charge_ids)
+            .values("charge_id")
+            .annotate(total=Sum("amount"))
+        )
+        for row in agg.iterator():
+            paid_by_charge[str(row["charge_id"])] = row.get("total") or Decimal("0.00")
+
+    out = []
+    for inv in invoices:
+        cid = inv.ledger_charge_id
+        paid = Decimal(str(paid_by_charge.get(str(cid), Decimal("0.00"))))
+        total = Decimal(str(inv.total_amount))
+        balance = total - paid
+        if balance <= Decimal("0.00"):
+            continue
+        out.append(
+            {
+                "invoice_id": str(inv.id),
+                "household_id": str(inv.household_id),
+                "due_on": inv.due_on.isoformat() if inv.due_on else None,
+                "total_amount": str(inv.total_amount),
+                "ledger_charge_id": str(cid),
+                "paid_amount": str(paid),
+                "balance": str(balance),
+            }
+        )
+
+    return _envelope(out, status=200)
