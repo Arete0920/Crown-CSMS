@@ -136,8 +136,16 @@ jobs:
 
       - name: Run database migrations
         run: |
-          az webapp remote-build-enabled set --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.WEBAPP_NAME }} --remote-build-enabled false
-          az webapp config appsettings set --resource-group ${{ env.RESOURCE_GROUP }} --name ${{ env.WEBAPP_NAME }} --settings RUN_MIGRATIONS=true
+          az webapp config appsettings set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --settings RUN_MIGRATIONS=true \
+            --output none \
+            --only-show-errors
+          az webapp restart \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --only-show-errors
 
       - name: Health check
         run: |
