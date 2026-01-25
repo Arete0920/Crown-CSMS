@@ -1311,3 +1311,138 @@ class YearEndTuitionPaidCSVExportView(APIView):
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
         return resp
+
+
+class PaymentsQuickBooksCSVExportView(APIView):
+    """0096-A: Payments export in a QuickBooks-friendly column order.
+
+    Endpoint:
+      /api/exports/accounting/payments-qb.csv
+
+    Columns:
+      Date, Amount, Customer, Payment Method, Reference/Check #, Memo, Deposit Account,
+      payment_id, household_id, school_id
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    payment_candidates = [
+        ModelCandidate("ledger", "Payment"),
+        ModelCandidate("payments", "Payment"),
+        ModelCandidate("crown_api", "Payment"),
+        ModelCandidate("billing", "Payment"),
+        ModelCandidate("finance", "Payment"),
+        ModelCandidate("accounting", "Payment"),
+    ]
+
+    def get(self, request):
+        try:
+            PaymentModel = resolve_model(self.payment_candidates)
+        except ModelNotFound as e:
+            resp = StreamingHttpResponse(
+                _csv_stream([["error"], [str(e)]]),
+                content_type="text/csv; charset=utf-8",
+                status=500,
+            )
+            resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            return resp
+
+        pay_fields = _field_names(PaymentModel)
+        sid = get_request_school_id(request)
+        _log_export_access(request, "accounting/payments-qb.csv", sid)
+
+        qs = PaymentModel.objects.all()
+
+        if "school_id" in pay_fields:
+            if not sid:
+                return StreamingHttpResponse(_csv_stream([]), status=403)
+            qs = qs.filter(school_id=sid)
+
+        date_field = _pick_first(pay_fields, ["payment_date", "received_on", "posted_on", "created_at", "timestamp"])
+        amount_field = _pick_first(pay_fields, ["amount", "amount_cents"])
+        method_field = _pick_first(pay_fields, ["method", "payment_method", "source"])
+        reference_field = _pick_first(pay_fields, ["reference", "payment_reference", "check_number", "reference_number"])
+        memo_field = _pick_first(pay_fields, ["memo", "notes"])
+
+        # Best-effort related lookup for customer name.
+        try:
+            if "account" in pay_fields:
+                qs = qs.select_related("account", "account__household")
+            elif "household" in pay_fields:
+                qs = qs.select_related("household")
+        except Exception:
+            pass
+
+        if date_field and "id" in pay_fields:
+            try:
+                qs = qs.order_by(date_field, "id")
+            except Exception:
+                qs = qs.order_by("id")
+        elif "id" in pay_fields:
+            qs = qs.order_by("id")
+
+        header = [
+            "Date",
+            "Amount",
+            "Customer",
+            "Payment Method",
+            "Reference/Check #",
+            "Memo",
+            "Deposit Account",
+            "payment_id",
+            "household_id",
+            "school_id",
+        ]
+
+        def _customer_for_payment(p) -> str:
+            hh = getattr(p, "household", None)
+            if hh is not None:
+                return _as_str(getattr(hh, "name", "") or hh)
+
+            acct = getattr(p, "account", None)
+            if acct is not None:
+                hh2 = getattr(acct, "household", None)
+                if hh2 is not None:
+                    return _as_str(getattr(hh2, "name", "") or hh2)
+            return ""
+
+        def _household_id_for_payment(p) -> str:
+            if hasattr(p, "household_id"):
+                return _as_str(getattr(p, "household_id", ""))
+            hh = getattr(p, "household", None)
+            if hh is not None:
+                return _as_str(getattr(hh, "id", ""))
+            acct = getattr(p, "account", None)
+            if acct is not None and hasattr(acct, "household_id"):
+                return _as_str(getattr(acct, "household_id", ""))
+            return ""
+
+        def rows():
+            yield header
+            for p in qs.iterator():
+                pid = getattr(p, "id", "")
+                school_val = getattr(p, "school_id", sid) if "school_id" in pay_fields else sid
+
+                date_val = getattr(p, date_field, "") if date_field else ""
+                amount_val = getattr(p, amount_field, "") if amount_field else ""
+                method_val = getattr(p, method_field, "") if method_field else ""
+                ref_val = getattr(p, reference_field, "") if reference_field else ""
+                memo_val = getattr(p, memo_field, "") if memo_field else ""
+
+                yield [
+                    _as_iso(date_val),
+                    _as_str(amount_val),
+                    _customer_for_payment(p),
+                    _as_str(method_val),
+                    _as_str(ref_val),
+                    _as_str(memo_val),
+                    "",  # deposit account is intentionally blank (no guessing)
+                    _as_str(pid),
+                    _household_id_for_payment(p),
+                    _as_str(school_val),
+                ]
+
+        filename = f"payments_qb_{now().date().isoformat()}.csv"
+        resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return resp
