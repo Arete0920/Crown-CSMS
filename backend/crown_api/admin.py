@@ -1,8 +1,12 @@
 from django.contrib import admin
 
 from crown_api.models import (
+    AttendanceRecord,
+    Course,
+    CourseEnrollment,
     Household,
     HouseholdMember,
+    GradeRecord,
     Person,
     Student,
     StudentProfile,
@@ -55,3 +59,31 @@ class StudentProfileAdmin(admin.ModelAdmin):
 @admin.register(UserPersonLink)
 class UserPersonLinkAdmin(admin.ModelAdmin):
     list_display = ("user", "person")
+
+
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
+    list_display = ("course_code", "name", "term", "active")
+    list_filter = ("active", "term")
+    search_fields = ("course_code", "name")
+
+
+@admin.register(CourseEnrollment)
+class CourseEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ("student", "course", "status", "created_at")
+    list_filter = ("status",)
+    search_fields = ("student__person__last_name", "course__course_code")
+
+
+@admin.register(AttendanceRecord)
+class AttendanceRecordAdmin(admin.ModelAdmin):
+    list_display = ("student", "course", "date", "status", "minutes_late")
+    list_filter = ("status", "date")
+    search_fields = ("student__person__last_name", "course__course_code")
+
+
+@admin.register(GradeRecord)
+class GradeRecordAdmin(admin.ModelAdmin):
+    list_display = ("student", "course", "period", "assignment_name", "letter_grade", "posted_at")
+    list_filter = ("period",)
+    search_fields = ("student__person__last_name", "course__course_code", "assignment_name")
