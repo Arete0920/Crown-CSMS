@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'ledger',
     'financial_aid',
     'academics',
+    'billing',
 ]
 
 MIDDLEWARE = [
