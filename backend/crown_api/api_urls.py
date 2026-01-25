@@ -23,11 +23,16 @@ from crown_api.director_views import (
     director_actions,
     director_timeline,
 )
+from crown_api.views_households import household_detail, households_list
 
 urlpatterns = [
     # Persona-specific API routes (NEW - per user spec)
     path("aid/", include("aid.api_urls")),
     path("admissions/", include("admissions.api_urls")),
+
+    # Households (Module 4 spine) - read-only
+    path("households/", households_list, name="households_list"),
+    path("households/<uuid:household_id>/", household_detail, name="household_detail"),
     
     # Legacy unified routes (DEPRECATED - kept for backwards compatibility)
     path("director/aid/summary/", aid_summary, name="aid_summary"),
