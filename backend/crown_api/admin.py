@@ -7,6 +7,8 @@ from crown_api.models import (
     Household,
     HouseholdMember,
     GradeRecord,
+    Invoice,
+    Payment,
     Person,
     Student,
     StudentProfile,
@@ -87,3 +89,16 @@ class GradeRecordAdmin(admin.ModelAdmin):
     list_display = ("student", "course", "period", "assignment_name", "letter_grade", "posted_at")
     list_filter = ("period",)
     search_fields = ("student__person__last_name", "course__course_code", "assignment_name")
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ("household", "invoice_number", "amount_cents", "status", "due_date")
+    list_filter = ("status",)
+    search_fields = ("invoice_number", "household__household_name")
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ("household", "payment_reference", "amount_cents", "payment_date")
+    search_fields = ("payment_reference", "household__household_name")
