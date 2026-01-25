@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     'households',
     'applications',
     'ledger',
+    'financial_aid',
 ]
 
 MIDDLEWARE = [
