@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 
 import { downloadCsv } from "../utils/downloadCsv.js";
+import { authenticatedFetch } from "../utils/authClient.js";
 
 /*
   Crown2026 – Billing Dashboard (0101 UI)
@@ -59,7 +60,7 @@ export function BillingDashboard() {
   const [allocs, setAllocs] = useState({}); // { [chargeIdUuid]: amountString }
 
   async function fetchJson(url, options = {}) {
-    const res = await fetch(url, {
+    const res = await authenticatedFetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
