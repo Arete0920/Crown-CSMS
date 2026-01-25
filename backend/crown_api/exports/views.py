@@ -13,6 +13,7 @@ from django.core.exceptions import FieldDoesNotExist
 
 from .audit import log_export
 from .permissions import IsFinanceRole
+from .throttles import ExportIPMinuteThrottle, ExportUserHourThrottle, ExportUserMinuteThrottle
 
 # IMPORTANT:
 # These imports must match your actual model locations.
@@ -87,6 +88,7 @@ class InvoicesCSVExportView(APIView):
     """
 
     permission_classes = [IsAuthenticated, IsFinanceRole]
+    throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
     def get(self, request):
         sid = get_request_school_id(request)
@@ -167,6 +169,7 @@ class InstallmentScheduleCSVExportView(APIView):
     """
 
     permission_classes = [IsAuthenticated, IsFinanceRole]
+    throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
     def get(self, request):
         sid = get_request_school_id(request)
@@ -249,6 +252,7 @@ def _model_has_field(model, name: str) -> bool:
 
 class _BaseModelCSVExportView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
     # override in subclasses
     model_candidates: list[ModelCandidate] = []
@@ -573,6 +577,7 @@ class StatementsCSVExportView(APIView):
     """
 
     permission_classes = [IsAuthenticated, IsFinanceRole]
+    throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
     invoice_candidates = [
         ModelCandidate("billing", "Invoice"),
@@ -760,6 +765,7 @@ class StatementLinesCSVExportView(APIView):
     """
 
     permission_classes = [IsAuthenticated, IsFinanceRole]
+    throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
     invoice_candidates = [
         ModelCandidate("billing", "Invoice"),
@@ -1167,6 +1173,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
     """
 
     permission_classes = [IsAuthenticated, IsFinanceRole]
+    throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
     payment_candidates = [
         ModelCandidate("ledger", "Payment"),
@@ -1381,6 +1388,7 @@ class PaymentsQuickBooksCSVExportView(APIView):
     """
 
     permission_classes = [IsAuthenticated, IsFinanceRole]
+    throttle_classes = [ExportUserMinuteThrottle, ExportUserHourThrottle, ExportIPMinuteThrottle]
 
     payment_candidates = [
         ModelCandidate("ledger", "Payment"),

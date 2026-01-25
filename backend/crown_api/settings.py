@@ -169,6 +169,13 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Exports-only throttling scopes (applied per-view via throttle_classes).
+        "exports_user_minute": "30/min",
+        "exports_user_hour": "120/hour",
+        # Per-IP safety net. Keep generous to avoid harming shared networks.
+        "exports_ip_minute": "60/min",
+    },
 }
 
 
