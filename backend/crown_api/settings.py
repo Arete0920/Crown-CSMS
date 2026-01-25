@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'crown_api',
+    'crown_api.exports',
     'core',
     'finance.apps.FinanceConfig',
     'aid.apps.AidConfig',
