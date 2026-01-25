@@ -10,3 +10,8 @@ Human notes for operational events/decisions (not tickets, not runbooks).
 - Health endpoints: `/health/` and `/api/health/` returned 200 with `build_sha` `b991e1f`
 - Tag pushed: `prod-green-20260124-2022`
 - `AZURE_CREDENTIALS` rotated and re-set via stdin on 2026-01-24 (no further rotations unless security-driven)
+
+## 2026-01-24 — Discipline rule: stop workflow thrash
+- `deploy-prod.yml` changes require a ticket + scoped intent (no more “poke until green”).
+- Secrets/credentials rotation is security-driven only (document date + reason here).
+- Stabilization work branches off the prod-green tag; main stays boring.
