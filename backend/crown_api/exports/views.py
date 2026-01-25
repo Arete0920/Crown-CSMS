@@ -11,6 +11,8 @@ from rest_framework.views import APIView
 from households.scoping import get_request_school_id
 from django.core.exceptions import FieldDoesNotExist
 
+from .permissions import IsFinanceRole
+
 # IMPORTANT:
 # These imports must match your actual model locations.
 # Adjust ONLY the import lines if your apps are named differently.
@@ -83,7 +85,7 @@ class InvoicesCSVExportView(APIView):
       - due_on_to (YYYY-MM-DD)
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     def get(self, request):
         sid = get_request_school_id(request)
@@ -155,7 +157,7 @@ class InstallmentScheduleCSVExportView(APIView):
       - plan_id
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     def get(self, request):
         sid = get_request_school_id(request)
@@ -346,6 +348,8 @@ class LedgerChargesCSVExportView(_BaseModelCSVExportView):
       - due_on_to (YYYY-MM-DD)
     """
 
+    permission_classes = [IsAuthenticated, IsFinanceRole]
+
     filename_prefix = "ledger_charges"
     order_by = ["posted_on", "due_on", "id"]
 
@@ -394,6 +398,8 @@ class LedgerAllocationsCSVExportView(_BaseModelCSVExportView):
       - applied_on_from (YYYY-MM-DD)
       - applied_on_to (YYYY-MM-DD)
     """
+
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     filename_prefix = "ledger_allocations"
     order_by = ["applied_on", "id"]
@@ -450,6 +456,8 @@ class PaymentsCSVExportView(_BaseModelCSVExportView):
       - method
       - status
     """
+
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     filename_prefix = "payments"
     order_by = ["posted_on", "received_on", "id"]
@@ -538,7 +546,7 @@ class StatementsCSVExportView(APIView):
       - status (optional)
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     invoice_candidates = [
         ModelCandidate("billing", "Invoice"),
@@ -716,7 +724,7 @@ class StatementLinesCSVExportView(APIView):
       - due_on_to (YYYY-MM-DD)
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     invoice_candidates = [
         ModelCandidate("billing", "Invoice"),
@@ -1120,7 +1128,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
     `applied_to_tuition_amount` will be blank.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     payment_candidates = [
         ModelCandidate("ledger", "Payment"),
@@ -1324,7 +1332,7 @@ class PaymentsQuickBooksCSVExportView(APIView):
       payment_id, household_id, school_id
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsFinanceRole]
 
     payment_candidates = [
         ModelCandidate("ledger", "Payment"),
