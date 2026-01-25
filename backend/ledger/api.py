@@ -14,6 +14,7 @@ from households.scoping import get_request_school_id
 from .models import Payment, PaymentAllocation, Charge, LedgerAccount
 from .models import Allocation, compute_account_balance
 from .services import allocate_payment_fifo, account_balance, charge_remaining_balance
+from .services import build_account_statement
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -299,3 +300,19 @@ def charge_balance(request: HttpRequest, charge_id: str):
 
     rem = charge_remaining_balance(ch)
     return _envelope({"charge_id": str(ch.id), "remaining_balance": str(rem)}, status=200)
+
+
+@login_required
+@require_http_methods(["GET"])
+def ledger_account_statement(request: HttpRequest, account_id: str):
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+    except LedgerAccount.DoesNotExist:
+        return _json_error("Not found", status=404)
+
+    data = build_account_statement(school_id=sid, account=acct)
+    return _envelope(data, status=200)

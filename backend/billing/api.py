@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from households.scoping import get_request_school_id
 from .models import BillingRun, Invoice, InvoiceLine
 from .services import create_tuition_billing_run
+from ledger.services import billing_run_summary
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -152,4 +153,20 @@ def billing_run_detail(request: HttpRequest, billing_run_id: str):
             }
         )
 
+    return _envelope(data, status=200)
+
+
+@login_required
+@require_http_methods(["GET"])
+def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        run = BillingRun.objects.get(id=UUID(billing_run_id), school_id=sid)
+    except BillingRun.DoesNotExist:
+        return _json_error("Not found", status=404)
+
+    data = billing_run_summary(school_id=sid, billing_run=run)
     return _envelope(data, status=200)
