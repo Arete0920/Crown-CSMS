@@ -101,11 +101,14 @@ jobs:
       - name: Preflight gate (Django deploy checks)
         run: |
           export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
-          python backend/manage.py check --deploy
+          cd backend
+          python manage.py check --deploy
 
       - name: Run tests
         run: |
-          python backend/manage.py test
+          cd backend
+          python manage.py test
+          cd ..
           pytest --cov=. --cov-report=xml
 
       - name: Upload coverage
