@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from crown_api.models import Household, HouseholdMember, Person, Student, UserPersonLink
+from crown_api.models import (
+    Household,
+    HouseholdMember,
+    Person,
+    Student,
+    StudentProfile,
+    UserPersonLink,
+)
 
 
 @admin.register(Person)
@@ -38,6 +45,11 @@ class StudentAdmin(admin.ModelAdmin):
     list_display = ("person", "household", "grade_level", "active", "created_at")
     list_filter = ("active", "grade_level")
     search_fields = ("person__first_name", "person__last_name", "household__household_name")
+
+
+@admin.register(StudentProfile)
+class StudentProfileAdmin(admin.ModelAdmin):
+    list_display = ("student", "student_number", "expected_grad_year")
 
 
 @admin.register(UserPersonLink)

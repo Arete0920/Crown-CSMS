@@ -26,7 +26,7 @@ def run() -> None:
 
     django.setup()
 
-    from crown_api.models import Household, HouseholdMember, Person, Student
+    from crown_api.models import Household, HouseholdMember, Person, Student, StudentProfile
     from crown_api.models_households import (
         ROLE_AUTHORIZED_PICKUP,
         ROLE_EMERGENCY_CONTACT,
@@ -107,13 +107,22 @@ def run() -> None:
     s1p = person("Alice", "Megahan", "alice.megahan@student.example.com")
     s2p = person("Ben", "Megahan", "ben.megahan@student.example.com")
 
-    Student.objects.get_or_create(
+    s1, _ = Student.objects.get_or_create(
         person=s1p,
         defaults={"household": h1, "grade_level": "3", "active": True},
     )
-    Student.objects.get_or_create(
+    s2, _ = Student.objects.get_or_create(
         person=s2p,
         defaults={"household": h1, "grade_level": "1", "active": True},
+    )
+
+    StudentProfile.objects.get_or_create(
+        student=s1,
+        defaults={"student_number": "HCA-0001", "expected_grad_year": 2035},
+    )
+    StudentProfile.objects.get_or_create(
+        student=s2,
+        defaults={"student_number": "HCA-0002", "expected_grad_year": 2037},
     )
 
     # Household 2 guardians
@@ -155,13 +164,22 @@ def run() -> None:
     s3p = person("Chloe", "Carter", "chloe.carter@student.example.com")
     s4p = person("David", "Carter", "david.carter@student.example.com")
 
-    Student.objects.get_or_create(
+    s3, _ = Student.objects.get_or_create(
         person=s3p,
         defaults={"household": h2, "grade_level": "5", "active": True},
     )
-    Student.objects.get_or_create(
+    s4, _ = Student.objects.get_or_create(
         person=s4p,
         defaults={"household": h2, "grade_level": "2", "active": True},
+    )
+
+    StudentProfile.objects.get_or_create(
+        student=s3,
+        defaults={"student_number": "HCA-0003", "expected_grad_year": 2033},
+    )
+    StudentProfile.objects.get_or_create(
+        student=s4,
+        defaults={"student_number": "HCA-0004", "expected_grad_year": 2036},
     )
 
     print("Seeded households:")
