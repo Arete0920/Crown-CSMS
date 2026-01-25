@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'applications',
     'ledger',
     'financial_aid',
+    'academics',
 ]
 
 MIDDLEWARE = [
