@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from crown_api.models import HouseholdMember, Person
+from crown_api.models_identity import UserPersonLink
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,14 @@ def is_staff_user(user) -> bool:
 def resolve_person_for_user(user) -> Person | None:
     if not user or not getattr(user, "is_authenticated", False):
         return None
+
+    # Prefer explicit identity linkage over email heuristics.
+    try:
+        link = user.person_link
+    except UserPersonLink.DoesNotExist:
+        link = None
+    if link is not None:
+        return link.person
 
     email = (getattr(user, "email", None) or "").strip()
     if not email:

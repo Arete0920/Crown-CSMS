@@ -3,7 +3,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from core.models import UserAccount
-from crown_api.models import Household, HouseholdMember, Person, Student
+from crown_api.models import Household, HouseholdMember, Person, Student, UserPersonLink
 from crown_api.models_households import ROLE_GUARDIAN, ROLE_PRIMARY_GUARDIAN
 
 
@@ -152,3 +152,78 @@ class HouseholdsApiTests(TestCase):
         self.assertEqual(resp.status_code, 401)
         resp2 = self.client.get(f"/api/households/{self.household.id}/")
         self.assertEqual(resp2.status_code, 401)
+
+    def test_linked_user_blank_email_scopes(self):
+        # Create a new user with blank email, but linked to a Person.
+        linked_user = UserAccount.objects.create_user(
+            username="linked_blank_email",
+            email="",
+            password="testpass",
+            is_staff=False,
+        )
+
+        linked_person = Person.objects.create(
+            first_name="Linked",
+            last_name="Person",
+            email="linked@example.com",
+        )
+        UserPersonLink.objects.create(user=linked_user, person=linked_person)
+
+        HouseholdMember.objects.create(
+            household=self.other_household,
+            person=linked_person,
+            role=ROLE_GUARDIAN,
+            is_primary=False,
+        )
+
+        self.client.force_authenticate(user=linked_user)
+        resp = self.client.get("/api/households/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual({row["id"] for row in resp.json()}, {str(self.other_household.id)})
+
+        # Out-of-scope detail should remain 404
+        resp2 = self.client.get(f"/api/households/{self.household.id}/")
+        self.assertEqual(resp2.status_code, 404)
+
+    def test_link_overrides_email_match(self):
+        # User email matches Person A...
+        user = UserAccount.objects.create_user(
+            username="override_user",
+            email="match@example.com",
+            password="testpass",
+            is_staff=False,
+        )
+
+        person_a = Person.objects.create(
+            first_name="Email",
+            last_name="Match",
+            email="match@example.com",
+        )
+        HouseholdMember.objects.create(
+            household=self.household,
+            person=person_a,
+            role=ROLE_GUARDIAN,
+            is_primary=False,
+        )
+
+        # ...but the explicit link points to Person B, so Person B must win.
+        person_b = Person.objects.create(
+            first_name="Linked",
+            last_name="Wins",
+            email="different@example.com",
+        )
+        HouseholdMember.objects.create(
+            household=self.other_household,
+            person=person_b,
+            role=ROLE_GUARDIAN,
+            is_primary=False,
+        )
+        UserPersonLink.objects.create(user=user, person=person_b)
+
+        self.client.force_authenticate(user=user)
+        resp = self.client.get("/api/households/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual({row["id"] for row in resp.json()}, {str(self.other_household.id)})
+
+        out = self.client.get(f"/api/households/{self.household.id}/")
+        self.assertEqual(out.status_code, 404)
