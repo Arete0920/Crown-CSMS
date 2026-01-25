@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from households.scoping import get_request_school_id
 from django.core.exceptions import FieldDoesNotExist
 
+from .audit import log_export
 from .permissions import IsFinanceRole
 
 # IMPORTANT:
@@ -92,6 +93,7 @@ class InvoicesCSVExportView(APIView):
         _log_export_access(request, "invoices.csv", sid)
         if not sid:
             # Stay safe: no scoping => no data
+            log_export(request, "invoices.csv", status_code=403, school_id="", row_count=0)
             return StreamingHttpResponse(_csv_stream([]), status=403)
 
         household_id = request.query_params.get("household_id")
@@ -143,9 +145,16 @@ class InvoicesCSVExportView(APIView):
                     _as_iso(getattr(inv, "updated_at", None)),
                 ]
 
+        row_count = None
+        try:
+            row_count = qs.count()
+        except Exception:
+            row_count = None
+
         filename = f"invoices_{now().date().isoformat()}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        log_export(request, "invoices.csv", status_code=200, school_id=str(sid or ""), row_count=row_count)
         return resp
 
 
@@ -163,6 +172,7 @@ class InstallmentScheduleCSVExportView(APIView):
         sid = get_request_school_id(request)
         _log_export_access(request, "installment-schedule.csv", sid)
         if not sid:
+            log_export(request, "installment-schedule.csv", status_code=403, school_id="", row_count=0)
             return StreamingHttpResponse(_csv_stream([]), status=403)
 
         household_id = request.query_params.get("household_id")
@@ -210,9 +220,16 @@ class InstallmentScheduleCSVExportView(APIView):
                     _as_iso(getattr(item, "updated_at", None)),
                 ]
 
+        row_count = None
+        try:
+            row_count = qs.count()
+        except Exception:
+            row_count = None
+
         filename = f"installment_schedule_{now().date().isoformat()}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        log_export(request, "installment-schedule.csv", status_code=200, school_id=str(sid or ""), row_count=row_count)
         return resp
 
 
@@ -266,16 +283,24 @@ class _BaseModelCSVExportView(APIView):
                 status=500,
             )
             resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            log_export(request, f"{self.filename_prefix}.csv", status_code=500, school_id=str(get_request_school_id(request) or ""))
             return resp
 
         sid = get_request_school_id(request)
         _log_export_access(request, f"{self.filename_prefix}.csv", sid)
         if _model_has_field(model, "school_id") and not sid:
             # Stay safe: a school-scoped model without a school context => no data.
+            log_export(request, f"{self.filename_prefix}.csv", status_code=403, school_id="", row_count=0)
             return StreamingHttpResponse(_csv_stream([]), status=403)
 
         fields = default_export_fields(model)
         qs = self.get_queryset(model)
+
+        row_count = None
+        try:
+            row_count = qs.count()
+        except Exception:
+            row_count = None
 
         def rows():
             yield fields
@@ -291,6 +316,7 @@ class _BaseModelCSVExportView(APIView):
         filename = f"{self.filename_prefix}_{now().date().isoformat()}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        log_export(request, f"{self.filename_prefix}.csv", status_code=200, school_id=str(sid or ""), row_count=row_count)
         return resp
 
 
@@ -581,6 +607,7 @@ class StatementsCSVExportView(APIView):
                 status=500,
             )
             resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            log_export(request, "statements.csv", status_code=500, school_id=str(get_request_school_id(request) or ""))
             return resp
 
         inv_fields = _field_names(InvoiceModel)
@@ -591,6 +618,7 @@ class StatementsCSVExportView(APIView):
         _log_export_access(request, "statements.csv", sid)
         if "school_id" in inv_fields:
             if not sid:
+                log_export(request, "statements.csv", status_code=403, school_id="", row_count=0)
                 return StreamingHttpResponse(_csv_stream([]), status=403)
             qs = qs.filter(school_id=sid)
 
@@ -703,9 +731,16 @@ class StatementsCSVExportView(APIView):
                     str(balance),
                 ]
 
+        row_count = None
+        try:
+            row_count = qs.count()
+        except Exception:
+            row_count = None
+
         filename = f"statements_{(as_of or now().date().isoformat())}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        log_export(request, "statements.csv", status_code=200, school_id=str(sid or ""), row_count=row_count)
         return resp
 
 
@@ -775,6 +810,7 @@ class StatementLinesCSVExportView(APIView):
                 status=500,
             )
             resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            log_export(request, "statement-lines.csv", status_code=500, school_id=str(get_request_school_id(request) or ""))
             return resp
 
         inv_fields = _field_names(InvoiceModel)
@@ -791,6 +827,7 @@ class StatementLinesCSVExportView(APIView):
                     status=403,
                 )
                 resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+                log_export(request, "statement-lines.csv", status_code=403, school_id="", row_count=0)
                 return resp
         else:
             _log_export_access(request, "statement-lines.csv", "")
@@ -1109,6 +1146,7 @@ class StatementLinesCSVExportView(APIView):
         filename = f"statement_lines_{as_of_val}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        log_export(request, "statement-lines.csv", status_code=200, school_id=str(school_id or ""), row_count=None)
         return resp
 
 
@@ -1164,6 +1202,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
                 status=400,
             )
             resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            log_export(request, "year-end/tuition-paid.csv", status_code=400, school_id=str(get_request_school_id(request) or ""))
             return resp
 
         try:
@@ -1175,6 +1214,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
                 status=500,
             )
             resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            log_export(request, "year-end/tuition-paid.csv", status_code=500, school_id=str(get_request_school_id(request) or ""))
             return resp
 
         pay_fields = _field_names(PaymentModel)
@@ -1185,6 +1225,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
 
         if "school_id" in pay_fields:
             if not sid:
+                log_export(request, "year-end/tuition-paid.csv", status_code=403, school_id="", row_count=0)
                 return StreamingHttpResponse(_csv_stream([]), status=403)
             qs = qs.filter(school_id=sid)
 
@@ -1315,9 +1356,16 @@ class YearEndTuitionPaidCSVExportView(APIView):
                     _as_str(getattr(p, memo_field, "") if memo_field else ""),
                 ]
 
+        row_count = None
+        try:
+            row_count = qs.count()
+        except Exception:
+            row_count = None
+
         filename = f"tuition_paid_{year}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        log_export(request, "year-end/tuition-paid.csv", status_code=200, school_id=str(sid or ""), row_count=row_count)
         return resp
 
 
@@ -1353,6 +1401,7 @@ class PaymentsQuickBooksCSVExportView(APIView):
                 status=500,
             )
             resp["Content-Disposition"] = 'attachment; filename="error.csv"'
+            log_export(request, "accounting/payments-qb.csv", status_code=500, school_id=str(get_request_school_id(request) or ""))
             return resp
 
         pay_fields = _field_names(PaymentModel)
@@ -1363,8 +1412,15 @@ class PaymentsQuickBooksCSVExportView(APIView):
 
         if "school_id" in pay_fields:
             if not sid:
+                log_export(request, "accounting/payments-qb.csv", status_code=403, school_id="", row_count=0)
                 return StreamingHttpResponse(_csv_stream([]), status=403)
             qs = qs.filter(school_id=sid)
+
+        row_count = None
+        try:
+            row_count = qs.count()
+        except Exception:
+            row_count = None
 
         date_field = _pick_first(pay_fields, ["payment_date", "received_on", "posted_on", "created_at", "timestamp"])
         amount_field = _pick_first(pay_fields, ["amount", "amount_cents"])
@@ -1453,4 +1509,5 @@ class PaymentsQuickBooksCSVExportView(APIView):
         filename = f"payments_qb_{now().date().isoformat()}.csv"
         resp = StreamingHttpResponse(_csv_stream(rows()), content_type="text/csv; charset=utf-8")
         resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        log_export(request, "accounting/payments-qb.csv", status_code=200, school_id=str(sid or ""), row_count=row_count)
         return resp
