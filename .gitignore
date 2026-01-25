@@ -39,10 +39,26 @@ Thumbs.db
 # Node
 node_modules/
 
+# Frontend (default ignored; carve out dashboards/src below)
+frontend/
+
 # Build outputs
 dist/
 build/
 *.egg-info/
+
+# --- Crown2026: allow tracking dashboards source ---
+!frontend/
+!frontend/dashboards/
+!frontend/dashboards/src/
+!frontend/dashboards/src/**
+
+# Still ignore build + deps
+frontend/dashboards/node_modules/
+frontend/dashboards/dist/
+frontend/dashboards/.vite/
+frontend/dashboards/*.log
+frontend/dashboards/vite-dev*.log
 
 # Local CI scratch
 _ci/
