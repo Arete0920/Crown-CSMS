@@ -164,6 +164,55 @@ export function BillingDashboard() {
     return out;
   }
 
+  function dollarsToCents(val) {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return 0;
+    return Math.round(n * 100);
+  }
+
+  function formatApiError(status, bodyText, bodyJson) {
+    if (status === 403) return "You don’t have permission to record payments (finance role required).";
+    if (status === 409) return "Duplicate reference: this payment reference was already recorded.";
+    if (status === 400) {
+      const detail =
+        (bodyJson && (bodyJson.detail || bodyJson.error)) ||
+        (typeof bodyText === "string" && bodyText.trim()) ||
+        "Validation error.";
+      return `Validation error: ${detail}`;
+    }
+    const detail =
+      (bodyJson && (bodyJson.detail || bodyJson.error)) ||
+      (typeof bodyText === "string" && bodyText.trim()) ||
+      "";
+    return detail ? `Payment failed (${status}): ${detail}` : `Payment failed (${status}).`;
+  }
+
+  function resolveSingleSelectedInvoice(openItemsList, allocsMap) {
+    const selectedChargeIds = Object.keys(allocsMap || {});
+    if (selectedChargeIds.length === 0) {
+      return { invoiceId: null, selectedChargeId: null, error: "Select exactly one open item to apply this payment to." };
+    }
+    if (selectedChargeIds.length > 1) {
+      return {
+        invoiceId: null,
+        selectedChargeId: null,
+        error:
+          "This MVP records one payment per invoice. Select exactly one open item (one invoice) and try again.",
+      };
+    }
+
+    const selectedChargeId = selectedChargeIds[0];
+    const match = (openItemsList || []).find((it) => it.ledger_charge_id === selectedChargeId);
+    if (!match || !match.invoice_id) {
+      return {
+        invoiceId: null,
+        selectedChargeId: null,
+        error: "Could not resolve invoice_id for the selected open item. Reload Open Invoices and try again.",
+      };
+    }
+    return { invoiceId: match.invoice_id, selectedChargeId, error: null };
+  }
+
   async function recordPayment() {
     setPayError("");
     setPayOk("");
@@ -179,24 +228,82 @@ export function BillingDashboard() {
       return;
     }
 
-    const allocations = buildAllocationsPayload();
-    const body = {
-      household_id: householdIdUuid,
-      payment_date: paymentDate,
-      amount: paymentAmount,
-      reference: paymentReference,
-      source: paymentSource,
-      account_id: acct,
-      allocations,
+    // 0109: backend contract (0108) = one invoice per request.
+    // UI currently supports multi-allocation; for MVP we require selecting exactly one open item.
+    const { invoiceId, selectedChargeId, error } = resolveSingleSelectedInvoice(openItems, allocs);
+    if (error) {
+      setPayError(error);
+      return;
+    }
+
+    const selectedAllocationDollars = (allocs && selectedChargeId ? allocs[selectedChargeId] : "") || "";
+    const amountCents = dollarsToCents(selectedAllocationDollars || paymentAmount);
+    if (!amountCents || amountCents <= 0) {
+      setPayError("Enter a valid amount > 0.");
+      return;
+    }
+
+    const payload = {
+      invoice_id: invoiceId,
+      amount_cents: amountCents,
+      method: (paymentSource || "manual").trim() || "manual",
+      reference: (paymentReference || "").trim(),
+      received_on: paymentDate || null,
     };
+
+    if (!payload.reference) {
+      setPayError("reference is required.");
+      return;
+    }
 
     setPayBusy(true);
     try {
-      const res = await fetchJson(`${API_BASE}/api/billing/payments/`, {
+      // 0109: JWT-first via authenticatedFetch (0104); cookies still included.
+      const resp = await authenticatedFetch(`${API_BASE}/api/billing/payments/record/`, {
         method: "POST",
-        body: JSON.stringify(body),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(payload),
       });
-      setPayOk(`Payment created: ${res.payment_id}`);
+
+      let bodyText = "";
+      let bodyJson = null;
+      try {
+        bodyText = await resp.text();
+      } catch {
+        bodyText = "";
+      }
+
+      try {
+        bodyJson = bodyText ? JSON.parse(bodyText) : null;
+      } catch {
+        bodyJson = null;
+      }
+
+      if (!resp.ok) {
+        throw new Error(formatApiError(resp.status, bodyText, bodyJson));
+      }
+
+      const data = bodyJson || {};
+      const paymentId = data.payment_id;
+      setPayOk(paymentId ? `Payment recorded: ${paymentId}` : "Payment recorded.");
+
+      // Optimistic refresh: update the selected row balance immediately, then re-fetch.
+      const appliedCents = Number(data.applied_amount_cents || 0);
+      if (Number.isFinite(appliedCents) && appliedCents > 0) {
+        setOpenItems((prev) =>
+          (prev || []).map((it) => {
+            if (it.invoice_id !== invoiceId) return it;
+            const bal = Number(it.balance);
+            if (!Number.isFinite(bal)) return it;
+            const nextBalance = Math.max(0, bal - appliedCents / 100);
+            return { ...it, balance: String(nextBalance.toFixed(2)) };
+          })
+        );
+      }
+
       await loadOpenInvoices();
     } catch (e) {
       setPayError(String(e?.message || e));
