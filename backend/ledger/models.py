@@ -87,6 +87,9 @@ class Allocation(TimeStampedModel):
 
 	class Meta:
 		db_table = "allocation"
+		constraints = [
+			models.UniqueConstraint(fields=["payment", "charge"], name="uniq_payment_charge_allocation"),
+		]
 		indexes = [
 			models.Index(fields=["school_id", "payment"]),
 			models.Index(fields=["school_id", "charge"]),
@@ -94,6 +97,11 @@ class Allocation(TimeStampedModel):
 
 	def __str__(self) -> str:
 		return f"Allocation({self.amount})"
+
+
+class PaymentAllocation(Allocation):
+	class Meta:
+		proxy = True
 
 
 def compute_account_balance(account: LedgerAccount) -> Decimal:
