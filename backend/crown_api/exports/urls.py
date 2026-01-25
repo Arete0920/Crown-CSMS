@@ -10,6 +10,7 @@ from .views import (
     LedgerAllocationsCSVExportView,
     PaymentsCSVExportView,
     StatementsCSVExportView,
+    StatementLinesCSVExportView,
 )
 
 urlpatterns = [
@@ -36,4 +37,11 @@ urlpatterns = [
 
     # 0093
     path("exports/statements.csv", StatementsCSVExportView.as_view(), name="exports-statements-csv"),
+
+    # 0094
+    path(
+        "exports/statement-lines.csv",
+        StatementLinesCSVExportView.as_view(),
+        name="exports-statement-lines-csv",
+    ),
 ]
