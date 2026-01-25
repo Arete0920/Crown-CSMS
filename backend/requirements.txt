@@ -1,0 +1,13 @@
+# Backend-only requirements for Crown2026 (Django/DRF API)
+# Keep in sync with root requirements.txt where applicable.
+
+Django==6.0
+djangorestframework==3.14.0
+python-dotenv==1.0.0
+
+# psycopg2-binary does not ship wheels for all Python versions (e.g., 3.14).
+# Keep it for older runtimes, but skip where it would require a local pg_config build.
+psycopg2-binary==2.9.9; python_version < "3.13"
+
+# JWT auth (alongside sessions)
+djangorestframework-simplejwt>=5.3.1

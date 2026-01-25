@@ -4,6 +4,7 @@ import io
 import pytest
 from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from core.models import School
@@ -25,10 +26,31 @@ def _model_exists(app_label: str, model_name: str) -> bool:
 
 
 @pytest.fixture
-def auth_user():
+def finance_user():
     school = School.objects.create(name="Test School")
     User = get_user_model()
     u = User.objects.create_user(username="user_qb", password="pass12345!")
+    if hasattr(u, "school_id"):
+        setattr(u, "school_id", school.id)
+        u.save(update_fields=["school_id"])
+
+    g, _ = Group.objects.get_or_create(name="Finance Director")
+    u.groups.add(g)
+    return u
+
+
+@pytest.fixture
+def finance_client(finance_user):
+    client = APIClient()
+    client.force_authenticate(user=finance_user)
+    return client
+
+
+@pytest.fixture
+def non_finance_user():
+    school = School.objects.create(name="Test School 2")
+    User = get_user_model()
+    u = User.objects.create_user(username="user_qb_nonrole", password="pass12345!")
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -36,9 +58,9 @@ def auth_user():
 
 
 @pytest.fixture
-def auth_client(auth_user):
+def non_finance_client(non_finance_user):
     client = APIClient()
-    client.force_authenticate(user=auth_user)
+    client.force_authenticate(user=non_finance_user)
     return client
 
 
@@ -48,7 +70,12 @@ def test_payments_qb_csv_requires_auth():
     assert resp.status_code in (401, 403)
 
 
-def test_payments_qb_csv_streams_when_payment_model_exists(auth_client):
+def test_payments_qb_csv_requires_finance_role(non_finance_client):
+    resp = non_finance_client.get("/api/exports/accounting/payments-qb.csv")
+    assert resp.status_code == 403
+
+
+def test_payments_qb_csv_streams_when_payment_model_exists(finance_client):
     payment_candidates = [
         ("ledger", "Payment"),
         ("payments", "Payment"),
@@ -60,7 +87,7 @@ def test_payments_qb_csv_streams_when_payment_model_exists(auth_client):
     if not any(_model_exists(a, m) for a, m in payment_candidates):
         pytest.skip("No Payment model found under expected labels yet.")
 
-    resp = auth_client.get("/api/exports/accounting/payments-qb.csv")
+    resp = finance_client.get("/api/exports/accounting/payments-qb.csv")
     assert resp.status_code in (200, 500)
 
     rows = _read_csv_bytes(b"".join(resp.streaming_content))
