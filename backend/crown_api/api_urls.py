@@ -119,6 +119,9 @@ urlpatterns = [
     # Billing run summary
     path("billing/runs/<str:billing_run_id>/summary/", billing_api.billing_run_summary_view, name="billing-run-summary"),
 
+    # Installment plans
+    path("billing/installment-plans/", billing_api.installment_plans, name="billing-installment-plans"),
+
     # Students (SIS Student Core) - read-only
     path("students/", students_list, name="students_list"),
     path("students/<uuid:student_id>/", student_detail, name="student_detail"),

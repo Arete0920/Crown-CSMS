@@ -9,9 +9,87 @@ from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
 
 from households.scoping import get_request_school_id
-from .models import BillingRun, Invoice, InvoiceLine
+from .models import BillingRun, Invoice, InvoiceLine, InstallmentPlan
 from .services import create_tuition_billing_run
 from ledger.services import billing_run_summary
+
+
+def _plan_to_dict(p: InstallmentPlan):
+    return {
+        "id": str(p.id),
+        "school_id": str(p.school_id),
+        "term": p.term,
+        "name": p.name,
+        "installment_count": int(p.installment_count),
+        "first_due_on": p.first_due_on.isoformat() if p.first_due_on else None,
+        "cadence_days": int(p.cadence_days),
+        "created_at": p.created_at.isoformat() if p.created_at else None,
+    }
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def installment_plans(request: HttpRequest):
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    if request.method == "GET":
+        qs = InstallmentPlan.objects.filter(school_id=sid).order_by("term", "name", "created_at")
+        return _envelope([_plan_to_dict(p) for p in qs], status=200)
+
+    payload = _parse_json(request)
+    if payload is None:
+        return _json_error("Invalid JSON body", status=400)
+
+    term = payload.get("term")
+    name = payload.get("name")
+    installment_count = payload.get("installment_count")
+    first_due_on = payload.get("first_due_on")
+    cadence_days = payload.get("cadence_days")
+
+    if not term:
+        return _json_error("term is required", status=400)
+    if not name:
+        return _json_error("name is required", status=400)
+    if installment_count is None:
+        return _json_error("installment_count is required", status=400)
+    if not first_due_on:
+        return _json_error("first_due_on is required", status=400)
+
+    try:
+        installment_count_i = int(installment_count)
+    except Exception:
+        return _json_error("installment_count must be an int", status=400)
+    if installment_count_i <= 0:
+        return _json_error("installment_count must be > 0", status=400)
+
+    try:
+        from datetime import date
+
+        due = date.fromisoformat(str(first_due_on))
+    except Exception:
+        return _json_error("first_due_on must be YYYY-MM-DD", status=400)
+
+    if cadence_days is None:
+        cadence_days_i = 30
+    else:
+        try:
+            cadence_days_i = int(cadence_days)
+        except Exception:
+            return _json_error("cadence_days must be an int", status=400)
+        if cadence_days_i <= 0:
+            return _json_error("cadence_days must be > 0", status=400)
+
+    p = InstallmentPlan.objects.create(
+        school_id=sid,
+        term=str(term)[:24],
+        name=str(name)[:120],
+        installment_count=installment_count_i,
+        first_due_on=due,
+        cadence_days=cadence_days_i,
+    )
+    return _envelope(_plan_to_dict(p), status=201)
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -61,6 +139,7 @@ def billing_runs(request: HttpRequest):
     term = payload.get("term")
     amount = payload.get("amount_per_student")
     description = payload.get("description") or "Tuition Billing Run"
+    installment_plan_id = payload.get("installment_plan_id")
 
     if not term:
         return _json_error("term is required", status=400)
@@ -78,6 +157,7 @@ def billing_runs(request: HttpRequest):
             term=str(term),
             amount_per_student=amt,
             description=str(description),
+            installment_plan_id=(UUID(str(installment_plan_id)) if installment_plan_id else None),
         )
     except ValueError as e:
         return _json_error(str(e), status=400)
