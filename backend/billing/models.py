@@ -1,6 +1,8 @@
 import uuid
 from decimal import Decimal
+from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from households.models import Household, Student
 
@@ -138,3 +140,52 @@ class InstallmentScheduleItem(TimeStampedModel):
 
 	def __str__(self) -> str:
 		return f"InstallmentScheduleItem({self.household_id}, {self.due_on}, {self.amount})"
+
+
+class BillingAuditEvent(TimeStampedModel):
+	ENTITY_INVOICE = "INVOICE"
+	ENTITY_PAYMENT = "PAYMENT"
+
+	school_id = models.UUIDField(db_index=True)
+	entity_type = models.CharField(max_length=24)
+	entity_id = models.UUIDField()
+	action = models.CharField(max_length=64)
+	actor_user = models.ForeignKey(
+		settings.AUTH_USER_MODEL,
+		on_delete=models.PROTECT,
+		null=True,
+		blank=True,
+		related_name="billing_audit_events",
+	)
+
+	timestamp = models.DateTimeField(default=timezone.now)
+	details_json = models.JSONField(default=dict, blank=True)
+
+	class Meta:
+		indexes = [
+			models.Index(fields=["school_id", "entity_type", "entity_id"]),
+			models.Index(fields=["school_id", "timestamp"]),
+			models.Index(fields=["school_id", "action"]),
+		]
+
+	def __str__(self) -> str:
+		return f"{self.timestamp} — {self.entity_type}:{self.entity_id} — {self.action}"
+
+	@staticmethod
+	def log(
+		school_id,
+		entity_type: str,
+		entity_id,
+		action: str,
+		actor_user=None,
+		details: dict | None = None,
+	):
+		return BillingAuditEvent.objects.create(
+			school_id=school_id,
+			entity_type=entity_type,
+			entity_id=entity_id,
+			action=action,
+			actor_user=actor_user,
+			timestamp=timezone.now(),
+			details_json=details or {},
+		)

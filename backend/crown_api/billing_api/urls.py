@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import OpenInvoicesView, PaymentsApplyView, PaymentsCreateView
+from .views import OpenInvoicesView, PaymentsApplyView, PaymentsCreateView, PaymentsRecordView
 
 urlpatterns = [
     path(
@@ -9,6 +9,7 @@ urlpatterns = [
         name="billing-open-invoices",
     ),
     path("billing/payments/", PaymentsCreateView.as_view(), name="billing-payments-create"),
+    path("billing/payments/record/", PaymentsRecordView.as_view(), name="billing-payments-record"),
     path(
         "billing/payments/<uuid:payment_id>/apply/",
         PaymentsApplyView.as_view(),
