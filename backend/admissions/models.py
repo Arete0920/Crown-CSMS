@@ -36,6 +36,22 @@ class AdmissionsApplication(TimeStampedModel):
     family = models.ForeignKey(Family, on_delete=models.PROTECT, related_name='admissions_applications')
     student = models.ForeignKey(Student, on_delete=models.PROTECT, null=True, blank=True, related_name='admissions_applications')
 
+    # Linkage to the read-only spine models (Households/Students modules)
+    household = models.ForeignKey(
+        'crown_api.Household',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='applications',
+    )
+    sis_student = models.ForeignKey(
+        'crown_api.Student',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='applications',
+    )
+
     submitted_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=24, choices=STATUS_CHOICES, default=STATUS_DRAFT)
 
