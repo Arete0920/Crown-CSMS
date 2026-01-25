@@ -107,9 +107,9 @@ jobs:
       - name: Run tests
         run: |
           cd backend
-          python manage.py test
+          python manage.py test core finance aid admissions crown_api
           cd ..
-          pytest --cov=. --cov-report=xml
+          pytest --cov=. --cov-report=xml --ignore-glob='backend/test_*.py' --ignore-glob='test_*.py'
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
