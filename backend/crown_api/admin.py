@@ -12,7 +12,10 @@ from crown_api.models import (
     Person,
     Student,
     StudentProfile,
+    Term,
     UserPersonLink,
+    Section,
+    SectionEnrollment,
 )
 
 
@@ -102,3 +105,24 @@ class InvoiceAdmin(admin.ModelAdmin):
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ("household", "payment_reference", "amount_cents", "payment_date")
     search_fields = ("payment_reference", "household__household_name")
+
+
+@admin.register(Term)
+class TermAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "start_date", "end_date", "active")
+    list_filter = ("active",)
+    search_fields = ("code", "name")
+
+
+@admin.register(Section)
+class SectionAdmin(admin.ModelAdmin):
+    list_display = ("term", "course", "section_code", "teacher", "room")
+    list_filter = ("term", "course")
+    search_fields = ("course__course_code", "term__code", "section_code")
+
+
+@admin.register(SectionEnrollment)
+class SectionEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ("section", "student", "active", "created_at")
+    list_filter = ("active",)
+    search_fields = ("student__person__last_name", "section__course__course_code", "section__term__code")
