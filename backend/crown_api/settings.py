@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'admissions.apps.AdmissionsConfig',
     'households',
     'applications',
+    'ledger',
 ]
 
 MIDDLEWARE = [
