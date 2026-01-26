@@ -23,6 +23,9 @@ $ROOT = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $PY   = Join-Path $ROOT ".venv\Scripts\python.exe"
 $MANAGE = Join-Path $ROOT "backend\manage.py"
 
+# Force repo-root working directory regardless of where user runs from
+Set-Location $ROOT
+
 function Is-LocalApiBase([string]$base) {
   return ($base -match '^http://(127\.0\.0\.1|localhost)(:\d+)?$')
 }
