@@ -77,6 +77,28 @@ def build_director_priority_snapshot(school_id, academic_year):
     if not academic_year:
         return None
     
+    admissions_needs_info_apps = (
+        AdmissionsApplication.objects
+        .filter(
+            school_id=school_id,
+            academic_year=academic_year,
+            status=AdmissionsApplication.STATUS_NEEDS_INFO,
+        )
+        .select_related("family")
+        .order_by("-submitted_at")[:10]
+    )
+
+    admissions_under_review_apps = (
+        AdmissionsApplication.objects
+        .filter(
+            school_id=school_id,
+            academic_year=academic_year,
+            status=AdmissionsApplication.STATUS_UNDER_REVIEW,
+        )
+        .select_related("family")
+        .order_by("-submitted_at")[:10]
+    )
+
     return {
         "aid": {
             "needs_info": list(
@@ -722,30 +744,52 @@ def director_actions(request):
                     {"error": "Missing required field: ids"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            
-            from crown_api.models import StudentAid
-            from crown_api.ledger_helpers import post_award_to_ledger
-            
+
             with transaction.atomic():
                 posted_count = 0
                 errors = []
                 
                 for award_id in ids:
                     try:
-                        award = StudentAid.objects.get(id=award_id)
+                        award = AidAward.objects.get(id=award_id)
                         
                         # Verify this award belongs to the specified school/year
-                        if school_id and str(award.student.school_id) != str(school_id):
+                        if school_id and str(award.school_id) != str(school_id):
                             errors.append({
                                 "award_id": award_id,
                                 "error": "Award does not belong to specified school",
                             })
                             continue
+
+                        if year_id and str(award.academic_year_id) != str(year_id):
+                            errors.append({
+                                "award_id": award_id,
+                                "error": "Award does not belong to specified academic year",
+                            })
+                            continue
+
+                        if award.decision_status != AidAward.DECISION_ACCEPTED:
+                            errors.append({
+                                "award_id": award_id,
+                                "error": "Award is not ACCEPTED",
+                            })
+                            continue
+
+                        was_unposted = award.ledger_entry_id is None
+
+                        actor_user = request.user if getattr(request.user, "is_authenticated", False) else None
                         
-                        # Post the award to ledger
-                        post_award_to_ledger(award)
-                        posted_count += 1
-                    except StudentAid.DoesNotExist:
+                        # Post to ledger (idempotent; will not double-post)
+                        award.mark_accepted_and_post(actor_user=actor_user)
+
+                        if was_unposted and award.ledger_entry_id is not None:
+                            posted_count += 1
+                    except AidAward.DoesNotExist:
+                        errors.append({
+                            "award_id": award_id,
+                            "error": "Award not found",
+                        })
+                    except (TypeError, ValueError):
                         errors.append({
                             "award_id": award_id,
                             "error": "Award not found",
@@ -771,13 +815,13 @@ def director_actions(request):
             # Fetch academic year if provided
             academic_year = None
             if year_id:
-                from crown_api.models import AcademicYear
+                from core.models import AcademicYear
                 try:
                     academic_year = AcademicYear.objects.get(id=year_id)
                 except AcademicYear.DoesNotExist:
                     academic_year = None
             
-            from crown_api.models import AidApplication
+            from aid.models import AidApplication
             
             # Build query
             query = AidApplication.objects.filter(id__in=ids)
@@ -797,7 +841,7 @@ def director_actions(request):
                     continue
                 
                 # Enforce NEEDS_INFO status
-                if app.status != "NEEDS_INFO":
+                if app.status != AidApplication.STATUS_NEEDS_INFO:
                     failures.append({
                         "id": str(app.id),
                         "reason": f"Application is in {app.status} status, not NEEDS_INFO"
