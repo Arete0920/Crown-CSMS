@@ -23,6 +23,7 @@ def log_export(request, export_name: str, status_code: int = 200, school_id: str
             method=getattr(request, "method", "GET"),
             status_code=int(status_code or 0),
             school_id=str(school_id or ""),
+            school_override_id=str(getattr(request, "_crown_school_override_id", "") or ""),
             row_count=row_count,
             ip=_get_client_ip(request),
             user_agent=(request.META.get("HTTP_USER_AGENT", "") or "")[:1000],

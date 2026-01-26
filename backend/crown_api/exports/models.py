@@ -21,6 +21,7 @@ class ExportAuditLog(models.Model):
 
     # optional useful metadata
     school_id = models.CharField(max_length=64, blank=True, default="")
+    school_override_id = models.CharField(max_length=64, blank=True, default="")
     row_count = models.IntegerField(null=True, blank=True)
 
     ip = models.GenericIPAddressField(null=True, blank=True)
