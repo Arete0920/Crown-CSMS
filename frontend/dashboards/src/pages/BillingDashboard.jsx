@@ -187,30 +187,32 @@ export function BillingDashboard() {
     return detail ? `Payment failed (${status}): ${detail}` : `Payment failed (${status}).`;
   }
 
-  function resolveSingleSelectedInvoice(openItemsList, allocsMap) {
+  function resolveSelectedOpenItems(openItemsList, allocsMap) {
     const selectedChargeIds = Object.keys(allocsMap || {});
     if (selectedChargeIds.length === 0) {
-      return { invoiceId: null, selectedChargeId: null, error: "Select exactly one open item to apply this payment to." };
-    }
-    if (selectedChargeIds.length > 1) {
       return {
-        invoiceId: null,
-        selectedChargeId: null,
-        error:
-          "This MVP records one payment per invoice. Select exactly one open item (one invoice) and try again.",
+        selectedChargeIds: [],
+        singleInvoiceId: null,
+        singleChargeId: null,
+        error: "Select at least one open item to apply this payment to.",
       };
     }
 
-    const selectedChargeId = selectedChargeIds[0];
-    const match = (openItemsList || []).find((it) => it.ledger_charge_id === selectedChargeId);
-    if (!match || !match.invoice_id) {
-      return {
-        invoiceId: null,
-        selectedChargeId: null,
-        error: "Could not resolve invoice_id for the selected open item. Reload Open Invoices and try again.",
-      };
+    if (selectedChargeIds.length === 1) {
+      const singleChargeId = selectedChargeIds[0];
+      const match = (openItemsList || []).find((it) => it.ledger_charge_id === singleChargeId);
+      if (!match || !match.invoice_id) {
+        return {
+          selectedChargeIds,
+          singleInvoiceId: null,
+          singleChargeId,
+          error: "Could not resolve invoice_id for the selected open item. Reload Open Invoices and try again.",
+        };
+      }
+      return { selectedChargeIds, singleInvoiceId: match.invoice_id, singleChargeId, error: null };
     }
-    return { invoiceId: match.invoice_id, selectedChargeId, error: null };
+
+    return { selectedChargeIds, singleInvoiceId: null, singleChargeId: null, error: null };
   }
 
   async function recordPayment() {
@@ -222,38 +224,72 @@ export function BillingDashboard() {
       return;
     }
 
-    const acct = (accountId || "").trim();
-    if (!acct) {
-      setPayError("account_id is required (UUID).");
-      return;
-    }
-
-    // 0109: backend contract (0108) = one invoice per request.
-    // UI currently supports multi-allocation; for MVP we require selecting exactly one open item.
-    const { invoiceId, selectedChargeId, error } = resolveSingleSelectedInvoice(openItems, allocs);
+    // 0111: /api/billing/payments/record/ supports multi-allocation.
+    // We restore the original workflow: multiple open items can be checked.
+    const { selectedChargeIds, singleInvoiceId, singleChargeId, error } = resolveSelectedOpenItems(openItems, allocs);
     if (error) {
       setPayError(error);
       return;
     }
 
-    const selectedAllocationDollars = (allocs && selectedChargeId ? allocs[selectedChargeId] : "") || "";
-    const amountCents = dollarsToCents(selectedAllocationDollars || paymentAmount);
-    if (!amountCents || amountCents <= 0) {
-      setPayError("Enter a valid amount > 0.");
+    const paymentAmountCents = dollarsToCents(paymentAmount);
+    if (!paymentAmountCents || paymentAmountCents <= 0) {
+      setPayError("Enter a valid payment amount > 0.");
       return;
     }
 
-    const payload = {
-      invoice_id: invoiceId,
-      amount_cents: amountCents,
+    const basePayload = {
+      amount_cents: paymentAmountCents,
       method: (paymentSource || "manual").trim() || "manual",
       reference: (paymentReference || "").trim(),
       received_on: paymentDate || null,
     };
 
-    if (!payload.reference) {
-      setPayError("reference is required.");
-      return;
+    let payload = basePayload;
+    let invoiceIdForOptimistic = null;
+
+    if (selectedChargeIds.length === 1) {
+      // Fallback to 0109 behavior (single invoice): keeps existing response handling and optimistic refresh.
+      const selectedAllocationDollars = (allocs && singleChargeId ? allocs[singleChargeId] : "") || "";
+      const amountCents = dollarsToCents(selectedAllocationDollars || paymentAmount);
+      if (!amountCents || amountCents <= 0) {
+        setPayError("Enter a valid amount > 0.");
+        return;
+      }
+
+      payload = {
+        ...basePayload,
+        invoice_id: singleInvoiceId,
+        amount_cents: amountCents,
+      };
+      invoiceIdForOptimistic = singleInvoiceId;
+    } else {
+      // Multi-allocation: one payment → many ledger charges.
+      const allocations = selectedChargeIds.map((chargeId) => {
+        const dollars = (allocs && allocs[chargeId] != null ? String(allocs[chargeId]) : "").trim();
+        const cents = dollars ? dollarsToCents(dollars) : 0;
+        return { ledger_charge_id: chargeId, amount_cents: Number.isFinite(cents) ? cents : 0 };
+      });
+
+      const sumAllocCents = allocations.reduce((acc, a) => acc + (Number(a.amount_cents) || 0), 0);
+
+      if (sumAllocCents === 0) {
+        // Auto-fill: if user left allocations blank, allocate full payment to the first selected item.
+        allocations[0].amount_cents = paymentAmountCents;
+      } else if (sumAllocCents !== paymentAmountCents) {
+        setPayError(
+          `Allocation total must equal payment amount. Allocated $${(sumAllocCents / 100).toFixed(2)} but payment is $${(
+            paymentAmountCents / 100
+          ).toFixed(2)}.`
+        );
+        return;
+      }
+
+      payload = {
+        ...basePayload,
+        household_id: householdIdUuid,
+        allocations,
+      };
     }
 
     setPayBusy(true);
@@ -290,18 +326,20 @@ export function BillingDashboard() {
       const paymentId = data.payment_id;
       setPayOk(paymentId ? `Payment recorded: ${paymentId}` : "Payment recorded.");
 
-      // Optimistic refresh: update the selected row balance immediately, then re-fetch.
-      const appliedCents = Number(data.applied_amount_cents || 0);
-      if (Number.isFinite(appliedCents) && appliedCents > 0) {
-        setOpenItems((prev) =>
-          (prev || []).map((it) => {
-            if (it.invoice_id !== invoiceId) return it;
-            const bal = Number(it.balance);
-            if (!Number.isFinite(bal)) return it;
-            const nextBalance = Math.max(0, bal - appliedCents / 100);
-            return { ...it, balance: String(nextBalance.toFixed(2)) };
-          })
-        );
+      // Optimistic refresh (single-invoice flow only): update the selected row balance immediately, then re-fetch.
+      if (invoiceIdForOptimistic) {
+        const appliedCents = Number(data.applied_amount_cents || 0);
+        if (Number.isFinite(appliedCents) && appliedCents > 0) {
+          setOpenItems((prev) =>
+            (prev || []).map((it) => {
+              if (it.invoice_id !== invoiceIdForOptimistic) return it;
+              const bal = Number(it.balance);
+              if (!Number.isFinite(bal)) return it;
+              const nextBalance = Math.max(0, bal - appliedCents / 100);
+              return { ...it, balance: String(nextBalance.toFixed(2)) };
+            })
+          );
+        }
       }
 
       await loadOpenInvoices();
