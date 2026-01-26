@@ -41,6 +41,7 @@ def test_post_director_actions():
     client = Client()
     
     user = None
+    nonstaff_user = None
     school = None
     year = None
     family = None
@@ -127,8 +128,39 @@ def test_post_director_actions():
         if award.ledger_entry_id is not None:
             raise AssertionError("Unauthenticated request posted an award (ledger_entry_id is set)")
 
-        # Test 2: POST with authentication (success case)
-        print("\n--- Test 2: POST with valid authentication ---")
+        # Test 2: POST with authenticated non-staff (must be forbidden)
+        print("\n--- Test 2: POST with authenticated non-staff ---")
+
+        nonstaff_username = f"testuser_{uuid4().hex[:8]}"
+        nonstaff_user = User.objects.create_user(
+            username=nonstaff_username,
+            email=f"{nonstaff_username}@test.com",
+            password="password123",
+        )
+
+        client.force_login(nonstaff_user)
+        response = client.post(
+            '/api/director/actions/',
+            data=json.dumps({
+                'action': 'POST_ACCEPTED_AWARDS',
+                'school_id': school_id,
+                'year_id': year_id,
+                'ids': [award_id]
+            }),
+            content_type='application/json'
+        )
+        print(f"Status: {response.status_code}")
+        print(f"Response: {response.json()}")
+
+        if response.status_code != 403:
+            raise AssertionError(f"Expected 403 for authenticated non-staff request, got {response.status_code}")
+
+        award.refresh_from_db()
+        if award.ledger_entry_id is not None:
+            raise AssertionError("Non-staff request posted an award (ledger_entry_id is set)")
+
+        # Test 3: POST with staff authentication (success case)
+        print("\n--- Test 3: POST with staff authentication ---")
 
         client.force_login(user)
         response = client.post(
@@ -147,8 +179,8 @@ def test_post_director_actions():
         if response.status_code != 200:
             raise AssertionError(f"Expected 200 for authenticated staff request, got {response.status_code}")
 
-        # Test 3: POST with missing action
-        print("\n--- Test 3: POST with missing action ---")
+        # Test 4: POST with missing action
+        print("\n--- Test 4: POST with missing action ---")
         response = client.post(
             '/api/director/actions/',
             data=json.dumps({
@@ -161,8 +193,8 @@ def test_post_director_actions():
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
 
-        # Test 4: POST with unknown action
-        print("\n--- Test 4: POST with unknown action ---")
+        # Test 5: POST with unknown action
+        print("\n--- Test 5: POST with unknown action ---")
         response = client.post(
             '/api/director/actions/',
             data=json.dumps({
@@ -176,8 +208,8 @@ def test_post_director_actions():
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
 
-        # Test 5: POST with missing ids
-        print("\n--- Test 5: POST with missing ids ---")
+        # Test 6: POST with missing ids
+        print("\n--- Test 6: POST with missing ids ---")
         response = client.post(
             '/api/director/actions/',
             data=json.dumps({
@@ -190,8 +222,8 @@ def test_post_director_actions():
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
 
-        # Test 6: POST with non-existent award id
-        print("\n--- Test 6: POST with non-existent award id ---")
+        # Test 7: POST with non-existent award id
+        print("\n--- Test 7: POST with non-existent award id ---")
         fake_id = 999999999
         response = client.post(
             '/api/director/actions/',
@@ -266,6 +298,12 @@ def test_post_director_actions():
         if user is not None:
             try:
                 user.delete()
+            except (ProtectedError, OperationalError, ProgrammingError):
+                pass
+
+        if nonstaff_user is not None:
+            try:
+                nonstaff_user.delete()
             except (ProtectedError, OperationalError, ProgrammingError):
                 pass
 
