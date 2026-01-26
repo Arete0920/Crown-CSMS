@@ -14,9 +14,9 @@ urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
+    path("api/", include("crown_api.billing_api.urls")),
     path("api/", include("crown_api.api_urls")),
     path("api/", include("crown_api.exports.urls")),
-    path("api/", include("crown_api.billing_api.urls")),
     path("api/v1/", include("households.urls")),
     path("api/v1/", include("crown_api.api_urls")),
     
