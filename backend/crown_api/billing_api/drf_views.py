@@ -15,11 +15,11 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from households.scoping import get_request_school_id
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class BillingRunCreateApiView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
-    @method_decorator(csrf_exempt)
     @transaction.atomic
     def post(self, request):
         """JWT-authenticated creation of a billing run that yields an invoice.
