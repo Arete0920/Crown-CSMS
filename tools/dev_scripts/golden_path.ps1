@@ -127,9 +127,6 @@ if ((Is-LocalApiBase $ApiBase) -and (-not $SkipSeed)) {
   if (-not $seed.school_id)    { throw "Missing env var GP_SCHOOL_ID" }
   if (-not $seed.year_id)      { throw "Missing env var GP_YEAR_ID" }
   if (-not $seed.aid_award_id) { throw "Missing env var GP_AID_AWARD_ID" }
-  if (-not $seed.invoice_id)   { throw "Missing env var GP_INVOICE_ID" }
-
-  $seed | ConvertTo-Json -Depth 6
 }
 
 $headers = @{
@@ -137,6 +134,23 @@ $headers = @{
   "Content-Type"      = "application/json"
   "X-Crown-School-Id" = $seed.school_id
 }
+
+if ((-not (Is-LocalApiBase $ApiBase)) -and (-not $seed.invoice_id)) {
+  Write-Host "Creating invoice via JWT billing runs API..."
+  $runBody = @{
+    term               = "2026-2027"
+    amount_per_student = "250.00"
+    description        = "Golden Path API run"
+  } | ConvertTo-Json
+
+  $run = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/billing/runs/api/" -Headers $headers -Body $runBody -TimeoutSec 90
+  $InvoiceId = $run.data.invoice_id
+  if (-not $InvoiceId) { throw "No invoice_id returned from /api/billing/runs/api/" }
+  $seed.invoice_id = $InvoiceId
+  $env:GP_INVOICE_ID = $InvoiceId
+}
+
+$seed | ConvertTo-Json -Depth 6
 
 # ------------------------------------------------------------
 # E) Director Actions - POST_ACCEPTED_AWARDS (receipt)
@@ -179,6 +193,7 @@ if ($seed.aid_application_id) {
 # ------------------------------------------------------------
 Write-Host ""
 Write-Host "=== G) Billing: record payment (receipt) ==="
+if (-not $seed.invoice_id) { throw "Missing invoice_id (expected to be created via /api/billing/runs/api/)" }
 $paymentRef = "GP-PAY-" + (Get-Date).ToString("yyyyMMdd-HHmmss")
 $pay = @{
   invoice_id   = $seed.invoice_id

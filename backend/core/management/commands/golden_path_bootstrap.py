@@ -40,12 +40,15 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
+        self.stdout.write("=== GOLDEN_PATH_BOOTSTRAP_BEGIN ===")
+
         from aid.models import AidApplication, AidAward
         from billing.models import BillingRun, Invoice
         from core.models import AcademicYear, Family, School, Student
         from finance.models import ChartAccount
         from households.models import Household
         from ledger.models import Charge, LedgerAccount
+        from django.contrib.auth import get_user_model
 
         school = School.objects.order_by("created_at", "id").first()
         if not school:
@@ -54,6 +57,20 @@ class Command(BaseCommand):
                 timezone="America/New_York",
                 is_active=True,
             )
+
+        User = get_user_model()
+        admin, _ = User.objects.get_or_create(
+            username="admin",
+            defaults={"email": "admin@local.test", "school": school},
+        )
+        if not admin.school:
+            admin.school = school
+        admin.is_active = True
+        admin.is_staff = True
+        admin.is_superuser = True
+        admin.set_password("Crown2026!")
+        admin.save()
+        self.stdout.write("BOOTSTRAP_OK admin=admin active=1 staff=1 superuser=1")
 
         academic_year = (
             AcademicYear.objects.filter(school=school)
@@ -161,3 +178,5 @@ class Command(BaseCommand):
         self.stdout.write(f'$env:GP_AID_AWARD_ID="{payload["aid_award_id"]}"')
         self.stdout.write(f'$env:GP_INVOICE_ID="{payload["invoice_id"]}"')
         self.stdout.write(f'$env:GP_AID_APP_ID="{payload["aid_application_id"]}"')
+
+        self.stdout.write("=== GOLDEN_PATH_BOOTSTRAP_END ===")

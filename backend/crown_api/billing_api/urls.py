@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import OpenInvoicesView, PaymentsApplyView, PaymentsCreateView, PaymentsRecordView
+from .drf_views import BillingRunCreateApiView
 
 urlpatterns = [
     path(
@@ -15,4 +16,5 @@ urlpatterns = [
         PaymentsApplyView.as_view(),
         name="billing-payments-apply",
     ),
+    path("billing/runs/api/", BillingRunCreateApiView.as_view(), name="billing-runs-api-create"),
 ]
