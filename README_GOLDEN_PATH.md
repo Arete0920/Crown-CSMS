@@ -107,3 +107,22 @@ $env:GP_AID_APP_ID   = "..."   # optional
 If you don’t have Azure IDs yet:
 
 The correct next move is: add a server-side seed command (on Azure) that prints those IDs once. If you want, tell me “seed command,” and I’ll add the exact Django management command file and where to hook it.
+
+## Azure notes (important)
+
+### Bootstrap before each Azure smoke
+On Azure, the smoke run **changes state** (e.g., invoices get paid and awards get posted).  
+So for repeatable receipts, run the bootstrap command first to print **fresh GP_* IDs**:
+
+```bash
+python backend/manage.py migrate --noinput
+python backend/manage.py golden_path_bootstrap
+```
+
+Then paste the printed $env:GP_* lines into your local PowerShell session and run:
+
+```powershell
+.\tools\dev_scripts\golden_path.ps1 -ApiBase "https://<your-app>.azurewebsites.net" -SkipSeed
+```
+
+If your Azure run fails, the only thing I need is the **exact console output/traceback** from `golden_path_bootstrap` (first error line is usually enough to pinpoint schema/permissions/env).
