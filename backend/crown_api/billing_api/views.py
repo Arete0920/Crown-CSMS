@@ -395,20 +395,25 @@ class PaymentsRecordView(APIView):
                     }
                 )
 
+            audit_details = {
+                "household_id": str(household_id),
+                "amount_cents": int(amount_cents_int),
+                "method": method,
+                "reference": reference,
+                "received_on": received_on.isoformat(),
+                "allocations": created_allocs,
+            }
+            school_override_id = getattr(request, "_crown_school_override_id", None)
+            if school_override_id:
+                audit_details["school_override_id"] = str(school_override_id)
+
             BillingAuditEvent.log(
                 school_id=school_id,
                 entity_type=BillingAuditEvent.ENTITY_PAYMENT,
                 entity_id=p.id,
                 action="PAYMENT_RECORDED",
                 actor_user=getattr(request, "user", None),
-                details={
-                    "household_id": str(household_id),
-                    "amount_cents": int(amount_cents_int),
-                    "method": method,
-                    "reference": reference,
-                    "received_on": received_on.isoformat(),
-                    "allocations": created_allocs,
-                },
+                details=audit_details,
             )
 
             return Response(
@@ -474,21 +479,26 @@ class PaymentsRecordView(APIView):
         )
 
         # Best-effort audit event (still in transaction so it rolls back on failure).
+        audit_details = {
+            "payment_id": str(p.id),
+            "charge_id": str(ch.id),
+            "amount_cents": _amount_to_cents(apply_amount),
+            "requested_amount_cents": int(amount_cents_int),
+            "method": method,
+            "reference": reference,
+            "received_on": received_on.isoformat(),
+        }
+        school_override_id = getattr(request, "_crown_school_override_id", None)
+        if school_override_id:
+            audit_details["school_override_id"] = str(school_override_id)
+
         BillingAuditEvent.log(
             school_id=school_id,
             entity_type=BillingAuditEvent.ENTITY_INVOICE,
             entity_id=inv.id,
             action="PAYMENT_RECORDED",
             actor_user=getattr(request, "user", None),
-            details={
-                "payment_id": str(p.id),
-                "charge_id": str(ch.id),
-                "amount_cents": _amount_to_cents(apply_amount),
-                "requested_amount_cents": int(amount_cents_int),
-                "method": method,
-                "reference": reference,
-                "received_on": received_on.isoformat(),
-            },
+            details=audit_details,
         )
 
         paid_total = paid_existing + apply_amount
