@@ -720,6 +720,20 @@ def director_actions(request):
         "ids": ["award_id1", "award_id2", ...]
     }
     """
+    # Security: director actions must never be callable anonymously.
+    # Even if CROWN_DEV_OPEN_API is enabled, require an authenticated staff user.
+    if not getattr(request.user, "is_authenticated", False):
+        return Response(
+            {"error": "Authentication required"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    if not getattr(request.user, "is_staff", False) and not getattr(request.user, "is_superuser", False):
+        return Response(
+            {"error": "Forbidden. Staff access required."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     if not crown_director_allowed(request):
         return Response(
             {"error": "Unauthorized. Director access required."},

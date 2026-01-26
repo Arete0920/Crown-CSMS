@@ -119,6 +119,14 @@ def test_post_director_actions():
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
 
+        if response.status_code != 401:
+            raise AssertionError(f"Expected 401 for unauthenticated request, got {response.status_code}")
+
+        # Ensure nothing was posted
+        award.refresh_from_db()
+        if award.ledger_entry_id is not None:
+            raise AssertionError("Unauthenticated request posted an award (ledger_entry_id is set)")
+
         # Test 2: POST with authentication (success case)
         print("\n--- Test 2: POST with valid authentication ---")
 
@@ -135,6 +143,9 @@ def test_post_director_actions():
         )
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
+
+        if response.status_code != 200:
+            raise AssertionError(f"Expected 200 for authenticated staff request, got {response.status_code}")
 
         # Test 3: POST with missing action
         print("\n--- Test 3: POST with missing action ---")
