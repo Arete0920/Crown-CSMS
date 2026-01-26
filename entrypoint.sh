@@ -3,12 +3,17 @@ set -euo pipefail
 
 cd /app/backend
 
+echo "ENTRYPOINT_SEES: RUN_MIGRATE=${RUN_MIGRATE:-<unset>}"
+echo "ENTRYPOINT_SEES: RUN_DEV_BOOTSTRAP=${RUN_DEV_BOOTSTRAP:-<unset>}"
+echo "ENTRYPOINT_SEES: RUN_GOLDEN_PATH_BOOTSTRAP=${RUN_GOLDEN_PATH_BOOTSTRAP:-<unset>}"
+echo "ENTRYPOINT_SEES: PORT=${PORT:-<unset>} WEBSITES_PORT=${WEBSITES_PORT:-<unset>}"
+
 # Optional, idempotent startup tasks (safe for dev/CI).
-if [[ "${RUN_MIGRATE:-1}" == "1" ]]; then
+if [[ "${RUN_MIGRATE:-0}" == "1" ]]; then
   python manage.py migrate --noinput
 fi
 
-if [[ "${RUN_DEV_BOOTSTRAP:-1}" == "1" ]]; then
+if [[ "${RUN_DEV_BOOTSTRAP:-0}" == "1" ]]; then
   python manage.py dev_bootstrap
 fi
 
