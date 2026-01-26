@@ -6,6 +6,27 @@
  */
 
 const TOKEN_KEY = "crown.jwt.access";
+const SCHOOL_KEY = "crown.school.id";
+
+export function getSelectedSchoolId() {
+  try {
+    return sessionStorage.getItem(SCHOOL_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+export function setSelectedSchoolId(schoolId) {
+  try {
+    const v = (schoolId || "").trim();
+    if (v) sessionStorage.setItem(SCHOOL_KEY, v);
+    else sessionStorage.removeItem(SCHOOL_KEY);
+  } catch {}
+}
+
+export function clearSelectedSchoolId() {
+  setSelectedSchoolId("");
+}
 
 export function getAccessToken() {
   try {
@@ -33,6 +54,12 @@ export async function authenticatedFetch(input, init = {}) {
   // Add bearer token if available
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  // Optional tenant override for staff/superusers only (backend enforces).
+  const schoolId = getSelectedSchoolId();
+  if (schoolId && !headers.has("X-Crown-School-Id")) {
+    headers.set("X-Crown-School-Id", schoolId);
   }
 
   // Keep cookies working for session-auth paths

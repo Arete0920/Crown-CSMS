@@ -1,5 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { jwtLogin, clearAccessToken, getAccessToken } from "../utils/authClient";
+import {
+  jwtLogin,
+  clearAccessToken,
+  getAccessToken,
+  getSelectedSchoolId,
+  setSelectedSchoolId,
+} from "../utils/authClient";
 
 /**
  * DevJwtPanel
@@ -16,6 +22,7 @@ export default function DevJwtPanel() {
 
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
+  const [schoolId, setSchoolId] = useState(() => getSelectedSchoolId());
   const [status, setStatus] = useState(() => (getAccessToken() ? "token loaded" : "no token"));
   const [err, setErr] = useState("");
 
@@ -36,6 +43,11 @@ export default function DevJwtPanel() {
     clearAccessToken();
     setStatus("token cleared");
     setErr("");
+  };
+
+  const onSchoolChange = (v) => {
+    setSchoolId(v);
+    setSelectedSchoolId(v);
   };
 
   return (
@@ -75,6 +87,22 @@ export default function DevJwtPanel() {
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        style={{
+          width: "100%",
+          padding: 8,
+          borderRadius: 8,
+          border: "1px solid rgba(255,255,255,.15)",
+          marginBottom: 10,
+        }}
+      />
+
+      <label style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+        School ID (optional)
+      </label>
+      <input
+        value={schoolId}
+        onChange={(e) => onSchoolChange(e.target.value)}
+        placeholder="UUID (X-Crown-School-Id)"
         style={{
           width: "100%",
           padding: 8,

@@ -1,10 +1,14 @@
-import { getAccessToken } from "./authClient.js";
+import { getAccessToken, getSelectedSchoolId } from "./authClient.js";
 
 export async function downloadCsv(url, { filename = 'export.csv' } = {}) {
   const token = getAccessToken();
+  const schoolId = getSelectedSchoolId();
   const headers = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  }
+  if (schoolId) {
+    headers["X-Crown-School-Id"] = schoolId;
   }
 
   const resp = await fetch(url, {
