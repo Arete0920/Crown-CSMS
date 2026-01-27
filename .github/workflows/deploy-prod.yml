@@ -65,6 +65,11 @@ jobs:
           fi
           echo "✓ AcrPull verified"
 
+      - name: Bake BUILD_SHA into artifact
+        run: |
+          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA_SHORT }}\"" > backend/crown_api/build_info.py
+          echo "✓ Generated build_info.py with SHA: ${{ env.DEPLOY_SHA_SHORT }}"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -131,15 +136,6 @@ jobs:
         with:
           files: ./coverage.xml
           flags: unittests
-
-      - name: Set BUILD_SHA (runtime deploy proof)
-        run: |
-          az webapp config appsettings set \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.WEBAPP_NAME }} \
-            --settings BUILD_SHA=${{ env.DEPLOY_SHA_SHORT }} \
-            --output none \
-            --only-show-errors
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
