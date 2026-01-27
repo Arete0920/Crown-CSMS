@@ -87,16 +87,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set BUILD_SHA app setting (before deployment)
-        run: |
-          az webapp config appsettings set \
-            --resource-group crown-rg \
-            --name crown-api-dev \
-            --settings BUILD_SHA=${{ needs.build.outputs.deploy_sha_short }} \
-            --output none
-          echo "Waiting 30s for app setting to stabilize..."
-          sleep 30
-
       - name: Show repo root files (proof of structure)
         run: |
           pwd
@@ -122,7 +112,15 @@ jobs:
           echo "Verifying ${url} reports build_sha=${expected}"
           echo "Waiting 60s for Azure app to fully restart with new code..."
           sleep 60
+Set BUILD_SHA app setting (after successful deployment)
+        run: |
+          az webapp config appsettings set \
+            --resource-group crown-rg \
+            --name crown-api-dev \
+            --settings BUILD_SHA=${{ needs.build.outputs.deploy_sha_short }} \
+            --output none
 
+      - name: 
           export EXPECTED="${expected}"
 
           for i in {1..20}; do
