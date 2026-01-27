@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import permissions, viewsets
 from .models import Guardian, Household, Student
 from .scoping import scope_to_school
@@ -25,13 +26,14 @@ class HouseholdViewSet(ScopedReadOnlyModelViewSet):
 		# Apply school scoping
 		qs = scope_to_school(self.request, qs)
 		
-		# Apply guardian scoping for non-staff
-		user = self.request.user
-		if not getattr(user, "is_staff", False):
-			email = getattr(user, "email", None)
-			if not email:
-				return qs.none()
-			qs = qs.filter(guardians__email__iexact=email).distinct()
+		# Apply guardian scoping if enabled (opt-in)
+		if getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", False):
+			user = self.request.user
+			if not getattr(user, "is_staff", False):
+				email = getattr(user, "email", None)
+				if not email:
+					return qs.none()
+				qs = qs.filter(guardians__email__iexact=email).distinct()
 		
 		return qs
 
@@ -51,13 +53,14 @@ class StudentViewSet(ScopedReadOnlyModelViewSet):
 		# Apply school scoping
 		qs = scope_to_school(self.request, qs)
 		
-		# Apply guardian scoping for non-staff
-		user = self.request.user
-		if not getattr(user, "is_staff", False):
-			email = getattr(user, "email", None)
-			if not email:
-				return qs.none()
-			# Students must be in households where guardian email matches
-			qs = qs.filter(household__guardians__email__iexact=email).distinct()
+		# Apply guardian scoping if enabled (opt-in)
+		if getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", False):
+			user = self.request.user
+			if not getattr(user, "is_staff", False):
+				email = getattr(user, "email", None)
+				if not email:
+					return qs.none()
+				# Students must be in households where guardian email matches
+				qs = qs.filter(household__guardians__email__iexact=email).distinct()
 		
 		return qs

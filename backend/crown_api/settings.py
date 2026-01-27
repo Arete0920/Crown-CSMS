@@ -190,6 +190,10 @@ REST_FRAMEWORK = {
 }
 
 
+# Households app configuration
+HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED = True
+
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
