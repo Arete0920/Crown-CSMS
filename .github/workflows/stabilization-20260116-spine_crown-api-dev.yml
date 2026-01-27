@@ -87,15 +87,6 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Set BUILD_SHA (runtime deploy proof)
-        run: |
-          az webapp config appsettings set \
-            --resource-group crown-rg \
-            --name crown-api-dev \
-            --settings BUILD_SHA=${{ needs.build.outputs.deploy_sha_short }} \
-            --output none \
-            --only-show-errors
-
       - name: Show repo root files (proof of structure)
         run: |
           pwd
