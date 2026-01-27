@@ -1,0 +1,78 @@
+name: CI - Tests and Checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Check for missing migrations
+        run: |
+          source venv/bin/activate
+          python manage.py makemigrations --check --dry-run --no-input
+        continue-on-error: false
+
+      - name: Run Django test suite
+        run: |
+          source venv/bin/activate
+          python manage.py test \
+            crown_api.tests.test_households_api \
+            crown_api.tests.test_students_api \
+            crown_api.tests.test_director_router \
+            crown_api.tests.test_admissions_links_api \
+            crown_api.tests.test_academics_api \
+            crown_api.tests.test_billing_summary_api \
+            crown_api.tests.test_comms_api \
+            crown_api.tests.test_scheduling_api \
+            -v 2
+        continue-on-error: false
+
+      - name: Test health endpoint locally
+        run: |
+          source venv/bin/activate
+          python manage.py runserver 8000 &
+          SERVER_PID=$!
+          sleep 5
+          
+          # Test health endpoint
+          response=$(curl -f http://localhost:8000/api/health/ || echo "FAILED")
+          
+          # Kill server
+          kill $SERVER_PID || true
+          
+          # Check response
+          if [[ "$response" == "FAILED" ]]; then
+            echo "❌ Health endpoint failed"
+            exit 1
+          fi
+          
+          echo "✅ Health endpoint responding: $response"
+        continue-on-error: false
+
+      - name: Fail fast summary
+        if: failure()
+        run: |
+          echo "❌ CI failed - check logs above"
+          echo "Possible causes:"
+          echo "  - Missing migrations (run: python manage.py makemigrations)"
+          echo "  - Test failures (run: python manage.py test)"
+          echo "  - Health endpoint broken (check crown_api/health_views.py)"
+          exit 1
