@@ -125,10 +125,10 @@ jobs:
           for i in {1..30}; do
             echo "Attempt ${i}/30"
             if response="$(curl -fsS "${url}" 2>/dev/null)"; then
-              build_sha="$(echo "${response}" | jq -r '.data.build_sha // empty' 2>/dev/null || true)"
+              build_sha="$(echo "${response}" | jq -r '.build_sha // empty' 2>/dev/null || true)"
 
               if [ -z "${build_sha}" ]; then
-                echo "Missing data.build_sha (or invalid JSON)"
+                echo "Missing build_sha (or invalid JSON)"
                 echo "${response}"
                 exit 1
               fi
