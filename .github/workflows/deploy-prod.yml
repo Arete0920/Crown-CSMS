@@ -52,6 +52,19 @@ jobs:
         run: |
           az acr login --name crownregistry --only-show-errors
 
+      - name: Verify AcrPull Identity (Guardrail)
+        run: |
+          echo "Verifying Managed Identity has AcrPull on registry..."
+          PRINCIPAL_ID=$(az webapp identity show -g crown-rg -n crown2026-api-dev --query principalId -o tsv)
+          ACR_ID=$(az acr show -n crownregistry --query id -o tsv)
+          if ! az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID | grep -q AcrPull; then
+            echo "ERROR: Managed Identity does not have AcrPull role on ACR"
+            echo "Principal: $PRINCIPAL_ID"
+            echo "ACR: $ACR_ID"
+            exit 1
+          fi
+          echo "✓ AcrPull verified"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
