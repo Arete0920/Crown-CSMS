@@ -15,6 +15,10 @@ urlpatterns = [
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     
+    # Authentication URLs (must come BEFORE api/ includes)
+    path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    
     # Canonical API
     path("api/v1/", include("crown_api.api_v1_urls")),
     
@@ -30,11 +34,6 @@ urlpatterns = [
     path("director/admissions/", director_dashboard_page, {'persona': 'admissions'}, name="director_admissions"),
     path("director/finance/", director_dashboard_page, {'persona': 'finance'}, name="director_finance"),
     path("director/registrar/", director_dashboard_page, {'persona': 'registrar'}, name="director_registrar"),
-]
-
-urlpatterns += [
-    path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]
 
 # Admin URLs added after app initialization
