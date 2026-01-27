@@ -53,11 +53,22 @@ DEBUG = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _en
     "DEBUG", default=False
 )
 
+# ALLOWED_HOSTS configuration
+_django_env = os.getenv("DJANGO_ENV", "").lower()
 _allowed_hosts = _env_list("ALLOWED_HOSTS") or _env_list("DJANGO_ALLOWED_HOSTS")
-if not _allowed_hosts and _is_azure:
+
+# DEV: Allow all hosts to avoid Azure health probe crashes (169.254.x.x IPs)
+if _django_env in ("dev", "development"):
+    _allowed_hosts = ["*"]
+elif not _allowed_hosts and _is_azure:
+    # PROD/other: infer from WEBSITE_HOSTNAME
     hostname = os.getenv("WEBSITE_HOSTNAME")
     if hostname:
         _allowed_hosts = [hostname]
+
+# Always allow localhost for local development
+if _allowed_hosts != ["*"] and "localhost" not in _allowed_hosts:
+    _allowed_hosts = (_allowed_hosts or []) + ["localhost", "127.0.0.1"]
 
 ALLOWED_HOSTS = _allowed_hosts
 
