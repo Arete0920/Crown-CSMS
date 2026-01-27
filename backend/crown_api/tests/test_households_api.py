@@ -2,16 +2,14 @@ from django.db import IntegrityError
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
-from households.models import Guardian, Household, Student
-from crown_api.models import UserPersonLink
+from core.models import UserAccount
+from crown_api.models import Household, HouseholdMember, Person, Student, UserPersonLink
+from crown_api.models_households import ROLE_GUARDIAN, ROLE_PRIMARY_GUARDIAN
 
 
 class HouseholdsApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
-
-        self.school = School.objects.create(name="Test School")
 
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
@@ -19,123 +17,120 @@ class HouseholdsApiTests(TestCase):
             password="testpass",
             is_staff=True,
         )
-        self.staff_user.school = self.school
-        self.staff_user.save()
-        
         self.nonstaff_user = UserAccount.objects.create_user(
             username="normaluser",
             email="normal@example.com",
             password="testpass",
             is_staff=False,
         )
-        self.nonstaff_user.school = self.school
-        self.nonstaff_user.save()
 
-        self.household = Household.objects.create(name="The Test Family", school_id=self.school.id)
-        self.other_household = Household.objects.create(name="Other Family", school_id=self.school.id)
-        
-        self.guardian1 = Guardian.objects.create(
-            school_id=self.school.id,
+        self.household = Household.objects.create(household_name="The Test Family")
+        self.other_household = Household.objects.create(household_name="Other Family")
+        self.guardian1 = Person.objects.create(
+            first_name="G1", last_name="Test", email="g1@example.com"
+        )
+        self.guardian2 = Person.objects.create(
+            first_name="G2", last_name="Test", email="g2@example.com"
+        )
+
+        HouseholdMember.objects.create(
             household=self.household,
-            first_name="G1",
-            last_name="Test",
-            email="g1@example.com",
+            person=self.guardian1,
+            role=ROLE_PRIMARY_GUARDIAN,
             is_primary=True,
         )
-        self.guardian2 = Guardian.objects.create(
-            school_id=self.school.id,
+        HouseholdMember.objects.create(
             household=self.household,
-            first_name="G2",
-            last_name="Test",
-            email="g2@example.com",
+            person=self.guardian2,
+            role=ROLE_GUARDIAN,
             is_primary=False,
         )
 
-        self.student = Student.objects.create(
-            school_id=self.school.id,
+        student_person = Person.objects.create(
+            first_name="S1", last_name="Test", email="s1@student.example.com"
+        )
+        Student.objects.create(
+            person=student_person,
             household=self.household,
-            first_name="S1",
-            last_name="Test",
             grade_level="3",
-            is_active=True,
+            active=True,
         )
 
     def test_model_creation(self):
         self.assertEqual(Household.objects.count(), 2)
-        self.assertEqual(Guardian.objects.count(), 2)
+        self.assertEqual(Person.objects.count(), 3)
+        self.assertEqual(HouseholdMember.objects.count(), 2)
         self.assertEqual(Student.objects.count(), 1)
 
     def test_primary_guardian_uniqueness(self):
         """At most one primary guardian per household."""
-        # Create second primary guardian - should succeed (no DB constraint in spine model)
-        Guardian.objects.create(
-            school_id=self.school.id,
-            household=self.household,
-            first_name="G3",
-            last_name="Test",
-            email="g3@example.com",
-            is_primary=True,
-        )
-        # Spine version allows multiple is_primary=True (business logic can enforce if needed)
-        self.assertEqual(Guardian.objects.filter(household=self.household, is_primary=True).count(), 2)
+        with self.assertRaises(IntegrityError):
+            HouseholdMember.objects.create(
+                household=self.household,
+                person=self.guardian2,
+                role=ROLE_GUARDIAN,
+                is_primary=True,
+            )
 
     def test_list_households_staff_200(self):
         self.client.force_authenticate(user=self.staff_user)
-        resp = self.client.get("/api/households/", HTTP_X_CROWN_SCHOOL_ID=str(self.school.id))
+        resp = self.client.get("/api/households/")
         self.assertEqual(resp.status_code, 200)
         self.assertIsInstance(resp.json(), list)
-        names = {row["name"] for row in resp.json()}
+        names = {row["household_name"] for row in resp.json()}
         self.assertIn("The Test Family", names)
         self.assertIn("Other Family", names)
 
     def test_detail_household_staff_200(self):
         self.client.force_authenticate(user=self.staff_user)
-        resp = self.client.get(f"/api/households/{self.household.id}/", HTTP_X_CROWN_SCHOOL_ID=str(self.school.id))
+        resp = self.client.get(f"/api/households/{self.household.id}/")
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body["id"], str(self.household.id))
-        self.assertIn("guardians", body)
+        self.assertIn("members", body)
         self.assertIn("students", body)
 
     def test_list_households_nonstaff_scoped(self):
-        """Non-staff users see all households in their school (spine version)."""
-        # Create guardian in other_household
-        Guardian.objects.create(
-            school_id=self.school.id,
+        """Non-staff users only see households where their email maps to a Person in membership."""
+        # Map nonstaff_user.email -> Person -> household membership
+        normal_person = Person.objects.create(
+            first_name="Normal", last_name="User", email="normal@example.com"
+        )
+        HouseholdMember.objects.create(
             household=self.other_household,
-            first_name="Normal",
-            last_name="User",
-            email="normal@example.com",
+            person=normal_person,
+            role=ROLE_GUARDIAN,
             is_primary=False,
         )
 
         self.client.force_authenticate(user=self.nonstaff_user)
-        resp = self.client.get("/api/households/", HTTP_X_CROWN_SCHOOL_ID=str(self.school.id))
+        resp = self.client.get("/api/households/")
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertIsInstance(body, list)
-        # Spine: school-only scoping, so non-staff sees BOTH households
-        self.assertEqual({row["id"] for row in body}, {str(self.household.id), str(self.other_household.id)})
+        self.assertEqual({row["id"] for row in body}, {str(self.other_household.id)})
 
     def test_detail_household_nonstaff_out_of_scope_404(self):
-        """Non-staff can access all households in their school (spine version)."""
-        Guardian.objects.create(
-            school_id=self.school.id,
+        """Non-staff must not learn existence of out-of-scope households."""
+        normal_person = Person.objects.create(
+            first_name="Normal", last_name="User", email="normal@example.com"
+        )
+        HouseholdMember.objects.create(
             household=self.other_household,
-            first_name="Normal",
-            last_name="User",
-            email="normal@example.com",
+            person=normal_person,
+            role=ROLE_GUARDIAN,
             is_primary=False,
         )
 
         self.client.force_authenticate(user=self.nonstaff_user)
 
-        # Both households accessible (school-only scoping)
-        ok = self.client.get(f"/api/households/{self.other_household.id}/", HTTP_X_CROWN_SCHOOL_ID=str(self.school.id))
+        # In-scope detail
+        ok = self.client.get(f"/api/households/{self.other_household.id}/")
         self.assertEqual(ok.status_code, 200)
 
-        also_ok = self.client.get(f"/api/households/{self.household.id}/", HTTP_X_CROWN_SCHOOL_ID=str(self.school.id))
-        self.assertEqual(also_ok.status_code, 200)
+        # Out-of-scope detail should be 404 (no existence leak)
+        no = self.client.get(f"/api/households/{self.household.id}/")
+        self.assertEqual(no.status_code, 404)
 
     def test_unknown_email_nonstaff_empty_list_and_404_detail(self):
         unknown = UserAccount.objects.create_user(
@@ -144,21 +139,91 @@ class HouseholdsApiTests(TestCase):
             password="testpass",
             is_staff=False,
         )
-        unknown.school = self.school
-        unknown.save()
-        
         self.client.force_authenticate(user=unknown)
-        # Spine: school-only scoping, so non-staff still sees all households in school
-        resp = self.client.get("/api/households/", HTTP_X_CROWN_SCHOOL_ID=str(self.school.id))
+        resp = self.client.get("/api/households/")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(len(resp.json()), 2)  # Both households visible
+        self.assertEqual(resp.json(), [])
 
-        resp2 = self.client.get(f"/api/households/{self.household.id}/", HTTP_X_CROWN_SCHOOL_ID=str(self.school.id))
-        self.assertEqual(resp2.status_code, 200)  # Now 200, not 404
+        resp2 = self.client.get(f"/api/households/{self.household.id}/")
+        self.assertEqual(resp2.status_code, 404)
 
     def test_unauthenticated_401(self):
         resp = self.client.get("/api/households/")
-        self.assertEqual(resp.status_code, 403)  # DRF returns 403 for IsAuthenticated
+        self.assertEqual(resp.status_code, 401)
         resp2 = self.client.get(f"/api/households/{self.household.id}/")
-        self.assertEqual(resp2.status_code, 403)
+        self.assertEqual(resp2.status_code, 401)
 
+    def test_linked_user_blank_email_scopes(self):
+        # Create a new user with blank email, but linked to a Person.
+        linked_user = UserAccount.objects.create_user(
+            username="linked_blank_email",
+            email="",
+            password="testpass",
+            is_staff=False,
+        )
+
+        linked_person = Person.objects.create(
+            first_name="Linked",
+            last_name="Person",
+            email="linked@example.com",
+        )
+        UserPersonLink.objects.create(user=linked_user, person=linked_person)
+
+        HouseholdMember.objects.create(
+            household=self.other_household,
+            person=linked_person,
+            role=ROLE_GUARDIAN,
+            is_primary=False,
+        )
+
+        self.client.force_authenticate(user=linked_user)
+        resp = self.client.get("/api/households/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual({row["id"] for row in resp.json()}, {str(self.other_household.id)})
+
+        # Out-of-scope detail should remain 404
+        resp2 = self.client.get(f"/api/households/{self.household.id}/")
+        self.assertEqual(resp2.status_code, 404)
+
+    def test_link_overrides_email_match(self):
+        # User email matches Person A...
+        user = UserAccount.objects.create_user(
+            username="override_user",
+            email="match@example.com",
+            password="testpass",
+            is_staff=False,
+        )
+
+        person_a = Person.objects.create(
+            first_name="Email",
+            last_name="Match",
+            email="match@example.com",
+        )
+        HouseholdMember.objects.create(
+            household=self.household,
+            person=person_a,
+            role=ROLE_GUARDIAN,
+            is_primary=False,
+        )
+
+        # ...but the explicit link points to Person B, so Person B must win.
+        person_b = Person.objects.create(
+            first_name="Linked",
+            last_name="Wins",
+            email="different@example.com",
+        )
+        HouseholdMember.objects.create(
+            household=self.other_household,
+            person=person_b,
+            role=ROLE_GUARDIAN,
+            is_primary=False,
+        )
+        UserPersonLink.objects.create(user=user, person=person_b)
+
+        self.client.force_authenticate(user=user)
+        resp = self.client.get("/api/households/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual({row["id"] for row in resp.json()}, {str(self.other_household.id)})
+
+        out = self.client.get(f"/api/households/{self.household.id}/")
+        self.assertEqual(out.status_code, 404)
