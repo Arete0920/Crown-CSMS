@@ -19,6 +19,22 @@ class HouseholdViewSet(ScopedReadOnlyModelViewSet):
 	queryset = Household.objects.all().order_by("name")
 	serializer_class = HouseholdSerializer
 
+	def get_queryset(self):
+		qs = Household.objects.all()
+		
+		# Apply school scoping
+		qs = scope_to_school(self.request, qs)
+		
+		# Apply guardian scoping for non-staff
+		user = self.request.user
+		if not getattr(user, "is_staff", False):
+			email = getattr(user, "email", None)
+			if not email:
+				return qs.none()
+			qs = qs.filter(guardians__email__iexact=email).distinct()
+		
+		return qs
+
 
 class GuardianViewSet(ScopedReadOnlyModelViewSet):
 	queryset = Guardian.objects.select_related("household").all().order_by("last_name", "first_name")
@@ -28,3 +44,20 @@ class GuardianViewSet(ScopedReadOnlyModelViewSet):
 class StudentViewSet(ScopedReadOnlyModelViewSet):
 	queryset = Student.objects.select_related("household").all().order_by("last_name", "first_name")
 	serializer_class = StudentSerializer
+
+	def get_queryset(self):
+		qs = Student.objects.select_related("household").all()
+		
+		# Apply school scoping
+		qs = scope_to_school(self.request, qs)
+		
+		# Apply guardian scoping for non-staff
+		user = self.request.user
+		if not getattr(user, "is_staff", False):
+			email = getattr(user, "email", None)
+			if not email:
+				return qs.none()
+			# Students must be in households where guardian email matches
+			qs = qs.filter(household__guardians__email__iexact=email).distinct()
+		
+		return qs
