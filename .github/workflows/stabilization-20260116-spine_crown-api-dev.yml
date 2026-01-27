@@ -87,6 +87,16 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set BUILD_SHA app setting (before deployment)
+        run: |
+          az webapp config appsettings set \
+            --resource-group crown-rg \
+            --name crown-api-dev \
+            --settings BUILD_SHA=${{ needs.build.outputs.deploy_sha_short }} \
+            --output none
+          echo "Waiting 30s for app setting to stabilize..."
+          sleep 30
+
       - name: Show repo root files (proof of structure)
         run: |
           pwd
@@ -110,11 +120,13 @@ jobs:
           expected="${{ needs.build.outputs.deploy_sha_short }}"
 
           echo "Verifying ${url} reports build_sha=${expected}"
+          echo "Waiting 60s for Azure app to fully restart with new code..."
+          sleep 60
 
           export EXPECTED="${expected}"
 
-          for i in {1..30}; do
-            echo "Attempt ${i}/30"
+          for i in {1..20}; do
+            echo "Attempt ${i}/20"
             if response="$(curl -fsS "${url}" 2>/dev/null)"; then
               build_sha="$(echo "${response}" | jq -r '.build_sha // empty' 2>/dev/null || true)"
 
@@ -125,17 +137,18 @@ jobs:
               fi
 
               if [ "${build_sha}" != "${expected}" ]; then
-                echo "build_sha mismatch"
+                echo "build_sha mismatch (retrying...)"
                 echo "Expected: ${expected}"
                 echo "Actual:   ${build_sha}"
-                exit 1
+                sleep 15
+                continue
               fi
 
               echo "Verified build_sha: ${build_sha}"
               echo "✅ Post-deploy verification passed"
               exit 0
             fi
-            sleep 10
+            sleep 15
           done
 
           echo "❌ Post-deploy verification failed (build_sha missing or mismatched)"
