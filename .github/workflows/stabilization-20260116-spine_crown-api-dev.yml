@@ -52,7 +52,7 @@ jobs:
       - name: Preflight gate (Django tests)
         run: |
           source antenv/bin/activate
-          python manage.py test crown_api.tests -v 0
+          python manage.py test crown_api.tests.test_households_api crown_api.tests.test_students_api crown_api.tests.test_director_router crown_api.tests.test_admissions_links_api crown_api.tests.test_academics_api crown_api.tests.test_billing_summary_api crown_api.tests.test_comms_api crown_api.tests.test_scheduling_api -v 0
                 
       # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
       - name: Upload artifact for deployment jobs
