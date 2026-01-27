@@ -109,7 +109,7 @@ jobs:
         with:
           app-name: 'crown-api-dev'
           slot-name: 'Production'
-          package: .
+          package: backend
 
       - name: Post-deploy verify BUILD_SHA
         shell: bash
