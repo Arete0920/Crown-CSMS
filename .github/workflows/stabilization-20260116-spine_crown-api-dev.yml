@@ -7,7 +7,7 @@ name: Build and deploy Python app to Azure Web App - crown-api-dev
 on:
   push:
     branches:
-      - stabilization-20260116-spine
+      - main
   workflow_dispatch:
     inputs:
       ref:
