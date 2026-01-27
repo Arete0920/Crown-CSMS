@@ -21,10 +21,9 @@ class HouseholdViewSet(ScopedReadOnlyModelViewSet):
 	serializer_class = HouseholdSerializer
 
 	def get_queryset(self):
-		qs = Household.objects.all()
-		
-		# Apply school scoping
-		qs = scope_to_school(self.request, qs)
+		# Parent class (ScopedReadOnlyModelViewSet) handles school scoping via scope_to_school()
+		# We only add optional guardian-level filtering here
+		qs = super().get_queryset()
 		
 		# Apply guardian scoping if enabled (opt-in)
 		if getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", False):
