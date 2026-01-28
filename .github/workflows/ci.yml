@@ -14,29 +14,40 @@ jobs:
         with:
           fetch-depth: 0  # Need full history to verify tags
       
-      - name: Verify spine tags are immutable
+      - name: Verify release tags are immutable
         run: |
           echo "Verifying immutable release tags..."
           
-          # Read expected SHAs from SPINE_TAGS.json
-          expected_sha=$(jq -r '.["crown-0.3.0-spine-complete"]' docs/SPINE_TAGS.json)
+          # Read all expected tags from RELEASE_TAGS.json
+          tags=$(jq -r 'keys[]' docs/RELEASE_TAGS.json)
           
-          # Get actual SHA from tag
-          actual_sha=$(git rev-parse crown-0.3.0-spine-complete^{commit})
-          
-          echo "Expected: $expected_sha"
-          echo "Actual:   $actual_sha"
-          
-          if [[ "$actual_sha" != "$expected_sha" ]]; then
-            echo "❌ CRITICAL: Tag crown-0.3.0-spine-complete has been moved!"
-            echo "   Expected commit: $expected_sha"
-            echo "   Current commit:  $actual_sha"
+          failed=0
+          for tag in $tags; do
+            expected_sha=$(jq -r ".[\"$tag\"]" docs/RELEASE_TAGS.json)
+            actual_sha=$(git rev-parse $tag^{commit})
+            
+            echo "Checking $tag:"
+            echo "  Expected: $expected_sha"
+            echo "  Actual:   $actual_sha"
+            
+            if [[ "$actual_sha" != "$expected_sha" ]]; then
+              echo "  ❌ CRITICAL: Tag $tag has been moved!"
+              echo "     Expected commit: $expected_sha"
+              echo "     Current commit:  $actual_sha"
+              echo ""
+              failed=1
+            else
+              echo "  ✅ Verified"
+            fi
             echo ""
-            echo "Tags must be immutable. Create a new tag instead of moving existing ones."
+          done
+          
+          if [[ $failed -eq 1 ]]; then
+            echo "❌ Tag immutability violated. Create new tags instead of moving existing ones."
             exit 1
           fi
           
-          echo "✅ All spine tags verified immutable"
+          echo "✅ All release tags verified immutable"
 
   test:
     runs-on: ubuntu-latest

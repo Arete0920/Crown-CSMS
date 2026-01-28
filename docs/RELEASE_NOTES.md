@@ -13,7 +13,17 @@
 The spine release (0.3.0) included the DEV workflow fix but PROD workflow still used the old appsettings method. This commit achieves full pipeline parity - both environments now use the same deployment pattern.
 
 ### Deployment Verification
+
+**Prod must match `crown-0.3.1-prod-pipeline-fix`, verified via `/api/health/`**
+
 ```powershell
+# Automated verification
+$expected = git rev-parse --short=7 crown-0.3.1-prod-pipeline-fix
+$prod = (curl.exe -s https://crown-api-prod.azurewebsites.net/api/health/ | ConvertFrom-Json).build_sha
+if ($prod -ne $expected) { throw "Prod mismatch: expected $expected got $prod" }
+Write-Host "✅ PROD verified at $expected" -ForegroundColor Green
+
+# Manual check
 curl https://crown-api-dev.azurewebsites.net/api/health/  # build_sha: 8241bfe
 curl https://crown-api-prod.azurewebsites.net/api/health/ # build_sha: 8241bfe
 ```
