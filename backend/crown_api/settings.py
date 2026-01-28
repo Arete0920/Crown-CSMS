@@ -182,6 +182,26 @@ USE_TZ = True
 # Custom User Model
 AUTH_USER_MODEL = 'core.UserAccount'
 
+# --- DRF renderer policy (PROD: JSON-only; non-PROD: JSON + Browsable) ---
+def _env_is_prod() -> bool:
+    v = (
+        os.getenv("CROWN_ENV")
+        or os.getenv("DJANGO_ENV")
+        or os.getenv("ENVIRONMENT")
+        or os.getenv("APP_ENV")
+        or ""
+    ).strip().lower()
+    return v in {"prod", "production", "live"}
+
+DRF_DEFAULT_RENDERERS = (
+    ("rest_framework.renderers.JSONRenderer",)
+    if _env_is_prod()
+    else (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    )
+)
+
 # DRF Configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -191,6 +211,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_RENDERER_CLASSES": DRF_DEFAULT_RENDERERS,
     "DEFAULT_THROTTLE_RATES": {
         # Exports-only throttling scopes (applied per-view via throttle_classes).
         "exports_user_minute": "30/min",
