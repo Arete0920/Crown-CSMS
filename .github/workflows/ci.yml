@@ -7,8 +7,40 @@ on:
     branches: [main]
 
 jobs:
+  verify-immutable-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history to verify tags
+      
+      - name: Verify spine tags are immutable
+        run: |
+          echo "Verifying immutable release tags..."
+          
+          # Read expected SHAs from SPINE_TAGS.json
+          expected_sha=$(jq -r '.["crown-0.3.0-spine-complete"]' docs/SPINE_TAGS.json)
+          
+          # Get actual SHA from tag
+          actual_sha=$(git rev-parse crown-0.3.0-spine-complete^{commit})
+          
+          echo "Expected: $expected_sha"
+          echo "Actual:   $actual_sha"
+          
+          if [[ "$actual_sha" != "$expected_sha" ]]; then
+            echo "❌ CRITICAL: Tag crown-0.3.0-spine-complete has been moved!"
+            echo "   Expected commit: $expected_sha"
+            echo "   Current commit:  $actual_sha"
+            echo ""
+            echo "Tags must be immutable. Create a new tag instead of moving existing ones."
+            exit 1
+          fi
+          
+          echo "✅ All spine tags verified immutable"
+
   test:
     runs-on: ubuntu-latest
+    needs: verify-immutable-tags
     
     steps:
       - uses: actions/checkout@v4
