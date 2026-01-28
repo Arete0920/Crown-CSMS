@@ -8,6 +8,10 @@ on:
         required: false
         default: ''
 
+concurrency:
+  group: crown-api-prod-deploy
+  cancel-in-progress: true
+
 permissions:
   contents: read
   actions: read
