@@ -12,6 +12,9 @@ urlpatterns = [
     # Authentication
     path("auth/token/", TokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="v1_token_refresh"),
+
+    # Dashboards (Day 2 read-only endpoints)
+    path("", include("crown_api.dashboards.urls")),
     
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.
