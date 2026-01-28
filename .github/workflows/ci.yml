@@ -18,13 +18,26 @@ jobs:
         run: |
           echo "Verifying immutable release tags..."
           
+          # Validate registry format: all SHAs must be full 40-char hex
+          echo "Validating registry format..."
+          while IFS= read -r sha; do
+            if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "❌ CRITICAL: Invalid SHA format in registry: $sha"
+              echo "   Registry must contain full 40-character commit SHAs only"
+              exit 1
+            fi
+          done < <(jq -r '.[]' docs/RELEASE_TAGS.json)
+          echo "✅ Registry format valid (all full SHAs)"
+          echo ""
+          
           # Read all expected tags from RELEASE_TAGS.json
           tags=$(jq -r 'keys[]' docs/RELEASE_TAGS.json)
           
           failed=0
           for tag in $tags; do
             expected_sha=$(jq -r ".[\"$tag\"]" docs/RELEASE_TAGS.json)
-            actual_sha=$(git rev-parse $tag^{commit})
+            # Explicitly resolve to commit (not tag object)
+            actual_sha=$(git rev-parse "${tag}^{commit}")
             
             echo "Checking $tag:"
             echo "  Expected: $expected_sha"
