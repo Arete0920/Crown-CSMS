@@ -28,6 +28,17 @@ curl https://crown-api-dev.azurewebsites.net/api/health/  # build_sha: 8241bfe
 curl https://crown-api-prod.azurewebsites.net/api/health/ # build_sha: 8241bfe
 ```
 
+### App Service Configuration Requirements
+
+**Required environment variables for each environment:**
+
+- **PROD** App Service must include: `CROWN_ENV=prod`
+- **DEV** App Service should include: `CROWN_ENV=dev`
+
+These settings control DRF renderer policy:
+- PROD: JSON-only (no browsable API HTML)
+- DEV: JSON + Browsable API (developer ergonomics)
+
 ---
 
 ## crown-0.3.0-spine-complete (2026-01-27)

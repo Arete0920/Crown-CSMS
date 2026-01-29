@@ -65,3 +65,7 @@ _ci/
 
 # Local helper scripts
 set-gh-azurecreds.ps1
+
+# Local scratch
+_tmp/
+
