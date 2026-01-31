@@ -1163,15 +1163,20 @@ def director_timeline(request):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def force_seed_user(request):
     """
     Dev-only endpoint to seed the database with demo user and data.
-    Requires director permissions.
+    Requires director permissions and dev seed key.
     """
-    # For dev, allow without auth, but check for a special header to prevent accidental calls
-    if not request.META.get('HTTP_X_DEV_SEED', '').lower() == 'true':
-        return Response({"error": "Dev seed endpoint requires X-Dev-Seed: true header"}, status=status.HTTP_403_FORBIDDEN)
+    if not crown_director_allowed(request):
+        return Response({"error": "Director permissions required"}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Require dev seed key for security
+    expected_key = os.getenv('DEV_SEED_KEY', 'crown2026-dev-seed-key')
+    provided_key = request.META.get('HTTP_X_DEV_SEED_KEY', '')
+    if provided_key != expected_key:
+        return Response({"error": "Invalid dev seed key"}, status=status.HTTP_403_FORBIDDEN)
     
     from django.core.management import call_command
     from django.core.management.base import CommandError
