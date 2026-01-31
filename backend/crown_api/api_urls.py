@@ -32,7 +32,6 @@ from crown_api.views_scheduling import terms_list, term_sections, student_schedu
 from crown_api.views_comms import threads_list, thread_detail
 from applications import api as applications_api
 from ledger import api as ledger_api
-from financial_aid import api as financial_aid_api
 from academics import api as academics_api
 from billing import api as billing_api
 
@@ -87,28 +86,6 @@ urlpatterns = [
     path("ledger/accounts/<str:account_id>/balance/", ledger_api.ledger_account_balance, name="ledger-account-balance"),
     path("ledger/charges/<str:charge_id>/balance/", ledger_api.charge_balance, name="ledger-charge-balance"),
 
-    path("financial-aid/applications/", financial_aid_api.aid_applications, name="aid-applications"),
-    path(
-        "financial-aid/applications/<str:aid_application_id>/submit/",
-        financial_aid_api.aid_submit,
-        name="aid-submit",
-    ),
-    path(
-        "financial-aid/applications/<str:aid_application_id>/decide/",
-        financial_aid_api.aid_decide,
-        name="aid-decide",
-    ),
-    path(
-        "financial-aid/awards/<str:award_id>/disburse/",
-        financial_aid_api.aid_disburse,
-        name="aid-disburse",
-    ),
-
-    path(
-        "financial-aid/billing-runs/<str:billing_run_id>/disburse/",
-        financial_aid_api.disburse_to_billing_run,
-        name="financial-aid-disburse-billing-run",
-    ),
 
     path("academics/courses/", academics_api.courses, name="academics-courses"),
     path("academics/sections/", academics_api.sections, name="academics-sections"),
