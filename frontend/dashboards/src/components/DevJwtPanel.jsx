@@ -15,9 +15,7 @@ import {
 export default function DevJwtPanel() {
   const isDev = import.meta.env.DEV;
   const apiBase = useMemo(() => {
-    // For dev proxy: empty string is correct (hits /api via Vite proxy)
-    // If someone sets VITE_API_BASE and calls direct, still works.
-    return "";
+    return import.meta.env.VITE_API_BASE_URL;
   }, []);
 
   const [username, setUsername] = useState("admin");

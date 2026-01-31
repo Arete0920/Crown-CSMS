@@ -1160,3 +1160,34 @@ def director_timeline(request):
         },
         "timeline": items,
     }, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def force_seed_user(request):
+    """
+    Dev-only endpoint to seed the database with demo user and data.
+    Requires director permissions.
+    """
+    if not crown_director_allowed(request):
+        return Response({"error": "Director permissions required"}, status=status.HTTP_403_FORBIDDEN)
+    
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+    
+    try:
+        # Run migrations
+        call_command('migrate', verbosity=1)
+        
+        # Run dev_bootstrap to create admin user
+        call_command('dev_bootstrap', verbosity=1)
+        
+        return Response({
+            "ok": True,
+            "message": "Database seeded successfully. Admin user 'admin' with password 'Crown2026!' created."
+        }, status=status.HTTP_200_OK)
+    except CommandError as e:
+        return Response({
+            "ok": False,
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -22,6 +22,7 @@ from crown_api.director_views import (
     director_priority,
     director_actions,
     director_timeline,
+    force_seed_user,
 )
 from crown_api.views_households import household_detail, households_list
 from crown_api.views_students import student_detail, students_list
@@ -150,4 +151,5 @@ urlpatterns = [
     path("director/priority/", director_priority, name="director_priority"),
     path("director/actions/", director_actions, name="director_actions"),
     path("director/timeline/", director_timeline, name="director_timeline"),
+    path("director/force_seed_user/", force_seed_user, name="force_seed_user"),
 ]
