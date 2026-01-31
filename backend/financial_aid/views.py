@@ -58,7 +58,7 @@ class FinancialAidSummaryView(APIView):
         else:
             avg_award_amount = Decimal("0.00")
 
-        # Awards by bucket
+        # Awards by bucket (frozen contract uses "total" not "count")
         awards_by_bucket = {}
         for key, label in AidBucket.choices:
             bucket_agg = awards_qs.filter(bucket=key).aggregate(
@@ -66,26 +66,28 @@ class FinancialAidSummaryView(APIView):
                 amount=Sum("amount")
             )
             awards_by_bucket[key] = {
-                "count": bucket_agg["count"] or 0,
+                "total": bucket_agg["count"] or 0,
                 "amount": str(bucket_agg["amount"] or Decimal("0.00")),
             }
 
-        # Build response contract
+        # Build response contract (frozen)
         payload = {
             "academic_year": academic_year,
-            "totals": {
-                "applications_total": applications_total,
-                "applications_by_status": {
+            "applications": {
+                "total": applications_total,
+                "by_status": {
                     "draft": apps_by_status["draft"],
                     "submitted": apps_by_status["submitted"],
                     "in_review": apps_by_status["in_review"],
                     "decided": apps_by_status["decided"],
                 },
-                "awards_total_count": awards_total_count,
-                "awards_total_amount": str(awards_total_amount),
-                "avg_award_amount": str(avg_award_amount),
             },
-            "awards_by_bucket": awards_by_bucket,
+            "awards": {
+                "total": awards_total_count,
+                "total_amount": str(awards_total_amount),
+                "avg_amount": str(avg_award_amount),
+                "by_bucket": awards_by_bucket,
+            },
         }
 
         return Response(payload)
@@ -151,9 +153,11 @@ class FinancialAidDrilldownView(APIView):
                     "award_id": str(a.id),
                     "application_id": str(a.application_id) if a.application_id else None,
                     "household_id": str(a.application.household_id) if a.application and a.application.household_id else None,
+                    "bucket": a.bucket,
                     "amount": str(a.amount),
                     "status": a.application.status if a.application else None,
-                    "rationale": a.rationale or "",
+                    "rationale": a.rationale if a.rationale else None,
+                    "updated_at": a.updated_at.isoformat() if a.updated_at else None,
                 }
             )
 
@@ -161,7 +165,7 @@ class FinancialAidDrilldownView(APIView):
             {
                 "academic_year": academic_year,
                 "bucket": bucket,
-                "count": total_count,
+                "total": total_count,
                 "limit": limit,
                 "offset": offset,
                 "rows": rows,
