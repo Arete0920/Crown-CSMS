@@ -78,11 +78,10 @@ export async function authenticatedFetch(input, init = {}) {
  *   POST /api/auth/token/  { username, password } -> { access, refresh }
  */
 export async function jwtLogin({ username, password, apiBase = "" }) {
-  const resp = await fetch(`${apiBase}/api/auth/token/`, {
+  const resp = await fetch(`${apiBase}/api/v1/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
-    credentials: "include",
   });
 
   if (!resp.ok) {
