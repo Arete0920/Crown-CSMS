@@ -123,3 +123,49 @@ class FinancialAidEndpointsTests(APITestCase):
         )
         self.assertEqual(r.status_code, 200)
         self.assertGreaterEqual(r.data["count"], 1)
+        self.assertIn("limit", r.data)
+        self.assertIn("offset", r.data)
+
+    def test_drilldown_pagination_contract(self):
+        """Verify pagination works correctly with limit and offset."""
+        # Create additional awards (we already have 1 from setUp)
+        app = FinancialAidApplication.objects.filter(school_id=self.school_id).first()
+        for i in range(3):
+            AidAward.objects.create(
+                school_id=self.school_id,
+                application=app,
+                bucket=AidBucket.NEED,
+                amount="1000.00",
+                rationale=f"Additional award {i}",
+            )
+        
+        # First page: limit=2, offset=0
+        r1 = self.client.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027&bucket=need&limit=2&offset=0",
+            HTTP_X_SCHOOL_ID=str(self.school_id),
+        )
+        self.assertEqual(r1.status_code, 200)
+        self.assertEqual(len(r1.data["rows"]), 2)
+        self.assertGreaterEqual(r1.data["count"], 4)
+        self.assertEqual(r1.data["limit"], 2)
+        self.assertEqual(r1.data["offset"], 0)
+        
+        # Second page: limit=2, offset=2
+        r2 = self.client.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027&bucket=need&limit=2&offset=2",
+            HTTP_X_SCHOOL_ID=str(self.school_id),
+        )
+        self.assertEqual(r2.status_code, 200)
+        self.assertGreaterEqual(len(r2.data["rows"]), 1)
+        self.assertEqual(r2.data["count"], r1.data["count"])  # Same total
+        self.assertEqual(r2.data["limit"], 2)
+        self.assertEqual(r2.data["offset"], 2)
+
+    def test_drilldown_invalid_bucket_400(self):
+        """Verify invalid bucket returns 400 error."""
+        r = self.client.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027&bucket=bogus",
+            HTTP_X_SCHOOL_ID=str(self.school_id),
+        )
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("detail", r.data)

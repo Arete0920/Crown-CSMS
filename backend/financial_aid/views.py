@@ -95,30 +95,65 @@ class FinancialAidDrilldownView(APIView):
 
     def get(self, request):
         school_id = require_school_id(request)
-        academic_year = request.query_params.get("academic_year", "2026-2027")
+        academic_year = request.query_params.get("academic_year")
         bucket = request.query_params.get("bucket")  # optional
 
-        qs = (
-            AidAward.objects.filter(school_id=school_id, application__academic_year=academic_year)
-            .select_related("application")
-            .order_by("-amount")
-        )
+        # If academic_year not provided, use latest year for this school
+        if not academic_year:
+            latest_app = FinancialAidApplication.objects.filter(
+                school_id=school_id
+            ).order_by("-academic_year").values_list("academic_year", flat=True).first()
+            academic_year = latest_app or "2025-2026"
 
+        # Validate bucket parameter
+        valid_buckets = [key for key, label in AidBucket.choices]
+        if bucket and bucket not in valid_buckets:
+            return Response(
+                {"detail": f"Invalid bucket '{bucket}'. Must be one of: {', '.join(valid_buckets)}"},
+                status=400
+            )
+
+        # Parse pagination params
+        try:
+            limit = int(request.query_params.get("limit", 25))
+            offset = int(request.query_params.get("offset", 0))
+        except (ValueError, TypeError):
+            return Response({"detail": "limit and offset must be integers"}, status=400)
+
+        # Validate pagination bounds
+        if limit < 1 or limit > 200:
+            return Response({"detail": "limit must be between 1 and 200"}, status=400)
+        if offset < 0:
+            return Response({"detail": "offset must be >= 0"}, status=400)
+
+        # Base queryset
+        qs = AidAward.objects.filter(
+            school_id=school_id,
+            application__isnull=False,
+            application__academic_year=academic_year
+        ).select_related("application").order_by("-created_at", "id")
+
+        # Apply bucket filter if provided
         if bucket:
             qs = qs.filter(bucket=bucket)
 
+        # Count total before pagination
+        total_count = qs.count()
+
+        # Apply pagination
+        page = qs[offset:offset+limit]
+
+        # Build rows with stable schema
         rows = []
-        for a in qs[:200]:
+        for a in page:
             rows.append(
                 {
                     "award_id": str(a.id),
-                    "application_id": str(a.application_id),
-                    "household_id": str(a.application.household_id),
-                    "bucket": a.bucket,
+                    "application_id": str(a.application_id) if a.application_id else None,
+                    "household_id": str(a.application.household_id) if a.application and a.application.household_id else None,
                     "amount": str(a.amount),
-                    "status": a.application.status,
-                    "submitted_at": a.application.submitted_at.isoformat(),
-                    "rationale": a.rationale,
+                    "status": a.application.status if a.application else None,
+                    "rationale": a.rationale or "",
                 }
             )
 
@@ -126,7 +161,9 @@ class FinancialAidDrilldownView(APIView):
             {
                 "academic_year": academic_year,
                 "bucket": bucket,
-                "count": qs.count(),
+                "count": total_count,
+                "limit": limit,
+                "offset": offset,
                 "rows": rows,
             }
         )
