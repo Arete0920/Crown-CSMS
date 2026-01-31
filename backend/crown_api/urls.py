@@ -4,6 +4,7 @@ URL configuration for crown_api project.
 from django.urls import include, path
 from django.views.generic import RedirectView
 from crown_api.health_views import health, health_version
+from crown_api.version_view import version
 from crown_api.views import director_dashboard_page, director_router
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -15,6 +16,9 @@ urlpatterns = [
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     path("health/version/", health_version, name="health_version"),
+    
+    # Version endpoint (public, no auth required)
+    path("api/v1/version/", version, name="version"),
     
     # Authentication URLs (must come BEFORE api/ includes)
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),

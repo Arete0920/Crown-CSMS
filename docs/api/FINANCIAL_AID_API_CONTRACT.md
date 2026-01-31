@@ -2,7 +2,8 @@
 
 **Last Updated:** 2026-01-31  
 **Status:** FROZEN – No breaking changes without major version bump  
-**Base URL:** `https://crown-api-dev.azurewebsites.net` (DEV) | `https://crown-api.azurewebsites.net` (PROD)
+**Base URL (DEV):** `https://crown-api-dev.azurewebsites.net`  
+**Base URL (PROD):** TBD (not yet deployed)
 
 ---
 
@@ -16,7 +17,7 @@ All endpoints require:
 | `X-School-Id` | UUID | Yes | `e5e7bec0-7e8a-4c8a-9b5c-7e8a4c8a9b5c` |
 
 **Error if missing:**
-- Missing/invalid `Authorization` → `403 Forbidden`
+- Missing/invalid `Authorization` → `403 Forbidden` (observed behavior; not JWT-standard 401)
 - Missing/invalid `X-School-Id` → `400 Bad Request`
 
 ---
