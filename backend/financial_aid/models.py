@@ -1,129 +1,157 @@
+﻿from django.db import models
+from django.utils import timezone
 import uuid
-from decimal import Decimal
-from django.db import models
-from households.models import Household
 
+class AidBucket(models.TextChoices):
+    NEED = "need", "Need-Based"
+    MISSION = "mission", "Mission-Driven"
+    MARKETING = "marketing", "Marketing/Enrollment"
+    MERIT = "merit", "Merit-Based"
+    HARDSHIP = "hardship", "Hardship/Crisis"
 
-class TimeStampedModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
-
-
-class AidStatus(models.TextChoices):
-    DRAFT = "DRAFT", "Draft"
-    SUBMITTED = "SUBMITTED", "Submitted"
-    DECIDED = "DECIDED", "Decided"
-
-
-class AwardStatus(models.TextChoices):
-    APPROVED = "APPROVED", "Approved"
-    DENIED = "DENIED", "Denied"
-
-
-class AidApplication(TimeStampedModel):
+class FinancialAidApplication(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school_id = models.UUIDField(db_index=True)
+    household_id = models.UUIDField(db_index=True)
+    academic_year = models.CharField(max_length=9, db_index=True)
+    submitted_at = models.DateTimeField(default=timezone.now)
+    household_income = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    household_size = models.PositiveIntegerField(default=1)
+    status = models.CharField(
+        max_length=20,
+        default="submitted",
+        db_index=True,
+        choices=[
+            ("draft", "Draft"),
+            ("submitted", "Submitted"),
+            ("in_review", "In Review"),
+            ("decided", "Decided"),
+        ],
+    )
 
-    household = models.ForeignKey(Household, on_delete=models.PROTECT, related_name="aid_applications")
+class AidAward(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    bucket = models.CharField(
+        max_length=20,
+        db_index=True,
+        null=True,
+        blank=True,
+        choices=AidBucket.choices,
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    rationale = models.TextField(blank=True, default="")
+    approved_by_user_id = models.UUIDField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    application = models.ForeignKey(
+        FinancialAidApplication,
+        on_delete=models.CASCADE,
+        related_name="awards",
+        null=True,
+        blank=True,
+    )
 
-    # e.g., "2026-2027"
-    academic_year = models.CharField(max_length=16, db_index=True)
+class AidAuditEvent(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+    event_type = models.CharField(max_length=50, db_index=True)
+    entity_type = models.CharField(max_length=50, db_index=True)
+    entity_id = models.UUIDField(db_index=True)
+    actor_user_id = models.UUIDField(null=True, blank=True)
+    message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(default=timezone.now)
+from django.db import models
+from django.utils import timezone
+import uuid
 
-    status = models.CharField(max_length=16, choices=AidStatus.choices, default=AidStatus.DRAFT, db_index=True)
-    submitted_at = models.DateTimeField(null=True, blank=True)
-    decided_at = models.DateTimeField(null=True, blank=True)
+# NOTE TO AI TOOLS:
+# MVP MODE. Do NOT add base classes/mixins or extra models.
+# Do NOT partially patch. Replace the full file if changes are required.
+# No abstractions. No future features. Keep it deterministic.
+
+
+class AidBucket(models.TextChoices):
+    NEED = "need", "Need-Based"
+    MISSION = "mission", "Mission-Driven"
+    MARKETING = "marketing", "Marketing/Enrollment"
+    MERIT = "merit", "Merit-Based"
+    HARDSHIP = "hardship", "Hardship/Crisis"
+
+
+class FinancialAidApplication(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    school_id = models.UUIDField(db_index=True)
+    household_id = models.UUIDField(db_index=True)
+
+    academic_year = models.CharField(max_length=9, db_index=True)  # e.g. "2026-2027"
+    submitted_at = models.DateTimeField(default=timezone.now)
+
+    household_income = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    household_size = models.PositiveIntegerField(default=1)
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("draft", "Draft"),
+            ("submitted", "Submitted"),
+            ("in_review", "In Review"),
+            ("decided", "Decided"),
+        ],
+        default="submitted",
+        db_index=True,
+    )
 
     class Meta:
-        db_table = "aid_application"
         indexes = [
             models.Index(fields=["school_id", "academic_year"]),
             models.Index(fields=["school_id", "status"]),
         ]
 
-    def __str__(self) -> str:
-        return f"AidApplication({self.academic_year})"
 
-
-class AidAward(TimeStampedModel):
+class AidAward(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     school_id = models.UUIDField(db_index=True)
+    application = models.ForeignKey(
+        "FinancialAidApplication",
+        on_delete=models.CASCADE,
+        related_name="awards",
+        null=True,
+        blank=True,
+    )
 
-    aid_application = models.OneToOneField(AidApplication, on_delete=models.CASCADE, related_name="award")
-    status = models.CharField(max_length=16, choices=AwardStatus.choices)
+    bucket = models.CharField(
+        max_length=20,
+        choices=AidBucket.choices,
+        db_index=True,
+        null=True,
+        blank=True,
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
-    amount_annual = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    rationale = models.TextField(blank=True, default="")
+    approved_by_user_id = models.UUIDField(null=True, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "aid_award"
         indexes = [
-            models.Index(fields=["school_id", "status"]),
+            models.Index(fields=["school_id", "bucket"]),
         ]
 
-    def __str__(self) -> str:
-        return f"AidAward({self.status}, {self.amount_annual})"
 
-
-class AidDisbursement(TimeStampedModel):
+class AidAuditEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     school_id = models.UUIDField(db_index=True)
+    event_type = models.CharField(max_length=50, db_index=True)
+    entity_type = models.CharField(max_length=50, db_index=True)
+    entity_id = models.UUIDField(db_index=True)
 
-    award = models.ForeignKey(AidAward, on_delete=models.CASCADE, related_name="disbursements")
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    disbursed_on = models.DateField()
+    actor_user_id = models.UUIDField(null=True, blank=True)
+    message = models.TextField(blank=True, default="")
 
-    class Meta:
-        db_table = "aid_disbursement"
-        indexes = [
-            models.Index(fields=["school_id", "disbursed_on"]),
-        ]
-
-    def __str__(self) -> str:
-        return f"AidDisbursement({self.amount} on {self.disbursed_on})"
-
-
-class AidEvent(TimeStampedModel):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    school_id = models.UUIDField(db_index=True)
-
-    aid_application = models.ForeignKey(AidApplication, on_delete=models.CASCADE, related_name="events")
-    event_type = models.CharField(max_length=60)
-    payload = models.JSONField(default=dict, blank=True)
-
-    class Meta:
-        db_table = "aid_event"
-        indexes = [
-            models.Index(fields=["school_id", "event_type"]),
-            models.Index(fields=["school_id", "aid_application", "created_at"]),
-        ]
-
-
-from billing.models import BillingRun, Invoice
-from ledger.models import Payment
-
-
-class FinancialAidDisbursement(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    school_id = models.UUIDField(db_index=True)
-
-    award = models.ForeignKey("AidAward", on_delete=models.PROTECT, related_name="billing_disbursements")
-    billing_run = models.ForeignKey(BillingRun, on_delete=models.CASCADE, related_name="aid_disbursements")
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="aid_disbursements")
-
-    payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name="aid_disbursements")
-
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "financial_aid_disbursement"
-        constraints = [
-            models.UniqueConstraint(fields=["award", "billing_run"], name="uniq_award_billingrun_disbursement"),
-        ]
-        indexes = [
-            models.Index(fields=["school_id", "billing_run"]),
-            models.Index(fields=["school_id", "invoice"]),
-        ]
+    created_at = models.DateTimeField(default=timezone.now)

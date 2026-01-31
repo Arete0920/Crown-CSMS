@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import { HomeDashboard } from '../pages/HomeDashboard.jsx';
 import { BillingDashboard } from '../pages/BillingDashboard.jsx';
+import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -12,5 +13,9 @@ export const router = createBrowserRouter([
   {
     path: '/billing',
     element: <BillingDashboard />,
+  },
+  {
+    path: '/financial-aid',
+    element: <FinancialAidDashboard />,
   },
 ]);

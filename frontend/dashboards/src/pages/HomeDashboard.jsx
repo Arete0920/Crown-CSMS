@@ -10,6 +10,9 @@ export function HomeDashboard() {
           <li>
             <a href="/billing">Billing</a>
           </li>
+          <li>
+            <a href="/financial-aid">Financial Aid</a>
+          </li>
         </ul>
       </p>
     </div>

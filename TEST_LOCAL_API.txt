@@ -1,0 +1,12 @@
+Test local API: http://localhost:8000/api/v1/financial-aid/summary/
+Server should be running at http://0.0.0.0:8000/
+
+Command to test:
+curl http://localhost:8000/api/v1/financial-aid/summary/
+
+Expected: 400 (missing X-School-Id header) or JSON response
+
+Then start frontend with:
+cd frontend/dashboards
+$env:VITE_API_BASE_URL="http://127.0.0.1:8000"
+npm run dev

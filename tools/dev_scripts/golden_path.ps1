@@ -18,6 +18,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- CI env overrides ---
+if (-not $ApiBase -and $env:GP_API_BASE) { $ApiBase = $env:GP_API_BASE }
+
+$GP_USER = $env:GP_USERNAME
+$GP_PASS = $env:GP_PASSWORD
+$GP_SEED_KEY = $env:GP_SEED_KEY
+
 # Resolve repo root from tools/dev_scripts
 $ROOT = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $PY   = Join-Path $ROOT ".venv\Scripts\python.exe"
@@ -74,15 +81,39 @@ if (Is-LocalApiBase $ApiBase) {
 }
 
 # ------------------------------------------------------------
-# B) Health check (local or remote)
+# B) Health check (local or remote) - with retry for Azure cold starts
 # ------------------------------------------------------------
 Write-Host ""
 Write-Host "=== B) Health ==="
-try {
-  $h = Invoke-RestMethod "$ApiBase/health/" -TimeoutSec 8
-} catch {
-  $h = Invoke-RestMethod "$ApiBase/api/health/" -TimeoutSec 8
+$maxRetries = 6
+$retryDelay = 5
+$healthOk = $false
+
+for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
+  try {
+    $h = Invoke-RestMethod "$ApiBase/health/" -TimeoutSec 8
+    $healthOk = $true
+    break
+  } catch {
+    try {
+      $h = Invoke-RestMethod "$ApiBase/api/health/" -TimeoutSec 8
+      $healthOk = $true
+      break
+    } catch {
+      Write-Host "Health check attempt $attempt/$maxRetries failed: $($_.Exception.Message)"
+      if ($attempt -lt $maxRetries) {
+        Write-Host "Retrying in $retryDelay seconds..."
+        Start-Sleep -Seconds $retryDelay
+        $retryDelay = [Math]::Min($retryDelay + 2, 10)  # Increase delay up to 10s
+      }
+    }
+  }
 }
+
+if (-not $healthOk) {
+  throw "Health check failed after $maxRetries attempts. Azure app may be down or restarting."
+}
+
 $h | ConvertTo-Json -Depth 6
 
 # ------------------------------------------------------------
@@ -90,7 +121,11 @@ $h | ConvertTo-Json -Depth 6
 # ------------------------------------------------------------
 Write-Host ""
 Write-Host "=== C) JWT ==="
-$body = @{ username = $Username; password = $Password } | ConvertTo-Json
+if ($GP_USER -and $GP_PASS) {
+  $body = @{ username = $GP_USER; password = $GP_PASS } | ConvertTo-Json
+} else {
+  $body = @{ username = $Username; password = $Password } | ConvertTo-Json
+}
 $tok = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/auth/token/" -ContentType "application/json" -Body $body -TimeoutSec 12
 $token = $tok.access
 if (-not $token) { throw "JWT failed. Check Username/Password." }
@@ -206,9 +241,23 @@ $r3 = Invoke-JsonPost "$ApiBase/api/billing/payments/record/" $headers $pay 25
 Write-Host "HTTP $($r3.StatusCode)"
 Write-Host $r3.Content
 
+# ------------------------------------------------------------
+# H) Financial Aid Drilldown
+# ------------------------------------------------------------
+Write-Host ""
+Write-Host "=== H) Financial Aid: drilldown ==="
+$r4 = Invoke-RestMethod -Method Get -Uri "$ApiBase/api/financial-aid/drilldown/" -Headers $headers -TimeoutSec 25
+Write-Host "HTTP 200 (expected)"
+$data = $r4 | ConvertFrom-Json
+if (-not $data.ok) { throw "Drilldown response not ok" }
+if (-not $data.PSObject.Properties.Match('items')) { throw "Missing items in drilldown" }
+if (-not $data.PSObject.Properties.Match('summary')) { throw "Missing summary in drilldown" }
+if (-not $data.PSObject.Properties.Match('facets')) { throw "Missing facets in drilldown" }
+Write-Host "Drilldown response shape OK"
+
 if (Is-LocalApiBase $ApiBase) {
   Write-Host ""
-  Write-Host "=== H) Repo hygiene (local) ==="
+  Write-Host "=== I) Repo hygiene (local) ==="
   git restore -- backend/db.sqlite3 | Out-Null
   git status -sb
 }

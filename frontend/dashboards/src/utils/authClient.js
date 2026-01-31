@@ -58,8 +58,8 @@ export async function authenticatedFetch(input, init = {}) {
 
   // Optional tenant override for staff/superusers only (backend enforces).
   const schoolId = getSelectedSchoolId();
-  if (schoolId && !headers.has("X-Crown-School-Id")) {
-    headers.set("X-Crown-School-Id", schoolId);
+  if (schoolId && !headers.has("X-School-Id")) {
+    headers.set("X-School-Id", schoolId);
   }
 
   // Keep cookies working for session-auth paths
