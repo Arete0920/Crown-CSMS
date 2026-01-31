@@ -23,9 +23,9 @@ param(
 # Load .env.local if present (never committed)
 if (Test-Path ".env.local") {
     Get-Content ".env.local" | ForEach-Object {
-        if ($_ -match "^\s*([A-Z_]+)\s*=\s*(.+)\s*$") {
+        if ($_ -match '^\s*([A-Z_]+)\s*=\s*(.+)\s*$') {
             $key = $matches[1]
-            $value = $matches[2] -replace '["'\'']', ''
+            $value = $matches[2] -replace '"', '' -replace "'", ''
             [Environment]::SetEnvironmentVariable($key, $value, "Process")
         }
     }
@@ -83,18 +83,30 @@ try {
     
     Write-Host "[PASS] Summary endpoint returned 200" -ForegroundColor Green
     
-    # Validate contract
-    $summaryKeys = @("academic_year", "totals", "awards_by_bucket")
-    $totalsKeys = @("applications_total", "applications_by_status", "awards_total_count", "awards_total_amount", "avg_award_amount")
+    # Validate FROZEN contract structure
+    $summaryKeys = @("academic_year", "applications", "awards")
+    $applicationsKeys = @("total", "by_status")
+    $statusKeys = @("draft", "submitted", "in_review", "decided")
+    $awardsKeys = @("total", "total_amount", "avg_amount", "by_bucket")
     $bucketKeys = @("need", "mission", "marketing", "merit", "hardship")
     
     Test-JsonKeys $summaryResp $summaryKeys "Summary root keys" | Out-Null
-    Test-JsonKeys $summaryResp.totals $totalsKeys "Totals keys" | Out-Null
-    Test-JsonKeys $summaryResp.awards_by_bucket $bucketKeys "Bucket keys" | Out-Null
+    Test-JsonKeys $summaryResp.applications $applicationsKeys "Applications keys" | Out-Null
+    Test-JsonKeys $summaryResp.applications.by_status $statusKeys "Status keys" | Out-Null
+    Test-JsonKeys $summaryResp.awards $awardsKeys "Awards keys" | Out-Null
+    
+    # Validate all bucket keys present
+    foreach ($bucket in $bucketKeys) {
+        if ($bucket -notin $summaryResp.awards.by_bucket.PSObject.Properties.Name) {
+            Write-Host "[FAIL] Missing bucket: $bucket" -ForegroundColor Red
+            exit 1
+        }
+    }
+    Write-Host "[PASS] All bucket keys present" -ForegroundColor Green
     
     Write-Host "   Academic Year: $($summaryResp.academic_year)"
-    Write-Host "   Total Applications: $($summaryResp.totals.applications_total)"
-    Write-Host "   Total Awards: $($summaryResp.totals.awards_total_count)"
+    Write-Host "   Total Applications: $($summaryResp.applications.total)"
+    Write-Host "   Total Awards: $($summaryResp.awards.total)"
 } catch {
     Write-Host "[FAIL] Summary endpoint failed: $_" -ForegroundColor Red
     exit 1
@@ -110,12 +122,18 @@ try {
     
     Write-Host "[PASS] Drilldown endpoint returned 200" -ForegroundColor Green
     
-    # Validate contract
-    $drilldownKeys = @("academic_year", "bucket", "count", "limit", "offset", "rows")
+    # Validate FROZEN contract (count → total)
+    $drilldownKeys = @("academic_year", "bucket", "total", "limit", "offset", "rows")
     Test-JsonKeys $drilldownResp $drilldownKeys "Drilldown keys" | Out-Null
     
+    # Validate row schema if rows present
+    if ($drilldownResp.rows.Count -gt 0) {
+        $rowKeys = @("award_id", "application_id", "household_id", "bucket", "amount", "status", "rationale", "updated_at")
+        Test-JsonKeys $drilldownResp.rows[0] $rowKeys "Row schema" | Out-Null
+    }
+    
     Write-Host "   Bucket: $($drilldownResp.bucket)"
-    Write-Host "   Total Count: $($drilldownResp.count)"
+    Write-Host "   Total Count: $($drilldownResp.total)"
     Write-Host "   Returned Rows: $($drilldownResp.rows.Count)"
     Write-Host "   Limit: $($drilldownResp.limit)"
     Write-Host "   Offset: $($drilldownResp.offset)"
