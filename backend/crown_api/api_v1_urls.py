@@ -22,4 +22,6 @@ urlpatterns = [
     path("", include("crown_api.billing_api.urls")),
     path("", include("crown_api.exports.urls")),
     path("", include("crown_api.api_urls")),
+    # Financial Aid endpoints
+    path("financial-aid/", include("financial_aid.urls")),
 ]

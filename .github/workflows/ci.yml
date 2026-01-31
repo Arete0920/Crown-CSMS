@@ -103,6 +103,7 @@ jobs:
             crown_api.tests.test_households_api \
             crown_api.tests.test_students_api \
             crown_api.tests.test_director_router \
+            crown_api.tests.test_director_actions_auth_required \
             crown_api.tests.test_admissions_links_api \
             crown_api.tests.test_academics_api \
             crown_api.tests.test_billing_summary_api \
@@ -142,3 +143,22 @@ jobs:
           echo "  - Test failures (run: python manage.py test)"
           echo "  - Health endpoint broken (check crown_api/health_views.py)"
           exit 1
+
+  golden-path-dev:
+    name: Golden Path Smoke (DEV)
+    runs-on: ubuntu-latest
+    needs: [ test ]
+    # Only run on main branch pushes (not PRs), unless manual dispatch
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Golden Path against deployed DEV
+        shell: pwsh
+        env:
+          GP_API_BASE: ${{ secrets.GP_API_BASE }}
+          GP_USERNAME: ${{ secrets.GP_USERNAME }}
+          GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
+          GP_SEED_KEY: ${{ secrets.GP_SEED_KEY }}
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./tools/dev_scripts/golden_path.ps1 -ApiBase "$env:GP_API_BASE" -SkipSeed

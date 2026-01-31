@@ -1162,38 +1162,84 @@ def director_timeline(request):
     }, status=status.HTTP_200_OK)
 
 
+import os
+import logging
+from django.conf import settings
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+
+logger = logging.getLogger(__name__)
+
+def _crown_env() -> str:
+    crown_env = os.environ.get("CROWN_ENV") or getattr(settings, "CROWN_ENV", None)
+    if crown_env:
+        return str(crown_env).strip().lower()
+    return "dev" if getattr(settings, "DEBUG", False) else "prod"
+
+
+def _is_dev_env() -> bool:
+    env = _crown_env()
+    if env == "prod":
+        # Absolute deny: never allow seeding behaviors in prod
+        return False
+    return env == "dev"
+
+
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])   # we enforce auth manually (JWT OR seed key)
+@authentication_classes([])       # prevent DRF from requiring JWT automatically
 def force_seed_user(request):
     """
-    Dev-only endpoint to seed the database with demo user and data.
-    Requires director permissions and dev seed key.
+    DEV-only emergency seeding endpoint.
+    AuthZ: (JWT staff/superuser) OR (X-Dev-Seed-Key matches DEV_SEED_KEY).
+    Never returns credentials.
     """
-    if not crown_director_allowed(request):
-        return Response({"error": "Director permissions required"}, status=status.HTTP_403_FORBIDDEN)
-    
-    # Require dev seed key for security
-    expected_key = os.getenv('DEV_SEED_KEY', 'crown2026-dev-seed-key')
-    provided_key = request.META.get('HTTP_X_DEV_SEED_KEY', '')
-    if provided_key != expected_key:
-        return Response({"error": "Invalid dev seed key"}, status=status.HTTP_403_FORBIDDEN)
-    
-    from django.core.management import call_command
-    from django.core.management.base import CommandError
-    
+    if not _is_dev_env():
+        # Hide existence outside DEV
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    # Authorization path A: authenticated staff/superuser
+    user = getattr(request, "user", None)
+    jwt_ok = bool(user and getattr(user, "is_authenticated", False) and (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)))
+
+    # Authorization path B: dev seed key
+    provided = request.headers.get("X-Dev-Seed-Key") or request.headers.get("X-DEV-SEED-KEY")
+    expected = os.environ.get("DEV_SEED_KEY") or getattr(settings, "DEV_SEED_KEY", None)
+    key_ok = bool(expected and provided and provided == expected)
+
+    if not (jwt_ok or key_ok):
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
     try:
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        
         # Run migrations
         call_command('migrate', verbosity=1)
         
         # Run dev_bootstrap to create admin user
-        call_command('dev_bootstrap', verbosity=1)
+        admin_password = os.environ.get("DEV_ADMIN_PASSWORD", "Crown2026!")
+        call_command('dev_bootstrap', admin_password=admin_password, verbosity=1)
         
-        return Response({
-            "ok": True,
-            "message": "Database seeded successfully. Admin user 'admin' with password 'Crown2026!' created."
-        }, status=status.HTTP_200_OK)
+        logger.warning(
+            "DEV_SEED invoked: actor=%s auth=%s",
+            getattr(user, "username", None) if jwt_ok else None,
+            "jwt" if jwt_ok else "seed_key"
+        )
+
+        return Response(
+            {
+                "ok": True,
+                "message": "Seed operation completed (details suppressed).",
+                "already_seeded": False,   # or True if you detect it
+            },
+            status=status.HTTP_200_OK
+        )
     except CommandError as e:
-        return Response({
-            "ok": False,
-            "error": str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        logger.exception("DEV_SEED failed: %s", str(e))
+        return Response(
+            {"ok": False, "message": "Seed operation failed."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

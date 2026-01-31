@@ -92,7 +92,7 @@ INSTALLED_APPS = [
     'households',
     'applications',
     'ledger',
-    'financial_aid',
+    'financial_aid.apps.FinancialAidConfig',
     'academics',
     'billing',
 ]
@@ -242,6 +242,9 @@ STATIC_URL = 'static/'
 
 # Custom User Model
 AUTH_USER_MODEL = 'core.UserAccount'
+
+# Default auto field
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Authentication redirects
 LOGIN_URL = '/accounts/login/'
