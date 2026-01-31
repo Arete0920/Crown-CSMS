@@ -12,6 +12,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("financial_aid", "0020_financial_aid_core"),
         ("crown_api", "0007_messagethread_message_and_more"),
+        ("households", "0008_households_guardians_students"),
     ]
 
     operations = [
