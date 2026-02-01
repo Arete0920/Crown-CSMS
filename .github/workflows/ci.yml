@@ -161,6 +161,15 @@ jobs:
           if (-not $env:GP_API_BASE) { throw "GP_API_BASE is empty" }
           Write-Host "GP_API_BASE=$env:GP_API_BASE"
 
+      - name: Debug GP endpoints (no secrets)
+        shell: pwsh
+        env:
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+        run: |
+          Write-Host "GP_API_BASE=$env:GP_API_BASE"
+          Write-Host "TOKEN_URL=$($env:GP_API_BASE)/api/v1/auth/token/"
+          pwsh -NoProfile -Command "iwr -UseBasicParsing -TimeoutSec 15 $env:GP_API_BASE/api/health | % Content"
+
       - name: Run Golden Path against deployed DEV
         shell: pwsh
         env:

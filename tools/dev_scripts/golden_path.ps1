@@ -126,7 +126,7 @@ if ($GP_USER -and $GP_PASS) {
 } else {
   $body = @{ username = $Username; password = $Password } | ConvertTo-Json
 }
-$tok = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/auth/token/" -ContentType "application/json" -Body $body -TimeoutSec 12
+$tok = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/v1/auth/token/" -ContentType "application/json" -Body $body -TimeoutSec 12
 $token = $tok.access
 if (-not $token) { throw "JWT failed. Check Username/Password." }
 Write-Host ("Token prefix: " + $token.Substring(0, [Math]::Min(24, $token.Length)) + "...")
