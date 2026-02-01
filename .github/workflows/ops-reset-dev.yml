@@ -8,6 +8,13 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-reset-dev
+  cancel-in-progress: false
+
 jobs:
   reset_dev:
     if: github.event_name == 'workflow_dispatch'
