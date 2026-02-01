@@ -72,17 +72,18 @@ jobs:
         run: |
           set -e
           URL="https://crown-api-dev.azurewebsites.net/api/health/"
-          EXPECTED="${EXPECTED_SHA:0:7}"
+          EXPECTED_SHORT="${EXPECTED_SHA:0:7}"
 
           echo "Expecting build_sha=${EXPECTED}"
           for i in $(seq 1 32); do
             echo "Attempt $i/32..."
             body="$(curl -fsS "$URL" || true)"
             echo "$body"
-            got="$(echo "$body" | python3 -c 'import json,sys; d=json.loads(sys.stdin.read() or "{}"); print((d.get("build_sha") or "")[:7])')"
+            got_full="$(echo "$body" | python3 -c 'import json,sys; d=json.loads(sys.stdin.read() or "{}"); print(d.get("build_sha") or "")')"
+            got_short="${got_full:0:7}"
 
-            if [ "$got" = "$EXPECTED" ]; then
-              echo "OK: deployed build_sha matches ${EXPECTED}"
+            if [ "$got_short" = "$EXPECTED_SHORT" ]; then
+              echo "OK: deployed build_sha matches ${EXPECTED_SHORT}"
               exit 0
             fi
 
