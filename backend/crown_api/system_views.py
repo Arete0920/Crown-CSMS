@@ -77,15 +77,38 @@ def demo_reset_view(request):
     out_migrate = io.StringIO()
     out_seed = io.StringIO()
 
-    call_command("migrate", "--noinput", stdout=out_migrate, stderr=out_migrate)
-    call_command(
-        "golden_path_bootstrap",
-        "--force",
-        "--school-id", str(school_id),
-        "--verbosity", str(verbosity_int),
-        stdout=out_seed,
-        stderr=out_seed,
-    )
+    try:
+        # 1) migrate (keyword options only)
+        call_command(
+            "migrate",
+            interactive=False,
+            verbosity=verbosity_int,
+            stdout=out_migrate,
+            stderr=out_migrate,
+        )
+
+        # 2) reseed (keyword options only)
+        call_command(
+            "golden_path_bootstrap",
+            force=True,
+            school_id=str(school_id),
+            verbosity=verbosity_int,
+            stdout=out_seed,
+            stderr=out_seed,
+        )
+
+    except Exception as e:
+        # Return JSON error instead of Django HTML 500 page
+        return JsonResponse(
+            {
+                "ok": False,
+                "error_type": e.__class__.__name__,
+                "error": str(e),
+                "migrate_tail": out_migrate.getvalue()[-2000:],
+                "seed_tail": out_seed.getvalue()[-2000:],
+            },
+            status=500,
+        )
 
     return JsonResponse(
         {
