@@ -58,22 +58,42 @@ def _get_school_id(request) -> str:
     return school_id
 
 
+def _normalize_ay_name(name: str) -> str:
+    """Normalize academic year name: en-dash (–) and em-dash (—) to hyphen (-)."""
+    return (name or "").strip().replace("\u2013", "-").replace("\u2014", "-")
+
+
 def _get_academic_year_window(school_id: str, academic_year: str | None):
     """
-    Returns: (academic_year_name, start_date, end_date)
+    Returns: (academic_year_name, start_date, end_date, is_explicit)
     If academic_year is None, use current AcademicYear for the school.
+    is_explicit: True if academic_year param was provided (indicates date filtering should apply).
     """
     qs = AcademicYear.objects.filter(school_id=school_id)
+    is_explicit = academic_year is not None
+
     if academic_year:
+        # Normalize the lookup name (hyphen vs en-dash)
+        ay_norm = _normalize_ay_name(academic_year)
+        # Try exact match first
         ay = qs.filter(name=academic_year).first()
+        # If not found, try with normalization
+        if not ay:
+            # Fall back to checking all names with normalization
+            for candidate in qs:
+                if _normalize_ay_name(candidate.name) == ay_norm:
+                    ay = candidate
+                    break
+        if not ay:
+            ay = None
     else:
         ay = qs.filter(is_current=True).first() or qs.order_by("-start_date").first()
 
     if not ay:
         # No AY configured: treat as unbounded
-        return (academic_year or "unknown", None, None)
+        return (academic_year or "unknown", None, None, is_explicit)
 
-    return (ay.name, ay.start_date, ay.end_date)
+    return (ay.name, ay.start_date, ay.end_date, is_explicit)
 
 
 def _compute_stage(
@@ -143,12 +163,13 @@ def admissions_summary(request):
         else None
     )
 
-    ay_name, ay_start, ay_end = _get_academic_year_window(school_id, academic_year)
+    ay_name, ay_start, ay_end, ay_explicit = _get_academic_year_window(school_id, academic_year)
 
     apps = Application.objects.filter(school_id=school_id)
 
-    # Academic year filter if available
-    if ay_start and ay_end:
+    # Academic year date filter only if academic_year param was explicitly provided
+    # This prevents "seeded data but shows 0" when data.created_at is outside AY window
+    if ay_explicit and ay_start and ay_end:
         apps = apps.filter(created_at__date__gte=ay_start, created_at__date__lte=ay_end)
 
     # Optional date window override
@@ -286,10 +307,10 @@ def admissions_drilldown(request):
             status=400
         )
 
-    ay_name, ay_start, ay_end = _get_academic_year_window(school_id, academic_year)
+    ay_name, ay_start, ay_end, ay_explicit = _get_academic_year_window(school_id, academic_year)
 
     apps = Application.objects.filter(school_id=school_id)
-    if ay_start and ay_end:
+    if ay_explicit and ay_start and ay_end:
         apps = apps.filter(created_at__date__gte=ay_start, created_at__date__lte=ay_end)
 
     app_ids = list(apps.values_list("id", flat=True))

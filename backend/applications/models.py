@@ -68,6 +68,10 @@ class Applicant(TimeStampedModel):
 	source = models.CharField(max_length=32, default="other", db_index=True)
 	flags = models.JSONField(default=dict, blank=True)
 
+	# Admissions funnel fields (canonical)
+	source = models.CharField(max_length=32, default="other", db_index=True)
+	flags = models.JSONField(default=dict, blank=True)
+
 	class Meta:
 		db_table = "applicant"
 		indexes = [
