@@ -67,10 +67,10 @@ jobs:
           for ($i=1; $i -le $max; $i++) {
             try {
               $code = (curl -s -o /dev/null -w "%{http_code}" $health)
-              Write-Host "Attempt $i/$max: HTTP $code"
+              Write-Host ("Attempt {0}/{1}: HTTP {2}" -f $i, $max, $code)
               if ($code -eq "200") { $ok = $true; break }
             } catch {
-              Write-Host "Attempt $i/$max: error: $($_.Exception.Message)"
+              Write-Host ("Attempt {0}/{1}: error: {2}" -f $i, $max, $_.Exception.Message)
             }
             Start-Sleep -Seconds $sleep
           }
