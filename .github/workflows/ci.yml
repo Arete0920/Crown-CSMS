@@ -176,6 +176,5 @@ jobs:
           GP_API_BASE: https://crown-api-dev.azurewebsites.net
           GP_USERNAME: ${{ secrets.GP_USERNAME }}
           GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
-          GP_SEED_KEY: ${{ secrets.GP_SEED_KEY }}
         run: |
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./tools/dev_scripts/golden_path.ps1 -ApiBase "$env:GP_API_BASE" -SkipSeed
