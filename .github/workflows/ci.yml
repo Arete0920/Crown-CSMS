@@ -213,13 +213,46 @@ jobs:
           DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
         run: |
           $uri = "$env:GP_API_BASE/api/v1/ops/ensure-ci-user/"
-          $headers = @{ "X-Dev-Ops-Secret" = $env:DEV_OPS_SECRET }
-          $payload = @{ username = $env:GP_USERNAME; password = $env:GP_PASSWORD } | ConvertTo-Json -Compress
+          Write-Host "OPS_URI=$uri"
 
-          Write-Host "Ensuring CI user exists..."
-          $resp = Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -ContentType "application/json" -Body $payload -TimeoutSec 30
-          if (-not $resp.ok) { throw "ensure-ci-user failed: $($resp | ConvertTo-Json)" }
-          Write-Host "CI user ready: $($resp | ConvertTo-Json -Compress)"
+          # Sanity checks (safe)
+          if (-not $env:DEV_OPS_SECRET) { throw "DEV_OPS_SECRET missing" }
+          if (-not $env:GP_USERNAME)    { throw "GP_USERNAME missing" }
+          if (-not $env:GP_PASSWORD)    { throw "GP_PASSWORD missing" }
+          Write-Host ("DEV_OPS_SECRET_LEN=" + $env:DEV_OPS_SECRET.Length)
+          Write-Host ("GP_USERNAME_SET=" + [bool]$env:GP_USERNAME)
+          Write-Host ("GP_PASSWORD_LEN=" + $env:GP_PASSWORD.Length)
+
+          $headers = @{
+            "X-Dev-Ops-Secret" = $env:DEV_OPS_SECRET
+            "Accept" = "application/json"
+          }
+
+          $payloadObj = @{ username = $env:GP_USERNAME; password = $env:GP_PASSWORD }
+          $payload = $payloadObj | ConvertTo-Json -Compress
+
+          try {
+            $resp = Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -ContentType "application/json" -Body $payload -TimeoutSec 30
+            Write-Host ("OPS_OK=" + $resp.ok)
+            Write-Host ("OPS_CREATED=" + $resp.created)
+          } catch {
+            $status = $null
+            $body   = $null
+
+            if ($_.Exception.Response) {
+              try { $status = [int]$_.Exception.Response.StatusCode } catch {}
+              try {
+                $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                $body = $sr.ReadToEnd()
+              } catch {}
+            }
+
+            Write-Host ("OPS_STATUS=" + $status)
+            if ($body) {
+              Write-Host ("OPS_BODY=" + $body)
+            }
+            throw
+          }
 
       - name: Run Golden Path against deployed DEV
         shell: pwsh
