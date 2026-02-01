@@ -91,6 +91,8 @@ USE_X_FORWARDED_HOST = True
 CROWN_ENV = os.getenv("CROWN_ENV", "")
 DJANGO_ENV = os.getenv("DJANGO_ENV", "")
 CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", "")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "")
+DEV_OPS_SECRET = os.getenv("DEV_OPS_SECRET", "")
 
 
 # Application definition
