@@ -13,7 +13,7 @@ def health(request):
     return JsonResponse({
         "ok": True,
         "status": "ok",
-        "build_sha": (BUILD_SHA or "unknown")[:7],
+        "build_sha": BUILD_SHA or "unknown",
     })
 
 
