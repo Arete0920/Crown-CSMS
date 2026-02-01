@@ -1,9 +1,13 @@
-import os
+from __future__ import annotations
+
+import io
+from django.conf import settings
 from django.core.management import call_command
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser, AllowAny
-from rest_framework import status
+from rest_framework.permissions import IsAdminUser
 
 from core.models_seed import SeedRun
 
@@ -33,61 +37,63 @@ class SeedStatusView(APIView):
         )
 
 
-class DemoResetView(APIView):
-    permission_classes = [AllowAny]
+def _get_ops_secret() -> str:
+    return getattr(settings, "CROWN_OPS_SECRET", "") or getattr(settings, "OPS_SECRET", "") or ""
 
-    def post(self, request):
-        secret = request.headers.get("X-Ops-Secret", "") or request.headers.get("X-Demo-Reset-Secret", "")
-        expected = (
-            os.getenv("OPS_RESET_SECRET", "")
-            or os.getenv("DEV_OPS_SECRET", "")
-            or os.getenv("DEMO_RESET_SECRET", "")
-        )
 
-        if not expected:
-            return Response(
-                {"error": "Server not configured for demo reset"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+def _is_dev_env() -> bool:
+    env = (getattr(settings, "CROWN_ENV", "") or getattr(settings, "DJANGO_ENV", "") or "").lower()
+    return env in ("dev", "development")
 
-        if secret != expected:
-            return Response(
-                {"error": "Invalid or missing X-Ops-Secret header"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        school_id = request.data.get("school_id")
-        if not school_id:
-            return Response(
-                {"error": "school_id required in request body"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            call_command("migrate", "--noinput")
-            call_command("golden_path_bootstrap", "--force", f"--school-id={school_id}", "--verbosity=2")
-            latest_run = SeedRun.objects.order_by("-created_at").first()
-            
-            if latest_run:
-                return Response({
-                    "status": "success",
-                    "seed_run": {
-                        "created_at": latest_run.created_at.isoformat(),
-                        "env_name": latest_run.env_name,
-                        "build_sha": latest_run.build_sha,
-                        "school_id": str(latest_run.school_id) if latest_run.school_id else None,
-                        "command": latest_run.command,
-                        "force": latest_run.force,
-                        "status": latest_run.status,
-                        "summary": latest_run.summary_json,
-                        "error": latest_run.error_text,
-                    }
-                })
-            else:
-                return Response({"status": "success", "message": "Command executed but no SeedRun found"})
-                
-        except Exception as e:
-            return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+
+@csrf_exempt
+def demo_reset_view(request):
+    """
+    DEV-only ops endpoint.
+    Runs: migrate --noinput AND golden_path_bootstrap --force --school-id <id>
+    Protected by: X-Admin-Ops-Secret header matching CROWN_OPS_SECRET
+    """
+    if request.method not in ("POST",):
+        return JsonResponse({"detail": "Method not allowed"}, status=405)
+
+    if not _is_dev_env():
+        return JsonResponse({"detail": "Not allowed outside dev"}, status=403)
+
+    secret = _get_ops_secret()
+    header = request.headers.get("X-Admin-Ops-Secret", "")
+    if not secret or header != secret:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    school_id = request.headers.get("X-School-Id") or request.GET.get("school_id") or ""
+    if not school_id:
+        return JsonResponse({"detail": "Missing school_id (send X-School-Id or ?school_id=...)"}, status=400)
+
+    verbosity = request.GET.get("verbosity", "1")
+    try:
+        verbosity_int = int(verbosity)
+    except Exception:
+        verbosity_int = 1
+
+    out_migrate = io.StringIO()
+    out_seed = io.StringIO()
+
+    call_command("migrate", "--noinput", stdout=out_migrate, stderr=out_migrate)
+    call_command(
+        "golden_path_bootstrap",
+        "--force",
+        "--school-id", str(school_id),
+        "--verbosity", str(verbosity_int),
+        stdout=out_seed,
+        stderr=out_seed,
+    )
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "env": (getattr(settings, "CROWN_ENV", "") or getattr(settings, "DJANGO_ENV", "")),
+            "school_id": school_id,
+            "migrate_tail": out_migrate.getvalue()[-2000:],
+            "seed_tail": out_seed.getvalue()[-2000:],
+        },
+        status=200,
+    )
