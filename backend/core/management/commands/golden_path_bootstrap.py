@@ -8,6 +8,149 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from applications.models import Application, Applicant, ApplicationEvent
+
+
+def seed_admissions_funnel(*, school_id, academic_year_name=None):
+    """
+    Deterministic admissions funnel seed.
+    - 30 leads (Applicants) + Applications
+    - Fixed distribution of sources/stages
+    - Events emitted for inquiry/tour/decision/enrollment where relevant
+    """
+    from households.models import Household
+
+    # Avoid duplicates if rerun
+    if Applicant.objects.filter(school_id=school_id).exists():
+        return
+
+    sources = [
+        "church_referral", "facebook", "instagram", "google",
+        "direct_mail_qr", "website", "word_of_mouth", "other",
+    ]
+
+    # Stage plan by index (deterministic)
+    # We'll create event chains for early funnel and decisions.
+    stage_plan = (
+        ["inquiry"] * 10 +
+        ["tour_scheduled"] * 5 +
+        ["tour_completed"] * 4 +
+        ["application_started"] * 5 +
+        ["application_submitted"] * 3 +
+        ["in_review"] * 1 +
+        ["accepted"] * 1 +
+        ["enrolled"] * 1
+    )
+    stage_plan = stage_plan[:30]
+
+    # Minimal “flags” pattern
+    def flags_for(i):
+        if i == 7:
+            return {"duplicate_suspected": True, "bot_suspected": False}
+        if i == 13:
+            return {"duplicate_suspected": False, "bot_suspected": True}
+        return {"duplicate_suspected": False, "bot_suspected": False}
+
+    # Application.status mapping baseline
+    def app_status_for(stage):
+        if stage in ("application_started", "inquiry", "tour_scheduled", "tour_completed"):
+            return "DRAFT"
+        if stage == "application_submitted":
+            return "SUBMITTED"
+        if stage == "in_review":
+            return "IN_REVIEW"
+        if stage in ("accepted", "enrolled"):
+            return "DECIDED"
+        return "DRAFT"
+
+    # Decision payload mapping
+    def decision_payload(stage):
+        if stage == "accepted":
+            return {"decision": "accepted"}
+        if stage == "enrolled":
+            return {"decision": "accepted"}
+        return None
+
+    for i in range(30):
+        stage = stage_plan[i]
+        source = sources[i % len(sources)]
+
+        app = Application.objects.create(
+            school_id=school_id,
+            household=Household.objects.filter(school_id=school_id).first(),
+            status=app_status_for(stage),
+        )
+
+        Applicant.objects.create(
+            school_id=school_id,
+            application=app,
+            student=None,
+            first_name=f"Student{i+1}",
+            last_name="Applicant",
+            grade_applying_for=str((i % 12) + 1),
+            dob=None,
+            source=source,
+            flags=flags_for(i),
+        )
+
+        # Event chain
+        if stage in (
+            "inquiry", "tour_scheduled", "tour_completed", "application_started",
+            "application_submitted", "in_review", "accepted", "enrolled"
+        ):
+            ApplicationEvent.objects.create(
+                school_id=school_id,
+                application=app,
+                event_type="inquiry_created",
+                payload={"source": source},
+            )
+
+        if stage in (
+            "tour_scheduled", "tour_completed", "application_started",
+            "application_submitted", "in_review", "accepted", "enrolled"
+        ):
+            ApplicationEvent.objects.create(
+                school_id=school_id,
+                application=app,
+                event_type="tour_scheduled",
+                payload={},
+            )
+
+        if stage in (
+            "tour_completed", "application_started", "application_submitted",
+            "in_review", "accepted", "enrolled"
+        ):
+            ApplicationEvent.objects.create(
+                school_id=school_id,
+                application=app,
+                event_type="tour_completed",
+                payload={},
+            )
+
+        if stage in ("application_submitted", "in_review", "accepted", "enrolled"):
+            ApplicationEvent.objects.create(
+                school_id=school_id,
+                application=app,
+                event_type="application_submitted",
+                payload={},
+            )
+
+        if stage in ("accepted", "enrolled"):
+            ApplicationEvent.objects.create(
+                school_id=school_id,
+                application=app,
+                event_type="decision_made",
+                payload=decision_payload(stage),
+            )
+
+        if stage == "enrolled":
+            ApplicationEvent.objects.create(
+                school_id=school_id,
+                application=app,
+                event_type="enrollment_confirmed",
+                payload={},
+            )
+
 
 class Command(BaseCommand):
     help = (
@@ -287,6 +430,9 @@ class Command(BaseCommand):
         )
 
         household, _ = Household.objects.get_or_create(school_id=school.id, name="GP Household")
+
+        seed_admissions_funnel(school_id=school.id, academic_year_name=academic_year.name if academic_year else None)
+
         ledger_acct, _ = LedgerAccount.objects.get_or_create(
             school_id=school.id,
             household=household,
