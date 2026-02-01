@@ -389,5 +389,6 @@ def admissions_drilldown(request):
             "limit": limit,
             "offset": offset,
             "rows": page,
+            "results": page,
         }
     )
