@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import json
 from datetime import timedelta
 from pathlib import Path
 
@@ -71,6 +72,20 @@ if _allowed_hosts != ["*"] and "localhost" not in _allowed_hosts:
     _allowed_hosts = (_allowed_hosts or []) + ["localhost", "127.0.0.1"]
 
 ALLOWED_HOSTS = _allowed_hosts
+
+# --- CSRF trusted origins (Azure-safe) ---
+_raw = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+
+if _raw.startswith("["):
+    CSRF_TRUSTED_ORIGINS = json.loads(_raw)
+elif _raw:
+    CSRF_TRUSTED_ORIGINS = [_raw]
+else:
+    CSRF_TRUSTED_ORIGINS = []
+
+# Azure reverse-proxy HTTPS handling
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
 
 # Application definition
