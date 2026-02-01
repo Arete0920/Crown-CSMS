@@ -195,11 +195,36 @@ GET /api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=0
 }
 ```
 
+**Response (unfiltered - all buckets):**
+
+```json
+{
+  "academic_year": "2025-2026",
+  "bucket": null,
+  "total": 24,
+  "limit": 25,
+  "offset": 0,
+  "rows": [
+    {
+      "award_id": "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d",
+      "application_id": "b8c9d0e1-f2a3-4b5c-6d7e-8f9a0b1c2d3e",
+      "household_id": "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4f",
+      "bucket": "need",
+      "amount": "2500.00",
+      "status": "decided",
+      "rationale": "Outstanding merit and demonstrated need",
+      "updated_at": "2026-01-31T14:22:10Z"
+    }
+  ]
+}
+```
+
 **Field Notes:**
 
+- `rows[]` represent **awards**; `application_id` is the associated financial aid application
 - `total` = total matching records (not just this page)
 - `rows` = paginated results (max `limit` items)
-- `bucket` = null if not filtered
+- `bucket` = null if not filtered, otherwise the filtered bucket name
 - `rationale` = null if not provided, otherwise text
 - `updated_at` = ISO 8601 timestamp
 - Amount is always a **decimal string** with 2 decimal places
@@ -241,6 +266,14 @@ GET /api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=25
 }
 ```
 
+Or field-specific errors:
+
+```json
+{
+  "limit": ["A valid integer is required."]
+}
+```
+
 **Missing required header:**
 
 ```json
@@ -249,21 +282,13 @@ GET /api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=25
 }
 ```
 
-### 401 Unauthorized
+### Auth Status Codes (Frozen Behavior)
 
-```json
-{
-  "detail": "Invalid token"
-}
-```
-
-### 403 Forbidden
-
-```json
-{
-  "detail": "Authentication credentials were not provided."
-}
-```
+| Scenario | Status | Example Response |
+|----------|--------|------------------|
+| Missing `Authorization` header | 403 | `{"detail": "Authentication credentials were not provided."}` |
+| Invalid/expired token | 401 | `{"detail": "Invalid token"}` |
+| Authenticated but permission denied (RBAC) | 403 | `{"detail": "You do not have permission to perform this action."}` |
 
 ---
 
@@ -407,6 +432,28 @@ $summary = Invoke-RestMethod -Uri "$API/api/v1/financial-aid/summary/" `
 $drilldown = Invoke-RestMethod -Uri "$API/api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=0" `
   -Headers @{"Authorization"="Bearer $token"; "X-School-Id"=$schoolId}
 ```
+
+---
+
+## Contract Tests
+
+This contract is **automatically enforced** by:  
+**`backend/financial_aid/tests/test_financial_aid_endpoints.py`**
+
+- **11 automated tests** validate every response shape, field type, and status code
+- Tests fail if actual API behavior drifts from frozen contract
+- Run locally: `python backend/manage.py test financial_aid.tests.test_financial_aid_endpoints`
+
+**Example Test (Invalid Bucket → 400):**
+```python
+def test_drilldown_invalid_bucket_400(self):
+    url = reverse("financial_aid:drilldown") + "?bucket=INVALID"
+    response = self.client.get(url, HTTP_X_SCHOOL_ID=str(self.school.id))
+    self.assertEqual(response.status_code, 400)
+    self.assertIn("bucket", response.json()["error"].lower())
+```
+
+These tests prevent "but the doc says..." bugs by ensuring the contract is **enforced in code**.
 
 ---
 
