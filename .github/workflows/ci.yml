@@ -204,6 +204,23 @@ jobs:
           }
           throw "DEV did not become healthy in time: $healthUrl"
 
+      - name: Ensure CI user exists in DEV (ops)
+        shell: pwsh
+        env:
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+          GP_USERNAME: ${{ secrets.GP_USERNAME }}
+          GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
+          DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
+        run: |
+          $uri = "$env:GP_API_BASE/api/v1/ops/ensure-ci-user/"
+          $headers = @{ "X-Dev-Ops-Secret" = $env:DEV_OPS_SECRET }
+          $payload = @{ username = $env:GP_USERNAME; password = $env:GP_PASSWORD } | ConvertTo-Json -Compress
+
+          Write-Host "Ensuring CI user exists..."
+          $resp = Invoke-RestMethod -Method Post -Uri $uri -Headers $headers -ContentType "application/json" -Body $payload -TimeoutSec 30
+          if (-not $resp.ok) { throw "ensure-ci-user failed: $($resp | ConvertTo-Json)" }
+          Write-Host "CI user ready: $($resp | ConvertTo-Json -Compress)"
+
       - name: Run Golden Path against deployed DEV
         shell: pwsh
         env:
