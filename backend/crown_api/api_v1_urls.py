@@ -8,7 +8,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from applications.views_admissions import admissions_summary, admissions_drilldown
-from crown_api.system_views import SeedStatusView, DemoResetView
+from crown_api.system_views import SeedStatusView, demo_reset_view
 
 urlpatterns = [
     # Authentication
@@ -23,7 +23,7 @@ urlpatterns = [
     path("admissions/drilldown/", admissions_drilldown, name="admissions_drilldown"),
     # System telemetry
     path("system/seed-status/", SeedStatusView.as_view(), name="seed_status"),
-    path("system/demo-reset/", DemoResetView.as_view(), name="demo_reset"),
+    path("system/demo-reset/", demo_reset_view, name="system-demo-reset"),
     
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.
