@@ -1,0 +1,37 @@
+name: OPS - Reset DEV Demo (migrate + reseed + smoke)
+
+on:
+  workflow_dispatch:
+    inputs:
+      school_id:
+        description: School UUID to reseed
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-reset-dev
+  cancel-in-progress: false
+
+jobs:
+  reset_dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call DEV demo reset endpoint
+        env:
+          API_BASE: https://crown-api-dev.azurewebsites.net
+          OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
+          SCHOOL_ID: ${{ inputs.school_id }}
+        run: |
+          set -euo pipefail
+          curl -sS -X POST "${API_BASE}/api/v1/system/demo-reset/?verbosity=1" \
+            -H "X-Admin-Ops-Secret: ${OPS_SECRET}" \
+            -H "X-School-Id: ${SCHOOL_ID}" \
+            -H "Content-Type: application/json" \
+            -d '{}' | tee /tmp/demo-reset.json
+          echo
+          echo "---- response ----"
+          cat /tmp/demo-reset.json
