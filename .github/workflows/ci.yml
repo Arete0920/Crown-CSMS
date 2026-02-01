@@ -153,10 +153,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Assert GP_API_BASE is set
+        shell: pwsh
+        env:
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+        run: |
+          if (-not $env:GP_API_BASE) { throw "GP_API_BASE is empty" }
+          Write-Host "GP_API_BASE=$env:GP_API_BASE"
+
       - name: Run Golden Path against deployed DEV
         shell: pwsh
         env:
-          GP_API_BASE: ${{ secrets.GP_API_BASE }}
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
           GP_USERNAME: ${{ secrets.GP_USERNAME }}
           GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
           GP_SEED_KEY: ${{ secrets.GP_SEED_KEY }}
