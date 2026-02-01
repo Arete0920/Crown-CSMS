@@ -188,8 +188,9 @@ class FinancialAidEndpointsTests(APITestCase):
         # Check row schema if present
         if r.data["rows"]:
             row = r.data["rows"][0]
-            row_keys = {"award_id", "application_id", "household_id", "bucket", "amount", "status", "rationale", "updated_at"}
+            row_keys = {"award_id", "application_id", "household_id", "bucket", "amount", "application_status", "award_status", "rationale", "updated_at"}
             self.assertTrue(row_keys.issubset(set(row.keys())))
+            self.assertNotIn("status", row)
 
     def test_drilldown_empty_results_valid_shape(self):
         """Verify empty results still return valid contract."""

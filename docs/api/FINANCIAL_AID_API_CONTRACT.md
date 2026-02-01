@@ -174,7 +174,8 @@ GET /api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=0
       "household_id": "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4f",
       "bucket": "need",
       "amount": "2500.00",
-      "status": "decided",
+      "application_status": "decided",
+      "award_status": "awarded",
       "rationale": "Outstanding merit and demonstrated need",
       "updated_at": "2026-01-31T14:22:10Z"
     }
@@ -211,7 +212,8 @@ GET /api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=0
       "household_id": "c9d0e1f2-a3b4-5c6d-7e8f-9a0b1c2d3e4f",
       "bucket": "need",
       "amount": "2500.00",
-      "status": "decided",
+      "application_status": "decided",
+      "award_status": "awarded",
       "rationale": "Outstanding merit and demonstrated need",
       "updated_at": "2026-01-31T14:22:10Z"
     }
@@ -225,6 +227,8 @@ GET /api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=0
 - `total` = total matching records (not just this page)
 - `rows` = paginated results (max `limit` items)
 - `bucket` = null if not filtered, otherwise the filtered bucket name
+- `application_status` = one of: `draft`, `submitted`, `in_review`, `decided`
+- `award_status` = one of: `awarded`, `denied`, `revised`, `withdrawn`
 - `rationale` = null if not provided, otherwise text
 - `updated_at` = ISO 8601 timestamp
 - Amount is always a **decimal string** with 2 decimal places
@@ -289,6 +293,8 @@ Or field-specific errors:
 | Missing `Authorization` header | 403 | `{"detail": "Authentication credentials were not provided."}` |
 | Invalid/expired token | 401 | `{"detail": "Invalid token"}` |
 | Authenticated but permission denied (RBAC) | 403 | `{"detail": "You do not have permission to perform this action."}` |
+
+Clients must branch on HTTP status code, **not** the `detail` message string.
 
 ---
 
@@ -366,7 +372,8 @@ interface FinancialAidDrilldown {
     household_id: string | null;
     bucket: AidBucket;
     amount: string; // Decimal string
-    status: "draft" | "submitted" | "in_review" | "decided";
+    application_status: "draft" | "submitted" | "in_review" | "decided";
+    award_status: "awarded" | "denied" | "revised" | "withdrawn";
     rationale: string | null;
     updated_at: string; // ISO 8601
   }[];
