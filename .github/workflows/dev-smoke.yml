@@ -79,11 +79,39 @@ jobs:
             throw "DEV health check failed after $max attempts."
           }
 
+      - name: Ensure smoke user exists (DEV ops)
+        shell: pwsh
+        env:
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+          DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
+          GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if ([string]::IsNullOrWhiteSpace($env:DEV_OPS_SECRET)) { throw "DEV_OPS_SECRET missing" }
+          if ([string]::IsNullOrWhiteSpace($env:GP_PASSWORD)) { throw "GP_PASSWORD missing" }
+
+          $uri = "$env:GP_API_BASE/api/v1/ops/ensure-ci-user/"
+          $headers = @{
+            "X-Dev-Ops-Secret" = $env:DEV_OPS_SECRET
+            "Accept" = "application/json"
+          }
+
+          $payloadObj = @{
+            username = "ci-golden@crown-demo.local"
+            password = $env:GP_PASSWORD
+          }
+          $payload = $payloadObj | ConvertTo-Json -Compress
+
+          Write-Host "Calling ops ensure-ci-user..."
+          $resp = Invoke-RestMethod -Method POST -Uri $uri -Headers $headers -ContentType "application/json" -Body $payload -TimeoutSec 30
+          $resp | ConvertTo-Json -Compress | Write-Host
+
       - name: Run Golden Path smoke (DEV)
         shell: pwsh
         env:
           GP_API_BASE: https://crown-api-dev.azurewebsites.net
-          GP_USERNAME: ${{ secrets.GP_USERNAME }}
+          GP_USERNAME: ci-golden@crown-demo.local
           GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
         run: |
           $ErrorActionPreference = "Stop"
