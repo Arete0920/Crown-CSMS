@@ -104,11 +104,11 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.assertEqual(resp.json(), {"detail": "Forbidden."})
 
         # 3) Wrong key -> 403
-        resp = self.client.post(url, headers={"X-Dev-Seed-Key": "wrong-key"})
+        resp = self.client.post(url, HTTP_X_DEV_SEED_KEY="wrong-key")
         self.assertEqual(resp.status_code, 403)
 
         # 4) Correct key -> 200, no credentials in response
-        resp = self.client.post(url, headers={"X-Dev-Seed-Key": "test-dev-seed-key"})
+        resp = self.client.post(url, HTTP_X_DEV_SEED_KEY="test-dev-seed-key")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIs(data["ok"], True)
@@ -132,6 +132,6 @@ class DirectorActionsAuthRequiredTests(TestCase):
     def test_force_seed_user_prod_always_404(self):
         """Absolute deny: force_seed_user returns 404 in prod even with valid key."""
         resp = self.client.post(
-            "/api/director/force_seed_user/", headers={"X-Dev-Seed-Key": "test-dev-seed-key"}
+            "/api/director/force_seed_user/", HTTP_X_DEV_SEED_KEY="test-dev-seed-key"
         )
         self.assertEqual(resp.status_code, 404)
