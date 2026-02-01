@@ -4,6 +4,7 @@ from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
+from rest_framework.test import APIClient
 
 from aid.models import AidAward
 from core.models import AcademicYear, Family, School, Student
@@ -123,10 +124,10 @@ class DirectorActionsAuthRequiredTests(TestCase):
             password="password123",
             is_staff=True,
         )
-        self.client.force_login(staff)
-        resp = self.client.post(url)
+        api_client = APIClient()
+        api_client.force_authenticate(user=staff)
+        resp = api_client.post(url)
         self.assertEqual(resp.status_code, 200)
-        self.client.logout()
 
     @override_settings(CROWN_ENV="prod", DEV_SEED_KEY="test-dev-seed-key")
     def test_force_seed_user_prod_always_404(self):
