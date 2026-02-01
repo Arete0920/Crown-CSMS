@@ -228,7 +228,7 @@ GET /api/v1/financial-aid/drilldown/?bucket=need&limit=25&offset=0
 - `rows` = paginated results (max `limit` items)
 - `bucket` = null if not filtered, otherwise the filtered bucket name
 - `application_status` = one of: `draft`, `submitted`, `in_review`, `decided`
-- `award_status` = one of: `awarded`, `denied`, `revised`, `withdrawn`
+- `award_status` = one of: `awarded`, `denied`, `revised`, `withdrawn` *(currently derived: if application_status != "decided" → revised; else if amount > 0 → awarded; else denied)*
 - `rationale` = null if not provided, otherwise text
 - `updated_at` = ISO 8601 timestamp
 - Amount is always a **decimal string** with 2 decimal places

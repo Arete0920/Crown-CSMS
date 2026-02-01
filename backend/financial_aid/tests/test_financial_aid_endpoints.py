@@ -191,6 +191,10 @@ class FinancialAidEndpointsTests(APITestCase):
             row_keys = {"award_id", "application_id", "household_id", "bucket", "amount", "application_status", "award_status", "rationale", "updated_at"}
             self.assertTrue(row_keys.issubset(set(row.keys())))
             self.assertNotIn("status", row)
+            
+            # Validate enum values (prevent silent regressions)
+            self.assertIn(row["application_status"], {"draft", "submitted", "in_review", "decided"})
+            self.assertIn(row["award_status"], {"awarded", "denied", "revised", "withdrawn"})
 
     def test_drilldown_empty_results_valid_shape(self):
         """Verify empty results still return valid contract."""
