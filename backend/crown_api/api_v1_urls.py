@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from applications.views_admissions import admissions_summary, admissions_drilldown
 
 urlpatterns = [
     # Authentication
@@ -15,6 +16,10 @@ urlpatterns = [
 
     # Dashboards (Day 2 read-only endpoints)
     path("", include("crown_api.dashboards.urls")),
+    
+    # Admissions funnel (frozen contract)
+    path("admissions/summary/", admissions_summary, name="admissions_summary"),
+    path("admissions/drilldown/", admissions_drilldown, name="admissions_drilldown"),
     
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.

@@ -64,6 +64,10 @@ class Applicant(TimeStampedModel):
 	grade_applying_for = models.CharField(max_length=16, blank=True, default="")
 	dob = models.DateField(null=True, blank=True)
 
+	# Admissions funnel fields (canonical)
+	source = models.CharField(max_length=32, default="other", db_index=True)
+	flags = models.JSONField(default=dict, blank=True)
+
 	class Meta:
 		db_table = "applicant"
 		indexes = [
