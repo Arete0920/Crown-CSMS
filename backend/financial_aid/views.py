@@ -148,6 +148,11 @@ class FinancialAidDrilldownView(APIView):
         # Build rows with stable schema
         rows = []
         for a in page:
+            application_status = a.application.status if a.application else None
+            if application_status == "decided":
+                award_status = "awarded" if a.amount and a.amount > 0 else "denied"
+            else:
+                award_status = "revised"
             rows.append(
                 {
                     "award_id": str(a.id),
@@ -155,7 +160,8 @@ class FinancialAidDrilldownView(APIView):
                     "household_id": str(a.application.household_id) if a.application and a.application.household_id else None,
                     "bucket": a.bucket,
                     "amount": str(a.amount),
-                    "status": a.application.status if a.application else None,
+                    "application_status": application_status,
+                    "award_status": award_status,
                     "rationale": a.rationale if a.rationale else None,
                     "updated_at": a.updated_at.isoformat() if a.updated_at else None,
                 }
