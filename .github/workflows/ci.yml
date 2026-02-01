@@ -161,14 +161,48 @@ jobs:
           if (-not $env:GP_API_BASE) { throw "GP_API_BASE is empty" }
           Write-Host "GP_API_BASE=$env:GP_API_BASE"
 
-      - name: Debug GP endpoints (no secrets)
+      - name: Debug GP endpoints (non-blocking)
         shell: pwsh
+        continue-on-error: true
         env:
           GP_API_BASE: https://crown-api-dev.azurewebsites.net
         run: |
           Write-Host "GP_API_BASE=$env:GP_API_BASE"
-          Write-Host "TOKEN_URL=$($env:GP_API_BASE)/api/v1/auth/token/"
-          pwsh -NoProfile -Command "iwr -UseBasicParsing -TimeoutSec 15 $env:GP_API_BASE/api/health | % Content"
+          Write-Host "HEALTH=$($env:GP_API_BASE)/api/health/"
+          Write-Host "TOKEN=$($env:GP_API_BASE)/api/v1/auth/token/"
+
+          $healthUrl = "$env:GP_API_BASE/api/health/"
+          for ($i=1; $i -le 10; $i++) {
+            try {
+              $resp = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 30
+              Write-Host "Health OK on attempt $i: $($resp | ConvertTo-Json -Compress)"
+              break
+            } catch {
+              Write-Host "Health attempt $i failed: $($_.Exception.Message)"
+              Start-Sleep -Seconds 10
+            }
+          }
+
+      - name: Wait for DEV to be healthy (blocking)
+        shell: pwsh
+        env:
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+        run: |
+          $healthUrl = "$env:GP_API_BASE/api/health/"
+          for ($i=1; $i -le 24; $i++) {
+            try {
+              $resp = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 30
+              if ($resp.ok -eq $true) {
+                Write-Host "DEV healthy: $($resp | ConvertTo-Json -Compress)"
+                exit 0
+              }
+              Write-Host "DEV responded but not ok: $($resp | ConvertTo-Json -Compress)"
+            } catch {
+              Write-Host "Attempt $i/24 failed: $($_.Exception.Message)"
+            }
+            Start-Sleep -Seconds 10
+          }
+          throw "DEV did not become healthy in time: $healthUrl"
 
       - name: Run Golden Path against deployed DEV
         shell: pwsh
