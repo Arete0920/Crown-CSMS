@@ -12,6 +12,7 @@ jobs:
   ops:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Call DEV demo reset endpoint (migrate + reseed)
