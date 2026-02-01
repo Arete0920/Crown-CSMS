@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       school_id:
-        description: "Target School UUID (X-School-Id) to reseed"
+        description: "School UUID to reseed"
         required: true
         type: string
 
 jobs:
-  ops:
+  reset_dev:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Call DEV demo reset endpoint (migrate + reseed)
