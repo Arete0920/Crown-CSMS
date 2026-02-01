@@ -8,6 +8,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from applications.views_admissions import admissions_summary, admissions_drilldown
+from crown_api.system_views import SeedStatusView
 
 urlpatterns = [
     # Authentication
@@ -20,6 +21,8 @@ urlpatterns = [
     # Admissions funnel (frozen contract)
     path("admissions/summary/", admissions_summary, name="admissions_summary"),
     path("admissions/drilldown/", admissions_drilldown, name="admissions_drilldown"),
+    # System telemetry
+    path("system/seed-status/", SeedStatusView.as_view(), name="seed_status"),
     
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.

@@ -99,6 +99,7 @@ def _get_academic_year_window(school_id: str, academic_year: str | None):
 def _compute_stage(
     app: Application,
     has_inquiry: bool,
+    has_tour_scheduled: bool,
     has_tour_completed: bool,
     decision: str | None,
     enrolled: bool,
@@ -125,6 +126,8 @@ def _compute_stage(
         # If inquiry exists, show earlier funnel stage if available
         if has_tour_completed:
             return "tour_completed"
+        if has_tour_scheduled:
+            return "tour_scheduled"
         if has_inquiry:
             return "inquiry"
         return "application_started"
@@ -188,6 +191,9 @@ def admissions_summary(request):
     inquiry_app_ids = set(
         events.filter(event_type="inquiry_created").values_list("application_id", flat=True)
     )
+    tour_scheduled_app_ids = set(
+        events.filter(event_type="tour_scheduled").values_list("application_id", flat=True)
+    )
     tour_completed_app_ids = set(
         events.filter(event_type="tour_completed").values_list("application_id", flat=True)
     )
@@ -208,6 +214,7 @@ def admissions_summary(request):
         stage = _compute_stage(
             app=app,
             has_inquiry=(app.id in inquiry_app_ids),
+            has_tour_scheduled=(app.id in tour_scheduled_app_ids),
             has_tour_completed=(app.id in tour_completed_app_ids),
             decision=decision_by_app.get(app.id),
             enrolled=(app.id in enrolled_app_ids),
@@ -320,6 +327,9 @@ def admissions_drilldown(request):
     inquiry_app_ids = set(
         events.filter(event_type="inquiry_created").values_list("application_id", flat=True)
     )
+    tour_scheduled_app_ids = set(
+        events.filter(event_type="tour_scheduled").values_list("application_id", flat=True)
+    )
     tour_completed_app_ids = set(
         events.filter(event_type="tour_completed").values_list("application_id", flat=True)
     )
@@ -351,6 +361,7 @@ def admissions_drilldown(request):
         st = _compute_stage(
             app=app,
             has_inquiry=(app.id in inquiry_app_ids),
+            has_tour_scheduled=(app.id in tour_scheduled_app_ids),
             has_tour_completed=(app.id in tour_completed_app_ids),
             decision=decision_by_app.get(app.id),
             enrolled=(app.id in enrolled_app_ids),

@@ -340,3 +340,7 @@ class LedgerEntry(BaseModel):
             is_reversal=True,
             reversal_of=original_entry,
         )
+
+
+# Ensure SeedRun is registered under the core app
+from .models_seed import SeedRun  # noqa: E402,F401
