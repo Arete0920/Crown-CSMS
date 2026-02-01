@@ -1,0 +1,111 @@
+name: DEV Smoke - Golden Path
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_seed:
+        description: "Skip seeding (recommended for normal smoke)"
+        required: true
+        default: "true"
+      max_attempts:
+        description: "Health check attempts"
+        required: true
+        default: "24"
+      sleep_seconds:
+        description: "Seconds between attempts"
+        required: true
+        default: "25"
+  schedule:
+    # optional: runs every hour (UTC). Comment out if you don't want scheduled smoke.
+    - cron: "0 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-smoke
+  cancel-in-progress: true
+
+jobs:
+  dev-smoke:
+    name: Golden Path Smoke (DEV)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set defaults
+        shell: pwsh
+        run: |
+          $skip = "${{ github.event.inputs.skip_seed }}"
+          if ([string]::IsNullOrWhiteSpace($skip)) { $skip = "true" }
+          "SKIP_SEED=$skip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          $max = "${{ github.event.inputs.max_attempts }}"
+          if ([string]::IsNullOrWhiteSpace($max)) { $max = "24" }
+          "MAX_ATTEMPTS=$max" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+          $sleep = "${{ github.event.inputs.sleep_seconds }}"
+          if ([string]::IsNullOrWhiteSpace($sleep)) { $sleep = "25" }
+          "SLEEP_SECONDS=$sleep" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Health check DEV (bounded)
+        shell: pwsh
+        env:
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $health = "$env:GP_API_BASE/api/health/"
+          Write-Host "Health URL: $health"
+
+          $max = [int]$env:MAX_ATTEMPTS
+          $sleep = [int]$env:SLEEP_SECONDS
+
+          $ok = $false
+          for ($i=1; $i -le $max; $i++) {
+            try {
+              $code = (curl -s -o /dev/null -w "%{http_code}" $health)
+              Write-Host "Attempt $i/$max: HTTP $code"
+              if ($code -eq "200") { $ok = $true; break }
+            } catch {
+              Write-Host "Attempt $i/$max: error: $($_.Exception.Message)"
+            }
+            Start-Sleep -Seconds $sleep
+          }
+
+          if (-not $ok) {
+            throw "DEV health check failed after $max attempts."
+          }
+
+      - name: Run Golden Path smoke (DEV)
+        shell: pwsh
+        env:
+          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+          GP_USERNAME: ${{ secrets.GP_USERNAME }}
+          GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if ([string]::IsNullOrWhiteSpace($env:GP_USERNAME)) { throw "GP_USERNAME missing" }
+          if ([string]::IsNullOrWhiteSpace($env:GP_PASSWORD)) { throw "GP_PASSWORD missing" }
+
+          $args = @(
+            "-NoProfile",
+            "-ExecutionPolicy", "Bypass",
+            "-File", "./tools/dev_scripts/golden_path.ps1",
+            "-ApiBase", "$env:GP_API_BASE"
+          )
+
+          if ($env:SKIP_SEED -eq "true") {
+            $args += "-SkipSeed"
+          }
+
+          pwsh @args
+
+      - name: Summary
+        if: always()
+        shell: pwsh
+        run: |
+          Write-Host "DEV smoke completed. (Success/failure shown above.)"
