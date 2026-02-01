@@ -13,9 +13,9 @@ from applications.models import Application, Applicant, ApplicationEvent
 
 def seed_admissions_funnel(*, school_id, academic_year_name=None):
     """
-    Deterministic admissions funnel seed.
-    - 30 leads (Applicants) + Applications
-    - Fixed distribution of sources/stages
+    Deterministic admissions funnel seed with realistic distribution.
+    - 100 applicants with demo-ready stage progression
+    - Distribution: 40% inquiry → 30% application_started → 20% submitted → 8% accepted → 2% enrolled
     - Events emitted for inquiry/tour/decision/enrollment where relevant
     """
     from households.models import Household
@@ -29,19 +29,15 @@ def seed_admissions_funnel(*, school_id, academic_year_name=None):
         "direct_mail_qr", "website", "word_of_mouth", "other",
     ]
 
-    # Stage plan by index (deterministic)
-    # We'll create event chains for early funnel and decisions.
+    # Realistic funnel distribution (100 total)
+    # 40 inquiry → 30 started → 20 submitted → 8 accepted → 2 enrolled
     stage_plan = (
-        ["inquiry"] * 10 +
-        ["tour_scheduled"] * 5 +
-        ["tour_completed"] * 4 +
-        ["application_started"] * 5 +
-        ["application_submitted"] * 3 +
-        ["in_review"] * 1 +
-        ["accepted"] * 1 +
-        ["enrolled"] * 1
+        ["inquiry"] * 40 +
+        ["application_started"] * 30 +
+        ["application_submitted"] * 20 +
+        ["accepted"] * 8 +
+        ["enrolled"] * 2
     )
-    stage_plan = stage_plan[:30]
 
     # Minimal “flags” pattern
     def flags_for(i):
@@ -53,12 +49,10 @@ def seed_admissions_funnel(*, school_id, academic_year_name=None):
 
     # Application.status mapping baseline
     def app_status_for(stage):
-        if stage in ("application_started", "inquiry", "tour_scheduled", "tour_completed"):
+        if stage in ("application_started", "inquiry"):
             return "DRAFT"
         if stage == "application_submitted":
             return "SUBMITTED"
-        if stage == "in_review":
-            return "IN_REVIEW"
         if stage in ("accepted", "enrolled"):
             return "DECIDED"
         return "DRAFT"
@@ -71,7 +65,7 @@ def seed_admissions_funnel(*, school_id, academic_year_name=None):
             return {"decision": "accepted"}
         return None
 
-    for i in range(30):
+    for i in range(100):
         stage = stage_plan[i]
         source = sources[i % len(sources)]
 
@@ -93,41 +87,24 @@ def seed_admissions_funnel(*, school_id, academic_year_name=None):
             flags=flags_for(i),
         )
 
-        # Event chain
-        if stage in (
-            "inquiry", "tour_scheduled", "tour_completed", "application_started",
-            "application_submitted", "in_review", "accepted", "enrolled"
-        ):
-            ApplicationEvent.objects.create(
-                school_id=school_id,
-                application=app,
-                event_type="inquiry_created",
-                payload={"source": source},
-            )
+        # Event chain: Always start with inquiry
+        ApplicationEvent.objects.create(
+            school_id=school_id,
+            application=app,
+            event_type="inquiry_created",
+            payload={"source": source},
+        )
 
-        if stage in (
-            "tour_scheduled", "tour_completed", "application_started",
-            "application_submitted", "in_review", "accepted", "enrolled"
-        ):
+        # Progress events based on stage
+        if stage in ("application_started", "application_submitted", "accepted", "enrolled"):
             ApplicationEvent.objects.create(
                 school_id=school_id,
                 application=app,
-                event_type="tour_scheduled",
+                event_type="application_started",
                 payload={},
             )
 
-        if stage in (
-            "tour_completed", "application_started", "application_submitted",
-            "in_review", "accepted", "enrolled"
-        ):
-            ApplicationEvent.objects.create(
-                school_id=school_id,
-                application=app,
-                event_type="tour_completed",
-                payload={},
-            )
-
-        if stage in ("application_submitted", "in_review", "accepted", "enrolled"):
+        if stage in ("application_submitted", "accepted", "enrolled"):
             ApplicationEvent.objects.create(
                 school_id=school_id,
                 application=app,

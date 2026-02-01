@@ -380,7 +380,7 @@ def admissions_drilldown(request):
     total = len(rows_all)
     page = rows_all[offset : offset + limit]
 
-    return Response(
+    response = Response(
         {
             "academic_year": ay_name,
             "stage": stage or None,
@@ -388,7 +388,12 @@ def admissions_drilldown(request):
             "total": total,
             "limit": limit,
             "offset": offset,
-            "rows": page,
+            "rows": page,  # DEPRECATED: use 'results' instead
             "results": page,
         }
     )
+    
+    # Add deprecation warning header for clients still checking 'rows'
+    response["X-Deprecated-Field"] = "rows; use results instead; sunset 2026-06-01"
+    
+    return response
