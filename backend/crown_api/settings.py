@@ -87,6 +87,11 @@ else:
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
+# Environment and ops secret (expose as settings attributes for system views)
+CROWN_ENV = os.getenv("CROWN_ENV", "")
+DJANGO_ENV = os.getenv("DJANGO_ENV", "")
+CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", "")
+
 
 # Application definition
 
