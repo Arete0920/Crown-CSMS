@@ -3,9 +3,13 @@ from django.conf import settings
 import os
 
 try:
-    from crown_api.build_info import BUILD_SHA, BUILD_TIME
+    from crown_api.build_info import BUILD_SHA
 except Exception:
     BUILD_SHA = "unknown"
+
+try:
+    from crown_api.build_info import BUILD_TIME
+except Exception:
     BUILD_TIME = "unknown"
 
 
