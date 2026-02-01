@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import (
 )
 from applications.views_admissions import admissions_summary, admissions_drilldown
 from crown_api.system_views import SeedStatusView, demo_reset_view
+from crown_api.ops_views import ensure_ci_user
 
 urlpatterns = [
     # Authentication
@@ -24,6 +25,9 @@ urlpatterns = [
     # System telemetry
     path("system/seed-status/", SeedStatusView.as_view(), name="seed_status"),
     path("system/demo-reset/", demo_reset_view, name="system-demo-reset"),
+    
+    # DEV-only ops endpoints
+    path("ops/ensure-ci-user/", ensure_ci_user, name="ops-ensure-ci-user"),
     
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.
