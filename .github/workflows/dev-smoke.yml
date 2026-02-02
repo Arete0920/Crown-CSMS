@@ -79,20 +79,12 @@ jobs:
             throw "DEV health check failed after $max attempts."
           }
 
-      - name: Debug - Check GP_PASSWORD
-        shell: pwsh
-        run: |
-          # Due to GitHub Actions secrets platform bug (secrets truncated to length 1),
-          # we use a hardcoded password for DEV smoke tests.
-          # This account should NEVER be used for production.
-          Write-Host "✓ Using hardcoded DEV smoke password"
-
       - name: Run Golden Path smoke (DEV)
         shell: pwsh
         env:
           GP_API_BASE: https://crown-api-dev.azurewebsites.net
           GP_USERNAME: ci-golden@crown-demo.local
-          GP_PASSWORD: "SmokeTest@123"
+          GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
           GP_SCHOOL_ID: "1"
           GP_YEAR_ID: "1"
           GP_AID_AWARD_ID: "1"
