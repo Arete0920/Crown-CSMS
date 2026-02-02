@@ -93,6 +93,11 @@ jobs:
           GP_API_BASE: https://crown-api-dev.azurewebsites.net
           GP_USERNAME: ci-golden@crown-demo.local
           GP_PASSWORD: "SmokeTest@123"
+          GP_SCHOOL_ID: "1"
+          GP_YEAR_ID: "1"
+          GP_AID_AWARD_ID: "1"
+          GP_AID_APP_ID: "1"
+          GP_INVOICE_ID: "1"
         run: |
           $ErrorActionPreference = "Stop"
 
