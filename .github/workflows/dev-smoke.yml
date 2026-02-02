@@ -91,6 +91,15 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:DEV_OPS_SECRET)) { throw "DEV_OPS_SECRET missing" }
           if ([string]::IsNullOrWhiteSpace($env:GP_PASSWORD)) { throw "GP_PASSWORD missing" }
 
+          # DEBUG: Compare secret hash
+          function Get-Sha256Hex([string]$s) {
+            $bytes = [System.Text.Encoding]::UTF8.GetBytes($s)
+            $hash = [System.Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+            ($hash | ForEach-Object { $_.ToString("x2") }) -join ""
+          }
+          Write-Host "DEV_OPS_SECRET sha256: $(Get-Sha256Hex $env:DEV_OPS_SECRET)"
+          Write-Host "DEV_OPS_SECRET length: $($env:DEV_OPS_SECRET.Length)"
+
           $uri = "$env:GP_API_BASE/api/v1/ops/ensure-ci-user/"
           $headers = @{
             "X-Dev-Ops-Secret" = $env:DEV_OPS_SECRET
