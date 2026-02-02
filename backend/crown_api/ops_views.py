@@ -62,11 +62,11 @@ def ensure_ci_user(request):
     if hasattr(user, "is_staff"):
         user.is_staff = True
 
+    # Add to Director group for golden path (invoice creation, director actions)
+    from django.contrib.auth.models import Group
+    group, _ = Group.objects.get_or_create(name="Director")
+    user.groups.add(group)
 
-        # Add to Director group for golden path (invoice creation, director actions)
-        from django.contrib.auth.models import Group
-        group, _ = Group.objects.get_or_create(name="Director")
-        user.groups.add(group)
     user.set_password(password)
     user.save()
 
