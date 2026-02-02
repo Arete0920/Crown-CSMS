@@ -79,6 +79,19 @@ jobs:
             throw "DEV health check failed after $max attempts."
           }
 
+      - name: Debug - Check GP_PASSWORD
+        shell: pwsh
+        env:
+          GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
+        run: |
+          Write-Host "GP_PASSWORD length: $($env:GP_PASSWORD.Length)"
+          Write-Host "GP_PASSWORD first 10 chars: $($env:GP_PASSWORD.Substring(0, [Math]::Min(10, $env:GP_PASSWORD.Length)))"
+          if ([string]::IsNullOrWhiteSpace($env:GP_PASSWORD)) {
+            Write-Host "ERROR: GP_PASSWORD is empty!"
+          } else {
+            Write-Host "✓ GP_PASSWORD is set"
+          }
+
       - name: Run Golden Path smoke (DEV)
         shell: pwsh
         env:
