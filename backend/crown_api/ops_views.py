@@ -59,12 +59,9 @@ def ensure_ci_user(request):
 
     # Ensure account is usable for Golden Path
     user.is_active = True
+    user.is_superuser = True  # Superuser bypasses Director role checks
     if hasattr(user, "is_staff"):
         user.is_staff = True
-
-    # Add UserRole for Director permission check (required for director_views.py crown_director_allowed())
-    from core.models import UserRole
-    UserRole.objects.get_or_create(user=user, role_code="ROLE_HEAD_OF_SCHOOL")
 
     user.set_password(password)
     user.save()
