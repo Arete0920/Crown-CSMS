@@ -69,3 +69,18 @@ set-gh-azurecreds.ps1
 # Local scratch
 _tmp/
 
+
+# --- local debug artifacts (do not commit) ---
+azure_logs.zip
+devlogs.zip
+demo_reset_body.txt
+demo_reset_headers.txt
+demo_response.json
+admissions_stages.json
+
+# optional: common local artifacts
+*.zip
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
