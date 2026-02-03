@@ -30,8 +30,9 @@ curl.exe -s -i http://127.0.0.1:8000/health/ | Select-Object -First 12
 
 ### 13.4 Auth Token
 - **Endpoint:** `POST /api/v1/auth/token/`
-- **Credentials:** `head@crown-demo.local` / `Joanne1023$`
+- **Credentials:** `head@crown-demo.local` / `demo1234` (seeded in dev)
 - **Pass criterion:** HTTP 200 + token length > 0
+- **IMPORTANT:** Set `$env:CROWN_PASSWORD = 'demo1234'` in session before running
 
 ```powershell
 $body = @{ username="head@crown-demo.local"; password=$env:CROWN_PASSWORD } | ConvertTo-Json -Compress
