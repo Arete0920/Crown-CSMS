@@ -13,10 +13,11 @@ import pytest
 from datetime import date
 from uuid import uuid4
 
-# Setup Django
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crown_api.settings')
-django.setup()
+# Setup Django (only if not running under pytest)
+if 'pytest' not in sys.modules:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crown_api.settings')
+    django.setup()
 
 # The Django test Client uses HTTP_HOST=testserver by default. When this script
 # runs outside pytest/Django's test runner, that host can be rejected by
