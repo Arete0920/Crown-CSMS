@@ -151,7 +151,9 @@ All verified  2026-02-02.
 
 **Purpose:** Lock the known-good proof ceremony configuration so all future CI runs use the same deterministic stack.
 
-**Canon Authority:** CI proof ceremony on `origin/main` is the authoritative gate. Local proof is best-effort only.
+**Governance Decision:** CI proof ceremony on `origin/main` is the authoritative gate. Local proof (`scripts/proof_step16.ps1`) is best-effort only.
+
+**Note:** Local proof may fail due to FK constraints when audit history exists. This is acceptable for now. Disposable DB mode for deterministic local proof is planned for Step 20B.
 
 ### Proof Ceremony Configuration (LOCKED)
 
@@ -186,8 +188,8 @@ Select-String -Path ".github/workflows/proof-ceremony.yml" -Pattern "python-vers
 # Check requirements
 Select-String -Path "backend/requirements.txt" -Pattern "psycopg"
 
-# Verify main is at merge commit
-git log --oneline main | Select-Object -First 1
+# Verify tags
+git tag -l freeze-2026-02-03*
 ```
 
 Expected output:
@@ -196,5 +198,5 @@ Expected output:
 - `psycopg[binary]==3.3.2`
 - `seed_demo_school --wipe`
 - `backend/tests/test_director_actions.py`
-- HEAD is `37e95f18...` (merge commit)
+- Tags: `freeze-2026-02-03-proof-green` (baseline) + `freeze-2026-02-03-proof-green-ci-canon` (addendum)
 
