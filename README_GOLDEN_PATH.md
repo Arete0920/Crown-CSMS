@@ -145,3 +145,54 @@ All verified  2026-02-02.
 
 **Future hardening:** Finance should accept X-School-Id as single tenant context (remove required school_id param) for consistency.
 
+---
+
+## Step 19: Freeze + Canon Lock (2026-02-03)
+
+**Purpose:** Lock the known-good proof ceremony configuration so all future CI runs use the same deterministic stack.
+
+### Proof Ceremony Configuration (LOCKED)
+
+The following configuration is now canonical for this repo. Any deviation will break CI intentionally:
+
+| Component | Value | Reason |
+|-----------|-------|--------|
+| **CI Python** | `3.13` | Stable wheel availability; psycopg v3 support |
+| **Database Driver** | `psycopg[binary]==3.3.2` | Python 3.13+ compatible (psycopg2-binary EOL) |
+| **Seed command** | `python manage.py seed_demo_school --wipe` | Clears stale audit history; needed for fresh DB |
+| **Pytest target** | `backend/tests/test_director_actions.py` | Test file location after move (Step 18) |
+| **Proof ceremony** | 7/7 tests GREEN | All checks passing locally & in CI |
+| **Merge commit** | `37e95f18` | PR #9 merged to main on 2026-02-03 |
+
+### Regression Guards
+
+If any of the above changes without explicit Step 20+ approval:
+
+1. Python version drift → CI will fail on wheel availability
+2. psycopg2-binary re-added → CI will fail with ABI mismatch (Python 3.13 incompatible)
+3. seed command without `--wipe` → CI will fail on duplicate key constraints
+4. pytest path hardcoded wrong → CI will fail "file not found"
+
+### To verify this lock is in place
+
+```powershell
+cd C:\Users\JMega\OneDrive\Desktop\Crown2026
+
+# Check CI config
+Select-String -Path ".github/workflows/proof-ceremony.yml" -Pattern "python-version|psycopg|seed_demo_school|test_director_actions"
+
+# Check requirements
+Select-String -Path "backend/requirements.txt" -Pattern "psycopg"
+
+# Verify main is at merge commit
+git log --oneline main | Select-Object -First 1
+```
+
+Expected output:
+
+- `python-version: '3.13'`
+- `psycopg[binary]==3.3.2`
+- `seed_demo_school --wipe`
+- `backend/tests/test_director_actions.py`
+- HEAD is `37e95f18...` (merge commit)
+

@@ -158,3 +158,36 @@ Once CI/proof ceremony is live:
 - Step 19: Document acceptable YELLOW conditions in RECOVERY_QUICKSHEET.md
 - Step 20: Lock release branch protection rules (require proof ceremony to pass)
 
+---
+
+## Step 19: Canon Lock (2026-02-03)
+
+**Status:** LOCKED ✅
+
+CI proof ceremony is now frozen with the following canon configuration:
+
+- **Python:** 3.13 (GitHub Actions CI)
+- **Database Driver:** psycopg[binary]==3.3.2
+- **Seed Strategy:** `python manage.py seed_demo_school --wipe`
+- **Test Target:** `backend/tests/test_director_actions.py`
+- **Test Status:** 7/7 GREEN (all assertions pass)
+- **Merge Point:** Commit `37e95f18` (PR #9 → main)
+- **Freeze Tag:** `freeze-2026-02-03-proof-green`
+
+**Why Lock Now?**
+
+1. CI/local proof repeatable & deterministic across multiple runs
+2. Module shadowing eliminated (core → core_shadowed)
+3. Dependencies rationalized (psycopg v3, dj-database-url, pytest)
+4. No further experimentation needed on this stack
+
+**What Changes Require Explicit Step 20+ Review?**
+
+- Python version in CI workflow
+- Database driver choice
+- pytest path or command
+- seed data strategy
+- test targets or assertions
+
+Any of these changing without approval will cause CI regression.
+

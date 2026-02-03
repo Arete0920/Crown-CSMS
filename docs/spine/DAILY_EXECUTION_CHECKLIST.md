@@ -7,11 +7,18 @@
 ## DAILY STARTUP (15–20 minutes)
 - [ ] Open repo in VS Code
 - [ ] `git pull`
-- [ ] Confirm branch: `release/feb16-freeze` (or today’s active release branch)
+- [ ] Confirm branch: `main` (or `release/feb16-freeze` if still in pre-merge)
 - [ ] Run Golden Path locally (or designated quick health proof)
+- [ ] **NEW:** Confirm CI proof ceremony is GREEN on `origin/main` (GitHub Actions)
 - [ ] Check GitHub Actions page for unexpected runs (should be none scheduled)
 
 **Stop condition:** You are oriented, and the system is in a known state.
+
+**CI Proof Ceremony (Step 19 Locked):**
+- Runs on every PR and push to release/* branches
+- Verifies: Health ✅ | Auth ✅ | Migrations ✅ | Pytest 7/7 ✅
+- Python: 3.13 | Driver: psycopg v3 | Seed: --wipe | Tests: backend/tests/test_director_actions.py
+- Must pass before merging to main (required going forward)
 
 ---
 
