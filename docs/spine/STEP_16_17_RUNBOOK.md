@@ -164,6 +164,10 @@ Once CI/proof ceremony is live:
 
 **Status:** LOCKED ✅
 
+**Canon Authority:** CI proof ceremony on `origin/main` is the authoritative gate.
+
+Local proof_step16.ps1 may fail due to FK constraints when audit history exists (--wipe drama). That is acceptable. GitHub Actions proof-ceremony.yml runs on fresh Postgres each time and is the true deterministic proof.
+
 CI proof ceremony is now frozen with the following canon configuration:
 
 - **Python:** 3.13 (GitHub Actions CI)

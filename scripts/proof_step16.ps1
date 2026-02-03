@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
 # Crown Step 16 Proof Ceremony - Deterministic proof that system is stable
+# 
+# ⚠️  CANON: CI proof ceremony on origin/main is authoritative.
+#     Local proof may fail if audit history causes FK constraint violations on --wipe.
+#     Check GitHub Actions proof-ceremony.yml results; that's the true gate.
 
 $ErrorActionPreference = "Stop"
 
