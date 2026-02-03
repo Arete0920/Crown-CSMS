@@ -85,7 +85,8 @@ jobs:
       
       - name: Run pytest
         run: |
-          python -m pytest test_director_actions.py -v --tb=short
+          cd backend
+          python -m pytest tests/test_director_actions.py -v --tb=short
       
       - name: Proof ceremony summary
         run: |
