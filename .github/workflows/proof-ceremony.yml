@@ -66,7 +66,7 @@ jobs:
       - name: Seed demo data
         run: |
           cd backend
-          python manage.py seed_demo_school
+          python manage.py seed_demo_school --wipe
       
       - name: Start Django dev server (background)
         run: |
