@@ -9,7 +9,7 @@ dj-database-url==2.3.0
 
 # Database drivers
 # psycopg (v3) supports Python 3.14; psycopg2-binary is EOL for 3.14+
-psycopg[binary]==3.2.2
+psycopg[binary]==3.3.2
 
 # JWT auth (alongside sessions)
 djangorestframework-simplejwt>=5.3.1
