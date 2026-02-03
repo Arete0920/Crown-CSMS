@@ -114,6 +114,7 @@ Only tasks tied directly to Feb 16 buyer readiness:
 - [ ] No surprise automation running
 - [ ] Notes written
 - [ ] You feel less frantic than when you started
+- [x] Step 14 proof complete (auth + tenant header + core endpoint)
 
 ---
 **Reminder:** Progress = reduced uncertainty, not more code.
