@@ -5,11 +5,11 @@ Django==5.2.8
 djangorestframework==3.14.0
 python-dotenv==1.0.0
 gunicorn==22.0.0
-dj-database-url==2.1.0
+dj-database-url==2.3.0
 
-# psycopg2-binary does not ship wheels for all Python versions (e.g., 3.14).
-# Keep it for older runtimes, but skip where it would require a local pg_config build.
-psycopg2-binary==2.9.9; python_version < "3.13"
+# psycopg2-binary for PostgreSQL support
+# For Python 3.14+, use prebuilt wheel from: https://github.com/psycopg/psycopg2-wheels
+psycopg2-binary==2.9.9
 
 # JWT auth (alongside sessions)
 djangorestframework-simplejwt>=5.3.1
