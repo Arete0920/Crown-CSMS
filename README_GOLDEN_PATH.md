@@ -151,6 +151,8 @@ All verified  2026-02-02.
 
 **Purpose:** Lock the known-good proof ceremony configuration so all future CI runs use the same deterministic stack.
 
+**Canon Authority:** CI proof ceremony on `origin/main` is the authoritative gate. Local proof is best-effort only.
+
 ### Proof Ceremony Configuration (LOCKED)
 
 The following configuration is now canonical for this repo. Any deviation will break CI intentionally:
