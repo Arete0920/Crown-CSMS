@@ -11,6 +11,10 @@ if (-not $env:CROWN_PASSWORD) {
     throw "CROWN_PASSWORD not set. Run: . .\scripts\env-config.ps1"
 }
 
+# Option 1 (Step 20B): Disposable local DB mode for deterministic local proof
+# Skipped for now; will be implemented when needed.
+# To enable: set $env:CROWN_DISPOSABLE_DB_MODE = $true before running this script.
+
 $CROWN_ROOT = "C:\Users\JMega\OneDrive\Desktop\Crown2026"
 $PY = "$CROWN_ROOT\.venv\Scripts\python.exe"
 $API = "http://127.0.0.1:8000"
@@ -156,6 +160,9 @@ $warn = @($results.Values | Where-Object { $_ -eq "WARN" }).Count
 $fail = @($results.Values | Where-Object { $_ -eq "FAIL" }).Count
 
 Write-Host "`nResult: $pass PASS, $warn WARN, $fail FAIL`n" -ForegroundColor Cyan
+
+# Cleanup (Step 20B: disposable DB cleanup would go here if enabled)
+# For now, local proof leaves the database as-is.
 
 if ($fail -gt 0) { exit 1 }
 exit 0
