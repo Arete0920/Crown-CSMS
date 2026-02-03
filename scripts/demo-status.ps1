@@ -2,7 +2,11 @@ $ErrorActionPreference="Stop"
 $API="https://crown-api-dev.azurewebsites.net"
 $SCHOOL_ID="a5351136-98fe-4d48-add0-fa8f62d9ceff"
 $USER="head@crown-demo.local"
-$PASS="Joanne1023$"
+
+# Password must be set in this session BEFORE running this script:
+#   $env:CROWN_PASSWORD = 'demo1234'
+if (-not $env:CROWN_PASSWORD) { throw "CROWN_PASSWORD environment variable is not set. Set it with: `$env:CROWN_PASSWORD = 'demo1234'" }
+$PASS=$env:CROWN_PASSWORD
 
 $body = @{ username=$USER; password=$PASS } | ConvertTo-Json -Compress
 $token = (Invoke-RestMethod -Uri "$API/api/v1/auth/token/" -Method Post -ContentType "application/json" -Body $body).access
