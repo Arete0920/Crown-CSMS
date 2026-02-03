@@ -126,3 +126,22 @@ Then paste the printed $env:GP_* lines into your local PowerShell session and ru
 ```
 
 If your Azure run fails, the only thing I need is the **exact console output/traceback** from `golden_path_bootstrap` (first error line is usually enough to pinpoint schema/permissions/env).
+
+---
+
+## Steps 13-15  Read-Only Proof (Locked)
+
+For a deterministic, step-by-step proof of core spine health without any write operations, see [docs/spine/STEP_13_15_RUNBOOK.md](docs/spine/STEP_13_15_RUNBOOK.md).
+
+**Summary:**
+
+- **Step 13:** Boot + Health (`/health/`) + Auth token + Admissions summary
+- **Step 14:** Auth + tenant header + Admissions drilldown (94 records seeded)
+- **Step 15:** Finance summary (`/api/director/finance/summary/?school_id=<uuid>`) + Financial Aid summary + Threads
+
+All verified  2026-02-02.
+
+**Route drift note:** Finance endpoints are under `/api/director/` namespace, not `/api/v1/`. Validate with Django resolver if endpoints return 404.
+
+**Future hardening:** Finance should accept X-School-Id as single tenant context (remove required school_id param) for consistency.
+

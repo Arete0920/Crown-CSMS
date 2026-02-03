@@ -1,0 +1,99 @@
+name: Proof Ceremony
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+      - 'stabilize/**'
+  push:
+    branches:
+      - 'release/**'
+      - 'stabilize/**'
+
+jobs:
+  proof-ceremony:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: crown
+          POSTGRES_PASSWORD: crown_test_pw
+          POSTGRES_DB: crown_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    env:
+      DJANGO_SETTINGS_MODULE: crown_api.settings
+      DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+      CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+      
+      - name: DB driver sanity
+        run: |
+          python -c "import sys; print(sys.version)"
+          python -c "import psycopg; print('psycopg:', psycopg.__version__)"
+          python -c "import psycopg2; print('psycopg2:', psycopg2.__version__)" || true
+      
+      - name: Run migrations
+        run: |
+          cd backend
+          python manage.py migrate --noinput
+      
+      - name: Seed demo data
+        run: |
+          cd backend
+          python manage.py seed_demo_school --wipe
+      
+      - name: Start Django dev server (background)
+        run: |
+          cd backend
+          python manage.py runserver 127.0.0.1:8000 &
+          sleep 5
+      
+      - name: Health check
+        run: |
+          curl -f http://127.0.0.1:8000/health/ || exit 1
+      
+      - name: Django system check
+        run: |
+          cd backend
+          python manage.py check
+      
+      - name: Run pytest
+        run: |
+          cd backend
+          python -m pytest tests/test_director_actions.py -v --tb=short
+      
+      - name: Proof ceremony summary
+        run: |
+          echo "=========================================="
+          echo "PROOF CEREMONY RESULTS"
+          echo "=========================================="
+          echo "Health check: PASSED"
+          echo "Django check: PASSED"
+          echo "Pytest: PASSED"
+          echo "=========================================="
