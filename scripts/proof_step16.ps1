@@ -5,11 +5,81 @@
 #     Local proof may fail if audit history causes FK constraint violations on --wipe.
 #     Check GitHub Actions proof-ceremony.yml results; that's the true gate.
 
+param(
+    [switch]$DisposableDb
+)
+
 $ErrorActionPreference = "Stop"
 
 if (-not $env:CROWN_PASSWORD) {
     throw "CROWN_PASSWORD not set. Run: . .\scripts\env-config.ps1"
 }
+
+# --- Step 20B: Disposable DB local proof (Docker Postgres) ---
+$__crownDbContainer = $null
+$__crownDbPort = $null
+$__crownDbPassword = $null
+
+function Assert-DockerRunning {
+    try {
+        docker info *> $null
+    } catch {
+        throw "Docker is not running or not reachable. Start Docker Desktop, then re-run with -DisposableDb."
+    }
+}
+
+function New-RandomPassword([int]$len = 24) {
+    $chars = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%^&*()-_=+"
+    -join (1..$len | ForEach-Object { $chars[(Get-Random -Minimum 0 -Maximum $chars.Length)] })
+}
+
+function Wait-PostgresReady([string]$container, [int]$timeoutSec = 60) {
+    $start = Get-Date
+    while ($true) {
+        $elapsed = (Get-Date) - $start
+        if ($elapsed.TotalSeconds -gt $timeoutSec) {
+            throw "Postgres did not become ready within ${timeoutSec}s."
+        }
+        $ok = $false
+        try {
+            # pg_isready exists in the postgres image
+            docker exec $container pg_isready -U postgres *> $null
+            if ($LASTEXITCODE -eq 0) { $ok = $true }
+        } catch { $ok = $false }
+        if ($ok) { return }
+        Start-Sleep -Seconds 2
+    }
+}
+
+if ($DisposableDb) {
+    Assert-DockerRunning
+
+    $__crownDbContainer = "crown-proof-pg-" + ([Guid]::NewGuid().ToString("N").Substring(0,12))
+    $__crownDbPort = (Get-Random -Minimum 15432 -Maximum 25432)
+    $__crownDbPassword = New-RandomPassword 28
+
+    Write-Host "Starting disposable Postgres container: $__crownDbContainer on localhost:$__crownDbPort"
+
+    # Start ephemeral Postgres (no volume)
+    docker run -d --rm `
+        --name $__crownDbContainer `
+        -e POSTGRES_PASSWORD=$__crownDbPassword `
+        -p "${__crownDbPort}:5432" `
+        postgres:16 *> $null
+
+    try {
+        Wait-PostgresReady -container $__crownDbContainer -timeoutSec 75
+
+        # Set DATABASE_URL for this process (and any child processes)
+        $env:DATABASE_URL = "postgresql://postgres:$__crownDbPassword@127.0.0.1:$__crownDbPort/postgres"
+        Write-Host "Disposable DATABASE_URL set for this run."
+    } catch {
+        # If startup failed, stop container before rethrow
+        try { docker stop $__crownDbContainer *> $null } catch {}
+        throw
+    }
+}
+# --- end Step 20B setup ---
 
 # Option 1 (Step 20B): Disposable local DB mode for deterministic local proof
 # Skipped for now; will be implemented when needed.
@@ -21,7 +91,10 @@ $API = "http://127.0.0.1:8000"
 $SCHOOL_ID = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
 $USERNAME = "head@crown-demo.local"
 
-Write-Host "`n========== STEP 16 PROOF CEREMONY ==========" -ForegroundColor Cyan
+$__exitCode = 0
+
+try {
+    Write-Host "`n========== STEP 16 PROOF CEREMONY ==========" -ForegroundColor Cyan
 
 $results = @{}
 
@@ -161,8 +234,17 @@ $fail = @($results.Values | Where-Object { $_ -eq "FAIL" }).Count
 
 Write-Host "`nResult: $pass PASS, $warn WARN, $fail FAIL`n" -ForegroundColor Cyan
 
-# Cleanup (Step 20B: disposable DB cleanup would go here if enabled)
-# For now, local proof leaves the database as-is.
+    if ($fail -gt 0) { $__exitCode = 1 } else { $__exitCode = 0 }
+}
+finally {
+    if ($DisposableDb -and $__crownDbContainer) {
+        Write-Host "Cleaning up disposable Postgres container: $__crownDbContainer"
+        try { docker stop $__crownDbContainer *> $null } catch {}
+    }
+}
 
-if ($fail -gt 0) { exit 1 }
+# Cleanup (Step 20B: disposable DB cleanup happens in finally block above)
+# For persistent DB mode, no cleanup occurs.
+
+if ($__exitCode -gt 0) { exit 1 }
 exit 0
