@@ -78,18 +78,19 @@ git push
 - ✅ Auth token generation works (JWT obtained)
 - ✅ 4 canonical endpoints return valid JSON (admissions, finance, aid, threads)
 - ✅ Django system check passes (0 issues)
-- ✅ Pytest runs (PASS or YELLOW with documented pre-existing issues)
+- ✅ Pytest runs and passes GREEN
 
-**Exit code:** 0 if all endpoints GREEN + Django check GREEN (test infra YELLOW acceptable)
+**Exit code:** 0 if all endpoints GREEN + Django check GREEN + pytest GREEN
 
 ---
 
-## 17.4 Known Issues (Acceptable YELLOW)
+## 17.4 Known Issues (Resolved)
 
-1. **Pytest migration error:** Pre-existing broken migration graph (core.0003 parent missing)
-   - Symptom: ERROR at setup, NodeNotFoundError
-   - Status: YELLOW (not blocking runtime)
-   - Fix: Requires migration repair work (deferred)
+**✅ Pytest (FIXED):** Module shadowing resolved
+   - Root cause: repo-root `core/` package shadowing `backend/core/`
+   - Status: GREEN (pytest passes with clean migrations)
+   - Fix: Renamed repo-root core → core_shadowed (commit 81523b40)
+   - Added: Guardrail test to prevent shadowing regression
 
 ---
 

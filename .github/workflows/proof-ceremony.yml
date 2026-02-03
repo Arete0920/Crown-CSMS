@@ -80,7 +80,6 @@ jobs:
       - name: Run pytest
         run: |
           python -m pytest test_director_actions.py -v --tb=short
-        continue-on-error: true
       
       - name: Proof ceremony summary
         run: |
@@ -89,5 +88,5 @@ jobs:
           echo "=========================================="
           echo "Health check: PASSED"
           echo "Django check: PASSED"
-          echo "Pytest: See above (migration issue known)"
+          echo "Pytest: PASSED"
           echo "=========================================="
