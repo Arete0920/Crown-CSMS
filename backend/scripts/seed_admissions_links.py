@@ -10,7 +10,7 @@ Creates a couple AdmissionsApplication rows linked to:
 
 Usage (PowerShell):
   cd backend
-  C:/Users/JMega/OneDrive/Desktop/Crown2026/.venv/Scripts/python.exe ..\backend\scripts\seed_admissions_links.py
+  C:/Users/JMega/OneDrive/Desktop/Crown2026/.venv/Scripts/python.exe ..\\backend\\scripts\\seed_admissions_links.py
 """
 
 import os

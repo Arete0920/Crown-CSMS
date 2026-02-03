@@ -229,6 +229,45 @@ All should return `200 OK` with JSON data.
 
 ---
 
+## Academics Read-Only Spine APIs
+
+**Scope:** Read-only only (no write endpoints).
+
+**Endpoints:**
+-
+- `GET /api/v1/academics/years/`
+- `GET /api/v1/academics/terms/`
+- `GET /api/v1/academics/courses/`
+- `GET /api/v1/academics/sections/`
+- `GET /api/v1/academics/students/{id}/sections/`
+- `GET /api/v1/academics/parents/me/students/`
+
+**Pagination:** list endpoints support `limit` and `offset` (defaults: `limit=50`, `offset=0`).
+
+**Filters:**
+-
+- `academic_year` or `academic_year_id`
+- `term` (term code) or `term_id`
+- `student_id`
+- `teacher_id`
+
+**Permissions matrix:**
+
+| Role | Access |
+| --- | --- |
+| Head/Staff/Admin | All records within school |
+| Teacher | Sections they teach + rosters |
+| Parent | Their students + schedules |
+| Student | Own schedule (requires identity mapping) |
+
+**Seed expectations:**
+-
+- Script: `backend/scripts/seed_academics_readonly.py`
+- Creates: 1 academic year, 2 terms, ~12 courses, ~20 sections, enrollments, teacher assignments
+- Idempotent: safe to re-run locally
+
+---
+
 ## Future Enhancements
 
 1. **Attendance tracking**: Replace enrollment endpoint with real attendance metrics (present/absent/tardy)
