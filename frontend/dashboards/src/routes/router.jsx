@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { HomeDashboard } from '../pages/HomeDashboard.jsx';
 import { BillingDashboard } from '../pages/BillingDashboard.jsx';
 import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
+import { AcademicsDashboard } from '../pages/AcademicsDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -17,5 +18,9 @@ export const router = createBrowserRouter([
   {
     path: '/financial-aid',
     element: <FinancialAidDashboard />,
+  },
+  {
+    path: '/academics',
+    element: <AcademicsDashboard />,
   },
 ]);

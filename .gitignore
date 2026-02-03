@@ -84,3 +84,8 @@ admissions_stages.json
 *.tmp
 .DS_Store
 Thumbs.db
+
+# Local DB artifacts
+backend/db.sqlite3
+backend/*.sqlite3
+

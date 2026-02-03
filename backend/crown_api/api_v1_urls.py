@@ -31,6 +31,7 @@ urlpatterns = [
     
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.
+    path("", include("academics.urls")),
     path("", include("households.urls")),
     path("", include("crown_api.billing_api.urls")),
     path("", include("crown_api.exports.urls")),

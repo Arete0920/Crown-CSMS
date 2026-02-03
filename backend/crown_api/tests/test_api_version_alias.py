@@ -3,6 +3,7 @@ Test that /api/v1 and /api paths return consistent responses.
 Guards against routing drift.
 """
 import importlib
+import json
 import sys
 import types
 import pytest
@@ -58,7 +59,7 @@ class TestAPIVersionAlias:
 
         rf = RequestFactory()
         response = health_views.health(rf.get("/health/"))
-        data = response.json()
+        data = json.loads(response.content.decode("utf-8"))
 
         assert data["build_sha"] == fake_build_info.BUILD_SHA
 

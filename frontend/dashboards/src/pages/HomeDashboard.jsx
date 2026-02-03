@@ -13,6 +13,9 @@ export function HomeDashboard() {
           <li>
             <a href="/financial-aid">Financial Aid</a>
           </li>
+          <li>
+            <a href="/academics">Academics</a>
+          </li>
         </ul>
       </p>
     </div>

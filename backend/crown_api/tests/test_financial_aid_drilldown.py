@@ -24,7 +24,8 @@ class FinancialAidDrilldownTests(TestCase):
         # If no data yet, 200 should still return a stable shape
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertTrue(data.get("ok"))
-        self.assertIn("items", data)
-        self.assertIn("summary", data)
-        self.assertIn("facets", data)
+        self.assertIn("academic_year", data)
+        self.assertIn("total", data)
+        self.assertIn("limit", data)
+        self.assertIn("offset", data)
+        self.assertIn("rows", data)
