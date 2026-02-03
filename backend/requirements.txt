@@ -7,9 +7,9 @@ python-dotenv==1.0.0
 gunicorn==22.0.0
 dj-database-url==2.3.0
 
-# psycopg2-binary for PostgreSQL support
-# For Python 3.14+, use prebuilt wheel from: https://github.com/psycopg/psycopg2-wheels
-psycopg2-binary==2.9.9
+# Database drivers
+# psycopg (v3) supports Python 3.14; psycopg2-binary is EOL for 3.14+
+psycopg[binary]==3.2.2
 
 # JWT auth (alongside sessions)
 djangorestframework-simplejwt>=5.3.1
