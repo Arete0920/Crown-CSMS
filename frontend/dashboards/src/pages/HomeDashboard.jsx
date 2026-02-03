@@ -16,6 +16,9 @@ export function HomeDashboard() {
           <li>
             <a href="/academics">Academics</a>
           </li>
+          <li>
+            <a href="/gradebook">Gradebook (Read-Only)</a>
+          </li>
         </ul>
       </p>
     </div>

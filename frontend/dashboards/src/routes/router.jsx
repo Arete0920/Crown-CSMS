@@ -5,6 +5,7 @@ import { HomeDashboard } from '../pages/HomeDashboard.jsx';
 import { BillingDashboard } from '../pages/BillingDashboard.jsx';
 import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
 import { AcademicsDashboard } from '../pages/AcademicsDashboard.jsx';
+import { GradebookRO } from '../pages/GradebookRO.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -22,5 +23,9 @@ export const router = createBrowserRouter([
   {
     path: '/academics',
     element: <AcademicsDashboard />,
+  },
+  {
+    path: '/gradebook',
+    element: <GradebookRO />,
   },
 ]);
