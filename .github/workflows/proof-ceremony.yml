@@ -40,10 +40,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Set up Python 3.14
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.13'
           cache: 'pip'
           cache-dependency-path: 'backend/requirements.txt'
       
@@ -51,6 +51,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
+      
+      - name: DB driver sanity
+        run: |
+          python -c "import sys; print(sys.version)"
+          python -c "import psycopg; print('psycopg:', psycopg.__version__)"
+          python -c "import psycopg2; print('psycopg2:', psycopg2.__version__)" || true
       
       - name: Run migrations
         run: |
