@@ -9,6 +9,7 @@ import os
 import sys
 import django
 import json
+import pytest
 from datetime import date
 from uuid import uuid4
 
@@ -35,6 +36,7 @@ from finance.models import ChartAccount
 from django.db.models.deletion import ProtectedError
 from django.db.utils import OperationalError, ProgrammingError
 
+@pytest.mark.django_db
 def test_post_director_actions():
     """Test the director_actions endpoint."""
     

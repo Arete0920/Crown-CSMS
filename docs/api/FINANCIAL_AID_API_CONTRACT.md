@@ -424,10 +424,11 @@ curl -i \
 
 ```powershell
 $API = "https://crown-api-dev.azurewebsites.net"
+# Set password first: $env:CROWN_PASSWORD = 'demo1234'
 $token = (Invoke-RestMethod -Uri "$API/api/v1/auth/token/" `
   -Method Post `
   -ContentType "application/json" `
-  -Body (@{username="head@crown-demo.local"; password="Joanne1023$"} | ConvertTo-Json -Compress)).access
+  -Body (@{username="head@crown-demo.local"; password=$env:CROWN_PASSWORD} | ConvertTo-Json -Compress)).access
 
 $schoolId = "e5e7bec0-7e8a-4c8a-9b5c-7e8a4c8a9b5c"
 
