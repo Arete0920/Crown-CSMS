@@ -7,8 +7,8 @@ import { authenticatedFetch } from "../utils/authClient.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-async function _fetchJson(url) {
-  const res = await authenticatedFetch(url);
+async function _fetchJson(url, opts = {}) {
+  const res = await authenticatedFetch(url, opts);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Request failed (${res.status}): ${text}`);
@@ -21,6 +21,6 @@ export function getGradebookSections({ limit = 50, offset = 0 } = {}) {
   return _fetchJson(`${API_BASE}/api/v1/gradebook/sections/?${params}`);
 }
 
-export function getGradebookGrades(sectionId) {
-  return _fetchJson(`${API_BASE}/api/v1/gradebook/sections/${sectionId}/grades/`);
+export function getGradebookGrades(sectionId, opts = {}) {
+  return _fetchJson(`${API_BASE}/api/v1/gradebook/sections/${sectionId}/grades/`, opts);
 }

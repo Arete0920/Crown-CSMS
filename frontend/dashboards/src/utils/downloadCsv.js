@@ -1,20 +1,7 @@
-import { getAccessToken, getSelectedSchoolId } from "./authClient.js";
+import { authenticatedFetch } from "./authClient.js";
 
 export async function downloadCsv(url, { filename = 'export.csv' } = {}) {
-  const token = getAccessToken();
-  const schoolId = getSelectedSchoolId();
-  const headers = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  if (schoolId) {
-    headers["X-Crown-School-Id"] = schoolId;
-  }
-
-  const resp = await fetch(url, {
-    credentials: 'include',
-    headers,
-  });
+  const resp = await authenticatedFetch(url);
 
   const blob = await resp.blob();
   const contentType = resp.headers.get('content-type') || '';

@@ -51,3 +51,70 @@ def test_tuition_billing_run_creates_invoices_and_ledger_charge():
 
     acct = LedgerAccount.objects.get(household=hh)
     assert Charge.objects.filter(account=acct).count() == 1
+
+
+def test_invoices_list_endpoint_returns_200():
+    """D3 Gate: GET /api/billing/invoices/ returns 200 for authenticated user."""
+    school = School.objects.create(name="Test School")
+    user = _mk_user_with_school(school)
+    
+    # Create test invoice data
+    hh = Household.objects.create(school_id=school.id, name="Test Household")
+    billing_run = BillingRun.objects.create(
+        school_id=school.id,
+        term="2026-TEST",
+        amount_per_student=500.00
+    )
+    Invoice.objects.create(
+        school_id=school.id,
+        household=hh,
+        billing_run=billing_run,
+        total_amount=500.00,
+        due_on="2026-03-01"
+    )
+    
+    c = Client()
+    c.force_login(user)
+    
+    resp = c.get(
+        "/api/billing/invoices/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)}
+    )
+    
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["household_name"] == "Test Household"
+    assert float(data[0]["total_amount"]) == 500.00
+
+
+def test_invoices_list_scoped_to_school():
+    """D3 Gate: Invoices are scoped to the user's school."""
+    school1 = School.objects.create(name="School 1")
+    school2 = School.objects.create(name="School 2")
+    
+    user = _mk_user_with_school(school1)
+    
+    # Create invoices in both schools
+    hh1 = Household.objects.create(school_id=school1.id, name="Household 1")
+    hh2 = Household.objects.create(school_id=school2.id, name="Household 2")
+    
+    billing_run1 = BillingRun.objects.create(school_id=school1.id, term="2026-TEST", amount_per_student=500.00)
+    billing_run2 = BillingRun.objects.create(school_id=school2.id, term="2026-TEST", amount_per_student=600.00)
+    
+    Invoice.objects.create(school_id=school1.id, household=hh1, billing_run=billing_run1, total_amount=500.00, due_on="2026-03-01")
+    Invoice.objects.create(school_id=school2.id, household=hh2, billing_run=billing_run2, total_amount=600.00, due_on="2026-03-01")
+    
+    c = Client()
+    c.force_login(user)
+    
+    resp = c.get(
+        "/api/billing/invoices/",
+        **{"HTTP_X_SCHOOL_ID": str(school1.id)}
+    )
+    
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["household_name"] == "Household 1"

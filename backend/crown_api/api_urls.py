@@ -101,6 +101,9 @@ urlpatterns = [
     # Billing run summary
     path("billing/runs/<str:billing_run_id>/summary/", billing_api.billing_run_summary_view, name="billing-run-summary"),
 
+    # Invoices (Finance v1)
+    path("billing/invoices/", billing_api.invoices, name="billing-invoices"),
+
     # Installment plans
     path("billing/installment-plans/", billing_api.installment_plans, name="billing-installment-plans"),
 

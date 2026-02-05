@@ -8,6 +8,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
 from households.scoping import get_request_school_id
 from .models import BillingRun, Invoice, InvoiceLine, InstallmentPlan
 from .services import create_tuition_billing_run
@@ -250,3 +254,42 @@ def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
 
     data = billing_run_summary(school_id=sid, billing_run=run)
     return _envelope(data, status=200)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def invoices(request):
+    """
+    Flat list of invoices for the current school context.
+    Includes household name and normalized fields for UI consumption.
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return Response(
+            {"detail": "school_id could not be derived for request"},
+            status=403
+        )
+
+    qs = (
+        Invoice.objects
+        .filter(school_id=sid)
+        .select_related("household")
+        .order_by("-created_at")
+    )
+
+    data = []
+    for inv in qs[:2000]:  # safety cap for demo; adjust later
+        data.append(
+            {
+                "id": str(inv.id),
+                "household_id": str(inv.household_id) if inv.household_id else None,
+                "household_name": inv.household.name if inv.household_id else None,
+                "total_amount": str(inv.total_amount),
+                "due_on": inv.due_on.isoformat() if inv.due_on else None,
+                "created_at": inv.created_at.isoformat() if inv.created_at else None,
+                "updated_at": inv.updated_at.isoformat() if inv.updated_at else None,
+                "balance_due": str(inv.total_amount),
+            }
+        )
+
+    return Response(data)

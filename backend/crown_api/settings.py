@@ -14,6 +14,7 @@ import os
 import json
 from datetime import timedelta
 from pathlib import Path
+from corsheaders.defaults import default_headers
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -83,6 +84,10 @@ elif _raw:
 else:
     CSRF_TRUSTED_ORIGINS = []
 
+# CORS configuration for local development
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 # Azure reverse-proxy HTTPS handling
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
@@ -104,6 +109,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'crown_api',
     'crown_api.exports',
@@ -121,6 +127,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
