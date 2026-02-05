@@ -53,7 +53,7 @@ jobs:
       - name: Health check DEV (bounded)
         shell: pwsh
         env:
-          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+          GP_API_BASE: https://crown2026-api-dev.azurewebsites.net
         run: |
           $ErrorActionPreference = "Stop"
 
@@ -82,7 +82,7 @@ jobs:
       - name: Run Golden Path smoke (DEV)
         shell: pwsh
         env:
-          GP_API_BASE: https://crown-api-dev.azurewebsites.net
+          GP_API_BASE: https://crown2026-api-dev.azurewebsites.net
           GP_USERNAME: ci-golden@crown-demo.local
           GP_PASSWORD: ${{ secrets.GP_PASSWORD }}
           GP_SCHOOL_ID: "1"
