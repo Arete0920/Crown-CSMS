@@ -26,6 +26,11 @@
 **Goal:** Prove Azure DEV is running the correct build with all spine endpoints live.  
 **Note:** Use `curl.exe` (not `curl`) in PowerShell to avoid alias behavior.
 
+**Quick setup (copy/paste these variables):**
+```powershell
+$BASE="https://crown-api-dev.azurewebsites.net"
+```
+
 ### Check 1 — Build SHA is correct
 ```powershell
 $BASE="https://crown-api-dev.azurewebsites.net"
@@ -47,7 +52,7 @@ curl.exe -sS -i "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 25
 
 ### Check 3 — Authenticated invoices returns 200
 ```powershell
-# Get token first:
+# Get token first (admin user from backend/create_superuser.py):
 Set-Content -Path .temp_creds.json -Value '{"username":"admin","password":"Crown2026!"}' -NoNewline
 $tokenResponse = (curl.exe -sS -X POST -H "Content-Type: application/json" -d "@.temp_creds.json" "$BASE/api/auth/token/" | ConvertFrom-Json)
 $TOKEN = $tokenResponse.access
