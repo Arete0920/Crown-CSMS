@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { downloadCsv } from "../utils/downloadCsv.js";
 import { authenticatedFetch } from "../utils/authClient.js";
@@ -151,17 +151,6 @@ export function BillingDashboard() {
 
   function setAllocAmount(chargeId, val) {
     setAllocs((prev) => ({ ...prev, [chargeId]: val }));
-  }
-
-  function buildAllocationsPayload() {
-    const out = [];
-    for (const [chargeId, amtStr] of Object.entries(allocs)) {
-      const amount = (amtStr || "").trim();
-      if (!chargeId) continue;
-      if (!amount) continue;
-      out.push({ charge_id: chargeId, amount });
-    }
-    return out;
   }
 
   function dollarsToCents(val) {

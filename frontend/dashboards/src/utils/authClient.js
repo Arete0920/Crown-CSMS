@@ -21,7 +21,9 @@ export function setSelectedSchoolId(schoolId) {
     const v = (schoolId || "").trim();
     if (v) sessionStorage.setItem(SCHOOL_KEY, v);
     else sessionStorage.removeItem(SCHOOL_KEY);
-  } catch {}
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 export function clearSelectedSchoolId() {
@@ -40,7 +42,9 @@ export function setAccessToken(token) {
   try {
     if (token) sessionStorage.setItem(TOKEN_KEY, token);
     else sessionStorage.removeItem(TOKEN_KEY);
-  } catch {}
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 export function clearAccessToken() {
@@ -69,7 +73,19 @@ export async function authenticatedFetch(input, init = {}) {
     credentials: init.credentials ?? "include",
   };
 
-  return fetch(input, finalInit);
+  const resp = await fetch(input, finalInit);
+
+  // Throw structured error with status/url/body for diagnostics
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => "");
+    const err = new Error(`HTTP ${resp.status} ${resp.statusText}`);
+    err.status = resp.status;
+    err.url = typeof input === "string" ? input : (input?.url || "");
+    err.body = text.slice(0, 500);
+    throw err;
+  }
+
+  return resp;
 }
 
 /**
