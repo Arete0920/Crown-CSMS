@@ -29,6 +29,7 @@
 **Quick setup (copy/paste these variables):**
 ```powershell
 $BASE="https://crown-api-dev.azurewebsites.net"
+$TOKEN="PASTE_VALID_JWT"  # obtain via standard login flow (see Check 3)
 ```
 
 ### Check 1 — Build SHA is correct
@@ -52,16 +53,13 @@ curl.exe -sS -i "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 25
 
 ### Check 3 — Authenticated invoices returns 200
 ```powershell
-# Get token first (admin user from backend/create_superuser.py):
-Set-Content -Path .temp_creds.json -Value '{"username":"admin","password":"Crown2026!"}' -NoNewline
-$tokenResponse = (curl.exe -sS -X POST -H "Content-Type: application/json" -d "@.temp_creds.json" "$BASE/api/auth/token/" | ConvertFrom-Json)
-$TOKEN = $tokenResponse.access
+# Get a valid JWT via the standard login flow:
+# - DevJwtPanel (if available in your UI)
+# - Or: POST to $BASE/api/auth/token/ with your credentials
+# Use a user authorized for the target school/tenant.
+# Then set $TOKEN="your_jwt_here" and run:
 
-# Test invoices endpoint:
 curl.exe -sS -i -H "Authorization: Bearer $TOKEN" "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 40
-
-# Cleanup:
-Remove-Item .temp_creds.json -ErrorAction SilentlyContinue
 ```
 **Pass criteria:**
 - `HTTP/1.1 200`
