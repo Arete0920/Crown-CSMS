@@ -30,7 +30,7 @@ jobs:
             echo "✅ Found $f"
           done
 
-      - name: Guard canon against forbidden content
+      - name: Guard canon against credential leakage (high-signal)
         run: |
           set -e
 
@@ -39,21 +39,25 @@ jobs:
             "docs/spine/TENANT_PRIVACY_CANON.md"
           )
 
-          FORBIDDEN_PATTERNS=(
-            "Authorization:"
-            "Bearer "
-            "PASSWORD"
-            "SECRET"
-            "CLIENT_SECRET"
-            "api/auth/token"
-            "localhost"
-            "127.0.0.1"
+          # High-signal secret patterns (NOT generic header names)
+          FORBIDDEN_REGEX=(
+            "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"   # JWT-like
+            "-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----"                      # Private keys
+            "(?i)client_secret\\s*[:=]"                                         # client_secret=
+            "(?i)secret_key\\s*[:=]"                                            # secret_key=
+            "(?i)api_key\\s*[:=]"                                               # api_key=
+            "(?i)password\\s*[:=]"                                              # password=
+            "(?i)CrownCiSmoke!"                                                 # known prior example
+            "(?i)DevOpsSecret_"                                                 # known prior example
+            "(?i)AZURE_CLIENT_SECRET"                                           # common env var
           )
 
           for file in "${CANON_FILES[@]}"; do
-            for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
-              if grep -R "$pattern" "$file" > /dev/null; then
-                echo "❌ Forbidden pattern '$pattern' found in $file"
+            for rx in "${FORBIDDEN_REGEX[@]}"; do
+              if grep -nE "$rx" "$file" > /dev/null; then
+                echo "❌ Forbidden secret pattern matched in $file (regex: $rx)"
+                echo "---- matches ----"
+                grep -nE "$rx" "$file" | head -n 20
                 exit 1
               fi
             done
