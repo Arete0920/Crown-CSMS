@@ -53,11 +53,8 @@ curl.exe -sS -i "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 25
 
 ### Check 3 — Authenticated invoices returns 200
 ```powershell
-# Get a valid JWT via the standard login flow:
-# - DevJwtPanel (if available in your UI)
-# - Or: POST to $BASE/api/auth/token/ with your credentials
+# Get a valid JWT via the standard login flow (DevJwtPanel or /api/v1/auth/login/).
 # Use a user authorized for the target school/tenant.
-# Then set $TOKEN="your_jwt_here" and run:
 
 curl.exe -sS -i -H "Authorization: Bearer $TOKEN" "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 40
 ```
