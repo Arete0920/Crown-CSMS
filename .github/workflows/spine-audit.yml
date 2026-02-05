@@ -41,7 +41,6 @@ jobs:
             "PASSWORD"
             "SECRET"
             "CLIENT_SECRET"
-            "api/auth/token"
             "localhost"
             "127.0.0.1"
           )
