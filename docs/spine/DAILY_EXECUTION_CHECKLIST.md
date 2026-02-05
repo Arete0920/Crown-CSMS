@@ -22,6 +22,81 @@
 
 ---
 
+## AZURE DEV SMOKE TEST (5 minutes)
+**Goal:** Prove Azure DEV is running the correct build with all spine endpoints live.  
+**Note:** Use `curl.exe` (not `curl`) in PowerShell to avoid alias behavior.
+
+### Check 1 — Build SHA is correct
+```powershell
+$BASE="https://crown-api-dev.azurewebsites.net"
+curl.exe -sS "$BASE/api/health/" | ConvertFrom-Json | Format-List
+```
+**Pass criteria:** `build_sha` matches the commit you expect (check `git log --oneline -1`).
+
+---
+
+### Check 2 — Unauth tenant guard works (should be 403 + message)
+```powershell
+curl.exe -sS -i "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 25
+```
+**Pass criteria:**
+- `HTTP/1.1 403`
+- Body contains: `school_id could not be derived`
+
+---
+
+### Check 3 — Authenticated invoices returns 200
+```powershell
+# Get token first:
+Set-Content -Path .temp_creds.json -Value '{"username":"admin","password":"Crown2026!"}' -NoNewline
+$tokenResponse = (curl.exe -sS -X POST -H "Content-Type: application/json" -d "@.temp_creds.json" "$BASE/api/auth/token/" | ConvertFrom-Json)
+$TOKEN = $tokenResponse.access
+
+# Test invoices endpoint:
+curl.exe -sS -i -H "Authorization: Bearer $TOKEN" "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 40
+
+# Cleanup:
+Remove-Item .temp_creds.json -ErrorAction SilentlyContinue
+```
+**Pass criteria:**
+- `HTTP/1.1 200`
+- JSON array with at least one invoice object (or empty array `[]` is acceptable)
+
+---
+
+### 409 OneDeploy Lock Drill (When GitHub Actions deploy fails with CODE: 409)
+
+**Symptom:** GitHub Actions deploy fails with `Conflict (CODE: 409)`.
+
+**Fix (canonical):**
+1. Confirm no GH runs queued/in_progress:
+   ```powershell
+   gh run list --workflow="stabilization-20260116-spine_crown-api-dev.yml" --limit 10
+   ```
+   If any runs show `in_progress` or `queued`, cancel them:
+   ```powershell
+   gh run cancel <RUN_ID>
+   ```
+
+2. Restart App Service:
+   ```powershell
+   az webapp restart -g crown-rg -n crown-api-dev
+   ```
+
+3. Re-run deploy workflow:
+   ```powershell
+   gh workflow run "Build and deploy Python app to Azure Web App - crown-api-dev" --ref main
+   ```
+
+4. **Escalation (if 409 persists):**
+   - Portal → crown-api-dev → Advanced Tools → Go (Kudu)
+   - Kudu → Process Explorer (check for stuck deployment process)
+   - App Service → Deployment Center → Logs (check for locked deployments)
+
+**Stop condition:** All 3 smoke checks pass, or documented blocker exists.
+
+---
+
 ## WORK BLOCKS (Weekdays: 8 hours)
 
 ### BLOCK 1 — Stability First (2 hours)
