@@ -17,3 +17,6 @@ pytest-django==4.7.0
 
 # JWT auth (alongside sessions)
 djangorestframework-simplejwt>=5.3.1
+
+# CORS headers for frontend integration
+django-cors-headers==4.3.1
