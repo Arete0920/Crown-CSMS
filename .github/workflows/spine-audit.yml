@@ -1,0 +1,57 @@
+name: Spine Audit (Canon Guard)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  spine-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical files exist
+        run: |
+          set -e
+          REQUIRED_FILES=(
+            "docs/spine/DAILY_EXECUTION_CHECKLIST.md"
+            "docs/spine/AUTH_RUNBOOK.md"
+            "docs/spine/TENANT_PRIVACY_CANON.md"
+          )
+
+          for f in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "❌ Missing canonical file: $f"
+              exit 1
+            fi
+            echo "✅ Found $f"
+          done
+
+      - name: Guard canon against forbidden content
+        run: |
+          set -e
+          CANON_FILES=$(ls docs/spine/*.md)
+
+          FORBIDDEN_PATTERNS=(
+            "Authorization:"
+            "Bearer "
+            "PASSWORD"
+            "SECRET"
+            "CLIENT_SECRET"
+            "api/auth/token"
+            "localhost"
+            "127.0.0.1"
+          )
+
+          for file in $CANON_FILES; do
+            for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
+              if grep -R "$pattern" "$file" > /dev/null; then
+                echo "❌ Forbidden pattern '$pattern' found in $file"
+                exit 1
+              fi
+            done
+            echo "✅ $file clean"
+          done
