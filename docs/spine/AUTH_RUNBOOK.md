@@ -23,16 +23,34 @@
 
 ## Tenant context model (why you see 403)
 
-Most protected endpoints require the request to resolve a **tenant** / school context. If the request does not provide enough information, the API will deny access.
+Protected endpoints require the request to resolve a **tenant** / school context via `get_request_school_id()` in `households/scoping.py`.
 
-**Common symptom:**
-- `HTTP 403` with body:
-  - `{"detail":"school_id could not be derived for request"}`
+**Derivation order (single source of truth):**
 
-This is expected behavior for:
-- unauthenticated requests
-- authenticated requests that do not resolve to a tenant/school
-- calls missing required headers/claims for tenant derivation
+1. **Staff/superuser header override** (for cross-school testing):
+   - `X-School-Id` (canonical) via `request.META["HTTP_X_SCHOOL_ID"]`
+   - `X-Crown-School-Id` (legacy alias) via `request.META["HTTP_X_CROWN_SCHOOL_ID"]`
+   - Only honored for `is_staff=True` or `is_superuser=True`
+   - Invalid UUID → `HTTP 400` "Invalid X-School-Id"
+   - Valid UUID, nonexistent school → `HTTP 404` "School not found"
+
+2. **User attributes** (primary for non-staff):
+   - `user.school_id` (direct attribute)
+   - `user.school.id` (relation fallback)
+
+3. **Middleware fallback** (if middleware attaches it):
+   - `request.school_id`
+
+4. **Failure mode:**
+   - Most endpoints use `required=False` mode
+   - When tenant can't be derived → returns `None` → endpoint returns:
+     - `HTTP 403` with body: `{"detail":"school_id could not be derived for request"}`
+
+**Common causes of 403 tenant guard:**
+- Unauthenticated requests (no JWT)
+- User has no `school_id` attribute set
+- Staff using invalid/nonexistent `X-School-Id` header
+- Token valid but user not associated with any school
 
 ---
 
