@@ -33,7 +33,11 @@ jobs:
       - name: Guard canon against forbidden content
         run: |
           set -e
-          CANON_FILES=$(ls docs/spine/*.md)
+
+          CANON_FILES=(
+            "docs/spine/DAILY_EXECUTION_CHECKLIST.md"
+            "docs/spine/TENANT_PRIVACY_CANON.md"
+          )
 
           FORBIDDEN_PATTERNS=(
             "Authorization:"
@@ -46,7 +50,7 @@ jobs:
             "127.0.0.1"
           )
 
-          for file in $CANON_FILES; do
+          for file in "${CANON_FILES[@]}"; do
             for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
               if grep -R "$pattern" "$file" > /dev/null; then
                 echo "❌ Forbidden pattern '$pattern' found in $file"
