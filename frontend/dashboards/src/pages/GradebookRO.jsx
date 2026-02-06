@@ -180,6 +180,13 @@ export function GradebookRO() {
   const hasAssignments = assignments.length > 0;
   const hasRows = rows.length > 0;
 
+  // Lookup selected section details
+  const selectedSection = useMemo(
+    () => sections.find(s => s.section_id === selectedSectionId),
+    [sections, selectedSectionId]
+  );
+  const rosterCount = selectedSection?.roster_count ?? 0;
+
   // memoize assignment keys to avoid render churn
   const assignmentKeysForHeader = useMemo(
     () => assignments.map((a) => a._key),
@@ -438,17 +445,37 @@ export function GradebookRO() {
       {/* Grades states */}
       {selectedSectionId && loadingGrades && <div>Loading grades…</div>}
 
+      {/* Debug panel: show selected section details */}
+      {selectedSectionId && !loadingGrades && isDev && (
+        <div className="debug-panel" style={{ background: "#fff8e1", borderColor: "#ffa726" }}>
+          <h4>📊 Selected Section State</h4>
+          <dl>
+            <dt>Section ID:</dt>
+            <dd>{selectedSectionId}</dd>
+            <dt>Roster Count:</dt>
+            <dd>{rosterCount}</dd>
+            <dt>Assignments:</dt>
+            <dd>{assignments.length}</dd>
+            <dt>Rows (students):</dt>
+            <dd>{rows.length}</dd>
+          </dl>
+        </div>
+      )}
+
       {selectedSectionId && !loadingGrades && !hasAssignments && (
         <div className="empty-state">
-          <h3>No assignments yet</h3>
-          <p>This section has no assignments or grades recorded.</p>
+          <h3>No grades found</h3>
+          <p>
+            This section has no assignments or grades recorded.
+            {isDev && <><br />Tip: Run <code style={{ background: "#f0f0f0", padding: "2px 6px", borderRadius: 3 }}>python manage.py seed_gradebook_demo --school-id &lt;uuid&gt;</code></>}
+          </p>
         </div>
       )}
 
       {selectedSectionId && !loadingGrades && hasAssignments && !hasRows && (
         <div className="empty-state">
-          <h3>No students</h3>
-          <p>This section has no enrolled students.</p>
+          <h3>No students enrolled</h3>
+          <p>This section has {rosterCount === 0 ? "no enrolled students" : `${rosterCount} student(s) enrolled, but no grades returned`}.</p>
         </div>
       )}
 
