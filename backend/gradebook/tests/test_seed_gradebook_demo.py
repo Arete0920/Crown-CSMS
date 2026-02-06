@@ -105,7 +105,8 @@ def test_seed_gradebook_demo_idempotent():
 
     # Verify count didn't change
     assert first_count == second_count, "Second run should not create duplicates"
-    assert "created_grade_entries=0" in out.getvalue(), "Second run should report 0 new entries"
+    assert "entries_created=0" in out.getvalue(), "Second run should report 0 new entries"
+    assert "entries_skipped=" in out.getvalue(), "Second run should report skipped entries"
 
 
 def test_seed_gradebook_demo_wipe_flag():
