@@ -18,6 +18,12 @@ Write-Host "`n3. Switching to spine/resume-morning-0205..." -ForegroundColor Yel
 git checkout spine/resume-morning-0205
 git pull
 
+# Verify we're on the correct branch (fail-fast safety check)
+$branch = (git rev-parse --abbrev-ref HEAD).Trim()
+if ($branch -ne "spine/resume-morning-0205") { 
+    throw "Not on resume branch. Current: $branch" 
+}
+
 # Show HEAD commit
 Write-Host "`n4. Current HEAD:" -ForegroundColor Yellow
 $currentHead = git rev-parse HEAD
