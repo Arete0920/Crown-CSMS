@@ -133,3 +133,68 @@ class TeacherAssignment(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"TeacherAssignment({self.staff_id} -> {self.section_id})"
+
+
+class AssignmentCategory(TimeStampedModel):
+    """
+    Per-section weighting buckets (e.g., Homework, Quiz, Test, Project).
+    
+    Weight validation: Sum of active category weights for a section must be 0 or 100.
+    - 0 means weights not configured yet → fallback to unweighted totals
+    - 100 means weights configured → use weighted grading
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    school_id = models.UUIDField(db_index=True)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="assignment_categories")
+
+    name = models.CharField(max_length=80)
+    weight_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # 0-100
+    sort_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "assignment_category"
+        constraints = [
+            models.UniqueConstraint(fields=["section", "name"], name="uniq_category_section_name"),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "section"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"AssignmentCategory({self.section_id} {self.name} {self.weight_percent}%)"
+
+
+class Assignment(TimeStampedModel):
+    """
+    Individual assignments within a section and category.
+    
+    Constraints:
+    - points_possible must be > 0 (validated at API level)
+    - Unique (section, name) for MVP simplicity
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    school_id = models.UUIDField(db_index=True)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="assignments")
+    category = models.ForeignKey(AssignmentCategory, on_delete=models.PROTECT, related_name="assignments")
+
+    name = models.CharField(max_length=120)
+    points_possible = models.DecimalField(max_digits=7, decimal_places=2)
+    due_date = models.DateField(null=True, blank=True)
+    assigned_date = models.DateField(null=True, blank=True)
+    is_published = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "assignment"
+        constraints = [
+            models.UniqueConstraint(fields=["section", "name"], name="uniq_assignment_section_name"),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "section"]),
+            models.Index(fields=["section", "category"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Assignment({self.section_id} {self.category.name} {self.name})"
