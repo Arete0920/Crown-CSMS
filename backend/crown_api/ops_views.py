@@ -103,3 +103,26 @@ def ensure_ci_user(request):
             "username": username,
             "school_id": str(school_id),
             "access": access_token,
+        },
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def demo_school(request):
+    """
+    DEV-only: return the default/demo school UUID.
+    Guarded by X-Admin-Ops-Secret header.
+    """
+    if not _dev_ops_enabled():
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if not _check_ops_secret(request):
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
+    school = School.objects.order_by("created_at", "id").first()
+    if school is None:
+        return Response({"detail": "No school found"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return Response({"school_id": str(school.id)}, status=status.HTTP_200_OK)
