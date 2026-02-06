@@ -31,6 +31,27 @@ jobs:
           fi
           echo "✅ Unauth invoices returned 403"
 
+      - name: Ensure CI user exists (DEV ops)
+        env:
+          OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
+          CROWN_USERNAME: ${{ secrets.CROWN_DEV_SMOKE_USERNAME }}
+          CROWN_PASSWORD: ${{ secrets.CROWN_DEV_SMOKE_PASSWORD }}
+          CROWN_SCHOOL_ID: ${{ secrets.CROWN_DEV_SMOKE_SCHOOL_ID }}
+        run: |
+          set -e
+          code=$(curl -sS -o /tmp/ensure.json -w "%{http_code}" \
+            -X POST "$BASE/api/v1/system/ensure-ci-user/" \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Ops-Secret: $OPS_SECRET" \
+            -d "{\"username\":\"$CROWN_USERNAME\",\"password\":\"$CROWN_PASSWORD\",\"school_id\":\"$CROWN_SCHOOL_ID\"}")
+
+          if [ "$code" != "200" ]; then
+            echo "❌ ensure-ci-user failed (HTTP $code)"
+            cat /tmp/ensure.json
+            exit 1
+          fi
+          echo "✅ ensure-ci-user OK"
+
       - name: Get JWT token
         env:
           CROWN_USERNAME: ${{ secrets.CROWN_DEV_SMOKE_USERNAME }}
