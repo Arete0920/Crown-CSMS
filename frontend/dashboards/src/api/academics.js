@@ -52,3 +52,12 @@ export function fetchParentStudents() {
 export function fetchStudentSections(studentId) {
   return _fetchJson(`${API_BASE}/api/v1/academics/students/${studentId}/sections/`);
 }
+
+export function fetchStudents({ limit = 100, offset = 0 } = {}) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  return _fetchJson(`${API_BASE}/api/v1/students/?${params}`);
+}
+
+export function fetchTranscript(studentId) {
+  return _fetchJson(`${API_BASE}/api/v1/academics/transcript/${studentId}/`);
+}
