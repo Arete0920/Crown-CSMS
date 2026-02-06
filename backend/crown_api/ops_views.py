@@ -9,6 +9,8 @@ from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -27,6 +29,14 @@ def _check_ops_secret(request) -> bool:
     header = request.headers.get("X-Admin-Ops-Secret", "") or request.META.get("HTTP_X_ADMIN_OPS_SECRET", "")
     expected = getattr(settings, "DEV_OPS_SECRET", "")
     return bool(expected) and header == expected
+
+
+def _require_ops_secret(request):
+    expected = getattr(settings, "DEV_OPS_SECRET", None) or os.getenv("DEV_OPS_SECRET")
+    provided = request.headers.get("X-DevOps-Secret") or request.META.get("HTTP_X_DEVOPS_SECRET")
+    if not expected or provided != expected:
+        return JsonResponse({"detail": "forbidden"}, status=403)
+    return None
 
 
 @api_view(["POST"])
@@ -108,21 +118,33 @@ def ensure_ci_user(request):
     )
 
 
-@api_view(["GET"])
-@permission_classes([AllowAny])
+@require_GET
 def demo_school(request):
     """
-    DEV-only: return the default/demo school UUID.
-    Guarded by X-Admin-Ops-Secret header.
+    DEV-only ops endpoint that returns the canonical demo school UUID.
+    Used to set CI_SMOKE_SCHOOL_ID deterministically.
     """
-    if not _dev_ops_enabled():
-        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+    env = os.getenv("ENVIRONMENT", "").lower()
+    if env not in {"dev", "development"}:
+        return JsonResponse({"detail": "not allowed outside dev"}, status=403)
 
-    if not _check_ops_secret(request):
-        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+    forbidden = _require_ops_secret(request)
+    if forbidden:
+        return forbidden
+
+    # If you already have a canonical "demo school id" env var, use it.
+    school_id = os.getenv("DEMO_SCHOOL_ID") or os.getenv("DEFAULT_SCHOOL_ID")
+    if school_id:
+        return JsonResponse({"school_id": school_id}, status=200)
+
+    # Otherwise: fetch the first School row (deterministic enough for DEV)
+    try:
+        from core.models import School
+    except Exception:
+        return JsonResponse({"detail": "School model import failed"}, status=500)
 
     school = School.objects.order_by("created_at", "id").first()
-    if school is None:
-        return Response({"detail": "No school found"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if not school:
+        return JsonResponse({"detail": "No School rows found. Seed DEV first."}, status=500)
 
-    return Response({"school_id": str(school.id)}, status=status.HTTP_200_OK)
+    return JsonResponse({"school_id": str(school.id), "name": getattr(school, "name", "")}, status=200)
