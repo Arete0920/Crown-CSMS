@@ -13,7 +13,7 @@ from crown_api.ops_views import ensure_ci_user
 
 urlpatterns = [
     # DEV-only ops endpoints (must come early before includes)
-    path("ops/ensure-ci-user/", ensure_ci_user, name="ops-ensure-ci-user"),
+    path("system/ensure-ci-user/", ensure_ci_user, name="system-ensure-ci-user"),
     
     # Authentication
     path("auth/token/", TokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
