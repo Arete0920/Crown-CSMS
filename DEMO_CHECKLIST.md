@@ -26,8 +26,17 @@ Open PowerShell in the Crown2026 folder and run:
   cd backend
   .\venv\Scripts\python.exe manage.py migrate
   .\venv\Scripts\python.exe manage.py seed_demo_school --wipe
+  .\venv\Scripts\python.exe manage.py seed_gradebook_demo --school-id <SCHOOL_UUID> --wipe
   .\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
   ```
+
+**Note on Gradebook Demo Data:**
+To ensure the gradebook grid is never empty during demos, run:
+```powershell
+cd backend
+.\venv\Scripts\python.exe manage.py seed_gradebook_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962 --wipe
+```
+This populates grade entries for all sections with enrolled students. The command is idempotent and safe to rerun.
 
 ---
 
