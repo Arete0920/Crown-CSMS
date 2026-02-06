@@ -70,11 +70,11 @@ def _seed_base_data(*, school: School):
         teacher_name="Mr. Anderson",
     )
     household = Household.objects.create(
-        school=school,
+        school_id=school.id,
         name="Test Family",
     )
     student = Student.objects.create(
-        school=school,
+        school_id=school.id,
         household=household,
         first_name="Test",
         last_name="Student",
