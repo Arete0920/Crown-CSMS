@@ -1,94 +1,145 @@
+from __future__ import annotations
+
+import random
+import uuid
+from dataclasses import dataclass
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Count
-from decimal import Decimal
-import random
 
-from gradebook.models import GradeEntry
+from core.models import School
 from academics.models import Section
+from gradebook.models import GradeEntry
+
+
+@dataclass(frozen=True)
+class SeedAssignment:
+    name: str
+    points_possible: int
+
+
+DEFAULT_ASSIGNMENTS: tuple[SeedAssignment, ...] = (
+    SeedAssignment("Quiz 1", 20),
+    SeedAssignment("Homework 1", 10),
+    SeedAssignment("Project 1", 50),
+    SeedAssignment("Quiz 2", 20),
+    SeedAssignment("Final Exam", 100),
+)
+
+
+def _student_ids_for_section(section: Section) -> list[uuid.UUID]:
+    """
+    Prefer real roster: Section.enrollments -> student_id (based on your existing gradebook views).
+    Fall back to any existing grade entries if enrollments aren't present.
+    """
+    # Attempt to use enrollments if the relation exists
+    if hasattr(section, "enrollments"):
+        try:
+            qs = section.enrollments.all()
+            # enrollment model might be Enrollment(student=...) or Enrollment(student_id=...)
+            if qs.model and hasattr(qs.model, "student_id"):
+                return list(qs.values_list("student_id", flat=True))
+            if qs.model and hasattr(qs.model, "student"):
+                return list(qs.values_list("student__id", flat=True))
+        except Exception:
+            pass
+
+    # Fallback: existing grade entries
+    return list(
+        GradeEntry.objects.filter(section_id=section.id).values_list("student_id", flat=True).distinct()
+    )
+
+
+def _score(points_possible: int) -> int:
+    # Simple deterministic-ish distribution; keep it realistic
+    # 60%–100% range
+    low = int(points_possible * 0.6)
+    return random.randint(low, points_possible)
 
 
 class Command(BaseCommand):
-    help = "Seed demo gradebook data (safe to re-run)."
+    help = "Seed Gradebook demo data (GradeEntry rows) for a given school_id. Idempotent and rerunnable."
 
     def add_arguments(self, parser):
-        parser.add_argument("--school-id", required=True)
-        parser.add_argument("--sections", type=int, default=2)
-        parser.add_argument("--students", type=int, default=12)
-        parser.add_argument("--assignments", type=int, default=6)
-        parser.add_argument("--wipe", action="store_true")
+        parser.add_argument("--school-id", required=True, help="UUID of the tenant school to seed.")
+        parser.add_argument(
+            "--sections",
+            default="",
+            help="Optional comma-separated section UUIDs to seed (otherwise seeds all accessible sections with roster).",
+        )
+        parser.add_argument("--wipe", action="store_true", help="Delete existing GradeEntry rows for this school before seeding.")
+        parser.add_argument("--per-section", type=int, default=5, help="How many assignments to seed per section (default 5).")
+        parser.add_argument("--seed", type=int, default=2026, help="Random seed for repeatable scores (default 2026).")
 
     @transaction.atomic
     def handle(self, *args, **opts):
-        school_id = opts["school_id"]
-        n_sections = opts["sections"]
-        n_students = opts["students"]
-        n_assignments = opts["assignments"]
+        random.seed(int(opts["seed"]))
 
-        if opts["wipe"]:
-            GradeEntry.objects.filter(school_id=school_id).delete()
-            self.stdout.write("Existing gradebook data wiped.")
+        school_id = uuid.UUID(str(opts["school_id"]))
+        wipe = bool(opts["wipe"])
+        per_section = int(opts["per_section"])
 
-        assignments = [
-            ("Assignment 1", Decimal("10.0")),
-            ("Assignment 2", Decimal("20.0")),
-            ("Assignment 3", Decimal("25.0")),
-            ("Assignment 4", Decimal("15.0")),
-            ("Assignment 5", Decimal("30.0")),
-            ("Assignment 6", Decimal("10.0")),
-        ][:n_assignments]
+        # Validate school exists (helps catch wrong IDs fast)
+        if not School.objects.filter(id=school_id).exists():
+            raise SystemExit(f"School not found: {school_id}")
 
-        def roster_students(section):
-            roster = []
-            for e in section.enrollments.all():
-                if hasattr(e, "first_name") and hasattr(e, "last_name"):
-                    roster.append(e)
-                elif hasattr(e, "student"):
-                    roster.append(e.student)
-            return roster
+        if wipe:
+            deleted, _ = GradeEntry.objects.filter(school_id=school_id).delete()
+            self.stdout.write(self.style.WARNING(f"WIPED GradeEntry rows for school_id={school_id}: deleted={deleted}"))
 
-        sections = (
-            Section.objects
-            .filter(school_id=school_id)
-            .annotate(rcount=Count("enrollments"))
-            .filter(rcount__gt=0)
-            .order_by("id")
-        )
-
-        if not sections:
-            self.stderr.write("Missing sections or students.")
-            return
+        # Section selection
+        section_ids_raw = str(opts["sections"]).strip()
+        if section_ids_raw:
+            section_ids = [uuid.UUID(x.strip()) for x in section_ids_raw.split(",") if x.strip()]
+            sections_qs = Section.objects.filter(school_id=school_id, id__in=section_ids)
+        else:
+            # Only seed sections that have enrollments (roster) if possible
+            sections_qs = (
+                Section.objects.filter(school_id=school_id)
+                .annotate(roster_count=Count("enrollments", distinct=True))
+                .filter(roster_count__gt=0)
+                .order_by("id")
+            )
 
         created = 0
-        updated = 0
+        skipped = 0
+        scanned_sections = 0
 
-        for section in sections:
-            roster = roster_students(section)
-            if not roster:
+        for section in sections_qs:
+            scanned_sections += 1
+
+            student_ids = _student_ids_for_section(section)
+            if not student_ids:
+                # If a section has no roster, skip (prevents empty noise)
                 continue
 
-            rng = random.Random(str(section.id))
+            assignments = DEFAULT_ASSIGNMENTS[:per_section]
 
-            for student in roster:
-                for name, possible in assignments:
-                    pct = Decimal(str(rng.uniform(0.80, 1.00)))
-                    earned = (possible * pct).quantize(Decimal("0.01"))
+            for student_id in student_ids:
+                for a in assignments:
+                    points_earned = _score(a.points_possible)
 
-                    _, was_created = GradeEntry.objects.update_or_create(
+                    obj, was_created = GradeEntry.objects.get_or_create(
                         school_id=school_id,
-                        section=section,
-                        student=student,
-                        assignment_name=name,
+                        section_id=section.id,
+                        student_id=student_id,
+                        assignment_name=a.name,
                         defaults={
-                            "points_earned": earned,
-                            "points_possible": possible,
+                            "points_earned": points_earned,
+                            "points_possible": a.points_possible,
                         },
                     )
                     if was_created:
                         created += 1
                     else:
-                        updated += 1
+                        skipped += 1
 
-        self.stdout.write(self.style.SUCCESS(
-            f"GradeEntry seeded across sections. created={created}, updated={updated}"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Seed complete for school_id={school_id}. "
+                f"sections_scanned={scanned_sections}, "
+                f"entries_created={created}, "
+                f"entries_skipped={skipped}"
+            )
+        )
