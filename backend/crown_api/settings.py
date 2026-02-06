@@ -122,6 +122,7 @@ INSTALLED_APPS = [
     'ledger',
     'financial_aid.apps.FinancialAidConfig',
     'academics',
+    'curricula',
     'gradebook',
     'billing',
 ]
