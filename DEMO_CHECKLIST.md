@@ -88,6 +88,64 @@ Then, click an action button on the Priority Worklist (e.g., "Send Email" or "Ma
 
 ---
 
+### 4. Verify Academic Features (Gradebook & Transcript)
+**Time: ~1 minute**
+
+#### Gradebook Grid
+1. Navigate to the gradebook (URL provided by frontend team)
+2. **You should see:**
+   - ✅ Grade entries populated for sections with enrolled students
+   - ✅ Editable cells (click to edit, save changes)
+   - ✅ Student names and section details visible
+
+**If gradebook is empty:**
+```powershell
+cd backend
+.\venv\Scripts\python.exe manage.py seed_gradebook_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962 --wipe
+```
+
+#### Transcript (Read-Only)
+**API Test:**
+```powershell
+# Get auth token
+$response = Invoke-RestMethod `
+  -Uri "http://127.0.0.1:8000/api/v1/auth/token/" `
+  -Method POST `
+  -Headers @{"Content-Type"="application/json"} `
+  -Body '{"username":"head@crown-demo.local","password":"demo1234"}'
+$token = $response.access
+
+# Test transcript endpoint
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:8000/api/v1/academics/transcript/da6e706b-ea3f-4047-aa0b-0dbcc0e4aac5/" `
+  -Method GET `
+  -Headers @{"Authorization"="Bearer $token"; "X-School-Id"="b45b8c5a-6708-4597-aad9-a226627b2962"}
+```
+
+**Expected API Response:**
+- ✅ 200 status
+- ✅ `student` object with name, grade level
+- ✅ `terms` array with course data (code, name, teacher, grade %, letter, credits)
+- ✅ `cumulative_gpa_mvp` field (number)
+- ✅ `notes` array with MVP disclaimer
+
+**UI Test:**
+1. Start frontend: `npm --prefix frontend/dashboards run dev -- --port 3001`
+2. Navigate to: `http://localhost:3001/transcript`
+3. **You should see:**
+   - ✅ Student dropdown populates
+   - ✅ Selecting "Ava Brooks" loads transcript
+   - ✅ Terms render (2026-FALL, 2027-SPRING) with course rows
+   - ✅ MVP GPA displayed with prominent disclaimer
+   - ✅ Print button works (triggers clean print layout)
+
+**If transcript 404s:**
+- Verify backend server is running on port 8000
+- Check academics app is included in crown_api/api_urls.py or crown_api/api_v1_urls.py
+- Try restarting server
+
+---
+
 ## During the Demo
 
 ### Before Audience Arrives
