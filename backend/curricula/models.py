@@ -22,10 +22,14 @@ class CurriculumMap(TimeStampedModel):
         Course,
         on_delete=models.PROTECT,
         related_name="curriculum_maps",
+        null=True,
+        blank=True,
     )
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
+    grade_band = models.CharField(max_length=32, blank=True, default="")
+    subject = models.CharField(max_length=80, blank=True, default="")
     active = models.BooleanField(default=True)
 
     class Meta:
@@ -54,6 +58,7 @@ class Unit(TimeStampedModel):
     sequence = models.IntegerField(default=0, db_index=True)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
+    overview = models.TextField(blank=True, default="")
 
     class Meta:
         db_table = "curriculum_unit"
@@ -82,8 +87,8 @@ class Lesson(TimeStampedModel):
     sequence = models.IntegerField(default=0, db_index=True)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, default="")
-    objectives = models.JSONField(default=list, blank=True)  # Learning objectives
-    resources = models.JSONField(default=list, blank=True)   # Teaching resources
+    objectives = models.TextField(blank=True, default="")  # Learning objectives
+    resources = models.TextField(blank=True, default="")   # Teaching resources
 
     class Meta:
         db_table = "curriculum_lesson"
