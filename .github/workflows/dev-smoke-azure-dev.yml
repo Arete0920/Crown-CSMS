@@ -31,32 +31,24 @@ jobs:
           fi
           echo "✅ Unauth invoices returned 403"
 
-      - name: Get JWT token (existing secrets only)
+      - name: Ensure CI user and get JWT
         env:
-          CROWN_USERNAME: ${{ secrets.GP_USERNAME }}
-          CROWN_PASSWORD: ${{ secrets.GP_PASSWORD }}
+          OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
         run: |
           set -e
-          
-          # Fail fast if secrets missing
-          if [ -z "$CROWN_USERNAME" ] || [ -z "$CROWN_PASSWORD" ]; then
-            echo "❌ Missing required repo secrets: GP_USERNAME, GP_PASSWORD"
-            exit 1
-          fi
-          
-          resp=$(curl -sS -X POST "$BASE/api/v1/auth/token/" \
+          resp=$(curl -sS -X POST "$BASE/api/v1/system/ensure-ci-user/" \
             -H "Content-Type: application/json" \
-            -d "{\"username\":\"$CROWN_USERNAME\",\"password\":\"$CROWN_PASSWORD\"}")
+            -H "X-Admin-Ops-Secret: $OPS_SECRET")
           
           token=$(echo "$resp" | jq -r '.access')
           if [ -z "$token" ] || [ "$token" = "null" ]; then
-            echo "❌ JWT acquisition failed"
+            echo "❌ ensure-ci-user failed"
             echo "$resp"
             exit 1
           fi
           
           echo "TOKEN=$token" >> $GITHUB_ENV
-          echo "✅ JWT acquired"
+          echo "✅ CI user ensured + JWT acquired"
 
       - name: Check 3 - Auth invoices returns 200
         run: |
