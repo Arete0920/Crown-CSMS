@@ -1,6 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
+from .transcript_views import TranscriptROView
 from .views import (
     AcademicYearViewSet,
     CourseViewSet,
@@ -18,6 +19,11 @@ router.register(r"academics/sections", SectionViewSet, basename="academics-secti
 
 urlpatterns = [
     path("", include(router.urls)),
+    path(
+        "academics/transcript/<uuid:student_id>/",
+        TranscriptROView.as_view(),
+        name="transcript-ro",
+    ),
     path(
         "academics/students/<uuid:student_id>/sections/",
         student_sections,
