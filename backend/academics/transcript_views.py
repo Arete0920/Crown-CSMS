@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -10,7 +11,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from academics.models import Enrollment
+from academics.models import Assignment, AssignmentCategory, Enrollment
 from gradebook.models import GradeEntry
 from households.models import Student
 
@@ -31,6 +32,159 @@ def _letter_from_percent(pct: Optional[float]) -> str:
 
 def _gpa_points(letter: str) -> float:
     return {"A": 4.0, "B": 3.0, "C": 2.0, "D": 1.0, "F": 0.0}.get(letter, 0.0)
+
+
+def _compute_section_final_percent(
+    school_id: str,
+    section_id: UUID,
+    student_id: UUID,
+) -> Optional[float]:
+    """
+    Compute final percent for a section using weighted grading if configured.
+    
+    Logic:
+    1. If section has AssignmentCategory rows:
+       - Check sum of active weights
+       - If sum = 100: use weighted grading
+       - If sum = 0: fallback to unweighted
+    2. If no categories: use simple GradeEntry sum (current MVP behavior)
+    
+    Weighted calculation:
+    - For each active category with points_possible > 0:
+      - category_percent = earned / possible
+      - Renormalize weights across categories with points
+      - weighted_contrib = category_percent * (renorm_weight)
+    - Final = sum(weighted_contrib) * 100
+    
+    Returns:
+        Final percent (0-100) or None if no gradable data
+    """
+    # Check if section has categories
+    categories = list(
+        AssignmentCategory.objects.filter(
+            school_id=school_id,
+            section_id=section_id,
+            is_active=True
+        ).order_by("sort_order")
+    )
+    
+    if not categories:
+        # No categories configured - fallback to GradeEntry sum (MVP behavior)
+        agg = (
+            GradeEntry.objects
+            .filter(school_id=school_id, section_id=section_id, student_id=student_id)
+            .aggregate(
+                earned=Sum("points_earned"),
+                possible=Sum("points_possible"),
+            )
+        )
+        earned = float(agg["earned"]) if agg["earned"] is not None else None
+        possible = float(agg["possible"]) if agg["possible"] is not None else None
+        
+        if earned is not None and possible and possible > 0:
+            return round((earned / possible) * 100.0, 1)
+        return None
+    
+    # Categories exist - check weight configuration
+    total_weight = sum(Decimal(str(cat.weight_percent)) for cat in categories)
+    
+    if total_weight == Decimal("0"):
+        # Weights not configured - use simple sum across all GradeEntry records
+        agg = (
+            GradeEntry.objects
+            .filter(school_id=school_id, section_id=section_id, student_id=student_id)
+            .aggregate(
+                earned=Sum("points_earned"),
+                possible=Sum("points_possible"),
+            )
+        )
+        earned = float(agg["earned"]) if agg["earned"] is not None else None
+        possible = float(agg["possible"]) if agg["possible"] is not None else None
+        
+        if earned is not None and possible and possible > 0:
+            return round((earned / possible) * 100.0, 1)
+        return None
+    
+    if total_weight != Decimal("100"):
+        # Invalid configuration - should not happen due to validation
+        # Fallback to GradeEntry sum
+        agg = (
+            GradeEntry.objects
+            .filter(school_id=school_id, section_id=section_id, student_id=student_id)
+            .aggregate(
+                earned=Sum("points_earned"),
+                possible=Sum("points_possible"),
+            )
+        )
+        earned = float(agg["earned"]) if agg["earned"] is not None else None
+        possible = float(agg["possible"]) if agg["possible"] is not None else None
+        
+        if earned is not None and possible and possible > 0:
+            return round((earned / possible) * 100.0, 1)
+        return None
+    
+    # Weights configured correctly (sum = 100) - use weighted grading
+    # Get all assignments for this section to map GradeEntry to categories
+    assignments_by_name = {}
+    for assignment in Assignment.objects.filter(
+        school_id=school_id,
+        section_id=section_id,
+        is_published=True
+    ).select_related("category"):
+        assignments_by_name[assignment.name] = assignment
+    
+    # Group GradeEntry records by category
+    grade_entries = GradeEntry.objects.filter(
+        school_id=school_id,
+        section_id=section_id,
+        student_id=student_id
+    )
+    
+    category_data = {cat.id: {"earned": Decimal("0"), "possible": Decimal("0"), "weight": cat.weight_percent} 
+                     for cat in categories}
+    
+    for entry in grade_entries:
+        # Match GradeEntry to Assignment by name
+        assignment = assignments_by_name.get(entry.assignment_name)
+        if not assignment:
+            # GradeEntry exists but no matching Assignment - skip for weighted calculation
+            continue
+        
+        cat_id = assignment.category_id
+        if cat_id not in category_data:
+            continue
+        
+        if entry.points_earned is not None:
+            category_data[cat_id]["earned"] += Decimal(str(entry.points_earned))
+        if entry.points_possible is not None:
+            category_data[cat_id]["possible"] += Decimal(str(entry.points_possible))
+    
+    # Compute weighted grade with renormalization for empty categories
+    categories_with_points = [
+        cat_id for cat_id, data in category_data.items()
+        if data["possible"] > 0
+    ]
+    
+    if not categories_with_points:
+        return None
+    
+    # Renormalize weights
+    total_included_weight = sum(
+        category_data[cat_id]["weight"] for cat_id in categories_with_points
+    )
+    
+    if total_included_weight == 0:
+        return None
+    
+    weighted_sum = Decimal("0")
+    for cat_id in categories_with_points:
+        data = category_data[cat_id]
+        category_percent = data["earned"] / data["possible"]  # 0.0 to 1.0
+        renorm_weight = data["weight"] / total_included_weight  # renormalized weight (0.0 to 1.0)
+        weighted_sum += category_percent * renorm_weight
+    
+    final_percent = float(weighted_sum * 100)
+    return round(final_percent, 1)
 
 
 @dataclass(frozen=True)
@@ -91,22 +245,8 @@ class TranscriptROView(APIView):
                     "term_code": term_code,
                 }
 
-            # Compute final_percent from GradeEntry sums for this student+section+school.
-            agg = (
-                GradeEntry.objects
-                .filter(school_id=school_id, section_id=section.id, student_id=student_id)
-                .aggregate(
-                    earned=Sum("points_earned"),
-                    possible=Sum("points_possible"),
-                )
-            )
-            earned = float(agg["earned"]) if agg["earned"] is not None else None
-            possible = float(agg["possible"]) if agg["possible"] is not None else None
-
-            final_percent: Optional[float] = None
-            if earned is not None and possible and possible > 0:
-                final_percent = round((earned / possible) * 100.0, 1)
-
+            # Compute final_percent using weighted grading if configured
+            final_percent = _compute_section_final_percent(school_id, section.id, student_id)
             letter = _letter_from_percent(final_percent)
 
             courses_by_term[term_key].append(
