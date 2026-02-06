@@ -1,7 +1,7 @@
 from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -15,6 +15,7 @@ from academics.serializers import SectionSerializer, StudentSerializer
 from academics.views import PaginatedReadOnlyViewSet
 
 from .models import GradeEntry
+from .serializers import GradebookAssignmentSerializer, GradebookStudentSerializer
 
 
 def _role_codes(user, school_id) -> set[str]:
@@ -172,3 +173,55 @@ def section_grades(request, section_id):
             "rows": rows,
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def assignments_list(request):
+    """
+    GET /api/v1/gradebook/assignments/?section_id=<uuid>
+    Same auth rules as section_assignments, but query-param based.
+    """
+    school_id = get_request_school_id(request, required=True)
+    section_id = request.query_params.get("section_id")
+    if not section_id:
+        return Response({"detail": "section_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    section = _get_section_or_404(request, school_id, section_id)
+
+    # Mirror the existing per-section assignments logic.
+    # If you already have a helper that computes assignments, call it here.
+    assignments = (
+        GradeEntry.objects.filter(school_id=school_id, section_id=section.id)
+        .values("assignment_name", "points_possible")
+        .distinct()
+        .order_by("assignment_name")
+    )
+
+    return Response(GradebookAssignmentSerializer(assignments, many=True).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def students_list(request):
+    """
+    GET /api/v1/gradebook/students/?section_id=<uuid>
+    Same auth rules as section_roster, but query-param based.
+    """
+    school_id = get_request_school_id(request, required=True)
+    section_id = request.query_params.get("section_id")
+    if not section_id:
+        return Response({"detail": "section_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    section = _get_section_or_404(request, school_id, section_id)
+
+    # Read-only MVP roster: students appearing in GradeEntry for this section.
+    students = (
+        GradeEntry.objects.filter(school_id=school_id, section_id=section.id)
+        .select_related("student")
+        .values("student_id", "student__first_name", "student__last_name")
+        .distinct()
+        .order_by("student__last_name", "student__first_name")
+    )
+
+    return Response(GradebookStudentSerializer(students, many=True).data)
