@@ -33,8 +33,8 @@ jobs:
 
       - name: Get JWT token
         env:
-          CROWN_USERNAME: admin
-          CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
+          CROWN_USERNAME: ${{ secrets.CROWN_DEV_SMOKE_USERNAME }}
+          CROWN_PASSWORD: ${{ secrets.CROWN_DEV_SMOKE_PASSWORD }}
         run: |
           set -e
           resp=$(curl -sS -X POST "$BASE/api/v1/auth/token/" \
