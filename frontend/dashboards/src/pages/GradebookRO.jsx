@@ -79,11 +79,18 @@ export function GradebookRO() {
     getGradebookSections()
       .then((data) => {
         if (!alive) return;
-        setSections(Array.isArray(data) ? data : []);
-        // auto-select first section only once
-        if (!autoSelectDoneRef.current && Array.isArray(data) && data.length > 0) {
+        // Handle paginated response: {total, limit, offset, results: [...]}
+        const sectionsList = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : []);
+        setSections(sectionsList);
+        
+        // Auto-select first ROSTERED section (roster_count > 0) to avoid empty grids
+        if (!autoSelectDoneRef.current && sectionsList.length > 0) {
           autoSelectDoneRef.current = true;
-          setSelectedSectionId(data[0].id);
+          const rostered = sectionsList.filter(s => (s?.roster_count ?? 0) > 0);
+          const defaultSection = rostered[0]?.section_id ?? sectionsList[0]?.section_id;
+          if (defaultSection) {
+            setSelectedSectionId(defaultSection);
+          }
         }
       })
       .catch((err) => {
@@ -281,8 +288,8 @@ export function GradebookRO() {
 
   // CSV export
   const selectedSectionName =
-    sections.find((s) => String(s.id) === String(selectedSectionId))?.name ||
-    sections.find((s) => String(s.id) === String(selectedSectionId))?.course_name ||
+    sections.find((s) => String(s.section_id) === String(selectedSectionId))?.name ||
+    sections.find((s) => String(s.section_id) === String(selectedSectionId))?.course_name ||
     "";
 
   const buildGradebookCsv = () => {
@@ -418,8 +425,8 @@ export function GradebookRO() {
               >
                 <option value="">— Select a Section —</option>
                 {sections.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name || s.course_name || s.id}
+                  <option key={s.section_id} value={s.section_id}>
+                    {s.course_name || s.name || s.section_id} {s.roster_count > 0 ? `(${s.roster_count} students)` : "(empty)"}
                   </option>
                 ))}
               </select>
