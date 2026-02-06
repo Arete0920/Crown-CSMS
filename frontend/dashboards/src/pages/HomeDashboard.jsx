@@ -17,6 +17,9 @@ export function HomeDashboard() {
           <li>
             <a href="/gradebook">Gradebook (Read-Only)</a>
           </li>
+          <li>
+            <a href="/transcript">Transcript (Read-Only)</a>
+          </li>
         </ul>
       </p>
     </div>
