@@ -103,6 +103,7 @@ class Command(BaseCommand):
             )
 
         created = 0
+        skipped = 0
         scanned_sections = 0
 
         for section in sections_qs:
@@ -132,11 +133,13 @@ class Command(BaseCommand):
                     if was_created:
                         created += 1
                     else:
-                        # keep idempotent by not overwriting scores
-                        pass
+                        skipped += 1
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Seed complete for school_id={school_id}. scanned_sections={scanned_sections}, created_grade_entries={created}"
+                f"Seed complete for school_id={school_id}. "
+                f"sections_scanned={scanned_sections}, "
+                f"entries_created={created}, "
+                f"entries_skipped={skipped}"
             )
         )
