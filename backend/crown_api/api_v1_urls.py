@@ -9,11 +9,12 @@ from rest_framework_simplejwt.views import (
 )
 from applications.views_admissions import admissions_summary, admissions_drilldown
 from crown_api.system_views import SeedStatusView, demo_reset_view
-from crown_api.ops_views import ensure_ci_user
+from crown_api.ops_views import ensure_ci_user, demo_school
 
 urlpatterns = [
     # DEV-only ops endpoints (must come early before includes)
     path("system/ensure-ci-user/", ensure_ci_user, name="system-ensure-ci-user"),
+    path("system/demo-school/", demo_school, name="system-demo-school"),
     
     # Authentication
     path("auth/token/", TokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
