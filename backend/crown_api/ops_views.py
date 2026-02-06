@@ -4,6 +4,7 @@ Guarded by X-Admin-Ops-Secret header.
 """
 from __future__ import annotations
 
+import os
 from uuid import UUID
 
 from django.conf import settings
@@ -12,6 +13,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.models import School
 
@@ -31,62 +33,68 @@ def _check_ops_secret(request) -> bool:
 @permission_classes([AllowAny])
 def ensure_ci_user(request):
     """
-    DEV-only: Create or reset a CI user account for Golden Path smoke tests.
-        Guarded by X-Admin-Ops-Secret header.
+    DEV-only: Idempotently ensure CI smoke user exists and return JWT.
+    Reads credentials from Azure App Service settings (CI_SMOKE_*).
+    Guarded by X-Admin-Ops-Secret header.
     
-    Request body:
-    {
-            "username": "ci-golden@crown-demo.local",
-            "password": "strong-password",
-            "school_id": "<uuid>"
-    }
+    Returns JWT for immediate use in smoke tests.
     """
     if not _dev_ops_enabled():
-        # Hide endpoint existence outside dev
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if not _check_ops_secret(request):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
-    payload = request.data or {}
-    username = (payload.get("username") or "").strip()
-    password = (payload.get("password") or "").strip()
-    school_id_raw = (payload.get("school_id") or "").strip()
+    # Read from server-side env vars (Azure App Service settings)
+    username = os.getenv("CI_SMOKE_USERNAME", "").strip()
+    password = os.getenv("CI_SMOKE_PASSWORD", "").strip()
+    school_id_raw = os.getenv("CI_SMOKE_SCHOOL_ID", "").strip()
 
     if not username or not password or not school_id_raw:
         return Response(
-            {"detail": "username, password, and school_id are required"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"detail": "Server misconfigured: missing CI_SMOKE_USERNAME, CI_SMOKE_PASSWORD, or CI_SMOKE_SCHOOL_ID"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     try:
         school_id = UUID(school_id_raw)
     except Exception:
-        return Response({"detail": "school_id must be a valid UUID"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Server misconfigured: CI_SMOKE_SCHOOL_ID must be valid UUID"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     school = School.objects.filter(id=school_id).first()
     if school is None:
-        return Response({"detail": "School not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": f"School {school_id} not found"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     User = get_user_model()
-
-    # For most custom User models this works; if yours uses email as USERNAME_FIELD, this still works
     lookup_field = getattr(User, "USERNAME_FIELD", "username")
     lookup = {lookup_field: username}
 
     user, created = User.objects.get_or_create(defaults={}, **lookup)
 
-    # Ensure account is usable for Golden Path
+    # Ensure account is usable for smoke tests
     user.is_active = True
     if hasattr(user, "is_staff"):
         user.is_staff = True
 
+    # Idempotent password reset (matches Azure setting)
     user.set_password(password)
+    
+    # Bind tenant context
     if hasattr(user, "school_id"):
         user.school_id = school_id
     if hasattr(user, "school"):
         user.school = school
     user.save()
+
+    # Generate JWT
+    refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
 
     return Response(
         {
@@ -94,7 +102,4 @@ def ensure_ci_user(request):
             "created": created,
             "username": username,
             "school_id": str(school_id),
-            "user_id": str(user.pk),
-        },
-        status=status.HTTP_200_OK,
-    )
+            "access": access_token,
