@@ -5,6 +5,7 @@ import { BillingDashboard } from '../pages/BillingDashboard.jsx';
 import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
 import { AcademicsDashboard } from '../pages/AcademicsDashboard.jsx';
 import { GradebookRO } from '../pages/GradebookRO.jsx';
+import { TranscriptRO } from '../pages/TranscriptRO.jsx';
 import { AdmissionsPipelineList } from '../pages/AdmissionsPipelineList.jsx';
 import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
 import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
@@ -29,6 +30,10 @@ export const router = createBrowserRouter([
   {
     path: '/gradebook',
     element: <GradebookRO />,
+  },
+  {
+    path: '/transcript',
+    element: <TranscriptRO />,
   },
   {
     path: '/admissions',
