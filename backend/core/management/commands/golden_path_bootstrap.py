@@ -505,9 +505,17 @@ class Command(BaseCommand):
             with transaction.atomic():
                 school = School.objects.order_by("created_at", "id").first()
                 if school_id:
-                    school = School.objects.filter(id=school_id).first()
-                    if not school:
-                        raise ValueError(f"School id not found: {school_id}")
+                    # Use get_or_create to make bootstrap idempotent with explicit school_id
+                    school, created = School.objects.get_or_create(
+                        id=school_id,
+                        defaults={
+                            'name': 'Crown Demo School',
+                            'timezone': 'America/New_York',
+                            'is_active': True,
+                        }
+                    )
+                    if created:
+                        self.stdout.write(f"BOOTSTRAP_OK school_created=1 id={school_id}")
 
                 if not school:
                     school = School.objects.create(
