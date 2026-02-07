@@ -18,6 +18,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.models import School
+from core.seed_helpers import ensure_deterministic_school
 
 
 def _dev_ops_enabled() -> bool:
@@ -74,15 +75,8 @@ def ensure_ci_user(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    # Use get_or_create to make ensure_ci_user idempotent
-    school, created = School.objects.get_or_create(
-        id=school_id,
-        defaults={
-            'name': 'Crown Demo School',
-            'timezone': 'America/New_York',
-            'is_active': True,
-        }
-    )
+    # Use canonical helper for deterministic school creation
+    school, created = ensure_deterministic_school(school_id)
 
     User = get_user_model()
     lookup_field = getattr(User, "USERNAME_FIELD", "username")

@@ -1,0 +1,100 @@
+"""Test ensure_ci_user endpoint creates school deterministically."""
+import os
+import pytest
+from uuid import UUID
+from unittest.mock import patch
+from django.conf import settings
+from django.test import override_settings
+from rest_framework.test import APIClient
+from core.models import School
+
+
+@pytest.mark.django_db
+def test_ensure_ci_user_creates_school_deterministically():
+    """
+    PROOF: ensure_ci_user endpoint creates school with deterministic defaults.
+    
+    This test prevents regression where API-level path diverges from
+    the canonical seed_helpers pattern.
+    
+    Context: Azure DEV Smoke calls this endpoint before any bootstrap runs.
+    It must create the school if missing, using deterministic defaults.
+    """
+    test_school_id = UUID('a5351136-98fe-4d48-add0-fa8f62d9ceff')
+    
+    # Ensure school doesn't exist
+    School.objects.filter(id=test_school_id).delete()
+    
+    client = APIClient()
+    
+    # Mock environment variables (os.getenv) and settings
+    with override_settings(ENVIRONMENT='dev', DEV_OPS_SECRET='test-secret-123'):
+        with patch.dict(os.environ, {
+            'CI_SMOKE_USERNAME': 'ci@test.local',
+            'CI_SMOKE_PASSWORD': 'TestPassword123!',
+            'CI_SMOKE_SCHOOL_ID': str(test_school_id),
+        }):
+            response = client.post(
+                '/api/v1/system/ensure-ci-user/',
+                content_type='application/json',
+                HTTP_X_ADMIN_OPS_SECRET='test-secret-123'
+            )
+    
+    # Should succeed
+    assert response.status_code == 200
+    data = response.json()
+    assert 'access' in data
+    
+    # School should now exist with canonical defaults
+    school = School.objects.get(id=test_school_id)
+    assert school.name == 'Crown Demo School'
+    assert school.timezone == 'America/New_York'
+    assert school.is_active is True
+
+
+@pytest.mark.django_db
+def test_ensure_ci_user_idempotent_with_existing_school():
+    """
+    PROOF: ensure_ci_user endpoint is idempotent when school exists.
+    
+    Second call should not crash or create duplicates.
+    """
+    test_school_id = UUID('a5351136-98fe-4d48-add0-fa8f62d9ceff')
+    
+    # Pre-create school
+    School.objects.filter(id=test_school_id).delete()
+    School.objects.create(
+        id=test_school_id,
+        name='Crown Demo School',
+        timezone='America/New_York',
+        is_active=True
+    )
+    
+    client = APIClient()
+    
+    with override_settings(ENVIRONMENT='dev', DEV_OPS_SECRET='test-secret-123'):
+        with patch.dict(os.environ, {
+            'CI_SMOKE_USERNAME': 'ci@test.local',
+            'CI_SMOKE_PASSWORD': 'TestPassword123!',
+            'CI_SMOKE_SCHOOL_ID': str(test_school_id),
+        }):
+            # First call
+            response1 = client.post(
+                '/api/v1/system/ensure-ci-user/',
+                content_type='application/json',
+                HTTP_X_ADMIN_OPS_SECRET='test-secret-123'
+            )
+            
+            # Second call (idempotent)
+            response2 = client.post(
+                '/api/v1/system/ensure-ci-user/',
+                content_type='application/json',
+                HTTP_X_ADMIN_OPS_SECRET='test-secret-123'
+            )
+    
+    # Both should succeed
+    assert response1.status_code == 200
+    assert response2.status_code == 200
+    
+    # No duplicates
+    assert School.objects.filter(id=test_school_id).count() == 1
