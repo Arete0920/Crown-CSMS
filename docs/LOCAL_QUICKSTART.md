@@ -30,15 +30,20 @@ Use the canonical demo school ID for consistency with Azure DEV:
 ```powershell
 $SCHOOL_ID = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
 
-# Bootstrap golden path (creates school, admin user, sections, etc.)
+# Bootstrap golden path (creates school, admin user, admissions funnel)
 python manage.py golden_path_bootstrap --school-id $SCHOOL_ID --force
 
-# Seed gradebook data (grade entries for students)
-python manage.py seed_gradebook_demo --school-id $SCHOOL_ID --per-section 5
+# Seed academics (courses, sections, enrollments - REQUIRED before category weights)
+python manage.py seed_academics_demo --school-id $SCHOOL_ID
 
 # Seed category weights (Homework, Tests, Projects, Exams with percentages)
 python manage.py seed_category_weights --school-id $SCHOOL_ID
 ```
+
+**Seed Order Matters:**
+1. `golden_path_bootstrap` creates school, admin, and admissions data
+2. `seed_academics_demo` creates courses, sections, and enrollments (prerequisite for categories)
+3. `seed_category_weights` creates category weights for sections (requires enrollments to exist)
 
 ### 4. Start Backend Server
 ```powershell
@@ -129,28 +134,30 @@ To wipe and re-seed:
 ```powershell
 $SCHOOL_ID = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
 
-# Wipe category weights
+# Option 1: Wipe specific data sets (granular control)
 python manage.py seed_category_weights --school-id $SCHOOL_ID --wipe
+python manage.py seed_academics_demo --school-id $SCHOOL_ID --wipe
 
-# Wipe gradebook
-python manage.py seed_gradebook_demo --school-id $SCHOOL_ID --wipe
-
-# Re-run full bootstrap
+# Option 2: Re-run full bootstrap sequence (recommended)
 python manage.py golden_path_bootstrap --school-id $SCHOOL_ID --force
-python manage.py seed_gradebook_demo --school-id $SCHOOL_ID
+python manage.py seed_academics_demo --school-id $SCHOOL_ID
 python manage.py seed_category_weights --school-id $SCHOOL_ID
 ```
+
+**Note:** `golden_path_bootstrap --force` wipes admissions data. `seed_academics_demo` is idempotent by default (won't duplicate on re-run).
 
 ## What You Get
 
 After following this guide:
 
-- ✅ **School:** Crown Demo School (deterministic UUID)
+- ✅ **School:** Crown Demo School (deterministic UUID: a5351136-98fe-4d48-add0-fa8f62d9ceff)
 - ✅ **Admin User:** admin / Crown2026!
-- ✅ **Sections:** Multiple sections with enrollments
-- ✅ **Students:** Demo students enrolled in sections
-- ✅ **Grade Entries:** 5 assignments per section with realistic scores
-- ✅ **Category Weights:** 4 categories (Homework 20%, Quizzes 30%, Projects 25%, Exams 25%)
+- ✅ **Admissions Funnel:** 100 applicants with realistic stage distribution (golden_path_bootstrap)
+- ✅ **Courses:** 2 courses (MATH-101, ENG-101) with deterministic codes (seed_academics_demo)
+- ✅ **Sections:** 2 sections with term assignments (seed_academics_demo)
+- ✅ **Students:** 25 demo students enrolled in all sections (seed_academics_demo)
+- ✅ **Enrollments:** 50 enrollments (25 students × 2 sections) (seed_academics_demo)
+- ✅ **Category Weights:** 4 categories per section (Homework 20%, Quizzes 30%, Projects 25%, Exams 25%) (seed_category_weights)
 
 ## Next Steps
 
