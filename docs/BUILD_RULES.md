@@ -98,6 +98,98 @@ cd "c:\Users\JMega\OneDrive\Desktop\Crown2026\backend"
 - **Seed produces**: 300 students, 180 families, 63 aid applications, 115 awards with realistic workflow distribution
 - **Demo admin credentials**: `head@crown-demo.local` / `demo1234` (only exists after seeding)
 
+### 3.5 Seed Command Idempotency Rules (CRITICAL)
+
+**Context**: Proof Ceremony CI runs `seed_demo_school --wipe` repeatedly, exposing non-idempotent patterns that fail under test conditions.
+
+#### 3.5.1 Mandatory Patterns
+1. **Use `get_or_create()` for unique constraints**
+   - ❌ **WRONG**: `Guardian.objects.create(school=school, email=email, ...)`
+   - ✅ **CORRECT**: `Guardian.objects.get_or_create(school=school, email=email, defaults={...})`
+   - **Why**: Random email generation + `.create()` = UniqueViolation on reruns
+
+2. **Use `get_or_create()` keyed on natural keys**
+   - Models with unique constraints must be created idempotently
+   - Key on `(school, name)`, `(school, email)`, `(school, code)`, etc. depending on model
+   - Pass variable data via `defaults={}` parameter
+
+3. **Delete in FK-safe order**
+   - ❌ **WRONG**: Delete `UserAccount` before `AidAuditEvent` (protected FK fails)
+   - ✅ **CORRECT**: Delete `AidAuditEvent` (child) before `UserAccount` (parent)
+   - **Pattern**: Delete referencing objects BEFORE referenced objects
+
+#### 3.5.2 Example: Guardian Seed (Fixed in PR #40)
+```python
+# BEFORE (broken)
+Guardian.objects.create(
+    school=school,
+    family=fam,
+    email=f"{last.lower()}.{random.randint(1000,9999)}@demo.local",
+    ...
+)
+
+# AFTER (idempotent)
+email = f"{last.lower()}.{random.randint(1000,9999)}@demo.local"
+Guardian.objects.get_or_create(
+    school=school,
+    email=email,  # Unique constraint key
+    defaults={
+        "family": fam,
+        "first_name": random.choice(FIRST_NAMES),
+        ...
+    }
+)
+```
+
+#### 3.5.3 Wipe Order for `seed_demo_school --wipe`
+Correct deletion cascade (from commit f81b4be0):
+```python
+def _wipe_school(self, school: School):
+    from financial_aid.models import AidAuditEvent
+    
+    # 1. Delete audit events (reference UserAccount via actor_user_id)
+    user_ids = list(UserAccount.objects.filter(school=school).values_list('id', flat=True))
+    AidAuditEvent.objects.filter(school_id=school.id).delete()
+    if user_ids:
+        AidAuditEvent.objects.filter(actor_user_id__in=user_ids).delete()
+    
+    # 2. Delete school data (now safe, no protected FKs)
+    AidAward.objects.filter(school=school).delete()
+    AidApplication.objects.filter(school=school).delete()
+    LedgerEntry.objects.filter(school=school).delete()
+    StudentTuition.objects.filter(school=school).delete()
+    TuitionPlan.objects.filter(school=school).delete()
+    JournalBatch.objects.filter(school=school).delete()
+    ChartAccount.objects.filter(school=school).delete()
+    Enrollment.objects.filter(school=school).delete()
+    Student.objects.filter(school=school).delete()
+    Guardian.objects.filter(school=school).delete()
+    Family.objects.filter(school=school).delete()
+    UserRole.objects.filter(school=school).delete()
+    UserAccount.objects.filter(school=school).delete()  # Now safe
+    Staff.objects.filter(school=school).delete()
+    GradeLevel.objects.filter(school=school).delete()
+    AcademicYear.objects.filter(school=school).delete()
+```
+
+#### 3.5.4 Testing Seed Idempotency
+Seed commands **must** pass this test:
+```python
+# Run seed twice in sequence
+call_command("seed_demo_school", "--wipe")
+call_command("seed_demo_school", "--wipe")  # Must not crash
+```
+
+If this fails with UniqueViolation or ProtectedError, fix the seed command before pushing.
+
+#### 3.5.5 When Adding New Seed Commands
+1. Use `get_or_create()` for all models with unique constraints
+2. Test double-run locally before committing
+3. Add tests verifying idempotency (like `test_seed_category_weights_command.py`)
+4. Document unique keys in command docstring
+
+**Root Cause Reference**: PR #40 commit f81b4be0 fixed proof-ceremony failures caused by non-idempotent Guardian creation.
+
 ---
 
 ## 4. API Endpoint Rules
