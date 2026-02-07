@@ -218,6 +218,124 @@ def category_update_delete(request, category_id):
     )
 
 
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated])
+def category_batch_weights(request, section_id):
+    """
+    PUT: Batch update category weights for a section.
+    
+    Body: List of {"id": "<uuid>", "weight_percent": "40.00", "is_active": true}
+    
+    Validates all changes before applying atomically:
+    - All IDs exist and belong to section
+    - No duplicate IDs
+    - weight_percent is valid decimal 0-100
+    - Active weights sum to exactly 0 or 100
+    
+    Returns: Updated categories list in deterministic order
+    """
+    school_id = get_request_school_id(request)
+    
+    if not _can_write(request.user, school_id):
+        raise PermissionDenied("Only ADMIN or DIRECTOR can modify category weights")
+    
+    section = get_object_or_404(Section, id=section_id, school_id=school_id)
+    
+    # Validate request body
+    updates = request.data
+    if not isinstance(updates, list) or not updates:
+        raise ValidationError("Request body must be a non-empty list")
+    
+    # Parse and validate all updates before applying
+    validated_updates = []
+    seen_ids = set()
+    
+    for item in updates:
+        if not isinstance(item, dict):
+            raise ValidationError("Each item must be an object with id, weight_percent, and is_active")
+        
+        # Validate ID
+        cat_id = item.get("id")
+        if not cat_id:
+            raise ValidationError("Each item must have an 'id' field")
+        
+        if cat_id in seen_ids:
+            raise ValidationError(f"Duplicate category ID: {cat_id}")
+        seen_ids.add(cat_id)
+        
+        # Validate weight_percent
+        try:
+            weight_percent = Decimal(str(item.get("weight_percent", "0")))
+        except (ValueError, TypeError):
+            raise ValidationError(f"Invalid weight_percent for category {cat_id}")
+        
+        if weight_percent < 0 or weight_percent > 100:
+            raise ValidationError(f"weight_percent must be between 0 and 100 for category {cat_id}")
+        
+        # Validate is_active
+        is_active = item.get("is_active", True)
+        if not isinstance(is_active, bool):
+            raise ValidationError(f"is_active must be true or false for category {cat_id}")
+        
+        validated_updates.append({
+            "id": cat_id,
+            "weight_percent": weight_percent,
+            "is_active": is_active,
+        })
+    
+    # Verify all IDs exist and belong to this section
+    category_ids = [u["id"] for u in validated_updates]
+    existing_categories = AssignmentCategory.objects.filter(
+        id__in=category_ids,
+        school_id=school_id,
+        section_id=section_id
+    )
+    existing_ids = set(str(c.id) for c in existing_categories)
+    
+    missing_ids = set(category_ids) - existing_ids
+    if missing_ids:
+        raise ValidationError(f"Categories not found in this section: {', '.join(missing_ids)}")
+    
+    # Validate that active weights will sum to 0 or 100
+    active_weight_sum = sum(
+        u["weight_percent"] for u in validated_updates if u["is_active"]
+    )
+    
+    if active_weight_sum not in (Decimal("0"), Decimal("100")):
+        raise ValidationError(
+            f"Active category weights must sum to 0 or 100. Provided sum: {active_weight_sum}"
+        )
+    
+    # All validations passed - apply updates atomically
+    with transaction.atomic():
+        for update in validated_updates:
+            AssignmentCategory.objects.filter(id=update["id"]).update(
+                weight_percent=update["weight_percent"],
+                is_active=update["is_active"]
+            )
+    
+    # Return updated categories in deterministic order
+    updated_categories = AssignmentCategory.objects.filter(
+        section_id=section_id,
+        school_id=school_id
+    ).order_by("sort_order", "name")
+    
+    data = [
+        {
+            "id": str(cat.id),
+            "name": cat.name,
+            "weight_percent": str(cat.weight_percent),
+            "sort_order": cat.sort_order,
+            "is_active": cat.is_active,
+            "created_at": cat.created_at.isoformat(),
+            "updated_at": cat.updated_at.isoformat(),
+        }
+        for cat in updated_categories
+    ]
+    
+    return Response({"categories": data})
+
+
 # ========== Assignment Endpoints ==========
 
 @api_view(["GET", "POST"])
