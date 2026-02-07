@@ -408,27 +408,35 @@ class Command(BaseCommand):
                 zip_code=str(random.randint(19701, 19999)),
                 status="ACTIVE",
             )
-            Guardian.objects.create(
+            # First guardian
+            email1 = f"{last.lower()}.{random.randint(1000,9999)}@demo.local"
+            Guardian.objects.get_or_create(
                 school=school,
-                family=fam,
-                first_name=random.choice(FIRST_NAMES),
-                last_name=last,
-                email=f"{last.lower()}.{random.randint(1000,9999)}@demo.local",
-                phone=f"302-{random.randint(200,999)}-{random.randint(1000,9999)}",
-                relationship="GUARDIAN",
-                portal_access=True,
-                custody_flag=False,
+                email=email1,
+                defaults={
+                    "family": fam,
+                    "first_name": random.choice(FIRST_NAMES),
+                    "last_name": last,
+                    "phone": f"302-{random.randint(200,999)}-{random.randint(1000,9999)}",
+                    "relationship": "GUARDIAN",
+                    "portal_access": True,
+                    "custody_flag": False,
+                },
             )
-            Guardian.objects.create(
+            # Second guardian
+            email2 = f"{last.lower()}.{random.randint(1000,9999)}@demo.local"
+            Guardian.objects.get_or_create(
                 school=school,
-                family=fam,
-                first_name=random.choice(FIRST_NAMES),
-                last_name=last,
-                email=f"{last.lower()}.{random.randint(1000,9999)}@demo.local",
-                phone=f"302-{random.randint(200,999)}-{random.randint(1000,9999)}",
-                relationship="GUARDIAN",
-                portal_access=True,
-                custody_flag=False,
+                email=email2,
+                defaults={
+                    "family": fam,
+                    "first_name": random.choice(FIRST_NAMES),
+                    "last_name": last,
+                    "phone": f"302-{random.randint(200,999)}-{random.randint(1000,9999)}",
+                    "relationship": "GUARDIAN",
+                    "portal_access": True,
+                    "custody_flag": False,
+                },
             )
 
             families.append(fam)
@@ -468,6 +476,16 @@ class Command(BaseCommand):
         return st
 
     def _wipe_school(self, school: School):
+        # Import here to avoid circular dependency
+        from financial_aid.models import AidAuditEvent
+        
+        # Delete audit events for this school AND any that reference user accounts we're about to delete
+        user_ids = list(UserAccount.objects.filter(school=school).values_list('id', flat=True))
+        AidAuditEvent.objects.filter(school_id=school.id).delete()
+        if user_ids:
+            AidAuditEvent.objects.filter(actor_user_id__in=user_ids).delete()
+        
+        # Continue with original deletions
         AidAward.objects.filter(school=school).delete()
         AidApplication.objects.filter(school=school).delete()
         LedgerEntry.objects.filter(school=school).delete()
