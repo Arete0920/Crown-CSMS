@@ -1,0 +1,65 @@
+name: Spine Audit (Canon Guard)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  spine-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify canonical files exist
+        run: |
+          set -e
+          REQUIRED_FILES=(
+            "docs/spine/DAILY_EXECUTION_CHECKLIST.md"
+            "docs/spine/AUTH_RUNBOOK.md"
+            "docs/spine/TENANT_PRIVACY_CANON.md"
+          )
+
+          for f in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "❌ Missing canonical file: $f"
+              exit 1
+            fi
+            echo "✅ Found $f"
+          done
+
+      - name: Guard canon against credential leakage (high-signal)
+        run: |
+          set -e
+
+          CANON_FILES=(
+            "docs/spine/DAILY_EXECUTION_CHECKLIST.md"
+            "docs/spine/TENANT_PRIVACY_CANON.md"
+          )
+
+          # High-signal secret patterns (NOT generic header names)
+          FORBIDDEN_REGEX=(
+            "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"   # JWT-like
+            "-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----"                      # Private keys
+            "(?i)client_secret\\s*[:=]"                                         # client_secret=
+            "(?i)secret_key\\s*[:=]"                                            # secret_key=
+            "(?i)api_key\\s*[:=]"                                               # api_key=
+            "(?i)password\\s*[:=]"                                              # password=
+            "(?i)CrownCiSmoke!"                                                 # known prior example
+            "(?i)DevOpsSecret_"                                                 # known prior example
+            "(?i)AZURE_CLIENT_SECRET"                                           # common env var
+          )
+
+          for file in "${CANON_FILES[@]}"; do
+            for rx in "${FORBIDDEN_REGEX[@]}"; do
+              if grep -nE "$rx" "$file" > /dev/null; then
+                echo "❌ Forbidden secret pattern matched in $file (regex: $rx)"
+                echo "---- matches ----"
+                grep -nE "$rx" "$file" | head -n 20
+                exit 1
+              fi
+            done
+            echo "✅ $file clean"
+          done

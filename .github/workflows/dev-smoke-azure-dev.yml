@@ -1,0 +1,63 @@
+name: Azure DEV Smoke (Deterministic)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Set base URL
+        run: echo "BASE=https://crown-api-dev.azurewebsites.net" >> $GITHUB_ENV
+
+      - name: Check 1 - /api/health/ returns build_sha
+        run: |
+          set -e
+          body=$(curl -sS "$BASE/api/health/")
+          echo "$body" | jq -e '.build_sha' > /dev/null
+          echo "✅ build_sha:" $(echo "$body" | jq -r '.build_sha')
+
+      - name: Check 2 - Unauth invoices returns 403
+        run: |
+          set -e
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$BASE/api/billing/invoices/")
+          if [ "$code" != "403" ]; then
+            echo "❌ Expected 403, got $code"
+            exit 1
+          fi
+          echo "✅ Unauth invoices returned 403"
+
+      - name: Ensure CI user and get JWT
+        env:
+          OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
+        run: |
+          set -e
+          resp=$(curl -sS -X POST "$BASE/api/v1/system/ensure-ci-user/" \
+            -H "Content-Type: application/json" \
+            -H "X-Admin-Ops-Secret: $OPS_SECRET")
+          
+          token=$(echo "$resp" | jq -r '.access')
+          if [ -z "$token" ] || [ "$token" = "null" ]; then
+            echo "❌ ensure-ci-user failed (needs Azure settings: CI_SMOKE_USERNAME, CI_SMOKE_PASSWORD, CI_SMOKE_SCHOOL_ID)"
+            echo "$resp"
+            exit 1
+          fi
+          
+          echo "TOKEN=$token" >> $GITHUB_ENV
+          echo "✅ CI user ensured + JWT acquired"
+
+      - name: Check 3 - Auth invoices returns 200
+        run: |
+          set -e
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $TOKEN" \
+            "$BASE/api/billing/invoices/")
+          if [ "$code" != "200" ]; then
+            echo "❌ Expected 200, got $code"
+            exit 1
+          fi
+          echo "✅ Auth invoices returned 200"
