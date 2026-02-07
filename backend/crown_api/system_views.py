@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 from django.conf import settings
 from django.core.management import call_command
+from django.db import connection
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.views import APIView
@@ -144,3 +145,94 @@ def demo_reset_view(request):
         },
         status=200,
     )
+
+
+@csrf_exempt
+def diagnose_db_tables_view(request):
+    """
+    Temporary diagnostic endpoint to check DB table vs Django migration state.
+    DEV-only. Requires OPS secret in header.
+    """
+    if not _is_dev_env():
+        return JsonResponse({"error": "Only available in DEV"}, status=403)
+
+    ops_secret = _get_ops_secret()
+    if ops_secret and request.headers.get("X-Ops-Secret") != ops_secret:
+        return JsonResponse({"error": "Invalid or missing X-Ops-Secret"}, status=401)
+
+    try:
+        with connection.cursor() as cursor:
+            # Query 1: Does the table exist?
+            cursor.execute(
+                "SELECT to_regclass('public.financial_aid_financialaidapplication') AS fa_table;"
+            )
+            row = cursor.fetchone()
+            fa_table = row[0] if row else None
+
+            # Query 2: What does Django think?
+            cursor.execute(
+                """
+                SELECT app, name, applied
+                FROM django_migrations
+                WHERE app = 'financial_aid'
+                ORDER BY applied DESC;
+                """
+            )
+            migration_rows = cursor.fetchall()
+
+            # Query 3: Confirm database connection
+            cursor.execute(
+                "SELECT current_database() AS db, inet_server_addr() AS server_ip, version();"
+            )
+            db_info = cursor.fetchone()
+
+        # Diagnosis
+        has_table = fa_table is not None
+        has_migrations = len(migration_rows) > 0
+        
+        if not has_table and has_migrations:
+            diagnosis = "SCHEMA_DRIFT"
+            message = "Migration ledger says 'applied' but table doesn't exist"
+            fix = "DELETE FROM django_migrations WHERE app = 'financial_aid'; then re-migrate"
+        elif has_table and not has_migrations:
+            diagnosis = "PARTIAL_DRIFT"
+            message = "Table exists but no migration ledger"
+            fix = "Fake applied migrations or re-sync"
+        elif not has_table and not has_migrations:
+            diagnosis = "CLEAN"
+            message = "No table, no migrations (expected for fresh DB)"
+            fix = "None needed"
+        else:
+            diagnosis = "CONSISTENT"
+            message = "Table exists and migrations recorded"
+            fix = "None needed"
+
+        return JsonResponse(
+            {
+                "ok": True,
+                "table_exists": has_table,
+                "table_name": fa_table,
+                "migrations_count": len(migration_rows),
+                "migrations": [
+                    {"app": app, "name": name, "applied": str(applied)}
+                    for app, name, applied in migration_rows
+                ],
+                "database": db_info[0],
+                "server_ip": db_info[1],
+                "pg_version": db_info[2][:80],
+                "diagnosis": diagnosis,
+                "message": message,
+                "fix": fix,
+            },
+            status=200,
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error_type": e.__class__.__name__,
+                "error": str(e),
+            },
+            status=500,
+        )
