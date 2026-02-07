@@ -4,6 +4,7 @@ from rest_framework.routers import SimpleRouter
 from .assignments_views import (
     assignment_list_create,
     assignment_update_delete,
+    category_batch_weights,
     category_list_create,
     category_update_delete,
 )
@@ -45,6 +46,11 @@ urlpatterns = [
         "academics/sections/<uuid:section_id>/categories/",
         category_list_create,
         name="section-categories",
+    ),
+    path(
+        "academics/sections/<uuid:section_id>/categories/weights/",
+        category_batch_weights,
+        name="section-category-weights",
     ),
     path(
         "academics/categories/<uuid:category_id>/",
