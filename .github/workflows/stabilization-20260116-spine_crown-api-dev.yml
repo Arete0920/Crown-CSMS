@@ -1,4 +1,4 @@
-name: Build and deploy Python app to Azure Web App - crown-api-dev
+﻿name: Build and deploy Python app to Azure Web App - crown-api-dev
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Install backend deps
         working-directory: backend
@@ -71,7 +71,7 @@ jobs:
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -e
-          URL="https://crown-api-dev.azurewebsites.net/api/health/"
+          URL="https://crown-api-dev.azurewebsites.net/health/"
           EXPECTED_SHORT="${EXPECTED_SHA:0:7}"
 
           echo "Expecting build_sha=${EXPECTED}"
@@ -92,4 +92,6 @@ jobs:
 
           echo "ERROR: Health never reported expected build_sha=${EXPECTED}"
           exit 1
+
+
 
