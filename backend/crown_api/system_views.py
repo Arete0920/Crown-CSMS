@@ -76,6 +76,7 @@ def demo_reset_view(request):
 
     out_migrate = io.StringIO()
     out_seed = io.StringIO()
+    out_categories = io.StringIO()
 
     try:
         # 1) migrate (keyword options only)
@@ -96,6 +97,15 @@ def demo_reset_view(request):
             stdout=out_seed,
             stderr=out_seed,
         )
+        
+        # 3) seed demonstration category weights
+        call_command(
+            "seed_category_weights",
+            school_id=str(school_id),
+            verbosity=verbosity_int,
+            stdout=out_categories,
+            stderr=out_categories,
+        )
 
     except Exception as e:
         # Return JSON error instead of Django HTML 500 page
@@ -106,6 +116,7 @@ def demo_reset_view(request):
                 "error": str(e),
                 "migrate_tail": out_migrate.getvalue()[-2000:],
                 "seed_tail": out_seed.getvalue()[-2000:],
+                "categories_tail": out_categories.getvalue()[-2000:],
             },
             status=500,
         )
@@ -117,6 +128,7 @@ def demo_reset_view(request):
             "school_id": school_id,
             "migrate_tail": out_migrate.getvalue()[-2000:],
             "seed_tail": out_seed.getvalue()[-2000:],
+            "categories_tail": out_categories.getvalue()[-2000:],
         },
         status=200,
     )
