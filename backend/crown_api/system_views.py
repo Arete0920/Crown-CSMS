@@ -236,3 +236,41 @@ def diagnose_db_tables_view(request):
             },
             status=500,
         )
+
+
+@csrf_exempt
+def fix_schema_drift_view(request):
+    """
+    Temporary endpoint to fix financial_aid schema drift.
+    DEV-only. Requires OPS secret in header.
+    Executes: DELETE FROM django_migrations WHERE app = 'financial_aid', then re-migrate.
+    """
+    if not _is_dev_env():
+        return JsonResponse({"error": "Only available in DEV"}, status=403)
+
+    ops_secret = _get_ops_secret()
+    if ops_secret and request.headers.get("X-Ops-Secret") != ops_secret:
+        return JsonResponse({"error": "Invalid or missing X-Ops-Secret"}, status=401)
+
+    try:
+        out = io.StringIO()
+        call_command("fix_schema_drift", stdout=out, stderr=out)
+        
+        return JsonResponse(
+            {
+                "ok": True,
+                "message": "Schema drift fix completed successfully",
+                "output": out.getvalue(),
+            },
+            status=200,
+        )
+
+    except Exception as e:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error_type": e.__class__.__name__,
+                "error": str(e),
+            },
+            status=500,
+        )
