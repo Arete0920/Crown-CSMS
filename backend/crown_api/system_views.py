@@ -76,6 +76,7 @@ def demo_reset_view(request):
 
     out_migrate = io.StringIO()
     out_seed = io.StringIO()
+    out_academics = io.StringIO()
     out_categories = io.StringIO()
 
     try:
@@ -98,7 +99,16 @@ def demo_reset_view(request):
             stderr=out_seed,
         )
         
-        # 3) seed demonstration category weights
+        # 3) seed academics (courses, sections, enrollments)
+        call_command(
+            "seed_academics_demo",
+            school_id=str(school_id),
+            verbosity=verbosity_int,
+            stdout=out_academics,
+            stderr=out_academics,
+        )
+        
+        # 4) seed demonstration category weights
         call_command(
             "seed_category_weights",
             school_id=str(school_id),
@@ -116,6 +126,7 @@ def demo_reset_view(request):
                 "error": str(e),
                 "migrate_tail": out_migrate.getvalue()[-2000:],
                 "seed_tail": out_seed.getvalue()[-2000:],
+                "academics_tail": out_academics.getvalue()[-2000:],
                 "categories_tail": out_categories.getvalue()[-2000:],
             },
             status=500,
@@ -128,6 +139,7 @@ def demo_reset_view(request):
             "school_id": school_id,
             "migrate_tail": out_migrate.getvalue()[-2000:],
             "seed_tail": out_seed.getvalue()[-2000:],
+            "academics_tail": out_academics.getvalue()[-2000:],
             "categories_tail": out_categories.getvalue()[-2000:],
         },
         status=200,
