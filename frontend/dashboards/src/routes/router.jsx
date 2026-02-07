@@ -6,6 +6,7 @@ import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
 import { AcademicsDashboard } from '../pages/AcademicsDashboard.jsx';
 import { GradebookRO } from '../pages/GradebookRO.jsx';
 import { TranscriptRO } from '../pages/TranscriptRO.jsx';
+import { CategoryWeightsEditor } from '../pages/CategoryWeightsEditor.jsx';
 import { AdmissionsPipelineList } from '../pages/AdmissionsPipelineList.jsx';
 import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
 import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
   {
     path: '/transcript',
     element: <TranscriptRO />,
+  },
+  {
+    path: '/category-weights',
+    element: <CategoryWeightsEditor />,
   },
   {
     path: '/admissions',
