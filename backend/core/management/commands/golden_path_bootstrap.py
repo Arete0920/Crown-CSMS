@@ -496,6 +496,7 @@ class Command(BaseCommand):
         from aid.models import AidApplication, AidAward
         from billing.models import BillingRun, Invoice
         from core.models import AcademicYear, Family, School, Student
+        from core.seed_helpers import ensure_deterministic_school
         from finance.models import ChartAccount
         from households.models import Household
         from ledger.models import Charge, LedgerAccount
@@ -505,15 +506,8 @@ class Command(BaseCommand):
             with transaction.atomic():
                 school = School.objects.order_by("created_at", "id").first()
                 if school_id:
-                    # Use get_or_create to make bootstrap idempotent with explicit school_id
-                    school, created = School.objects.get_or_create(
-                        id=school_id,
-                        defaults={
-                            'name': 'Crown Demo School',
-                            'timezone': 'America/New_York',
-                            'is_active': True,
-                        }
-                    )
+                    # Use canonical helper for deterministic school creation
+                    school, created = ensure_deterministic_school(school_id)
                     if created:
                         self.stdout.write(f"BOOTSTRAP_OK school_created=1 id={school_id}")
 
