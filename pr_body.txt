@@ -1,0 +1,52 @@
+Creates courses, sections, and enrollments before seed_category_weights, fixing academics validation blocker.
+
+## Problem
+- OPS reset ran `seed_category_weights` but no sections/enrollments existed in DEV
+- `seed_category_weights` requires sections with enrollments (roster_count > 0)
+- `golden_path_bootstrap` only creates admissions data (no academics)
+- Result: 0 categories seeded, academics validation blocked (Step A2 failed)
+
+## Solution
+**New management command:** `seed_academics_demo.py`
+- **Idempotent:** Uses `get_or_create()` for all models (BUILD_RULES.md 3.5 compliant)
+- **Deterministic:** Fixed course codes (MATH-101, ENG-101), term (2026-SPRING)
+- **Creates:**
+  - 2 courses with fixed codes
+  - 2 sections (one per course, Spring 2026 term)
+  - 25 demo students (households.Student) if none exist
+  - 50 enrollments (25 students × 2 sections)
+
+**OPS Workflow Integration (system_views.py):**
+```
+1. migrate
+2. golden_path_bootstrap (admissions)
+3. seed_academics_demo (courses/sections/enrollments) NEW
+4. seed_category_weights (categories for sections)
+```
+
+## Testing
+**New test file:** `tests/test_seed_academics_demo_command.py` (4/4 passing)
+- test_creates_academics_data: Courses, sections, enrollments created
+- test_idempotent_double_run: No duplicates on re-run
+- test_wipe_and_reseed: --wipe flag works correctly
+- test_invalid_school_id: Handles invalid UUIDs gracefully
+
+## Documentation
+**Updated:** `docs/LOCAL_QUICKSTART.md`
+- Added `seed_academics_demo` to step 3 (seed data)
+- Explained seed order: admissions to academics to categories
+- Updated What You Get section with academics data counts
+
+## Verification Path After Merge and Deploy
+After merge run OPS reset and verify academics APIs return data:
+- Courses API should return 2 courses (MATH-101, ENG-101)
+- Sections API should return 2 sections with enrollments
+- Categories API should return 8 categories (4 per section)
+
+## Impact
+**Before:** Academics validation blocked (0 sections, 0 courses, 0 categories)  
+**After:** Academics validation unblocked (2 courses, 2 sections, 50 enrollments, 8 categories)
+
+**Related:**
+- PR #40: seed_category_weights implementation (merged)
+- BUILD_RULES.md section 3.5: Idempotency rules
