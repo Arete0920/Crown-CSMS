@@ -1,0 +1,24 @@
+# Code Owners - Security Controls
+# Require review from designated owners for security-critical files
+# Enable in: Settings → Branches → Branch protection → "Require review from Code Owners"
+
+# GitHub workflows (require review for any workflow changes)
+/.github/workflows/ @tcmegahan
+
+# Secret scanning and protection
+/.gitleaks.toml @tcmegahan
+/.gitleaksignore @tcmegahan
+
+# Secret handling modules
+/scripts/Redact.psm1 @tcmegahan
+/scripts/Invoke-SecureCommand.ps1 @tcmegahan
+/scripts/hooks/ @tcmegahan
+/scripts/install-hooks.ps1 @tcmegahan
+/scripts/install-hooks.sh @tcmegahan
+
+# Credential templates and documentation
+/local.secrets.ps1.example @tcmegahan
+/ROTATE_SECRETS.md @tcmegahan
+
+# Git configuration
+/.gitignore @tcmegahan
