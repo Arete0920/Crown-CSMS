@@ -528,7 +528,15 @@ class Command(BaseCommand):
                 admin.is_active = True
                 admin.is_staff = True
                 admin.is_superuser = True
-                admin.set_password("Crown2026!")
+                
+                # Require password from environment (never hard-code in repo)
+                demo_password = os.environ.get("CROWN_DEMO_PASSWORD")
+                if not demo_password:
+                    raise SystemExit(
+                        "CROWN_DEMO_PASSWORD environment variable is required for bootstrap. "
+                        "Set in Azure App Settings or local .env"
+                    )
+                admin.set_password(demo_password)
                 admin.save()
                 self.stdout.write("BOOTSTRAP_OK admin=admin active=1 staff=1 superuser=1")
 
