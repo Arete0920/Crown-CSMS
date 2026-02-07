@@ -74,12 +74,15 @@ def ensure_ci_user(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    school = School.objects.filter(id=school_id).first()
-    if school is None:
-        return Response(
-            {"detail": f"School {school_id} not found"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
+    # Use get_or_create to make ensure_ci_user idempotent
+    school, created = School.objects.get_or_create(
+        id=school_id,
+        defaults={
+            'name': 'Crown Demo School',
+            'timezone': 'America/New_York',
+            'is_active': True,
+        }
+    )
 
     User = get_user_model()
     lookup_field = getattr(User, "USERNAME_FIELD", "username")
