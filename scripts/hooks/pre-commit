@@ -1,0 +1,55 @@
+#!/bin/bash
+# Pre-commit hook: detect secrets before they're committed
+# Install: Run scripts/install-hooks.ps1
+
+echo "🔐 Running pre-commit secret scan..."
+
+FOUND_SECRETS=0
+
+# 1) Run gitleaks if available (most comprehensive)
+if command -v gitleaks >/dev/null 2>&1; then
+    echo "   Using gitleaks..."
+    if ! gitleaks detect --no-git --redact --staged; then
+        echo "❌ gitleaks detected secrets!"
+        FOUND_SECRETS=1
+    fi
+else
+    echo "⚠️  gitleaks not installed (fallback to basic scan)"
+    echo "   Install: winget install gitleaks.gitleaks"
+    
+    # 2) Fallback: basic pattern scan
+    for file in $(git diff --cached --name-only); do
+        # Skip template/example files
+        if [[ "$file" == *.example* ]] || [[ "$file" == *.template* ]]; then
+            continue
+        fi
+        
+        # Skip config files
+        if [[ "$file" == .git* ]] || [[ "$file" == .env* ]]; then
+            continue
+        fi
+        
+        # Skip documentation
+        if [[ "$file" == *.md ]]; then
+            continue
+        fi
+        
+        # Check for credentials
+        if grep -E 'password\s*=\s*['\''"][^placeholder][a-zA-Z0-9@$!#]{8,}|Bearer [A-Za-z0-9_-]{100,}|SECRET_KEY\s*=\s*['\''"][a-z0-9]{50,}' "$file" > /dev/null 2>&1; then
+            echo "❌ BLOCKED: Potential exposed secret in $file"
+            FOUND_SECRETS=1
+        fi
+    done
+fi
+
+if [ $FOUND_SECRETS -eq 1 ]; then
+    echo ""
+    echo "🛑 Commit blocked due to detected secrets."
+    echo "Use local.secrets.ps1 or environment variables instead."
+    echo ""
+    echo "To override (NOT RECOMMENDED): git commit --no-verify"
+    exit 1
+fi
+
+echo "✅ No exposed secrets detected."
+exit 0

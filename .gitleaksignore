@@ -1,0 +1,45 @@
+# .gitleaksignore
+# False positive exclusions for gitleaks secret scanning
+# WARNING: Requires CODEOWNER review for changes (see .github/CODEOWNERS)
+# Format: <commit-hash>:<rule-id>:<file-path>
+
+# Example (do not use until you have a real false positive):
+# abc123def456:generic-api-key:docs/api-example.md
+
+# To add exclusions:
+# 1. Run: gitleaks detect --report-format json --report-path gitleaks-report.json
+# 2. Review report for false positives
+# 3. Add entry: <Commit>:<RuleID>:<File>
+# 4. Request CODEOWNER review for .gitleaksignore changes
+
+# Template:
+# <commit-sha>:<rule-id>:<file-path>
+
+# Current exclusions:
+# Documentation files with example/placeholder tokens and connection strings (not real credentials)
+# Format: <commit-sha>:<file>:<rule-id>:<line> (when scanning full history with --log-opts="--all")
+6bc615ae0d8e82ae750bd35252f9ab38c7754fac:scripts/README.md:project-db-credential:41
+6bc615ae0d8e82ae750bd35252f9ab38c7754fac:scripts/Redact.psm1:project-db-credential:18
+6bc615ae0d8e82ae750bd35252f9ab38c7754fac:scripts/Redact.psm1:project-db-credential:68
+c78f2179b27473639d0276c75a6783656f3eda2d:scripts/proof_step16.ps1:postgres-connection-string:74
+9328fe5b0d893ee4a1499238ef50f72b5c09f171:AZURE_OPERATIONS_GUIDE.md:postgres-connection-string:30
+9328fe5b0d893ee4a1499238ef50f72b5c09f171:SYSTEM_VERIFICATION_COMPLETE.md:postgres-connection-string:143
+f954837f6e2ef2aa602110b511ec717d0a03ce3c:API_ENDPOINT_VERIFICATION.md:postgres-connection-string:409
+11ecefe86cb1b9df158784f2fcfe8ac8ffda3849:SYSTEM_VERIFICATION_COMPLETE.md:postgres-connection-string:141
+03d9c43e20152d852c3bbb34c382620f787e28dc:AZURE_OPERATIONS_GUIDE.md:postgres-connection-string:30
+.github/workflows/proof-ceremony.yml:postgres-connection-string:36
+IMPLEMENTATION_COMPLETE.md:curl-auth-header:124
+INTEGRATION_GUIDE.md:curl-auth-header:245
+CHECKLIST.md:curl-auth-header:91
+CHECKLIST.md:curl-auth-header:100
+CHECKLIST.md:curl-auth-header:109
+curl_examples_director_actions.sh:curl-auth-header:7
+curl_examples_director_actions.sh:curl-auth-header:21
+curl_examples_director_actions.sh:curl-auth-header:38
+curl_examples_director_actions.sh:curl-auth-header:46
+curl_examples_director_actions.sh:curl-auth-header:55
+docs/AZURE_DEV_APP_SETTINGS.md:project-ci-credential:13
+docs/AZURE_DEV_APP_SETTINGS.md:project-ops-credential:26
+docs/AZURE_DEV_APP_SETTINGS.md:project-ops-credential:27
+docs/DIRECTOR_ACTIONS_API.md:curl-auth-header:164
+scripts/README.md:postgres-connection-string:117
