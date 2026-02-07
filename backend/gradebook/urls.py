@@ -1,7 +1,14 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from .views import GradebookSectionViewSet, section_assignments, section_grades, section_roster
+from .views import (
+    GradebookSectionViewSet,
+    assignments_list,
+    section_assignments,
+    section_grades,
+    section_roster,
+    students_list,
+)
 
 
 router = SimpleRouter()
@@ -9,6 +16,8 @@ router.register(r"gradebook/sections", GradebookSectionViewSet, basename="gradeb
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("gradebook/assignments/", assignments_list, name="gradebook-assignments-list"),
+    path("gradebook/students/", students_list, name="gradebook-students-list"),
     path(
         "gradebook/sections/<uuid:section_id>/roster/",
         section_roster,
