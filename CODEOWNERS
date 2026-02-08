@@ -1,0 +1,18 @@
+﻿# CODEOWNERS  Spine guardrails
+# GitHub will request reviews from these owners when files change.
+# Adjust owner handles as needed.
+
+# Spine-critical
+/.github/workflows/                @tcmegahan
+/docs/                             @tcmegahan
+/CODEOWNERS                        @tcmegahan
+
+# Backend spine
+/backend/crown_api/                @tcmegahan
+/backend/*/urls.py                 @tcmegahan
+/backend/*/settings.py             @tcmegahan
+/backend/**/middleware*.py         @tcmegahan
+
+# Production/deploy surfaces
+/requirements.txt                  @tcmegahan
+/backend/requirements.txt          @tcmegahan
