@@ -1,18 +1,36 @@
-## What changed (1–3 bullets)
--
+﻿# Spine PR  No Wandering
 
-## Why
--
+## Purpose (1 sentence)
+<!-- What does this PR do? -->
 
-## Files changed
--
+## Scope / Blast Radius (must be explicit)
+**Allowed changed files / directories (exact list):**
+- 
 
-## Tests run (exact commands + results)
--
+**Forbidden (anything not listed above):**
+- Everything else
 
-## Risk / rollout notes
--
+## Proof (required)
+Paste raw outputs (no interpretation):
 
-## Evidence
-- [ ] Output pasted (status lines / keys only) where applicable
-- [ ] No secrets/tokens/passwords included
+### Local
+```bash
+git status -sb
+git diff --stat
+python backend/manage.py check
+```
+
+### CI (PR checks)
+- pytest: 
+- Spine Audit (Canon Guard): 
+- Proof Ceremony: 
+- Secret Scan: 
+- CI - Tests and Checks: 
+
+### Deploy Determinism (if deploy-related)
+- /health/ returns {"build_sha":"<sha>"} (not local-dev)
+- Workflow log contains: OK build_sha:
+
+## Rollback plan (1 line)
+<!-- example: revert commit / revert PR -->
+
