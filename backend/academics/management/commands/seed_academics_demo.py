@@ -87,24 +87,30 @@ class Command(BaseCommand):
             code="2026-SPRING",
             defaults={
                 "name": "Spring 2026",
+                "school_year": academic_year.name,
                 "start_date": date(2026, 1, 15),
                 "end_date": date(2026, 6, 10),
+                "ordering": 2,
                 "active": True,
             }
         )
 
         # Create courses (idempotent)
         course_specs = [
-            ("MATH-101", "Mathematics 101"),
-            ("ENG-101", "English 101"),
+            ("MATH-101", "Mathematics 101", "Mathematics", "1.00"),
+            ("ENG-101", "English 101", "English", "1.00"),
         ]
 
         courses = []
-        for code, name in course_specs:
+        for code, name, department, credits in course_specs:
             course, created = Course.objects.get_or_create(
                 school_id=school.id,
                 code=code,
-                defaults={"name": name}
+                defaults={
+                    "name": name,
+                    "department": department,
+                    "credits": credits,
+                }
             )
             courses.append(course)
             status = "created" if created else "exists"

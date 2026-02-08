@@ -8,17 +8,20 @@ from .assignments_views import (
     category_list_create,
     category_update_delete,
 )
-from .transcript_views import TranscriptROView
+from .transcript_views import StudentTranscriptContractView, TranscriptROView
 from .views import (
     AcademicYearViewSet,
     CourseViewSet,
     SectionViewSet,
     TermViewSet,
     parent_students,
+    section_assessments,
+    section_roster,
     student_sections,
 )
 
 router = SimpleRouter()
+router.include_format_suffixes = False
 router.register(r"academics/years", AcademicYearViewSet, basename="academics-years")
 router.register(r"academics/terms", TermViewSet, basename="academics-terms")
 router.register(r"academics/courses", CourseViewSet, basename="academics-courses")
@@ -32,6 +35,11 @@ urlpatterns = [
         name="transcript-ro",
     ),
     path(
+        "transcripts/students/<uuid:student_id>/",
+        TranscriptROView.as_view(),
+        name="transcript-ro-alias",
+    ),
+    path(
         "academics/students/<uuid:student_id>/sections/",
         student_sections,
         name="academics-student-sections",
@@ -40,6 +48,21 @@ urlpatterns = [
         "academics/parents/me/students/",
         parent_students,
         name="academics-parent-students",
+    ),
+    path(
+        "academics/sections/<uuid:section_id>/roster/",
+        section_roster,
+        name="academics-section-roster",
+    ),
+    path(
+        "academics/sections/<uuid:section_id>/assessments/",
+        section_assessments,
+        name="academics-section-assessments",
+    ),
+    path(
+        "academics/students/<uuid:student_id>/transcript/",
+        StudentTranscriptContractView.as_view(),
+        name="academics-student-transcript",
     ),
     # Assignment Category endpoints
     path(
