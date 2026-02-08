@@ -93,3 +93,8 @@ Thumbs.db
 backend/db.sqlite3
 backend/*.sqlite3
 
+
+# Local docker/log artifacts (must never be committed)
+*.log
+**/*docker*.log
+
