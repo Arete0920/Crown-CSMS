@@ -1,0 +1,44 @@
+academics/
+admissions/
+admissions_app/
+app_logs/
+azlogs_opsreset/
+azure_logs_extracted/
+backend/academics/api/
+backend/financial_aid/api/
+backend/financial_aid/management/
+Capstone Project/
+communications/
+core_shadowed/api/
+core_shadowed/health/
+core_shadowed/management/
+core_shadowed/middleware/
+core_shadowed/models/
+core_shadowed/serializers/
+core_shadowed/tests/
+core_shadowed/views/
+CROWN BINDER/
+crown_api/
+crown-api-dev-logs/
+crownapp/
+curriculum/
+devlogs/
+docs/auth/
+docs/canon/
+docs/plan/
+finance/
+finance_fees/
+frontend/dashboards/public/
+households/
+inquiries/
+integrations/
+lms/
+Marketing Brand/
+ms365/
+pog/
+preapplicants/
+scripts/scripts/
+scripts/seed/
+sis/
+staticfiles/
+tools/manual_checks/
