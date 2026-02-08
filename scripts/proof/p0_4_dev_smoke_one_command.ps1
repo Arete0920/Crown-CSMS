@@ -84,17 +84,36 @@ $run = $null
 while ($findPoll -lt $maxFindPolls -and -not $run) {
     $findPoll++
 
-    # Pull a handful of recent runs, then pick the first created after trigger time
-    $runsJson = & gh run list -R $repo --workflow "$workflowName" --limit 10 --json databaseId,status,conclusion,createdAt,url 2>$null
-    $runs = $runsJson | ConvertFrom-Json
-
-    foreach ($r in $runs) {
-        # createdAt is ISO 8601; parse to UTC
-        $created = [DateTime]::Parse($r.createdAt).ToUniversalTime()
-        if ($created -ge $triggeredAtUtc.AddSeconds(-2)) {
-            $run = $r
-            break
+    # Use gh api for strict JSON; avoids stdout contamination from gh run list in some environments.
+    $repoApi = "repos/$repo/actions/runs"
+    
+    # Fetch 20 recent runs and filter locally; keep it simple and deterministic.
+    $runsJson = & gh api $repoApi -f per_page=20 2>$null
+    
+    if (-not $runsJson -or $runsJson.Trim().Length -lt 2) {
+        Write-Host "❌ gh api returned empty output"
+        exit 1
+    }
+    
+    try {
+        $runsObj = $runsJson | ConvertFrom-Json
+        $runs = $runsObj.workflow_runs
+        
+        # Filter to our workflow name, then pick the first created after trigger time
+        $runs = $runs | Where-Object { $_.name -eq $workflowName }
+        
+        foreach ($r in $runs) {
+            # created_at is ISO 8601; parse to UTC
+            $created = [DateTime]::Parse($r.created_at).ToUniversalTime()
+            if ($created -ge $triggeredAtUtc.AddSeconds(-2)) {
+                $run = $r
+                break
+            }
         }
+    } catch {
+        $runsJson | Out-File -Encoding utf8 "$env:TEMP\p0_4_runs_raw.txt"
+        Write-Host "❌ JSON parse failed. Wrote raw gh output to $env:TEMP\p0_4_runs_raw.txt"
+        throw
     }
 
     if (-not $run) {
@@ -108,8 +127,8 @@ if (-not $run) {
     exit 1
 }
 
-$runId  = $run.databaseId
-$runUrl = $run.url
+$runId  = $run.id
+$runUrl = $run.html_url
 
 Write-Host "✅ Workflow run detected: $runUrl"
 Write-Host "   Run ID: $runId"
