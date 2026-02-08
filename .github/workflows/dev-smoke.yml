@@ -50,6 +50,30 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($sleep)) { $sleep = "25" }
           "SLEEP_SECONDS=$sleep" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+      - name: Verify BUILD_SHA (Deploy Determinism Gate)
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://crown-api-dev.azurewebsites.net/health/"
+          echo "P0.3 Gate: Verifying BUILD_SHA at $URL"
+          
+          BODY="$(curl -fsS "$URL")"
+          echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print('build_sha:', d.get('build_sha','MISSING')); print('env:', d.get('env','MISSING')); print('db:', d.get('db','MISSING'))"
+          
+          SHA="$(echo "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build_sha',''))")"
+          
+          if [ -z "$SHA" ] || [ "$SHA" = "MISSING" ]; then
+            echo "❌ FAILED: build_sha missing from /health/"
+            exit 1
+          fi
+          
+          if [ ${#SHA} -ne 40 ]; then
+            echo "❌ FAILED: build_sha must be 40 chars (got ${#SHA})"
+            exit 1
+          fi
+          
+          echo "✅ P0.3 Gate: BUILD_SHA verified ($SHA)"
+
       - name: Health check DEV (bounded)
         shell: pwsh
         env:

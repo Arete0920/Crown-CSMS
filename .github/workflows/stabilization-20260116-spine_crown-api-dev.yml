@@ -28,11 +28,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate build_info.py from GITHUB_SHA (artifact-baked)
-        run: |
-          echo "BUILD_SHA = \"${GITHUB_SHA}\"" > backend/crown_api/build_info.py
-          python -c "import sys; sys.path.insert(0, 'backend'); from crown_api.build_info import BUILD_SHA; print('BUILD_SHA=', BUILD_SHA[:7])"
-
       - name: Run tests (fail fast)
         working-directory: backend
         env:
@@ -66,31 +61,44 @@ jobs:
           slot-name: Production
           package: deploy.zip
 
+      - name: Set BUILD_SHA on Azure App Service
+        run: |
+          az webapp config appsettings set \
+            --name crown-api-dev \
+            --resource-group crown-rg \
+            --settings BUILD_SHA=${{ github.sha }} \
+            --output none
+
+      - name: Restart to apply BUILD_SHA
+        run: |
+          az webapp restart \
+            --name crown-api-dev \
+            --resource-group crown-rg \
+            --output none
+
       - name: Verify deployment (poll health until SHA matches)
         env:
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -e
           URL="https://crown-api-dev.azurewebsites.net/health/"
-          EXPECTED_SHORT="${EXPECTED_SHA:0:7}"
 
-          echo "Expecting build_sha=${EXPECTED}"
+          echo "Expecting build_sha=${EXPECTED_SHA}"
           for i in $(seq 1 32); do
             echo "Attempt $i/32..."
             body="$(curl -fsS "$URL" || true)"
             echo "$body"
-            got_full="$(echo "$body" | python3 -c 'import json,sys; d=json.loads(sys.stdin.read() or "{}"); print(d.get("build_sha") or "")')"
-            got_short="${got_full:0:7}"
+            got="$(echo "$body" | python3 -c 'import json,sys; d=json.loads(sys.stdin.read() or "{}"); print(d.get("build_sha") or "")')"
 
-            if [ "$got_short" = "$EXPECTED_SHORT" ]; then
-              echo "OK: deployed build_sha matches ${EXPECTED_SHORT}"
+            if [ "$got" = "$EXPECTED_SHA" ]; then
+              echo "OK: deployed build_sha matches ${EXPECTED_SHA}"
               exit 0
             fi
 
             sleep 15
           done
 
-          echo "ERROR: Health never reported expected build_sha=${EXPECTED}"
+          echo "ERROR: Health never reported expected build_sha=${EXPECTED_SHA}"
           exit 1
 
 
