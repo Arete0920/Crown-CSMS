@@ -2,22 +2,13 @@ from django.http import JsonResponse
 from django.conf import settings
 import os
 
-try:
-    from crown_api.build_info import BUILD_SHA
-except Exception:
-    BUILD_SHA = "unknown"
-
-try:
-    from crown_api.build_info import BUILD_TIME
-except Exception:
-    BUILD_TIME = "unknown"
-
 
 def health(request):
+    build_sha = os.getenv("BUILD_SHA", "local-dev")
     return JsonResponse({
         "ok": True,
         "status": "ok",
-        "build_sha": BUILD_SHA or "unknown",
+        "build_sha": build_sha,
     })
 
 
