@@ -208,6 +208,42 @@ All repo tagging MUST use these scripts. Manual tags are forbidden.
 - `scripts/tag_freeze.ps1`
 - `scripts/tag_gate.ps1`
 
+## Tagging Doctrine (Canonical)
+
+All Git tags MUST be created via these scripts only:
+
+scripts/tag_spine.ps1
+
+scripts/tag_gate.ps1
+
+scripts/tag_freeze.ps1
+
+Manual tags are forbidden (GitHub UI, git tag, IDE tooling, etc.).
+
+Tags are part of the audit trail. Any tag not created by these scripts is non-canonical and must be deleted.
+
+Preconditions enforced by scripts:
+
+Must be inside a Git repo
+
+Must be on main
+
+Working tree must be clean
+
+Local main must match origin/main
+
+Tags must not already exist
+
+Tags must be annotated and include canonical metadata (type, tag, branch, sha, utc, note)
+
+Intended use:
+
+tag_spine.ps1 → engineering milestone tags
+
+tag_gate.ps1 → Gate pass tags (gate-#...)
+
+tag_freeze.ps1 → freeze tags (freeze-YYYY-MM-DD-<label>)
+
 ### Small commits only
 After each checkpoint works:
 ```powershell
