@@ -26,6 +26,7 @@ jobs:
           python -m pip install --upgrade pip
       - name: Verify requirements single source of truth
         shell: bash
+        working-directory: .
         run: |
           set -euo pipefail
           WANT='-r backend/requirements.txt'
@@ -37,6 +38,8 @@ jobs:
             echo "  $GOT"
             exit 1
           fi
+      - name: Install requirements
+        run: |
           pip install -r requirements.txt
 
       - name: Run tests
