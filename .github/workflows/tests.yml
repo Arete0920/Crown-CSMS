@@ -1,4 +1,4 @@
-name: Tests
+﻿name: Tests
 
 on:
   pull_request:
@@ -24,6 +24,22 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
+      - name: Verify requirements single source of truth
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          WANT='-r backend/requirements.txt'
+          GOT="$(tr -d '\r' < requirements.txt | sed '/^\s*$/d')"
+          if [ "$GOT" != "$WANT" ]; then
+            echo "requirements.txt MUST be exactly:"
+            echo "  $WANT"
+            echo "Got:"
+            echo "  $GOT"
+            exit 1
+          fi
+      - name: Install requirements
+        run: |
           pip install -r requirements.txt
 
       - name: Run tests
