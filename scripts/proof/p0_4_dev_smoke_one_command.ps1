@@ -75,63 +75,36 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Waiting for run to appear..."
 Start-Sleep -Seconds 5
 
-# 4) Find the run we just triggered (first run created after our trigger time)
+# 4) Locate the triggered run (clean JSON via gh run list)
 Write-Host "Locating the triggered run..."
-$maxFindPolls = 12   # ~60s max (12 * 5s)
-$findPoll = 0
-$run = $null
 
-while ($findPoll -lt $maxFindPolls -and -not $run) {
-    $findPoll++
+$runsJson = & gh run list `
+  -R $repo `
+  --workflow "$workflowName" `
+  --limit 5 `
+  --json databaseId,status,conclusion,createdAt,url 2>$null
 
-    # Use gh api for strict JSON; avoids stdout contamination from gh run list in some environments.
-    $repoApi = "repos/$repo/actions/runs"
-    
-    # Fetch 20 recent runs and filter locally; keep it simple and deterministic.
-    $runsJson = & gh api $repoApi -f per_page=20 2>$null
-    
-    if (-not $runsJson -or $runsJson.Trim().Length -lt 2) {
-        Write-Host "❌ gh api returned empty output"
-        exit 1
-    }
-    
-    try {
-        $runsObj = $runsJson | ConvertFrom-Json
-        $runs = $runsObj.workflow_runs
-        
-        # Filter to our workflow name, then pick the first created after trigger time
-        $runs = $runs | Where-Object { $_.name -eq $workflowName }
-        
-        foreach ($r in $runs) {
-            # created_at is ISO 8601; parse to UTC
-            $created = [DateTime]::Parse($r.created_at).ToUniversalTime()
-            if ($created -ge $triggeredAtUtc.AddSeconds(-2)) {
-                $run = $r
-                break
-            }
-        }
-    } catch {
-        $runsJson | Out-File -Encoding utf8 "$env:TEMP\p0_4_runs_raw.txt"
-        Write-Host "❌ JSON parse failed. Wrote raw gh output to $env:TEMP\p0_4_runs_raw.txt"
-        throw
-    }
-
-    if (-not $run) {
-        Write-Host ("[{0:00}] Run not visible yet; retrying..." -f $findPoll)
-        Start-Sleep -Seconds 5
-    }
+if (-not $runsJson) {
+  throw "gh run list returned empty output"
 }
+
+$runs = $runsJson | ConvertFrom-Json
+
+# Pick the first run created after trigger time
+$run = $runs | Where-Object {
+  [DateTime]::Parse($_.createdAt).ToUniversalTime() -ge $triggeredAtUtc.AddSeconds(-2)
+} | Select-Object -First 1
 
 if (-not $run) {
-    Write-Host "❌ Could not find the workflow run created after trigger time."
-    exit 1
+  throw "Could not find a workflow run created after trigger time"
 }
 
-$runId  = $run.id
-$runUrl = $run.html_url
+$runId  = $run.databaseId
+$runUrl = $run.url
 
-Write-Host "✅ Workflow run detected: $runUrl"
-Write-Host "   Run ID: $runId"
+Write-Host "✅ Workflow run detected:"
+Write-Host "   Run ID:  $runId"
+Write-Host "   Run URL: $runUrl"
 
 # 5) Poll for completion
 Write-Host "`n=== Step 3: Wait for Completion ==="
