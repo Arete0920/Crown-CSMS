@@ -98,3 +98,8 @@ backend/*.sqlite3
 *.log
 **/*docker*.log
 
+
+# Local security scan artifacts
+_gitleaks_ci_report.json
+*_gitleaks*.json
+
