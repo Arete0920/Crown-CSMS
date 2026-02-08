@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
 from django.db.models import Sum
@@ -308,4 +308,96 @@ class TranscriptROView(APIView):
                 "GPA values are MVP placeholders; weighting engine not yet implemented.",
                 "Credits default to 1.0 until credit model is implemented.",
             ],
+        }, status=200)
+
+
+def _term_school_year(term) -> str:
+    return (
+        getattr(term, "school_year", "")
+        or getattr(getattr(term, "academic_year", None), "name", "")
+        or "UNKNOWN"
+    )
+
+
+def _term_display_name(term, fallback_code: str) -> str:
+    return getattr(term, "name", "") or fallback_code or "UNKNOWN"
+
+
+class StudentTranscriptContractView(APIView):
+    """
+    Read-only transcript contract (student-centric, buyer-facing shape).
+
+    Shape:
+      student_id, student_name, school_years -> terms -> courses
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, student_id: UUID):
+        school_id = request.headers.get("X-School-Id")
+        if not school_id:
+            return JsonResponse({"detail": "Missing X-School-Id header."}, status=400)
+
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return JsonResponse({"detail": "Student not found."}, status=404)
+
+        enrollments = (
+            Enrollment.objects
+            .filter(school_id=school_id, student_id=student_id)
+            .select_related("section__course", "section__term_ref", "section__term_ref__academic_year")
+        )
+
+        by_year: Dict[str, Dict[str, Any]] = {}
+        by_term: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
+        for enrollment in enrollments:
+            section = enrollment.section
+            term_ref = section.term_ref
+            term_code = getattr(section, "term", "") or "UNKNOWN"
+            school_year = _term_school_year(term_ref)
+            term_id = str(getattr(term_ref, "id", "") or "")
+            term_name = _term_display_name(term_ref, term_code)
+
+            if school_year not in by_year:
+                by_year[school_year] = {
+                    "school_year": school_year,
+                    "terms": [],
+                }
+
+            term_key = (school_year, term_id or term_code)
+            if term_key not in by_term:
+                term_block = {
+                    "term_id": term_id or None,
+                    "term_name": term_name,
+                    "courses": [],
+                }
+                by_term[term_key] = term_block
+                by_year[school_year]["terms"].append(term_block)
+
+            final_percent = _compute_section_final_percent(school_id, section.id, student_id)
+            final_letter = _letter_from_percent(final_percent)
+            final_grade = None if final_letter == "N/A" else final_letter
+
+            by_term[term_key]["courses"].append({
+                "section_id": str(section.id),
+                "course_code": getattr(section.course, "code", ""),
+                "course_name": getattr(section.course, "name", ""),
+                "credits": str(getattr(section.course, "credits", "1.00")),
+                "teacher": getattr(section, "teacher_name", ""),
+                "final_grade": final_grade,
+                "status": "in_progress" if final_grade is None else "final",
+            })
+
+        school_years = list(by_year.values())
+        school_years.sort(key=lambda row: row["school_year"])
+        for year in school_years:
+            year["terms"].sort(key=lambda t: (t["term_name"], t["term_id"] or ""))
+            for term in year["terms"]:
+                term["courses"].sort(key=lambda c: (c["course_code"], c["course_name"], c["section_id"]))
+
+        return JsonResponse({
+            "student_id": str(student.id),
+            "student_name": f"{student.first_name} {student.last_name}".strip(),
+            "school_years": school_years,
         }, status=200)
