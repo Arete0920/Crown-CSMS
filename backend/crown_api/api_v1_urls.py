@@ -34,6 +34,7 @@ urlpatterns = [
     
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.
+    path("academics/", include("academics_ro.urls")),
     path("", include("academics.urls")),
     path("curricula/", include("curricula.urls")),
     path("", include("gradebook.urls")),
