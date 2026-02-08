@@ -16,6 +16,16 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Define ESC character for reliable ANSI stripping in regex
+$esc = [char]27
+
+# Sanity: ensure ANSI stripping pattern works in this shell
+$__ansiTest = "hello$esc[32mworld$esc[0m"
+$__ansiOut  = $__ansiTest -replace "$esc\[[0-9;]*m", ""
+if ($__ansiOut -ne "helloworld") {
+    throw "ANSI strip self-test failed; regex not stripping ESC sequences in this environment."
+}
+
 $env:GH_PAGER = "cat"
 $env:GH_FORCE_TTY = 0
 
@@ -83,7 +93,7 @@ $runsRaw = & gh run list -R $repo --workflow "$workflowName" --limit 5 --json da
 $runsJson = ($runsRaw -join "`n")
 
 # Strip ANSI escape codes (some gh builds still emit them)
-$runsJson = $runsJson -replace "`e\[[0-9;]*m", ""
+$runsJson = $runsJson -replace "$esc\[[0-9;]*m", ""
 
 # Also strip stray '.' lines if present (defensive; seen in your environment)
 $runsJson = ($runsJson -split "`n" | Where-Object { $_.Trim() -ne "." }) -join "`n"
@@ -118,7 +128,7 @@ while ($pollCount -lt $maxPolls) {
 
     $viewRaw  = & gh run view $runId -R $repo --json status,conclusion,url 2>$null
     $viewJson = ($viewRaw -join "`n")
-    $viewJson = $viewJson -replace "`e\[[0-9;]*m", ""
+    $viewJson = $viewJson -replace "$esc\[[0-9;]*m", ""
     $viewJson = ($viewJson -split "`n" | Where-Object { $_.Trim() -ne "." }) -join "`n"
 
     $currentRun = $viewJson | ConvertFrom-Json
