@@ -1,0 +1,47 @@
+﻿name: Spine Task (No Wandering)
+description: A single-purpose spine task with explicit blast radius and proof.
+title: "[SPINE] <short purpose>"
+labels: ["spine"]
+body:
+  - type: input
+    id: purpose
+    attributes:
+      label: Purpose (1 sentence)
+      placeholder: "Add X endpoint under /api/v1/... without touching other modules."
+    validations:
+      required: true
+
+  - type: textarea
+    id: blast_radius
+    attributes:
+      label: Allowed blast radius (exact paths)
+      description: "List ONLY the files/dirs allowed to change. Anything else is forbidden."
+      placeholder: |
+        - backend/<path>/<file>.py
+        - .github/workflows/<file>.yml
+    validations:
+      required: true
+
+  - type: textarea
+    id: proof_steps
+    attributes:
+      label: Deterministic proof steps (exact commands)
+      description: "Commands must be run in order and outputs pasted raw."
+      placeholder: |
+        git status -sb
+        git diff --stat
+        python backend/manage.py check
+        pytest -q
+    validations:
+      required: true
+
+  - type: textarea
+    id: done_definition
+    attributes:
+      label: Definition of Done
+      placeholder: |
+        - CI green
+        - Local boot proves /health 200
+        - Endpoint curl proves 200 with expected JSON shape
+    validations:
+      required: true
