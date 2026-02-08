@@ -27,6 +27,13 @@ From repo root:
 - Starts the Django dev server on `127.0.0.1:8000` (kills any existing listener).
 - Does not commit or require committing SQLite; the script restores `backend/db.sqlite3` at the end.
 
+## Local Environment Lock (Short)
+
+- Local venv uses Python `3.12.x` (root requirements use `psycopg2-binary`, which lacks 3.13 wheels).
+- Full suite expectations:
+  - `test_batch_endpoint_sanity.py` requires the local server running on `127.0.0.1:8000`.
+  - `CROWN_DEMO_PASSWORD` must be set for bootstrap tests.
+
 ## Azure Dev Smoke (API-only)
 
 ### Why API-only?
@@ -109,6 +116,36 @@ If you don’t have Azure IDs yet:
 The correct next move is: add a server-side seed command (on Azure) that prints those IDs once. If you want, tell me “seed command,” and I’ll add the exact Django management command file and where to hook it.
 
 ## Azure notes (important)
+
+### JSON escape rule (Windows)
+
+When a CLI flag requires JSON, never use single backslashes in paths.
+Use forward slashes or double backslashes:
+
+```json
+{"path":"C:/Users/JMega/logs.zip"}
+```
+
+```json
+{"path":"C:\\Users\\JMega\\logs.zip"}
+```
+
+Avoid:
+
+```json
+{"path":"C:\Users\JMega\logs.zip"}
+```
+
+Doctrine: no raw passwords in `DATABASE_URL`. URL-encode locally, or use discrete DB_* app settings to avoid URL parsing edge-cases.
+
+### Health check script (Windows)
+
+Use the repo root script for a quick, deterministic check of App Service status and `/health/`:
+
+```powershell
+./CROWN_HEALTH_CHECK.ps1 -Environment dev
+./CROWN_HEALTH_CHECK.ps1 -Environment prod
+```
 
 ### Bootstrap before each Azure smoke
 On Azure, the smoke run **changes state** (e.g., invoices get paid and awards get posted).  
