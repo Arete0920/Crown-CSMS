@@ -53,32 +53,62 @@ Write-Host "`n=== Step 2: Trigger DEV Smoke Workflow ==="
 $workflowName = "DEV Smoke - Golden Path"
 $repo = "tcmegahan/Crown2026"
 
+$env:GH_PAGER = "cat"
+$env:GH_FORCE_TTY = 0
+
+# Capture a trigger timestamp to avoid grabbing someone else's run
+$triggeredAtUtc = [DateTime]::UtcNow
+Write-Host ("Trigger time (UTC): {0:o}" -f $triggeredAtUtc)
+
 Write-Host "Triggering workflow: $workflowName"
-$triggerResult = gh workflow run "$workflowName" -R $repo --json 2>&1
+# NOTE: gh workflow run does NOT support --json
+gh workflow run "$workflowName" -R $repo | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Failed to trigger workflow"
     exit 1
 }
 
-# Wait for run to appear (GitHub API can take a few seconds)
+# Wait for run to appear (GitHub may take a few seconds)
 Write-Host "Waiting for run to appear..."
 Start-Sleep -Seconds 5
 
-# 4) Find the most recent run (should be the one we just triggered)
-$env:GH_PAGER = "cat"
-$env:GH_FORCE_TTY = 0
-$runs = gh run list -R $repo --workflow="$workflowName" --limit 1 --json databaseId,status,conclusion,createdAt,url | ConvertFrom-Json
+# 4) Find the run we just triggered (first run created after our trigger time)
+Write-Host "Locating the triggered run..."
+$maxFindPolls = 12   # ~60s max (12 * 5s)
+$findPoll = 0
+$run = $null
 
-if ($runs.Count -eq 0) {
-    Write-Host "❌ No runs found for workflow: $workflowName"
+while ($findPoll -lt $maxFindPolls -and -not $run) {
+    $findPoll++
+
+    # Pull a handful of recent runs, then pick the first created after trigger time
+    $runs = gh run list -R $repo --workflow="$workflowName" --limit 10 `
+        --json databaseId,status,conclusion,createdAt,url | ConvertFrom-Json
+
+    foreach ($r in $runs) {
+        # createdAt is ISO 8601; parse to UTC
+        $created = [DateTime]::Parse($r.createdAt).ToUniversalTime()
+        if ($created -ge $triggeredAtUtc.AddSeconds(-2)) {
+            $run = $r
+            break
+        }
+    }
+
+    if (-not $run) {
+        Write-Host ("[{0:00}] Run not visible yet; retrying..." -f $findPoll)
+        Start-Sleep -Seconds 5
+    }
+}
+
+if (-not $run) {
+    Write-Host "❌ Could not find the workflow run created after trigger time."
     exit 1
 }
 
-$run = $runs[0]
-$runId = $run.databaseId
+$runId  = $run.databaseId
 $runUrl = $run.url
 
-Write-Host "✅ Workflow run triggered: $runUrl"
+Write-Host "✅ Workflow run detected: $runUrl"
 Write-Host "   Run ID: $runId"
 
 # 5) Poll for completion
@@ -88,28 +118,30 @@ $pollCount = 0
 
 while ($pollCount -lt $maxPolls) {
     $pollCount++
-    $currentRun = gh run view $runId -R $repo --json status,conclusion | ConvertFrom-Json
+
+    $currentRun = gh run view $runId -R $repo --json status,conclusion,url | ConvertFrom-Json
     $status = $currentRun.status
     $conclusion = $currentRun.conclusion
-    
+    $url = $currentRun.url
+
     Write-Host ("[{0:00}] Status: {1,-15} Conclusion: {2}" -f $pollCount, $status, $(if ($conclusion) { $conclusion } else { "pending" }))
-    
+
     if ($status -eq "completed") {
         Write-Host "`n=== Final Result ==="
-        Write-Host "Run URL: $runUrl"
+        Write-Host "Run URL: $url"
         Write-Host "Status: $status"
         Write-Host "Conclusion: $conclusion"
-        
+
         if ($conclusion -eq "success") {
             Write-Host "✅ P0.4 CLOSED: DEV Smoke passed on SHA $ExpectedSHA"
             exit 0
         } else {
             Write-Host "❌ FAILED: DEV Smoke concluded with '$conclusion'"
-            Write-Host "View logs: $runUrl"
+            Write-Host "View logs: $url"
             exit 1
         }
     }
-    
+
     Start-Sleep -Seconds 10
 }
 
