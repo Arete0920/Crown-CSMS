@@ -42,6 +42,40 @@ function Invoke-JsonPost([string]$Url, [hashtable]$Headers, $Obj, [int]$TimeoutS
   return Invoke-WebRequest -UseBasicParsing -Method Post -Uri $Url -Headers $Headers -Body $json -TimeoutSec $TimeoutSec
 }
 
+function Get-JwtToken {
+  param(
+    [string]$ApiBase,
+    [string]$Username,
+    [string]$Password
+  )
+
+  $body = @{ username = $Username; password = $Password } | ConvertTo-Json
+  return (Invoke-RestMethod -Method Post -Uri "$ApiBase/api/v1/auth/token/" -ContentType "application/json" -Body $body -TimeoutSec 12).access
+}
+
+function Ensure-CiUser {
+  param(
+    [string]$ApiBase,
+    [string]$Username,
+    [string]$Password
+  )
+
+  if ([string]::IsNullOrWhiteSpace($env:DEV_OPS_SECRET)) {
+    throw "DEV_OPS_SECRET is not set. Cannot ensure CI user."
+  }
+
+  $headers = @{
+    "X-Admin-Ops-Secret" = $env:DEV_OPS_SECRET
+    "Content-Type"       = "application/json"
+  }
+
+  $payload = @{} | ConvertTo-Json
+
+  $resp = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/v1/system/ensure-ci-user/" -Headers $headers -Body $payload -TimeoutSec 12
+  Write-Host "✅ CI user ensured. Response: $($resp | ConvertTo-Json -Depth 2)"
+  return $resp
+}
+
 Write-Host "=== CROWN2026 - GOLDEN PATH ==="
 Write-Host "ApiBase: $ApiBase"
 Write-Host "Mode:   " -NoNewline
@@ -117,19 +151,37 @@ if (-not $healthOk) {
 $h | ConvertTo-Json -Depth 6
 
 # ------------------------------------------------------------
-# C) JWT
+# C) JWT (with auto-heal: ensure CI user if "No active account" error)
 # ------------------------------------------------------------
 Write-Host ""
 Write-Host "=== C) JWT ==="
-if ($GP_USER -and $GP_PASS) {
-  $body = @{ username = $GP_USER; password = $GP_PASS } | ConvertTo-Json
-} else {
-  $body = @{ username = $Username; password = $Password } | ConvertTo-Json
+
+# Determine which credentials to use
+$authUser = if ($GP_USER -and $GP_PASS) { $GP_USER } else { $Username }
+$authPass = if ($GP_USER -and $GP_PASS) { $GP_PASS } else { $Password }
+
+# Attempt token acquisition with auto-heal retry
+try {
+  $token = Get-JwtToken -ApiBase $ApiBase -Username $authUser -Password $authPass
+} catch {
+  $msg = "$_"
+  if ($msg -match "No active account found with the given credentials") {
+    Write-Host "⚠️  Auth failed: CI user missing or password mismatch. Ensuring CI user, then retrying token..."
+    try {
+      Ensure-CiUser -ApiBase $ApiBase -Username $authUser -Password $authPass
+    } catch {
+      Write-Host "❌ Ensure-CiUser failed: $_"
+      throw
+    }
+    # Retry token acquisition after ensuring user exists
+    $token = Get-JwtToken -ApiBase $ApiBase -Username $authUser -Password $authPass
+  } else {
+    throw
+  }
 }
-$tok = Invoke-RestMethod -Method Post -Uri "$ApiBase/api/v1/auth/token/" -ContentType "application/json" -Body $body -TimeoutSec 12
-$token = $tok.access
+
 if (-not $token) { throw "JWT failed. Check Username/Password." }
-Write-Host ("Token prefix: " + $token.Substring(0, [Math]::Min(24, $token.Length)) + "...")
+Write-Host ("✅ Token acquired. Prefix: " + $token.Substring(0, [Math]::Min(24, $token.Length)) + "...")
 
 # ------------------------------------------------------------
 # D) Seed context

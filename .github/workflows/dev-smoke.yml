@@ -114,6 +114,7 @@ jobs:
           GP_AID_AWARD_ID: "1"
           GP_AID_APP_ID: "1"
           GP_INVOICE_ID: "1"
+          DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
         run: |
           $ErrorActionPreference = "Stop"
 
