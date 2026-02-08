@@ -29,5 +29,6 @@ jobs:
       - name: Run tests
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
+          BUILD_SHA: ${{ github.sha }}
         run: |
           python -m pytest -q
