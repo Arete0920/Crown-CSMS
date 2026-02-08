@@ -16,6 +16,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$env:GH_PAGER = "cat"
+$env:GH_FORCE_TTY = 0
+
 # 1) Determine expected SHA (local HEAD if not provided)
 if ([string]::IsNullOrWhiteSpace($ExpectedSHA)) {
     $ExpectedSHA = (git rev-parse HEAD).Trim()
@@ -82,8 +85,8 @@ while ($findPoll -lt $maxFindPolls -and -not $run) {
     $findPoll++
 
     # Pull a handful of recent runs, then pick the first created after trigger time
-    $runs = gh run list -R $repo --workflow="$workflowName" --limit 10 `
-        --json databaseId,status,conclusion,createdAt,url | ConvertFrom-Json
+    $runsJson = & gh run list -R $repo --workflow "$workflowName" --limit 10 --json databaseId,status,conclusion,createdAt,url 2>$null
+    $runs = $runsJson | ConvertFrom-Json
 
     foreach ($r in $runs) {
         # createdAt is ISO 8601; parse to UTC
@@ -119,7 +122,8 @@ $pollCount = 0
 while ($pollCount -lt $maxPolls) {
     $pollCount++
 
-    $currentRun = gh run view $runId -R $repo --json status,conclusion,url | ConvertFrom-Json
+    $viewJson = & gh run view $runId -R $repo --json status,conclusion,url 2>$null
+    $currentRun = $viewJson | ConvertFrom-Json
     $status = $currentRun.status
     $conclusion = $currentRun.conclusion
     $url = $currentRun.url
