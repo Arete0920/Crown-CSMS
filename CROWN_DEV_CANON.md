@@ -199,6 +199,15 @@ cd C:\Users\JMega\OneDrive\Desktop\Crown2026
 git checkout -b fix/<short-name>
 ```
 
+---
+
+## Tagging (Canonical)
+All repo tagging MUST use these scripts. Manual tags are forbidden.
+
+- `scripts/tag_spine.ps1`
+- `scripts/tag_freeze.ps1`
+- `scripts/tag_gate.ps1`
+
 ### Small commits only
 After each checkpoint works:
 ```powershell
