@@ -5,6 +5,12 @@ from django.core.management import call_command
 from core.models import School
 
 
+@pytest.fixture(autouse=True)
+def _set_required_demo_password_env(monkeypatch):
+    """Provide a dummy demo password required by golden_path_bootstrap."""
+    monkeypatch.setenv("CROWN_DEMO_PASSWORD", "dummy-test-password")
+
+
 @pytest.mark.django_db
 def test_bootstrap_creates_school_when_id_provided():
     """

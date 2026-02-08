@@ -13,7 +13,7 @@ from core.models import AcademicYear, UserRole
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
 
-from .models import Course, Enrollment, Section, Term
+from .models import AssignmentCategory, Course, Enrollment, Section, Term
 from .serializers import (
     AcademicYearSerializer,
     CourseSerializer,
@@ -21,6 +21,12 @@ from .serializers import (
     StudentSerializer,
     TermSerializer,
 )
+
+
+def _student_display_name(student: Student) -> str:
+    first = getattr(student, "first_name", "") or ""
+    last = getattr(student, "last_name", "") or ""
+    return " ".join(part for part in [first, last] if part).strip()
 
 
 def _parse_pagination(request) -> tuple[int, int]:
@@ -180,13 +186,16 @@ class TermViewSet(PaginatedReadOnlyViewSet):
         user = getattr(self.request, "user", None)
         roles = _role_codes(user, school_id)
 
-        qs = Term.objects.filter(school_id=school_id).order_by("code")
+        qs = Term.objects.filter(school_id=school_id).order_by("ordering", "code")
 
         academic_year_id = self.request.query_params.get("academic_year") or self.request.query_params.get(
             "academic_year_id"
         )
+        school_year = self.request.query_params.get("school_year")
         if academic_year_id:
             qs = qs.filter(academic_year_id=academic_year_id)
+        if school_year:
+            qs = qs.filter(school_year=school_year)
 
         if _is_staffish(user, roles):
             return qs
@@ -295,3 +304,64 @@ def parent_students(request):
         "last_name", "first_name"
     )
     return Response(StudentSerializer(qs, many=True).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def section_roster(request, section_id):
+    school_id = get_request_school_id(request, required=True)
+    section = _sections_for_access(request, school_id).filter(id=section_id).first()
+    if not section:
+        raise Http404()
+
+    enrollments = (
+        Enrollment.objects
+        .filter(school_id=school_id, section_id=section.id)
+        .select_related("student")
+        .order_by("student__last_name", "student__first_name")
+    )
+
+    students = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        students.append({
+            "student_id": str(student.id),
+            "display_name": _student_display_name(student),
+            "grade_level": getattr(student, "grade_level", None),
+            "status": "enrolled",
+        })
+
+    return Response({
+        "section_id": str(section.id),
+        "count": len(students),
+        "students": students,
+    })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def section_assessments(request, section_id):
+    school_id = get_request_school_id(request, required=True)
+    section = _sections_for_access(request, school_id).filter(id=section_id).first()
+    if not section:
+        raise Http404()
+
+    categories = (
+        AssignmentCategory.objects
+        .filter(school_id=school_id, section_id=section.id)
+        .order_by("sort_order", "name")
+    )
+
+    items = []
+    for category in categories:
+        items.append({
+            "section_id": str(section.id),
+            "category": category.name,
+            "weight": str(category.weight_percent),
+            "published": category.is_active,
+        })
+
+    return Response({
+        "section_id": str(section.id),
+        "assessments": items,
+    })

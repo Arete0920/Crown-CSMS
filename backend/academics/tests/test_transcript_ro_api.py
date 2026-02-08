@@ -45,6 +45,8 @@ def _seed_transcript_test_data(*, school: School):
         academic_year=year,
         code="2026-FALL",
         name="Fall 2026",
+        school_year="2026-2027",
+        ordering=1,
         active=True,
     )
     term2 = Term.objects.create(
@@ -52,6 +54,8 @@ def _seed_transcript_test_data(*, school: School):
         academic_year=year,
         code="2027-SPRING",
         name="Spring 2027",
+        school_year="2026-2027",
+        ordering=2,
         active=True,
     )
     
@@ -160,3 +164,62 @@ def test_transcript_ro_returns_terms_and_courses_for_demo_student():
     assert "term_gpa_mvp" in t0
     assert "cumulative_gpa_mvp" in data
     assert "notes" in data
+
+
+def test_transcript_ro_alias_returns_same_contract():
+    school = School.objects.create(name="Test School")
+    user = _mk_user(school=school, email="director@test.local")
+    _assign_role(user=user, school=school, role_code="DIRECTOR")
+
+    student = _seed_transcript_test_data(school=school)
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get(
+        f"/api/v1/transcripts/students/{student.id}/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert resp.status_code == 200, resp.content
+
+    data = resp.json()
+    assert data["student"]["student_id"] == str(student.id)
+    assert "terms" in data and isinstance(data["terms"], list)
+
+
+def test_student_transcript_contract_shape():
+    school = School.objects.create(name="Test School")
+    user = _mk_user(school=school, email="director@test.local")
+    _assign_role(user=user, school=school, role_code="DIRECTOR")
+
+    student = _seed_transcript_test_data(school=school)
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get(
+        f"/api/v1/academics/students/{student.id}/transcript/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert resp.status_code == 200, resp.content
+
+    data = resp.json()
+    assert data["student_id"] == str(student.id)
+    assert "student_name" in data
+    assert "school_years" in data and isinstance(data["school_years"], list)
+    assert data["school_years"], data
+    year0 = data["school_years"][0]
+    assert "school_year" in year0
+    assert "terms" in year0 and isinstance(year0["terms"], list)
+    term0 = year0["terms"][0]
+    assert "term_id" in term0
+    assert "term_name" in term0
+    assert "courses" in term0 and isinstance(term0["courses"], list)
+    course0 = term0["courses"][0]
+    assert "section_id" in course0
+    assert "course_code" in course0
+    assert "course_name" in course0
+    assert "credits" in course0
+    assert "teacher" in course0
+    assert "final_grade" in course0
+    assert "status" in course0

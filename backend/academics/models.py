@@ -24,8 +24,10 @@ class Term(TimeStampedModel):
 
     code = models.CharField(max_length=24, db_index=True)
     name = models.CharField(max_length=80)
+    school_year = models.CharField(max_length=16, blank=True, default="")
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
+    ordering = models.IntegerField(default=0)
     active = models.BooleanField(default=True)
 
     class Meta:
@@ -46,6 +48,9 @@ class Course(TimeStampedModel):
 
     code = models.CharField(max_length=32, db_index=True)
     name = models.CharField(max_length=160)
+    department = models.CharField(max_length=80, blank=True, default="")
+    credits = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    grading_scale_ref = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = "course"
@@ -77,6 +82,7 @@ class Section(TimeStampedModel):
 
     # optional teacher reference (string for now; real Staff model comes later)
     teacher_name = models.CharField(max_length=120, blank=True, default="")
+    teacher_id = models.UUIDField(null=True, blank=True)
 
     # optional grade band (string for now)
     grade_band = models.CharField(max_length=32, blank=True, default="")

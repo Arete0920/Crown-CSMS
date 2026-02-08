@@ -33,8 +33,10 @@ class TermSerializer(serializers.ModelSerializer):
             "academic_year_id",
             "code",
             "name",
+            "school_year",
             "start_date",
             "end_date",
+            "ordering",
             "active",
         ]
 
@@ -49,6 +51,9 @@ class CourseSerializer(serializers.ModelSerializer):
             "school_id",
             "code",
             "name",
+            "department",
+            "credits",
+            "grading_scale_ref",
         ]
 
 
@@ -72,6 +77,7 @@ class SectionSerializer(serializers.ModelSerializer):
             "term_id",
             "term_code",
             "teacher_name",
+            "teacher_id",
             "grade_band",
             "roster_count",
         ]
