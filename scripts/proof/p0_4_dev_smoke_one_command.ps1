@@ -78,15 +78,17 @@ Start-Sleep -Seconds 5
 # 4) Locate the triggered run (clean JSON via gh run list)
 Write-Host "Locating the triggered run..."
 
-$runsJson = & gh run list `
-  -R $repo `
-  --workflow "$workflowName" `
-  --limit 5 `
-  --json databaseId,status,conclusion,createdAt,url 2>$null
+$runsRaw = & gh run list -R $repo --workflow "$workflowName" --limit 5 --json databaseId,status,conclusion,createdAt,url 2>$null
+# Join in case PowerShell returns an array of lines
+$runsJson = ($runsRaw -join "`n")
 
-if (-not $runsJson) {
-  throw "gh run list returned empty output"
-}
+# Strip ANSI escape codes (some gh builds still emit them)
+$runsJson = $runsJson -replace "`e\[[0-9;]*m", ""
+
+# Also strip stray '.' lines if present (defensive; seen in your environment)
+$runsJson = ($runsJson -split "`n" | Where-Object { $_.Trim() -ne "." }) -join "`n"
+
+if (-not $runsJson) { throw "gh run list returned empty output" }
 
 $runs = $runsJson | ConvertFrom-Json
 
@@ -114,7 +116,11 @@ $pollCount = 0
 while ($pollCount -lt $maxPolls) {
     $pollCount++
 
-    $viewJson = & gh run view $runId -R $repo --json status,conclusion,url 2>$null
+    $viewRaw  = & gh run view $runId -R $repo --json status,conclusion,url 2>$null
+    $viewJson = ($viewRaw -join "`n")
+    $viewJson = $viewJson -replace "`e\[[0-9;]*m", ""
+    $viewJson = ($viewJson -split "`n" | Where-Object { $_.Trim() -ne "." }) -join "`n"
+
     $currentRun = $viewJson | ConvertFrom-Json
     $status = $currentRun.status
     $conclusion = $currentRun.conclusion
