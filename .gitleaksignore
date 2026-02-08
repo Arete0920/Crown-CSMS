@@ -43,3 +43,8 @@ docs/AZURE_DEV_APP_SETTINGS.md:project-ops-credential:26
 docs/AZURE_DEV_APP_SETTINGS.md:project-ops-credential:27
 docs/DIRECTOR_ACTIONS_API.md:curl-auth-header:164
 scripts/README.md:postgres-connection-string:117
+# Historical false-positives / legacy examples (pre-policy)  fingerprint ignores
+d2b0c11d4fe9d9a92989cda1d41bba0914f5955f:gitleaks.json:postgres-connection-string:9
+d2b0c11d4fe9d9a92989cda1d41bba0914f5955f:gitleaks.json:postgres-connection-string:421
+89048929a08c82412c88968e1cd062b6557fa540:AZURE_OPERATIONS_GUIDE.md:postgres-connection-string:31
+89048929a08c82412c88968e1cd062b6557fa540:SYSTEM_VERIFICATION_COMPLETE.md:postgres-connection-string:143
