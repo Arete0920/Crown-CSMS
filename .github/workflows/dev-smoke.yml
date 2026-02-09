@@ -114,30 +114,17 @@ jobs:
           $sha = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
           $fp = ($sha | ForEach-Object { $_.ToString("x2") }) -join ""
           Write-Host "DEV_OPS_SECRET_SHA256=$fp"
-
       - name: Run Golden Path smoke (DEV)
         shell: pwsh
         env:
           GP_API_BASE: https://crown-api-dev.azurewebsites.net
           DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
+          SKIP_SEED: true
+          MAX_ATTEMPTS: 24
+          SLEEP_SECONDS: 25
         run: |
           $ErrorActionPreference = "Stop"
-
-          if ([string]::IsNullOrWhiteSpace($env:GP_USERNAME)) { throw "GP_USERNAME missing" }
-          if ([string]::IsNullOrWhiteSpace($env:GP_PASSWORD)) { throw "GP_PASSWORD missing" }
-
-          $args = @(
-            "-NoProfile",
-            "-ExecutionPolicy", "Bypass",
-            "-File", "./tools/dev_scripts/golden_path.ps1",
-            "-ApiBase", "$env:GP_API_BASE"
-          )
-
-          if ($env:SKIP_SEED -eq "true") {
-            $args += "-SkipSeed"
-          }
-
-          pwsh @args
+          pwsh -NoProfile -ExecutionPolicy Bypass -File "./tools/dev_scripts/golden_path.ps1" -ApiBase "$env:GP_API_BASE" -SkipSeed
 
       - name: Summary
         if: always()
