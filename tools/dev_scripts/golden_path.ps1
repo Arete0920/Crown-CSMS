@@ -218,7 +218,7 @@ if (Is-LocalApiBase $ApiBase) {
 }
 
 $headers = @{
-  Authorization       = "Bearer $token"
+  Authorization       = "Bearer $($tok.Trim())"
   "Content-Type"      = "application/json"
   "X-Crown-School-Id" = $seed.school_id
 }
