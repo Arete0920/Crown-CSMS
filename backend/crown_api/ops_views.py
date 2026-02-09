@@ -9,6 +9,7 @@ from uuid import UUID
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from rest_framework.decorators import api_view, permission_classes
@@ -104,6 +105,10 @@ def ensure_ci_user(request):
         user=user,
         defaults={"school": school, "role_code": "AID_DIRECTOR"}
     )
+
+    # Ensure CI user can perform billing actions
+    finance_group, _ = Group.objects.get_or_create(name="Business Manager")
+    user.groups.add(finance_group)
 
     # Generate JWT
     refresh = RefreshToken.for_user(user)
