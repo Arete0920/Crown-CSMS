@@ -26,6 +26,36 @@ $GP_PASS = $env:GP_PASSWORD
 $GP_SEED_KEY = $env:GP_SEED_KEY
 
 # Resolve repo root from tools/dev_scripts
+
+function Ensure-CiUser {
+  param(
+    [string]$ApiBase
+  )
+
+  if ([string]::IsNullOrWhiteSpace($env:DEV_OPS_SECRET)) {
+    throw "DEV_OPS_SECRET is not set. Cannot ensure CI user."
+  }
+
+  $headers = @{
+    "X-Admin-Ops-Secret" = $env:DEV_OPS_SECRET
+    "Content-Type"      = "application/json"
+  }
+
+  $payload = @{} | ConvertTo-Json
+  return Invoke-RestMethod -Method Post -Uri "$ApiBase/api/v1/system/ensure-ci-user/" -Headers $headers -Body $payload -TimeoutSec 12
+}
+
+function Get-JwtViaEnsure {
+  param(
+    [string]$ApiBase
+  )
+
+  $resp = Ensure-CiUser -ApiBase $ApiBase
+  if (-not $resp) { throw "ensure-ci-user returned empty response" }
+  if (-not $resp.access) { throw "ensure-ci-user response missing 'access' JWT" }
+  return $resp.access
+}
+
 $ROOT = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $PY   = Join-Path $ROOT ".venv\Scripts\python.exe"
 $MANAGE = Join-Path $ROOT "backend\manage.py"
@@ -158,45 +188,13 @@ $h | ConvertTo-Json -Depth 6
 Write-Host ""
 Write-Host "=== C) JWT ==="
 
-# Determine which credentials to use
-$authUser = if ($GP_USER -and $GP_PASS) { $GP_USER } else { $Username }
-$authPass = if ($GP_USER -and $GP_PASS) { $GP_PASS } else { $Password }
-
-# Attempt token acquisition with auto-heal retry
+# CI auth is sourced from the server (Azure App Service CI_SMOKE_*). We do NOT hardcode usernames in GitHub.
 try {
-  $token = Get-JwtToken -ApiBase $ApiBase -Username $authUser -Password $authPass
+  $tok = Get-JwtViaEnsure -ApiBase $ApiBase
+  Write-Host "✅ ensure-ci-user returned JWT."
 } catch {
-  $msg = "$_"
-  if ($msg -match "No active account found with the given credentials") {
-    Write-Host "⚠️  Auth failed: CI user missing or password mismatch. Ensuring CI user, then retrying token..."
-    try {
-      Ensure-CiUser -ApiBase $ApiBase -Username $authUser -Password $authPass
-    } catch {
-      Write-Host "❌ Ensure-CiUser failed: $_"
-      throw
-    }
-    # Retry token acquisition after ensuring user exists
-    $token = Get-JwtToken -ApiBase $ApiBase -Username $authUser -Password $authPass
-  } else {
-    throw
-  }
+  throw "FAILED: ensure-ci-user could not return JWT. Root cause: $($_.Exception.Message)"
 }
-
-if (-not $token) { throw "JWT failed. Check Username/Password." }
-Write-Host ("✅ Token acquired. Prefix: " + $token.Substring(0, [Math]::Min(24, $token.Length)) + "...")
-
-# ------------------------------------------------------------
-# D) Seed context
-#   - Local: run golden_path_seed.py (safe)
-#   - Remote: require GP_* env vars (no Django shell against remote DB)
-# ------------------------------------------------------------
-$seed = $null
-
-if ((Is-LocalApiBase $ApiBase) -and (-not $SkipSeed)) {
-  $seedScript = Join-Path $ROOT "tools\dev_scripts\golden_path_seed.py"
-  if (-not (Test-Path $seedScript)) { throw "Missing seed script: $seedScript" }
-
-  Write-Host ""
   Write-Host "=== D) Seed context (LOCAL) ==="
   $seedJson = & $PY $seedScript
   $seed = ($seedJson | Select-Object -Last 1) | ConvertFrom-Json
