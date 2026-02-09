@@ -64,6 +64,8 @@ function Ensure-CiUser {
     throw "DEV_OPS_SECRET is not set. Cannot ensure CI user."
   }
 
+  Write-Host "DEV_OPS_SECRET present: True (length: $($env:DEV_OPS_SECRET.Length) chars)"
+
   $headers = @{
     "X-Admin-Ops-Secret" = $env:DEV_OPS_SECRET
     "Content-Type"       = "application/json"
