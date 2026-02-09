@@ -17,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from core.models import School
+from core.models import School, UserRole
 from core.seed_helpers import ensure_deterministic_school
 
 
@@ -98,6 +98,12 @@ def ensure_ci_user(request):
     if hasattr(user, "school"):
         user.school = school
     user.save()
+
+    # Ensure CI user has director role for smoke tests
+    UserRole.objects.update_or_create(
+        user=user,
+        defaults={"school": school, "role_code": "AID_DIRECTOR"}
+    )
 
     # Generate JWT
     refresh = RefreshToken.for_user(user)

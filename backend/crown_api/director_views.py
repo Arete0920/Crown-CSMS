@@ -22,10 +22,10 @@ from core.models import (
 
 
 ALLOWED_ROLE_CODES = {
-    "ROLE_AID_DIRECTOR",
-    "ROLE_FINANCE_DIRECTOR",
-    "ROLE_REGISTRAR",
-    "ROLE_HEAD_OF_SCHOOL",
+    "AID_DIRECTOR",
+    "FINANCE_DIRECTOR",
+    "REGISTRAR",
+    "HEAD_OF_SCHOOL",
 }
 
 
