@@ -221,6 +221,7 @@ $headers = @{
   Authorization       = "Bearer $($tok.Trim())"
   "Content-Type"      = "application/json"
   "X-Crown-School-Id" = $seed.school_id
+  "X-School-Id"       = $seed.school_id
 }
 
 if ((-not (Is-LocalApiBase $ApiBase)) -and (-not $seed.invoice_id)) {
