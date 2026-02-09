@@ -190,7 +190,8 @@ Write-Host "=== C) JWT ==="
 
 # CI auth is sourced from the server (Azure App Service CI_SMOKE_*). We do NOT hardcode usernames in GitHub.
 try {
-  $tok = Get-JwtViaEnsure -ApiBase $ApiBase
+  $ciUserResponse = Ensure-CiUser -ApiBase $ApiBase
+  $tok = $ciUserResponse.access
   Write-Host "✅ ensure-ci-user returned JWT."
 } catch {
   throw "FAILED: ensure-ci-user could not return JWT. Root cause: $($_.Exception.Message)"
@@ -205,17 +206,15 @@ if (Is-LocalApiBase $ApiBase) {
   Write-Host ""
   Write-Host "=== D) Seed context (REMOTE/API-only) ==="
   $seed = [pscustomobject]@{
-    school_id          = $env:GP_SCHOOL_ID
+    school_id          = $ciUserResponse.school_id
     year_id            = $env:GP_YEAR_ID
     aid_award_id       = $env:GP_AID_AWARD_ID
     aid_application_id = $env:GP_AID_APP_ID
     invoice_id         = $env:GP_INVOICE_ID
   }
 
-  # Require the minimum IDs for the smoke
-  if (-not $seed.school_id)    { throw "Missing env var GP_SCHOOL_ID" }
-  if (-not $seed.year_id)      { throw "Missing env var GP_YEAR_ID" }
-  if (-not $seed.aid_award_id) { throw "Missing env var GP_AID_AWARD_ID" }
+  # Require the minimum: school_id from CI user
+  if (-not $seed.school_id) { throw "ensure-ci-user response missing 'school_id'" }
 }
 
 $headers = @{
