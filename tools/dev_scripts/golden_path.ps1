@@ -302,7 +302,7 @@ Write-Host ""
 Write-Host "=== H) Financial Aid: drilldown ==="
 $r4 = Invoke-RestMethod -Method Get -Uri "$ApiBase/api/financial-aid/drilldown/" -Headers $headers -TimeoutSec 25
 Write-Host "HTTP 200 (expected)"
-$data = $r4 | ConvertFrom-Json
+$data = $r4
 if (-not $data.ok) { throw "Drilldown response not ok" }
 if (-not $data.PSObject.Properties.Match('items')) { throw "Missing items in drilldown" }
 if (-not $data.PSObject.Properties.Match('summary')) { throw "Missing summary in drilldown" }
