@@ -195,6 +195,8 @@ try {
 } catch {
   throw "FAILED: ensure-ci-user could not return JWT. Root cause: $($_.Exception.Message)"
 }
+
+if (Is-LocalApiBase $ApiBase) {
   Write-Host "=== D) Seed context (LOCAL) ==="
   $seedJson = & $PY $seedScript
   $seed = ($seedJson | Select-Object -Last 1) | ConvertFrom-Json
