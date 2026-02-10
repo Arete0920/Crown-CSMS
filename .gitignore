@@ -103,3 +103,6 @@ backend/*.sqlite3
 _gitleaks_ci_report.json
 *_gitleaks*.json
 
+
+_local_proofs/
+
