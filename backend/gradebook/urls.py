@@ -7,6 +7,7 @@ from .views import (
     section_assignments,
     section_grades,
     section_roster,
+    section_summary,
     students_list,
 )
 
@@ -27,6 +28,11 @@ urlpatterns = [
         "gradebook/sections/<uuid:section_id>/assignments/",
         section_assignments,
         name="gradebook-section-assignments",
+    ),
+    path(
+        "gradebook/sections/<uuid:section_id>/summary/",
+        section_summary,
+        name="gradebook-section-summary",
     ),
     path(
         "gradebook/sections/<uuid:section_id>/grades/",
