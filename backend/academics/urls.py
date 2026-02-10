@@ -16,7 +16,6 @@ from .views import (
     TermViewSet,
     parent_students,
     section_assessments,
-    section_roster,
     student_sections,
 )
 
@@ -48,11 +47,6 @@ urlpatterns = [
         "academics/parents/me/students/",
         parent_students,
         name="academics-parent-students",
-    ),
-    path(
-        "academics/sections/<uuid:section_id>/roster/",
-        section_roster,
-        name="academics-section-roster",
     ),
     path(
         "academics/sections/<uuid:section_id>/assessments/",

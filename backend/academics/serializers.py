@@ -96,3 +96,69 @@ class StudentSerializer(serializers.ModelSerializer):
             "last_name",
             "grade_level",
         ]
+
+
+# Section Serializers (v1 read-only API)
+class SectionListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for section list view."""
+    section_id = serializers.UUIDField(source="id", read_only=True)
+    course_id = serializers.UUIDField(read_only=True)
+    course_code = serializers.CharField(source="course.code", read_only=True)
+    course_name = serializers.CharField(source="course.name", read_only=True)
+    term_id = serializers.UUIDField(source="term_ref_id", read_only=True)
+    term_code = serializers.CharField(source="term", read_only=True)
+    teacher_id = serializers.UUIDField(read_only=True, allow_null=True)
+    teacher_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Section
+        fields = [
+            "section_id",
+            "school_id",
+            "course_id",
+            "course_code",
+            "course_name",
+            "term_id",
+            "term_code",
+            "teacher_id",
+            "teacher_name",
+            "grade_band",
+        ]
+
+
+class SectionDetailSerializer(serializers.ModelSerializer):
+    """Detailed serializer for section detail view."""
+    section_id = serializers.UUIDField(source="id", read_only=True)
+    course_id = serializers.UUIDField(read_only=True)
+    course_code = serializers.CharField(source="course.code", read_only=True)
+    course_name = serializers.CharField(source="course.name", read_only=True)
+    term_id = serializers.UUIDField(source="term_ref_id", read_only=True)
+    term_code = serializers.CharField(source="term", read_only=True)
+    teacher_id = serializers.UUIDField(read_only=True, allow_null=True)
+    teacher_name = serializers.CharField(read_only=True)
+    roster_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Section
+        fields = [
+            "section_id",
+            "school_id",
+            "course_id",
+            "course_code",
+            "course_name",
+            "term_id",
+            "term_code",
+            "teacher_id",
+            "teacher_name",
+            "grade_band",
+            "roster_count",
+        ]
+
+
+class SectionRosterStudentSerializer(serializers.Serializer):
+    """Simple student row for roster endpoint."""
+    student_id = serializers.UUIDField()
+    display_name = serializers.CharField()
+    grade_level = serializers.CharField(allow_null=True)
+    status = serializers.CharField()
+

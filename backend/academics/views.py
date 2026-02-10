@@ -4,7 +4,7 @@ from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -17,6 +17,9 @@ from .models import AssignmentCategory, Course, Enrollment, Section, Term
 from .serializers import (
     AcademicYearSerializer,
     CourseSerializer,
+    SectionDetailSerializer,
+    SectionListSerializer,
+    SectionRosterStudentSerializer,
     SectionSerializer,
     StudentSerializer,
     TermSerializer,
@@ -235,7 +238,25 @@ class CourseViewSet(PaginatedReadOnlyViewSet):
 
 
 class SectionViewSet(PaginatedReadOnlyViewSet):
-    serializer_class = SectionSerializer
+    """
+    Read-only Sections.
+
+    Filters (query params):
+      - academic_year / academic_year_id : UUID (filters term_ref__academic_year_id)
+      - term_id                          : UUID (filters term_ref_id)
+      - term                             : str  (filters term code)
+      - student_id                       : UUID (filters enrollments__student_id)
+      - teacher_id                       : UUID (filters teacher_assignments__staff_id)
+
+    Role guard:
+      - TEACHER may only query teacher_id matching their own staff id.
+    """
+    serializer_class = SectionListSerializer
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return SectionDetailSerializer
+        return SectionListSerializer
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request, required=True)
@@ -268,7 +289,49 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
             if not staff or str(staff.id) != str(teacher_id):
                 return qs.none()
 
+        # Deterministic ordering (stable for UI + tests)
+        qs = qs.order_by(
+            "term_ref__academic_year__start_date",
+            "term_ref__ordering",
+            "term",
+            "course__name",
+            "id",
+        )
         return qs.distinct()
+
+    @action(detail=True, methods=["get"])
+    def roster(self, request, pk=None):
+        """Return students enrolled in this section."""
+        school_id = get_request_school_id(request, required=True)
+        section = _sections_for_access(request, school_id).filter(id=pk).first()
+        if not section:
+            raise Http404()
+
+        enrollments = (
+            Enrollment.objects.filter(school_id=school_id, section_id=section.id)
+            .select_related("student")
+            .order_by("student__last_name", "student__first_name")
+        )
+
+        students = []
+        for enrollment in enrollments:
+            student = enrollment.student
+            students.append(
+                {
+                    "student_id": str(student.id),
+                    "display_name": _student_display_name(student),
+                    "grade_level": getattr(student, "grade_level", None),
+                    "status": "enrolled",
+                }
+            )
+
+        return Response(
+            {
+                "section_id": str(section.id),
+                "count": len(students),
+                "students": students,
+            }
+        )
 
 
 @api_view(["GET"])
