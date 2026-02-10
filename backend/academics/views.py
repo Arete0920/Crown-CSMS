@@ -301,37 +301,80 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
 
     @action(detail=True, methods=["get"])
     def roster(self, request, pk=None):
-        """Return students enrolled in this section."""
+        """
+        GET /api/v1/academics/sections/{pk}/roster/
+        
+        Returns section metadata + teacher + enrolled students.
+        Students ordered deterministically: last_name, first_name, student_id.
+        
+        Response shape:
+        {
+          "section_id": "...",
+          "section_name": "...",
+          "course_code": "...",
+          "term": { "id": "...", "name": "..." },
+          "teacher": { "id": "...", "name": "...", "email": "..." } or null,
+          "students": [ { "student_id": "...", "name": "...", "grade_level": "...", "enrollment_status": "active" } ],
+          "counts": { "students": <count> }
+        }
+        """
         school_id = get_request_school_id(request, required=True)
-        section = _sections_for_access(request, school_id).filter(id=pk).first()
+        section = (
+            _sections_for_access(request, school_id)
+            .select_related("course", "term_ref", "teacher")
+            .filter(id=pk)
+            .first()
+        )
         if not section:
             raise Http404()
 
+        # Fetch enrollments and students, deterministically ordered
         enrollments = (
             Enrollment.objects.filter(school_id=school_id, section_id=section.id)
             .select_related("student")
-            .order_by("student__last_name", "student__first_name")
+            .order_by("student__last_name", "student__first_name", "student__id")
         )
 
-        students = []
-        for enrollment in enrollments:
-            student = enrollment.student
-            students.append(
-                {
-                    "student_id": str(student.id),
-                    "display_name": _student_display_name(student),
-                    "grade_level": getattr(student, "grade_level", None),
-                    "status": "enrolled",
-                }
-            )
-
-        return Response(
+        students = [
             {
-                "section_id": str(section.id),
-                "count": len(students),
-                "students": students,
+                "student_id": str(e.student.id),
+                "name": f"{e.student.last_name}, {e.student.first_name}",
+                "grade_level": e.student.grade_level,
+                "enrollment_status": "active",
             }
-        )
+            for e in enrollments
+        ]
+
+        # Resolve teacher (nullable)
+        teacher = None
+        if section.teacher:
+            teacher = {
+                "id": str(section.teacher.id),
+                "name": section.teacher.get_full_name(),
+                "email": section.teacher.email,
+            }
+
+        # Resolve term (nullable)
+        term = None
+        if section.term_ref:
+            term = {
+                "id": str(section.term_ref.id),
+                "name": section.term_ref.name,
+            }
+
+        payload = {
+            "section_id": str(section.id),
+            "section_name": section.course.name if section.course else "",
+            "course_code": section.course.code if section.course else "",
+            "term": term,
+            "teacher": teacher,
+            "students": students,
+            "counts": {
+                "students": len(students),
+            },
+        }
+
+        return Response(payload)
 
 
 @api_view(["GET"])
@@ -371,38 +414,6 @@ def parent_students(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def section_roster(request, section_id):
-    school_id = get_request_school_id(request, required=True)
-    section = _sections_for_access(request, school_id).filter(id=section_id).first()
-    if not section:
-        raise Http404()
-
-    enrollments = (
-        Enrollment.objects
-        .filter(school_id=school_id, section_id=section.id)
-        .select_related("student")
-        .order_by("student__last_name", "student__first_name")
-    )
-
-    students = []
-    for enrollment in enrollments:
-        student = enrollment.student
-        students.append({
-            "student_id": str(student.id),
-            "display_name": _student_display_name(student),
-            "grade_level": getattr(student, "grade_level", None),
-            "status": "enrolled",
-        })
-
-    return Response({
-        "section_id": str(section.id),
-        "count": len(students),
-        "students": students,
-    })
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
 def section_assessments(request, section_id):
     school_id = get_request_school_id(request, required=True)
     section = _sections_for_access(request, school_id).filter(id=section_id).first()
@@ -428,3 +439,74 @@ def section_assessments(request, section_id):
         "section_id": str(section.id),
         "assessments": items,
     })
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def section_roster(request, section_id):
+    """
+    GET /api/v1/academics/sections/<section_id>/roster/
+    
+    Returns section metadata + teacher + enrolled students (deterministic order).
+    
+    Tenant-scoped and role-filtered via _sections_for_access.
+    Students ordered by: last_name, first_name, student_id (stable).
+    """
+    school_id = get_request_school_id(request, required=True)
+    section = (
+        _sections_for_access(request, school_id)
+        .select_related("course", "term_ref", "teacher")
+        .filter(id=section_id)
+        .first()
+    )
+    if not section:
+        raise Http404()
+
+    # Fetch enrollments and students, deterministically ordered
+    enrollments = (
+        Enrollment.objects
+        .select_related("student")
+        .filter(section=section, school_id=school_id)
+        .order_by("student__last_name", "student__first_name", "student__id")
+    )
+
+    students = [
+        {
+            "student_id": str(e.student.id),
+            "name": f"{e.student.last_name}, {e.student.first_name}",
+            "grade_level": e.student.grade_level,
+            "enrollment_status": "active",
+        }
+        for e in enrollments
+    ]
+
+    # Resolve teacher (nullable)
+    teacher = None
+    if section.teacher:
+        teacher = {
+            "id": str(section.teacher.id),
+            "name": section.teacher.get_full_name(),
+            "email": section.teacher.email,
+        }
+
+    # Resolve term (nullable)
+    term = None
+    if section.term_ref:
+        term = {
+            "id": str(section.term_ref.id),
+            "name": section.term_ref.name,
+        }
+
+    payload = {
+        "section_id": str(section.id),
+        "section_name": section.name or "",
+        "course_code": section.course.code if section.course else "",
+        "term": term,
+        "teacher": teacher,
+        "students": students,
+        "counts": {
+            "students": len(students),
+        },
+    }
+
+    return Response(payload)
