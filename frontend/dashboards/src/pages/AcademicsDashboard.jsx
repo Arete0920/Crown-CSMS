@@ -4,6 +4,7 @@ import {
   fetchParentStudents,
   fetchSections,
   fetchStudentSections,
+  fetchSectionRoster,
 } from '../api/academics.js';
 
 export function AcademicsDashboard() {
@@ -15,6 +16,10 @@ export function AcademicsDashboard() {
   const [lookupId, setLookupId] = useState('');
   const [lookupRows, setLookupRows] = useState([]);
   const [lookupError, setLookupError] = useState('');
+  const [selectedSectionId, setSelectedSectionId] = useState(null);
+  const [rosterData, setRosterData] = useState(null);
+  const [rosterLoading, setRosterLoading] = useState(false);
+  const [rosterError, setRosterError] = useState('');
 
   useEffect(() => {
     fetchSections()
@@ -56,6 +61,33 @@ export function AcademicsDashboard() {
       .catch((err) => setLookupError(err.message));
   };
 
+  const handleOpenRoster = async (sectionId) => {
+    setSelectedSectionId(sectionId);
+    setRosterLoading(true);
+    setRosterError('');
+    setRosterData(null);
+
+    try {
+      const data = await fetchSectionRoster(sectionId);
+      setRosterData(data);
+    } catch (err) {
+      // err could be Error | string | object depending on _fetchJson
+      const msg =
+        (err && typeof err === 'object' && 'message' in err && err.message) ||
+        (typeof err === 'string' && err) ||
+        'Failed to load roster.';
+      setRosterError(msg);
+    } finally {
+      setRosterLoading(false);
+    }
+  };
+
+  const handleCloseRoster = () => {
+    setSelectedSectionId(null);
+    setRosterData(null);
+    setRosterError('');
+  };
+
   return (
     <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
       <h1>Academics (Read-only)</h1>
@@ -80,7 +112,22 @@ export function AcademicsDashboard() {
                   <td>{row.course_code} — {row.course_name}</td>
                   <td>{row.term_code || row.term_id}</td>
                   <td>{row.teacher_name || '—'}</td>
-                  <td>{row.roster_count ?? 0}</td>
+                  <td>
+                    <button
+                      onClick={() => handleOpenRoster(row.section_id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#0066cc',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                        padding: 0,
+                        font: 'inherit',
+                      }}
+                    >
+                      {row.roster_count ?? 0} students
+                    </button>
+                  </td>
                 </tr>
               ))}
               {sections.length === 0 && (
@@ -169,6 +216,135 @@ export function AcademicsDashboard() {
           </tbody>
         </table>
       </section>
+
+      {selectedSectionId && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 480,
+              backgroundColor: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: 16,
+                borderBottom: '1px solid #e0e0e0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                {rosterData && (
+                  <>
+                    <h3 style={{ margin: '0 0 4px 0' }}>{rosterData.section_name}</h3>
+                    <p style={{ margin: 0, fontSize: 12, color: '#666' }}>
+                      {rosterData.course_code}
+                    </p>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={handleCloseRoster}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: 20,
+                  cursor: 'pointer',
+                  color: '#666',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+              {rosterLoading && <div>Loading roster...</div>}
+              {rosterError && <div style={{ color: 'crimson' }}>Error: {rosterError}</div>}
+              {rosterData && (
+                <>
+                  {/* Term + Teacher */}
+                  <div style={{ marginBottom: 16 }}>
+                    {rosterData.term && (
+                      <div style={{ marginBottom: 8 }}>
+                        <strong>Term:</strong> {rosterData.term.name}
+                      </div>
+                    )}
+                    {rosterData.teacher && (
+                      <div>
+                        <strong>Teacher:</strong> {rosterData.teacher.name} ({rosterData.teacher.email})
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Student Count Badge */}
+                  {(() => {
+                    const rosterCount =
+                      rosterData?.counts?.students ??
+                      (rosterData?.students?.length ?? 0);
+                    return (
+                      <div
+                        style={{
+                          backgroundColor: '#e8f4f8',
+                          padding: '8px 12px',
+                          borderRadius: 4,
+                          marginBottom: 16,
+                          fontSize: 12,
+                        }}
+                      >
+                        <strong>{rosterCount}</strong> students enrolled
+                      </div>
+                    );
+                  })()}
+
+                  {/* Student List */}
+                  <div>
+                    <strong style={{ display: 'block', marginBottom: 8 }}>Roster</strong>
+                    {(rosterData?.students ?? []).length === 0 ? (
+                      <div style={{ fontSize: 12, color: '#666' }}>
+                        No students enrolled.
+                      </div>
+                    ) : (
+                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                        {(rosterData?.students ?? []).map((student) => (
+                          <li
+                            key={student.student_id}
+                            style={{
+                              padding: '8px',
+                              borderBottom: '1px solid #f0f0f0',
+                              fontSize: 13,
+                            }}
+                          >
+                            <div>{student.name}</div>
+                            <div style={{ fontSize: 11, color: '#999' }}>
+                              Grade {student.grade_level}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
