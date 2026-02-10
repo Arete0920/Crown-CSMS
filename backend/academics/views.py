@@ -238,6 +238,19 @@ class CourseViewSet(PaginatedReadOnlyViewSet):
 
 
 class SectionViewSet(PaginatedReadOnlyViewSet):
+    """
+    Read-only Sections.
+
+    Filters (query params):
+      - academic_year / academic_year_id : UUID (filters term_ref__academic_year_id)
+      - term_id                          : UUID (filters term_ref_id)
+      - term                             : str  (filters term code)
+      - student_id                       : UUID (filters enrollments__student_id)
+      - teacher_id                       : UUID (filters teacher_assignments__staff_id)
+
+    Role guard:
+      - TEACHER may only query teacher_id matching their own staff id.
+    """
     serializer_class = SectionListSerializer
 
     def get_serializer_class(self):
@@ -276,6 +289,14 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
             if not staff or str(staff.id) != str(teacher_id):
                 return qs.none()
 
+        # Deterministic ordering (stable for UI + tests)
+        qs = qs.order_by(
+            "term_ref__academic_year__start_date",
+            "term_ref__ordering",
+            "term",
+            "course__name",
+            "id",
+        )
         return qs.distinct()
 
     @action(detail=True, methods=["get"])
