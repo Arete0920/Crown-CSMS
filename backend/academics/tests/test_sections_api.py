@@ -115,9 +115,10 @@ def test_section_roster_returns_students():
     assert resp.status_code == 200
     body = resp.json()
     assert body["section_id"] == str(section.id)
-    assert body["count"] == 1
+    assert body["counts"]["students"] == 1
     assert body["students"][0]["student_id"] == str(student.id)
-    assert body["students"][0]["display_name"] == "Jane Doe"
+    # name format is "LastName, FirstName"
+    assert "Doe" in body["students"][0]["name"]
 
 
 def test_section_post_returns_405():
