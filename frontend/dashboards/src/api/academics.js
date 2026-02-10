@@ -61,3 +61,8 @@ export function fetchStudents({ limit = 100, offset = 0 } = {}) {
 export function fetchTranscript(studentId) {
   return _fetchJson(`${API_BASE}/api/v1/academics/transcript/${studentId}/`);
 }
+
+export function fetchSectionRoster(sectionId) {
+  if (!sectionId) throw new Error('sectionId is required');
+  return _fetchJson(`${API_BASE}/api/v1/academics/sections/${encodeURIComponent(sectionId)}/roster/`);
+}
