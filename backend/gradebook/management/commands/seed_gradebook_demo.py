@@ -20,12 +20,38 @@ class SeedAssignment:
 
 
 DEFAULT_ASSIGNMENTS: tuple[SeedAssignment, ...] = (
+    # Quizzes (low stakes)
     SeedAssignment("Quiz 1", 20),
-    SeedAssignment("Homework 1", 10),
-    SeedAssignment("Project 1", 50),
     SeedAssignment("Quiz 2", 20),
+    SeedAssignment("Quiz 3", 20),
+    SeedAssignment("Quiz 4", 20),
+
+    # Homework (very low stakes)
+    SeedAssignment("Homework 1", 10),
+    SeedAssignment("Homework 2", 10),
+    SeedAssignment("Homework 3", 10),
+    SeedAssignment("Homework 4", 10),
+
+    # Major items
+    SeedAssignment("Project 1", 50),
+    SeedAssignment("Project 2", 50),
+    SeedAssignment("Midterm Exam", 100),
     SeedAssignment("Final Exam", 100),
 )
+
+
+def _missing_prob(name: str) -> float:
+    """Probability that a student misses (has no grade) for this assignment."""
+    n = name.lower()
+    if "homework" in n:
+        return 0.15
+    if "quiz" in n:
+        return 0.10
+    if "project" in n:
+        return 0.05
+    if "midterm" in n or "final" in n or "exam" in n:
+        return 0.03
+    return 0.07
 
 
 def _student_ids_for_section(section: Section) -> list[uuid.UUID]:
@@ -51,11 +77,14 @@ def _student_ids_for_section(section: Section) -> list[uuid.UUID]:
     )
 
 
-def _score(points_possible: int) -> int:
-    # Simple deterministic-ish distribution; keep it realistic
-    # 60%–100% range
+def _score(rng: random.Random, points_possible: int, assignment_name: str) -> int | None:
+    """Generate a score with realistic missingness. Returns None if student missed assignment."""
+    # Check missingness first
+    if rng.random() < _missing_prob(assignment_name):
+        return None
+    # Otherwise generate score: 60%–100% range
     low = int(points_possible * 0.6)
-    return random.randint(low, points_possible)
+    return round(rng.uniform(low, points_possible), 2)
 
 
 class Command(BaseCommand):
@@ -74,7 +103,8 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **opts):
-        random.seed(int(opts["seed"]))
+        seed_value = int(opts["seed"])
+        rng = random.Random(seed_value)
 
         school_id = uuid.UUID(str(opts["school_id"]))
         wipe = bool(opts["wipe"])
@@ -118,7 +148,7 @@ class Command(BaseCommand):
 
             for student_id in student_ids:
                 for a in assignments:
-                    points_earned = _score(a.points_possible)
+                    points_earned = _score(rng, a.points_possible, a.name)
 
                     obj, was_created = GradeEntry.objects.get_or_create(
                         school_id=school_id,
