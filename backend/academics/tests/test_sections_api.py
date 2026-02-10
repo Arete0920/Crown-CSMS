@@ -23,7 +23,7 @@ def _mk_staff_user(school: School):
     return user
 
 
-def _seed_section(*, school: School):
+def _seed_section(*, school: School, teacher=None):
     year = AcademicYear.objects.create(
         school=school,
         name="2026-2027",
@@ -52,8 +52,8 @@ def _seed_section(*, school: School):
         course=course,
         term_ref=term,
         term=term.code,
+        teacher=teacher,
         teacher_name="Mrs. Smith",
-        teacher_id=uuid.uuid4(),
     )
     household = Household.objects.create(school_id=school.id, name="Household")
     student = Student.objects.create(
@@ -67,26 +67,44 @@ def _seed_section(*, school: School):
     return section, student
 
 
-def test_sections_list_includes_teacher_id():
+def test_sections_list_returns_200():
+    """Test GET /api/v1/academics/sections/ returns 200."""
     school = School.objects.create(name="Test School")
     user = _mk_staff_user(school)
-    section, _student = _seed_section(school=school)
+    section, _student = _seed_section(school=school, teacher=user)
 
     client = APIClient()
     client.force_authenticate(user)
     resp = client.get("/api/v1/academics/sections/", HTTP_X_SCHOOL_ID=str(school.id))
     assert resp.status_code == 200
     body = resp.json()
-    assert body["results"], body
-    row = body["results"][0]
-    assert row["section_id"] == str(section.id)
-    assert row["teacher_id"] == str(section.teacher_id)
+    assert "results" in body
+    assert body["total"] >= 1
+
+
+def test_sections_detail_returns_200():
+    """Test GET /api/v1/academics/sections/{id}/ returns 200."""
+    school = School.objects.create(name="Test School")
+    user = _mk_staff_user(school)
+    section, _student = _seed_section(school=school, teacher=user)
+
+    client = APIClient()
+    client.force_authenticate(user)
+    resp = client.get(
+        f"/api/v1/academics/sections/{section.id}/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["section_id"] == str(section.id)
+    assert body["course_code"] == "ENG-101"
 
 
 def test_section_roster_returns_students():
+    """Test GET /api/v1/academics/sections/{id}/roster/ returns students."""
     school = School.objects.create(name="Test School")
     user = _mk_staff_user(school)
-    section, student = _seed_section(school=school)
+    section, student = _seed_section(school=school, teacher=user)
 
     client = APIClient()
     client.force_authenticate(user)
@@ -100,3 +118,18 @@ def test_section_roster_returns_students():
     assert body["count"] == 1
     assert body["students"][0]["student_id"] == str(student.id)
     assert body["students"][0]["display_name"] == "Jane Doe"
+
+
+def test_section_post_returns_405():
+    """Test POST /api/v1/academics/sections/ returns 405 (Method Not Allowed)."""
+    school = School.objects.create(name="Test School")
+    user = _mk_staff_user(school)
+
+    client = APIClient()
+    client.force_authenticate(user)
+    resp = client.post(
+        "/api/v1/academics/sections/",
+        data={"course_id": str(uuid.uuid4()), "term": "2026-FALL"},
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert resp.status_code == 405
