@@ -1,16 +1,23 @@
 /**
  * authClient.js
- * - Stores JWT access token in sessionStorage (memory-ish, clears on browser close).
+ * - Stores JWT access token in localStorage.
  * - Provides authenticatedFetch which adds Authorization header if token exists.
  * - Keeps cookie/session auth working (we DO NOT disable credentials).
  */
 
-const TOKEN_KEY = "crown.jwt.access";
-const SCHOOL_KEY = "crown.school.id";
+// Canonical storage keys (single source of truth)
+export const AUTH_STORAGE_KEYS = {
+  accessToken: "crown.accessToken",
+  refreshToken: "crown.refreshToken",
+  schoolId: "crown.schoolId",
+};
+
+const TOKEN_KEY = AUTH_STORAGE_KEYS.accessToken;
+const SCHOOL_KEY = AUTH_STORAGE_KEYS.schoolId;
 
 export function getSelectedSchoolId() {
   try {
-    return sessionStorage.getItem(SCHOOL_KEY) || "";
+    return localStorage.getItem(SCHOOL_KEY) || "";
   } catch {
     return "";
   }
@@ -19,8 +26,8 @@ export function getSelectedSchoolId() {
 export function setSelectedSchoolId(schoolId) {
   try {
     const v = (schoolId || "").trim();
-    if (v) sessionStorage.setItem(SCHOOL_KEY, v);
-    else sessionStorage.removeItem(SCHOOL_KEY);
+    if (v) localStorage.setItem(SCHOOL_KEY, v);
+    else localStorage.removeItem(SCHOOL_KEY);
   } catch (err) {
     console.error(err);
   }
@@ -32,7 +39,7 @@ export function clearSelectedSchoolId() {
 
 export function getAccessToken() {
   try {
-    return sessionStorage.getItem(TOKEN_KEY) || "";
+    return localStorage.getItem(TOKEN_KEY) || "";
   } catch {
     return "";
   }
@@ -40,8 +47,8 @@ export function getAccessToken() {
 
 export function setAccessToken(token) {
   try {
-    if (token) sessionStorage.setItem(TOKEN_KEY, token);
-    else sessionStorage.removeItem(TOKEN_KEY);
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
   } catch (err) {
     console.error(err);
   }
@@ -49,6 +56,19 @@ export function setAccessToken(token) {
 
 export function clearAccessToken() {
   setAccessToken("");
+}
+
+// Read auth state from storage (debug + app use)
+export function getStoredAuthState() {
+  const access = localStorage.getItem(AUTH_STORAGE_KEYS.accessToken) || "";
+  const refresh = localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken) || "";
+  const schoolId = localStorage.getItem(AUTH_STORAGE_KEYS.schoolId) || "";
+  return {
+    hasAccess: !!access,
+    accessPreview: access ? access.slice(0, 16) + "…" : "",
+    hasRefresh: !!refresh,
+    schoolId,
+  };
 }
 
 export async function authenticatedFetch(input, init = {}) {
@@ -72,6 +92,26 @@ export async function authenticatedFetch(input, init = {}) {
     headers,
     credentials: init.credentials ?? "include",
   };
+
+  // --- DEBUG: capture what we actually send (no DevTools needed) ---
+  try {
+    const debugHeaders = {};
+    if (headers instanceof Headers) {
+      headers.forEach((v, k) => (debugHeaders[k] = v));
+    } else {
+      Object.assign(debugHeaders, headers);
+    }
+    window.__CROWN_LAST_AUTH_FETCH__ = {
+      at: new Date().toISOString(),
+      url,
+      method: init?.method || "GET",
+      hasAuthorization: !!(debugHeaders.Authorization || debugHeaders.authorization),
+      schoolId: debugHeaders["X-School-Id"] || debugHeaders["x-school-id"] || "",
+    };
+  } catch (e) {
+    // swallow debug errors
+  }
+  // --- END DEBUG ---
 
   const resp = await fetch(input, finalInit);
 
@@ -107,6 +147,12 @@ export async function jwtLogin({ username, password, apiBase = "" }) {
 
   const data = await resp.json();
   if (!data?.access) throw new Error("Login response missing access token");
-  setAccessToken(data.access);
+  
+  // Store using canonical keys
+  localStorage.setItem(AUTH_STORAGE_KEYS.accessToken, data.access);
+  if (data.refresh) {
+    localStorage.setItem(AUTH_STORAGE_KEYS.refreshToken, data.refresh);
+  }
+  
   return data;
 }
