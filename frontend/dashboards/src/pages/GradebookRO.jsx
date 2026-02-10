@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getGradebookSections, getGradebookGrades } from "../api/gradebook";
+import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown } from "../api/gradebook";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import { pctFromCell, bgForPct } from "../lib/ui/gradeVisuals";
+import Drawer from "../components/Drawer";
+
 
 const keyOf = (name) => String(name ?? "").trim();
 const HEADER_ROW_HEIGHT = 40;
@@ -70,6 +72,13 @@ export function GradebookRO() {
   // diagnostics state (kept from before)
   const [lastRequest, setLastRequest] = useState(null);
   const [lastError, setLastError] = useState(null);
+
+  // drilldown state
+  const [drilldownStudent, setDrilldownStudent] = useState(null);
+  const [drilldownData, setDrilldownData] = useState(null);
+  const [drilldownLoading, setDrilldownLoading] = useState(false);
+  const [drilldownError, setDrilldownError] = useState("");
+
 
   // Load sections once
   useEffect(() => {
@@ -203,6 +212,26 @@ export function GradebookRO() {
     }
     return map;
   }, [rows, assignments]);
+
+  // Drilldown handler
+  const handleOpenDrilldown = async (studentId, studentName) => {
+    setDrilldownStudent({ student_id: studentId, student_name: studentName });
+    setDrilldownLoading(true);
+    setDrilldownError("");
+    try {
+      const data = await fetchGradebookDrilldown(selectedSectionId, {
+        bucket: "all",
+        limit: 50,
+        offset: 0,
+      });
+      setDrilldownData(data);
+    } catch (err) {
+      setDrilldownError(err.message);
+    } finally {
+      setDrilldownLoading(false);
+    }
+  };
+
 
   // memoize assignment averages
   const assignmentAverages = useMemo(() => {
@@ -695,9 +724,14 @@ export function GradebookRO() {
                         zIndex: 1,
                         borderBottom: "1px solid #eee",
                         padding: "8px",
+                        cursor: "pointer",
+                        transition: "background 0.2s",
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f9f9f9")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                      onClick={() => handleOpenDrilldown(s.student_id, label)}
                     >
-                      <div>{label || "Unnamed Student"}</div>
+                      <div style={{ fontWeight: 500 }}>{label || "Unnamed Student"}</div>
                       <div style={{ fontSize: 12, opacity: 0.7 }}>
                         Grade {s.grade_level ?? "—"}
                       </div>
@@ -762,6 +796,109 @@ export function GradebookRO() {
             </tbody>
           </table>
         </div>
+
+        {/* Drilldown Drawer */}
+        <Drawer
+          open={!!drilldownStudent}
+          onClose={() => setDrilldownStudent(null)}
+          title={`Details: ${drilldownStudent?.student_name}`}
+          width={520}
+        >
+          <div style={{ padding: "1.5rem" }}>
+            <h2 style={{ marginTop: 0, marginBottom: "1.5rem", fontSize: "1.25rem" }}>
+              Student Summary
+            </h2>
+
+            {drilldownError && (
+              <div
+                style={{
+                  background: "#fee",
+                  border: "1px solid #c33",
+                  padding: "1rem",
+                  borderRadius: "0.5rem",
+                  marginBottom: "1rem",
+                  color: "#c33",
+                }}
+              >
+                <strong>Error:</strong> {drilldownError}
+                <button
+                  onClick={() => handleOpenDrilldown(drilldownStudent.student_id, drilldownStudent.student_name)}
+                  style={{ marginLeft: "1rem", padding: "0.25rem 0.5rem" }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {drilldownLoading && (
+              <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
+                Loading...
+              </div>
+            )}
+
+            {drilldownData && !drilldownLoading && (
+              <>
+                {drilldownData.rows.length === 0 ? (
+                  <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
+                    No data available for this student.
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <strong>Section:</strong> {drilldownData.section_name}
+                    </div>
+                    <div style={{ marginBottom: "1.5rem" }}>
+                      <strong>Total participants:</strong> {drilldownData.total}
+                    </div>
+
+                    <details
+                      open
+                      style={{
+                        border: "1px solid #ddd",
+                        borderRadius: "0.5rem",
+                        padding: "1rem",
+                        marginTop: "1rem",
+                      }}
+                    >
+                      <summary style={{ cursor: "pointer", fontWeight: "bold", marginBottom: "0.5rem" }}>
+                        Performance Breakdown
+                      </summary>
+                      {drilldownData.rows.map((row) => (
+                        <div
+                          key={row.student_id}
+                          style={{
+                            padding: "0.75rem",
+                            borderBottom: "1px solid #eee",
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          <div>
+                            <strong>{row.student_name}</strong> —{" "}
+                            <span
+                              style={{
+                                background:
+                                  row.pct >= 80 ? "#e8f5e9" : row.pct >= 70 ? "#fff9c4" : "#ffebee",
+                                padding: "0.25rem 0.5rem",
+                                borderRadius: "0.25rem",
+                              }}
+                            >
+                              {row.pct.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div style={{ color: "#666", marginTop: "0.25rem", fontSize: "0.75rem" }}>
+                            {row.total_points_earned} / {row.total_points_possible} points
+                            {row.missing_count > 0 && ` • ${row.missing_count} missing`}
+                            {row.status !== "normal" && ` • [${row.status}]`}
+                          </div>
+                        </div>
+                      ))}
+                    </details>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </Drawer>
         </>
       )}
     </div>
