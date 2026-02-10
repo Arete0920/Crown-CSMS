@@ -3,15 +3,13 @@ Seed deterministic academics data (courses, sections, enrollments) for DEV demos
 
 Designed for Azure DEV OPS reset workflow:
 - Idempotent: get_or_create for all models with unique constraints
-- Deterministic: fixed codes (MATH-101, ENG-101, SCI-101), no random collisions
+- Deterministic: fixed codes (MATH-101, ENG-101), no random collisions
 - Multi-run safe: can be called multiple times without duplication
 
 Creates:
-- 3 Courses (MATH-101, ENG-101, SCI-101)
-- 2 Terms (Fall, Spring)
-- 4 Sections (distributed across courses and terms)
-- 1 teacher per section
-- 12-18 students per section
+- 2 Courses (MATH-101, ENG-101)
+- 2 Sections per course (one per term)
+- Enrollments: first 25 active students per section (or fewer if < 25 exist)
 
 Usage:
     python manage.py seed_academics_demo --school-id <uuid>
@@ -26,10 +24,7 @@ from django.db import transaction
 
 from academics.models import Course, Section, Enrollment, Term
 from core.models import School, AcademicYear
-from django.contrib.auth import get_user_model
 from households.models import Student, Household
-
-User = get_user_model()
 
 
 class Command(BaseCommand):
@@ -82,22 +77,11 @@ class Command(BaseCommand):
                 "start_date": date(2025, 8, 15),
                 "end_date": date(2026, 6, 10),
                 "is_current": True,
-            }s (Fall and Spring)
-        term_fall, _ = Term.objects.get_or_create(
-            school_id=school.id,
-            academic_year=academic_year,
-            code="2026-FALL",
-            defaults={
-                "name": "Fall 2026",
-                "school_year": academic_year.name,
-                "start_date": date(2025, 8, 15),
-                "end_date": date(2025, 12, 20),
-                "ordering": 1,
-                "active": True,
             }
         )
 
-        term_spring, _ = Term.objects.get_or_create(
+        # Get or create term
+        term, _ = Term.objects.get_or_create(
             school_id=school.id,
             academic_year=academic_year,
             code="2026-SPRING",
@@ -111,99 +95,49 @@ class Command(BaseCommand):
             }
         )
 
-        terms = [term_fall, term_spring]
-
-        # Create courses (idempotent) - 3 courses
+        # Create courses (idempotent)
         course_specs = [
             ("MATH-101", "Mathematics 101", "Mathematics", "1.00"),
             ("ENG-101", "English 101", "English", "1.00"),
-            ("SCI-101", "Science 101", "Science
-        course_specs = [
-            ("MATH-101", "Mathematics 101", "Mathematics", "1.00"),
-            ("ENG-101", "English 101", "English", "1.00"),
-        ]Get or create demo teachers (1 per section = 4 teachers)
-        teachers = []
-        for i in range(1, 5):
-            teacher, created = User.objects.get_or_create(
-                username=f"teacher{i}@demo.school",
-                defaults={
-                    "email": f"teacher{i}@demo.school",
-                    "first_name": f"Teacher{i}",
-                    "last_name": "Demo",
-                    "is_staff": False,
-                    "school": school,
-                }
-            )
-            teachers.append(teacher)
-            status = "created" if created else "exists"
-            self.stdout.write(f"  Teacher {teacher.username}: {status}")
-
-        # Create sections (idempotent) - 4 sections across courses and terms
-        # Distribution: MATH-Fall, MATH-Spring, ENG-Fall, SCI-Fall
-        section_specs = [
-            (courses[0], terms[0], teachers[0], "MATH-101 Fall"),  # Math Fall
-            (courses[0], terms[1], teachers[1], "MATH-101 Spring"),  # Math Spring
-            (courses[1], terms[0], teachers[2], "ENG-101 Fall"),  # English Fall
-            (courses[2], terms[0], teachers[3], "SCI-101 Fall"),  # Science Fall
         ]
 
+        courses = []
+        for code, name, department, credits in course_specs:
+            course, created = Course.objects.get_or_create(
+                school_id=school.id,
+                code=code,
+                defaults={
+                    "name": name,
+                    "department": department,
+                    "credits": credits,
+                }
+            )
+            courses.append(course)
+            status = "created" if created else "exists"
+            self.stdout.write(f"  Course {code}: {status}")
+
+        # Create sections (idempotent)
         sections = []
-        for course, term, teacher, label in section_specs:
+        for course in courses:
             section, created = Section.objects.get_or_create(
                 school_id=school.id,
                 course=course,
                 term=term.code,
                 defaults={
                     "term_ref": term,
-                    "teacher": teacher,
-                    "teacher_name": f"{teacher.first_name} {teacher.last_name}",
+                    "teacher_name": "Demo Teacher",
                     "grade_band": "9-12",
                 }
             )
-            # Update teacher FK if section already exists but teacher wasn't set
-            if not created and section.teacher is None:
-                section.teacher = teacher
-                section.teacher_name = f"{teacher.first_name} {teacher.last_name}"
-                section.save(update_fields=["teacher", "teacher_name"])
-            
             sections.append(section)
             status = "created" if created else "exists"
-            self.stdout.write(f"  Section {label}: {status}")
+            self.stdout.write(f"  Section {course.code}-{term.code}: {status}")
 
-        # Get active students (12-18 per section = 48-72 total needed)
-        # For demo, aim for ~60 students to distribute
-        students = list(Student.objects.filter(school_id=school.id, is_active=True)[:60])
+        # Get active students (or create minimal set)
+        students = list(Student.objects.filter(school_id=school.id, is_active=True)[:25])
         
-        if len(students) < 48:
-            self.stdout.write(self.style.WARNING(f"Only {len(students)} students found. Creating more..."))
-            needed = 60 - len(students)
-            new_students = self._create_demo_students(school, count=needed)
-            students.extend(new_students)
-
-        # Create enrollments (12-18 students per section)
-        enrollment_count = 0
-        students_per_section = [15, 12, 18, 15]  # Varied realistic distribution
-        offset = 0
-        
-        for idx, section in enumerate(sections):
-            count = students_per_section[idx]
-            section_students = students[offset : offset + count]
-            
-            for student in section_students:
-                _, created = Enrollment.objects.get_or_create(
-                    school_id=school.id,
-                    section=section,
-                    student=student,
-                )
-                if created:
-                    enrollment_count += 1
-            
-            offset += count
-            self.stdout.write(f"    Section {idx+1}: {len(section_students)} enrolled")
-
-        self.stdout.write(self.style.SUCCESS(
-            f"✓ Academics seeded: {len(courses)} courses, {len(terms)} terms, "
-            f"{len(sections)} sections, {enrollment_count} enrollmentsund. Creating demo students..."))
+        if not students:
+            self.stdout.write(self.style.WARNING("No active students found. Creating demo students..."))
             students = self._create_demo_students(school, count=25)
 
         # Create enrollments (idempotent)
