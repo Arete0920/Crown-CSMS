@@ -6,6 +6,7 @@ import {
   fetchStudentSections,
   fetchSectionRoster,
 } from '../api/academics.js';
+import { getGradebookGrades } from '../api/gradebook.js';
 
 export function AcademicsDashboard() {
   const [sections, setSections] = useState([]);
@@ -21,6 +22,9 @@ export function AcademicsDashboard() {
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState('');
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [studentGradesLoading, setStudentGradesLoading] = useState(false);
+  const [studentGradesError, setStudentGradesError] = useState('');
+  const [studentGradeRow, setStudentGradeRow] = useState(null);
 
   useEffect(() => {
     fetchSections()
@@ -68,6 +72,9 @@ export function AcademicsDashboard() {
     setRosterError('');
     setRosterData(null);
     setSelectedStudent(null);
+    setStudentGradeRow(null);
+    setStudentGradesError('');
+    setStudentGradesLoading(false);
 
     try {
       const data = await fetchSectionRoster(sectionId);
@@ -89,14 +96,59 @@ export function AcademicsDashboard() {
     setRosterData(null);
     setRosterError('');
     setSelectedStudent(null);
+    setStudentGradeRow(null);
+    setStudentGradesError('');
+    setStudentGradesLoading(false);
   };
 
   const handleOpenStudent = (student) => {
     setSelectedStudent(student);
+    setStudentGradeRow(null);
+    setStudentGradesError('');
   };
 
   const handleCloseStudent = () => {
     setSelectedStudent(null);
+    setStudentGradeRow(null);
+    setStudentGradesError('');
+  };
+
+  const handleLoadStudentGradebook = async () => {
+    if (!selectedSectionId) {
+      setStudentGradesError('Missing section id.');
+      return;
+    }
+    if (!selectedStudent?.student_id) {
+      setStudentGradesError('Missing student id.');
+      return;
+    }
+
+    setStudentGradesLoading(true);
+    setStudentGradesError('');
+    setStudentGradeRow(null);
+
+    try {
+      const data = await getGradebookGrades(selectedSectionId);
+
+      const rows = data?.rows ?? [];
+      const row =
+        rows.find((r) => r?.student?.student_id === selectedStudent.student_id) ?? null;
+
+      if (!row) {
+        setStudentGradesError('No gradebook row found for this student.');
+        return;
+      }
+
+      setStudentGradeRow(row);
+    } catch (err) {
+      const msg =
+        (err && typeof err === 'object' && 'message' in err && err.message) ||
+        (typeof err === 'string' && err) ||
+        'Failed to load gradebook.';
+      setStudentGradesError(msg);
+    } finally {
+      setStudentGradesLoading(false);
+    }
   };
 
   return (
@@ -358,10 +410,14 @@ export function AcademicsDashboard() {
                         </div>
 
                         <div style={{ marginTop: 12 }}>
-                          <strong style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Quick links (stub)</strong>
+                          <strong style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Quick links</strong>
 
-                          <button disabled style={{ width: '100%', padding: 8, marginBottom: 8 }}>
-                            Gradebook (coming soon)
+                          <button
+                            onClick={handleLoadStudentGradebook}
+                            disabled={studentGradesLoading}
+                            style={{ width: '100%', padding: 8, marginBottom: 8, cursor: 'pointer' }}
+                          >
+                            {studentGradesLoading ? 'Loading gradebook...' : 'Load gradebook'}
                           </button>
                           <button disabled style={{ width: '100%', padding: 8, marginBottom: 8 }}>
                             Attendance (coming soon)
@@ -370,6 +426,41 @@ export function AcademicsDashboard() {
                             Assignments (coming soon)
                           </button>
                         </div>
+
+                        {studentGradesError && (
+                          <div style={{ marginTop: 10, color: 'crimson', fontSize: 12 }}>
+                            {studentGradesError}
+                          </div>
+                        )}
+
+                        {studentGradeRow && (
+                          <div style={{ marginTop: 10 }}>
+                            <strong style={{ display: 'block', marginBottom: 6, fontSize: 12 }}>
+                              Gradebook (section)
+                            </strong>
+
+                            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                              Scores shown are per-assignment points earned / possible.
+                            </div>
+
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                              {Object.entries(studentGradeRow.scores ?? {}).slice(0, 8).map(([k, v]) => (
+                                <li key={k} style={{ padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                                  <div style={{ fontSize: 13 }}>{k}</div>
+                                  <div style={{ fontSize: 11, color: '#999' }}>
+                                    {(v?.points_earned ?? '—')} / {(v?.points_possible ?? '—')}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {Object.keys(studentGradeRow.scores ?? {}).length > 8 && (
+                              <div style={{ marginTop: 6, fontSize: 11, color: '#999' }}>
+                                Showing first 8 items.
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <>
