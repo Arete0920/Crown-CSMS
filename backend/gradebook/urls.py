@@ -5,6 +5,7 @@ from .views import (
     GradebookSectionViewSet,
     assignments_list,
     section_assignments,
+    section_drilldown,
     section_grades,
     section_roster,
     section_summary,
@@ -38,5 +39,10 @@ urlpatterns = [
         "gradebook/sections/<uuid:section_id>/grades/",
         section_grades,
         name="gradebook-section-grades",
+    ),
+    path(
+        "gradebook/sections/<uuid:section_id>/drilldown/",
+        section_drilldown,
+        name="gradebook-section-drilldown",
     ),
 ]
