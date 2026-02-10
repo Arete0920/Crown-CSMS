@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { fetchFinancialAidSummary, fetchFinancialAidDrilldown } from "../api/financialAid.js";
-import { getStoredAuthState } from "../utils/authClient";
 
 /*
   Crown2026 – Financial Aid Dashboard
@@ -83,27 +82,9 @@ export function FinancialAidDashboard() {
 
   const isEmpty = summary && summary.totals?.applications_total === 0 && summary.totals?.awards_total_count === 0;
 
-  // Debug readout (no DevTools needed)
-  const authState = getStoredAuthState();
-  const last = window.__CROWN_LAST_AUTH_FETCH__;
-
   return (
     <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
       <h1>Financial Aid Dashboard</h1>
-
-      <div style={{ marginTop: 12, padding: 12, border: "1px solid #ddd", borderRadius: 8, marginBottom: 16, background: "#f9f9f9" }}>
-        <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 12, color: "#666" }}>Auth Debug (no DevTools)</div>
-        <pre style={{ margin: 0, whiteSpace: "pre-wrap", fontSize: 11 }}>
-{JSON.stringify(
-  {
-    stored: authState,
-    lastRequest: last || null,
-  },
-  null,
-  2
-)}
-        </pre>
-      </div>
 
       {summaryError && (
         <div style={{ background: "#fee", border: "1px solid #c33", padding: 16, borderRadius: 8, marginBottom: 16 }}>
