@@ -81,11 +81,13 @@ def test_seed_gradebook_demo_creates_entries():
         student_entries = entries.filter(student_id=student.id)
         assert student_entries.count() == 5, f"Should create 5 default assignments for {student.first_name}"
 
-    # Verify assignment names
+    # Verify assignment names (first 5 of 12 total in DEFAULT_ASSIGNMENTS)
     assignment_names = set(entries.values_list("assignment_name", flat=True).distinct())
     assert "Quiz 1" in assignment_names
+    assert "Quiz 2" in assignment_names
+    assert "Quiz 3" in assignment_names
+    assert "Quiz 4" in assignment_names
     assert "Homework 1" in assignment_names
-    assert "Project 1" in assignment_names
 
 
 def test_seed_gradebook_demo_idempotent():
