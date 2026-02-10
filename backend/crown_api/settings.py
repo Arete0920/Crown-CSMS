@@ -87,6 +87,10 @@ else:
 # CORS configuration for local development
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "x-school-id",
+    "x-crown-school-id",
+]
 
 # Azure reverse-proxy HTTPS handling
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
