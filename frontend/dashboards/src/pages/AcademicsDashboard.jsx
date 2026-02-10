@@ -20,6 +20,7 @@ export function AcademicsDashboard() {
   const [rosterData, setRosterData] = useState(null);
   const [rosterLoading, setRosterLoading] = useState(false);
   const [rosterError, setRosterError] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
   useEffect(() => {
     fetchSections()
@@ -66,6 +67,7 @@ export function AcademicsDashboard() {
     setRosterLoading(true);
     setRosterError('');
     setRosterData(null);
+    setSelectedStudent(null);
 
     try {
       const data = await fetchSectionRoster(sectionId);
@@ -86,6 +88,15 @@ export function AcademicsDashboard() {
     setSelectedSectionId(null);
     setRosterData(null);
     setRosterError('');
+    setSelectedStudent(null);
+  };
+
+  const handleOpenStudent = (student) => {
+    setSelectedStudent(student);
+  };
+
+  const handleCloseStudent = () => {
+    setSelectedStudent(null);
   };
 
   return (
@@ -312,31 +323,95 @@ export function AcademicsDashboard() {
                     );
                   })()}
 
-                  {/* Student List */}
+                  {/* Student Snapshot OR Student List */}
                   <div>
-                    <strong style={{ display: 'block', marginBottom: 8 }}>Roster</strong>
-                    {(rosterData?.students ?? []).length === 0 ? (
-                      <div style={{ fontSize: 12, color: '#666' }}>
-                        No students enrolled.
-                      </div>
-                    ) : (
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                        {(rosterData?.students ?? []).map((student) => (
-                          <li
-                            key={student.student_id}
+                    {selectedStudent ? (
+                      <div style={{ border: '1px solid #eee', borderRadius: 6, padding: 12 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <strong>Student Snapshot</strong>
+                          <button
+                            onClick={handleCloseStudent}
                             style={{
-                              padding: '8px',
-                              borderBottom: '1px solid #f0f0f0',
-                              fontSize: 13,
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#0066cc',
+                              padding: 0,
+                              font: 'inherit',
                             }}
                           >
-                            <div>{student.name}</div>
-                            <div style={{ fontSize: 11, color: '#999' }}>
-                              Grade {student.grade_level}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                            ← Back to roster
+                          </button>
+                        </div>
+
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedStudent.name}</div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
+                            Grade: {selectedStudent.grade_level}
+                          </div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
+                            Enrollment: {selectedStudent.enrollment_status ?? 'Unknown'}
+                          </div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
+                            Student ID: {selectedStudent.student_id}
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: 12 }}>
+                          <strong style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Quick links (stub)</strong>
+
+                          <button disabled style={{ width: '100%', padding: 8, marginBottom: 8 }}>
+                            Gradebook (coming soon)
+                          </button>
+                          <button disabled style={{ width: '100%', padding: 8, marginBottom: 8 }}>
+                            Attendance (coming soon)
+                          </button>
+                          <button disabled style={{ width: '100%', padding: 8 }}>
+                            Assignments (coming soon)
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <strong style={{ display: 'block', marginBottom: 8 }}>Roster</strong>
+
+                        {(rosterData?.students ?? []).length === 0 ? (
+                          <div style={{ fontSize: 12, color: '#666' }}>No students enrolled.</div>
+                        ) : (
+                          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                            {(rosterData?.students ?? []).map((student) => (
+                              <li
+                                key={student.student_id}
+                                onClick={() => handleOpenStudent(student)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') handleOpenStudent(student);
+                                }}
+                                style={{
+                                  padding: '8px',
+                                  borderBottom: '1px solid #f0f0f0',
+                                  fontSize: 13,
+                                  cursor: 'pointer',
+                                }}
+                                title="Open student snapshot"
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                                  <div>
+                                    <div>{student.name}</div>
+                                    <div style={{ fontSize: 11, color: '#999' }}>
+                                      Grade {student.grade_level}
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: 11, color: '#999', alignSelf: 'center' }}>
+                                    ›
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </>
                     )}
                   </div>
                 </>
