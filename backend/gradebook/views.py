@@ -267,3 +267,153 @@ def students_list(request):
     )
 
     return Response(GradebookStudentSerializer(students, many=True).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def section_drilldown(request, section_id):
+    """
+    GET /api/v1/gradebook/sections/<section_id>/drilldown/
+    
+    Paginated drilldown rows for a section, filtered by bucket (missing|below_threshold|all).
+    
+    Query params:
+    - bucket: 'missing', 'below_threshold', or 'all' (default: 'all')
+    - threshold: float (default: 70) – used only when bucket='below_threshold'
+    - category_id: UUID (optional, currently not implemented)
+    - limit: int (default: 25, max: 200)
+    - offset: int (default: 0)
+    
+    Response shape:
+    {
+      "section_id": "...",
+      "section_name": "...",
+      "total": 150,
+      "limit": 25,
+      "offset": 0,
+      "rows": [
+        {
+          "student_id": "...",
+          "student_name": "Last, First",
+          "grade_level": "9",
+          "category_id": null,
+          "category_name": null,
+          "total_points_earned": 45,
+          "total_points_possible": 50,
+          "pct": 90.0,
+          "status": "below_threshold|missing|normal",
+          "assignments_count": 5,
+          "missing_count": 1,
+          "late_count": 0,
+          "last_submission": "2026-02-09T14:22:00Z"
+        }
+      ]
+    }
+    """
+    school_id = get_request_school_id(request, required=True)
+    section = _get_section_or_404(request, school_id, section_id)
+
+    # Parameters
+    bucket = (request.query_params.get("bucket") or "all").strip().lower()
+    threshold = float(request.query_params.get("threshold") or 70)
+    category_id = request.query_params.get("category_id")  # not used in MVP
+    
+    try:
+        limit = int(request.query_params.get("limit") or 25)
+        offset = int(request.query_params.get("offset") or 0)
+    except (ValueError, TypeError):
+        return Response(
+            {"detail": "limit and offset must be integers"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Validate bounds
+    limit = max(1, min(200, limit))
+    offset = max(0, offset)
+
+    # Validate bucket
+    valid_buckets = ["all", "missing", "below_threshold"]
+    if bucket not in valid_buckets:
+        return Response(
+            {"detail": f"Invalid bucket '{bucket}'. Must be one of: {', '.join(valid_buckets)}"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Fetch all student-grade aggregates for this section
+    enrollments = (
+        Enrollment.objects.filter(section=section)
+        .select_related("student")
+        .order_by("student__last_name", "student__first_name")
+    )
+
+    # Compute per-student aggregates
+    rows_data = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        entries = GradeEntry.objects.filter(
+            section=section, student=student, school_id=school_id
+        )
+
+        # Count assignments and missing entries
+        total_entries = entries.count()
+        missing_count = entries.filter(points_earned__isnull=True).count()
+
+        # Compute total points (only non-missing)
+        scored = entries.filter(points_earned__isnull=False)
+        sums = scored.aggregate(
+            earned=Sum("points_earned"),
+            possible=Sum("points_possible"),
+            updated=Max("updated_at"),
+        )
+
+        earned = float(sums["earned"] or 0)
+        possible = float(sums["possible"] or 0)
+        pct = (earned / possible * 100) if possible > 0 else 0
+        last_submission = sums["updated"]
+
+        # Determine status
+        status_val = "normal"
+        if missing_count > 0:
+            status_val = "missing"
+        elif pct < threshold:
+            status_val = "below_threshold"
+
+        rows_data.append(
+            {
+                "student_id": str(student.id),
+                "student_name": f"{student.last_name}, {student.first_name}".strip(),
+                "grade_level": student.grade_level,
+                "category_id": None,
+                "category_name": None,
+                "total_points_earned": round(earned, 2),
+                "total_points_possible": round(possible, 2),
+                "pct": round(pct, 1),
+                "status": status_val,
+                "assignments_count": total_entries,
+                "missing_count": missing_count,
+                "late_count": 0,
+                "last_submission": last_submission.isoformat() if last_submission else None,
+            }
+        )
+
+    # Apply bucket filter
+    if bucket == "missing":
+        rows_data = [r for r in rows_data if r["missing_count"] > 0]
+    elif bucket == "below_threshold":
+        rows_data = [r for r in rows_data if r["pct"] < threshold]
+
+    total_count = len(rows_data)
+
+    # Apply pagination
+    paginated_rows = rows_data[offset : offset + limit]
+
+    payload = {
+        "section_id": str(section.id),
+        "section_name": section.course.name if section.course else "",
+        "total": total_count,
+        "limit": limit,
+        "offset": offset,
+        "rows": paginated_rows,
+    }
+
+    return Response(payload)
