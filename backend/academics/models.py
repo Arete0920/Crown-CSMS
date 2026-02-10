@@ -1,4 +1,5 @@
 import uuid
+from django.conf import settings
 from django.db import models
 from core.models import AcademicYear, Staff
 from households.models import Student
@@ -80,9 +81,18 @@ class Section(TimeStampedModel):
     # spine: keep term as string (e.g., "2026-FALL")
     term = models.CharField(max_length=24, db_index=True)
 
-    # optional teacher reference (string for now; real Staff model comes later)
+    # FK to User for primary teacher (nullable)
+    # Django auto-creates .teacher_id attribute for the FK
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="taught_sections",
+    )
+
+    # optional teacher reference (legacy field for backwards compatibility)
     teacher_name = models.CharField(max_length=120, blank=True, default="")
-    teacher_id = models.UUIDField(null=True, blank=True)
 
     # optional grade band (string for now)
     grade_band = models.CharField(max_length=32, blank=True, default="")
