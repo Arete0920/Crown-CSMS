@@ -1,4 +1,4 @@
-from django.db.models import Count
+from django.db.models import Count, Max, Q, Sum
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -111,6 +111,48 @@ def section_assignments(request, section_id):
         {
             "section_id": str(section.id),
             "assignments": list(assignments),
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def section_summary(request, section_id):
+    school_id = get_request_school_id(request, required=True)
+    section = _get_section_or_404(request, school_id, section_id)
+
+    # students (roster size)
+    student_count = Enrollment.objects.filter(section=section).count()
+
+    # grade entries scoped to tenant + section
+    qs = GradeEntry.objects.filter(section=section, school_id=school_id)
+
+    assignment_count = qs.values("assignment_name").distinct().count()
+    missing_count = qs.filter(points_earned__isnull=True).count()
+
+    # class average percent (only non-missing)
+    scored = qs.filter(points_earned__isnull=False)
+    sums = scored.aggregate(
+        earned=Sum("points_earned"),
+        possible=Sum("points_possible"),
+        updated=Max("updated_at"),
+        created=Max("created_at"),
+    )
+
+    earned = sums["earned"] or 0
+    possible = sums["possible"] or 0
+    avg_pct = round((earned / possible) * 100, 2) if possible else None
+
+    last_updated = sums["updated"] or sums["created"]
+
+    return Response(
+        {
+            "section_id": str(section.id),
+            "student_count": student_count,
+            "assignment_count": assignment_count,
+            "missing_count": missing_count,
+            "class_average_pct": avg_pct,
+            "last_updated": last_updated.isoformat() if last_updated else None,
         }
     )
 
