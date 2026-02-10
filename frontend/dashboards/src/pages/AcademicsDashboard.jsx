@@ -6,7 +6,7 @@ import {
   fetchStudentSections,
   fetchSectionRoster,
 } from '../api/academics.js';
-import { getGradebookGrades } from '../api/gradebook.js';
+import { getGradebookGrades, getSectionAssignments } from '../api/gradebook.js';
 
 export function AcademicsDashboard() {
   const [sections, setSections] = useState([]);
@@ -25,6 +25,9 @@ export function AcademicsDashboard() {
   const [studentGradesLoading, setStudentGradesLoading] = useState(false);
   const [studentGradesError, setStudentGradesError] = useState('');
   const [studentGradeRow, setStudentGradeRow] = useState(null);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [assignmentsError, setAssignmentsError] = useState('');
+  const [assignments, setAssignments] = useState(null);
 
   useEffect(() => {
     fetchSections()
@@ -75,6 +78,9 @@ export function AcademicsDashboard() {
     setStudentGradeRow(null);
     setStudentGradesError('');
     setStudentGradesLoading(false);
+    setAssignments(null);
+    setAssignmentsError('');
+    setAssignmentsLoading(false);
 
     try {
       const data = await fetchSectionRoster(sectionId);
@@ -99,18 +105,49 @@ export function AcademicsDashboard() {
     setStudentGradeRow(null);
     setStudentGradesError('');
     setStudentGradesLoading(false);
+    setAssignments(null);
+    setAssignmentsError('');
+    setAssignmentsLoading(false);
   };
 
   const handleOpenStudent = (student) => {
     setSelectedStudent(student);
     setStudentGradeRow(null);
     setStudentGradesError('');
+    setAssignments(null);
+    setAssignmentsError('');
   };
 
   const handleCloseStudent = () => {
     setSelectedStudent(null);
     setStudentGradeRow(null);
     setStudentGradesError('');
+    setAssignments(null);
+    setAssignmentsError('');
+  };
+
+  const handleLoadAssignments = async () => {
+    if (!selectedSectionId) {
+      setAssignmentsError('Missing section id.');
+      return;
+    }
+
+    setAssignmentsLoading(true);
+    setAssignmentsError('');
+    setAssignments(null);
+
+    try {
+      const data = await getSectionAssignments(selectedSectionId);
+      setAssignments(data?.assignments ?? []);
+    } catch (err) {
+      const msg =
+        (err && typeof err === 'object' && 'message' in err && err.message) ||
+        (typeof err === 'string' && err) ||
+        'Failed to load assignments.';
+      setAssignmentsError(msg);
+    } finally {
+      setAssignmentsLoading(false);
+    }
   };
 
   const handleLoadStudentGradebook = async () => {
@@ -422,8 +459,12 @@ export function AcademicsDashboard() {
                           <button disabled style={{ width: '100%', padding: 8, marginBottom: 8 }}>
                             Attendance (coming soon)
                           </button>
-                          <button disabled style={{ width: '100%', padding: 8 }}>
-                            Assignments (coming soon)
+                          <button
+                            onClick={handleLoadAssignments}
+                            disabled={assignmentsLoading}
+                            style={{ width: '100%', padding: 8, marginBottom: 8, cursor: 'pointer' }}
+                          >
+                            {assignmentsLoading ? 'Loading assignments...' : 'Load assignments'}
                           </button>
                         </div>
 
@@ -457,6 +498,41 @@ export function AcademicsDashboard() {
                             {Object.keys(studentGradeRow.scores ?? {}).length > 8 && (
                               <div style={{ marginTop: 6, fontSize: 11, color: '#999' }}>
                                 Showing first 8 items.
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {assignmentsError && (
+                          <div style={{ marginTop: 10, color: 'crimson', fontSize: 12 }}>
+                            {assignmentsError}
+                          </div>
+                        )}
+
+                        {assignments && (
+                          <div style={{ marginTop: 10 }}>
+                            <strong style={{ display: 'block', marginBottom: 6, fontSize: 12 }}>
+                              Assignments (section)
+                            </strong>
+
+                            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                              All assignments in this section with max points possible.
+                            </div>
+
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                              {assignments.slice(0, 8).map((a) => (
+                                <li key={a.assignment_name} style={{ padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                                  <div style={{ fontSize: 13 }}>{a.assignment_name}</div>
+                                  <div style={{ fontSize: 11, color: '#999' }}>
+                                    Points Possible: {a.points_possible ?? '—'}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {assignments.length > 8 && (
+                              <div style={{ marginTop: 6, fontSize: 11, color: '#999' }}>
+                                Showing first 8 of {assignments.length} items.
                               </div>
                             )}
                           </div>

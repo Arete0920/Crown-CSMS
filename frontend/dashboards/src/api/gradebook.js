@@ -25,6 +25,10 @@ export function getGradebookGrades(sectionId, opts = {}) {
   return _fetchJson(`${API_BASE}/api/v1/gradebook/sections/${sectionId}/grades/`, opts);
 }
 
+export function getSectionAssignments(sectionId, opts = {}) {
+  return _fetchJson(`${API_BASE}/api/v1/gradebook/sections/${sectionId}/assignments/`, opts);
+}
+
 /**
  * Fetch drilldown rows for gradebook (paginated by student)
  * 
