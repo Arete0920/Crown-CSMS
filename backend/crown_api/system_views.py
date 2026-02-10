@@ -79,6 +79,7 @@ def demo_reset_view(request):
     out_seed = io.StringIO()
     out_academics = io.StringIO()
     out_categories = io.StringIO()
+    out_gradebook = io.StringIO()
 
     try:
         # 1) migrate (keyword options only)
@@ -118,6 +119,18 @@ def demo_reset_view(request):
             stderr=out_categories,
         )
 
+        # 5) seed gradebook entries
+        call_command(
+            "seed_gradebook_demo",
+            school_id=str(school_id),
+            per_section=12,
+            seed=2026,
+            wipe=True,
+            verbosity=verbosity_int,
+            stdout=out_gradebook,
+            stderr=out_gradebook,
+        )
+
     except Exception as e:
         # Return JSON error instead of Django HTML 500 page
         return JsonResponse(
@@ -129,6 +142,7 @@ def demo_reset_view(request):
                 "seed_tail": out_seed.getvalue()[-2000:],
                 "academics_tail": out_academics.getvalue()[-2000:],
                 "categories_tail": out_categories.getvalue()[-2000:],
+                "gradebook_tail": out_gradebook.getvalue()[-2000:],
             },
             status=500,
         )
@@ -142,6 +156,7 @@ def demo_reset_view(request):
             "seed_tail": out_seed.getvalue()[-2000:],
             "academics_tail": out_academics.getvalue()[-2000:],
             "categories_tail": out_categories.getvalue()[-2000:],
+            "gradebook_tail": out_gradebook.getvalue()[-2000:],
         },
         status=200,
     )
