@@ -92,7 +92,7 @@ test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", 
   const sectionsData: any = await sectionsResp.json();
   const sections = sectionsData?.results ?? sectionsData?.data ?? sectionsData ?? [];
   expect(sections.length, "At least one section must exist for proof").toBeGreaterThan(0);
-  const SECTION_ID = sections[0].id;
+  const SECTION_ID = sections[0].section_id;
   console.log(`[Setup] Using section: ${SECTION_ID}\n`);
 
   // Step 2: Use the captured token to directly verify the three endpoints
