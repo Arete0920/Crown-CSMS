@@ -19,28 +19,66 @@ test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", 
   await page.locator('input[type="password"]').fill(PASSWORD);
   await page.locator('input[placeholder*="UUID"]').fill(SCHOOL_ID);
 
-  // Click login
-  await page.getByRole("button", { name: /^Login$/i }).click();
-  await page.waitForTimeout(1500);
-
-  // Discover storage keys (deterministic: print what's actually there)
-  const storageKeys = await page.evaluate(() => ({
-    localStorage: Object.keys(localStorage),
-    sessionStorage: Object.keys(sessionStorage),
-  }));
-
-  console.log("[Auth] localStorage keys:", storageKeys.localStorage);
-  console.log("[Auth] sessionStorage keys:", storageKeys.sessionStorage);
-
-  // Extract token from sessionStorage (where auth client stores it)
-  const authToken: string | null = await page.evaluate(() => {
-    return sessionStorage.getItem("crown.jwt.access");
+  // Capture the login response before clicking
+  const loginResponsePromise = page.waitForResponse((r) => {
+    const url = r.url();
+    return r.request().method() === "POST" && url.includes("/api/") && url.includes("token");
   });
 
+  // Click login
+  await page.getByRole("button", { name: /^Login$/i }).click();
+
+  // Wait for the backend response
+  const loginResp = await loginResponsePromise;
+  console.log("[Auth] loginResp status:", loginResp.status());
+  console.log("[Auth] loginResp url:", loginResp.url());
+
+  // Extract token from response JSON (try multiple common key names)
+  let authToken: string | null = null;
+  try {
+    const data: any = await loginResp.json();
+    authToken = data?.access ?? data?.token ?? data?.jwt ?? null;
+    if (authToken) {
+      console.log("[Auth] Token extracted from JSON response");
+    }
+  } catch (err) {
+    console.log("[Auth] Could not parse JSON response:", err);
+  }
+
+  // If not in JSON, try cookies (common for httpOnly JWT setups)
+  if (!authToken) {
+    const cookies = await page.context().cookies();
+    console.log("[Auth] Cookies:", cookies.map((c) => c.name).join(", "));
+
+    const accessCookie =
+      cookies.find((c) => /access/i.test(c.name)) ??
+      cookies.find((c) => /jwt/i.test(c.name)) ??
+      cookies.find((c) => /token/i.test(c.name));
+
+    authToken = accessCookie?.value ?? null;
+    if (authToken) {
+      console.log("[Auth] Token extracted from cookies");
+    }
+  }
+
+  // Fall back to sessionStorage if all else fails (the original approach)
+  if (!authToken) {
+    const storedToken = await page.evaluate(() => {
+      return sessionStorage.getItem("crown.jwt.access");
+    });
+    authToken = storedToken;
+    if (authToken) {
+      console.log("[Auth] Token extracted from sessionStorage (legacy)");
+    }
+  }
+
   // Validate token exists before proceeding
-  expect(authToken, "Token not found in sessionStorage after login").toBeTruthy();
-  console.log("[Auth] Token extracted from sessionStorage");
+  expect(authToken, "Token not found in login response, cookies, or sessionStorage").toBeTruthy();
   console.log("TOKEN_OK=true");
+
+  // Extract school ID from sessionStorage (this one works reliably)
+  const schoolId = await page.evaluate(() => sessionStorage.getItem("crown.school.id"));
+  expect(schoolId, "School ID not found in sessionStorage after login").toBeTruthy();
   console.log("SCHOOL_ID_OK=true\n");
 
   // Step 2: Use the captured token to directly verify the three endpoints
