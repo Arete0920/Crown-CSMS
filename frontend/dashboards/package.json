@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "ui:proof:gradebook": "playwright test tests/ui/gradebook-proof.spec.ts --reporter=line"
+    "api:proof:gradebook": "playwright test tests/api/gradebook-api-proof.spec.ts --reporter=line"
   },
   "dependencies": {
     "react": "^18.3.1",
