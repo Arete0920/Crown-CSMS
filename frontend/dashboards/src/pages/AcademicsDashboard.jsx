@@ -7,6 +7,7 @@ import {
   fetchSectionRoster,
 } from '../api/academics.js';
 import { getGradebookGrades, getSectionAssignments } from '../api/gradebook.js';
+import { logApiRequest, logApiError } from '../utils/requestTracing.js';
 
 export function AcademicsDashboard() {
   const [sections, setSections] = useState([]);
@@ -137,9 +138,26 @@ export function AcademicsDashboard() {
     setAssignments(null);
 
     try {
+      logApiRequest('GET', `/api/v1/academics/sections/${selectedSectionId}/assignments/`, {
+        message: 'Loading assignments for section',
+      });
+
       const data = await getSectionAssignments(selectedSectionId);
-      setAssignments(data?.assignments ?? []);
+      const items = data?.assignments ?? [];
+
+      if (items.length === 0) {
+        logApiRequest('GET', `/api/v1/academics/sections/${selectedSectionId}/assignments/`, {
+          message: 'No assignments found (demo data may be limited)',
+        });
+        // Empty state is expected during demo
+        return;
+      }
+
+      setAssignments(items);
     } catch (err) {
+      logApiError('GET', `/api/v1/academics/sections/${selectedSectionId}/assignments/`, err, {
+        body: err.body || '',
+      });
       const msg =
         (err && typeof err === 'object' && 'message' in err && err.message) ||
         (typeof err === 'string' && err) ||
@@ -165,6 +183,10 @@ export function AcademicsDashboard() {
     setStudentGradeRow(null);
 
     try {
+      logApiRequest('GET', `/api/v1/gradebook/sections/${selectedSectionId}/grades/`, {
+        message: `Loading gradebook for ${selectedStudent.name}`,
+      });
+
       const data = await getGradebookGrades(selectedSectionId);
 
       const rows = data?.rows ?? [];
@@ -172,12 +194,19 @@ export function AcademicsDashboard() {
         rows.find((r) => r?.student?.student_id === selectedStudent.student_id) ?? null;
 
       if (!row) {
-        setStudentGradesError('No gradebook row found for this student.');
+        // Empty state: no grades yet, but this is normal during demo
+        logApiRequest('GET', `/api/v1/gradebook/sections/${selectedSectionId}/grades/`, {
+          message: 'No gradebook row found (demo data may be limited)',
+        });
+        setStudentGradeRow(null);
         return;
       }
 
       setStudentGradeRow(row);
     } catch (err) {
+      logApiError('GET', `/api/v1/gradebook/sections/${selectedSectionId}/grades/`, err, {
+        body: err.body || '',
+      });
       const msg =
         (err && typeof err === 'object' && 'message' in err && err.message) ||
         (typeof err === 'string' && err) ||
@@ -473,8 +502,66 @@ export function AcademicsDashboard() {
                         </div>
 
                         {studentGradesError && (
-                          <div style={{ marginTop: 10, color: 'crimson', fontSize: 12 }}>
-                            {studentGradesError}
+                          <div
+                            style={{
+                              marginTop: 10,
+                              color: 'crimson',
+                              fontSize: 12,
+                              backgroundColor: '#ffe8e8',
+                              padding: 10,
+                              borderRadius: 4,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span>{studentGradesError}</span>
+                            <button
+                              onClick={handleLoadStudentGradebook}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#0066cc',
+                                cursor: 'pointer',
+                                padding: '0 4px',
+                                font: 'inherit',
+                                textDecoration: 'underline',
+                              }}
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        )}
+
+                        {!studentGradesError && !studentGradeRow && (
+                          <div
+                            style={{
+                              marginTop: 10,
+                              color: '#666',
+                              fontSize: 12,
+                              backgroundColor: '#f5f5f5',
+                              padding: 10,
+                              borderRadius: 4,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span>No gradebook data yet (demo data may be limited).</span>
+                            <button
+                              onClick={handleLoadStudentGradebook}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#0066cc',
+                                cursor: 'pointer',
+                                padding: '0 4px',
+                                font: 'inherit',
+                                textDecoration: 'underline',
+                              }}
+                            >
+                              Refresh
+                            </button>
                           </div>
                         )}
 
@@ -508,8 +595,66 @@ export function AcademicsDashboard() {
                         )}
 
                         {assignmentsError && (
-                          <div style={{ marginTop: 10, color: 'crimson', fontSize: 12 }}>
-                            {assignmentsError}
+                          <div
+                            style={{
+                              marginTop: 10,
+                              color: 'crimson',
+                              fontSize: 12,
+                              backgroundColor: '#ffe8e8',
+                              padding: 10,
+                              borderRadius: 4,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span>{assignmentsError}</span>
+                            <button
+                              onClick={handleLoadAssignments}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#0066cc',
+                                cursor: 'pointer',
+                                padding: '0 4px',
+                                font: 'inherit',
+                                textDecoration: 'underline',
+                              }}
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        )}
+
+                        {!assignmentsError && assignments && assignments.length === 0 && (
+                          <div
+                            style={{
+                              marginTop: 10,
+                              color: '#666',
+                              fontSize: 12,
+                              backgroundColor: '#f5f5f5',
+                              padding: 10,
+                              borderRadius: 4,
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <span>No assignments yet (demo data may be limited).</span>
+                            <button
+                              onClick={handleLoadAssignments}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#0066cc',
+                                cursor: 'pointer',
+                                padding: '0 4px',
+                                font: 'inherit',
+                                textDecoration: 'underline',
+                              }}
+                            >
+                              Refresh
+                            </button>
                           </div>
                         )}
 
