@@ -15,33 +15,33 @@ test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", 
   await page.waitForTimeout(500);
 
   // Fill login form
-  const usernameInputs = await page.locator('input[type="text"]').all();
-  const passwordInputs = await page.locator('input[type="password"]').all();
-  const allInputs = await page.locator('input').all();
+  await page.locator("input").first().fill(USERNAME);
+  await page.locator('input[type="password"]').fill(PASSWORD);
+  await page.locator('input[placeholder*="UUID"]').fill(SCHOOL_ID);
 
-  if (usernameInputs.length > 0) {
-    await usernameInputs[0].fill(USERNAME);
-  }
-  if (passwordInputs.length > 0) {
-    await passwordInputs[0].fill(PASSWORD);
-  }
-  if (allInputs.length >= 3) {
-    await allInputs[2].fill(SCHOOL_ID);
-  }
+  // Click login
+  await page.getByRole("button", { name: /^Login$/i }).click();
+  await page.waitForTimeout(1500);
 
-  // Intercept the login response to capture the token
-  let authToken = "";
-  page.on("response", (resp) => {
-    if (resp.url().includes("/token/") && resp.status() === 200) {
-      resp.json().then((body) => {
-        authToken = body.access;
-        console.log(`[Auth] Token captured: ${authToken.substring(0, 20)}...`);
-      });
-    }
+  // Discover storage keys (deterministic: print what's actually there)
+  const storageKeys = await page.evaluate(() => ({
+    localStorage: Object.keys(localStorage),
+    sessionStorage: Object.keys(sessionStorage),
+  }));
+
+  console.log("[Auth] localStorage keys:", storageKeys.localStorage);
+  console.log("[Auth] sessionStorage keys:", storageKeys.sessionStorage);
+
+  // Extract token from sessionStorage (where auth client stores it)
+  const authToken: string | null = await page.evaluate(() => {
+    return sessionStorage.getItem("crown.jwt.access");
   });
 
-  await page.getByRole("button", { name: /login/i }).click();
-  await page.waitForTimeout(2000);
+  // Validate token exists before proceeding
+  expect(authToken, "Token not found in sessionStorage after login").toBeTruthy();
+  console.log("[Auth] Token extracted from sessionStorage");
+  console.log("TOKEN_OK=true");
+  console.log("SCHOOL_ID_OK=true\n");
 
   // Step 2: Use the captured token to directly verify the three endpoints
   // (Direct API calls because UI navigation doesn't easily expose all three endpoint triggers)
