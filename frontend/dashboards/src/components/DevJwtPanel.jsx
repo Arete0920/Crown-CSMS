@@ -18,9 +18,9 @@ export default function DevJwtPanel() {
     return import.meta.env.VITE_API_BASE_URL;
   }, []);
 
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("");
-  const [schoolId, setSchoolId] = useState(() => getSelectedSchoolId());
+  const [username, setUsername] = useState("head@crown-demo.local");
+  const [password, setPassword] = useState("Crown2026Demo!");
+  const [schoolId, setSchoolId] = useState("b45b8c5a-6708-4597-aad9-a226627b2962");
   const [status, setStatus] = useState(() => (getAccessToken() ? "token loaded" : "no token"));
   const [err, setErr] = useState("");
 
