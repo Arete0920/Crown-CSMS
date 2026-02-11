@@ -1,0 +1,94 @@
+name: Proof — Gradebook (UI + API)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: proof-gradebook
+  cancel-in-progress: true
+
+jobs:
+  gradebook-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # UI server + API calls are made through the dev server during the test.
+      # If your tests require different env vars, add them here.
+      CROWN_UI_URL: "http://localhost:3000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dashboards deps
+        working-directory: frontend/dashboards
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend/dashboards
+        run: npx playwright install --with-deps
+
+      # Start the Vite dev server in the background
+      - name: Start dashboards dev server
+        working-directory: frontend/dashboards
+        run: |
+          nohup npm run dev -- --host 127.0.0.1 --port 3000 > vite.log 2>&1 &
+          echo "Started Vite. Waiting for http://localhost:3000 ..."
+
+      - name: Wait for UI
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://localhost:3000 >/dev/null; then
+              echo "UI is up."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "UI did not come up in time."
+          echo "---- vite.log ----"
+          cat frontend/dashboards/vite.log || true
+          exit 1
+
+      # Run API proof (uses UI login to acquire token deterministically from sessionStorage)
+      - name: Run API proof
+        working-directory: frontend/dashboards
+        run: npm run api:proof:gradebook
+
+      # Run UI proof (Flow A) + screenshots
+      - name: Run UI proof
+        working-directory: frontend/dashboards
+        run: npm run ui:proof:gradebook
+
+      - name: Upload UI proof screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradebook-ui-proof-screenshots
+          path: |
+            frontend/dashboards/gb-ui-section-roster.png
+            frontend/dashboards/gb-ui-gradebook-grid.png
+            frontend/dashboards/gb-ui-assignments.png
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: |
+            frontend/dashboards/test-results
+            frontend/dashboards/playwright-report
+            frontend/dashboards/vite.log
+          if-no-files-found: warn
+          retention-days: 14
