@@ -1,9 +1,11 @@
 # Gradebook Proof Milestone — February 10, 2026
 
-**Status:** ✅ LOCKED  
-**Tag:** `proof-gradebook-2026-02-10`  
-**Merge Commit:** `d501e97a`  
-**Timestamp:** 2026-02-11T06:58:14Z
+## Status
+
+- **PR #109** (API proof fix): ✅ MERGED to main
+- **PR #110** (this document): 🔄 Pending merge to main
+- **Proof Tag:** `proof-gradebook-2026-02-10` → `d501e97a` (immutable)
+- **Main branch state:** Contains deterministic API proof fix + UI proof branch (proof/ui-gradebook-automated-v2)
 
 ---
 
