@@ -6,7 +6,6 @@ const API_BASE = process.env.API_BASE_URL ?? "http://127.0.0.1:8000";
 const USERNAME = "head@crown-demo.local";
 const PASSWORD = "demo1234";
 const SCHOOL_ID = "b45b8c5a-6708-4597-aad9-a226627b2962";
-const SECTION_ID = "044882e0-3405-4542-a237-32f1adf4f047";
 
 test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", async ({ page }) => {
   // Step 1: Get an auth token via the UI
@@ -80,6 +79,21 @@ test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", 
   const schoolId = await page.evaluate(() => sessionStorage.getItem("crown.school.id"));
   expect(schoolId, "School ID not found in sessionStorage after login").toBeTruthy();
   console.log("SCHOOL_ID_OK=true\n");
+
+  // Fetch first available section (resilient to seed variability)
+  console.log("[Setup] Fetching available sections from API...");
+  const sectionsResp = await page.request.get(`${API_BASE}/api/v1/academics/sections/`, {
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "X-School-Id": SCHOOL_ID,
+    },
+  });
+  expect(sectionsResp.status(), "Sections API should return 200").toBe(200);
+  const sectionsData: any = await sectionsResp.json();
+  const sections = sectionsData?.results ?? sectionsData?.data ?? sectionsData ?? [];
+  expect(sections.length, "At least one section must exist for proof").toBeGreaterThan(0);
+  const SECTION_ID = sections[0].id;
+  console.log(`[Setup] Using section: ${SECTION_ID}\n`);
 
   // Step 2: Use the captured token to directly verify the three endpoints
   // (Direct API calls because UI navigation doesn't easily expose all three endpoint triggers)
