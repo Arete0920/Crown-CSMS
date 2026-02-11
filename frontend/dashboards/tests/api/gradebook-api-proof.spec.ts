@@ -4,7 +4,7 @@ const BASE_URL = process.env.CROWN_UI_URL ?? "http://localhost:3000";
 const API_BASE = process.env.API_BASE_URL ?? "http://127.0.0.1:8000";
 
 const USERNAME = "head@crown-demo.local";
-const PASSWORD = "Crown2026Demo!";
+const PASSWORD = "demo1234";
 const SCHOOL_ID = "b45b8c5a-6708-4597-aad9-a226627b2962";
 const SECTION_ID = "044882e0-3405-4542-a237-32f1adf4f047";
 
