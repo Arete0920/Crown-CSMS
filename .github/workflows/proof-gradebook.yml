@@ -42,6 +42,8 @@ jobs:
 
       - name: Seed Django (golden path + demo users)
         working-directory: backend
+        env:
+          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
         run: |
           python manage.py golden_path_bootstrap --force --school-id b45b8c5a-6708-4597-aad9-a226627b2962
 
