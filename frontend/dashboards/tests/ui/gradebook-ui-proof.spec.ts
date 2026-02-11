@@ -1,14 +1,30 @@
 import { test, expect } from "@playwright/test";
 
 const BASE_URL = process.env.CROWN_UI_URL ?? "http://localhost:3000";
+const API_BASE = process.env.API_BASE_URL ?? "http://127.0.0.1:8000";
 
 const USERNAME = "head@crown-demo.local";
-const PASSWORD = "Crown2026Demo!";
+const PASSWORD = "demo1234";
 const SCHOOL_ID = "b45b8c5a-6708-4597-aad9-a226627b2962";
 
-const SECTION_ID = "044882e0-3405-4542-a237-32f1adf4f047";
+test("UI proof: Academics → Roster → Load gradebook → Load assignments (200s)", async ({ page, request }) => {
+  // Fetch section ID dynamically (same pattern as API proof)
+  const loginData = { username: USERNAME, password: PASSWORD };
+  const loginResp = await request.post(`${API_BASE}/api/v1/auth/token/`, { data: loginData });
+  const authData: any = await loginResp.json();
+  const authToken = authData?.access ?? authData?.token;
 
-test("UI proof: Academics → Roster → Load gradebook → Load assignments (200s)", async ({ page }) => {
+  const sectionsResp = await request.get(`${API_BASE}/api/v1/academics/sections/`, {
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+      "X-School-Id": SCHOOL_ID,
+    },
+  });
+  const sectionsData: any = await sectionsResp.json();
+  const sections = sectionsData?.results ?? sectionsData?.data ?? sectionsData ?? [];
+  const SECTION_ID = sections[0]?.section_id;
+  console.log(`[UI Setup] Using section: ${SECTION_ID}`);
+
   const seen = {
     roster: [] as Array<{ url: string; status: number }>,
     grades: [] as Array<{ url: string; status: number }>,
