@@ -214,6 +214,7 @@ export function AcademicsDashboard() {
                   <td>{row.teacher_name || '—'}</td>
                   <td>
                     <button
+                      data-testid={`btn-open-roster-${row.section_id}`}
                       onClick={() => handleOpenRoster(row.section_id)}
                       style={{
                         background: 'none',
@@ -329,6 +330,7 @@ export function AcademicsDashboard() {
           }}
         >
           <div
+            data-testid="roster-drawer"
             style={{
               width: '100%',
               maxWidth: 480,
@@ -450,6 +452,7 @@ export function AcademicsDashboard() {
                           <strong style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>Quick links</strong>
 
                           <button
+                            data-testid="btn-load-gradebook"
                             onClick={handleLoadStudentGradebook}
                             disabled={studentGradesLoading}
                             style={{ width: '100%', padding: 8, marginBottom: 8, cursor: 'pointer' }}
@@ -460,6 +463,7 @@ export function AcademicsDashboard() {
                             Attendance (coming soon)
                           </button>
                           <button
+                            data-testid="btn-load-assignments"
                             onClick={handleLoadAssignments}
                             disabled={assignmentsLoading}
                             style={{ width: '100%', padding: 8, marginBottom: 8, cursor: 'pointer' }}
