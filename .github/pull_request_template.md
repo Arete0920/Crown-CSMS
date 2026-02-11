@@ -10,6 +10,19 @@
 **Forbidden (anything not listed above):**
 - Everything else
 
+## Proof Policy Gate
+**If this PR touches any of these, Proof — Gradebook must run + pass:**
+- `.github/workflows/proof-gradebook.yml`
+- `frontend/dashboards/tests/**`
+- `frontend/dashboards/src/**`
+- `backend/gradebook/**`
+- `backend/academics/**`
+- `backend/core/management/commands/**`
+- `backend/crown_api/**`
+
+- [ ] Proof — Gradebook (UI + API) ran and passed (auto-runs on relevant changes)
+  - Proof run link: (if manual trigger used)
+
 ## Proof (required)
 Paste raw outputs (no interpretation):
 
