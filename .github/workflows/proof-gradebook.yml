@@ -24,6 +24,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Guardrail — print versions
+        run: |
+          set -euo pipefail
+          echo "Node: $(node -v || true)"
+          echo "Python: $(python --version || true)"
+          echo "Pip: $(pip --version || true)"
+
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -40,13 +47,20 @@ jobs:
         run: |
           python manage.py migrate --noinput
 
+      - name: Guardrail — required env
+        env:
+          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
+        run: |
+          set -euo pipefail
+          test -n "${CROWN_DEMO_PASSWORD}" || (echo "Missing CROWN_DEMO_PASSWORD secret" && exit 1)
+
       - name: Seed Django (golden path + demo users)
         working-directory: backend
         env:
           CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
         run: |
           python manage.py golden_path_bootstrap --force --school-id b45b8c5a-6708-4597-aad9-a226627b2962
-          python manage.py seed_demo_school --force --target-students 25
+          python manage.py seed_demo_school --force --students 25
 
       - name: Start Django dev server
         working-directory: backend
@@ -56,17 +70,15 @@ jobs:
 
       - name: Wait for API
         run: |
+          set -euo pipefail
           for i in {1..60}; do
             if curl -fsS http://localhost:8000/api/v1/health/ >/dev/null 2>&1 || curl -fsS http://localhost:8000/ >/dev/null 2>&1; then
               echo "API is up."
               exit 0
             fi
-            sleep 2
+            sleep 1
           done
-          echo "API did not come up in time."
-          echo "---- django.log ----"
-          cat backend/django.log || true
-          exit 1
+          echo "API never became healthy" && exit 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -78,6 +90,12 @@ jobs:
       - name: Install dashboards deps
         working-directory: frontend/dashboards
         run: npm ci
+
+      - name: Proof receipts
+        run: |
+          echo "VITE_API_BASE_URL=$VITE_API_BASE_URL"
+          echo "API_BASE_URL=${API_BASE_URL:-<not set>}"
+          echo "CROWN_UI_URL=$CROWN_UI_URL"
 
       - name: Install Playwright browsers
         working-directory: frontend/dashboards
@@ -92,17 +110,15 @@ jobs:
 
       - name: Wait for UI
         run: |
+          set -euo pipefail
           for i in {1..60}; do
-            if curl -fsS http://localhost:3000 >/dev/null; then
+            if curl -fsS http://localhost:3000 >/dev/null 2>&1; then
               echo "UI is up."
               exit 0
             fi
-            sleep 2
+            sleep 1
           done
-          echo "UI did not come up in time."
-          echo "---- vite.log ----"
-          cat frontend/dashboards/vite.log || true
-          exit 1
+          echo "UI never became reachable" && exit 1
 
       # Run API proof (uses UI login to acquire token deterministically from sessionStorage)
       - name: Run API proof
