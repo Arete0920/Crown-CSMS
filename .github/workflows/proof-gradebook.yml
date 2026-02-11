@@ -40,6 +40,11 @@ jobs:
         run: |
           python manage.py migrate --noinput
 
+      - name: Seed Django (golden path + demo users)
+        working-directory: backend
+        run: |
+          python manage.py golden_path_bootstrap --force --school-id b45b8c5a-6708-4597-aad9-a226627b2962
+
       - name: Start Django dev server
         working-directory: backend
         run: |
@@ -99,6 +104,9 @@ jobs:
       # Run API proof (uses UI login to acquire token deterministically from sessionStorage)
       - name: Run API proof
         working-directory: frontend/dashboards
+        env:
+          CROWN_UI_URL: "http://localhost:3000"
+          API_BASE_URL: "http://localhost:8000"
         run: npm run api:proof:gradebook
 
       # Run UI proof (Flow A) + screenshots
