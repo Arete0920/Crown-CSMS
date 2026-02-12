@@ -1,4 +1,5 @@
-from django.db.models import Count, Max, Q, Sum
+from django.db.models import Count, F, Max, Q, Sum
+from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -100,17 +101,31 @@ def section_assignments(request, section_id):
     school_id = get_request_school_id(request, required=True)
     section = _get_section_or_404(request, school_id, section_id)
 
-    assignments = (
+    assignments_qs = (
         GradeEntry.objects.filter(section=section, school_id=school_id)
-        .values("assignment_name", "points_possible")
+        .select_related("assignment")
+        .annotate(
+            _assignment_id=F("assignment__id"),
+            _assignment_name=Coalesce(F("assignment__name"), F("assignment_name")),
+            _points_possible=Coalesce(F("assignment__points_possible"), F("points_possible")),
+        )
+        .values("_assignment_id", "_assignment_name", "_points_possible")
         .distinct()
-        .order_by("assignment_name")
+        .order_by("_assignment_name")
     )
+    assignments = [
+        {
+            "assignment_id": a["_assignment_id"],
+            "assignment_name": a["_assignment_name"],
+            "points_possible": a["_points_possible"],
+        }
+        for a in assignments_qs
+    ]
 
     return Response(
         {
             "section_id": str(section.id),
-            "assignments": list(assignments),
+            "assignments": assignments,
         }
     )
 
@@ -127,7 +142,13 @@ def section_summary(request, section_id):
     # grade entries scoped to tenant + section
     qs = GradeEntry.objects.filter(section=section, school_id=school_id)
 
-    assignment_count = qs.values("assignment_name").distinct().count()
+    # Count distinct assignments - use assignment_id if available, otherwise fall back to assignment_name
+    assignment_count = (
+        qs.annotate(_name_fallback=Coalesce(F("assignment__name"), F("assignment_name")))
+        .values("_name_fallback")
+        .distinct()
+        .count()
+    )
     missing_count = qs.filter(points_earned__isnull=True).count()
 
     # class average percent (only non-missing)
@@ -163,12 +184,25 @@ def section_grades(request, section_id):
     school_id = get_request_school_id(request, required=True)
     section = _get_section_or_404(request, school_id, section_id)
 
-    entries = GradeEntry.objects.filter(section=section, school_id=school_id)
-    assignments = list(
-        entries.values("assignment_name", "points_possible")
+    entries = GradeEntry.objects.filter(section=section, school_id=school_id).select_related("assignment")
+    assignments_qs = (
+        entries.annotate(
+            _assignment_id=F("assignment__id"),
+            _assignment_name=Coalesce(F("assignment__name"), F("assignment_name")),
+            _points_possible=Coalesce(F("assignment__points_possible"), F("points_possible")),
+        )
+        .values("_assignment_id", "_assignment_name", "_points_possible")
         .distinct()
-        .order_by("assignment_name")
+        .order_by("_assignment_name")
     )
+    assignments = [
+        {
+            "assignment_id": a["_assignment_id"],
+            "assignment_name": a["_assignment_name"],
+            "points_possible": a["_points_possible"],
+        }
+        for a in assignments_qs
+    ]
 
     roster = (
         Enrollment.objects.filter(section=section)
@@ -178,10 +212,10 @@ def section_grades(request, section_id):
 
     entry_map = {}
     for entry in entries:
-        entry_map[(str(entry.student_id), entry.assignment_name)] = {
+        entry_map[(str(entry.student_id), str(entry.assignment_id))] = {
             "grade_entry_id": str(entry.id),
             "points_earned": entry.points_earned,
-            "points_possible": entry.points_possible,
+            "points_possible": entry.assignment.points_possible if entry.assignment else entry.points_possible,
         }
 
     rows = []
@@ -189,7 +223,7 @@ def section_grades(request, section_id):
         student = enrollment.student
         scores = {}
         for assignment in assignments:
-            key = (str(student.id), assignment["assignment_name"])
+            key = (str(student.id), str(assignment["assignment_id"]))
             scores[assignment["assignment_name"]] = entry_map.get(
                 key,
                 {
@@ -238,12 +272,26 @@ def assignments_list(request):
 
     # Mirror the existing per-section assignments logic.
     # If you already have a helper that computes assignments, call it here.
-    assignments = (
+    assignments_qs = (
         GradeEntry.objects.filter(school_id=school_id, section_id=section.id)
-        .values("assignment_name", "points_possible")
+        .select_related("assignment")
+        .annotate(
+            _assignment_id=F("assignment__id"),
+            _assignment_name=Coalesce(F("assignment__name"), F("assignment_name")),
+            _points_possible=Coalesce(F("assignment__points_possible"), F("points_possible")),
+        )
+        .values("_assignment_id", "_assignment_name", "_points_possible")
         .distinct()
-        .order_by("assignment_name")
+        .order_by("_assignment_name")
     )
+    assignments = [
+        {
+            "assignment_id": a["_assignment_id"],
+            "assignment_name": a["_assignment_name"],
+            "points_possible": a["_points_possible"],
+        }
+        for a in assignments_qs
+    ]
 
     return Response(GradebookAssignmentSerializer(assignments, many=True).data)
 

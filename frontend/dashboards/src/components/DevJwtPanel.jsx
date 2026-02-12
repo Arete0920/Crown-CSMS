@@ -30,6 +30,7 @@ export default function DevJwtPanel() {
     setErr("");
     try {
       await jwtLogin({ username, password, apiBase });
+      setSelectedSchoolId(schoolId); // Persist school ID on successful login
       setStatus("token set");
     } catch (e) {
       setErr(String(e?.message || e));

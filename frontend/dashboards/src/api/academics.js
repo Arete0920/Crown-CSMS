@@ -66,3 +66,67 @@ export function fetchSectionRoster(sectionId) {
   if (!sectionId) throw new Error('sectionId is required');
   return _fetchJson(`${API_BASE}/api/v1/academics/sections/${encodeURIComponent(sectionId)}/roster/`);
 }
+
+/**
+ * PATCH an assignment (points_possible, name, category_id, due_date, etc.)
+ * 
+ * @param {string} assignmentId - Assignment UUID
+ * @param {Object} payload - Fields to update
+ * @param {string} [payload.name] - Assignment name
+ * @param {string} [payload.points_possible] - Decimal as string (e.g., "50" or "50.00")
+ * @param {string} [payload.category_id] - Category UUID
+ * @param {string|null} [payload.due_date] - ISO date string (YYYY-MM-DD) or null
+ * @param {string|null} [payload.assigned_date] - ISO date string (YYYY-MM-DD) or null
+ * @param {boolean} [payload.is_published] - Publication status
+ * @returns {Promise<Object>} Updated assignment data
+ */
+export async function patchAssignment(assignmentId, payload) {
+  const url = `${API_BASE}/api/v1/academics/assignments/${encodeURIComponent(assignmentId)}/`;
+  const res = await authenticatedFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`PATCH assignment failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+/**
+ * PATCH a category (weight_percent, name, is_active, etc.)
+ * 
+ * @param {string} categoryId - Category UUID
+ * @param {Object} payload - Fields to update
+ * @param {string} [payload.name] - Category name
+ * @param {string} [payload.weight_percent] - Decimal as string 0-100 (e.g., "25" or "25.00")
+ * @param {number} [payload.sort_order] - Display order
+ * @param {boolean} [payload.is_active] - Active status
+ * @returns {Promise<Object>} Updated category data
+ */
+export async function patchCategory(categoryId, payload) {
+  const url = `${API_BASE}/api/v1/academics/categories/${encodeURIComponent(categoryId)}/`;
+  const res = await authenticatedFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`PATCH category failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+/**
+ * Fetch all assignments for a section
+ * 
+ * @param {string} sectionId - Section UUID
+ * @returns {Promise<{assignments: Array}>} List of assignments with category info
+ */
+export function fetchSectionAssignments(sectionId) {
+  if (!sectionId) throw new Error('sectionId is required');
+  return _fetchJson(`${API_BASE}/api/v1/academics/sections/${encodeURIComponent(sectionId)}/assignments/`);
+}
+

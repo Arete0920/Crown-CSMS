@@ -56,3 +56,25 @@ export async function fetchGradebookDrilldown(sectionId, { bucket = "all", thres
   }
   return res.json();
 }
+
+/**
+ * PATCH a grade entry (points_earned editing)
+ * 
+ * @param {string} gradeEntryId - GradeEntry UUID
+ * @param {Object} payload - Fields to update
+ * @param {number|null} payload.points_earned - Earned points (null for missing/blank)
+ * @returns {Promise<Object>} Updated grade entry data
+ */
+export async function patchGradeEntry(gradeEntryId, payload) {
+  const url = `${API_BASE}/api/v1/gradebook/grade-entries/${encodeURIComponent(gradeEntryId)}/`;
+  const res = await authenticatedFetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`PATCH grade entry failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
