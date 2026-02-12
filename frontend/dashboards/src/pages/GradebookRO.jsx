@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown } from "../api/gradebook";
+import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown, patchGradeEntry } from "../api/gradebook";
+import { patchAssignment } from "../api/academics";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import { pctFromCell, bgForPct } from "../lib/ui/gradeVisuals";
@@ -68,6 +69,7 @@ export function GradebookRO() {
 
   // abort handling
   const gradesAbortRef = useRef(null);
+  const probedRef = useRef(false);
 
   // diagnostics state (kept from before)
   const [lastRequest, setLastRequest] = useState(null);
@@ -78,6 +80,12 @@ export function GradebookRO() {
   const [drilldownData, setDrilldownData] = useState(null);
   const [drilldownLoading, setDrilldownLoading] = useState(false);
   const [drilldownError, setDrilldownError] = useState("");
+
+  // editing state
+  const [editingAssignmentId, setEditingAssignmentId] = useState(null);
+  const [savingAssignmentId, setSavingAssignmentId] = useState(null);
+  const [editMsg, setEditMsg] = useState("");
+  const [canWriteAssignments, setCanWriteAssignments] = useState(false);
 
 
   // Load sections once
@@ -121,6 +129,8 @@ export function GradebookRO() {
   useEffect(() => {
     if (!selectedSectionId) return;
 
+    probedRef.current = false;
+
     // guard: do not refetch same section
     if (lastFetchedSectionRef.current === selectedSectionId) return;
     lastFetchedSectionRef.current = selectedSectionId;
@@ -146,6 +156,7 @@ export function GradebookRO() {
         // minimal normalization
         // Keep assignment order; also precompute a stable lookup key
         const normalizedAssignments = a.map((x) => ({
+          assignment_id: x.assignment_id,
           assignment_name: x.assignment_name,
           points_possible: x.points_possible,
           _key: keyOf(x.assignment_name),
@@ -183,6 +194,20 @@ export function GradebookRO() {
     };
   }, [selectedSectionId]);
 
+  // Probe write permissions once after assignments load
+  useEffect(() => {
+    if (probedRef.current) return;
+    if (!token) return;
+    if (!assignments?.length) return;
+
+    const a = assignments[0];
+    if (!a?.assignment_id) return;
+
+    probedRef.current = true;
+    probeCanWrite(a.assignment_id, a.points_possible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, assignments]);
+
 
   const isAuthed = !!token && !!schoolId;
   const isDev = import.meta.env.DEV;
@@ -213,6 +238,49 @@ export function GradebookRO() {
     return map;
   }, [rows, assignments]);
 
+  // Refresh gradebook data
+  const refreshGradebook = async () => {
+    if (!selectedSectionId) return;
+    lastFetchedSectionRef.current = ""; // Clear guard to allow refetch
+    setAssignments([]);
+    setRows([]);
+    setLoadingGrades(true);
+
+    try {
+      const payload = await getGradebookGrades(selectedSectionId);
+      const a = Array.isArray(payload?.assignments) ? payload.assignments : [];
+      const r = Array.isArray(payload?.rows) ? payload.rows : [];
+
+      const normalizedAssignments = a.map((x) => ({
+        assignment_id: x.assignment_id,
+        assignment_name: x.assignment_name,
+        points_possible: x.points_possible,
+        _key: keyOf(x.assignment_name),
+      }));
+
+      const normalizedRows = r.map((row) => {
+        const scores = row?.scores || {};
+        const normScores = {};
+        for (const [k, v] of Object.entries(scores)) {
+          normScores[keyOf(k)] = v;
+        }
+        return {
+          ...row,
+          _scores: normScores,
+        };
+      });
+
+      setAssignments(normalizedAssignments);
+      setRows(normalizedRows);
+      lastFetchedSectionRef.current = selectedSectionId;
+    } catch (err) {
+      console.error(err);
+      setEditMsg(`Failed to refresh: ${err.message}`);
+    } finally {
+      setLoadingGrades(false);
+    }
+  };
+
   // Drilldown handler
   const handleOpenDrilldown = async (studentId, studentName) => {
     setDrilldownStudent({ student_id: studentId, student_name: studentName });
@@ -229,6 +297,39 @@ export function GradebookRO() {
       setDrilldownError(err.message);
     } finally {
       setDrilldownLoading(false);
+    }
+  };
+
+  // Probe write permissions once on load
+  const probeCanWrite = async (assignmentId, currentPointsPossible) => {
+    try {
+      // PATCH same value; backend validates and returns 200 if allowed
+      await patchAssignment(assignmentId, { points_possible: String(currentPointsPossible) });
+      setCanWriteAssignments(true);
+    } catch (e) {
+      // If 403 or other error, disable editing UI quietly
+      setCanWriteAssignments(false);
+    }
+  };
+
+  // Handle assignment points_possible editing
+  const handleSavePointsPossible = async (assignmentId, newPoints) => {
+    const trimmed = String(newPoints ?? "").trim();
+    if (!trimmed) return;
+
+    setSavingAssignmentId(assignmentId);
+    setEditMsg("");
+
+    try {
+      await patchAssignment(assignmentId, { points_possible: trimmed });
+      await refreshGradebook();
+      setEditingAssignmentId(null);
+      setEditMsg("✅ Points possible updated");
+      setTimeout(() => setEditMsg(""), 3000);
+    } catch (e) {
+      setEditMsg(`❌ Failed to update points possible: ${String(e)}`);
+    } finally {
+      setSavingAssignmentId(null);
     }
   };
 
@@ -514,18 +615,33 @@ export function GradebookRO() {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "flex-end",
+              justifyContent: "space-between",
               gap: 12,
               marginBottom: 10,
             }}
           >
-            <button
-              type="button"
-              onClick={onExportCsv}
-              style={{ padding: "6px 10px", fontSize: 13 }}
-            >
-              Export CSV ↓
-            </button>
+            {editMsg && (
+              <div
+                style={{
+                  padding: "6px 12px",
+                  fontSize: 13,
+                  background: editMsg.includes("✅") ? "#e6ffe6" : "#ffe6e6",
+                  border: `1px solid ${editMsg.includes("✅") ? "#00cc00" : "#cc0000"}`,
+                  borderRadius: 4,
+                }}
+              >
+                {editMsg}
+              </div>
+            )}
+            <div style={{ marginLeft: "auto" }}>
+              <button
+                type="button"
+                onClick={onExportCsv}
+                style={{ padding: "6px 10px", fontSize: 13 }}
+              >
+                Export CSV ↓
+              </button>
+            </div>
           </div>
 
           <div style={{ overflowX: "auto" }}>
@@ -590,9 +706,44 @@ export function GradebookRO() {
                       fontWeight: 600,
                     }}
                   >
-                    <div>{a.assignment_name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.7 }}>
-                      / {a.points_possible}
+                    <div style={{ marginBottom: 4 }}>{a.assignment_name}</div>
+                    <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
+                      {editingAssignmentId === a.assignment_id ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          defaultValue={a.points_possible}
+                          disabled={savingAssignmentId === a.assignment_id}
+                          style={{ width: 70, padding: 4, fontSize: 12 }}
+                          onBlur={(e) => handleSavePointsPossible(a.assignment_id, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") e.currentTarget.blur();
+                            if (e.key === "Escape") setEditingAssignmentId(null);
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <>
+                          <span style={{ fontSize: 12, opacity: 0.7 }}>/ </span>
+                          <button
+                            type="button"
+                            onClick={() => setEditingAssignmentId(a.assignment_id)}
+                            disabled={!token || !canWriteAssignments}
+                            title={!canWriteAssignments ? "Requires ADMIN/DIRECTOR" : "Click to edit points possible"}
+                            style={{
+                              fontSize: 12,
+                              padding: "2px 6px",
+                              cursor: token && canWriteAssignments ? "pointer" : "not-allowed",
+                              background: "none",
+                              border: "1px solid #ccc",
+                              borderRadius: 3,
+                              opacity: token && canWriteAssignments ? 0.7 : 0.4,
+                            }}
+                          >
+                            {a.points_possible}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </th>
                 ))}

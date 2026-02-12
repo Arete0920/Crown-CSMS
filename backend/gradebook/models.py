@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from academics.models import Section
+from academics.models import Section, Assignment
 from households.models import Student
 
 
@@ -11,6 +11,16 @@ class GradeEntry(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="grade_entries")
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="grade_entries")
 
+    # FK to academics.Assignment (new domain model link)
+    assignment = models.ForeignKey(
+        Assignment,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="grade_entries",
+    )
+
+    # Legacy string field - will be removed after data migration
     assignment_name = models.CharField(max_length=255)
     points_earned = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     points_possible = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
