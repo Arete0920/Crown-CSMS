@@ -109,6 +109,7 @@ class SectionListSerializer(serializers.ModelSerializer):
     term_code = serializers.CharField(source="term", read_only=True)
     teacher_id = serializers.UUIDField(read_only=True, allow_null=True)
     teacher_name = serializers.CharField(read_only=True)
+    roster_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Section
@@ -123,6 +124,7 @@ class SectionListSerializer(serializers.ModelSerializer):
             "teacher_id",
             "teacher_name",
             "grade_band",
+            "roster_count",
         ]
 
 
