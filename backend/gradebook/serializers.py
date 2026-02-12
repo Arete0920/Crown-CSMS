@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .models import GradeEntry
 
 
 class AssignmentSerializer(serializers.Serializer):
@@ -15,3 +16,9 @@ class GradebookStudentSerializer(serializers.Serializer):
     student_id = serializers.UUIDField()
     student__first_name = serializers.CharField()
     student__last_name = serializers.CharField()
+
+
+class GradeEntryUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GradeEntry
+        fields = ["points_earned"]

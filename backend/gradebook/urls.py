@@ -10,6 +10,7 @@ from .views import (
     section_roster,
     section_summary,
     students_list,
+    update_grade_entry,
 )
 
 
@@ -44,5 +45,10 @@ urlpatterns = [
         "gradebook/sections/<uuid:section_id>/drilldown/",
         section_drilldown,
         name="gradebook-section-drilldown",
+    ),
+    path(
+        "gradebook/grade-entries/<uuid:entry_id>/",
+        update_grade_entry,
+        name="update-grade-entry",
     ),
 ]

@@ -29,6 +29,11 @@ local_settings.py
 local.secrets.ps1
 *.secrets.ps1
 
+# Test credential helpers (local use only)
+get_test_credentials.ps1
+test_editable_cells.py
+*_credentials*.ps1
+
 # IDE
 .vscode/
 .idea/

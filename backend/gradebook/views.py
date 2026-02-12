@@ -179,6 +179,7 @@ def section_grades(request, section_id):
     entry_map = {}
     for entry in entries:
         entry_map[(str(entry.student_id), entry.assignment_name)] = {
+            "grade_entry_id": str(entry.id),
             "points_earned": entry.points_earned,
             "points_possible": entry.points_possible,
         }
@@ -192,6 +193,7 @@ def section_grades(request, section_id):
             scores[assignment["assignment_name"]] = entry_map.get(
                 key,
                 {
+                    "grade_entry_id": None,
                     "points_earned": None,
                     "points_possible": assignment.get("points_possible"),
                 },
@@ -211,6 +213,9 @@ def section_grades(request, section_id):
     return Response(
         {
             "section_id": str(section.id),
+            "course_code": section.course.code,
+            "course_name": section.course.name,
+            "term_code": section.term,
             "assignments": assignments,
             "rows": rows,
         }
@@ -417,3 +422,41 @@ def section_drilldown(request, section_id):
     }
 
     return Response(payload)
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_grade_entry(request, entry_id):
+    """
+    PATCH /api/v1/gradebook/grade-entries/{entry_id}/
+    
+    Update points_earned for a specific grade entry.
+    
+    Tenant-scoped: must include X-School-Id header matching entry's school_id.
+    
+    Request:
+      {"points_earned": 95}
+    
+    Returns updated entry or 400/403/404.
+    """
+    school_id = get_request_school_id(request, required=True)
+
+    entry = get_object_or_404(
+        GradeEntry,
+        id=entry_id,
+        school_id=school_id,
+    )
+
+    from .serializers import GradeEntryUpdateSerializer
+
+    serializer = GradeEntryUpdateSerializer(
+        entry,
+        data=request.data,
+        partial=True,
+    )
+
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

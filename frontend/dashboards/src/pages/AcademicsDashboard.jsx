@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import {
   fetchParentStudents,
@@ -242,21 +243,9 @@ export function AcademicsDashboard() {
                   <td>{row.term_code || row.term_id}</td>
                   <td>{row.teacher_name || '—'}</td>
                   <td>
-                    <button
-                      data-testid={`btn-open-roster-${row.section_id}`}
-                      onClick={() => handleOpenRoster(row.section_id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#0066cc',
-                        cursor: 'pointer',
-                        textDecoration: 'underline',
-                        padding: 0,
-                        font: 'inherit',
-                      }}
-                    >
+                    <Link to={`/gradebook/${row.section_id}`}>
                       {row.roster_count ?? 0} students
-                    </button>
+                    </Link>
                   </td>
                 </tr>
               ))}

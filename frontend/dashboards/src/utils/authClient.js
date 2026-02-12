@@ -10,7 +10,14 @@ const SCHOOL_KEY = "crown.school.id";
 
 export function getSelectedSchoolId() {
   try {
-    return sessionStorage.getItem(SCHOOL_KEY) || "";
+    // sessionStorage is primary (written during app init/login)
+    const session = sessionStorage.getItem(SCHOOL_KEY);
+    if (session) return session;
+    
+    // Fall back to localStorage if sessionStorage empty
+    // localStorage persists across browser sessions; sessionStorage clears on close
+    // This ensures tenant header is sent even if user refreshed during session
+    return localStorage.getItem("schoolId") || localStorage.getItem(SCHOOL_KEY) || "";
   } catch {
     return "";
   }
