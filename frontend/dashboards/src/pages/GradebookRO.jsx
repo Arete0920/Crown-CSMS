@@ -4,6 +4,7 @@ import { patchAssignment } from "../api/academics";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import { pctFromCell, bgForPct } from "../lib/ui/gradeVisuals";
+import { fmt2 } from "../utils/number";
 import Drawer from "../components/Drawer";
 
 
@@ -42,7 +43,7 @@ const calcRowTotals = (row, assignments) => {
 
 const formatTotals = ({ earned, possible, pct }) => {
   if (!possible) return "—";
-  return `${earned} / ${possible}\n(${pct ?? 0}%)`;
+  return `${fmt2(earned)} / ${possible}\n(${pct ?? 0}%)`;
 };
 
 export function GradebookRO() {
@@ -211,6 +212,8 @@ export function GradebookRO() {
 
   const isAuthed = !!token && !!schoolId;
   const isDev = import.meta.env.DEV;
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE === "1";
+  const showDevPanels = isDev && !isDemoMode;
   const hasAssignments = assignments.length > 0;
   const hasRows = rows.length > 0;
 
@@ -487,7 +490,7 @@ export function GradebookRO() {
 
       <h2>Gradebook (Read-Only)</h2>
 
-      {isDev && (
+      {showDevPanels && (
         <div className="debug-panel">
           <h4>🔧 Request Diagnostics (DEV)</h4>
           <dl>
@@ -576,7 +579,7 @@ export function GradebookRO() {
       {selectedSectionId && loadingGrades && <div>Loading grades…</div>}
 
       {/* Debug panel: show selected section details */}
-      {selectedSectionId && !loadingGrades && isDev && (
+      {selectedSectionId && !loadingGrades && showDevPanels && (
         <div className="debug-panel" style={{ background: "#fff8e1", borderColor: "#ffa726" }}>
           <h4>📊 Selected Section State</h4>
           <dl>
