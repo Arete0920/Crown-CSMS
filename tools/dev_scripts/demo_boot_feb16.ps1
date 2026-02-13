@@ -11,13 +11,20 @@ $ErrorActionPreference = 'Stop'
 $WarningPreference = 'SilentlyContinue'
 
 function Resolve-NpmCmd {
-    $npm = (Get-Command npm.cmd -ErrorAction SilentlyContinue)
-    if ($npm) { return $npm.Path }
-    $npm = (Get-Command npm -ErrorAction SilentlyContinue)
-    if ($npm) { return $npm.Path }
+    [CmdletBinding()]
+    param()
+
+    $candidates = @("npm.cmd", "npm")
+    foreach ($name in $candidates) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Path -and (Test-Path $cmd.Path)) {
+            return $cmd.Path
+        }
+    }
     throw "npm not found. Install Node.js LTS and ensure npm is on PATH."
 }
-$NPM_CMD = Resolve-NpmCmd
+
+$script:NPM_CMD = Resolve-NpmCmd
 
 $TAG = "demo-feb16-gradebook-edit-pp-001"
 $USERNAME = "head@crown-demo.local"
@@ -70,9 +77,9 @@ Write-Host ""
 Write-Host "Step 3: Starting React frontend..." -ForegroundColor Yellow
 $frontendProc = $null
 try {
-    $frontendProc = Start-Process -NoNewWindow `
-        -FilePath $NPM_CMD `
+    $frontendProc = Start-Process -FilePath $script:NPM_CMD `
         -ArgumentList @("--prefix", "$SCRIPT_ROOT\frontend\dashboards", "run", "dev", "--", "--port", "3000") `
+        -WindowStyle Minimized `
         -PassThru
     
     Write-Host "  (PID: $($frontendProc.Id)) Waiting ${FrontendWait}s..." -ForegroundColor DarkGray
