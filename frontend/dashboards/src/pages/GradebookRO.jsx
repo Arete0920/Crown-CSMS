@@ -694,6 +694,7 @@ export function GradebookRO() {
                 {sortedAssignments.map((a) => (
                   <th
                     key={a._key}
+                    data-testid="gradebook-assignment-header"
                     style={{
                       position: "sticky",
                       top: 0,
@@ -866,7 +867,7 @@ export function GradebookRO() {
                 const label = `${s.last_name ?? ""}, ${s.first_name ?? ""}`.trim().replace(/^,|,$/g, "").trim();
 
                 return (
-                  <tr key={studentId}>
+                  <tr key={studentId} data-testid="gradebook-row">
                     <td
                       style={{
                         position: "sticky",
