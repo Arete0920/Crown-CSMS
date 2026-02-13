@@ -14,6 +14,7 @@ import {
  */
 export default function DevJwtPanel() {
   const isDev = import.meta.env.DEV;
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE === "1";
   const apiBase = useMemo(() => {
     return import.meta.env.VITE_API_BASE_URL;
   }, []);
@@ -24,7 +25,8 @@ export default function DevJwtPanel() {
   const [status, setStatus] = useState(() => (getAccessToken() ? "token loaded" : "no token"));
   const [err, setErr] = useState("");
 
-  if (!isDev) return null;
+  // Hide in production builds AND during demo mode
+  if (!isDev || isDemoMode) return null;
 
   const onLogin = async () => {
     setErr("");
