@@ -59,8 +59,19 @@ try {
     $env:PYTHONDONTWRITEBYTECODE = "1"
     $env:PYTHONUNBUFFERED = "1"
     
+    # Ensure port 8000 is free
+    $existing8000 = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue
+    if ($existing8000) {
+        Stop-Process -Id $existing8000.OwningProcess -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 500
+    }
+    
+    # Verify venv python exists
+    $py = "$SCRIPT_ROOT\.venv\Scripts\python.exe"
+    if (-not (Test-Path $py)) { throw "Missing venv python at: $py" }
+    
     $backendProc = Start-Process -NoNewWindow `
-        -FilePath "$SCRIPT_ROOT\.venv\Scripts\python.exe" `
+        -FilePath $py `
         -ArgumentList @("manage.py", "runserver", "127.0.0.1:8000", "--noreload") `
         -PassThru
     
@@ -98,6 +109,13 @@ Write-Host ""
 Write-Host "Step 3: Starting React frontend..." -ForegroundColor Yellow
 $frontendProc = $null
 try {
+    # Ensure port 3000 is free
+    $existing3000 = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue
+    if ($existing3000) {
+        Stop-Process -Id $existing3000.OwningProcess -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 500
+    }
+    
     # Enable demo mode to hide dev panels
     $env:VITE_DEMO_MODE = "1"
     $env:VITE_DEMO_AUTO_LOGIN = "1"
@@ -110,8 +128,27 @@ try {
         -WindowStyle Minimized `
         -PassThru
     
-    Write-Host "  (PID: $($frontendProc.Id)) Waiting ${FrontendWait}s..." -ForegroundColor DarkGray
-    Start-Sleep -Seconds $FrontendWait
+    Write-Host "  (PID: $($frontendProc.Id)) Waiting for readiness..." -ForegroundColor DarkGray
+    
+    # Wait for frontend to respond
+    $frontUrl = "$FRONTEND_URL/gradebook"
+    $deadline = (Get-Date).AddSeconds($APITimeout)
+    $frontReady = $false
+    
+    do {
+        try {
+            Invoke-WebRequest -Uri $frontUrl -UseBasicParsing -TimeoutSec 2 | Out-Null
+            $frontReady = $true
+            break
+        } catch {}
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+    
+    if (-not $frontReady) {
+        throw "Frontend did not become reachable within $APITimeout seconds"
+    }
+    
+    Write-Host "  [OK] Frontend reachable" -ForegroundColor Green
 } catch {
     Write-Host "  [FAIL] Frontend startup failed: $_" -ForegroundColor Red
     if ($backendProc) { Stop-Process -InputObject $backendProc -ErrorAction Ignore }
