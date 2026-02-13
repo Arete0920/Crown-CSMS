@@ -1,5 +1,17 @@
 # Crown Director Dashboard — Demo Script (7–9 minutes)
 
+## Demo Environment Notice
+
+This presentation runs from a frozen Git tag:
+```
+demo-feb16-gradebook-edit-pp-003
+SHA: aec71930dffba0e1d186e49468ff67f77df5ead9
+```
+
+The demo code is immutable for presentation stability.
+
+---
+
 **Objective:** Demonstrate the Director Dashboard as a real-time decision support system for financial aid administration.
 
 **Audience:** Leadership, Finance Team, Admin Staff
