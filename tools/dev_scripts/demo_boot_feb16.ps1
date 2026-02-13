@@ -64,8 +64,29 @@ try {
         -ArgumentList @("manage.py", "runserver", "127.0.0.1:8000", "--noreload") `
         -PassThru
     
-    Write-Host "  (PID: $($backendProc.Id)) Waiting ${BackendWait}s..." -ForegroundColor DarkGray
-    Start-Sleep -Seconds $BackendWait
+    Write-Host "  (PID: $($backendProc.Id)) Waiting for health check..." -ForegroundColor DarkGray
+    
+    # Wait for backend health
+    $healthUrl = "http://127.0.0.1:8000/health/"
+    $deadline = (Get-Date).AddSeconds($APITimeout)
+    $healthy = $false
+    
+    do {
+        try {
+            $resp = Invoke-RestMethod -Uri $healthUrl -TimeoutSec 2 -ErrorAction Stop
+            if ($resp.ok -eq $true) {
+                $healthy = $true
+                break
+            }
+        } catch {}
+        Start-Sleep -Milliseconds 500
+    } while ((Get-Date) -lt $deadline)
+    
+    if (-not $healthy) {
+        throw "Backend did not become healthy within $APITimeout seconds"
+    }
+    
+    Write-Host "  [OK] Backend healthy" -ForegroundColor Green
 } catch {
     Write-Host "  [FAIL] Backend startup failed: $_" -ForegroundColor Red
     exit 1

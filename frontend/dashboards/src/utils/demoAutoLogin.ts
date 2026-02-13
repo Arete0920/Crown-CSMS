@@ -41,7 +41,10 @@ export async function ensureDemoAutoLogin({
   const data = await resp.json();
   if (!data?.access) throw new Error("Demo auto-login failed: missing access token");
 
+  // Write to both sessionStorage (primary) and localStorage (fallback for tab reopen)
   sessionStorage.setItem(tokenKey, data.access);
+  localStorage.setItem(tokenKey, data.access);
   sessionStorage.setItem(schoolKey, schoolId);
+  localStorage.setItem(schoolKey, schoolId);
   return true;
 }
