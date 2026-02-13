@@ -77,6 +77,9 @@ Write-Host ""
 Write-Host "Step 3: Starting React frontend..." -ForegroundColor Yellow
 $frontendProc = $null
 try {
+    # Enable demo mode to hide dev panels
+    $env:VITE_DEMO_MODE = "1"
+    
     $frontendProc = Start-Process -FilePath $script:NPM_CMD `
         -ArgumentList @("--prefix", "$SCRIPT_ROOT\frontend\dashboards", "run", "dev", "--", "--port", "3000") `
         -WindowStyle Minimized `
