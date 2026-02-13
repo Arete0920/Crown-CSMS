@@ -10,6 +10,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $WarningPreference = 'SilentlyContinue'
 
+function Resolve-NpmCmd {
+    $npm = (Get-Command npm.cmd -ErrorAction SilentlyContinue)
+    if ($npm) { return $npm.Path }
+    $npm = (Get-Command npm -ErrorAction SilentlyContinue)
+    if ($npm) { return $npm.Path }
+    throw "npm not found. Install Node.js LTS and ensure npm is on PATH."
+}
+$NPM_CMD = Resolve-NpmCmd
+
 $TAG = "demo-feb16-gradebook-edit-pp-001"
 $USERNAME = "head@crown-demo.local"
 $PASSWORD = "demo1234"
@@ -62,7 +71,7 @@ Write-Host "Step 3: Starting React frontend..." -ForegroundColor Yellow
 $frontendProc = $null
 try {
     $frontendProc = Start-Process -NoNewWindow `
-        -FilePath "npm" `
+        -FilePath $NPM_CMD `
         -ArgumentList @("--prefix", "$SCRIPT_ROOT\frontend\dashboards", "run", "dev", "--", "--port", "3000") `
         -PassThru
     
