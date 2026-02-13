@@ -26,7 +26,7 @@ function Resolve-NpmCmd {
 
 $script:NPM_CMD = Resolve-NpmCmd
 
-$TAG = "demo-feb16-gradebook-edit-pp-001"
+$TAG = "demo-feb16-gradebook-edit-pp-003"
 $USERNAME = "head@crown-demo.local"
 $PASSWORD = "demo1234"
 $SCHOOL_ID = "b45b8c5a-6708-4597-aad9-a226627b2962"
