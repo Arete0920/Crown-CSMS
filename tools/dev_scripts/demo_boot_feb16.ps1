@@ -79,6 +79,10 @@ $frontendProc = $null
 try {
     # Enable demo mode to hide dev panels
     $env:VITE_DEMO_MODE = "1"
+    $env:VITE_DEMO_AUTO_LOGIN = "1"
+    $env:VITE_DEMO_USER = "head@crown-demo.local"
+    $env:VITE_DEMO_PASS = "demo1234"
+    $env:VITE_DEMO_SCHOOL_ID = "b45b8c5a-6708-4597-aad9-a226627b2962"
     
     $frontendProc = Start-Process -FilePath $script:NPM_CMD `
         -ArgumentList @("--prefix", "$SCRIPT_ROOT\frontend\dashboards", "run", "dev", "--", "--port", "3000") `
