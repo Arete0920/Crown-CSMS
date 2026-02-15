@@ -4,6 +4,16 @@ from django.db import connection
 import os
 from datetime import datetime, timezone
 
+# --- CROWN_ENV_BOOL_HELPER ---
+
+def _crown_env_true(name: str, default: bool = False) -> bool:
+    v = os.getenv(name)
+    if v is None:
+        return default
+    v = str(v).strip().lower()
+    return v in ("1","true","t","yes","y","on")
+
+
 
 def health(request):
     """
@@ -27,6 +37,7 @@ def health(request):
     return JsonResponse({
         "ok": True,
         "status": "ok",
+        "demo_mode": _crown_env_true('CROWN_DEMO_MODE', default=False),
         "build_sha": build_sha,
         "env": env_name,
         "build_time_utc": build_time,

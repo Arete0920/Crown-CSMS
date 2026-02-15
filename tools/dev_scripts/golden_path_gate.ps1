@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Alias("APITimeout")][int]$TimeoutSec = 5,
   [int]$MinAdmissionsApplications = 5,
   [int]$MinAidApplications = 3,
@@ -92,10 +92,7 @@ $qsYearId = "school_id=$schoolId&year_id=$yearId"
 $qsAcademicYearId = "school_id=$schoolId&academic_year_id=$yearId"
 
 $health = Get-Json "$Backend/health/" "SYS_HEALTH_HTTP_FAIL"
-if (-not $IsCI) {
-  Assert ($health.demo_mode -eq $true) "SYS_DEMO_MODE_INACTIVE got=$($health.demo_mode) expected=true"
-}
-Assert ([bool]$health.build_sha -and $health.build_sha -ne "local-dev") "SYS_BUILD_SHA_INVALID got=$($health.build_sha) expected!=local-dev"
+Assert ($health.demo_mode -eq $true) "SYS_DEMO_MODE_INACTIVE got=$($health.demo_mode) expected=true"`nAssert ([bool]$health.build_sha -and $health.build_sha -ne "local-dev") "SYS_BUILD_SHA_INVALID got=$($health.build_sha) expected!=local-dev"
 
 try {
   $frontendStatus = (Invoke-WebRequest -UseBasicParsing -TimeoutSec $TimeoutSec "$Frontend/").StatusCode
@@ -130,3 +127,4 @@ Write-Host "SCHOOL_ID=$schoolId"
 Write-Host "ACADEMIC_YEAR_ID=$yearId"
 Write-Host "BUILD_SHA=$($health.build_sha)"
 exit 0
+
