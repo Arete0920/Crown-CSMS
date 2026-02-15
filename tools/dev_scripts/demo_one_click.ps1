@@ -24,21 +24,20 @@ Require-File $goldenGate
 if (-not $SkipSnapshot) { Require-File $snapshot }
 if (-not $SkipTag)      { Require-File $tagGreen }
 
-Write-Host "Step 1: Boot + seed + basic smoke (lockdown_run.ps1)" -ForegroundColor Yellow
+Write-Host "Step 1: Boot + seed + smoke" -ForegroundColor Yellow
 & $lockdownRun -APITimeout $APITimeout
 
-Write-Host "Step 2: Golden Path gate (golden_path_gate.ps1)" -ForegroundColor Yellow
-& $goldenGate -TimeoutSec $APITimeout
+Write-Host "Step 2: Golden Path gate" -ForegroundColor Yellow
+& $goldenGate -APITimeout $APITimeout
 
 if (-not $SkipSnapshot) {
-  Write-Host "Step 3: Snapshot demo state (demo_snapshot.ps1)" -ForegroundColor Yellow
+  Write-Host "Step 3: Snapshot" -ForegroundColor Yellow
   & $snapshot
 }
 
 if (-not $SkipTag) {
-  Write-Host "Step 4: Tag green proof (tag_green3.ps1)" -ForegroundColor Yellow
-  $tagName = "lockdown-goldenpath-" + (Get-Date -Format "yyyyMMdd-HHmmss")
-  & $tagGreen -TagName $tagName
+  Write-Host "Step 4: Tag green proof" -ForegroundColor Yellow
+  & $tagGreen
 }
 
 Write-Host "✅ ONE-CLICK GATE COMPLETE" -ForegroundColor Green
