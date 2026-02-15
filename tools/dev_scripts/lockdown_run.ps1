@@ -33,8 +33,43 @@ Write-Host "== LOCKDOWN RUN =="
 Push-Location $backendRoot
 $env:PYTHONUTF8 = "1"
 $env:PYTHONIOENCODING = "utf-8"
-& $py manage.py seed_lockdown_minimal --count $AdmissionsCount
-if ($LASTEXITCODE -ne 0) { throw "seed_lockdown_minimal failed exit=$LASTEXITCODE" }
+
+# Boot Django server in background
+Write-Host "Booting Django server..."
+$serverJob = Start-Job -ScriptBlock {
+  param($pyPath, $backendPath)
+  Set-Location $backendPath
+  & $pyPath manage.py runserver 127.0.0.1:8000 --noreload
+} -ArgumentList $py, $backendRoot
+
+# Wait for server to be ready
+Write-Host "Waiting for server..."
+$maxAttempts = 20
+$attempt = 0
+$serverReady = $false
+while ($attempt -lt $maxAttempts -and -not $serverReady) {
+  Start-Sleep -Milliseconds 500
+  try {
+    $healthStatus = (Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 "http://127.0.0.1:8000/health/").StatusCode
+    if ($healthStatus -eq 200) {
+      $serverReady = $true
+      Write-Host "Server ready!"
+    }
+  }
+  catch {
+    $attempt++
+  }
+}
+
+if (-not $serverReady) {
+  Stop-Job -Job $serverJob
+  Remove-Job -Job $serverJob
+  throw "Django server failed to start within timeout"
+}
+
+Write-Host "Seeding Heritage realism pack..."
+& $py manage.py seed_heritage_realism_pack --no-finance-scripts
+if ($LASTEXITCODE -ne 0) { throw "seed_heritage_realism_pack failed exit=$LASTEXITCODE" }
 
 try {
   $healthStatus = (Invoke-WebRequest -UseBasicParsing -TimeoutSec $TimeoutSec "http://127.0.0.1:8000/health/").StatusCode
