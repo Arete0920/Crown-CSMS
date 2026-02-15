@@ -5,7 +5,9 @@
   [int]$MinEnrolledStudents = 1,
   [int]$MinStudentsBilled = 1,
   [string]$SchoolId = "",
-  [string]$AcademicYearId = ""
+  [string]$AcademicYearId = "",
+  [Parameter(Mandatory=$false)]
+  [switch]$BackendOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,12 +96,16 @@ $qsAcademicYearId = "school_id=$schoolId&academic_year_id=$yearId"
 $health = Get-Json "$Backend/health/" "SYS_HEALTH_HTTP_FAIL"
 Assert ($health.demo_mode -eq $true) "SYS_DEMO_MODE_INACTIVE got=$($health.demo_mode) expected=true"`nAssert ([bool]$health.build_sha -and $health.build_sha -ne "local-dev") "SYS_BUILD_SHA_INVALID got=$($health.build_sha) expected!=local-dev"
 
-try {
-  $frontendStatus = (Invoke-WebRequest -UseBasicParsing -TimeoutSec $TimeoutSec "$Frontend/").StatusCode
-  Assert ($frontendStatus -eq 200) "SYS_FRONTEND_NOT_200 got=$frontendStatus expected=200"
-}
-catch {
-  Fail "SYS_FRONTEND_HTTP_FAIL url=$Frontend/ err=$($_.Exception.Message)"
+if (-not $BackendOnly) {
+  try {
+    $frontendStatus = (Invoke-WebRequest -UseBasicParsing -TimeoutSec $TimeoutSec "$Frontend/").StatusCode
+    Assert ($frontendStatus -eq 200) "SYS_FRONTEND_NOT_200 got=$frontendStatus expected=200"
+  }
+  catch {
+    Fail "SYS_FRONTEND_HTTP_FAIL url=$Frontend/ err=$($_.Exception.Message)"
+  }
+} else {
+  Write-Host "BackendOnly=ON: skipping frontend :3000 check"
 }
 
 $admissions = Get-Json "$Backend/api/admissions/metrics/?$qsYearId" "ADM_SUMMARY_HTTP_FAIL"
