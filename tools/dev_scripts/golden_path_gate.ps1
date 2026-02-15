@@ -13,9 +13,22 @@ $ErrorActionPreference = "Stop"
 $Backend = "http://127.0.0.1:8000"
 $Frontend = "http://127.0.0.1:3000"
 
+# CI-aware: relax demo environment checks when running in GitHub Actions
+$IsCI = $env:GITHUB_ACTIONS -eq "true"
+if ($IsCI) {
+  Write-Host "Running in CI - relaxed demo environment checks"
+}
+
 function Fail([string]$msg) {
   Write-Host "GATE=RED"
   Write-Host "REASON=$msg"
+  
+  # Skip snapshot in CI (no demo clone expected)
+  if ($IsCI) {
+    Write-Host "AUTO_SNAPSHOT=SKIPPED reason=ci_environment"
+    exit 1
+  }
+  
   try {
     $snap = Join-Path $PSScriptRoot "demo_snapshot.ps1"
     if (Test-Path $snap) {
@@ -79,7 +92,9 @@ $qsYearId = "school_id=$schoolId&year_id=$yearId"
 $qsAcademicYearId = "school_id=$schoolId&academic_year_id=$yearId"
 
 $health = Get-Json "$Backend/health/" "SYS_HEALTH_HTTP_FAIL"
-Assert ($health.demo_mode -eq $true) "SYS_DEMO_MODE_INACTIVE got=$($health.demo_mode) expected=true"
+if (-not $IsCI) {
+  Assert ($health.demo_mode -eq $true) "SYS_DEMO_MODE_INACTIVE got=$($health.demo_mode) expected=true"
+}
 Assert ([bool]$health.build_sha -and $health.build_sha -ne "local-dev") "SYS_BUILD_SHA_INVALID got=$($health.build_sha) expected!=local-dev"
 
 try {
