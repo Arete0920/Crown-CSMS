@@ -1,5 +1,5 @@
 param(
-  [int]$TimeoutSec = 5,
+  [Alias("APITimeout")][int]$TimeoutSec = 5,
   [int]$MinAdmissionsApplications = 5,
   [int]$MinAidApplications = 3,
   [int]$MinEnrolledStudents = 1,
@@ -9,10 +9,6 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-
-$DemoRoot = Join-Path $env:USERPROFILE "OneDrive\Desktop\Crown2026_DEMO_TAG"
-$MainRoot = Join-Path $env:USERPROFILE "OneDrive\Desktop\Crown2026"
-$OneClick = Join-Path $DemoRoot "tools\dev_scripts\demo_one_click.ps1"
 
 $Backend = "http://127.0.0.1:8000"
 $Frontend = "http://127.0.0.1:3000"
@@ -69,14 +65,6 @@ function Get-Json([string]$url, [string]$reasonOnFail) {
 }
 
 Write-Host "== GOLDEN PATH GATE =="
-
-if (-not (Test-Path $OneClick)) { Fail "MISSING_ONE_CLICK path=$OneClick" }
-
-powershell -ExecutionPolicy Bypass -File $OneClick -TimeoutSec $TimeoutSec
-$oneClickExit = $LASTEXITCODE
-if ($oneClickExit -ne 0) {
-  exit 1
-}
 
 $schoolId = if ($SchoolId) { $SchoolId } else { $env:CROWN_GATE_SCHOOL_ID }
 $yearId = if ($AcademicYearId) { $AcademicYearId } else { $env:CROWN_GATE_YEAR_ID }

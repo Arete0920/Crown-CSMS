@@ -17,9 +17,12 @@ jobs:
       
       - name: Verify release tags are immutable
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git fetch --tags --force
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --tags --force origin
           echo "Verifying immutable release tags..."
           
           # Validate registry format: all SHAs must be full 40-char hex
