@@ -1,23 +1,40 @@
+# Python
 .venv/
 venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 
-*.log
-*.out
-*.err
-
-db.sqlite3
-backend/db.sqlite3
-
-.vscode/
+# Node
+node_modules/
+dist/
+build/
+.vite/
 frontend/dashboards/node_modules/
 frontend/dashboards/dist/
 frontend/dashboards/test-results/
 
+# Demo proof/log artifacts
+BOOTPASS_*.log
+ONEPASS_*.log
+*.log
+*.out
+*.err
+docs/demo-proof/**/proof/
+docs/demo-proof/**/out/
+docs/demo-proof/**/tmp/
+
+# Local generated artifacts
+db.sqlite3
+backend/db.sqlite3
 _tmp/
 _local_proofs/
 app_logs/
 media/
+
+# Editor/OS
+.vscode/
+Thumbs.db
+.DS_Store
