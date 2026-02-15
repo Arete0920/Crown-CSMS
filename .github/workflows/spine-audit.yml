@@ -24,10 +24,10 @@ jobs:
 
           for f in "${REQUIRED_FILES[@]}"; do
             if [ ! -f "$f" ]; then
-              echo "❌ Missing canonical file: $f"
+              echo "ERROR Missing canonical file: $f"
               exit 1
             fi
-            echo "✅ Found $f"
+            echo "OK Found $f"
           done
 
       - name: Guard canon against credential leakage (high-signal)
@@ -55,11 +55,11 @@ jobs:
           for file in "${CANON_FILES[@]}"; do
             for rx in "${FORBIDDEN_REGEX[@]}"; do
               if grep -nE "$rx" "$file" > /dev/null; then
-                echo "❌ Forbidden secret pattern matched in $file (regex: $rx)"
+                echo "ERROR Forbidden secret pattern matched in $file (regex: $rx)"
                 echo "---- matches ----"
                 grep -nE "$rx" "$file" | head -n 20
                 exit 1
               fi
             done
-            echo "✅ $file clean"
+            echo "OK $file clean"
           done
