@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.management import call_command
+from django.db.models import Count
 
 from core.models import School, AcademicYear
 
@@ -27,7 +28,17 @@ class Command(BaseCommand):
 
         call_command("seed_demo_school")
 
-        school = School.objects.order_by("created_at", "id").first()
+        school = (
+            School.objects.filter(name="Crown Demo Christian Academy")
+            .order_by("-created_at", "id")
+            .first()
+        )
+        if not school:
+            school = (
+                School.objects.annotate(family_count=Count("families"))
+                .order_by("-family_count", "created_at", "id")
+                .first()
+            )
         if not school:
             raise CommandError("No School found after seed_demo_school")
 
