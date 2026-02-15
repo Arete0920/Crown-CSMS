@@ -46,7 +46,7 @@ jobs:
             echo "Lockdown gate artifacts must exist in main repo paths before CI can run."
             echo "Sync from DEMO_TAG to main and rerun."
             exit 1
-          fi
+          }
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -75,6 +75,8 @@ jobs:
         shell: pwsh
         run: |
           Set-Location backend
+          $env:PYTHONUTF8 = '1'
+          $env:PYTHONIOENCODING = 'utf-8'
           python manage.py migrate --noinput
 
           $out = python manage.py seed_lockdown_minimal --count 10
@@ -103,16 +105,20 @@ jobs:
         shell: pwsh
         run: |
           Set-Location backend
-          $log = Join-Path $env:RUNNER_TEMP 'backend.log'
-          $proc = Start-Process python -ArgumentList @('manage.py','runserver','127.0.0.1:8000','--noreload') -RedirectStandardOutput $log -RedirectStandardError $log -PassThru
+          $workDir = (Get-Location).Path
+          $outLog = Join-Path $env:RUNNER_TEMP 'backend.out.log'
+          $errLog = Join-Path $env:RUNNER_TEMP 'backend.err.log'
+          $proc = Start-Process python -WorkingDirectory $workDir -ArgumentList @('manage.py','runserver','127.0.0.1:8000','--noreload') -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
           Set-Content -Path (Join-Path $env:RUNNER_TEMP 'backend.pid') -Value $proc.Id
 
       - name: Start frontend (3000)
         shell: pwsh
         run: |
           Set-Location frontend/dashboards
-          $log = Join-Path $env:RUNNER_TEMP 'frontend.log'
-          $proc = Start-Process npm -ArgumentList @('run','dev','--','--host','127.0.0.1','--port','3000') -RedirectStandardOutput $log -RedirectStandardError $log -PassThru
+          $workDir = (Get-Location).Path
+          $outLog = Join-Path $env:RUNNER_TEMP 'frontend.out.log'
+          $errLog = Join-Path $env:RUNNER_TEMP 'frontend.err.log'
+          $proc = Start-Process npm -WorkingDirectory $workDir -ArgumentList @('run','dev','--','--host','127.0.0.1','--port','3000') -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
           Set-Content -Path (Join-Path $env:RUNNER_TEMP 'frontend.pid') -Value $proc.Id
 
       - name: Wait for backend and frontend
@@ -120,13 +126,12 @@ jobs:
         run: |
           $backendOk = $false
           for ($i=0; $i -lt 40; $i++) {
-            try {
-              Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 'http://127.0.0.1:8000/health/' | Out-Null
+            $listener = Get-NetTCPConnection -State Listen -LocalPort 8000 -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($listener) {
               $backendOk = $true
               break
-            } catch {
-              Start-Sleep -Seconds 1
             }
+            Start-Sleep -Seconds 1
           }
           if (-not $backendOk) { throw 'Backend did not become healthy on :8000' }
 
@@ -158,13 +163,21 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          Write-Host "===== backend.log ====="
-          $backendLog = Join-Path $env:RUNNER_TEMP 'backend.log'
-          if (Test-Path $backendLog) { Get-Content $backendLog -Tail 400 }
+          Write-Host "===== backend.out.log ====="
+          $backendOut = Join-Path $env:RUNNER_TEMP 'backend.out.log'
+          if (Test-Path $backendOut) { Get-Content $backendOut -Tail 400 }
 
-          Write-Host "===== frontend.log ====="
-          $frontendLog = Join-Path $env:RUNNER_TEMP 'frontend.log'
-          if (Test-Path $frontendLog) { Get-Content $frontendLog -Tail 400 }
+          Write-Host "===== backend.err.log ====="
+          $backendErr = Join-Path $env:RUNNER_TEMP 'backend.err.log'
+          if (Test-Path $backendErr) { Get-Content $backendErr -Tail 400 }
+
+          Write-Host "===== frontend.out.log ====="
+          $frontendOut = Join-Path $env:RUNNER_TEMP 'frontend.out.log'
+          if (Test-Path $frontendOut) { Get-Content $frontendOut -Tail 400 }
+
+          Write-Host "===== frontend.err.log ====="
+          $frontendErr = Join-Path $env:RUNNER_TEMP 'frontend.err.log'
+          if (Test-Path $frontendErr) { Get-Content $frontendErr -Tail 400 }
 
       - name: Stop servers
         if: always()
@@ -174,11 +187,11 @@ jobs:
           $frontendPidFile = Join-Path $env:RUNNER_TEMP 'frontend.pid'
 
           if (Test-Path $backendPidFile) {
-            $pid = Get-Content $backendPidFile | Select-Object -First 1
-            if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+            $backendProcId = Get-Content $backendPidFile | Select-Object -First 1
+            if ($backendProcId) { Stop-Process -Id $backendProcId -Force -ErrorAction SilentlyContinue }
           }
 
           if (Test-Path $frontendPidFile) {
-            $pid = Get-Content $frontendPidFile | Select-Object -First 1
-            if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+            $frontendProcId = Get-Content $frontendPidFile | Select-Object -First 1
+            if ($frontendProcId) { Stop-Process -Id $frontendProcId -Force -ErrorAction SilentlyContinue }
           }
