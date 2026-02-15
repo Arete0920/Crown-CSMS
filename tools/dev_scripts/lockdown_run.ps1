@@ -72,6 +72,55 @@ Write-Host "Seeding Heritage realism pack..."
 & $py manage.py seed_heritage_realism_pack --no-finance-scripts
 if ($LASTEXITCODE -ne 0) { throw "seed_heritage_realism_pack failed exit=$LASTEXITCODE" }
 
+# ---- Gate context (School/Year) for golden_path_gate.ps1 ----
+# Determine SchoolId + AcademicYearId from DB.
+# Strategy: Find the school by name, then find the academic year that HAS the seeded admissions marker.
+$gateCtxRaw = & $py manage.py shell -c @"
+import json
+from core.models import School, AcademicYear
+from admissions.models import AdmissionsApplication
+
+s = School.objects.filter(name='Crown Demo Christian Academy').order_by('-created_at', 'id').first()
+if not s:
+    print(json.dumps({'school_id': None, 'year_id': None, 'year_label': None}))
+else:
+    # Find the year that actually HAS the seeded admissions marker
+    year_with_marker = AcademicYear.objects.filter(
+        school=s,
+        admissions_applications__notes_internal='seed_admissions_demo'
+    ).distinct().first()
+    y = year_with_marker if year_with_marker else AcademicYear.objects.filter(school=s, is_current=True).first()
+    print(json.dumps({
+      'school_id': str(s.id),
+      'year_id': str(y.id) if y else None,
+      'year_label': getattr(y, 'label', None) if y else None,
+    }))
+"@
+
+if ($LASTEXITCODE -ne 0) { throw "gate context query failed exit=$LASTEXITCODE" }
+
+# Filter for JSON line (starts with '{') in case Django fixture messages are present
+$gateCtx = ($gateCtxRaw | Where-Object { $_ -match '^\{' }) | Select-Object -First 1
+
+if ([string]::IsNullOrWhiteSpace($gateCtx)) { 
+  throw "gate context JSON not found in output: $($gateCtxRaw -join '; ')" 
+}
+
+try { $ctx = $gateCtx | ConvertFrom-Json } catch { throw "gate context JSON parse failed: $gateCtx" }
+
+if ([string]::IsNullOrWhiteSpace($ctx.school_id)) { throw "CROWN_GATE_SCHOOL_ID could not be determined" }
+
+# Prefer AcademicYear.id if present; otherwise allow label fallback only if your API accepts it.
+if ([string]::IsNullOrWhiteSpace($ctx.year_id)) {
+  throw "CROWN_GATE_YEAR_ID could not be determined (AcademicYear.id missing)"
+}
+
+$env:CROWN_GATE_SCHOOL_ID = $ctx.school_id
+$env:CROWN_GATE_YEAR_ID   = $ctx.year_id
+
+Write-Host "Gate context set: CROWN_GATE_SCHOOL_ID=$($env:CROWN_GATE_SCHOOL_ID) CROWN_GATE_YEAR_ID=$($env:CROWN_GATE_YEAR_ID)"
+# ------------------------------------------------------------
+
 try {
   $healthStatus = (Invoke-WebRequest -UseBasicParsing -TimeoutSec $TimeoutSec "http://127.0.0.1:8000/health/").StatusCode
   if ($healthStatus -ne 200) { throw "backend health status=$healthStatus" }
