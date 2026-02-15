@@ -33,6 +33,7 @@ Write-Host "== LOCKDOWN RUN =="
 Push-Location $backendRoot
 $env:PYTHONUTF8 = "1"
 $env:PYTHONIOENCODING = "utf-8"
+$env:CROWN_DEMO_MODE = "true"
 
 # Boot Django server in background
 Write-Host "Booting Django server..."

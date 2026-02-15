@@ -28,7 +28,11 @@ Write-Host "Step 1: Boot + seed + smoke" -ForegroundColor Yellow
 & $lockdownRun -APITimeout $APITimeout
 
 Write-Host "Step 2: Golden Path gate" -ForegroundColor Yellow
-& $goldenGate -APITimeout $APITimeout
+if ($SkipSnapshot) {
+  & $goldenGate -APITimeout $APITimeout -BackendOnly
+} else {
+  & $goldenGate -APITimeout $APITimeout
+}
 
 if (-not $SkipSnapshot) {
   Write-Host "Step 3: Snapshot" -ForegroundColor Yellow
