@@ -7,6 +7,9 @@ Safe-by-default:
 Usage (PowerShell):
   cd backend
     .\\venv\\Scripts\\python.exe ..\\backend\\scripts\\seed_households.py
+
+NOTE: This now creates household/guardian records only.
+Student linking is handled by seed_demo_school (core.Student) and admissions bridge.
 """
 
 import os
@@ -26,7 +29,7 @@ def run() -> None:
 
     django.setup()
 
-    from crown_api.models import Household, HouseholdMember, Person, Student, StudentProfile
+    from crown_api.models import Household, HouseholdMember, Person
     from crown_api.models_households import (
         ROLE_AUTHORIZED_PICKUP,
         ROLE_EMERGENCY_CONTACT,
@@ -103,27 +106,10 @@ def run() -> None:
         defaults={"is_primary": False},
     )
 
-    # Household 1 students
-    s1p = person("Alice", "Megahan", "alice.megahan@student.example.com")
-    s2p = person("Ben", "Megahan", "ben.megahan@student.example.com")
-
-    s1, _ = Student.objects.get_or_create(
-        person=s1p,
-        defaults={"household": h1, "grade_level": "3", "active": True},
-    )
-    s2, _ = Student.objects.get_or_create(
-        person=s2p,
-        defaults={"household": h1, "grade_level": "1", "active": True},
-    )
-
-    StudentProfile.objects.get_or_create(
-        student=s1,
-        defaults={"student_number": "HCA-0001", "expected_grad_year": 2035},
-    )
-    StudentProfile.objects.get_or_create(
-        student=s2,
-        defaults={"student_number": "HCA-0002", "expected_grad_year": 2037},
-    )
+    # Household 1 students (NOTE: core.Student objects created by seed_demo_school)
+    # StudentProfile linking will happen via scoping bridge in admissions
+    # This section intentionally removed - Student/StudentProfile now
+    # use core.models.Student with family-based relationships.
 
     # Household 2 guardians
     p3 = person("Mark", "Carter", "mark.carter@example.com", phone="555-1001")
@@ -160,27 +146,10 @@ def run() -> None:
         defaults={"is_primary": False},
     )
 
-    # Household 2 students
-    s3p = person("Chloe", "Carter", "chloe.carter@student.example.com")
-    s4p = person("David", "Carter", "david.carter@student.example.com")
-
-    s3, _ = Student.objects.get_or_create(
-        person=s3p,
-        defaults={"household": h2, "grade_level": "5", "active": True},
-    )
-    s4, _ = Student.objects.get_or_create(
-        person=s4p,
-        defaults={"household": h2, "grade_level": "2", "active": True},
-    )
-
-    StudentProfile.objects.get_or_create(
-        student=s3,
-        defaults={"student_number": "HCA-0003", "expected_grad_year": 2033},
-    )
-    StudentProfile.objects.get_or_create(
-        student=s4,
-        defaults={"student_number": "HCA-0004", "expected_grad_year": 2036},
-    )
+    # Household 2 students (NOTE: core.Student objects created by seed_demo_school)
+    # StudentProfile linking will happen via scoping bridge in admissions.
+    # This section intentionally removed - Student/StudentProfile now use
+    # core.models.Student with family-based relationships.
 
     print("Seeded households:")
     print(f"- {h1.household_name}")
