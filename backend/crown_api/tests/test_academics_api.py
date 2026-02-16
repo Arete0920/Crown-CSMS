@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import UserAccount
+from core.models import UserAccount, School, Family, Student
 from crown_api.models import (
     AttendanceRecord,
     Course,
@@ -11,7 +11,6 @@ from crown_api.models import (
     Household,
     HouseholdMember,
     Person,
-    Student,
     UserPersonLink,
 )
 from crown_api.models_households import ROLE_GUARDIAN
@@ -51,28 +50,56 @@ class AcademicsApiTests(TestCase):
             is_primary=False,
         )
 
-        self.student_a_person = Person.objects.create(
+        # Create core School and Family for core.models.Student
+        self.school = School.objects.create(name="Test School")
+        self.family_a = Family.objects.create(school=self.school, family_name="Family A")
+        self.family_b = Family.objects.create(school=self.school, family_name="Family B")
+
+        # Create core.models.Student objects
+        self.student_a = Student.objects.create(
+            school=self.school,
+            family=self.family_a,
+            student_number="STU001",
             first_name="Student",
             last_name="A",
-            email="student.a@example.com",
-        )
-        self.student_b_person = Person.objects.create(
-            first_name="Student",
-            last_name="B",
-            email="student.b@example.com",
-        )
-
-        self.student_a = Student.objects.create(
-            person=self.student_a_person,
-            household=self.household_a,
-            grade_level="3",
-            active=True,
+            dob=date(2018, 1, 1),
+            status='ACTIVE',
         )
         self.student_b = Student.objects.create(
-            person=self.student_b_person,
+            school=self.school,
+            family=self.family_b,
+            student_number="STU002",
+            first_name="Student",
+            last_name="B",
+            dob=date(2016, 1, 1),
+            status='ACTIVE',
+        )
+        
+        # Link families to households for parent scoping
+        # Create AdmissionsApplication records to establish the family←→household link
+        from admissions.models import AdmissionsApplication
+        from core.models import AcademicYear
+        from datetime import datetime
+        ay = AcademicYear.objects.create(
+            school=self.school,
+            name="2026",
+            start_date=datetime(2026, 1, 1).date(),
+            end_date=datetime(2026, 12, 31).date(),
+            is_current=True,
+        )
+        AdmissionsApplication.objects.create(
+            school=self.school,
+            academic_year=ay,
+            family=self.family_a,
+            student=self.student_a,
+            household=self.household_a,
+        )
+        AdmissionsApplication.objects.create(
+            school=self.school,
+            academic_year=ay,
+            family=self.family_b,
+            student=self.student_b,
             household=self.household_b,
-            grade_level="5",
-            active=True,
         )
 
         self.course_math = Course.objects.create(course_code="MATH-101", name="Math")

@@ -1,16 +1,15 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import UserAccount
+from core.models import UserAccount, School, Family, Student
 from crown_api.models import (
     Household,
     HouseholdMember,
     Message,
     MessageThread,
     Person,
-    Student,
     UserPersonLink,
 )
 from crown_api.models_households import ROLE_GUARDIAN
@@ -54,28 +53,29 @@ class CommsApiTests(TestCase):
             is_primary=False,
         )
 
-        student_a_person = Person.objects.create(
+        # Create core School and Family for core.models.Student
+        self.school = School.objects.create(name="Test School")
+        self.family_a = Family.objects.create(school=self.school, family_name="Family A")
+        self.family_b = Family.objects.create(school=self.school, family_name="Family B")
+
+        # Create core.models.Student objects
+        self.student_a = Student.objects.create(
+            school=self.school,
+            family=self.family_a,
+            student_number="STU001",
             first_name="Student",
             last_name="A",
-            email="student.a@example.com",
-        )
-        self.student_a = Student.objects.create(
-            person=student_a_person,
-            household=self.household_a,
-            grade_level="3",
-            active=True,
-        )
-
-        student_b_person = Person.objects.create(
-            first_name="Student",
-            last_name="B",
-            email="student.b@example.com",
+            dob=date(2018, 1, 1),
+            status='ACTIVE',
         )
         self.student_b = Student.objects.create(
-            person=student_b_person,
-            household=self.household_b,
-            grade_level="4",
-            active=True,
+            school=self.school,
+            family=self.family_b,
+            student_number="STU002",
+            first_name="Student",
+            last_name="B",
+            dob=date(2017, 1, 1),
+            status='ACTIVE',
         )
 
         other_person = Person.objects.create(

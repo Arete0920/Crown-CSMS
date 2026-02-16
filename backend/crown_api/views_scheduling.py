@@ -5,7 +5,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from crown_api.access_households import resolve_household_access
-from crown_api.models import Section, SectionEnrollment, Student, Term
+from crown_api.models import Section, SectionEnrollment, Term
+from core.models import Student
+from crown_api.scoping_students import get_core_student_or_404_for_request
 from crown_api.serializers_scheduling import (
     StudentScheduleEnrollmentSerializer,
     TermListSerializer,
@@ -58,9 +60,17 @@ def term_sections(request, term_id):
     )
 
     if not access.is_staff:
+        # Filter sections to only those with in-scope students
+        # Get all in-scope student IDs
+        from admissions.models import AdmissionsApplication
+        in_scope_student_ids = set(
+            AdmissionsApplication.objects.filter(
+                household_id__in=access.household_ids
+            ).values_list("student_id", flat=True)
+        )
         qs = qs.filter(
             roster__active=True,
-            roster__student__household_id__in=access.household_ids,
+            roster__student_id__in=in_scope_student_ids,
         ).distinct()
 
     payload = []
@@ -99,16 +109,11 @@ def student_schedule(request, student_id):
 
     access = resolve_household_access(request)
 
-    student_qs = Student.objects.select_related("household", "person")
-
     if not access.is_staff:
-        # No existence leak: if student isn't in-scope, return 404
-        if not student_qs.filter(id=student_id, household_id__in=access.household_ids).exists():
-            raise Http404()
+        # Enforce household-based access control (returns 404 if out of scope)
+        get_core_student_or_404_for_request(request=request, student_id=student_id)
 
-        student_qs = student_qs.filter(household_id__in=access.household_ids)
-
-    student = get_object_or_404(student_qs, id=student_id)
+    student = get_object_or_404(Student, id=student_id)
 
     enrollments = (
         SectionEnrollment.objects.filter(student=student, active=True)

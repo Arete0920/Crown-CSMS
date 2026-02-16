@@ -29,7 +29,6 @@ def threads_list(request):
     qs = MessageThread.objects.select_related(
         "household",
         "student",
-        "student__person",
     )
 
     if not access.is_staff:
@@ -51,7 +50,6 @@ def thread_detail(request, thread_id):
     qs = MessageThread.objects.select_related(
         "household",
         "student",
-        "student__person",
     )
 
     if not access.is_staff:

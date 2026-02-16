@@ -1,7 +1,7 @@
 from django.db import models
 
-from core.models import BaseModel
-from crown_api.models_households import Household, Person, Student
+from core.models import BaseModel, Student
+from crown_api.models_households import Household, Person
 
 
 class MessageThread(BaseModel):
