@@ -134,6 +134,7 @@ INSTALLED_APPS = [
     'academics',
     'academics_ro',
     'curricula',
+    'classroom',
     'gradebook',
     'billing',
     'audit',  # Production audit logging

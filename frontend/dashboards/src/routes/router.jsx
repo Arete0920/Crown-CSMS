@@ -11,6 +11,7 @@ import { AdmissionsPipelineList } from '../pages/AdmissionsPipelineList.jsx';
 import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
 import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
 import OpsCommandCenter from '../components/OpsCommandCenter.jsx';
+import ClassroomsDashboard from '../pages/ClassroomsDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
   {
     path: '/academics',
     element: <AcademicsDashboard />,
+  },
+  {
+    path: '/classrooms',
+    element: <ClassroomsDashboard />,
   },
   {
     path: '/gradebook',
