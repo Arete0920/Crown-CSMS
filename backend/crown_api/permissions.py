@@ -1,31 +1,57 @@
-"""
-Role-based access control helpers for production permission enforcement.
-"""
+import os
+from functools import wraps
 from django.http import JsonResponse
 
 
-def require_role(allowed_roles):
+def _get_user_role(request):
     """
-    Decorator to enforce role-based access control.
+    Crown demo-friendly role resolution.
+    Priority:
+      1) request.user.role (if your User model has it)
+      2) HTTP header X-Demo-Role (only if ALLOW_DEMO_ROLE_HEADER=1)
+      3) None
     
-    Usage:
-        @require_role(["admin", "finance"])
-        def finance_dashboard(request):
-            ...
-    
-    Returns 403 if user role not in allowed_roles.
+    SECURITY: X-Demo-Role header only works when ALLOW_DEMO_ROLE_HEADER=1
+    to prevent privilege escalation in production.
     """
+    # 1) user.role
+    user = getattr(request, "user", None)
+    role = getattr(user, "role", None)
+    if role:
+        return str(role)
+
+    # 2) demo header fallback (only if explicitly enabled)
+    if os.getenv("ALLOW_DEMO_ROLE_HEADER") == "1":
+        hdr = request.headers.get("X-Demo-Role") or request.META.get("HTTP_X_DEMO_ROLE")
+        if hdr:
+            return str(hdr).strip()
+
+    return None
+
+
+def require_roles(allowed_roles):
+    """
+    Decorator enforcing that request has one of allowed roles.
+    Returns JSON 403 with required_roles and actual_role.
+    """
+    allowed = set(str(r) for r in allowed_roles)
+
     def decorator(view_func):
+        @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            user_role = getattr(request.user, "role", None) if hasattr(request, "user") else None
-            if user_role not in allowed_roles:
-                return JsonResponse({
-                    "ok": False,
-                    "error": "Forbidden",
-                    "required_roles": allowed_roles
-                }, status=403)
+            actual = _get_user_role(request)
+            if actual not in allowed:
+                return JsonResponse(
+                    {
+                        "ok": False,
+                        "error": "Forbidden",
+                        "required_roles": sorted(list(allowed)),
+                        "actual_role": actual,
+                    },
+                    status=403,
+                )
             return view_func(request, *args, **kwargs)
-        wrapper.__name__ = view_func.__name__
-        wrapper.__doc__ = view_func.__doc__
+
         return wrapper
+
     return decorator
