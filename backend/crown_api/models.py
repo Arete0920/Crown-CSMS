@@ -5,6 +5,7 @@ from .models_academics_core import Course, CourseEnrollment, AttendanceRecord, G
 from .models_finance_core import Invoice, Payment
 from .models_scheduling_core import Term, Section, SectionEnrollment
 from .models_comms_core import MessageThread, Message
+from .audit_models import AuditEvent  # noqa: F401
 
 __all__ = [
     "Person",
@@ -24,4 +25,5 @@ __all__ = [
     "SectionEnrollment",
     "MessageThread",
     "Message",
+    "AuditEvent",
 ]
