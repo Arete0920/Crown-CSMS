@@ -38,3 +38,6 @@ media/
 .vscode/
 Thumbs.db
 .DS_Store
+
+# Developer scratch
+._scratch_local/
