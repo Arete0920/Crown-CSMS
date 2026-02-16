@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from core.models import UserRole
 from households.scoping import get_request_school_id
+from crown_api.tenant_decorators import require_tenant
 
 from academics.models import Enrollment, Section, TeacherAssignment
 from academics.serializers import SectionSerializer, StudentSerializer
@@ -75,6 +76,7 @@ class GradebookSectionViewSet(PaginatedReadOnlyViewSet):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@require_tenant
 def section_roster(request, section_id):
     school_id = get_request_school_id(request, required=True)
     section = _get_section_or_404(request, school_id, section_id)
@@ -97,6 +99,7 @@ def section_roster(request, section_id):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@require_tenant
 def section_assignments(request, section_id):
     school_id = get_request_school_id(request, required=True)
     section = _get_section_or_404(request, school_id, section_id)
@@ -180,6 +183,7 @@ def section_summary(request, section_id):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@require_tenant
 def section_grades(request, section_id):
     school_id = get_request_school_id(request, required=True)
     section = _get_section_or_404(request, school_id, section_id)
