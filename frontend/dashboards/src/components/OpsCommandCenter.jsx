@@ -1,17 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { fetchOpsSummary } from "../api/ops";
+import { fetchOpsSummary, fetchOpsAlerts } from "../api/ops";
 
 export default function OpsCommandCenter() {
   const [data, setData] = useState(null);
+  const [alerts, setAlerts] = useState([]);
   const [err, setErr] = useState("");
+  const [deps, setDeps] = useState({});
+  const [depErrors, setDepErrors] = useState([]);
   const [loading, setLoading] = useState(false);
 
   async function load() {
     setErr("");
+    setDepErrors([]);
     setLoading(true);
     try {
-      const j = await fetchOpsSummary();
-      setData(j);
+      const [s, a] = await Promise.all([fetchOpsSummary(), fetchOpsAlerts()]);
+      setData(s);
+      setAlerts(a.alerts || []);
+      setDeps(a.deps || {});
+      setDepErrors(a.errors || []);
     } catch (e) {
       setErr(e?.message || String(e));
     } finally {
@@ -26,6 +33,14 @@ export default function OpsCommandCenter() {
   const proof = useMemo(() => {
     if (!data) return "";
     const c = data.counts || {};
+    const alertLines = alerts.length > 0
+      ? [
+          `ALERTS: ${alerts.length} total`,
+          ...alerts.slice(0, 3).map((a) => `  - [${a.severity}] ${a.title}`),
+          alerts.length > 3 ? `  ... (${alerts.length - 3} more)` : "",
+        ].filter(Boolean)
+      : ["ALERTS: none (demo looks healthy)"];
+
     return [
       `CROWN OPS PROOF`,
       `ts=${data.ts}`,
@@ -41,8 +56,10 @@ export default function OpsCommandCenter() {
       `grade_entries=${c.grade_entries}`,
       `comms_threads=${c.comms_threads}`,
       `comms_messages=${c.comms_messages}`,
+      "",
+      ...alertLines,
     ].join("\n");
-  }, [data]);
+  }, [data, alerts]);
 
   async function copyProof() {
     try {
@@ -82,6 +99,20 @@ export default function OpsCommandCenter() {
         </div>
       )}
 
+      {depErrors.length > 0 && (
+        <div style={{ padding: 12, border: "1px solid #f60", backgroundColor: "#fff4e6", marginBottom: 12 }}>
+          <strong style={{ color: "#f60" }}>⚠ Ops Alerts Degraded:</strong>
+          <div style={{ fontSize: 12, marginTop: 8 }}>
+            {depErrors.map((e, i) => (
+              <div key={i} style={{ marginBottom: 4 }}>• {e}</div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, marginTop: 8, color: "#666" }}>
+            Some alert rules may be unavailable. Deps: admissions={String(deps.admissions)}, finance={String(deps.finance)}, gradebook={String(deps.gradebook)}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(180px, 1fr))", gap: 12 }}>
         {tiles.map(([k, v]) => (
           <div key={k} style={{ border: "1px solid #ddd", padding: 12, borderRadius: 8 }}>
@@ -89,6 +120,35 @@ export default function OpsCommandCenter() {
             <div style={{ fontSize: 18, fontWeight: 600 }}>{v ?? "n/a"}</div>
           </div>
         ))}
+      </div>
+
+      <div style={{ marginTop: 16, padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 12 }}>Predictive Alerts (Lite)</h3>
+        <div style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>
+          Deterministic rules based on current demo data
+        </div>
+        {alerts.length === 0 ? (
+          <div style={{ fontSize: 14, color: "#666" }}>No alerts. Demo data looks healthy.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {alerts.map((a) => (
+              <div key={a.id} style={{ padding: 10, border: "1px solid #ddd", borderRadius: 4 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{a.title}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: a.severity === "critical" ? "#c00" : a.severity === "warning" ? "#f60" : "#999" }}>
+                    {a.severity}
+                  </span>
+                </div>
+                <div style={{ fontSize: 13, marginBottom: 6 }}>{a.detail}</div>
+                {a.metric && (
+                  <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace" }}>
+                    metric: {a.metric} • value: {JSON.stringify(a.value)} • threshold: {JSON.stringify(a.threshold)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <h3 style={{ marginTop: 16 }}>Proof Block</h3>

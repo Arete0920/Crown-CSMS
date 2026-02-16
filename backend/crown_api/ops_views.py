@@ -260,3 +260,202 @@ def ops_summary(request):
         },
     }
     return JsonResponse(payload)
+
+
+# ---- Predictive Alerts Lite ----
+
+
+@require_GET
+def ops_alerts(request):
+    """
+    Predictive Alerts Lite:
+    - Deterministic rule checks based on current DB state.
+    - No external services, no background jobs.
+    - Tracks dependency imports so failures are visible (not silent).
+    - Strict mode (?strict=1) returns 500 if imports fail (useful for CI).
+    """
+    from django.utils import timezone
+    from django.db.models import Max
+
+    ts = timezone.now().isoformat()
+    alerts = []
+    deps = {"admissions": False, "finance": False, "gradebook": False}
+    errors = []
+    
+    # Strict mode: if any import fails + strict=1, return 500
+    strict = request.GET.get("strict") == "1"
+
+    # --- Helper to append alerts consistently ---
+    def add_alert(alert_id, severity, title, detail, metric=None, value=None, threshold=None):
+        alerts.append({
+            "id": alert_id,
+            "severity": severity,   # "critical" | "warning" | "info"
+            "title": title,
+            "detail": detail,
+            "metric": metric,
+            "value": value,
+            "threshold": threshold,
+            "ts": ts,
+        })
+
+    # --- Defensive imports inside try blocks (track failures) ---
+    Application = None
+    Invoice = None
+    Payment = None
+    GradeEntry = None
+
+    try:
+        from admissions.models import AdmissionsApplication
+        Application = AdmissionsApplication
+        deps["admissions"] = True
+    except Exception as e:
+        errors.append(f"admissions import failed: {type(e).__name__}")
+
+    try:
+        from billing.models import Invoice
+        from ledger.models import Payment
+        deps["finance"] = True
+    except Exception as e:
+        errors.append(f"finance import failed: {type(e).__name__}")
+
+    try:
+        from gradebook.models import GradeEntry
+        deps["gradebook"] = True
+    except Exception as e:
+        errors.append(f"gradebook import failed: {type(e).__name__}")
+
+    # --- Rule 1: Demo looks empty (critical) ---
+    # If all core counts are extremely low, the demo will feel hollow.
+    core_counts = {}
+    try:
+        core_counts["admissions_applications"] = Application.objects.count() if Application else None
+    except Exception:
+        core_counts["admissions_applications"] = None
+
+    try:
+        core_counts["invoices"] = Invoice.objects.count() if Invoice else None
+    except Exception:
+        core_counts["invoices"] = None
+
+    try:
+        core_counts["grade_entries"] = GradeEntry.objects.count() if GradeEntry else None
+    except Exception:
+        core_counts["grade_entries"] = None
+
+    # Only evaluate if we actually have at least 2 metrics available
+    available = [v for v in core_counts.values() if isinstance(v, int)]
+    if len(available) >= 2:
+        if all(v < 5 for v in available):
+            add_alert(
+                "demo_empty",
+                "critical",
+                "Demo data looks sparse",
+                f"Core demo counts are low: {core_counts}. Seed the demo dataset before presenting.",
+                metric="core_counts",
+                value=core_counts,
+                threshold=">=5 in each core area",
+            )
+
+    # --- Rule 2: Admissions present, but finance missing (warning) ---
+    if isinstance(core_counts.get("admissions_applications"), int) and isinstance(core_counts.get("invoices"), int):
+        if core_counts["admissions_applications"] >= 5 and core_counts["invoices"] == 0:
+            add_alert(
+                "finance_missing",
+                "warning",
+                "Admissions present but finance is empty",
+                "You have applications but no invoices. Run finance seed so the story flows into billing.",
+                metric="invoices",
+                value=core_counts["invoices"],
+                threshold=">0",
+            )
+
+    # --- Rule 3: Gradebook missing (warning) ---
+    if isinstance(core_counts.get("grade_entries"), int):
+        if core_counts["grade_entries"] == 0:
+            add_alert(
+                "gradebook_missing",
+                "warning",
+                "Gradebook has no entries",
+                "No grade entries found. Seed gradebook so the academic side is believable.",
+                metric="grade_entries",
+                value=core_counts["grade_entries"],
+                threshold=">0",
+            )
+
+    # --- Rule 4: Payments trail invoices too much (info/warning) ---
+    # If payments are far behind, it can be a good "collections" story, but you want it intentional.
+    if Invoice and Payment:
+        try:
+            invoice_count = Invoice.objects.count()
+            payment_count = Payment.objects.count()
+            if invoice_count >= 10 and payment_count == 0:
+                add_alert(
+                    "no_payments",
+                    "warning",
+                    "Invoices exist but no payments recorded",
+                    "This is fine if intentional, but most demos benefit from a few payments to show the loop.",
+                    metric="payments",
+                    value=payment_count,
+                    threshold=">=1",
+                )
+            elif invoice_count >= 20 and payment_count / max(invoice_count, 1) < 0.05:
+                add_alert(
+                    "low_payment_ratio",
+                    "info",
+                    "Low payment-to-invoice ratio",
+                    "Payment activity is low relative to invoices. Consider seeding a few payments for realism.",
+                    metric="payment_ratio",
+                    value=round(payment_count / max(invoice_count, 1), 3),
+                    threshold=">=0.05",
+                )
+        except Exception:
+            pass
+
+    # --- Rule 5: Stale data indicator (info) ---
+    # Uses max created/updated timestamps if available on one known model.
+    # Keep it defensive to avoid field errors.
+    if Application:
+        try:
+            last = Application.objects.aggregate(m=Max("created_at"))["m"]
+            if last:
+                age_days = (timezone.now() - last).days
+                if age_days >= 7:
+                    add_alert(
+                        "stale_admissions",
+                        "info",
+                        "Admissions data may be stale",
+                        f"Most recent application is {age_days} days old. Fresh data reads better in live demos.",
+                        metric="admissions_last_created_days",
+                        value=age_days,
+                        threshold="<7",
+                    )
+        except Exception:
+            pass
+
+    # --- Strict mode: if imports failed + strict=1, return 500 for CI visibility ---
+    if strict and errors:
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "Strict mode: dependencies failed to import",
+                "errors": errors,
+                "deps": deps,
+                "ts": ts,
+            },
+            status=500,
+        )
+
+    # --- Build SHA support (for deployment/verification) ---
+    import os
+    build_sha = os.environ.get("BUILD_SHA", "local-dev")
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "build_sha": build_sha,
+            "ts": ts,
+            "alerts": alerts,
+            "deps": deps,
+            "errors": errors,
+        }
+    )
