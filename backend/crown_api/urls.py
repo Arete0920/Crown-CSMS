@@ -9,6 +9,7 @@ from crown_api.views import director_dashboard_page, director_router
 from crown_api.ops_views import ops_summary, ops_alerts
 from crown_api.rbac_views import finance_guardrail_proof
 from crown_api.audit_views import recent_audit_events
+from crown_api.auth_views import login, refresh, me
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -35,6 +36,11 @@ urlpatterns = [
     
     # Audit log endpoint
     path("api/system/audit/recent/", recent_audit_events, name="recent_audit_events"),
+    
+    # JWT Auth endpoints
+    path("api/auth/login/", login, name="auth_login"),
+    path("api/auth/refresh/", refresh, name="auth_refresh"),
+    path("api/auth/me/", me, name="auth_me"),
     
     # Authentication URLs (must come BEFORE api/ includes)
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
