@@ -87,11 +87,69 @@ cd $env:USERPROFILE\OneDrive\Desktop\Crown2026
 
 ---
 
-## Future Smoke Tests
+## Gate 1C: Auth Hardening + Tenant Proof (WhoAmI)
 
-### Gate 1C: Financial Ledger
-(To be added after Issue #181)
+**Tag:** `gate1c-auth-tenant-proof` (to be created after merge)
+
+**Purpose:** Verify default-deny auth, unskippable tenant enforcement, and whoami proof endpoint.
+
+**Tests Run:**
+```powershell
+cd $env:USERPROFILE\OneDrive\Desktop\Crown2026
+& ".\.venv\Scripts\python.exe" -m pytest backend/crown_api/tests/test_gate1c_auth_tenant_proof.py -v
+```
+
+**Expected Results:**
+- 10/10 Gate 1C tests PASS (auth proof, tenant guard, whoami endpoint)
+
+**Manual Proof Commands:**
+```powershell
+# 1. Verify whoami requires authentication (401 without auth)
+curl http://127.0.0.1:8000/api/system/whoami/
+
+# 2. Login and get access token
+$loginResp = curl -X POST http://127.0.0.1:8000/api/auth/login/ `
+  -H "Content-Type: application/json" `
+  -d '{\"email\":\"admin@heritage.test\",\"password\":\"crown123\"}' | ConvertFrom-Json
+$token = $loginResp.access
+
+# 3. Verify whoami with auth returns full session state
+curl http://127.0.0.1:8000/api/system/whoami/ `
+  -H "Authorization: Bearer $token" `
+  -H "X-School-Id: <school-uuid>"
+
+# Expected whoami response:
+# {
+#   "ok": true,
+#   "user": {"id": "...", "email": "admin@heritage.test", "is_staff": true, "role": "admin", "school_id": "..."},
+#   "tenant": {"resolved_school_id": "...", "resolution_source": "header", "header_present": true},
+#   "override": {"school_override_id": "..." or null},
+#   "build": {"build_sha": "local-dev", "env": "dev"}
+# }
+```
+
+**CI Status:** Should be 9/9 checks GREEN
+
+**What it tests:**
+- DEFAULT_PERMISSION_CLASSES: IsAuthenticated (default-deny)
+- Whoami endpoint requires JWT auth (401 without token)
+- Whoami returns: user (id, email, is_staff, role), tenant (resolved school), override (if staff), build_sha
+- TenantRequiredMixin enforces tenant on ViewSets (400 if missing)
+- Build SHA exposed in settings and whoami response
+
+**Definition of Done:**
+- All Gate 1C tests PASS
+- Whoami endpoint requires auth (401 without token)
+- Whoami returns all required fields (user, tenant, override, build)
+- CI pytest check GREEN
 
 ---
 
-**Last Updated:** 2026-02-16 (Gate 1B complete)
+## Future Smoke Tests
+
+### Gate 1D: Financial Ledger
+(To be added after future scope)
+
+---
+
+**Last Updated:** 2026-02-16 (Gate 1C in progress)
