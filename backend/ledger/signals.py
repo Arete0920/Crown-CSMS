@@ -155,3 +155,51 @@ def _charge_create_void_reversal(sender, instance: Charge, created: bool, **kwar
         original_entry=original,
         reason=f"Charge voided ({instance.id})",
     )
+
+
+@receiver(pre_save, sender=Payment)
+def _payment_capture_void_flip(sender, instance: Payment, **kwargs):
+    """
+    Store a flag on the instance when is_void flips False -> True.
+    This avoids guessing in post_save and avoids re-querying after save.
+    """
+    instance._void_flip_to_true = False  # default
+
+    if not instance.pk:
+        return
+
+    prior = sender.objects.filter(pk=instance.pk).values_list("is_void", flat=True).first()
+    if prior is None:
+        return
+
+    if (bool(prior) is False) and (bool(instance.is_void) is True):
+        instance._void_flip_to_true = True
+
+
+@receiver(post_save, sender=Payment)
+def _payment_create_void_reversal(sender, instance: Payment, created: bool, **kwargs):
+    if created:
+        return
+    if not getattr(instance, "_void_flip_to_true", False):
+        return
+
+    # Find the original JE for this payment (tenant-safe by school_id)
+    original = (
+        JournalEntry.objects
+        .select_related("school", "created_by")
+        .filter(
+            school_id=instance.school_id,
+            reference_type="payment",
+            reference_id=instance.id,
+        )
+        .order_by("-id")
+        .first()
+    )
+    if not original:
+        return  # no posted entry; nothing to reverse
+
+    # Idempotent reversal; also preserves immutability (no edits)
+    create_reversal_entry(
+        original_entry=original,
+        reason=f"Payment voided ({instance.id})",
+    )

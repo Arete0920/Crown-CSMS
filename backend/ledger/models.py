@@ -62,6 +62,7 @@ class Payment(TimeStampedModel):
 	source = models.CharField(max_length=32, default="EXTERNAL", db_index=True)
 	reference = models.CharField(max_length=64, blank=True, default="", db_index=True)
 	amount = models.DecimalField(max_digits=10, decimal_places=2)
+	is_void = models.BooleanField(default=False, db_index=True)
 
 	class Meta:
 		db_table = "payment"
