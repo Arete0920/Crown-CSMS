@@ -4,6 +4,7 @@ import uuid
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import check_password, make_password
 
 from crown_api.auth_models import CrownUser
@@ -20,6 +21,7 @@ def _json_body(request):
         return None
 
 
+@csrf_exempt
 @require_POST
 def login(request):
     body = _json_body(request)
@@ -51,6 +53,7 @@ def login(request):
     return JsonResponse({"ok": True, "access": access, "refresh": refresh})
 
 
+@csrf_exempt
 @require_POST
 def refresh(request):
     body = _json_body(request)
