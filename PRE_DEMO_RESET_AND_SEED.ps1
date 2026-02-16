@@ -149,7 +149,7 @@ Write-Host ""
 # ============================================================================
 
 Write-Host "Seeding heritage realism pack..." -ForegroundColor Cyan
-python manage.py seed_heritage_realism_pack --no-comms --no-finance-scripts
+python manage.py seed_heritage_realism_pack --no-comms --no-finance-scripts --traceback
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Seed failed." -ForegroundColor Red
     exit 1

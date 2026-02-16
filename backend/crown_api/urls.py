@@ -59,6 +59,9 @@ urlpatterns = [
     # Curriculum (read-only, demo-safe)
     path("api/curriculum/", include("curriculum.urls")),
     
+    # Classroom (read-only, demo-safe)
+    path("api/classroom/", include("classroom.urls")),
+    
     # Integrations (webhooks, etc.)
     path("api/integrations/", include("integrations.urls")),
     
