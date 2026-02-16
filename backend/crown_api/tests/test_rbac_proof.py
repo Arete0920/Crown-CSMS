@@ -18,7 +18,7 @@ def test_rbac_finance_proof_forbidden_without_role():
 def test_rbac_finance_proof_allows_admin_via_demo_header(monkeypatch):
     """Demo header works when ALLOW_DEMO_ROLE_HEADER=1"""
     monkeypatch.setenv("ALLOW_DEMO_ROLE_HEADER", "1")
-    c = Client(HTTP_X_DEMO_ROLE="admin")
+    c = Client(HTTP_X_DEMO_ROLE="AdMiN")
     resp = c.get("/api/system/rbac/finance-proof/")
     assert resp.status_code == 200
     data = resp.json()
