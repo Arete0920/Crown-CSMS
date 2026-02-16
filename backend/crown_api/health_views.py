@@ -61,16 +61,21 @@ def health_version(request):
 
 def system_health(request):
     """
-    Production-grade health endpoint for uptime checks.
-    Checks:
-    - DB connectivity
-    - Basic query execution
-    - Host identity
-    - BUILD_SHA
+    Production-grade health endpoint.
+
+    Contract:
+    - Always returns JSON
+    - 200 if DB is reachable
+    - 503 if DB is not reachable
+    - Includes BUILD_SHA for deployment proof (falls back to 'local-dev')
+
+    Notes:
+    - Safe for load balancers / uptime monitors
+    - Uses a trivial SELECT 1 to confirm DB query execution
     """
-    from django.utils import timezone as tz
+    from django.utils import timezone
     
-    ts = tz.now().isoformat()
+    ts = timezone.now().isoformat()
     build_sha = os.environ.get("BUILD_SHA", "local-dev")
     hostname = socket.gethostname()
 
@@ -83,19 +88,19 @@ def system_health(request):
             cursor.fetchone()
         db_ok = True
     except Exception as e:
-        db_error = str(e)
+        db_error = f"{type(e).__name__}: {e}"
 
-    status = "healthy" if db_ok else "unhealthy"
-
-    return JsonResponse({
+    payload = {
         "ok": db_ok,
-        "status": status,
+        "status": "healthy" if db_ok else "unhealthy",
         "ts": ts,
         "build_sha": build_sha,
         "host": hostname,
         "database": {
             "connected": db_ok,
-            "error": db_error
-        }
-    }, status=200 if db_ok else 503)
+            "error": db_error,
+        },
+    }
+
+    return JsonResponse(payload, status=200 if db_ok else 503)
 
