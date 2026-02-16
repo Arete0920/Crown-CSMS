@@ -145,11 +145,81 @@ curl http://127.0.0.1:8000/api/system/whoami/ `
 
 ---
 
-## Future Smoke Tests
+## Gate 1D — Authoritative Journal Ledger Core (Double-Entry)
 
-### Gate 1D: Financial Ledger
-(To be added after future scope)
+**Canonical Tag:** `gate1d-ledger-core`  
+**Canonical Commit:** `aa569002`  
+
+### Proof: Repo + Tag
+```powershell
+git fetch origin
+git show -s --oneline --decorate gate1d-ledger-core
+git tag --points-at aa569002
+```
+
+**Expected Output:**
+```
+aa569002 (tag: gate1d-ledger-core) gate1d: add authoritative double-entry journal (models + service + invariants)
+gate1d-ledger-core
+```
+
+### Proof: Journal Invariants (Local)
+```powershell
+cd backend
+.\.venv\Scripts\python.exe manage.py test journal
+```
+
+**Expected Output:**
+```
+Found 8 test(s).
+Creating test database for alias 'default'...
+System check identified no issues (0 silenced).
+........
+----------------------------------------------------------------------
+Ran 8 tests in <X>s
+
+OK
+Destroying test database for alias 'default'...
+```
+
+**Expected Results:**
+- All journal invariant tests PASS
+- No failures
+
+### Proof: Full Test Suite (Local)
+```powershell
+.\.venv\Scripts\python.exe manage.py test
+```
+
+**Expected Output:**
+- Full suite PASS (0 failures)
+
+**What it tests:**
+- GLAccount model (chart of accounts, tenant-scoped, hierarchical)
+- JournalEntry model (immutable, locked by default, no delete)
+- JournalLine model (debit XOR credit, tenant validation, no delete)
+- post_journal_entry service (single write path, atomic, balanced)
+- Invariants:
+  - Balanced entries succeed
+  - Unbalanced entries fail
+  - Single-line entries fail
+  - Negative values fail
+  - Cross-tenant accounts fail
+  - Locked entries cannot be modified
+  - Locked entries cannot be deleted
+  - Atomic rollback on failure
+
+**Definition of Done:**
+- 8/8 journal invariant tests PASS
+- Full test suite GREEN (no regressions)
+- CI pytest check GREEN
 
 ---
 
-**Last Updated:** 2026-02-16 (Gate 1C in progress)
+## Future Smoke Tests
+
+(Additional gates to be added as development continues)
+
+---
+
+**Last Updated:** 2026-02-16 (Gate 1D merged)
