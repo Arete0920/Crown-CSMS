@@ -79,21 +79,21 @@ class CourseAdmin(admin.ModelAdmin):
 class CourseEnrollmentAdmin(admin.ModelAdmin):
     list_display = ("student", "course", "status", "created_at")
     list_filter = ("status",)
-    search_fields = ("student__person__last_name", "course__course_code")
+    search_fields = ("student__last_name", "course__course_code")
 
 
 @admin.register(AttendanceRecord)
 class AttendanceRecordAdmin(admin.ModelAdmin):
     list_display = ("student", "course", "date", "status", "minutes_late")
     list_filter = ("status", "date")
-    search_fields = ("student__person__last_name", "course__course_code")
+    search_fields = ("student__last_name", "course__course_code")
 
 
 @admin.register(GradeRecord)
 class GradeRecordAdmin(admin.ModelAdmin):
     list_display = ("student", "course", "period", "assignment_name", "letter_grade", "posted_at")
     list_filter = ("period",)
-    search_fields = ("student__person__last_name", "course__course_code", "assignment_name")
+    search_fields = ("student__last_name", "course__course_code", "assignment_name")
 
 
 @admin.register(Invoice)
@@ -127,7 +127,7 @@ class SectionAdmin(admin.ModelAdmin):
 class SectionEnrollmentAdmin(admin.ModelAdmin):
     list_display = ("section", "student", "active", "created_at")
     list_filter = ("active",)
-    search_fields = ("student__person__last_name", "section__course__course_code", "section__term__code")
+    search_fields = ("student__last_name", "section__course__course_code", "section__term__code")
 
 
 @admin.register(MessageThread)

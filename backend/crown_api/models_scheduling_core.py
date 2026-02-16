@@ -1,8 +1,8 @@
 from django.db import models
 
-from core.models import BaseModel
+from core.models import BaseModel, Student
 from crown_api.models_academics_core import Course
-from crown_api.models_households import Person, Student
+from crown_api.models_households import Person
 
 
 class Term(BaseModel):
@@ -77,7 +77,7 @@ class SectionEnrollment(BaseModel):
                 name="uniq_section_enrollment_section_student",
             )
         ]
-        ordering = ["section", "student__person__last_name"]
+        ordering = ["section", "student__last_name"]
 
     def __str__(self) -> str:
         return f"{self.student} -> {self.section}".strip()

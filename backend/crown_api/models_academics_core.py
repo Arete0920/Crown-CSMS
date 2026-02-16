@@ -1,7 +1,6 @@
 from django.db import models
 
-from core.models import BaseModel
-from crown_api.models_households import Student
+from core.models import BaseModel, Student
 
 
 class Course(BaseModel):
@@ -45,7 +44,7 @@ class CourseEnrollment(BaseModel):
                 name="uniq_course_enrollment_student_course",
             )
         ]
-        ordering = ["course__course_code", "student__person__last_name"]
+        ordering = ["course__course_code", "student__last_name"]
 
     def __str__(self) -> str:
         return f"{self.student} -> {self.course} ({self.status})"

@@ -1,7 +1,6 @@
 from django.db import models
 
-from core.models import BaseModel
-from crown_api.models_households import Student
+from core.models import BaseModel, Student
 
 
 class StudentProfile(BaseModel):
