@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from decimal import Decimal
 from .models import JournalEntry, JournalLine
 
@@ -73,3 +74,65 @@ def post_journal_entry(
         entry.save()
 
     return entry
+
+
+def create_reversal_entry(*, original_entry: JournalEntry, reason: str) -> JournalEntry:
+    """
+    Create an immutable reversing JournalEntry for original_entry.
+    Idempotent via DB: JournalEntry.reversal_of is OneToOne.
+    """
+    # Fast-path
+    if getattr(original_entry, "reversal_entry_id", None):
+        return original_entry.reversal_entry
+
+    with transaction.atomic():
+        # Lock original to prevent races
+        original_entry = (
+            JournalEntry.objects
+            .select_for_update()
+            .prefetch_related("lines")
+            .get(pk=original_entry.pk)
+        )
+
+        if getattr(original_entry, "reversal_entry_id", None):
+            return original_entry.reversal_entry
+
+        # Build kwargs for reversal header (include optional fields if they exist)
+        create_kwargs = {
+            "school": original_entry.school,
+            "created_by": original_entry.created_by,
+            "reference_type": "charge_void_reversal",
+            "reference_id": original_entry.reference_id,  # charge id already stored there
+            "locked": True,
+            "reversal_of": original_entry,
+            "memo": f"REVERSAL: {reason}",
+        }
+        
+        # Add optional fields if they exist in the model
+        optional_fields = {
+            "description": f"REVERSAL: {reason}",
+            "entry_date": getattr(original_entry, "entry_date", None) or timezone.now().date(),
+            "posted_at": getattr(original_entry, "posted_at", None),
+        }
+        for attr, value in optional_fields.items():
+            if hasattr(JournalEntry, attr):
+                create_kwargs[attr] = value
+        
+        # Create reversal header (all fields set during create, no update needed)
+        rev = JournalEntry.objects.create(**create_kwargs)
+
+        # Reverse every line (swap DR/CR, keep account)
+        new_lines = []
+        for line in original_entry.lines.all():
+            new_lines.append(JournalLine(
+                entry=rev,
+                account=line.account,
+                debit=line.credit,
+                credit=line.debit,
+            ))
+            # Carry memo if present
+            if hasattr(line, "memo") and hasattr(new_lines[-1], "memo"):
+                new_lines[-1].memo = line.memo
+
+        JournalLine.objects.bulk_create(new_lines)
+        return rev

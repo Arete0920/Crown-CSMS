@@ -68,6 +68,14 @@ class JournalEntry(models.Model):
     reference_type = models.CharField(max_length=64, blank=True, null=True)
     reference_id = models.UUIDField(blank=True, null=True)
 
+    reversal_of = models.OneToOneField(
+        "self",
+        null=True,
+        blank=True,
+        related_name="reversal_entry",
+        on_delete=models.PROTECT,
+    )
+
     class Meta:
         db_table = "journal_entry"
         indexes = [
