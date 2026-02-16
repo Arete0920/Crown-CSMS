@@ -7,6 +7,7 @@ from crown_api.health_views import health, health_version, system_health
 from crown_api.version_views import version
 from crown_api.views import director_dashboard_page, director_router
 from crown_api.ops_views import ops_summary, ops_alerts
+from crown_api.rbac_views import finance_guardrail_proof
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -27,6 +28,9 @@ urlpatterns = [
     
     # Ops alerts (public read-only, for demo proof)
     path("api/ops/alerts/", ops_alerts, name="ops_alerts"),
+    
+    # RBAC proof endpoint
+    path("api/system/rbac/finance-proof/", finance_guardrail_proof, name="finance_guardrail_proof"),
     
     # Authentication URLs (must come BEFORE api/ includes)
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
