@@ -216,10 +216,74 @@ Destroying test database for alias 'default'...
 
 ---
 
+## Gate 2A — AR → GL Integration (Charges/Payments Auto-Post to Journal)
+
+**Canonical Tag:** `gate2a-ar-gl-integration`  
+**Canonical Commit:** `e1431f159d65e2961a73198cab5ce214a0ddaa61`
+
+### Proof: Repo + Tag
+```powershell
+git fetch origin
+git show -s --oneline --decorate gate2a-ar-gl-integration
+git tag --points-at e1431f159d65e2961a73198cab5ce214a0ddaa61
+```
+
+**Expected Output:**
+```
+e1431f15 (tag: gate2a-ar-gl-integration) gate2a: post journal entries for charges and payments (idempotent) (#192)
+gate2a-ar-gl-integration
+```
+
+### Proof: AR Posting Tests (Local)
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest backend/ledger/tests/test_ar_posts_to_journal.py -v
+```
+
+**Expected Output:**
+```
+============================== test session starts ==============================
+platform win32 -- Python 3.x.x, pytest-x.x.x
+collected 5 items
+
+backend/ledger/tests/test_ar_posts_to_journal.py::ARPostsToJournalTestCase::test_canonical_gl_accounts_are_created PASSED [ 20%]
+backend/ledger/tests/test_ar_posts_to_journal.py::ARPostsToJournalTestCase::test_charge_creation_posts_one_balanced_journal_entry PASSED [ 40%]
+backend/ledger/tests/test_ar_posts_to_journal.py::ARPostsToJournalTestCase::test_idempotent_posting_no_duplicate_on_resave PASSED [ 60%]
+backend/ledger/tests/test_ar_posts_to_journal.py::ARPostsToJournalTestCase::test_payment_creation_posts_one_balanced_journal_entry PASSED [ 80%]
+backend/ledger/tests/test_ar_posts_to_journal.py::ARPostsToJournalTestCase::test_void_charge_does_not_post PASSED [100%]
+
+============================== 5 passed in X.XXs ===============================
+```
+
+**Expected Results:**
+- 5/5 tests PASS
+
+**Note:**
+- Charge creation posts balanced journal entry: DR AR / CR Revenue
+- Payment creation posts balanced journal entry: DR Cash / CR AR
+- Posting is idempotent via JournalEntry(reference_type, reference_id)
+- Implemented via Django signals to cover all call sites
+
+**What it tests:**
+- post_charge_to_journal signal: Charge creation → DR Accounts Receivable / CR Tuition Revenue
+- post_payment_to_journal signal: Payment creation → DR Cash / CR Accounts Receivable
+- Idempotency: Resaving Charge/Payment does not create duplicate entries
+- Void charges: is_void=True charges do not post to journal
+- Canonical GL accounts: Lazy-creates 1000 Cash, 1100 AR, 4000 Revenue per school
+- System user: crown-system user created for automated postings
+- Tenant enforcement: Validates School.objects.filter(id=instance.school_id).first()
+
+**Definition of Done:**
+- 5/5 AR posting tests PASS
+- Full test suite GREEN (233/233 pass)
+- CI pytest check GREEN
+
+---
+
 ## Future Smoke Tests
 
 (Additional gates to be added as development continues)
 
 ---
 
-**Last Updated:** 2026-02-16 (Gate 1D merged)
+**Last Updated:** 2026-02-16 (Gate 2A merged)
