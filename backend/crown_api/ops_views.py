@@ -156,3 +156,107 @@ def demo_school(request):
         return JsonResponse({"detail": "No School rows found. Seed DEV first."}, status=500)
 
     return JsonResponse({"school_id": str(school.id), "name": getattr(school, "name", "")}, status=200)
+
+
+# ---- Ops Summary (for demo dashboard) ----
+
+
+def _safe_count(model):
+    """Count rows in model; return None if fails."""
+    try:
+        return model.objects.count()
+    except Exception:
+        return None
+
+
+@require_GET
+def ops_summary(request):
+    """
+    Read-only ops summary for demo/proof runs.
+    Returns build SHA, demo mode, seed timestamps, and real counts across major modules.
+    No auth assumptions here; keep it simple for demo hardening.
+    """
+    from django.utils import timezone
+    from core.models import AcademicYear
+
+    # Build + mode
+    build_sha = os.environ.get("BUILD_SHA") or "local-dev"
+    demo_mode = os.environ.get("CROWN_DEMO_MODE", "").lower() in ("1", "true", "yes", "on")
+
+    # SeedRun (if present)
+    seed_last = None
+    try:
+        from core.models import SeedRun
+        sr = SeedRun.objects.order_by("-created_at").first()
+        if sr:
+            seed_last = {
+                "name": sr.name,
+                "created_at": sr.created_at.isoformat(),
+                "meta": sr.meta if hasattr(sr, "meta") else None,
+            }
+    except Exception:
+        seed_last = None
+
+    # Current school/year (best-effort)
+    school = School.objects.order_by("-created_at").first()
+    year = AcademicYear.objects.filter(school=school).order_by("-created_at").first() if school else None
+
+    # Counts (best-effort imports)
+    students = households = admissions_apps = invoices = grade_entries = comm_threads = comm_messages = None
+
+    try:
+        from students.models import Student
+        students = _safe_count(Student)
+    except Exception:
+        pass
+
+    try:
+        from households.models import Household
+        households = _safe_count(Household)
+    except Exception:
+        pass
+
+    try:
+        from admissions.models import AdmissionsApplication
+        admissions_apps = _safe_count(AdmissionsApplication)
+    except Exception:
+        pass
+
+    try:
+        from billing.models import Invoice
+        invoices = _safe_count(Invoice)
+    except Exception:
+        pass
+
+    try:
+        from gradebook.models import GradeEntry
+        grade_entries = _safe_count(GradeEntry)
+    except Exception:
+        pass
+
+    try:
+        from comms.models import Thread, Message
+        comm_threads = _safe_count(Thread)
+        comm_messages = _safe_count(Message)
+    except Exception:
+        pass
+
+    payload = {
+        "ok": True,
+        "ts": timezone.now().isoformat(),
+        "build_sha": build_sha,
+        "demo_mode": demo_mode,
+        "seed_last": seed_last,
+        "school": {"id": str(school.id), "name": school.name} if school else None,
+        "academic_year": {"id": str(year.id), "label": getattr(year, "label", None)} if year else None,
+        "counts": {
+            "students": students,
+            "households": households,
+            "admissions_applications": admissions_apps,
+            "invoices": invoices,
+            "grade_entries": grade_entries,
+            "comms_threads": comm_threads,
+            "comms_messages": comm_messages,
+        },
+    }
+    return JsonResponse(payload)

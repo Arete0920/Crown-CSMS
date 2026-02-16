@@ -10,6 +10,7 @@ import { CategoryWeightsEditor } from '../pages/CategoryWeightsEditor.jsx';
 import { AdmissionsPipelineList } from '../pages/AdmissionsPipelineList.jsx';
 import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
 import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
+import OpsCommandCenter from '../components/OpsCommandCenter.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -55,5 +56,9 @@ export const router = createBrowserRouter([
   {
     path: '/communications',
     element: <CommunicationsThreadsList />,
+  },
+  {
+    path: '/ops',
+    element: <OpsCommandCenter />,
   },
 ]);
