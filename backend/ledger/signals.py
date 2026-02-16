@@ -1,12 +1,12 @@
 from decimal import Decimal
-from django.db.models.signals import post_save
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
 from core.models import School
 from journal.models import GLAccount, JournalEntry
-from journal.services import post_journal_entry
+from journal.services import post_journal_entry, create_reversal_entry
 from ledger.models import Charge, Payment
 
 
@@ -106,4 +106,52 @@ def post_payment_to_journal(sender, instance: Payment, created, **kwargs):
         memo=f"Payment: {instance.source} {instance.reference}".strip(),
         reference_type="payment",
         reference_id=instance.id,
+    )
+
+
+@receiver(pre_save, sender=Charge)
+def _charge_capture_void_flip(sender, instance: Charge, **kwargs):
+    """
+    Store a flag on the instance when is_void flips False -> True.
+    This avoids guessing in post_save and avoids re-querying after save.
+    """
+    instance._void_flip_to_true = False  # default
+
+    if not instance.pk:
+        return
+
+    prior = sender.objects.filter(pk=instance.pk).values_list("is_void", flat=True).first()
+    if prior is None:
+        return
+
+    if (bool(prior) is False) and (bool(instance.is_void) is True):
+        instance._void_flip_to_true = True
+
+
+@receiver(post_save, sender=Charge)
+def _charge_create_void_reversal(sender, instance: Charge, created: bool, **kwargs):
+    if created:
+        return
+    if not getattr(instance, "_void_flip_to_true", False):
+        return
+
+    # Find the original JE for this charge (tenant-safe by school_id)
+    original = (
+        JournalEntry.objects
+        .select_related("school", "created_by")
+        .filter(
+            school_id=instance.school_id,
+            reference_type="charge",
+            reference_id=instance.id,
+        )
+        .order_by("-id")
+        .first()
+    )
+    if not original:
+        return  # no posted entry; nothing to reverse
+
+    # Idempotent reversal; also preserves immutability (no edits)
+    create_reversal_entry(
+        original_entry=original,
+        reason=f"Charge voided ({instance.id})",
     )
