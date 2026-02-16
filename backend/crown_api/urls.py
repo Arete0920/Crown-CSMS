@@ -56,6 +56,9 @@ urlpatterns = [
     # Back-compat alias: /api/* behaves like /api/v1/*
     path("api/", include("crown_api.api_v1_urls")),
     
+    # Integrations (webhooks, etc.)
+    path("api/integrations/", include("integrations.urls")),
+    
     # Authentication URLs (login, logout, password reset, etc.)
     path("accounts/", include("django.contrib.auth.urls")),
     
