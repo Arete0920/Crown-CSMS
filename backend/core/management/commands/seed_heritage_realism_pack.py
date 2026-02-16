@@ -70,6 +70,9 @@ class Command(BaseCommand):
         call_command("seed_gradebook_demo", school_id=str(school.id))
         call_command("seed_category_weights", school_id=str(school.id))
 
+        # 5.5) Attendance (deterministic week for demo realism)
+        call_command("seed_attendance_demo", school_id=str(school.id))
+
         # 6) Billing + payments
         call_command("seed_billing_demo", school_id=str(school.id))
 
