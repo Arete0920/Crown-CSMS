@@ -134,7 +134,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'crown_api.performance.PerformanceMiddleware',  # Performance timing (must be first)
+    'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing (must be first)
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
