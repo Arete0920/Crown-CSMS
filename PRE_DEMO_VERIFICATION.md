@@ -51,14 +51,47 @@ Created test user
 
 ---
 
-## Future Smoke Tests
+## Gate 1B: Tenant Enforcement
 
-### Gate 1B: Tenant Enforcement
-(To be added after Issue #180)
+**Tag:** `gate1b-tenant-enforcement` (commit 1ea180df)
+
+**Purpose:** Verify tenant resolution via header/JWT, validation layer, and audit trail.
+
+**Tests Run:**
+```powershell
+cd $env:USERPROFILE\OneDrive\Desktop\Crown2026
+& ".\.venv\Scripts\python.exe" -m pytest backend/households/tests/test_tenant_isolation.py -v
+& ".\.venv\Scripts\python.exe" -m pytest backend/crown_api/tests/test_tenant_enforcement.py -v
+& ".\.venv\Scripts\python.exe" -m pytest backend/crown_api/billing_api/tests/test_billing_audit_override_capture.py -v
+```
+
+**Expected Results:**
+- 8/8 tenant isolation tests PASS (400/404 contract enforced)
+- 6/6 tenant enforcement tests PASS (header/JWT resolution)
+- 1/1 billing audit override test PASS (staff override tracked)
+
+**CI Status:** 9/9 checks GREEN (PR #183)
+
+**What it tests:**
+- X-School-Id header takes precedence over JWT user.school_id
+- Invalid header UUID → 400 ValidationError
+- Valid UUID but nonexistent school → 404 NotFound
+- Non-staff cross-tenant access via header → 404 NotFound
+- Staff override via header → allowed + audit trail captured
+- DRF force_authenticate compatibility
+
+**Definition of Done:**
+- All tenant_isolation tests PASS
+- All tenant_enforcement tests PASS
+- CI pytest check GREEN (270 tests including billing_api)
+
+---
+
+## Future Smoke Tests
 
 ### Gate 1C: Financial Ledger
 (To be added after Issue #181)
 
 ---
 
-**Last Updated:** 2026-02-17 (Gate 1A complete)
+**Last Updated:** 2026-02-16 (Gate 1B complete)
