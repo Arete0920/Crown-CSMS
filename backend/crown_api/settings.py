@@ -121,6 +121,7 @@ INSTALLED_APPS = [
     'crown_api',
     'crown_api.exports',
     'core',
+    'curriculum',
     'finance.apps.FinanceConfig',
     'aid.apps.AidConfig',
     'admissions.apps.AdmissionsConfig',

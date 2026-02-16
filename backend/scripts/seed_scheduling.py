@@ -29,7 +29,8 @@ def run() -> None:
 
     django.setup()
 
-    from crown_api.models import Course, Person, Section, SectionEnrollment, Student, Term
+    from core.models import Student
+    from crown_api.models import Course, Person, Section, SectionEnrollment, Term
 
     term, _ = Term.objects.get_or_create(
         code="2026-SPR",
@@ -71,9 +72,9 @@ def run() -> None:
         defaults={"teacher": None, "room": "202", "meeting_days": "TR", "meeting_time": "13:00", "name_override": ""},
     )
 
-    students = list(Student.objects.select_related("person").all().order_by("person__last_name", "person__first_name"))
+    students = list(Student.objects.all().order_by("last_name", "first_name"))
     if not students:
-        raise SystemExit("No students found. Run scripts/seed_households.py first.")
+        raise SystemExit("No students found. Run seed_demo_school or seed_heritage_realism_pack first.")
 
     # Enroll first two students into two sections each.
     for student in students[:2]:

@@ -8,9 +8,12 @@ import {
   fetchSectionRoster,
 } from '../api/academics.js';
 import { getGradebookGrades, getSectionAssignments } from '../api/gradebook.js';
+import { getSelectedSchoolId } from '../utils/authClient.js';
 import { logApiRequest, logApiError } from '../utils/requestTracing.js';
+import { CurriculumPacingCard } from '../components/CurriculumPacingCard.jsx';
 
 export function AcademicsDashboard() {
+  const [schoolId, setSchoolId] = useState('');
   const [sections, setSections] = useState([]);
   const [sectionsError, setSectionsError] = useState('');
   const [parentStudents, setParentStudents] = useState([]);
@@ -30,6 +33,12 @@ export function AcademicsDashboard() {
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [assignmentsError, setAssignmentsError] = useState('');
   const [assignments, setAssignments] = useState(null);
+
+  // Initialize schoolId from authClient (which checks sessionStorage first, then localStorage)
+  useEffect(() => {
+    const id = getSelectedSchoolId();
+    setSchoolId(id);
+  }, []);
 
   useEffect(() => {
     fetchSections()
@@ -221,6 +230,11 @@ export function AcademicsDashboard() {
   return (
     <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
       <h1>Academics (Read-only)</h1>
+
+      {/* Curriculum Pacing Summary */}
+      <section style={{ marginBottom: 32 }}>
+        <CurriculumPacingCard schoolId={schoolId} />
+      </section>
 
       <section style={{ marginBottom: 32 }}>
         <h2>Teacher Sections</h2>

@@ -66,6 +66,11 @@ class Command(BaseCommand):
         call_command("seed_academics_demo", school_id=str(school.id))
         call_command("seed_curricula_demo", school_id=str(school.id))
 
+        # 4.5) Curriculum (Crown differentiator: mission-driven courses, units, lessons)
+        from scripts.seed_curriculum_demo import seed_curriculum_demo
+        curriculum_result = seed_curriculum_demo(school_id=str(school.id))
+        self.stdout.write(f"Curriculum seeded: {curriculum_result['courses']} courses, {curriculum_result['units']} units, {curriculum_result['lessons']} lessons")
+
         # 5) Gradebook + category weights (makes the UI look alive)
         call_command("seed_gradebook_demo", school_id=str(school.id))
         call_command("seed_category_weights", school_id=str(school.id))
