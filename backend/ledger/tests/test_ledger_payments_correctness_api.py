@@ -25,6 +25,7 @@ def _mk_user_with_school_id(school_id):
 
 def test_record_payment_strict_allocation_sum_and_creates_allocations():
     school_id = uuid.uuid4()
+    School.objects.create(id=school_id, name="Test School")
     hh = Household.objects.create(school_id=school_id, name="HH")
     acct = LedgerAccount.objects.create(school_id=school_id, household=hh)
 
@@ -61,6 +62,7 @@ def test_record_payment_strict_allocation_sum_and_creates_allocations():
 
 def test_record_payment_rejects_sum_mismatch_by_default():
     school_id = uuid.uuid4()
+    School.objects.create(id=school_id, name="Test School")
     hh = Household.objects.create(school_id=school_id, name="HH")
     acct = LedgerAccount.objects.create(school_id=school_id, household=hh)
     ch1 = Charge.objects.create(school_id=school_id, account=acct, description="Tuition", amount=Decimal("150.00"))
@@ -81,6 +83,7 @@ def test_record_payment_rejects_sum_mismatch_by_default():
 
 def test_open_charges_lists_remaining_balances():
     school_id = uuid.uuid4()
+    School.objects.create(id=school_id, name="Test School")
     hh = Household.objects.create(school_id=school_id, name="HH")
     acct = LedgerAccount.objects.create(school_id=school_id, household=hh)
 
