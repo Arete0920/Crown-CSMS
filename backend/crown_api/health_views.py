@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.conf import settings
 from django.db import connection
 import os
+import socket
 from datetime import datetime, timezone
 
 # --- CROWN_ENV_BOOL_HELPER ---
@@ -56,3 +57,45 @@ def health_version(request):
         "env": os.environ.get("CROWN_ENV", "unknown"),
         "debug": getattr(settings, "DEBUG", False),
     })
+
+
+def system_health(request):
+    """
+    Production-grade health endpoint for uptime checks.
+    Checks:
+    - DB connectivity
+    - Basic query execution
+    - Host identity
+    - BUILD_SHA
+    """
+    from django.utils import timezone as tz
+    
+    ts = tz.now().isoformat()
+    build_sha = os.environ.get("BUILD_SHA", "local-dev")
+    hostname = socket.gethostname()
+
+    db_ok = False
+    db_error = None
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+            cursor.fetchone()
+        db_ok = True
+    except Exception as e:
+        db_error = str(e)
+
+    status = "healthy" if db_ok else "unhealthy"
+
+    return JsonResponse({
+        "ok": db_ok,
+        "status": status,
+        "ts": ts,
+        "build_sha": build_sha,
+        "host": hostname,
+        "database": {
+            "connected": db_ok,
+            "error": db_error
+        }
+    }, status=200 if db_ok else 503)
+
