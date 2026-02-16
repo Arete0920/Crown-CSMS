@@ -134,7 +134,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing (must be first)
+    'crown_api.middleware.api_exceptions.ApiExceptionMiddleware',  # Exception envelope (outermost)
+    'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -144,7 +145,6 @@ MIDDLEWARE = [
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'crown_api.exceptions.api_exception_handler',  # Exception handling (must be last)
 ]
 
 ROOT_URLCONF = 'crown_api.urls'
