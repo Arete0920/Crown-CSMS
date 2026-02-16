@@ -10,21 +10,38 @@ def _get_user_role(request):
       1) request.user.role (if your User model has it)
       2) HTTP header X-Demo-Role (only if ALLOW_DEMO_ROLE_HEADER=1)
       3) None
-    
+
     SECURITY: X-Demo-Role header only works when ALLOW_DEMO_ROLE_HEADER=1
     to prevent privilege escalation in production.
+
+    HARDENING: role values are normalized to lowercase for consistent comparisons.
     """
+    def _norm(val):
+        if val is None:
+            return None
+        s = str(val).strip()
+        return s.lower() if s else None
+
     # 1) user.role
     user = getattr(request, "user", None)
-    role = getattr(user, "role", None)
+    role = _norm(getattr(user, "role", None))
     if role:
-        return str(role)
+        return role
 
     # 2) demo header fallback (only if explicitly enabled)
     if os.getenv("ALLOW_DEMO_ROLE_HEADER") == "1":
-        hdr = request.headers.get("X-Demo-Role") or request.META.get("HTTP_X_DEMO_ROLE")
+        hdr = None
+        try:
+            hdr = request.headers.get("X-Demo-Role")
+        except Exception:
+            hdr = None
+
+        if not hdr:
+            hdr = request.META.get("HTTP_X_DEMO_ROLE")
+
+        hdr = _norm(hdr)
         if hdr:
-            return str(hdr).strip()
+            return hdr
 
     return None
 
