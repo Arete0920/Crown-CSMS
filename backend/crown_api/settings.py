@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     'households',
     'applications',
     'ledger',
+    'journal',
     'financial_aid.apps.FinancialAidConfig',
     'academics',
     'academics_ro',
