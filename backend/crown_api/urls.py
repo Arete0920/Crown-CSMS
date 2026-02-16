@@ -10,6 +10,7 @@ from crown_api.ops_views import ops_summary, ops_alerts
 from crown_api.rbac_views import finance_guardrail_proof
 from crown_api.audit_views import recent_audit_events
 from crown_api.auth_views import login, refresh, me
+from crown_api.system_views import whoami
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -21,6 +22,9 @@ urlpatterns = [
     path("api/health/", health, name="api_health"),
     path("api/system/health/", system_health, name="system_health"),
     path("health/version/", health_version, name="health_version"),
+    
+    # Gate 1C: WhoAmI proof endpoint (requires auth)
+    path("api/system/whoami/", whoami, name="system_whoami"),
     
     # Version endpoint (public, no auth required)
     path("api/v1/version/", version, name="version"),

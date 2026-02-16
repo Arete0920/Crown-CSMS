@@ -289,3 +289,61 @@ def fix_schema_drift_view(request):
             },
             status=500,
         )
+
+
+# --- Gate 1C: WhoAmI Proof Endpoint ---
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def whoami(request):
+    """
+    Gate 1C: Canonical proof endpoint for session state.
+    
+    Returns:
+    - user info (id, email, is_staff, role)
+    - resolved tenant (school_id from middleware)
+    - staff override info (if header present)
+    - build_sha (deployment proof)
+    
+    MUST be authenticated (default-deny auth).
+    """
+    user = request.user
+    
+    # User info
+    user_data = {
+        "id": str(getattr(user, "id", None)),
+        "email": getattr(user, "email", None),
+        "is_staff": getattr(user, "is_staff", False),
+        "role": getattr(user, "role", None),
+        "school_id": str(getattr(user, "school_id", None)) if getattr(user, "school_id", None) else None,
+    }
+    
+    # Tenant resolution (from TenantContextMiddleware)
+    tenant_data = {
+        "resolved_school_id": str(request.tenant_school_id) if hasattr(request, "tenant_school_id") and request.tenant_school_id else None,
+        "resolution_source": getattr(request, "_tenant_resolution_source", None),
+        "header_present": getattr(request, "_tenant_header_present", False),
+    }
+    
+    # Staff override audit (from TenantContextMiddleware)
+    override_data = {
+        "school_override_id": str(getattr(request, "_crown_school_override_id", None)) if getattr(request, "_crown_school_override_id", None) else None,
+    }
+    
+    # Build proof
+    build_data = {
+        "build_sha": settings.BUILD_SHA,
+        "env": settings.CROWN_ENV or "unknown",
+    }
+    
+    return JsonResponse({
+        "ok": True,
+        "user": user_data,
+        "tenant": tenant_data,
+        "override": override_data,
+        "build": build_data,
+    })
