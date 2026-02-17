@@ -68,25 +68,38 @@ class Command(BaseCommand):
             for s in roster:
                 ClassroomEnrollment.objects.create(classroom=c, student=s)
 
+            today = date.today()
+            
+            # Announcements: recent + older for demo
             ClassroomAnnouncement.objects.create(
                 classroom=c,
                 title="Welcome & Weekly Focus",
                 body="This week: character, diligence, and prepared hearts. Reminder: bring your reading notebook.",
                 pinned=True,
+                created_at=timezone.now() - timedelta(hours=6),
             )
             ClassroomAnnouncement.objects.create(
                 classroom=c,
                 title="Quiz Friday",
                 body="Short quiz at the start of class. Study notes from Monday–Wednesday.",
                 pinned=False,
+                created_at=timezone.now() - timedelta(days=3),
             )
-
-            today = date.today()
+            
+            # Assignments: overdue, due today, upcoming
+            ClassroomAssignment.objects.create(
+                classroom=c,
+                title="Chapter 5 Summary",
+                description="One-page summary of Chapter 5. Due by 11:59 PM.",
+                due_date=today - timedelta(days=1),  # Past due
+                points=40,
+                status="published",
+            )
             ClassroomAssignment.objects.create(
                 classroom=c,
                 title="Reading Reflection",
                 description="1 page reflection: key idea + one question you still have.",
-                due_date=today + timedelta(days=2),
+                due_date=today,  # Due today
                 points=50,
                 status="published",
             )
@@ -94,7 +107,7 @@ class Command(BaseCommand):
                 classroom=c,
                 title="Memory Verse",
                 description="Recite the weekly verse during homeroom check-in.",
-                due_date=today + timedelta(days=4),
+                due_date=today + timedelta(days=3),  # Upcoming
                 points=25,
                 status="published",
             )

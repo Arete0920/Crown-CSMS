@@ -10,11 +10,12 @@ These enable the Azure DEV Smoke workflow to test deployed API:
 
 ```
 CI_SMOKE_USERNAME = "ci@crown-demo.local"
-CI_SMOKE_PASSWORD = "CrownCiSmoke!2026"  # ROTATE AFTER STABILIZATION
+CI_SMOKE_PASSWORD = "<REDACTED_SEE_AZURE_APP_SETTINGS>"
 CI_SMOKE_SCHOOL_ID = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
 ```
 
 **Security Notes:**
+- **NEVER commit real passwords to git.** Fetch from Azure App Settings or GitHub Secrets.
 - CI user should have minimal permissions (read-only + roster view)
 - Password should be rotated quarterly (store in GitHub Secrets + Azure App Settings)
 - School ID must match canonical seed script (seed_a535.py)
@@ -23,14 +24,15 @@ CI_SMOKE_SCHOOL_ID = "a5351136-98fe-4d48-add0-fa8f62d9ceff"
 OPS endpoints use header-based authentication:
 
 ```
-CROWN_OPS_SECRET = "DevOpsSecret_Crown2026_Smoke_Testing_af94be6e9f6642c998ce_XyZ9QwErTyUiOp"
-DEV_OPS_SECRET = "DevOpsSecret_Crown2026_Smoke_Testing_af94be6e9f6642c998ce_XyZ9QwErTyUiOp"
+CROWN_OPS_SECRET = "<REDACTED_SEE_AZURE_APP_SETTINGS_OR_GITHUB_SECRETS>"
+DEV_OPS_SECRET = "<REDACTED_SEE_AZURE_APP_SETTINGS_OR_GITHUB_SECRETS>"
 ```
 
 **Why Both?**
 - `CROWN_OPS_SECRET`: Used by demo-reset endpoint
 - `DEV_OPS_SECRET`: Used by ensure-ci-user endpoint
 - **MUST MATCH** for workflow consistency
+- **ROTATE IMMEDIATELY if exposed in logs/chat/commits**
 - Workflows reference GitHub Secret `DEV_OPS_SECRET`
 
 ### Build/Version Tracking

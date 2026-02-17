@@ -1,4 +1,4 @@
-"""
+﻿"""
 URL configuration for Director APIs
 
 PERSONA-SPECIFIC APIs (per user's spec):
@@ -36,9 +36,16 @@ from academics import api as academics_api
 from billing import api as billing_api
 
 urlpatterns = [
+    path('360/', include('student360.api.urls')),
+    path('comms/', include('comms.api.urls')),
     # Persona-specific API routes (NEW - per user spec)
     path("aid/", include("aid.api_urls")),
     path("admissions/", include("admissions.api_urls")),
+    
+    # New demo pillars (discipline, service hours, Teams integration)
+    path("discipline/", include("discipline.api.urls")),
+    path("service/", include("servicehours.api.urls")),
+    path("integrations/", include("integrations.api.urls")),
 
     # Households (Module 4 spine) - read-only
     path("households/", households_list, name="households_list"),
@@ -133,3 +140,5 @@ urlpatterns = [
     path("director/timeline/", director_timeline, name="director_timeline"),
     path("director/force_seed_user/", force_seed_user, name="force_seed_user"),
 ]
+
+
