@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+﻿import { createBrowserRouter } from 'react-router-dom';
 
 import { HomeDashboard } from '../pages/HomeDashboard.jsx';
 import { BillingDashboard } from '../pages/BillingDashboard.jsx';
@@ -12,6 +12,13 @@ import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
 import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
 import OpsCommandCenter from '../components/OpsCommandCenter.jsx';
 import ClassroomsDashboard from '../pages/ClassroomsDashboard.jsx';
+import DisciplinePage from '../pages/DisciplinePage.jsx';
+import ServiceHoursPage from '../pages/ServiceHoursPage.jsx';
+import TeamsPreviewPage from '../pages/TeamsPreviewPage.jsx';
+import CommsInboxPage from '../pages/CommsInboxPage.jsx';
+import CommsThreadPage from '../pages/CommsThreadPage.jsx';
+import CommsComposePage from '../pages/CommsComposePage.jsx';
+import Student360Page from '../pages/Student360Page.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -67,3 +74,6 @@ export const router = createBrowserRouter([
     element: <OpsCommandCenter />,
   },
 ]);
+
+
+
