@@ -19,6 +19,9 @@ import CommsInboxPage from '../pages/CommsInboxPage.jsx';
 import CommsThreadPage from '../pages/CommsThreadPage.jsx';
 import CommsComposePage from '../pages/CommsComposePage.jsx';
 import Student360Page from '../pages/Student360Page.jsx';
+import AcademicsTeacherGrading from '../pages/AcademicsTeacherGrading.jsx';
+import AcademicsStudentWork from '../pages/AcademicsStudentWork.jsx';
+import AcademicsParentSnapshot from '../pages/AcademicsParentSnapshot.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -72,6 +75,18 @@ export const router = createBrowserRouter([
   {
     path: '/ops',
     element: <OpsCommandCenter />,
+  },
+  {
+    path: '/academics/teacher-grading',
+    element: <AcademicsTeacherGrading />,
+  },
+  {
+    path: '/academics/student-work',
+    element: <AcademicsStudentWork />,
+  },
+  {
+    path: '/academics/parent-snapshot',
+    element: <AcademicsParentSnapshot />,
   },
 ]);
 
