@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.models import AcademicYear, UserRole
+from crown_api.tenant_guards import TenantRequiredMixin
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
 
@@ -590,7 +591,7 @@ class PublisherObjectiveViewSet(PaginatedReadOnlyViewSet):
 # =============================================================================
 
 
-class SubmissionViewSet(viewsets.ModelViewSet):
+class SubmissionViewSet(TenantRequiredMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Submission.objects.select_related(
         "assignment", "enrollment", "enrollment__student"

@@ -313,6 +313,9 @@ class LedgerEntry(BaseModel):
     
     class Meta:
         ordering = ['-entry_date', '-created_at']
+
+    def delete(self, *args, **kwargs):
+        raise RuntimeError("LedgerEntry records are immutable. Use create_reversal().")
     
     def __str__(self):
         account_code = self.account.code if self.account_id else 'NoAccount'
