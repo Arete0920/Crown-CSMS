@@ -100,9 +100,10 @@ USE_X_FORWARDED_HOST = True
 # Environment and ops secret (expose as settings attributes for system views)
 CROWN_ENV = os.getenv("CROWN_ENV", "")
 
-# Demo mode settings (auto-enable in DEBUG mode for local dev)
-# In production (DEBUG=False), requires explicit CROWN_DEMO_MODE=true env var
-CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=DEBUG)
+# Demo mode settings
+# Requires explicit CROWN_DEMO_MODE=true env var to enable.
+# When enabled, DemoWriteBlockMiddleware blocks all mutating requests.
+CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=False)
 if not DEBUG and CROWN_DEMO_MODE:
     raise RuntimeError("CROWN_DEMO_MODE cannot be enabled in production.")
 CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "CrownDemoKey!2026" if DEBUG else "")
@@ -154,6 +155,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'core.middleware.DemoWriteBlockMiddleware',
     'crown_api.middleware.api_exceptions.ApiExceptionMiddleware',  # Exception envelope (outermost)
     'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing
     'corsheaders.middleware.CorsMiddleware',
