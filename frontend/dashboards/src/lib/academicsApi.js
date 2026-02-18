@@ -64,6 +64,12 @@ export async function listMastery(studentId) {
   );
 }
 
+// ── Students ──────────────────────────────────────────────
+
+export async function listStudents() {
+  return apiGet("/api/academics/parents/me/students/");
+}
+
 // ── Transcript ────────────────────────────────────────────
 
 export async function listTranscript(studentId) {
