@@ -1,11 +1,11 @@
 import uuid
 from django.db import models
 from django.utils import timezone
+from core.tenant_models import TenantScopedModel
 
 
-class Classroom(models.Model):
+class Classroom(TenantScopedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    school = models.ForeignKey("core.School", on_delete=models.CASCADE, related_name="classrooms")
 
     # Simple "homeroom/class" concept (not the full master schedule section model)
     name = models.CharField(max_length=120)  # e.g., "9th Grade Homeroom", "English 9 - Section A"
