@@ -18,6 +18,14 @@ from .views import (
     section_assessments,
     section_roster,
     student_sections,
+    CurriculumSourceViewSet,
+    UnitViewSet,
+    LessonViewSet,
+    PublisherObjectiveViewSet,
+    SubmissionViewSet,
+    GradeViewSet,
+    MasteryRecordViewSet,
+    TranscriptEntryViewSet,
 )
 
 router = SimpleRouter()
@@ -26,6 +34,20 @@ router.register(r"academics/years", AcademicYearViewSet, basename="academics-yea
 router.register(r"academics/terms", TermViewSet, basename="academics-terms")
 router.register(r"academics/courses", CourseViewSet, basename="academics-courses")
 router.register(r"academics/sections", SectionViewSet, basename="academics-sections")
+
+# Curriculum endpoints
+router.register(r"academics/curriculum-sources", CurriculumSourceViewSet, basename="curriculum-sources")
+router.register(r"academics/units", UnitViewSet, basename="units")
+router.register(r"academics/lessons", LessonViewSet, basename="lessons")
+router.register(r"academics/objectives", PublisherObjectiveViewSet, basename="objectives")
+
+# Submission & Grade endpoints
+router.register(r"academics/submissions", SubmissionViewSet, basename="submissions")
+router.register(r"academics/grades", GradeViewSet, basename="grades")
+
+# Mastery & Transcript endpoints
+router.register(r"academics/mastery", MasteryRecordViewSet, basename="mastery")
+router.register(r"academics/transcript-entries", TranscriptEntryViewSet, basename="transcript-entries")
 
 urlpatterns = [
     path("", include(router.urls)),

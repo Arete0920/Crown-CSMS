@@ -13,7 +13,8 @@ from core.models import AcademicYear, UserRole
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
 
-from .models import AssignmentCategory, Course, Enrollment, Section, Term
+from .models import AssignmentCategory, Course, Enrollment, Section, Term, Assignment
+from .models import CurriculumSource, Unit, Lesson, PublisherObjective, Submission, Grade, MasteryRecord, TranscriptEntry
 from .serializers import (
     AcademicYearSerializer,
     CourseSerializer,
@@ -23,6 +24,16 @@ from .serializers import (
     SectionSerializer,
     StudentSerializer,
     TermSerializer,
+    CurriculumSourceSerializer,
+    UnitSerializer,
+    LessonSerializer,
+    PublisherObjectiveSerializer,
+    SubmissionSerializer,
+    SubmissionCreateSerializer,
+    GradeSerializer,
+    GradeCreateSerializer,
+    MasteryRecordSerializer,
+    TranscriptEntrySerializer,
 )
 
 
@@ -510,3 +521,199 @@ def section_roster(request, section_id):
     }
 
     return Response(payload)
+
+
+# =============================================================================
+# CURRICULUM VIEWSETS
+# =============================================================================
+
+
+class CurriculumSourceViewSet(PaginatedReadOnlyViewSet):
+    serializer_class = CurriculumSourceSerializer
+    queryset = CurriculumSource.objects.all()
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        return self.queryset.filter(school_id=school_id).order_by("name")
+
+
+class UnitViewSet(PaginatedReadOnlyViewSet):
+    serializer_class = UnitSerializer
+    queryset = Unit.objects.select_related("course", "curriculum_source").all()
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        qs = self.queryset.filter(school_id=school_id)
+        
+        # Filter by course if provided
+        course_id = self.request.query_params.get("course_id")
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+        
+        return qs.order_by("course__code", "sequence_order")
+
+
+class LessonViewSet(PaginatedReadOnlyViewSet):
+    serializer_class = LessonSerializer
+    queryset = Lesson.objects.select_related("unit", "unit__course").all()
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        qs = self.queryset.filter(school_id=school_id)
+        
+        # Filter by unit if provided
+        unit_id = self.request.query_params.get("unit_id")
+        if unit_id:
+            qs = qs.filter(unit_id=unit_id)
+        
+        return qs.order_by("lesson_date", "title")
+
+
+class PublisherObjectiveViewSet(PaginatedReadOnlyViewSet):
+    serializer_class = PublisherObjectiveSerializer
+    queryset = PublisherObjective.objects.select_related("lesson", "lesson__unit").all()
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        qs = self.queryset.filter(school_id=school_id)
+        
+        # Filter by lesson if provided
+        lesson_id = self.request.query_params.get("lesson_id")
+        if lesson_id:
+            qs = qs.filter(lesson_id=lesson_id)
+        
+        return qs.order_by("objective_code")
+
+
+# =============================================================================
+# SUBMISSION & GRADE VIEWSETS
+# =============================================================================
+
+
+class SubmissionViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = Submission.objects.select_related(
+        "assignment", "enrollment", "enrollment__student"
+    ).all()
+
+    def get_serializer_class(self):
+        if self.action in ("create",):
+            return SubmissionCreateSerializer
+        return SubmissionSerializer
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        qs = self.queryset.filter(school_id=school_id)
+        
+        # Filter by assignment if provided
+        assignment_id = self.request.query_params.get("assignment_id")
+        if assignment_id:
+            qs = qs.filter(assignment_id=assignment_id)
+        
+        # Filter by student if provided
+        student_id = self.request.query_params.get("student_id")
+        if student_id:
+            qs = qs.filter(enrollment__student_id=student_id)
+        
+        return qs.order_by("-submitted_at")
+
+
+class GradeViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = GradeSerializer
+    queryset = Grade.objects.select_related(
+        "submission", "submission__assignment", "graded_by"
+    ).all()
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        qs = self.queryset.filter(school_id=school_id)
+        
+        # Filter by submission if provided
+        submission_id = self.request.query_params.get("submission_id")
+        if submission_id:
+            qs = qs.filter(submission_id=submission_id)
+        
+        return qs.order_by("-graded_at")
+
+    @action(detail=False, methods=["post"], url_path="grade")
+    def grade_submission(self, request):
+        """
+        Grade a submission.
+        POST /api/academics/grades/grade/
+        Body: {submission_id, numeric_score, teacher_feedback}
+        """
+        from .services import upsert_grade_for_submission
+        from decimal import Decimal
+        
+        ser = GradeCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        submission_id = ser.validated_data["submission_id"]
+        numeric_score: Decimal = ser.validated_data["numeric_score"]
+        feedback = ser.validated_data.get("teacher_feedback", "")
+
+        submission = get_object_or_404(
+            Submission.objects.select_related("assignment"),
+            id=submission_id
+        )
+        
+        # Verify school_id matches
+        school_id = get_request_school_id(request)
+        if submission.school_id != school_id:
+            raise PermissionDenied("Submission not in your school")
+
+        grade = upsert_grade_for_submission(
+            submission=submission,
+            numeric_score=numeric_score,
+            graded_by=request.user,
+            feedback=feedback
+        )
+
+        return Response(GradeSerializer(grade).data)
+
+
+# =============================================================================
+# MASTERY & TRANSCRIPT VIEWSETS
+# =============================================================================
+
+
+class MasteryRecordViewSet(PaginatedReadOnlyViewSet):
+    serializer_class = MasteryRecordSerializer
+    queryset = MasteryRecord.objects.select_related(
+        "student", "objective", "evidence_assignment"
+    ).all()
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        qs = self.queryset.filter(school_id=school_id)
+        
+        # Filter by student if provided
+        student_id = self.request.query_params.get("student_id")
+        if student_id:
+            qs = qs.filter(student_id=student_id)
+        
+        # Filter by objective if provided
+        objective_id = self.request.query_params.get("objective_id")
+        if objective_id:
+            qs = qs.filter(objective_id=objective_id)
+        
+        return qs.order_by("-last_demonstrated_at")
+
+
+class TranscriptEntryViewSet(PaginatedReadOnlyViewSet):
+    serializer_class = TranscriptEntrySerializer
+    queryset = TranscriptEntry.objects.select_related(
+        "student", "course", "term"
+    ).all()
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request)
+        qs = self.queryset.filter(school_id=school_id)
+        
+        # Filter by student if provided
+        student_id = self.request.query_params.get("student_id")
+        if student_id:
+            qs = qs.filter(student_id=student_id)
+        
+        return qs.order_by("term__ordering", "course__code")

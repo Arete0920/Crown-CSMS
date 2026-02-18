@@ -202,6 +202,10 @@ class Assignment(TimeStampedModel):
     assigned_date = models.DateField(null=True, blank=True)
     is_published = models.BooleanField(default=True)
 
+    # Curriculum links (optional, for standards-based grading)
+    lesson = models.ForeignKey("Lesson", on_delete=models.SET_NULL, null=True, blank=True, related_name="assignments")
+    objective = models.ForeignKey("PublisherObjective", on_delete=models.SET_NULL, null=True, blank=True, related_name="assignments")
+
     class Meta:
         db_table = "assignment"
         constraints = [
@@ -214,3 +218,255 @@ class Assignment(TimeStampedModel):
 
     def __str__(self) -> str:
         return f"Assignment({self.section_id} {self.category.name} {self.name})"
+
+
+# =============================================================================
+# CURRICULUM HIERARCHY (standards-based instruction)
+# =============================================================================
+
+
+class CurriculumSource(TimeStampedModel):
+    """
+    Publisher or research-based curriculum source (e.g., BJU Press, Abeka, state standards).
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    name = models.CharField(max_length=255)
+    source_type = models.CharField(max_length=32, default="publisher")  # publisher, pdf, research, state_standards
+    reference_link = models.URLField(blank=True, default="")
+    description = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "curriculum_source"
+        indexes = [
+            models.Index(fields=["school_id"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.source_type})"
+
+
+class Unit(TimeStampedModel):
+    """
+    Instructional unit within a course (e.g., "Unit 1: Foundations of Biology").
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="units")
+    curriculum_source = models.ForeignKey(CurriculumSource, on_delete=models.SET_NULL, null=True, blank=True, related_name="units")
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    sequence_order = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        db_table = "unit"
+        ordering = ["sequence_order", "id"]
+        indexes = [
+            models.Index(fields=["school_id", "course"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Unit {self.sequence_order}: {self.title}"
+
+
+class Lesson(TimeStampedModel):
+    """
+    Daily lesson plan within a unit.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="lessons")
+
+    title = models.CharField(max_length=255)
+    lesson_date = models.DateField(null=True, blank=True)
+    instructional_notes = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "lesson"
+        indexes = [
+            models.Index(fields=["school_id", "unit"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.unit}: {self.title}"
+
+
+class PublisherObjective(TimeStampedModel):
+    """
+    Learning objective from publisher curriculum (BJU, Abeka) or state standards.
+    MVP: Publisher objectives only. Later can generalize to LearningStandard with crosswalks.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="objectives")
+
+    objective_code = models.CharField(max_length=64)
+    description = models.TextField()
+
+    class Meta:
+        db_table = "publisher_objective"
+        constraints = [
+            models.UniqueConstraint(fields=["lesson", "objective_code"], name="uniq_objective_lesson_code"),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "lesson"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.objective_code}: {self.description[:40]}"
+
+
+# =============================================================================
+# SUBMISSION & GRADING WORKFLOW
+# =============================================================================
+
+
+class Submission(TimeStampedModel):
+    """
+    Student submission for an assignment. One per (assignment, enrollment).
+    Status workflow: assigned → submitted → graded (or missing/late).
+    """
+    class Status(models.TextChoices):
+        ASSIGNED = "assigned", "Assigned"
+        SUBMITTED = "submitted", "Submitted"
+        LATE = "late", "Late"
+        MISSING = "missing", "Missing"
+        GRADED = "graded", "Graded"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name="submissions")
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name="submissions")
+
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.ASSIGNED)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    # File upload (MVP)
+    upload = models.FileField(upload_to="submissions/", null=True, blank=True)
+
+    class Meta:
+        db_table = "submission"
+        constraints = [
+            models.UniqueConstraint(fields=["assignment", "enrollment"], name="uniq_submission_assignment_enrollment"),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "assignment"]),
+            models.Index(fields=["school_id", "enrollment"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Submission({self.assignment_id} - {self.enrollment.student_id} - {self.status})"
+
+
+class Grade(TimeStampedModel):
+    """
+    Grade for a submission. OneToOne relationship.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name="grade")
+
+    graded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="graded_submissions"
+    )
+    numeric_score = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    percentage = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+
+    letter_grade = models.CharField(max_length=2, default="F")
+    teacher_feedback = models.TextField(blank=True, default="")
+    graded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "grade"
+        indexes = [
+            models.Index(fields=["school_id", "submission"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Grade({self.submission_id} => {self.letter_grade} {self.percentage}%)"
+
+
+# =============================================================================
+# MASTERY & TRANSCRIPT
+# =============================================================================
+
+
+class MasteryRecord(TimeStampedModel):
+    """
+    Mastery tracking per (student, objective). Latest evidence replaces.
+    Mastery levels: 1=Beginning, 2=Developing, 3=Proficient, 4=Advanced.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="mastery_records")
+    objective = models.ForeignKey(PublisherObjective, on_delete=models.CASCADE, related_name="mastery_records")
+
+    mastery_level = models.PositiveSmallIntegerField(default=1)  # 1-4
+    last_demonstrated_at = models.DateTimeField(auto_now=True)
+
+    evidence_assignment = models.ForeignKey(
+        Assignment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mastery_evidence"
+    )
+
+    class Meta:
+        db_table = "mastery_record"
+        constraints = [
+            models.UniqueConstraint(fields=["student", "objective"], name="uniq_mastery_student_objective"),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "student"]),
+            models.Index(fields=["school_id", "objective"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Mastery({self.student_id} {self.objective.objective_code} => L{self.mastery_level})"
+
+
+class TranscriptEntry(TimeStampedModel):
+    """
+    Course-level transcript entry for a student.
+    MVP: One entry per (student, course, term).
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school_id = models.UUIDField(db_index=True)
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="transcript_entries")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="transcript_entries")
+    term = models.ForeignKey(Term, on_delete=models.SET_NULL, null=True, blank=True, related_name="transcript_entries")
+
+    credit_value = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    final_letter_grade = models.CharField(max_length=2, default="")
+    final_percentage = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    gpa_points = models.DecimalField(max_digits=4, decimal_places=2, default=0)
+
+    provider = models.CharField(max_length=255, blank=True, default="")
+    dual_enrollment_label = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        db_table = "transcript_entry"
+        constraints = [
+            models.UniqueConstraint(fields=["student", "course", "term"], name="uniq_transcript_student_course_term"),
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "student"]),
+            models.Index(fields=["school_id", "course"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Transcript({self.student_id} - {self.course.code} - {self.final_letter_grade})"
