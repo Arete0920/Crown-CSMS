@@ -3,6 +3,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from contextlib import contextmanager
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Thread-local storage for current request school
 _thread_locals = threading.local()
@@ -20,10 +23,24 @@ def clear_current_school():
     set_current_school(None)
 
 
+def _log_tenant_violation(*, violation_type, tenant_school_id=None, model=None, operation=None, extra=None):
+    payload = {
+        "event": "TENANT_VIOLATION",
+        "violation_type": violation_type,
+        "tenant_school_id": str(tenant_school_id) if tenant_school_id else None,
+        "model": model,
+        "operation": operation,
+    }
+    if extra:
+        payload.update(extra)
+    logger.warning("TENANT_VIOLATION", extra=payload)
+
+
 def require_tenant_context():
     """Require tenant context to be set - raises if missing."""
     current = get_current_school()
     if current is None:
+        _log_tenant_violation(violation_type='context_required', tenant_school_id=None, model=None, operation='require_tenant_context')
         raise TenantContextRequired("TENANT_CONTEXT_REQUIRED")
     return current
 
@@ -61,6 +78,7 @@ class TenantQuerySet(models.QuerySet):
         """Guard bulk update - require tenant context (fail-closed)."""
         current = get_current_school()
         if current is None:
+            _log_tenant_violation(violation_type='bulk_update', tenant_school_id=None, model=getattr(self.model,'__name__',None), operation='update')
             raise TenantBulkOpViolation('TENANT_CONTEXT_MISSING_BULK_UPDATE')
         # Ensure we are tenant-scoped before bulk update
         if hasattr(self.model, 'school'):
@@ -72,6 +90,7 @@ class TenantQuerySet(models.QuerySet):
         """Guard bulk delete - require tenant context (fail-closed)."""
         current = get_current_school()
         if current is None:
+            _log_tenant_violation(violation_type='bulk_delete', tenant_school_id=None, model=getattr(self.model,'__name__',None), operation='delete')
             raise TenantBulkOpViolation('TENANT_CONTEXT_MISSING_BULK_DELETE')
         # Ensure we are tenant-scoped before bulk delete
         if hasattr(self.model, 'school'):
@@ -125,6 +144,7 @@ class TenantScopedModel(models.Model):
                     # Safe convenience: bind new objects to current tenant
                     self.school_id = current.id
                 elif self.school_id != current.id:
+                    _log_tenant_violation(violation_type='write', tenant_school_id=getattr(current,'id',None), model=self.__class__.__name__, operation='save', extra={'target_school_id': str(self.school_id)})
                     raise TenantWriteViolation("CROSS_TENANT_WRITE_BLOCKED")
         return super().save(*args, **kwargs)
 
