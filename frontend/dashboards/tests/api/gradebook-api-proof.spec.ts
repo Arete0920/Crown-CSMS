@@ -13,19 +13,15 @@ test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", 
   await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
 
-  // Fill login form
-  await page.locator("input").first().fill(USERNAME);
-  await page.locator('input[type="password"]').fill(PASSWORD);
-  await page.locator('input[placeholder*="UUID"]').fill(SCHOOL_ID);
-
+  // The DevJwtPanel now uses single-button login (no input fields)
   // Capture the login response before clicking
   const loginResponsePromise = page.waitForResponse((r) => {
     const url = r.url();
     return r.request().method() === "POST" && url.includes("/api/") && url.includes("token");
   });
 
-  // Click login
-  await page.getByRole("button", { name: /^Login$/i }).click();
+  // Click "Demo Login" button (single-button deterministic auth)
+  await page.getByRole("button", { name: /Demo Login/i }).click();
 
   // Wait for the backend response
   const loginResp = await loginResponsePromise;

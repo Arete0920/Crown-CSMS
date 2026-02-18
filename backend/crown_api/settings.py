@@ -90,6 +90,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-school-id",
     "x-crown-school-id",
+    "x-demo-key",
 ]
 
 # Azure reverse-proxy HTTPS handling
@@ -98,6 +99,12 @@ USE_X_FORWARDED_HOST = True
 
 # Environment and ops secret (expose as settings attributes for system views)
 CROWN_ENV = os.getenv("CROWN_ENV", "")
+
+# Demo mode settings (auto-enable in DEBUG mode for local dev)
+# In production (DEBUG=False), requires explicit CROWN_DEMO_MODE=true env var
+CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=DEBUG)
+CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "CrownDemoKey!2026" if DEBUG else "")
+CROWN_DEMO_SCHOOL_ID = os.getenv("CROWN_DEMO_SCHOOL_ID", "19801b59-8c05-4c84-9312-5d792e4e839d")
 DJANGO_ENV = os.getenv("DJANGO_ENV", "")
 CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", "")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "")

@@ -1,39 +1,61 @@
 import { useMemo, useState } from "react";
 import {
-  jwtLogin,
   clearAccessToken,
   getAccessToken,
   getSelectedSchoolId,
-  setSelectedSchoolId,
 } from "../utils/authClient";
 
 /**
  * DevJwtPanel
  * - Dev-only login helper for fast local testing.
- * - Does NOT ship as a real login UX (we'll build real auth later).
+ * - Uses /api/dev/token/ endpoint (no password typing).
+ * - Deterministic auth: single-button login.
  */
 export default function DevJwtPanel() {
   const isDev = import.meta.env.DEV;
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === "1";
   const apiBase = useMemo(() => {
-    return import.meta.env.VITE_API_BASE_URL;
+    return import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+  }, []);
+  const demoKey = useMemo(() => {
+    return import.meta.env.VITE_DEMO_KEY || "";
   }, []);
 
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("");
-  const [schoolId, setSchoolId] = useState(() => getSelectedSchoolId());
   const [status, setStatus] = useState(() => (getAccessToken() ? "token loaded" : "no token"));
   const [err, setErr] = useState("");
+  const [schoolId, setSchoolId] = useState(() => getSelectedSchoolId());
 
   // Hide in production builds AND during demo mode
   if (!isDev || isDemoMode) return null;
 
-  const onLogin = async () => {
+  const onDemoLogin = async () => {
     setErr("");
+    setStatus("requesting...");
     try {
-      await jwtLogin({ username, password, apiBase });
-      setSelectedSchoolId(schoolId); // Persist school ID on successful login
+      const res = await fetch(`${apiBase}/api/dev/token/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Demo-Key": demoKey,
+        },
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Demo token failed: ${res.status} ${text.slice(0, 200)}`);
+      }
+
+      const data = await res.json();
+      
+      // Store token and school ID in sessionStorage (same keys as authenticatedFetch uses)
+      sessionStorage.setItem("crown.jwt.access", data.access);
+      sessionStorage.setItem("crown.school.id", data.school_id);
+      
       setStatus("token set");
+      setSchoolId(data.school_id);
+      
+      // Auto-reload page to refresh all authenticated data
+      setTimeout(() => window.location.reload(), 500);
     } catch (e) {
       setErr(String(e?.message || e));
       setStatus("login failed");
@@ -42,13 +64,9 @@ export default function DevJwtPanel() {
 
   const onClear = () => {
     clearAccessToken();
+    sessionStorage.removeItem("crown.school.id");
     setStatus("token cleared");
     setErr("");
-  };
-
-  const onSchoolChange = (v) => {
-    setSchoolId(v);
-    setSelectedSchoolId(v);
   };
 
   return (
@@ -70,59 +88,39 @@ export default function DevJwtPanel() {
       <div style={{ fontWeight: 700, marginBottom: 6 }}>Dev JWT Login</div>
       <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 10 }}>Status: {status}</div>
 
-      <label style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Username</label>
-      <input
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 8,
-          borderRadius: 8,
-          border: "1px solid rgba(255,255,255,.15)",
-          marginBottom: 8,
-        }}
-      />
-
-      <label style={{ fontSize: 12, display: "block", marginBottom: 4 }}>Password</label>
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 8,
-          borderRadius: 8,
-          border: "1px solid rgba(255,255,255,.15)",
-          marginBottom: 10,
-        }}
-      />
-
-      <label style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-        School ID (optional)
-      </label>
-      <input
-        value={schoolId}
-        onChange={(e) => onSchoolChange(e.target.value)}
-        placeholder="UUID (X-Crown-School-Id)"
-        style={{
-          width: "100%",
-          padding: 8,
-          borderRadius: 8,
-          border: "1px solid rgba(255,255,255,.15)",
-          marginBottom: 10,
-        }}
-      />
+      {schoolId && (
+        <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 10, wordBreak: "break-all" }}>
+          School: {schoolId.slice(0, 8)}...
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8 }}>
         <button
-          onClick={onLogin}
-          style={{ flex: 1, padding: 10, borderRadius: 10, border: 0, cursor: "pointer" }}
+          onClick={onDemoLogin}
+          style={{
+            flex: 1,
+            padding: 10,
+            borderRadius: 10,
+            border: 0,
+            cursor: "pointer",
+            background: "#3b82f6",
+            color: "#fff",
+            fontWeight: 600,
+          }}
         >
-          Login
+          Demo Login
         </button>
         <button
           onClick={onClear}
-          style={{ flex: 1, padding: 10, borderRadius: 10, border: 0, cursor: "pointer" }}
+          style={{
+            flex: 1,
+            padding: 10,
+            borderRadius: 10,
+            border: 0,
+            cursor: "pointer",
+            background: "rgba(255,255,255,.15)",
+            color: "#fff",
+          }}
         >
           Clear
         </button>

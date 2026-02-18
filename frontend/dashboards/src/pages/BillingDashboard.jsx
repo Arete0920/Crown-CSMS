@@ -17,7 +17,12 @@ import { authenticatedFetch } from "../utils/authClient.js";
   Note: This repo uses UUIDs for household/account/charge IDs.
 */
 
-const API_BASE = ""; // same-origin; set to "http://127.0.0.1:8000" if running separately
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
+// Dev-mode regression guard: catch missing API_BASE before it breaks exports
+if (import.meta.env.DEV && !API_BASE) {
+  console.warn("⚠️ BillingDashboard: API_BASE is empty. Exports will fail. Set VITE_API_BASE_URL in .env.local");
+}
 
 function formatMoney(x) {
   if (x == null) return "";
@@ -58,6 +63,9 @@ export function BillingDashboard() {
 
   // Allocation builder: choose charge_ids + amounts from open items
   const [allocs, setAllocs] = useState({}); // { [chargeIdUuid]: amountString }
+
+  // Demo household loader
+  const [loadingDemoHousehold, setLoadingDemoHousehold] = useState(false);
 
   async function fetchJson(url, options = {}) {
     const res = await authenticatedFetch(url, {
@@ -106,6 +114,25 @@ export function BillingDashboard() {
       alert(String(e?.message || e));
     } finally {
       setExportBusy(false);
+    }
+  }
+
+  async function loadDemoHousehold() {
+    setLoadingDemoHousehold(true);
+    try {
+      const data = await fetchJson(`${API_BASE}/api/households/?page_size=1`);
+      if (data?.results?.[0]?.id) {
+        setHouseholdId(data.results[0].id);
+        // Optional: show household name in a toast/alert
+        const name = data.results[0].name || data.results[0].id;
+        console.log(`Loaded demo household: ${name}`);
+      } else {
+        alert("No households found in system. Run seed data first.");
+      }
+    } catch (e) {
+      alert(`Failed to load demo household: ${e.message}`);
+    } finally {
+      setLoadingDemoHousehold(false);
     }
   }
 
@@ -359,6 +386,15 @@ export function BillingDashboard() {
             style={{ padding: 8, minWidth: 360 }}
           />
         </div>
+
+        <button 
+          onClick={loadDemoHousehold} 
+          disabled={loadingDemoHousehold}
+          style={{ padding: "8px 12px", backgroundColor: "#e3f2fd", border: "1px solid #1976d2", color: "#1976d2", cursor: "pointer" }}
+          title="Load first household from database"
+        >
+          {loadingDemoHousehold ? "Loading..." : "Use Demo Household"}
+        </button>
 
         <button onClick={loadOpenInvoices} disabled={openBusy} style={{ padding: "8px 12px" }}>
           {openBusy ? "Loading..." : "Load Open Invoices"}
