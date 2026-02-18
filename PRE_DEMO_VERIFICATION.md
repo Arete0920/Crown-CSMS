@@ -286,6 +286,66 @@ backend/ledger/tests/test_ar_posts_to_journal.py::ARPostsToJournalTestCase::test
 
 ---
 
+## Rehearsal Reset (run before every rehearsal or demo)
+
+```powershell
+# 1. Kill stale servers
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue |
+  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue |
+  ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+# 2. Sync + verify
+cd "$env:USERPROFILE\OneDrive\Desktop\Crown2026"
+git checkout main; git pull --ff-only
+
+# 3. Backend checks
+cd backend
+python manage.py migrate --check
+python manage.py seed_curriculum_vertical_slice --school-id 19801b59-8c05-4c84-9312-5d792e4e839d
+
+# 4. Start backend (background)
+Start-Process python -ArgumentList "manage.py runserver 127.0.0.1:8000 --noreload"
+
+# 5. Start frontend (new terminal)
+cd "$env:USERPROFILE\OneDrive\Desktop\Crown2026\frontend\dashboards"
+npx vite --host 127.0.0.1 --port 3000
+```
+
+---
+
+## Quick Proof Commands (3 checks, <30 seconds)
+
+Run after servers start to confirm everything is live:
+
+```powershell
+# 1. Backend health
+Invoke-RestMethod http://127.0.0.1:8000/api/health/
+# Expected: {"status":"ok", ...}
+
+# 2. Demo token mint
+$r = Invoke-RestMethod -Uri http://127.0.0.1:8000/api/dev/token/ -Method POST `
+  -ContentType "application/json" -Headers @{"X-Demo-Key"="CrownDemoKey!2026"} `
+  -Body '{"persona":"STAFF"}'
+$token = $r.access
+# Expected: JWT string
+
+# 3. Key endpoint per slice
+# Academics
+Invoke-RestMethod http://127.0.0.1:8000/api/academics/sections/ `
+  -Headers @{"Authorization"="Bearer $token"}
+# Expected: 2 sections (ENG-101, MATH-101)
+
+# Billing
+Invoke-RestMethod http://127.0.0.1:8000/api/health/
+# Expected: status ok (billing runs through same server)
+```
+
+**Definition of Done:** All 3 commands return expected data, no 401/404/500.
+
+---
+
 **Last Updated:** 2026-02-18 (Academics polish merged, demo tag locked)
 
 ---
