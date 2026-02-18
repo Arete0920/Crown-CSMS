@@ -238,11 +238,11 @@ class Command(BaseCommand):
 
                 # Create grade with variety
                 if is_high_performer:
-                    numeric_score = Decimal("92.00") + Decimal(submission.id.hex[0], base=16) % Decimal("8.00")
+                    numeric_score = Decimal("92.00") + Decimal(int(submission.id.hex[0], 16)) % Decimal("8.00")
                 elif is_at_risk:
-                    numeric_score = Decimal("65.00") + Decimal(submission.id.hex[0], base=16) % Decimal("15.00")
+                    numeric_score = Decimal("65.00") + Decimal(int(submission.id.hex[0], 16)) % Decimal("15.00")
                 else:
-                    numeric_score = Decimal("78.00") + Decimal(submission.id.hex[0], base=16) % Decimal("12.00")
+                    numeric_score = Decimal("78.00") + Decimal(int(submission.id.hex[0], 16)) % Decimal("12.00")
 
                 grade = upsert_grade_for_submission(
                     submission=submission,
