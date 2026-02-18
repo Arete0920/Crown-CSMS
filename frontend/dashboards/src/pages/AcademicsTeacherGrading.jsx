@@ -19,6 +19,9 @@ import {
   Stack,
   Alert,
   CircularProgress,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 
 import {
@@ -51,6 +54,9 @@ export default function AcademicsTeacherGrading() {
   // draft scores: { submissionId: "95" }
   const [draftScores, setDraftScores] = useState({});
   const [savingId, setSavingId] = useState("");
+
+  // Status filter for demo convenience
+  const [statusFilter, setStatusFilter] = useState("all");
 
   async function loadSections() {
     const data = await listSections();
@@ -114,6 +120,23 @@ export default function AcademicsTeacherGrading() {
     assignments.forEach((a) => m.set(a.id, a));
     return m;
   }, [assignments]);
+
+  const filteredSubmissions = useMemo(() => {
+    if (statusFilter === "all") return submissions;
+    return submissions.filter(
+      (s) => (s.status || "").toLowerCase() === statusFilter
+    );
+  }, [submissions, statusFilter]);
+
+  function autoFillSubmitted() {
+    const updates = {};
+    submissions.forEach((sub) => {
+      if ((sub.status || "").toLowerCase() === "submitted") {
+        updates[sub.id] = "100";
+      }
+    });
+    setDraftScores((prev) => ({ ...prev, ...updates }));
+  }
 
   async function onGradeRow(sub) {
     const scoreStr = draftScores[sub.id];
@@ -194,9 +217,41 @@ export default function AcademicsTeacherGrading() {
 
       <Card>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Submissions
-          </Typography>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              Submissions
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Filter</InputLabel>
+              <Select
+                label="Filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="submitted">Submitted</MenuItem>
+                <MenuItem value="missing">Missing</MenuItem>
+                <MenuItem value="late">Late</MenuItem>
+                <MenuItem value="graded">Graded</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+
+          <Accordion disableGutters sx={{ mb: 2, boxShadow: "none", border: "1px solid", borderColor: "divider" }}>
+            <AccordionSummary expandIcon={<span style={{ fontSize: "1.2rem" }}>{"\u25BC"}</span>}>
+              <Typography variant="body2" color="text.secondary">Demo Tools</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={autoFillSubmitted}
+                disabled={submissions.length === 0}
+              >
+                Auto-fill 100 for &ldquo;Submitted&rdquo;
+              </Button>
+            </AccordionDetails>
+          </Accordion>
 
           <Table size="small">
             <TableHead>
@@ -208,7 +263,7 @@ export default function AcademicsTeacherGrading() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {submissions.map((sub) => (
+              {filteredSubmissions.map((sub) => (
                 <TableRow key={sub.id}>
                   <TableCell>
                     {sub.student_name || sub.student?.name || sub.student || "Student"}
@@ -238,7 +293,7 @@ export default function AcademicsTeacherGrading() {
                 </TableRow>
               ))}
 
-              {submissions.length === 0 && (
+              {filteredSubmissions.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4}>
                     <Typography color="text.secondary">

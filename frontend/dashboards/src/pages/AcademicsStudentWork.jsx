@@ -14,9 +14,13 @@ import {
   TableBody,
   Chip,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 
-import { listStudentSubmissions, listMastery } from "../lib/academicsApi";
+import { listStudentSubmissions, listMastery, listStudents } from "../lib/academicsApi";
 
 function statusChip(status) {
   const s = (status || "").toLowerCase();
@@ -28,28 +32,43 @@ function statusChip(status) {
 }
 
 export default function AcademicsStudentWork() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+
+  const [students, setStudents] = useState([]);
+  const [studentId, setStudentId] = useState(
+    sessionStorage.getItem("crown.student.id") || ""
+  );
 
   const [submissions, setSubmissions] = useState([]);
   const [mastery, setMastery] = useState([]);
 
-  // Demo: pick a student id from sessionStorage if you store it; otherwise hardcode later.
-  const studentId =
-    sessionStorage.getItem("crown.student.id") ||
-    sessionStorage.getItem("studentId") ||
-    "";
-
+  // Load student list on mount
   useEffect(() => {
+    (async () => {
+      try {
+        const data = await listStudents();
+        const list = Array.isArray(data) ? data : data.results || [];
+        setStudents(list);
+        // Auto-select first student if none stored
+        if (!studentId && list.length > 0) {
+          const firstId = list[0].student_id || list[0].id;
+          setStudentId(firstId);
+          sessionStorage.setItem("crown.student.id", firstId);
+        }
+      } catch (e) {
+        setErr(e.message || String(e));
+      }
+    })();
+  }, []);
+
+  // Load data when student changes
+  useEffect(() => {
+    if (!studentId) return;
     (async () => {
       try {
         setLoading(true);
         setErr("");
-
-        if (!studentId) {
-          setErr("No student id in sessionStorage (crown.student.id). For demo, set it or add a picker.");
-          return;
-        }
 
         const subs = await listStudentSubmissions(studentId);
         const mas = await listMastery(studentId);
@@ -63,6 +82,12 @@ export default function AcademicsStudentWork() {
       }
     })();
   }, [studentId]);
+
+  function onStudentChange(e) {
+    const id = e.target.value;
+    setStudentId(id);
+    sessionStorage.setItem("crown.student.id", id);
+  }
 
   return (
     <Box sx={{ p: 2 }}>
@@ -78,6 +103,21 @@ export default function AcademicsStudentWork() {
       )}
 
       {err && <Alert severity="warning" sx={{ mb: 2 }}>{err}</Alert>}
+
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <FormControl fullWidth>
+            <InputLabel>Student</InputLabel>
+            <Select label="Student" value={studentId} onChange={onStudentChange}>
+              {students.map((s) => (
+                <MenuItem key={s.student_id || s.id} value={s.student_id || s.id}>
+                  {s.last_name}, {s.first_name} — Grade {s.grade_level || "?"}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </CardContent>
+      </Card>
 
       <Card sx={{ mb: 2 }}>
         <CardContent>

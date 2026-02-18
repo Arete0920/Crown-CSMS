@@ -13,9 +13,13 @@ import {
   TableCell,
   TableBody,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 
-import { listStudentSubmissions, listTranscript } from "../lib/academicsApi";
+import { listStudentSubmissions, listTranscript, listStudents } from "../lib/academicsApi";
 
 function statusChip(status) {
   const s = (status || "").toLowerCase();
@@ -25,27 +29,43 @@ function statusChip(status) {
 }
 
 export default function AcademicsParentSnapshot() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+
+  const [students, setStudents] = useState([]);
+  const [studentId, setStudentId] = useState(
+    sessionStorage.getItem("crown.student.id") || ""
+  );
 
   const [submissions, setSubmissions] = useState([]);
   const [transcript, setTranscript] = useState([]);
 
-  const studentId =
-    sessionStorage.getItem("crown.student.id") ||
-    sessionStorage.getItem("studentId") ||
-    "";
-
+  // Load student list on mount
   useEffect(() => {
+    (async () => {
+      try {
+        const data = await listStudents();
+        const list = Array.isArray(data) ? data : data.results || [];
+        setStudents(list);
+        // Auto-select first student if none stored
+        if (!studentId && list.length > 0) {
+          const firstId = list[0].student_id || list[0].id;
+          setStudentId(firstId);
+          sessionStorage.setItem("crown.student.id", firstId);
+        }
+      } catch (e) {
+        setErr(e.message || String(e));
+      }
+    })();
+  }, []);
+
+  // Load data when student changes
+  useEffect(() => {
+    if (!studentId) return;
     (async () => {
       try {
         setLoading(true);
         setErr("");
-
-        if (!studentId) {
-          setErr("No student id in sessionStorage (crown.student.id). For demo, set it or add a picker.");
-          return;
-        }
 
         const subs = await listStudentSubmissions(studentId);
         const tr = await listTranscript(studentId);
@@ -59,6 +79,12 @@ export default function AcademicsParentSnapshot() {
       }
     })();
   }, [studentId]);
+
+  function onStudentChange(e) {
+    const id = e.target.value;
+    setStudentId(id);
+    sessionStorage.setItem("crown.student.id", id);
+  }
 
   const missing = useMemo(
     () => submissions.filter((s) => (s.status || "").toLowerCase() === "missing"),
@@ -84,6 +110,21 @@ export default function AcademicsParentSnapshot() {
       )}
 
       {err && <Alert severity="warning" sx={{ mb: 2 }}>{err}</Alert>}
+
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <FormControl fullWidth>
+            <InputLabel>Select Child</InputLabel>
+            <Select label="Select Child" value={studentId} onChange={onStudentChange}>
+              {students.map((s) => (
+                <MenuItem key={s.student_id || s.id} value={s.student_id || s.id}>
+                  {s.last_name}, {s.first_name} — Grade {s.grade_level || "?"}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </CardContent>
+      </Card>
 
       <Card sx={{ mb: 2 }}>
         <CardContent>
