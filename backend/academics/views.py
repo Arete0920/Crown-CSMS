@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from core.audit_mixins import AuditMutationMixin
 from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -591,7 +592,7 @@ class PublisherObjectiveViewSet(PaginatedReadOnlyViewSet):
 # =============================================================================
 
 
-class SubmissionViewSet(TenantRequiredMixin, viewsets.ModelViewSet):
+class SubmissionViewSet(AuditMutationMixin, TenantRequiredMixin, viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Submission.objects.select_related(
         "assignment", "enrollment", "enrollment__student"
