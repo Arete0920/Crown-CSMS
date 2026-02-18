@@ -107,6 +107,10 @@ CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=False)
 if not DEBUG and CROWN_DEMO_MODE:
     raise RuntimeError("CROWN_DEMO_MODE cannot be enabled in production.")
 CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "CrownDemoKey!2026" if DEBUG else "")
+
+# Tenant header enforcement
+# When True, TenantHeaderRequiredMiddleware requires X-School-Id on /api/v1/* routes.
+TENANT_HEADER_REQUIRED = _env_bool("TENANT_HEADER_REQUIRED", default=True)
 CROWN_DEMO_SCHOOL_ID = os.getenv("CROWN_DEMO_SCHOOL_ID", "19801b59-8c05-4c84-9312-5d792e4e839d")
 DJANGO_ENV = os.getenv("DJANGO_ENV", "")
 CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", "")
@@ -156,6 +160,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'core.middleware.DemoWriteBlockMiddleware',
+    'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',
     'crown_api.middleware.api_exceptions.ApiExceptionMiddleware',  # Exception envelope (outermost)
     'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing
     'corsheaders.middleware.CorsMiddleware',

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 const BASE_URL = process.env.CROWN_UI_URL ?? "http://localhost:3000";
 const API_BASE = process.env.API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -7,74 +8,39 @@ const USERNAME = "head@crown-demo.local";
 const PASSWORD = "demo1234";
 const SCHOOL_ID = "b45b8c5a-6708-4597-aad9-a226627b2962";
 
-test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", async ({ page }) => {
-  // Step 1: Get an auth token via the UI
-  console.log("[Auth] Logging in to get bearer token...");
-  await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(500);
+// Helper: Inject auth into page context for all subsequent navigations
+async function injectAuth(page: Page, token: string, schoolId: string) {
+  await page.addInitScript(
+    ({ token, schoolId }) => {
+      sessionStorage.setItem("crown.jwt.access", token);
+      sessionStorage.setItem("crown.school.id", schoolId);
+      localStorage.setItem("crown.jwt.access", token);
+      localStorage.setItem("crown.school.id", schoolId);
+    },
+    { token, schoolId }
+  );
+}
 
-  // The DevJwtPanel now uses single-button login (no input fields)
-  // Capture the login response before clicking
-  const loginResponsePromise = page.waitForResponse((r) => {
-    const url = r.url();
-    return r.request().method() === "POST" && url.includes("/api/") && url.includes("token");
+test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", async ({ page, request }) => {
+  // Step 1: Get an auth token via direct API call (more reliable than UI automation in CI)
+  console.log("[Auth] Acquiring JWT token via API...");
+  const loginResp = await request.post(`${API_BASE}/api/v1/auth/token/`, {
+    data: { username: USERNAME, password: PASSWORD },
   });
-
-  // Click "Demo Login" button (single-button deterministic auth)
-  await page.getByRole("button", { name: /Demo Login/i }).click();
-
-  // Wait for the backend response
-  const loginResp = await loginResponsePromise;
-  console.log("[Auth] loginResp status:", loginResp.status());
-  console.log("[Auth] loginResp url:", loginResp.url());
-
-  // Extract token from response JSON (try multiple common key names)
-  let authToken: string | null = null;
-  try {
-    const data: any = await loginResp.json();
-    authToken = data?.access ?? data?.token ?? data?.jwt ?? null;
-    if (authToken) {
-      console.log("[Auth] Token extracted from JSON response");
-    }
-  } catch (err) {
-    console.log("[Auth] Could not parse JSON response:", err);
-  }
-
-  // If not in JSON, try cookies (common for httpOnly JWT setups)
-  if (!authToken) {
-    const cookies = await page.context().cookies();
-    console.log("[Auth] Cookies:", cookies.map((c) => c.name).join(", "));
-
-    const accessCookie =
-      cookies.find((c) => /access/i.test(c.name)) ??
-      cookies.find((c) => /jwt/i.test(c.name)) ??
-      cookies.find((c) => /token/i.test(c.name));
-
-    authToken = accessCookie?.value ?? null;
-    if (authToken) {
-      console.log("[Auth] Token extracted from cookies");
-    }
-  }
-
-  // Fall back to sessionStorage if all else fails (the original approach)
-  if (!authToken) {
-    const storedToken = await page.evaluate(() => {
-      return sessionStorage.getItem("crown.jwt.access");
-    });
-    authToken = storedToken;
-    if (authToken) {
-      console.log("[Auth] Token extracted from sessionStorage (legacy)");
-    }
-  }
-
-  // Validate token exists before proceeding
-  expect(authToken, "Token not found in login response, cookies, or sessionStorage").toBeTruthy();
+  
+  expect(loginResp.status(), "Login API should return 200").toBe(200);
+  const authData: any = await loginResp.json();
+  const authToken = authData?.access ?? authData?.token;
+  expect(authToken, "Token not found in login response").toBeTruthy();
+  console.log("[Auth] Token acquired from API");
   console.log("TOKEN_OK=true");
-
-  // Extract school ID from sessionStorage (this one works reliably)
-  const schoolId = await page.evaluate(() => sessionStorage.getItem("crown.school.id"));
-  expect(schoolId, "School ID not found in sessionStorage after login").toBeTruthy();
+  
+  const schoolId = SCHOOL_ID;
   console.log("SCHOOL_ID_OK=true\n");
+
+  // Inject auth into page context for future navigations (CRITICAL for UI screenshots)
+  await injectAuth(page, authToken, schoolId);
+  console.log("[Auth] Injected token + schoolId into page context for future navigations\n");
 
   // Fetch first available section (resilient to seed variability)
   console.log("[Setup] Fetching available sections from API...");

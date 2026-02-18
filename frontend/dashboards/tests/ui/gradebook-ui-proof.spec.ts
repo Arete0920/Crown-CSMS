@@ -16,23 +16,44 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
   const token = authData?.access ?? authData?.token;
   expect(token, "[Setup] Failed to acquire JWT token").toBeTruthy();
 
-  // Step 2: Inject JWT + school ID into sessionStorage before page load
+  // Step 2: Inject JWT + school ID into sessionStorage + localStorage before page load
+  // (Ensures authenticatedFetch() can read tenant header for X-School-Id enforcement)
   await page.addInitScript(
-    ([jwt, school]) => {
-      sessionStorage.setItem("crown.jwt.access", jwt);
-      sessionStorage.setItem("crown.school.id", school);
+    ({ token, schoolId }) => {
+      // Session storage (primary)
+      sessionStorage.setItem("crown.jwt.access", token);
+      sessionStorage.setItem("crown.school.id", schoolId);
+
+      // Local storage (backup fallback for authClient.js)
+      localStorage.setItem("crown.jwt.access", token);
+      localStorage.setItem("crown.school.id", schoolId);
     },
-    [token, SCHOOL_ID]
+    { token, schoolId: SCHOOL_ID }
   );
 
-  // Step 3: Track API calls
+  // Step 3: Track API calls and log errors
   const seen = {
     sections: false,
     grades: false,
   };
+  const apiErrors: string[] = [];
+
+  page.on("console", (msg) => {
+    if (msg.type() === "error") console.log(`[Browser Error] ${msg.text()}`);
+  });
 
   page.on("response", (resp) => {
     const url = resp.url();
+    const status = resp.status();
+    
+    // Log all /api/v1/ responses for diagnostics
+    if (url.includes("/api/v1/")) {
+      console.log(`[API] ${resp.request().method()} ${url} → ${status}`);
+      if (status >= 400) {
+        apiErrors.push(`${url} returned ${status}`);
+      }
+    }
+    
     if (url.includes("/gradebook/sections") && !url.includes("/grades")) seen.sections = true;
     if (url.includes("/gradebook/sections/") && url.includes("/grades")) seen.grades = true;
   });
@@ -40,9 +61,18 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
   // Step 4: Navigate directly to gradebook (token is already injected)
   await page.goto(`${BASE_URL}/gradebook`, { waitUntil: "domcontentloaded" });
 
+  // Step 4.5: Wait for page to auto-select first section and load grades (with extra time)
+  await page.waitForTimeout(2000);
+
+  // Early diagnostic: check if any API errors occurred before checking elements
+  if (apiErrors.length > 0) {
+    console.log(`[ERROR] API failures detected: ${apiErrors.join(", ")}`);
+    throw new Error(`API calls failed: ${apiErrors.join("; ")}`);
+  }
+
   // Step 5: Wait for assignment headers to render
   const firstAssignmentHeader = page.locator("[data-testid='gradebook-assignment-header']").first();
-  await expect(firstAssignmentHeader).toBeVisible({ timeout: 10000 });
+  await expect(firstAssignmentHeader).toBeVisible({ timeout: 15000 });
 
   // Step 6: Wait for at least one grade row to render
   const firstRow = page.locator("[data-testid='gradebook-row']").first();

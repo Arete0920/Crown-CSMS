@@ -35,3 +35,7 @@ def pytest_configure(config):
     # Ensure demo write-block middleware does not interfere with tests.
     # Individual tests opt in via @override_settings(CROWN_DEMO_MODE=True).
     settings.CROWN_DEMO_MODE = False
+
+    # Disable tenant header enforcement globally in tests.
+    # Individual tests opt in via @override_settings(TENANT_HEADER_REQUIRED=True).
+    settings.TENANT_HEADER_REQUIRED = False
