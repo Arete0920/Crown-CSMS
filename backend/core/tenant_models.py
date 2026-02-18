@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
+from contextlib import contextmanager
 import threading
 
 # Thread-local storage for current request school
@@ -17,6 +18,27 @@ def get_current_school():
 
 def clear_current_school():
     set_current_school(None)
+
+
+def require_tenant_context():
+    """Require tenant context to be set - raises if missing."""
+    current = get_current_school()
+    if current is None:
+        raise TenantContextRequired("TENANT_CONTEXT_REQUIRED")
+    return current
+
+
+@contextmanager
+def tenant_context(school):
+    """Context manager for explicit tenant scoping (supports nesting)."""
+    # Save prior (supports nesting)
+    prior = get_current_school()
+    try:
+        set_current_school(school)
+        yield school
+    finally:
+        # Restore prior (or clear)
+        set_current_school(prior)
 
 
 class TenantQuerySet(models.QuerySet):
@@ -65,6 +87,11 @@ class TenantWriteViolation(Exception):
 
 class TenantBulkOpViolation(Exception):
     """Raised when attempting bulk operation without tenant context."""
+    pass
+
+
+class TenantContextRequired(Exception):
+    """Raised when tenant context is required but missing."""
     pass
 
 
