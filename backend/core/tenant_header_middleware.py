@@ -2,7 +2,7 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 import uuid
 from core.models import School
-from core.tenant_models import set_current_school
+from core.tenant_models import set_current_school, clear_current_school
 
 class TenantHeaderRequiredMiddleware:
     """
@@ -23,43 +23,47 @@ class TenantHeaderRequiredMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Allow CORS preflight to flow to CorsMiddleware
-        if request.method == "OPTIONS":
-            return self.get_response(request)
-
-        # If enforcement disabled, just pass through
-        if not getattr(settings, "TENANT_HEADER_REQUIRED", True):
-            return self.get_response(request)
-
-        path = request.path or ""
-
-        # Only enforce /api/v1/*
-        if not path.startswith("/api/v1/"):
-            return self.get_response(request)
-
-        # Exempt prefixes
-        for prefix in self.EXEMPT_PREFIXES:
-            if path.startswith(prefix):
+        try:
+            # Allow CORS preflight to flow to CorsMiddleware
+            if request.method == "OPTIONS":
                 return self.get_response(request)
 
-        school_id_raw = request.headers.get("X-School-Id") or request.META.get("HTTP_X_SCHOOL_ID")
-        if not school_id_raw:
-            return JsonResponse({"detail": "Missing required header: X-School-Id"}, status=400)
+            # If enforcement disabled, just pass through
+            if not getattr(settings, "TENANT_HEADER_REQUIRED", True):
+                return self.get_response(request)
 
-        # Validate UUID
-        try:
-            school_uuid = uuid.UUID(str(school_id_raw))
-        except Exception:
-            return JsonResponse({"detail": "Invalid X-School-Id (must be UUID)"}, status=400)
+            path = request.path or ""
 
-        # Validate School exists
-        school = School.objects.filter(id=school_uuid).only("id").first()
-        if school is None:
-            return JsonResponse({"detail": "Unknown X-School-Id"}, status=404)
+            # Only enforce /api/v1/*
+            if not path.startswith("/api/v1/"):
+                return self.get_response(request)
 
-        # Attach for downstream consumption
-        request.school_id = str(school_uuid)
-        request.school = school
-        set_current_school(school)
+            # Exempt prefixes
+            for prefix in self.EXEMPT_PREFIXES:
+                if path.startswith(prefix):
+                    return self.get_response(request)
 
-        return self.get_response(request)
+            school_id_raw = request.headers.get("X-School-Id") or request.META.get("HTTP_X_SCHOOL_ID")
+            if not school_id_raw:
+                return JsonResponse({"detail": "Missing required header: X-School-Id"}, status=400)
+
+            # Validate UUID
+            try:
+                school_uuid = uuid.UUID(str(school_id_raw))
+            except Exception:
+                return JsonResponse({"detail": "Invalid X-School-Id (must be UUID)"}, status=400)
+
+            # Validate School exists
+            school = School.objects.filter(id=school_uuid).only("id").first()
+            if school is None:
+                return JsonResponse({"detail": "Unknown X-School-Id"}, status=404)
+
+            # Attach for downstream consumption
+            request.school_id = str(school_uuid)
+            request.school = school
+            set_current_school(school)
+
+            return self.get_response(request)
+        finally:
+            # Always clear tenant context after request (even on exceptions)
+            clear_current_school()
