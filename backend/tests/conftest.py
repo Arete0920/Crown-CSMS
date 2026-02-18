@@ -31,3 +31,7 @@ def pytest_configure(config):
         print("import core/core.migrations failed:", repr(e))
 
     print("=== END DIAGNOSTICS ===\n")
+
+    # Ensure demo write-block middleware does not interfere with tests.
+    # Individual tests opt in via @override_settings(CROWN_DEMO_MODE=True).
+    settings.CROWN_DEMO_MODE = False
