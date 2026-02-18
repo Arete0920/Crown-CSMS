@@ -35,9 +35,36 @@ class TenantQuerySet(models.QuerySet):
     def get(self, *args, **kwargs):
         return super().get(*args, **kwargs)
 
+    def update(self, **kwargs):
+        """Guard bulk update - require tenant context (fail-closed)."""
+        current = get_current_school()
+        if current is None:
+            raise TenantBulkOpViolation('TENANT_CONTEXT_MISSING_BULK_UPDATE')
+        # Ensure we are tenant-scoped before bulk update
+        if hasattr(self.model, 'school'):
+            qs = self.filter(school=current)
+            return super(TenantQuerySet, qs).update(**kwargs)
+        return super().update(**kwargs)
+
+    def delete(self):
+        """Guard bulk delete - require tenant context (fail-closed)."""
+        current = get_current_school()
+        if current is None:
+            raise TenantBulkOpViolation('TENANT_CONTEXT_MISSING_BULK_DELETE')
+        # Ensure we are tenant-scoped before bulk delete
+        if hasattr(self.model, 'school'):
+            qs = self.filter(school=current)
+            return super(TenantQuerySet, qs).delete()
+        return super().delete()
+
 
 class TenantWriteViolation(Exception):
     """Raised when attempting cross-tenant write operation."""
+    pass
+
+
+class TenantBulkOpViolation(Exception):
+    """Raised when attempting bulk operation without tenant context."""
     pass
 
 
