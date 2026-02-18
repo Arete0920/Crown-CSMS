@@ -2,6 +2,7 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 import uuid
 from core.models import School
+from core.tenant_models import set_current_school
 
 class TenantHeaderRequiredMiddleware:
     """
@@ -59,5 +60,6 @@ class TenantHeaderRequiredMiddleware:
         # Attach for downstream consumption
         request.school_id = str(school_uuid)
         request.school = school
+        set_current_school(school)
 
         return self.get_response(request)
