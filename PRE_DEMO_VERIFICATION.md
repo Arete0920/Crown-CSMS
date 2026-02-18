@@ -286,4 +286,29 @@ backend/ledger/tests/test_ar_posts_to_journal.py::ARPostsToJournalTestCase::test
 
 ---
 
-**Last Updated:** 2026-02-16 (Gate 2A merged)
+**Last Updated:** 2026-02-18 (Academics polish merged, demo tag locked)
+
+---
+
+## Rollback Anchor
+
+If anything breaks during demo prep, restore to the last known-good state:
+
+```powershell
+git checkout demo-2026-02-18-academics-polish
+```
+
+**Tag:** `demo-2026-02-18-academics-polish`  
+**Commit:** `2c6bd258`  
+**Contains:** PRs #211–#215 (billing fix, curriculum backend, UI pages, student picker + demo tools, seed Decimal fix)  
+**Verified:** 82 backend tests, frontend build clean, 3 academics routes live, 9/9 CI green
+
+---
+
+## Dependency Freeze Policy
+
+**No new frontend or backend dependencies until after the demo** unless fixing a hard CI or runtime failure.
+
+Forbidden frontend imports (enforced by CI):
+- `@mui/icons-material` — not installed; use Unicode characters instead
+- `@material-ui/icons` — legacy; not installed

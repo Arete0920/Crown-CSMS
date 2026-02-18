@@ -82,6 +82,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Guard against forbidden frontend imports
+        run: |
+          set -e
+          echo "Scanning for forbidden frontend imports..."
+          FORBIDDEN=(
+            "@mui/icons-material"
+            "@material-ui/icons"
+          )
+          failed=0
+          for pattern in "${FORBIDDEN[@]}"; do
+            matches=$(grep -rn "$pattern" frontend/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" || true)
+            if [ -n "$matches" ]; then
+              echo "❌ Forbidden import found: $pattern"
+              echo "$matches"
+              failed=1
+            fi
+          done
+          if [ $failed -eq 1 ]; then
+            echo ""
+            echo "❌ Forbidden imports detected. These packages are not in dependencies."
+            echo "   Use Unicode characters or inline SVG instead."
+            exit 1
+          fi
+          echo "✅ No forbidden imports found"
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
