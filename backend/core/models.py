@@ -12,6 +12,13 @@ class BaseModel(models.Model):
         abstract = True
 
 
+class TenantSafeModel(models.Model):
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        raise RuntimeError("Hard delete blocked for tenant-owned models. Use soft-delete or reversal.")
+
 # 1. School
 class School(BaseModel):
     name = models.CharField(max_length=255)
