@@ -3,12 +3,18 @@ Tests for tenant auto-scoping with fail-closed behavior.
 """
 from django.test import TestCase, override_settings
 from core.models import School
-from core.tenant_models import set_current_school, get_current_school
+from core.tenant_models import set_current_school, get_current_school, clear_current_school
 from classroom.models import Classroom
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False)
 class TenantAutoScopeTests(TestCase):
+    def setUp(self):
+        clear_current_school()
+
+    def tearDown(self):
+        clear_current_school()
+
     def test_queryset_auto_filters_by_school(self):
         """Queries only return rows for the current school context."""
         s1 = School.objects.create(name="School A")

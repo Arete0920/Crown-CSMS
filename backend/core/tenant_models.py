@@ -15,6 +15,10 @@ def get_current_school():
     return getattr(_thread_locals, "school", None)
 
 
+def clear_current_school():
+    set_current_school(None)
+
+
 class TenantQuerySet(models.QuerySet):
     def _filter_by_school(self):
         school = get_current_school()
@@ -30,6 +34,11 @@ class TenantQuerySet(models.QuerySet):
 
     def get(self, *args, **kwargs):
         return super().get(*args, **kwargs)
+
+
+class TenantWriteViolation(Exception):
+    """Raised when attempting cross-tenant write operation."""
+    pass
 
 
 class TenantManager(models.Manager):
@@ -51,6 +60,19 @@ class TenantScopedModel(models.Model):
     )
 
     objects = TenantManager()
+
+    def save(self, *args, **kwargs):
+        """Enforce tenant write protection."""
+        current = get_current_school()
+        # If there is tenant context, enforce writes stay in-tenant
+        if current is not None:
+            if hasattr(self, "school_id"):
+                if self.school_id is None:
+                    # Safe convenience: bind new objects to current tenant
+                    self.school_id = current.id
+                elif self.school_id != current.id:
+                    raise TenantWriteViolation("CROSS_TENANT_WRITE_BLOCKED")
+        return super().save(*args, **kwargs)
 
     class Meta:
         abstract = True
