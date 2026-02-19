@@ -1,5 +1,8 @@
 name: Azure DEV Smoke (Deterministic)
 
+env:
+  SMOKE_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
+
 on:
   workflow_dispatch:
   push:
@@ -24,7 +27,9 @@ jobs:
       - name: Check 2 - Unauth invoices returns 403
         run: |
           set -e
-          code=$(curl -sS -o /dev/null -w "%{http_code}" "$BASE/api/billing/invoices/")
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "X-School-Id: $SMOKE_SCHOOL_ID" \
+            "$BASE/api/billing/invoices/")
           if [ "$code" != "403" ]; then
             echo "ERROR Expected 403, got $code"
             exit 1
