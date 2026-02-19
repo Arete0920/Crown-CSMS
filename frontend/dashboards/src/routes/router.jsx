@@ -88,6 +88,10 @@ export const router = createBrowserRouter([
     path: '/academics/parent-snapshot',
     element: <AcademicsParentSnapshot />,
   },
+  {
+    path: '/students/:id',
+    element: <Student360Page />,
+  },
 ]);
 
 
