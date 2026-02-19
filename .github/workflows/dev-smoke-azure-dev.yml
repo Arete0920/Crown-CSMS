@@ -47,7 +47,8 @@ jobs:
           set -e
           resp=$(curl -sS -X POST "$BASE/api/v1/system/ensure-ci-user/" \
             -H "Content-Type: application/json" \
-            -H "X-Admin-Ops-Secret: $OPS_SECRET")
+            -H "X-Admin-Ops-Secret: $OPS_SECRET" \
+            -H "X-School-Id: $SMOKE_SCHOOL_ID")
           
           token=$(echo "$resp" | jq -r '.access')
           if [ -z "$token" ] || [ "$token" = "null" ]; then
