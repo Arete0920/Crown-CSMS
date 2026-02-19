@@ -19,6 +19,7 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
+    path("api/v1/graduation/", include('graduation.urls')),
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     path("api/system/health/", system_health, name="system_health"),

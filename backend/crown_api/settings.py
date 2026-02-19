@@ -156,6 +156,7 @@ INSTALLED_APPS = [
     'servicehours',  # Service hours tracking & approvals
     'comms',
     'student360',
+    'graduation',
 ]
 
 MIDDLEWARE = [
