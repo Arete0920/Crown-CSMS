@@ -130,3 +130,14 @@ export function fetchSectionAssignments(sectionId) {
   return _fetchJson(`${API_BASE}/api/v1/academics/sections/${encodeURIComponent(sectionId)}/assignments/`);
 }
 
+/**
+ * Fetch graduation audit for a student
+ * 
+ * @param {string} studentId - Student UUID
+ * @returns {Promise<Object>} Graduation audit data including credits and on_track status
+ */
+export function fetchGraduationAudit(studentId) {
+  if (!studentId) throw new Error('studentId is required');
+  return _fetchJson(`${API_BASE}/api/v1/graduation/audit/${encodeURIComponent(studentId)}/`);
+}
+
