@@ -9,12 +9,13 @@ class DemoWriteBlockMiddleware:
 
     MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
-    # Paths that must remain writable even in demo mode (auth, health)
+    # Paths that must remain writable even in demo mode (auth, health, key admin actions)
     EXEMPT_PREFIXES = (
         "/api/dev/token",
         "/api/token",
         "/api/v1/auth",
         "/api/v1/health",
+        "/api/admissions/enroll/",
     )
 
     def __init__(self, get_response):
