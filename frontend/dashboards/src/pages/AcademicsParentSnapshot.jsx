@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Card,
@@ -17,6 +18,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Button,
 } from "@mui/material";
 
 import { listStudentSubmissions, listTranscript, listStudents } from "../lib/academicsApi";
@@ -29,6 +31,7 @@ function statusChip(status) {
 }
 
 export default function AcademicsParentSnapshot() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
@@ -123,6 +126,16 @@ export default function AcademicsParentSnapshot() {
               ))}
             </Select>
           </FormControl>
+          {studentId && (
+            <Button
+              variant="contained"
+              onClick={() => navigate(`/parent/students/${studentId}`)}
+              sx={{ mt: 2 }}
+              fullWidth
+            >
+              View Full Student360
+            </Button>
+          )}
         </CardContent>
       </Card>
 
