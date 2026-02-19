@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getAdmissionsApplications } from "../api/admissions";
+import { getAdmissionsApplications, enrollApplicant } from "../api/admissions";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import Drawer from "../components/Drawer";
@@ -13,6 +13,7 @@ const STATUS_LABELS = {
   WAITLISTED: "Waitlisted",
   DENIED: "Denied",
   WITHDRAWN: "Withdrawn",
+  ENROLLED: "Enrolled",
 };
 
 export function AdmissionsPipelineList() {
@@ -28,6 +29,10 @@ export function AdmissionsPipelineList() {
 
   // detail drawer state
   const [selected, setSelected] = useState(null);
+
+  // enroll action state
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollResult, setEnrollResult] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -128,6 +133,25 @@ export function AdmissionsPipelineList() {
     const csv = buildAdmissionsCsv();
     const filename = `admissions_pipeline.csv`;
     downloadTextFile(filename, csv);
+  };
+
+  const handleEnroll = async () => {
+    if (!selected) return;
+    setEnrolling(true);
+    setEnrollResult(null);
+    try {
+      const result = await enrollApplicant(selected.id);
+      setEnrollResult({ ok: true, message: result.message, studentId: result.student_id });
+      // Update status locally
+      setSelected((prev) => ({ ...prev, status: "ENROLLED" }));
+      setApplications((prev) =>
+        prev.map((a) => (a.id === selected.id ? { ...a, status: "ENROLLED" } : a))
+      );
+    } catch (err) {
+      setEnrollResult({ ok: false, message: err.message || "Enroll failed." });
+    } finally {
+      setEnrolling(false);
+    }
   };
 
   const isAuthed = !!token && !!schoolId;
@@ -376,7 +400,7 @@ export function AdmissionsPipelineList() {
 
       <Drawer
         open={!!selected}
-        onClose={() => setSelected(null)}
+        onClose={() => { setSelected(null); setEnrollResult(null); }}
         title={selected ? selected.applicant_name : ""}
       >
         {selected && (
@@ -387,6 +411,57 @@ export function AdmissionsPipelineList() {
               <div><strong>Status:</strong> {STATUS_LABELS[selected.status] || selected.status}</div>
               <div><strong>Household:</strong> {selected.household_name}</div>
             </section>
+
+            {/* Enroll action */}
+            {selected.status === "ACCEPTED" && (
+              <section>
+                <h4 style={{ marginBottom: 8 }}>Enrollment</h4>
+                <button
+                  type="button"
+                  onClick={handleEnroll}
+                  disabled={enrolling}
+                  style={{
+                    padding: "8px 16px",
+                    background: enrolling ? "#999" : "#1a5c2a",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    cursor: enrolling ? "not-allowed" : "pointer",
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  {enrolling ? "Enrolling…" : "Enroll Student"}
+                </button>
+                {enrollResult && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 12px",
+                      background: enrollResult.ok ? "#e6f4ea" : "#fce8e8",
+                      border: `1px solid ${enrollResult.ok ? "#34a853" : "#cc0000"}`,
+                      borderRadius: 4,
+                      fontSize: 13,
+                    }}
+                  >
+                    {enrollResult.message}
+                    {enrollResult.ok && enrollResult.studentId && (
+                      <div style={{ marginTop: 4, color: "#555", fontSize: 12 }}>
+                        Student ID: {enrollResult.studentId}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {selected.status === "ENROLLED" && (
+              <section>
+                <div style={{ padding: "8px 12px", background: "#e6f4ea", border: "1px solid #34a853", borderRadius: 4, fontSize: 13 }}>
+                  Student is enrolled.
+                </div>
+              </section>
+            )}
 
             {/* Timeline */}
             <section>

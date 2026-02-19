@@ -1,0 +1,18 @@
+name: phase1-gate
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+jobs:
+  phase1-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Contract check (static)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference="Stop"
+          pwsh -File scripts/phase1/phase1_contract.ps1

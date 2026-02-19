@@ -36,3 +36,38 @@ export const getAdmissionsApplications = async () => {
   const data = await response.json();
   return Array.isArray(data) ? data : [];
 };
+
+/**
+ * Enroll an accepted applicant. Moves status ACCEPTED → ENROLLED.
+ * @param {number} applicationId - AdmissionsApplication PK
+ * @returns {Promise<{ok, student_id, name, message}>}
+ */
+export const enrollApplicant = async (applicationId) => {
+  const token = getToken();
+  const schoolId = getSchoolId();
+
+  if (!token || !schoolId) {
+    throw new Error("Missing authentication credentials");
+  }
+
+  const url = `${API_BASE}/api/admissions/enroll/`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ application_id: applicationId }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const err = new Error(data.detail || `Enroll error: ${response.status}`);
+    err.status = response.status;
+    throw err;
+  }
+
+  return data;
+};

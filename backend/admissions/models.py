@@ -19,6 +19,7 @@ class AdmissionsApplication(TimeStampedModel):
     STATUS_WAITLISTED = 'WAITLISTED'
     STATUS_DENIED = 'DENIED'
     STATUS_WITHDRAWN = 'WITHDRAWN'
+    STATUS_ENROLLED = 'ENROLLED'
 
     STATUS_CHOICES = [
         (STATUS_DRAFT, 'Draft'),
@@ -29,6 +30,7 @@ class AdmissionsApplication(TimeStampedModel):
         (STATUS_WAITLISTED, 'Waitlisted'),
         (STATUS_DENIED, 'Denied'),
         (STATUS_WITHDRAWN, 'Withdrawn'),
+        (STATUS_ENROLLED, 'Enrolled'),
     ]
 
     school = models.ForeignKey(School, on_delete=models.PROTECT, related_name='admissions_applications')
