@@ -6,6 +6,9 @@ from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum
 from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
@@ -40,6 +43,9 @@ def _envelope(data, status: int = 200) -> JsonResponse:
 
 
 def _parse_json(request: HttpRequest):
+    # Handle both DRF Request (request.data) and plain Django HttpRequest (request.body)
+    if hasattr(request, "data") and isinstance(request.data, dict):
+        return request.data
     try:
         if not request.body:
             return {}
@@ -103,8 +109,8 @@ def _payment_to_dict(p: Payment):
     }
 
 
-@login_required
-@require_http_methods(["POST"])
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def ensure_account(request: HttpRequest):
     """
     Create the household's ledger account if missing.
@@ -136,8 +142,8 @@ def ensure_account(request: HttpRequest):
     return _envelope(_acct_to_dict(acct), status=200)
 
 
-@login_required
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def account_detail(request: HttpRequest, account_id: str):
     sid = get_request_school_id(request)
     if not sid:
@@ -158,12 +164,9 @@ def account_detail(request: HttpRequest, account_id: str):
     return _envelope(data, status=200)
 
 
-@login_required
-@require_http_methods(["POST"])
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def create_charge(request: HttpRequest):
-    """
-    Body: { "account_id": "<uuid>", "description": "...", "amount": "123.45" }
-    """
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
@@ -202,8 +205,8 @@ def create_charge(request: HttpRequest):
     return _envelope(_charge_to_dict(c), status=201)
 
 
-@login_required
-@require_http_methods(["POST"])
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def record_payment(request: HttpRequest):
     """
     Body: {
@@ -427,8 +430,8 @@ def ledger_account_statement(request: HttpRequest, account_id: str):
     return _envelope(data, status=200)
 
 
-@login_required
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def open_charges(request: HttpRequest):
     """List open (unpaid) charges for an account/household.
 
@@ -493,8 +496,8 @@ def open_charges(request: HttpRequest):
     return _envelope(open_rows, status=200)
 
 
-@login_required
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def open_invoices(request: HttpRequest):
     """List open invoices (via billing.Invoice) with computed balances from ledger allocations.
 
