@@ -5,7 +5,9 @@
 
 import { authenticatedFetch } from "../utils/authClient.js";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+// Normalize base URL once (prevents double-slash bugs)
+const rawBase = import.meta.env.VITE_API_BASE_URL || "";
+const API_BASE = rawBase.endsWith("/") ? rawBase.slice(0, -1) : rawBase;
 
 async function _fetchJson(url) {
   const res = await authenticatedFetch(url);
@@ -138,6 +140,13 @@ export function fetchSectionAssignments(sectionId) {
  */
 export function fetchGraduationAudit(studentId) {
   if (!studentId) throw new Error('studentId is required');
+  
+  // Fail fast if session keys missing (prevents confusing 403 loops)
+  const token = sessionStorage.getItem("crown.jwt.access") || "";
+  const schoolId = sessionStorage.getItem("crown.school.id") || "";
+  if (!token) throw new Error("Missing access token (sessionStorage: crown.jwt.access)");
+  if (!schoolId) throw new Error("Missing school id (sessionStorage: crown.school.id)");
+  
   return _fetchJson(`${API_BASE}/api/v1/graduation/audit/${encodeURIComponent(studentId)}/`);
 }
 
