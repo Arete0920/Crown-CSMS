@@ -19,6 +19,7 @@ import CommsInboxPage from '../pages/CommsInboxPage.jsx';
 import CommsThreadPage from '../pages/CommsThreadPage.jsx';
 import CommsComposePage from '../pages/CommsComposePage.jsx';
 import Student360Page from '../pages/Student360Page.jsx';
+import ParentStudent360Page from '../pages/ParentStudent360Page.jsx';
 import AcademicsTeacherGrading from '../pages/AcademicsTeacherGrading.jsx';
 import AcademicsStudentWork from '../pages/AcademicsStudentWork.jsx';
 import AcademicsParentSnapshot from '../pages/AcademicsParentSnapshot.jsx';
@@ -96,6 +97,10 @@ export const router = createBrowserRouter([
   {
     path: '/students/:id',
     element: <Student360Page />,
+  },
+  {
+    path: '/parent/students/:id',
+    element: <ParentStudent360Page />,
   },
 ]);
 
