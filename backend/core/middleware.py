@@ -16,6 +16,10 @@ class DemoWriteBlockMiddleware:
         "/api/v1/auth",
         "/api/v1/health",
         "/api/admissions/enroll/",
+        "/api/v1/billing/payments/",    # Lane 2: payment record + apply
+        "/api/v1/ledger/accounts/ensure/",  # Lane 2: ensure ledger account
+        "/api/v1/ledger/charges/",      # Lane 2: create charge
+        "/api/v1/ledger/payments/",     # Lane 2: record + allocate payment
     )
 
     def __init__(self, get_response):

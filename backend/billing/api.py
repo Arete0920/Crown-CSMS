@@ -9,7 +9,7 @@ from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from households.scoping import get_request_school_id
@@ -31,8 +31,8 @@ def _plan_to_dict(p: InstallmentPlan):
     }
 
 
-@login_required
-@require_http_methods(["GET", "POST"])
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
 def installment_plans(request: HttpRequest):
     sid = get_request_school_id(request)
     if not sid:
@@ -125,8 +125,8 @@ def _run_to_dict(r: BillingRun):
     }
 
 
-@login_required
-@require_http_methods(["GET", "POST"])
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
 def billing_runs(request: HttpRequest):
     sid = get_request_school_id(request)
     if not sid:
@@ -178,8 +178,8 @@ def billing_runs(request: HttpRequest):
     )
 
 
-@login_required
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def billing_run_detail(request: HttpRequest, billing_run_id: str):
     sid = get_request_school_id(request)
     if not sid:
@@ -240,8 +240,8 @@ def billing_run_detail(request: HttpRequest, billing_run_id: str):
     return _envelope(data, status=200)
 
 
-@login_required
-@require_http_methods(["GET"])
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
     sid = get_request_school_id(request)
     if not sid:
