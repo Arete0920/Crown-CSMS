@@ -1,8 +1,6 @@
-﻿name: Build and deploy Python app to Azure Web App - crown-api-dev
-
+name: Build and deploy Python app to Azure Web App - crown-api-dev
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch: {}
   workflow_dispatch: {}
 
 concurrency:
