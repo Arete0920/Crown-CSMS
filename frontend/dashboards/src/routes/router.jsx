@@ -23,12 +23,23 @@ import ParentStudent360Page from '../pages/ParentStudent360Page.jsx';
 import AcademicsTeacherGrading from '../pages/AcademicsTeacherGrading.jsx';
 import AcademicsStudentWork from '../pages/AcademicsStudentWork.jsx';
 import AcademicsParentSnapshot from '../pages/AcademicsParentSnapshot.jsx';
+import TeacherDashboard from '../pages/TeacherDashboard.jsx';
+import TeacherAttendancePage from '../pages/TeacherAttendancePage.jsx';
+import ParentAttendancePage from '../pages/ParentAttendancePage.jsx';
 import { LoginPage } from '../pages/LoginPage.jsx';
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/teacher/attendance',
+    element: <TeacherAttendancePage />,
+  },
+  {
+    path: '/parent/attendance',
+    element: <ParentAttendancePage />,
   },
   {
     path: '/',
@@ -45,6 +56,10 @@ export const router = createBrowserRouter([
   {
     path: '/academics',
     element: <AcademicsDashboard />,
+  },
+  {
+    path: '/teacher',
+    element: <TeacherDashboard />,
   },
   {
     path: '/classrooms',

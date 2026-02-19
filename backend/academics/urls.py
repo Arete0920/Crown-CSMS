@@ -9,6 +9,7 @@ from .assignments_views import (
     category_update_delete,
 )
 from .transcript_views import StudentTranscriptContractView, TranscriptROView
+from crown_api.views_academics import section_attendance_submit
 from .views import (
     AcademicYearViewSet,
     CourseViewSet,
@@ -75,6 +76,11 @@ urlpatterns = [
         "academics/sections/<uuid:section_id>/assessments/",
         section_assessments,
         name="academics-section-assessments",
+    ),
+    path(
+        "academics/sections/<uuid:section_id>/attendance/",
+        section_attendance_submit,
+        name="academics-section-attendance-submit",
     ),
     path(
         "academics/sections/<uuid:section_id>/roster/",
