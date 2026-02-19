@@ -22,8 +22,13 @@ import Student360Page from '../pages/Student360Page.jsx';
 import AcademicsTeacherGrading from '../pages/AcademicsTeacherGrading.jsx';
 import AcademicsStudentWork from '../pages/AcademicsStudentWork.jsx';
 import AcademicsParentSnapshot from '../pages/AcademicsParentSnapshot.jsx';
+import { LoginPage } from '../pages/LoginPage.jsx';
 
 export const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
   {
     path: '/',
     element: <HomeDashboard />,
