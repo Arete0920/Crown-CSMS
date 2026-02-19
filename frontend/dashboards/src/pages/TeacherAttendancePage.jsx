@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../lib/api";
+import { authenticatedFetch } from "../utils/authClient";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+
+async function fetchJson(path, opts = {}) {
+  const resp = await authenticatedFetch(`${API_BASE}${path}`, opts);
+  return resp.json();
+}
 
 export default function TeacherAttendancePage() {
   const [sections, setSections] = useState([]);
@@ -14,7 +21,7 @@ export default function TeacherAttendancePage() {
     (async () => {
       setMsg("");
       try {
-        const res = await api.get("/api/v1/academics/sections/");
+        const res = await fetchJson("/api/v1/academics/sections/");
         setSections(res?.results || res || []);
       } catch {
         setMsg("Failed to load sections.");
@@ -29,7 +36,7 @@ export default function TeacherAttendancePage() {
       setRoster([]);
       setStatusMap({});
       try {
-        const r = await api.get(`/api/v1/academics/sections/${sectionId}/roster/`);
+        const r = await fetchJson(`/api/v1/academics/sections/${sectionId}/roster/`);
         const items = r?.students || r?.results || r?.items || r || [];
         setRoster(items);
         const m = {};
@@ -51,10 +58,11 @@ export default function TeacherAttendancePage() {
         student_id,
         status,
       }));
-      const res = await api.post(
-        `/api/v1/academics/sections/${sectionId}/attendance/`,
-        { date: today, items }
-      );
+      const res = await fetchJson(`/api/v1/academics/sections/${sectionId}/attendance/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: today, items }),
+      });
       setMsg(`Saved: created=${res.created} updated=${res.updated} (${res.date})`);
     } catch {
       setMsg("Submit failed. Check API + permissions.");
