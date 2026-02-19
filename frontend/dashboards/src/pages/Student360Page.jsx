@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { authenticatedFetch } from "../utils/authClient.js";
+import { fetchGraduationAudit } from "../api/academics.js";
 
 async function api(path) {
   const base = import.meta.env.VITE_API_BASE_URL || "";
@@ -21,14 +22,25 @@ export default function Student360Page() {
   const { id } = useParams();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
+  const [graduation, setGraduation] = useState(null);
+  const [gradErr, setGradErr] = useState("");
 
   const load = async () => {
     setErr("");
+    setGradErr("");
     try {
       const d = await api(`/api/360/students/${id}/overview/`);
       setData(d);
     } catch (e) {
       setErr(String(e.message || e));
+    }
+    
+    // Load graduation audit
+    try {
+      const grad = await fetchGraduationAudit(id);
+      setGraduation(grad);
+    } catch (e) {
+      setGradErr(String(e.message || e));
     }
   };
 
@@ -68,6 +80,65 @@ export default function Student360Page() {
           <div style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>
             <Link to="/attendance">View Attendance</Link>
           </div>
+        </Tile>
+
+        <Tile title="Graduation">
+          {gradErr ? (
+            <div style={{ fontSize: "0.85rem", color: "#dc2626" }}>{gradErr}</div>
+          ) : !graduation ? (
+            <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Loading...</div>
+          ) : graduation.status === "STUDENT_NOT_FOUND" ? (
+            <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Student not found</div>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+                <span
+                  style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    padding: "0.25rem 0.5rem",
+                    borderRadius: "4px",
+                    backgroundColor: graduation.on_track ? "#10b981" : "#ef4444",
+                    color: "white"
+                  }}
+                >
+                  {graduation.on_track ? "On Track" : "Off Track"}
+                </span>
+              </div>
+              
+              <div style={{ fontSize: "1.25rem", fontWeight: 600 }}>
+                {graduation.earned_credits || "0.00"} / {graduation.required_credits || "0.00"} credits
+              </div>
+              
+              {/* Progress bar */}
+              <div style={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}>
+                <div style={{ 
+                  width: "100%", 
+                  height: "8px", 
+                  backgroundColor: "#e5e7eb", 
+                  borderRadius: "4px",
+                  overflow: "hidden"
+                }}>
+                  <div style={{ 
+                    width: `${Math.min(100, (parseFloat(graduation.earned_credits || 0) / parseFloat(graduation.required_credits || 1)) * 100)}%`,
+                    height: "100%",
+                    backgroundColor: graduation.on_track ? "#10b981" : "#f59e0b",
+                    transition: "width 0.3s ease"
+                  }} />
+                </div>
+              </div>
+
+              <div style={{ fontSize: "0.85rem", opacity: 0.75 }}>
+                Remaining: {graduation.remaining_credits || "0.00"} credits
+              </div>
+              
+              {graduation.rule?.name && (
+                <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", opacity: 0.6 }}>
+                  Policy: {graduation.rule.name}
+                </div>
+              )}
+            </>
+          )}
         </Tile>
 
         <Tile title="Finance">
