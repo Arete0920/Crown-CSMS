@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { authenticatedFetch } from "../utils/authClient.js";
 import { fetchGraduationAudit } from "../api/academics.js";
+import GraduationBreakdownDrawer from "../components/student360/GraduationBreakdownDrawer.jsx";
 
 async function api(path) {
   const base = import.meta.env.VITE_API_BASE_URL || "";
@@ -24,6 +25,7 @@ export default function Student360Page() {
   const [err, setErr] = useState("");
   const [graduation, setGraduation] = useState(null);
   const [gradErr, setGradErr] = useState("");
+  const [gradDrawerOpen, setGradDrawerOpen] = useState(false);
 
   const load = async () => {
     setErr("");
@@ -83,14 +85,18 @@ export default function Student360Page() {
         </Tile>
 
         <Tile title="Graduation">
-          {gradErr ? (
-            <div style={{ fontSize: "0.85rem", color: "#dc2626" }}>{gradErr}</div>
-          ) : !graduation ? (
-            <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Loading...</div>
-          ) : graduation.status === "STUDENT_NOT_FOUND" ? (
-            <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Student not found</div>
-          ) : (
-            <>
+          <div 
+            onClick={() => graduation && !gradErr && setGradDrawerOpen(true)} 
+            style={{ cursor: (graduation && !gradErr) ? "pointer" : "default" }}
+          >
+            {gradErr ? (
+              <div style={{ fontSize: "0.85rem", color: "#dc2626" }}>{gradErr}</div>
+            ) : !graduation ? (
+              <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Loading...</div>
+            ) : graduation.status === "STUDENT_NOT_FOUND" ? (
+              <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Student not found</div>
+            ) : (
+              <>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
                 <span
                   style={{
@@ -139,6 +145,7 @@ export default function Student360Page() {
               )}
             </>
           )}
+          </div>
         </Tile>
 
         <Tile title="Finance">
@@ -204,6 +211,12 @@ export default function Student360Page() {
       <div style={{ marginTop: "1.25rem", fontSize: "0.85rem", opacity: 0.75 }}>
         Tip: Use any seeded student UUID for the route: <code>/student-360/&lt;student_id&gt;</code>
       </div>
+
+      <GraduationBreakdownDrawer
+        open={gradDrawerOpen}
+        onClose={() => setGradDrawerOpen(false)}
+        studentUuid={id}
+      />
     </div>
   );
 }
