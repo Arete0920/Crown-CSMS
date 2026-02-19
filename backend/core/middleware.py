@@ -22,13 +22,23 @@ class DemoWriteBlockMiddleware:
         "/api/v1/ledger/payments/",     # Lane 2: record + allocate payment
     )
 
+    # Path suffixes that must remain writable in demo mode (used when UUID is in the path)
+    EXEMPT_SUFFIXES = (
+        "/attendance/",  # Lane 3: teacher attendance submit
+    )
+
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         if getattr(settings, "CROWN_DEMO_MODE", False):
             if request.method in self.MUTATING_METHODS:
-                if not request.path.startswith(self.EXEMPT_PREFIXES):
+                path = request.path
+                is_exempt = (
+                    path.startswith(self.EXEMPT_PREFIXES)
+                    or any(path.endswith(s) for s in self.EXEMPT_SUFFIXES)
+                )
+                if not is_exempt:
                     return JsonResponse(
                         {"detail": "Writes disabled in demo mode."},
                         status=403

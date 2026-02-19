@@ -47,6 +47,87 @@ def student_attendance_list(request, student_id):
     return Response(AttendanceRecordReadSerializer(qs, many=True).data)
 
 
+# --- Lane 3: Teacher Attendance WRITE endpoint ---
+
+from django.utils import timezone
+from rest_framework.permissions import IsAuthenticated
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def section_attendance_submit(request, section_id):
+    """
+    POST /api/v1/academics/sections/<section_id>/attendance/
+    Teacher submits attendance for a section for today (or a provided date).
+
+    Body:
+      {
+        "date": "YYYY-MM-DD",  (optional; defaults to today)
+        "items": [
+          {"student_id": "<uuid>", "status": "present|absent|tardy|PRESENT|ABSENT|TARDY"},
+          ...
+        ]
+      }
+
+    Upserts AttendanceRecord rows keyed by (student_id, course_id, date).
+    Returns: {"ok": true, "date": "YYYY-MM-DD", "created": N, "updated": N}
+    """
+    payload = request.data or {}
+    items = payload.get("items") or []
+    if not isinstance(items, list) or len(items) == 0:
+        return Response({"ok": False, "error": "items[] required (list of {student_id, status})"}, status=400)
+
+    # Resolve date
+    raw_date = payload.get("date")
+    if raw_date:
+        try:
+            day = timezone.datetime.fromisoformat(str(raw_date)).date()
+        except Exception:
+            return Response({"ok": False, "error": "invalid date — use YYYY-MM-DD"}, status=400)
+    else:
+        day = timezone.localdate()
+
+    # Resolve section to verify it exists (section_id in URL is from academics.models.Section)
+    from academics.models import Section
+    get_object_or_404(Section, id=section_id)
+    # NOTE: we do NOT use section.course_id here — AttendanceRecord.course targets a
+    # different Course model (crown_api.models_academics_core.Course) than academics.models.Course.
+    # Attendance is recorded per student+date only; course is left null (nullable FK).
+
+    created = 0
+    updated = 0
+
+    for row in items:
+        sid = row.get("student_id")
+        status = row.get("status")
+        if not sid or not status:
+            return Response(
+                {"ok": False, "error": "each item requires student_id + status"},
+                status=400,
+            )
+
+        try:
+            obj, was_created = AttendanceRecord.objects.get_or_create(
+                student_id=sid,
+                date=day,
+                defaults={"status": status},
+            )
+        except Exception as exc:
+            return Response(
+                {"ok": False, "error": f"could not save attendance for student_id={sid}: {exc}"},
+                status=400,
+            )
+
+        if was_created:
+            created += 1
+        else:
+            obj.status = status
+            obj.save(update_fields=["status", "updated_at"])
+            updated += 1
+
+    return Response({"ok": True, "date": str(day), "created": created, "updated": updated})
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def student_grades_list(request, student_id):

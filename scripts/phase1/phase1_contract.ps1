@@ -53,4 +53,21 @@ Assert ($middleware -match "ledger/charges") "Lane 2: middleware missing ledger/
 Assert ($middleware -match "ledger/payments") "Lane 2: middleware missing ledger/payments/ exemption"
 Assert ($middleware -match "billing/payments") "Lane 2: middleware missing billing/payments/ exemption"
 
+# --- Lane 3: Attendance Workflow guards ---
+$viewsAcademics = Get-Content "backend/crown_api/views_academics.py" -Raw
+Assert ($viewsAcademics -match "section_attendance_submit") "Lane 3: views_academics.py missing section_attendance_submit"
+Assert ($viewsAcademics -match "IsAuthenticated") "Lane 3: section_attendance_submit missing IsAuthenticated"
+$acadUrls = Get-Content "backend/academics/urls.py" -Raw
+Assert ($acadUrls -match "section_attendance_submit") "Lane 3: academics/urls.py missing section_attendance_submit import"
+Assert ($acadUrls -match "academics/sections/.*/attendance/") "Lane 3: academics/urls.py missing attendance URL path"
+Assert (Test-Path "tools/verify_lane3_attendance_loop.ps1") "Lane 3: missing tools/verify_lane3_attendance_loop.ps1"
+Assert (Test-Path "backend/academics/tests/test_lane3_attendance_smoke.py") "Lane 3: missing backend/academics/tests/test_lane3_attendance_smoke.py"
+$router = Get-Content "frontend/dashboards/src/routes/router.jsx" -Raw
+Assert ($router -match "TeacherAttendancePage") "Lane 3: router.jsx missing TeacherAttendancePage"
+Assert ($router -match "ParentAttendancePage") "Lane 3: router.jsx missing ParentAttendancePage"
+Assert ($router -match "/teacher/attendance") "Lane 3: router.jsx missing /teacher/attendance route"
+Assert ($router -match "/parent/attendance") "Lane 3: router.jsx missing /parent/attendance route"
+$middleware = Get-Content "backend/core/middleware.py" -Raw
+Assert ($middleware -match "attendance") "Lane 3: middleware.py missing attendance exemption"
+
 Write-Host "PHASE1_CONTRACT=PASS" -ForegroundColor Green
