@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from "react";
-import api from "../lib/api";
+import { authenticatedFetch } from "../utils/authClient";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+
+async function fetchJson(path, opts = {}) {
+  const resp = await authenticatedFetch(`${API_BASE}${path}`, opts);
+  return resp.json();
+}
 
 export default function ParentAttendancePage() {
   const [students, setStudents] = useState([]);
@@ -11,7 +18,7 @@ export default function ParentAttendancePage() {
     (async () => {
       setMsg("");
       try {
-        const res = await api.get("/api/v1/academics/parents/me/students/");
+        const res = await fetchJson("/api/v1/academics/parents/me/students/");
         setStudents(res?.results || res || []);
       } catch {
         setMsg("Failed to load parent students.");
@@ -25,7 +32,7 @@ export default function ParentAttendancePage() {
       setMsg("");
       setRows([]);
       try {
-        const res = await api.get(`/api/v1/students/${studentId}/attendance/`);
+        const res = await fetchJson(`/api/v1/students/${studentId}/attendance/`);
         setRows(res?.results || res || []);
       } catch {
         setMsg("Failed to load attendance.");
