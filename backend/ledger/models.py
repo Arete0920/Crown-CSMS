@@ -1,7 +1,47 @@
 import uuid
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from django.db import models
 from households.models import Household
+
+
+class ImmutableMoneyMixin:
+    """
+    Phase 2 Priority 5: prevent silent edits to money-critical fields after creation.
+
+    On UPDATE (pk exists and not adding), forbids changes to fields in
+    IMMUTABLE_FIELDS that actually exist on the model. Non-existent fields
+    are silently skipped — no crashes on schema differences.
+    """
+
+    # Subclasses declare their own IMMUTABLE_FIELDS — base is empty.
+    IMMUTABLE_FIELDS = ()
+
+    def _immutable_check(self):
+        # Only enforce on updates, not inserts.
+        if not getattr(self, "pk", None):
+            return
+        if getattr(self, "_state", None) is not None and self._state.adding:
+            return
+
+        cls = self.__class__
+        try:
+            original = cls.objects.get(pk=self.pk)
+        except Exception:
+            # Cannot load original — do not block (avoids false negatives).
+            return
+
+        for field in self.IMMUTABLE_FIELDS:
+            # is_void is explicitly excluded — it is the legitimate correction path.
+            if field == "is_void":
+                continue
+            if hasattr(self, field) and hasattr(original, field):
+                if getattr(self, field) != getattr(original, field):
+                    raise ValidationError({field: "This field is immutable after creation."})
+
+    def save(self, *args, **kwargs):
+        self._immutable_check()
+        return super().save(*args, **kwargs)
 
 
 class TimeStampedModel(models.Model):
@@ -31,7 +71,9 @@ class LedgerAccount(TimeStampedModel):
 		return f"LedgerAccount({self.household_id})"
 
 
-class Charge(TimeStampedModel):
+class Charge(ImmutableMoneyMixin, TimeStampedModel):
+	IMMUTABLE_FIELDS = ("school_id", "account_id", "amount")
+
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
 	school_id = models.UUIDField(db_index=True)
@@ -53,7 +95,9 @@ class Charge(TimeStampedModel):
 		return f"Charge({self.amount})"
 
 
-class Payment(TimeStampedModel):
+class Payment(ImmutableMoneyMixin, TimeStampedModel):
+	IMMUTABLE_FIELDS = ("school_id", "account_id", "amount", "source", "reference")
+
 	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
 	school_id = models.UUIDField(db_index=True)
