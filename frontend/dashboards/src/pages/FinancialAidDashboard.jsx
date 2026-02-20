@@ -89,6 +89,7 @@ export function FinancialAidDashboard() {
   return (
     <CrownLayout title="Financial Aid" subtitle="Award summaries and application drilldown">
       {/* CROWN_DASH_GRID_NORMALIZED */}
+      {/* API contract: { academic_year, applications: { total, by_status }, awards: { total, total_amount, avg_amount, by_bucket } } */}
       <CrownGrid>
         <Col span={3}><CrownMetricCard label="Applications" value={summaryLoading ? "…" : String(summary?.applications?.total ?? "—")} hint="Total submitted" /></Col>
         <Col span={3}><CrownMetricCard label="Awards" value={summaryLoading ? "…" : String(summary?.awards?.total ?? "—")} hint="Active grants" /></Col>
