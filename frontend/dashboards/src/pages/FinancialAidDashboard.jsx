@@ -90,10 +90,10 @@ export function FinancialAidDashboard() {
     <CrownLayout title="Financial Aid" subtitle="Award summaries and application drilldown">
       {/* CROWN_DASH_GRID_NORMALIZED */}
       <CrownGrid>
-        <Col span={3}><CrownMetricCard label="Applications" value={summaryLoading ? "…" : String(summary?.totals?.applications_total ?? "—")} hint="Total submitted" /></Col>
-        <Col span={3}><CrownMetricCard label="Awards" value={summaryLoading ? "…" : String(summary?.totals?.awards_total_count ?? "—")} hint="Active grants" /></Col>
-        <Col span={3}><CrownMetricCard label="Awarded" value={summaryLoading ? "…" : (summary?.totals?.awards_total_amount != null ? `$${Number(summary.totals.awards_total_amount).toLocaleString()}` : "—")} hint="Total $ disbursed" /></Col>
-        <Col span={3}><CrownMetricCard label="Avg Award" value={summaryLoading ? "…" : (summary?.totals?.avg_award_amount != null ? `$${Number(summary.totals.avg_award_amount).toLocaleString()}` : "—")} hint="Per household" /></Col>
+        <Col span={3}><CrownMetricCard label="Applications" value={summaryLoading ? "…" : String(summary?.applications?.total ?? "—")} hint="Total submitted" /></Col>
+        <Col span={3}><CrownMetricCard label="Awards" value={summaryLoading ? "…" : String(summary?.awards?.total ?? "—")} hint="Active grants" /></Col>
+        <Col span={3}><CrownMetricCard label="Awarded" value={summaryLoading ? "…" : (summary?.awards?.total_amount != null ? `$${Number(summary.awards.total_amount).toLocaleString()}` : "—")} hint="Total $ disbursed" /></Col>
+        <Col span={3}><CrownMetricCard label="Avg Award" value={summaryLoading ? "…" : (summary?.awards?.avg_amount != null ? `$${Number(summary.awards.avg_amount).toLocaleString()}` : "—")} hint="Per household" /></Col>
 
         <Col span={12}>
           <CrownCard title="Financial Aid" right={<span className="crown-pill">Crown Dashboard</span>}>
