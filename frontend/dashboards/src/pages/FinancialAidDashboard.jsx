@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchFinancialAidSummary, fetchFinancialAidDrilldown } from "../api/financialAid.js";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 /*
   Crown2026 – Financial Aid Dashboard
@@ -83,8 +84,7 @@ export function FinancialAidDashboard() {
   const isEmpty = summary && summary.totals?.applications_total === 0 && summary.totals?.awards_total_count === 0;
 
   return (
-    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
-      <h1>Financial Aid Dashboard</h1>
+    <CrownLayout title="Financial Aid" subtitle="Award summaries and application drilldown">
 
       {summaryError && (
         <div style={{ background: "#fee", border: "1px solid #c33", padding: 16, borderRadius: 8, marginBottom: 16 }}>
@@ -269,6 +269,6 @@ function DrilldownDrawer({ drilldown, loading, error, onClose, onRetry, onLoadMo
           )}
         </>
       )}
-    </div>
+    </CrownLayout>
   );
 }

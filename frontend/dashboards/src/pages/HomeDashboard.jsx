@@ -1,30 +1,27 @@
+import CrownLayout from '../components/crown/CrownLayout.jsx';
+
 export function HomeDashboard() {
   return (
-    <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Crown Dashboards</h1>
-      <p>
-        Routes:
-        <ul>
-          <li>
-            <a href="/billing">Billing</a>
-          </li>
-          <li>
-            <a href="/financial-aid">Financial Aid</a>
-          </li>
-          <li>
-            <a href="/academics">Academics</a>
-          </li>
-          <li>
-            <a href="/classrooms">Classrooms</a>
-          </li>
-          <li>
-            <a href="/gradebook">Gradebook (Read-Only)</a>
-          </li>
-          <li>
-            <a href="/transcript">Transcript (Read-Only)</a>
-          </li>
-        </ul>
-      </p>
-    </div>
+    <CrownLayout title="Crown" subtitle="School management platform">
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
+        {[
+          ['/billing',       'Billing'],
+          ['/financial-aid', 'Financial Aid'],
+          ['/academics',     'Academics'],
+          ['/classrooms',    'Classrooms'],
+          ['/gradebook',     'Gradebook (Read-Only)'],
+          ['/transcript',    'Transcript (Read-Only)'],
+        ].map(([href, label]) => (
+          <a
+            key={href}
+            href={href}
+            className="crown-btn"
+            style={{ justifyContent: 'flex-start' }}
+          >
+            {label} &rarr;
+          </a>
+        ))}
+      </nav>
+    </CrownLayout>
   );
 }

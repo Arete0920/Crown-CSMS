@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { downloadCsv } from "../utils/downloadCsv.js";
 import { authenticatedFetch } from "../utils/authClient.js";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 /*
   Crown2026 – Billing Dashboard (0101 UI)
@@ -367,13 +368,7 @@ export function BillingDashboard() {
   }
 
   return (
-    <div
-      style={{
-        padding: 16,
-        fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
-      }}
-    >
-      <h2 style={{ margin: "0 0 12px" }}>Billing Dashboard</h2>
+    <CrownLayout title="Billing" subtitle="Invoices, payments, and export center">
 
       {/* Household selector */}
       <div style={{ display: "flex", gap: 12, alignItems: "end", marginBottom: 16, flexWrap: "wrap" }}>
@@ -563,6 +558,6 @@ export function BillingDashboard() {
           Tip: Load Open Invoices first, then check items and enter allocation amounts (defaults to balance).
         </div>
       </div>
-    </div>
+    </CrownLayout>
   );
 }
