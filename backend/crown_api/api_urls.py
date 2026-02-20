@@ -83,7 +83,9 @@ urlpatterns = [
     # Ledger statement
     path("ledger/accounts/<str:account_id>/statement/", ledger_api.ledger_account_statement, name="ledger-account-statement"),
     path("ledger/charges/", ledger_api.create_charge, name="ledger-create-charge"),
+    path("ledger/charges/<str:charge_id>/void/", ledger_api.void_charge, name="ledger-void-charge"),
     path("ledger/payments/", ledger_api.record_payment, name="ledger-record-payment"),
+    path("ledger/payments/<str:payment_id>/void/", ledger_api.void_payment, name="ledger-void-payment"),
 
     # 0102: open items helpers
     path("ledger/charges/open/", ledger_api.open_charges, name="ledger-open-charges"),

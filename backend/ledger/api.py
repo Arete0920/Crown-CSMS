@@ -642,3 +642,69 @@ def ledger_invariants(request: HttpRequest):
         },
         status=200,
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 Priority 5 — Void endpoints (charge / payment)
+# Reversal journal entries are handled by ledger/signals.py automatically.
+# Both endpoints are idempotent: voiding twice returns 200 cleanly.
+# ---------------------------------------------------------------------------
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def void_charge(request: HttpRequest, charge_id: str):
+    """
+    POST /api/v1/ledger/charges/<charge_id>/void/
+
+    Idempotent: voiding an already-void charge returns 200.
+    Allocations on the charge are deleted before void so that
+    balance/invariant queries remain consistent.
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    with transaction.atomic():
+        try:
+            ch = Charge.objects.select_for_update().get(id=UUID(charge_id), school_id=sid)
+        except (Charge.DoesNotExist, Exception):
+            return _json_error("charge not found", status=404)
+
+        if ch.is_void:
+            return _envelope({"id": str(ch.id), "is_void": True, "note": "already void"}, status=200)
+
+        Allocation.objects.filter(school_id=sid, charge=ch).delete()
+        ch.is_void = True
+        ch.save(update_fields=["is_void"])
+
+    return _envelope({"id": str(ch.id), "school_id": str(sid), "is_void": True}, status=200)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def void_payment(request: HttpRequest, payment_id: str):
+    """
+    POST /api/v1/ledger/payments/<payment_id>/void/
+
+    Idempotent: voiding an already-void payment returns 200.
+    Allocations on the payment are deleted before void so that
+    balance/invariant queries remain consistent.
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    with transaction.atomic():
+        try:
+            p = Payment.objects.select_for_update().get(id=UUID(payment_id), school_id=sid)
+        except (Payment.DoesNotExist, Exception):
+            return _json_error("payment not found", status=404)
+
+        if p.is_void:
+            return _envelope({"id": str(p.id), "is_void": True, "note": "already void"}, status=200)
+
+        Allocation.objects.filter(school_id=sid, payment=p).delete()
+        p.is_void = True
+        p.save(update_fields=["is_void"])
+
+    return _envelope({"id": str(p.id), "school_id": str(sid), "is_void": True}, status=200)
