@@ -1,0 +1,93 @@
+name: Demo Reset + Smoke (runtime proof)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  demo-reset-smoke:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: crown_test
+          POSTGRES_USER: crown
+          POSTGRES_PASSWORD: crown_test_pw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U crown -d crown_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      DJANGO_SETTINGS_MODULE: crown_api.settings
+      DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+      CROWN_DEMO_MODE: "true"
+      CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Migrate
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
+      - name: Seed demo school
+        working-directory: backend
+        run: python manage.py seed_demo_school --wipe
+
+      - name: Seed minimum ledger entities
+        working-directory: backend
+        run: python manage.py seed_demo_ledger_min --verbose
+
+      - name: Start Django server (background)
+        working-directory: backend
+        run: |
+          nohup python manage.py runserver 127.0.0.1:8000 --noreload > /tmp/django.log 2>&1 &
+          echo $! > /tmp/django.pid
+          sleep 5
+
+      - name: Health check
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8000/health/ >/dev/null 2>&1; then
+              echo "health ok"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "health timeout — last 50 lines of django.log:"
+          tail -50 /tmp/django.log || true
+          exit 1
+
+      - name: Runtime proof ceremony
+        working-directory: backend
+        run: python manage.py proof_phase3_runtime --verbose
+
+      - name: Dump server log on failure
+        if: failure()
+        run: |
+          echo "==== Django server output ===="
+          cat /tmp/django.log || true
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f /tmp/django.pid ]; then
+            kill -9 "$(cat /tmp/django.pid)" 2>/dev/null || true
+          fi
