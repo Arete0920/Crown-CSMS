@@ -1,4 +1,5 @@
 from django.db.models import Count, F, Max, Q, Sum
+from django.db import transaction
 from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404
@@ -9,10 +10,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.models import UserRole
+from households.models import Student
 from households.scoping import get_request_school_id
 from crown_api.tenant_decorators import require_tenant
 
-from academics.models import Enrollment, Section, TeacherAssignment
+from academics.models import Assignment, Enrollment, Section, TeacherAssignment
 from academics.serializers import SectionSerializer, StudentSerializer
 from academics.views import PaginatedReadOnlyViewSet
 
@@ -512,3 +514,87 @@ def update_grade_entry(request, entry_id):
         return Response(serializer.data)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# =========================
+# Lane 4: Teacher grade-entry bulk upsert
+# POST /api/v1/gradebook/sections/<section_id>/assignments/<assignment_id>/grades/upsert/
+# =========================
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def grade_entry_bulk_upsert(request, section_id, assignment_id):
+    """
+    Bulk upsert grade entries for an assignment.
+
+    Requires TEACHER, HEAD_OF_SCHOOL, or ADMIN role.
+
+    Payload:
+      {"grades": [{"student_id": "<uuid>", "points_earned": 9.5}, ...]}
+
+    Returns:
+      {"created": N, "updated": M, "count": T, "rows": [...]}
+    """
+    school_id = get_request_school_id(request, required=True)
+
+    roles = _role_codes(request.user, school_id)
+    if not roles.intersection({"TEACHER", "HEAD_OF_SCHOOL", "ADMIN"}):
+        raise PermissionDenied("Grade write requires TEACHER, HEAD_OF_SCHOOL, or ADMIN role.")
+
+    section = _get_section_or_404(request, school_id, section_id)
+    assignment = get_object_or_404(Assignment, id=assignment_id, section=section, school_id=school_id)
+
+    grades = request.data.get("grades", None)
+    if not isinstance(grades, list) or len(grades) == 0:
+        return Response(
+            {"detail": "Payload must include non-empty 'grades' list."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    created_count = 0
+    updated_count = 0
+    out = []
+
+    with transaction.atomic():
+        for row in grades:
+            if not isinstance(row, dict):
+                continue
+            student_id = row.get("student_id")
+            if not student_id:
+                continue
+
+            try:
+                student = Student.objects.get(id=student_id)
+            except Student.DoesNotExist:
+                # Skip unknown students; do not fail the whole batch
+                continue
+
+            obj, was_created = GradeEntry.objects.update_or_create(
+                section=section,
+                student=student,
+                assignment_name=assignment.name,
+                defaults={
+                    "assignment": assignment,
+                    "school_id": school_id,
+                    "points_earned": row.get("points_earned"),
+                    "points_possible": assignment.points_possible,
+                },
+            )
+
+            if was_created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+            out.append({
+                "id": str(obj.id),
+                "student_id": str(student.id),
+                "assignment_id": str(assignment.id),
+                "points_earned": str(obj.points_earned) if obj.points_earned is not None else None,
+            })
+
+    return Response({
+        "created": created_count,
+        "updated": updated_count,
+        "count": len(out),
+        "rows": out,
+    })
