@@ -127,6 +127,16 @@ class Command(BaseCommand):
             )
             school_id = opts["school_id"]
 
+        # Resolve a seeded household_id for parameterized ledger proof (P3).
+        # seed_demo_ledger_min creates a Household with a known name; look it up by school scope.
+        from households.models import Household
+        demo_hh = Household.objects.filter(school_id=school_id, name="Demo Household (proof)").first()
+        household_id = str(demo_hh.pk) if demo_hh else None
+        if household_id:
+            self.stdout.write(f"Demo household UUID (from DB): {household_id}")
+        else:
+            self.stdout.write(self.style.WARNING("No seeded demo household found — open_charges/open_invoices will be permissive"))
+
         results: list[StepResult] = []
 
         # ------------------------------------------------------------------
@@ -191,29 +201,48 @@ class Command(BaseCommand):
         results.append(StepResult("ledger_invariants", True, st3, "ok"))
 
         # ------------------------------------------------------------------
-        # 4. Open charges — endpoint existence check.
-        #    Requires account_id or household_id. Calling without them must
-        #    return 400 (not 401/403/404/500), proving the endpoint is live
-        #    and correctly rejects bad input.
+        # 4. Open charges — parameterized with household_id (P3 upgrade).
+        #    With household_id from a seeded household, expects 200.
+        #    Falls back to accepting 200|400 (proof-of-life) if no household.
         # ------------------------------------------------------------------
         open_charges_url = _join(base, "api/v1/ledger/charges/open/")
-        st4, bd4 = _req("GET", open_charges_url, headers=auth_headers)
-        if st4 not in (200, 400):
-            results.append(StepResult("ledger_open_charges", False, st4, bd4[:400]))
-            self._emit(results, verbose)
-            raise CommandError("PHASE3_RUNTIME_PROOF: FAIL at ledger_open_charges")
-        results.append(StepResult("ledger_open_charges", True, st4, "endpoint live"))
+        if household_id:
+            charges_url = open_charges_url + f"?household_id={household_id}"
+            st4, bd4 = _req("GET", charges_url, headers=auth_headers)
+            if st4 != 200:
+                results.append(StepResult("ledger_open_charges", False, st4, bd4[:400]))
+                self._emit(results, verbose)
+                raise CommandError("PHASE3_RUNTIME_PROOF: FAIL at ledger_open_charges")
+            results.append(StepResult("ledger_open_charges", True, st4, "200 (parameterized)"))
+        else:
+            st4, bd4 = _req("GET", open_charges_url, headers=auth_headers)
+            if st4 not in (200, 400):
+                results.append(StepResult("ledger_open_charges", False, st4, bd4[:400]))
+                self._emit(results, verbose)
+                raise CommandError("PHASE3_RUNTIME_PROOF: FAIL at ledger_open_charges")
+            results.append(StepResult("ledger_open_charges", True, st4, "endpoint live (no household)"))
 
         # ------------------------------------------------------------------
-        # 5. Open invoices — endpoint existence check (same pattern as charges).
+        # 5. Open invoices — parameterized with household_id (P3 upgrade).
+        #    Returns 200+[] even with no billing Invoice rows — that is correct
+        #    behaviour and sufficient proof.
         # ------------------------------------------------------------------
         open_invoices_url = _join(base, "api/v1/ledger/invoices/open/")
-        st5, bd5 = _req("GET", open_invoices_url, headers=auth_headers)
-        if st5 not in (200, 400):
-            results.append(StepResult("ledger_open_invoices", False, st5, bd5[:400]))
-            self._emit(results, verbose)
-            raise CommandError("PHASE3_RUNTIME_PROOF: FAIL at ledger_open_invoices")
-        results.append(StepResult("ledger_open_invoices", True, st5, "endpoint live"))
+        if household_id:
+            invoices_url = open_invoices_url + f"?household_id={household_id}"
+            st5, bd5 = _req("GET", invoices_url, headers=auth_headers)
+            if st5 != 200:
+                results.append(StepResult("ledger_open_invoices", False, st5, bd5[:400]))
+                self._emit(results, verbose)
+                raise CommandError("PHASE3_RUNTIME_PROOF: FAIL at ledger_open_invoices")
+            results.append(StepResult("ledger_open_invoices", True, st5, "200 (parameterized)"))
+        else:
+            st5, bd5 = _req("GET", open_invoices_url, headers=auth_headers)
+            if st5 not in (200, 400):
+                results.append(StepResult("ledger_open_invoices", False, st5, bd5[:400]))
+                self._emit(results, verbose)
+                raise CommandError("PHASE3_RUNTIME_PROOF: FAIL at ledger_open_invoices")
+            results.append(StepResult("ledger_open_invoices", True, st5, "endpoint live (no household)"))
 
         # ------------------------------------------------------------------
         # 6. Admissions summary
