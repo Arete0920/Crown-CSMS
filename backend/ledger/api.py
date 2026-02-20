@@ -197,12 +197,17 @@ def create_charge(request: HttpRequest):
     except Exception:
         return _json_error("amount must be a decimal", status=400)
 
-    c = Charge.objects.create(
-        school_id=sid,
-        account=acct,
-        description=description.strip(),
-        amount=amt,
-    )
+    # Write-safety guard: charges must be positive (negative/zero charges corrupt the ledger).
+    if amt <= Decimal("0"):
+        return _json_error("amount must be > 0", status=400)
+
+    with transaction.atomic():
+        c = Charge.objects.create(
+            school_id=sid,
+            account=acct,
+            description=description.strip(),
+            amount=amt,
+        )
     return _envelope(_charge_to_dict(c), status=201)
 
 
