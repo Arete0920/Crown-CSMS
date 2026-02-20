@@ -78,6 +78,7 @@ jobs:
           python manage.py seed_demo_school --force --students 25
           python manage.py seed_academics_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
           python manage.py seed_gradebook_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
+          python manage.py seed_demo_parent_gradebook --school-id b45b8c5a-6708-4597-aad9-a226627b2962
 
       - name: Start Django dev server
         working-directory: backend
@@ -136,6 +137,49 @@ jobs:
             sleep 1
           done
           echo "UI never became reachable" && exit 1
+
+      - name: Gradebook API readiness
+        shell: bash
+        env:
+          CROWN_DEMO_KEY: ${{ env.CROWN_DEMO_KEY }}
+        run: |
+          set -euo pipefail
+          echo "Acquiring demo JWT for readiness probe..."
+          TOKEN_JSON=$(curl -fsS -X POST "http://127.0.0.1:8000/api/dev/token/" \
+            -H "Content-Type: application/json" \
+            -H "X-Demo-Key: ${CROWN_DEMO_KEY}" \
+            -d '{}')
+
+          ACCESS=$(python3 - <<'PY'
+import json, sys
+d = json.loads(sys.stdin.read())
+print(d.get("access") or d.get("access_token") or "")
+PY
+<<<"$TOKEN_JSON")
+
+          if [[ -z "$ACCESS" ]]; then
+            echo "ERROR: Could not acquire demo access token. Response:"
+            echo "$TOKEN_JSON"
+            exit 1
+          fi
+          echo "Token acquired. Probing gradebook sections endpoint..."
+
+          for i in {1..40}; do
+            HTTP=$(curl -s -o /tmp/gb_ready.json -w "%{http_code}" \
+              "http://127.0.0.1:8000/api/v1/gradebook/sections/" \
+              -H "Authorization: Bearer ${ACCESS}" \
+              -H "X-School-Id: b45b8c5a-6708-4597-aad9-a226627b2962")
+            if [[ "$HTTP" == "200" || "$HTTP" == "400" || "$HTTP" == "403" ]]; then
+              echo "Gradebook API ready (HTTP ${HTTP})."
+              exit 0
+            fi
+            echo "Attempt ${i}: HTTP ${HTTP} — waiting 2s..."
+            cat /tmp/gb_ready.json || true
+            sleep 2
+          done
+          echo "Gradebook API never became ready (kept returning 500 or similar)."
+          cat /tmp/gb_ready.json || true
+          exit 1
 
       # Run API proof (uses UI login to acquire token deterministically from sessionStorage)
       - name: Run API proof
