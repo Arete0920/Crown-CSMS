@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown, patchGradeEntry } from "../api/gradebook";
+import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown, patchGradeEntry, upsertAssignmentGrades } from "../api/gradebook";
 import { patchAssignment } from "../api/academics";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
@@ -87,6 +87,72 @@ export function GradebookRO() {
   const [savingAssignmentId, setSavingAssignmentId] = useState(null);
   const [editMsg, setEditMsg] = useState("");
   const [canWriteAssignments, setCanWriteAssignments] = useState(false);
+
+  // ===== LANE4_GRADE_EDIT_UI =====
+  const [lane4EditMode, setLane4EditMode] = useState(false);
+  const [lane4Saving, setLane4Saving] = useState(false);
+  const [lane4Msg, setLane4Msg] = useState(null);
+  // cell edits keyed by "assignmentId:studentId" -> { points_earned }
+  const [lane4Edits, setLane4Edits] = useState({});
+
+  const lane4SetEdit = (assignmentId, studentId, patch) => {
+    const k = `${assignmentId}:${studentId}`;
+    setLane4Edits(prev => ({ ...prev, [k]: { ...(prev[k] || {}), ...patch } }));
+  };
+
+  const lane4ClearMsgSoon = () => {
+    window.clearTimeout(window.__lane4MsgT);
+    window.__lane4MsgT = window.setTimeout(() => setLane4Msg(null), 4000);
+  };
+
+  const lane4SaveAll = async () => {
+    if (!selectedSectionId) {
+      setLane4Msg({ type: 'error', text: 'No section selected; cannot save grades.' });
+      lane4ClearMsgSoon();
+      return;
+    }
+
+    const byAsn = {};
+    for (const [k, v] of Object.entries(lane4Edits)) {
+      const [assignmentId, studentId] = k.split(':');
+      if (!assignmentId || !studentId) continue;
+      if (!byAsn[assignmentId]) byAsn[assignmentId] = [];
+      const row = { student_id: studentId };
+      if (v.points_earned !== undefined && v.points_earned !== '') {
+        row.points_earned = Number(v.points_earned);
+      }
+      byAsn[assignmentId].push(row);
+    }
+
+    const assignmentIds = Object.keys(byAsn);
+    if (assignmentIds.length === 0) {
+      setLane4Msg({ type: 'info', text: 'No grade edits to save.' });
+      lane4ClearMsgSoon();
+      return;
+    }
+
+    try {
+      setLane4Saving(true);
+      setLane4Msg(null);
+      let total = 0;
+      for (const assignmentId of assignmentIds) {
+        const res = await upsertAssignmentGrades(selectedSectionId, assignmentId, byAsn[assignmentId]);
+        total += (res && res.count) ? res.count : 0;
+      }
+      setLane4Msg({ type: 'success', text: `Saved ${total} grade row(s).` });
+      lane4ClearMsgSoon();
+      setLane4Edits({});
+      setLane4EditMode(false);
+      await refreshGradebook();
+    } catch (e) {
+      const msg = e?.message || 'Save failed.';
+      setLane4Msg({ type: 'error', text: msg });
+      lane4ClearMsgSoon();
+    } finally {
+      setLane4Saving(false);
+    }
+  };
+  // ===== /LANE4_GRADE_EDIT_UI =====
 
 
   // Load sections once
@@ -489,6 +555,46 @@ export function GradebookRO() {
       <style>{`.muted{color:#666;font-size:0.9rem;margin-top:0.5rem}.error-box{margin:12px 0;padding:12px;border:1px solid #cc0000;background:#ffe6e6}.empty-state{margin:24px 0;padding:16px;border-left:4px solid #ddd;background:#f9f9f9}.empty-state h3{margin:0 0 8px 0;font-size:1.1rem}.debug-panel{margin:12px 0;padding:12px;background:#f0f8ff;border:1px solid #4a90e2;font-size:13px;font-family:monospace}.debug-panel h4{margin:0 0 8px 0;font-size:14px;font-family:system-ui}.debug-panel dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:4px}.debug-panel dt{font-weight:600}.debug-panel dd{margin:0;color:#333}`}</style>
 
       <h2>Gradebook (Read-Only)</h2>
+
+      {/* Lane 4: Teacher grade-edit toolbar */}
+      {canWriteAssignments && (
+        <div style={{ marginBottom: 12, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', background: lane4EditMode ? '#fffbf0' : '#fafafa' }}>
+          <span style={{ fontWeight: 500, fontSize: 13 }}>Grade Edit</span>
+          <button
+            onClick={() => { setLane4EditMode(v => !v); setLane4Msg(null); }}
+            disabled={lane4Saving}
+            style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: lane4EditMode ? 600 : 400, border: '1px solid #bbb', borderRadius: 3, background: lane4EditMode ? '#1976d2' : '#fff', color: lane4EditMode ? '#fff' : '#333' }}
+          >
+            {lane4EditMode ? 'Editing ✓' : 'Edit Grades'}
+          </button>
+          {lane4EditMode && (
+            <>
+              <button
+                onClick={lane4SaveAll}
+                disabled={lane4Saving}
+                style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #1976d2', borderRadius: 3, background: '#1976d2', color: '#fff' }}
+              >
+                {lane4Saving ? 'Saving…' : 'Save Grades'}
+              </button>
+              <button
+                onClick={() => { setLane4Edits({}); setLane4EditMode(false); setLane4Msg(null); }}
+                disabled={lane4Saving}
+                style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', border: '1px solid #bbb', borderRadius: 3, background: '#fff', color: '#555' }}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+          {lane4Msg && (
+            <span style={{ fontSize: 13, marginLeft: 8, color: lane4Msg.type === 'error' ? '#c62828' : lane4Msg.type === 'success' ? '#2e7d32' : '#555' }}>
+              {lane4Msg.type === 'success' ? '✅ ' : lane4Msg.type === 'error' ? '⛔ ' : 'ℹ️ '}{lane4Msg.text}
+            </span>
+          )}
+          {lane4EditMode && (
+            <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>Edit cells below, then click Save Grades.</span>
+          )}
+        </div>
+      )}
 
       {showDevPanels && (
         <div className="debug-panel">
@@ -910,9 +1016,21 @@ export function GradebookRO() {
                             background: bg,
                           }}
                         >
-                          {formatScore(earned, possible).split('\n').map((line, i) => (
-                            <div key={i}>{line}</div>
-                          ))}
+                          {lane4EditMode ? (
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={lane4Edits[`${a.assignment_id}:${studentId}`]?.points_earned ?? (earned === "" || earned === null ? "" : earned)}
+                              onChange={(e) => lane4SetEdit(a.assignment_id, studentId, { points_earned: e.target.value })}
+                              style={{ width: 72, textAlign: 'center', padding: '2px 4px', fontSize: 13, border: '1px solid #1976d2', borderRadius: 3 }}
+                              aria-label={`Score for student on ${a.assignment_name}`}
+                            />
+                          ) : (
+                            formatScore(earned, possible).split('\n').map((line, i) => (
+                              <div key={i}>{line}</div>
+                            ))
+                          )}
                         </td>
                       );
                     })}
