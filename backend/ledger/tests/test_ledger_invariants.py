@@ -1,0 +1,139 @@
+"""
+Phase 2 Priority 2 – Ledger Invariant endpoint proof tests.
+
+Invariants checked by GET /api/v1/ledger/invariants/:
+  1. over_allocated  – allocations exceed charge face value
+  2. negative_charges – non-void charges with amount < 0
+  3. negative_payments – non-void payments with amount < 0
+
+All tests are self-contained; no seed command required.
+"""
+import uuid
+import pytest
+from decimal import Decimal
+from django.contrib.auth import get_user_model
+from django.test import Client
+
+from core.models import School
+from households.models import Household
+from ledger.models import LedgerAccount, Charge, Payment, Allocation
+
+pytestmark = pytest.mark.django_db
+
+URL = "/api/v1/ledger/invariants/"
+
+
+def _school_and_user():
+    """Return (school_id, user) for a fresh school."""
+    sid = uuid.uuid4()
+    School.objects.get_or_create(id=sid, defaults={"name": f"School-{sid}"})
+    User = get_user_model()
+    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password="pass12345!")
+    if hasattr(user, "school_id"):
+        user.school_id = sid
+        user.save(update_fields=["school_id"])
+    return sid, user
+
+
+def _make_account(sid):
+    hh = Household.objects.create(school_id=sid, name=f"HH-{uuid.uuid4()}")
+    return LedgerAccount.objects.create(school_id=sid, household=hh)
+
+
+# ---------------------------------------------------------------------------
+# Test 1: unauthenticated request is rejected (no 2xx)
+# ---------------------------------------------------------------------------
+
+def test_invariants_unauthenticated_rejected():
+    c = Client()
+    resp = c.get(URL)
+    assert resp.status_code not in (200, 201, 204), (
+        f"Expected auth rejection, got {resp.status_code}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 2: authenticated, no seed violations → 200 + clean=True
+# ---------------------------------------------------------------------------
+
+def test_invariants_clean_ledger_returns_clean():
+    sid, user = _school_and_user()
+    acct = _make_account(sid)
+
+    # A 100.00 charge with a perfectly-matched 100.00 allocation
+    charge = Charge.objects.create(school_id=sid, account=acct, description="Tuition", amount=Decimal("100.00"))
+    payment = Payment.objects.create(school_id=sid, account=acct, amount=Decimal("100.00"))
+    Allocation.objects.create(school_id=sid, payment=payment, charge=charge, amount=Decimal("100.00"))
+
+    c = Client()
+    c.force_login(user)
+    resp = c.get(URL, HTTP_X_SCHOOL_ID=str(sid))
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ok"] is True
+    assert data["data"]["clean"] is True
+    assert data["data"]["violations"]["over_allocated"] == []
+    assert data["data"]["violations"]["negative_charges"] == []
+    assert data["data"]["violations"]["negative_payments"] == []
+    assert data["data"]["school_id"] == str(sid)
+
+
+# ---------------------------------------------------------------------------
+# Test 3: over-allocation is detected + tenant isolation
+# ---------------------------------------------------------------------------
+
+def test_invariants_detects_over_allocation():
+    sid, user = _school_and_user()
+    acct = _make_account(sid)
+
+    charge = Charge.objects.create(school_id=sid, account=acct, description="Fee", amount=Decimal("100.00"))
+    payment = Payment.objects.create(school_id=sid, account=acct, amount=Decimal("999.00"))
+    # Allocated 150 against a 100-face charge → over by 50
+    Allocation.objects.create(school_id=sid, payment=payment, charge=charge, amount=Decimal("150.00"))
+
+    c = Client()
+    c.force_login(user)
+    resp = c.get(URL, HTTP_X_SCHOOL_ID=str(sid))
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["data"]["clean"] is False
+    violations = body["data"]["violations"]["over_allocated"]
+    assert len(violations) == 1
+    assert violations[0]["charge_id"] == str(charge.id)
+    assert Decimal(violations[0]["overage"]) == Decimal("50.00")
+
+
+# ---------------------------------------------------------------------------
+# Test 4: tenant isolation — other school's violations invisible
+# ---------------------------------------------------------------------------
+
+def test_invariants_tenant_isolation():
+    """
+    school_a has an over-allocated charge.
+    school_b has a clean ledger.
+    school_b's user must see clean=True (no cross-tenant bleed).
+    """
+    sid_a, _ = _school_and_user()
+    sid_b, user_b = _school_and_user()
+
+    # Pollute school_a
+    acct_a = _make_account(sid_a)
+    charge_a = Charge.objects.create(school_id=sid_a, account=acct_a, description="Bad charge", amount=Decimal("50.00"))
+    pay_a = Payment.objects.create(school_id=sid_a, account=acct_a, amount=Decimal("999.00"))
+    Allocation.objects.create(school_id=sid_a, payment=pay_a, charge=charge_a, amount=Decimal("200.00"))
+
+    # school_b is clean
+    acct_b = _make_account(sid_b)
+    Charge.objects.create(school_id=sid_b, account=acct_b, description="Normal", amount=Decimal("300.00"))
+
+    c = Client()
+    c.force_login(user_b)
+    resp = c.get(URL, HTTP_X_SCHOOL_ID=str(sid_b))
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["data"]["school_id"] == str(sid_b)
+    assert body["data"]["clean"] is True
+    assert body["data"]["violations"]["over_allocated"] == []

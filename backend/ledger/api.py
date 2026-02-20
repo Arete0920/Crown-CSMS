@@ -555,3 +555,76 @@ def open_invoices(request: HttpRequest):
         )
 
     return _envelope(out, status=200)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 Priority 2 — Ledger Invariants (read-only, tenant-scoped)
+# ---------------------------------------------------------------------------
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def ledger_invariants(request: HttpRequest):
+    """
+    GET /api/v1/ledger/invariants/
+
+    Returns a JSON report of known accounting violations within the
+    caller's school. Safe to call at any time; makes no writes.
+
+    Invariants checked:
+      1. over_allocated  – charges where SUM(allocations.amount) > charge.amount
+      2. negative_charges – non-void charges with amount < 0
+      3. negative_payments – non-void payments with amount < 0
+
+    Response shape:
+      { ok: true, data: { school_id, violations: {...}, clean: bool } }
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    # 1. Over-allocated charges
+    alloc_agg = (
+        Allocation.objects.filter(school_id=sid)
+        .values("charge_id")
+        .annotate(total_applied=Sum("amount"))
+    )
+    alloc_by_charge = {str(row["charge_id"]): row["total_applied"] for row in alloc_agg}
+
+    over_allocated = []
+    for charge in Charge.objects.filter(school_id=sid, is_void=False).only("id", "amount", "description"):
+        applied = alloc_by_charge.get(str(charge.id), Decimal("0.00"))
+        if applied and Decimal(str(applied)) > Decimal(str(charge.amount)):
+            over_allocated.append({
+                "charge_id": str(charge.id),
+                "charge_amount": str(charge.amount),
+                "allocated_amount": str(applied),
+                "overage": str(Decimal(str(applied)) - Decimal(str(charge.amount))),
+            })
+
+    # 2. Negative-amount charges (non-void)
+    negative_charges = [
+        {"charge_id": str(c.id), "amount": str(c.amount)}
+        for c in Charge.objects.filter(school_id=sid, is_void=False, amount__lt=0).only("id", "amount")
+    ]
+
+    # 3. Negative-amount payments (non-void)
+    negative_payments = [
+        {"payment_id": str(p.id), "amount": str(p.amount)}
+        for p in Payment.objects.filter(school_id=sid, is_void=False, amount__lt=0).only("id", "amount")
+    ]
+
+    violations = {
+        "over_allocated": over_allocated,
+        "negative_charges": negative_charges,
+        "negative_payments": negative_payments,
+    }
+    clean = not any(v for v in violations.values())
+
+    return _envelope(
+        {
+            "school_id": str(sid),
+            "clean": clean,
+            "violations": violations,
+        },
+        status=200,
+    )
