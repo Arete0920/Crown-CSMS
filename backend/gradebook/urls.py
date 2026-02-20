@@ -13,6 +13,7 @@ from .views import (
     students_list,
     update_grade_entry,
 )
+from .views_parent import student_grades_summary
 
 
 router = SimpleRouter()
@@ -22,6 +23,11 @@ urlpatterns = [
     path("", include(router.urls)),
     path("gradebook/assignments/", assignments_list, name="gradebook-assignments-list"),
     path("gradebook/students/", students_list, name="gradebook-students-list"),
+    path(
+        "gradebook/students/<uuid:student_id>/grades/",
+        student_grades_summary,
+        name="parent-grades-summary",
+    ),
     path(
         "gradebook/sections/<uuid:section_id>/roster/",
         section_roster,
