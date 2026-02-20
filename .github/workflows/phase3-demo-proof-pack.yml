@@ -1,0 +1,17 @@
+name: Phase3 Demo Proof Pack Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  demo-proof-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Static demo-surface proof gate
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File tools/verify_phase3_demo_proof.ps1 -Mode static
