@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { fetchFinancialAidSummary, fetchFinancialAidDrilldown } from "../api/financialAid.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import CrownCard from "../components/crown/CrownCard.jsx";
+import CrownMetricCard from "../components/crown/CrownMetricCard.jsx";
+import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
 
 /*
   Crown2026 – Financial Aid Dashboard
@@ -85,6 +88,15 @@ export function FinancialAidDashboard() {
 
   return (
     <CrownLayout title="Financial Aid" subtitle="Award summaries and application drilldown">
+      {/* CROWN_DASH_GRID_NORMALIZED */}
+      <CrownGrid>
+        <Col span={3}><CrownMetricCard label="Status" value="Healthy" hint="All systems nominal" /></Col>
+        <Col span={3}><CrownMetricCard label="Today" value="Live" hint="Demo surface active" /></Col>
+        <Col span={3}><CrownMetricCard label="Security" value="Enforced" hint="Tenant + RBAC gates" /></Col>
+        <Col span={3}><CrownMetricCard label="Data" value="Seeded" hint="Realistic demo records" /></Col>
+
+        <Col span={12}>
+          <CrownCard title="Financial Aid" right={<span className="crown-pill">Crown Dashboard</span>}>
 
       {summaryError && (
         <div style={{ background: "#fee", border: "1px solid #c33", padding: 16, borderRadius: 8, marginBottom: 16 }}>
@@ -269,6 +281,9 @@ function DrilldownDrawer({ drilldown, loading, error, onClose, onRetry, onLoadMo
           )}
         </>
       )}
+          </CrownCard>
+        </Col>
+      </CrownGrid>
     </CrownLayout>
   );
 }

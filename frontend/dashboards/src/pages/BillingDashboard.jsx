@@ -3,6 +3,9 @@ import { useMemo, useState } from "react";
 import { downloadCsv } from "../utils/downloadCsv.js";
 import { authenticatedFetch } from "../utils/authClient.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import CrownCard from "../components/crown/CrownCard.jsx";
+import CrownMetricCard from "../components/crown/CrownMetricCard.jsx";
+import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
 
 /*
   Crown2026 – Billing Dashboard (0101 UI)
@@ -369,6 +372,15 @@ export function BillingDashboard() {
 
   return (
     <CrownLayout title="Billing" subtitle="Invoices, payments, and export center">
+      {/* CROWN_DASH_GRID_NORMALIZED */}
+      <CrownGrid>
+        <Col span={3}><CrownMetricCard label="Status" value="Healthy" hint="All systems nominal" /></Col>
+        <Col span={3}><CrownMetricCard label="Today" value="Live" hint="Demo surface active" /></Col>
+        <Col span={3}><CrownMetricCard label="Security" value="Enforced" hint="Tenant + RBAC gates" /></Col>
+        <Col span={3}><CrownMetricCard label="Data" value="Seeded" hint="Realistic demo records" /></Col>
+
+        <Col span={12}>
+          <CrownCard title="Billing" right={<span className="crown-pill">Crown Dashboard</span>}>
 
       {/* Household selector */}
       <div style={{ display: "flex", gap: 12, alignItems: "end", marginBottom: 16, flexWrap: "wrap" }}>
@@ -558,6 +570,9 @@ export function BillingDashboard() {
           Tip: Load Open Invoices first, then check items and enter allocation amounts (defaults to balance).
         </div>
       </div>
+          </CrownCard>
+        </Col>
+      </CrownGrid>
     </CrownLayout>
   );
 }
