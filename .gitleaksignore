@@ -30,6 +30,7 @@ f954837f6e2ef2aa602110b511ec717d0a03ce3c:API_ENDPOINT_VERIFICATION.md:postgres-c
 .github/workflows/proof-ceremony.yml:postgres-connection-string:36
 .github/workflows/phase3-runtime-proof.yml:postgres-connection-string:29
 .github/workflows/demo-reset-smoke.yml:postgres-connection-string:27
+.github/workflows/phase4-gradebook-demo-proof.yml:postgres-connection-string:32
 IMPLEMENTATION_COMPLETE.md:curl-auth-header:124
 INTEGRATION_GUIDE.md:curl-auth-header:245
 CHECKLIST.md:curl-auth-header:91

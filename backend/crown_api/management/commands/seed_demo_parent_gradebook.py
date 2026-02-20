@@ -1,31 +1,44 @@
 """
-Seed minimal parent-gradebook demo data.
+Seed deterministic parent-gradebook demo data.
 
-Idempotent. Creates:
-  - Demo Student in Demo Household
-  - Course + Section (term=2026-FALL)
+Produces:
+  - Demo Student "Alex Demo" in Demo Household
+  - Course MATH-101 + Section (term=2026-FALL)
   - Enrollment
-  - 2 GradeEntries with scores
+  - 2 GradeEntries with known scores (Quiz 1: 18/20, Homework 1: 9/10)
+
+Idempotent (get_or_create everywhere).
+Depends on: seed_demo_school (seed_demo_ledger_min optional — household is
+created here if absent).
 
 Usage:
   python manage.py seed_demo_parent_gradebook [--verbose]
 """
-from django.core.management.base import BaseCommand, CommandError
-from django.conf import settings
+from __future__ import annotations
 
+from decimal import Decimal
+
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
+
+from academics.models import Course, Enrollment, Section
 from core.models import School
-from households.models import Household, Student
-from academics.models import Course, Section
-from academics.models import Enrollment
 from gradebook.models import GradeEntry
+from households.models import Household, Student
+
+DEMO_SCHOOL_NAME = "Crown Demo Christian Academy"
+DEMO_HOUSEHOLD_NAME = "Demo Household (proof)"
+DEMO_STUDENT_FIRST = "Alex"
+DEMO_STUDENT_LAST = "Demo"
 
 
 class Command(BaseCommand):
-    help = "Seed demo parent gradebook data (idempotent)"
+    help = "Seed deterministic parent-gradebook demo data (Alex Demo, idempotent)"
 
     def add_arguments(self, parser):
         parser.add_argument("--verbose", action="store_true", default=False)
 
+    @transaction.atomic
     def handle(self, *args, **options):
         verbose = options["verbose"]
 
@@ -34,86 +47,76 @@ class Command(BaseCommand):
                 self.stdout.write(msg)
 
         # 1) Demo school
-        try:
-            school = School.objects.get(name="Crown Demo Christian Academy")
-        except School.DoesNotExist:
+        school = School.objects.filter(name=DEMO_SCHOOL_NAME).first()
+        if not school:
             raise CommandError(
-                "Demo school not found. Run seed_demo_school first."
+                f"School '{DEMO_SCHOOL_NAME}' not found. Run seed_demo_school first."
             )
-        school_id = school.id
-        log(f"seed_demo_parent_gradebook: school_id={school_id}")
+        log(f"seed_demo_parent_gradebook: school_id={school.id}")
 
-        # 2) Demo household (from ledger seed)
-        household = Household.objects.filter(
-            school_id=school_id, name="Demo Household (proof)"
-        ).first()
-        if household is None:
-            raise CommandError(
-                "Demo household not found. Run seed_demo_ledger_min first."
-            )
+        # 2) Demo household (idempotent — created here if absent)
+        household, _ = Household.objects.get_or_create(
+            school_id=school.id,
+            name=DEMO_HOUSEHOLD_NAME,
+        )
         log(f"seed_demo_parent_gradebook: household_id={household.pk}")
 
-        # 3) Demo student
-        student, created = Student.objects.get_or_create(
-            school_id=school_id,
+        # 3) Demo student — filter+create pattern avoids constraint collisions
+        student = Student.objects.filter(
+            school_id=school.id,
             household=household,
-            first_name="Alex",
-            last_name="Demo",
-            defaults={"grade_level": "10", "is_active": True},
-        )
-        log(
-            f"seed_demo_parent_gradebook: student {'created' if created else 'exists'} pk={student.pk}"
-        )
+            first_name=DEMO_STUDENT_FIRST,
+            last_name=DEMO_STUDENT_LAST,
+        ).first()
+        if not student:
+            student = Student.objects.create(
+                school_id=school.id,
+                household=household,
+                first_name=DEMO_STUDENT_FIRST,
+                last_name=DEMO_STUDENT_LAST,
+                grade_level="10",
+                is_active=True,
+            )
+        log(f"seed_demo_parent_gradebook: student_id={student.pk}")
 
         # 4) Course
-        course, created = Course.objects.get_or_create(
-            school_id=school_id,
-            code="DEMO-MATH",
-            defaults={"name": "Demo Mathematics", "credits": 1},
+        course, _ = Course.objects.get_or_create(
+            school_id=school.id,
+            code="MATH-101",
+            defaults={"name": "Math 101"},
         )
-        log(
-            f"seed_demo_parent_gradebook: course {'created' if created else 'exists'} pk={course.pk}"
-        )
+        log(f"seed_demo_parent_gradebook: course_id={course.pk}")
 
-        # 5) Section
-        section, created = Section.objects.get_or_create(
-            school_id=school_id,
+        # 5) Section — Section has no 'name' field; keyed on course + term
+        section, _ = Section.objects.get_or_create(
+            school_id=school.id,
             course=course,
             term="2026-FALL",
         )
-        log(
-            f"seed_demo_parent_gradebook: section {'created' if created else 'exists'} pk={section.pk}"
-        )
+        log(f"seed_demo_parent_gradebook: section_id={section.pk}")
 
         # 6) Enrollment
-        enrollment, created = Enrollment.objects.get_or_create(
-            school_id=school_id,
+        enrollment, _ = Enrollment.objects.get_or_create(
+            school_id=school.id,
             section=section,
             student=student,
         )
-        log(
-            f"seed_demo_parent_gradebook: enrollment {'created' if created else 'exists'} pk={enrollment.pk}"
-        )
+        log(f"seed_demo_parent_gradebook: enrollment_id={enrollment.pk}")
 
-        # 7) Grade entries (uses legacy assignment_name — FK is nullable)
+        # 7) Grade entries (assignment FK is nullable — use assignment_name)
         entries = [
-            ("Homework 1", "90.00", "100.00"),
-            ("Quiz 1", "78.00", "100.00"),
+            ("Quiz 1",     Decimal("18.0"), Decimal("20.0")),
+            ("Homework 1", Decimal("9.0"),  Decimal("10.0")),
         ]
         for name, earned, possible in entries:
-            entry, created = GradeEntry.objects.get_or_create(
-                school_id=school_id,
+            _, created = GradeEntry.objects.get_or_create(
+                school_id=school.id,
                 section=section,
                 student=student,
                 assignment_name=name,
-                defaults={
-                    "points_earned": earned,
-                    "points_possible": possible,
-                },
+                defaults={"points_earned": earned, "points_possible": possible},
             )
-            log(
-                f"seed_demo_parent_gradebook: grade entry '{name}' {'created' if created else 'exists'}"
-            )
+            log(f"seed_demo_parent_gradebook: grade_entry '{name}' {'created' if created else 'exists'}")
 
         self.stdout.write(
             f"seed_demo_parent_gradebook: OK  student_id={student.pk}"
