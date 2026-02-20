@@ -14,7 +14,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.test import Client
 
-from core.models import School
+from core.models import School, UserRole
 from households.models import Household
 from ledger.models import LedgerAccount, Charge, Payment, Allocation
 
@@ -24,14 +24,15 @@ URL = "/api/v1/ledger/invariants/"
 
 
 def _school_and_user():
-    """Return (school_id, user) for a fresh school."""
+    """Return (school_id, user) for a fresh school. User is granted HEAD_OF_SCHOOL."""
     sid = uuid.uuid4()
-    School.objects.get_or_create(id=sid, defaults={"name": f"School-{sid}"})
+    school = School.objects.get_or_create(id=sid, defaults={"name": f"School-{sid}"})[0]
     User = get_user_model()
     user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password="pass12345!")
     if hasattr(user, "school_id"):
         user.school_id = sid
         user.save(update_fields=["school_id"])
+    UserRole.objects.create(school_id=sid, user=user, role_code="HEAD_OF_SCHOOL")
     return sid, user
 
 

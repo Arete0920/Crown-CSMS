@@ -15,6 +15,7 @@ from django.views.decorators.http import require_http_methods
 
 from households.models import Household
 from households.scoping import get_request_school_id
+from core.models import UserRole
 from .models import Payment, PaymentAllocation, Charge, LedgerAccount
 from .models import Allocation, compute_account_balance
 from .services import allocate_payment_fifo, account_balance, charge_remaining_balance
@@ -581,6 +582,14 @@ def ledger_invariants(request: HttpRequest):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
+
+    # RBAC: HEAD_OF_SCHOOL or FINANCE_DIRECTOR only
+    roles = set(
+        UserRole.objects.filter(user=request.user, school_id=sid)
+        .values_list("role_code", flat=True)
+    )
+    if not roles.intersection({"HEAD_OF_SCHOOL", "FINANCE_DIRECTOR"}):
+        return _json_error("Forbidden: requires HEAD_OF_SCHOOL or FINANCE_DIRECTOR role.", status=403)
 
     # 1. Over-allocated charges
     alloc_agg = (
