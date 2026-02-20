@@ -4,6 +4,7 @@ from rest_framework.routers import SimpleRouter
 from .views import (
     GradebookSectionViewSet,
     assignments_list,
+    grade_entry_bulk_upsert,
     section_assignments,
     section_drilldown,
     section_grades,
@@ -50,5 +51,10 @@ urlpatterns = [
         "gradebook/grade-entries/<uuid:entry_id>/",
         update_grade_entry,
         name="update-grade-entry",
+    ),
+    path(
+        "gradebook/sections/<uuid:section_id>/assignments/<uuid:assignment_id>/grades/upsert/",
+        grade_entry_bulk_upsert,
+        name="gradebook-gradeentry-upsert",
     ),
 ]

@@ -78,3 +78,27 @@ export async function patchGradeEntry(gradeEntryId, payload) {
   }
   return res.json();
 }
+
+/**
+ * Lane 4: Bulk upsert grades for an assignment (teacher write).
+ *
+ * POST /api/v1/gradebook/sections/<sectionId>/assignments/<assignmentId>/grades/upsert/
+ *
+ * @param {string} sectionId
+ * @param {string} assignmentId
+ * @param {Array<{student_id: string, points_earned?: number|null}>} grades
+ * @returns {Promise<{created: number, updated: number, count: number, rows: Array}>}
+ */
+export async function upsertAssignmentGrades(sectionId, assignmentId, grades) {
+  const url = `${API_BASE}/api/v1/gradebook/sections/${encodeURIComponent(sectionId)}/assignments/${encodeURIComponent(assignmentId)}/grades/upsert/`;
+  const res = await authenticatedFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ grades: grades || [] }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Upsert grades failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
