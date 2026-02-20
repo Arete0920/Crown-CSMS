@@ -41,3 +41,10 @@ Thumbs.db
 
 # Developer scratch
 ._scratch_local/
+
+# Local closeout / session tracking docs (not production artifacts)
+closeout/
+PACK3_ACCURATE_STATUS.md
+PACK3_VISUAL_PROOF_CHECKLIST.md
+pr_smoke_404.txt
+test_student360_auth.ps1

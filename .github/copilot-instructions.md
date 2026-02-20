@@ -33,10 +33,9 @@ This alone dramatically reduces “creative” damage.
 ## 🚦 Critical Developer Workflows
 
 - **Build/Run:**  
-  - Always use the provided venv and absolute paths:
+  - The venv lives at the **repo root** (`.venv/`), not inside `backend/`:
     ```
-    cd backend
-    & ".\venv\Scripts\python.exe" "manage.py" runserver 127.0.0.1:8000 --noreload
+    & ".venv\Scripts\python.exe" "backend\manage.py" runserver 127.0.0.1:8000 --noreload
     ```
 - **Testing:**  
   - Automated: `python test_director_actions.py`
