@@ -58,6 +58,11 @@ jobs:
           cd backend
           python manage.py seed_demo_school --wipe
 
+      - name: Seed minimum ledger entities (for parameterized proof)
+        run: |
+          cd backend
+          python manage.py seed_demo_ledger_min --verbose
+
       - name: Start Django server (background)
         run: |
           cd backend
