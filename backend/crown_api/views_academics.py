@@ -1,15 +1,16 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from crown_api.access_households import resolve_person_for_user, resolve_household_access
 from crown_api.models import AttendanceRecord, GradeRecord, HouseholdMember
-from core.models import Student
+from core.models import Student, UserRole
 from crown_api.models_households import GUARDIAN_ROLES
 from crown_api.scoping_students import get_core_student_or_404_for_request
 from crown_api.serializers_academics import AttendanceRecordReadSerializer, GradeRecordReadSerializer
+from households.scoping import get_request_school_id
 
 
 def _guardian_household_ids_for_user(request) -> set:
@@ -57,23 +58,38 @@ from rest_framework.permissions import IsAuthenticated
 @permission_classes([IsAuthenticated])
 def section_attendance_submit(request, section_id):
     """
+    ATTENDANCE_HARDENING_V2
     POST /api/v1/academics/sections/<section_id>/attendance/
-    Teacher submits attendance for a section for today (or a provided date).
+
+    Idempotent: update_or_create keyed by (student_id, course=None, date).
+    RBAC: TEACHER / ADMIN / HEAD_OF_SCHOOL only.
 
     Body:
       {
-        "date": "YYYY-MM-DD",  (optional; defaults to today)
-        "items": [
-          {"student_id": "<uuid>", "status": "present|absent|tardy|PRESENT|ABSENT|TARDY"},
+        "date": "YYYY-MM-DD",          (optional; defaults to today)
+        "items": [                      (also accepts "records" key)
+          {"student_id": "<uuid>", "status": "PRESENT|ABSENT|TARDY|EXCUSED"},
           ...
         ]
       }
 
-    Upserts AttendanceRecord rows keyed by (student_id, course_id, date).
-    Returns: {"ok": true, "date": "YYYY-MM-DD", "created": N, "updated": N}
+    Returns: {"ok": true, "date": "YYYY-MM-DD", "section_id": "...", "created": N, "updated": N}
     """
+    # --- RBAC ---
+    school_id = get_request_school_id(request, required=False)
+    if school_id:
+        roles = set(
+            UserRole.objects.filter(user=request.user, school_id=school_id)
+            .values_list("role_code", flat=True)
+        )
+        allowed = {"TEACHER", "ADMIN", "HEAD_OF_SCHOOL"}
+        if not roles.intersection(allowed):
+            return Response({"detail": "Forbidden: requires TEACHER, ADMIN, or HEAD_OF_SCHOOL role."}, status=403)
+
     payload = request.data or {}
-    items = payload.get("items") or []
+
+    # Accept both "items" (existing callers) and "records" (new convention)
+    items = payload.get("items") or payload.get("records") or []
     if not isinstance(items, list) or len(items) == 0:
         return Response({"ok": False, "error": "items[] required (list of {student_id, status})"}, status=400)
 
@@ -87,30 +103,28 @@ def section_attendance_submit(request, section_id):
     else:
         day = timezone.localdate()
 
-    # Resolve section to verify it exists (section_id in URL is from academics.models.Section)
+    # Resolve section to verify it exists
     from academics.models import Section
     get_object_or_404(Section, id=section_id)
-    # NOTE: we do NOT use section.course_id here — AttendanceRecord.course targets a
-    # different Course model (crown_api.models_academics_core.Course) than academics.models.Course.
-    # Attendance is recorded per student+date only; course is left null (nullable FK).
 
+    VALID_STATUSES = {"PRESENT", "ABSENT", "TARDY", "EXCUSED"}
     created = 0
     updated = 0
 
     for row in items:
         sid = row.get("student_id")
-        status = row.get("status")
-        if not sid or not status:
-            return Response(
-                {"ok": False, "error": "each item requires student_id + status"},
-                status=400,
-            )
+        raw_status = str(row.get("status") or "").upper().strip()
+        if not sid:
+            return Response({"ok": False, "error": "each item requires student_id"}, status=400)
+        if raw_status not in VALID_STATUSES:
+            raw_status = "PRESENT"
 
         try:
-            obj, was_created = AttendanceRecord.objects.get_or_create(
+            obj, was_created = AttendanceRecord.objects.update_or_create(
                 student_id=sid,
+                course=None,
                 date=day,
-                defaults={"status": status},
+                defaults={"status": raw_status},
             )
         except Exception as exc:
             return Response(
@@ -121,11 +135,9 @@ def section_attendance_submit(request, section_id):
         if was_created:
             created += 1
         else:
-            obj.status = status
-            obj.save(update_fields=["status", "updated_at"])
             updated += 1
 
-    return Response({"ok": True, "date": str(day), "created": created, "updated": updated})
+    return Response({"ok": True, "date": str(day), "section_id": str(section_id), "created": created, "updated": updated})
 
 
 @api_view(["GET"])

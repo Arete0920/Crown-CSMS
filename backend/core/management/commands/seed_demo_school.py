@@ -303,6 +303,33 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Aid applications created: {apps_created}"))
         self.stdout.write(self.style.SUCCESS(f"Aid awards created+accepted+posted: {posted} (created {awards_created})"))
+
+        # --- 8) SEED_ATTENDANCE_DEMO_V1: deterministic attendance for demo realism ---
+        try:
+            from datetime import timedelta
+            from crown_api.models_academics_core import AttendanceRecord as _AR
+
+            STATUSES = ["PRESENT", "PRESENT", "PRESENT", "TARDY", "ABSENT", "EXCUSED", "PRESENT"]
+            attendance_sample = created_students[:30]  # seed first 30 students; fast + realistic enough
+            att_dates = [date.today() - timedelta(days=i) for i in range(1, 6)]  # last 5 school days
+
+            att_created = 0
+            for idx, st in enumerate(attendance_sample):
+                for d_offset, att_date in enumerate(att_dates):
+                    status = STATUSES[(idx + d_offset) % len(STATUSES)]
+                    _, was_created = _AR.objects.update_or_create(
+                        student=st,
+                        course=None,
+                        date=att_date,
+                        defaults={"status": status},
+                    )
+                    if was_created:
+                        att_created += 1
+
+            self.stdout.write(self.style.SUCCESS(f"Attendance demo records seeded: {att_created} new rows."))
+        except Exception as exc:
+            self.stdout.write(self.style.WARNING(f"Attendance seed skipped (non-fatal): {exc}"))
+
         self.stdout.write(self.style.SUCCESS("✅ Demo school seed complete. Now review in Django Admin."))
 
     def _ensure_chart_accounts(self, school: School):
