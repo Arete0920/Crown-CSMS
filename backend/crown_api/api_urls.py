@@ -92,6 +92,8 @@ urlpatterns = [
     path("ledger/payments/<str:payment_id>/allocate/", ledger_api.payment_allocate, name="ledger-payment-allocate"),
     path("ledger/accounts/<str:account_id>/balance/", ledger_api.ledger_account_balance, name="ledger-account-balance"),
     path("ledger/charges/<str:charge_id>/balance/", ledger_api.charge_balance, name="ledger-charge-balance"),
+    # Phase 2 invariants — read-only sanity check, tenant-scoped
+    path("ledger/invariants/", ledger_api.ledger_invariants, name="ledger-invariants"),
 
 
     path("academics/courses/", academics_api.courses, name="academics-courses"),
