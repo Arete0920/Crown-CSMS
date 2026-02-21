@@ -189,7 +189,7 @@ jobs:
       - name: Verify deployed build_sha via /health
         shell: bash
         env:
-          WANT_SHA: ${{ github.sha }}
+          WANT_SHA: ${{ env.DEPLOY_SHA }}
         run: |
           set -euo pipefail
           URL="https://crown-api-prod.azurewebsites.net/health/"
