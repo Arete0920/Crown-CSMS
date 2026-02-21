@@ -1,0 +1,28 @@
+﻿name: gradebookro-ui-gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/dashboards/src/pages/GradebookRO.jsx"
+      - "frontend/dashboards/src/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_gradebookro_ui_gate.ps1"
+      - ".github/workflows/gradebookro-ui-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "frontend/dashboards/src/pages/GradebookRO.jsx"
+      - "frontend/dashboards/src/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_gradebookro_ui_gate.ps1"
+      - ".github/workflows/gradebookro-ui-gate.yml"
+
+jobs:
+  gate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run GradebookRO UI Gate (PowerShell)
+        shell: pwsh
+        run: |
+          pwsh -File tools/verify_gradebookro_ui_gate.ps1

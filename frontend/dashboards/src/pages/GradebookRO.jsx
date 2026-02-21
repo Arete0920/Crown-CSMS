@@ -552,7 +552,11 @@ export function GradebookRO() {
   };
 
   return (
-    <CrownLayout title="Gradebook" subtitle="Read Only">
+    <CrownLayout
+      title="Gradebook"
+      subtitle="Read Only"
+      right={<button className="crown-btn" onClick={() => window.print()}>Print</button>}
+    >
       <style>{`.muted{color:#666;font-size:0.9rem;margin-top:0.5rem}.error-box{margin:12px 0;padding:12px;border:1px solid #cc0000;background:#ffe6e6}.empty-state{margin:24px 0;padding:16px;border-left:4px solid #ddd;background:#f9f9f9}.empty-state h3{margin:0 0 8px 0;font-size:1.1rem}.debug-panel{margin:12px 0;padding:12px;background:#f0f8ff;border:1px solid #4a90e2;font-size:13px;font-family:monospace}.debug-panel h4{margin:0 0 8px 0;font-size:14px;font-family:system-ui}.debug-panel dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:4px}.debug-panel dt{font-weight:600}.debug-panel dd{margin:0;color:#333}`}</style>
 
       {/* Lane 4: Teacher grade-edit toolbar */}
