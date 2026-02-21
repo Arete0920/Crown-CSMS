@@ -205,67 +205,66 @@ try {
         Bail "no auth token. Set RC_TOKEN, or CROWN_DEMO_KEY (for dev-token), or RC_EMAIL+RC_PASSWORD."
     }
 
-    # ── 4) Critical endpoint probes ───────────────────────────────────────────
+    # ── 4) Endpoint probes (JSON-driven -- edit tools/rc_endpoint_probes.json, not this file) ──
     $authHdrs = $baseHdrs.Clone()
     $authHdrs["Authorization"] = "Bearer $token"
 
-    # Endpoints taken directly from the CONTRACT GATE (verified real paths).
-    # Each entry: name, method, path, headers, expected HTTP status codes.
-    $probes = @(
-        # Health — public, no auth
-        [pscustomobject]@{ Name="GET /health/";                    Method="GET";  Path="/health/";                    Hdrs=$baseHdrs; Expect=@(200,204) }
-        [pscustomobject]@{ Name="GET /api/health/";                Method="GET";  Path="/api/health/";                Hdrs=$baseHdrs; Expect=@(200,204) }
+    # Resolve probe file (absolute or relative to repo root)
+    $contractPath = if ([System.IO.Path]::IsPathRooted($ProbesFile)) {
+        $ProbesFile
+    } else {
+        Join-Path $repoRoot $ProbesFile
+    }
 
-        # Auth surface
-        [pscustomobject]@{ Name="GET /api/auth/me/";               Method="GET";  Path="/api/auth/me/";               Hdrs=$authHdrs; Expect=@(200)     }
+    if (!(Test-Path $contractPath)) {
+        Bail "probe contract not found: $contractPath`n  Set -ProbesFile or RC_PROBES_FILE, or create tools/rc_endpoint_probes.json."
+    }
 
-        # Director / persona summaries (auth + tenant)
-        [pscustomobject]@{ Name="GET /api/director/dashboard/";    Method="GET";  Path="/api/director/dashboard/";    Hdrs=$authHdrs; Expect=@(200)     }
-        [pscustomobject]@{ Name="GET /api/director/aid/summary/";  Method="GET";  Path="/api/director/aid/summary/";  Hdrs=$authHdrs; Expect=@(200)     }
-        [pscustomobject]@{ Name="GET /api/director/finance/summary/"; Method="GET"; Path="/api/director/finance/summary/"; Hdrs=$authHdrs; Expect=@(200) }
-
-        # SIS / roster
-        [pscustomobject]@{ Name="GET /api/students/";              Method="GET";  Path="/api/students/";              Hdrs=$authHdrs; Expect=@(200)     }
-        [pscustomobject]@{ Name="GET /api/households/";            Method="GET";  Path="/api/households/";            Hdrs=$authHdrs; Expect=@(200)     }
-
-        # Finance
-        [pscustomobject]@{ Name="GET /api/ledger/invariants/";     Method="GET";  Path="/api/ledger/invariants/";     Hdrs=$authHdrs; Expect=@(200)     }
-        [pscustomobject]@{ Name="GET /api/billing/invoices/";      Method="GET";  Path="/api/billing/invoices/";      Hdrs=$authHdrs; Expect=@(200)     }
-
-        # Academics
-        [pscustomobject]@{ Name="GET /api/academics/courses/";     Method="GET";  Path="/api/academics/courses/";     Hdrs=$authHdrs; Expect=@(200)     }
-        [pscustomobject]@{ Name="GET /api/academics/sections/";    Method="GET";  Path="/api/academics/sections/";    Hdrs=$authHdrs; Expect=@(200)     }
-
-        # Applications
-        [pscustomobject]@{ Name="GET /api/applications/";          Method="GET";  Path="/api/applications/";          Hdrs=$authHdrs; Expect=@(200)     }
-
-        # Ops / system (no auth required)
-        [pscustomobject]@{ Name="GET /api/ops/summary/";           Method="GET";  Path="/api/ops/summary/";           Hdrs=$baseHdrs; Expect=@(200)     }
-    )
+    $contract = Get-Content -Path $contractPath -Raw | ConvertFrom-Json
+    if (-not $contract.probes -or $contract.probes.Count -eq 0) {
+        Bail "probe contract has no probes: $contractPath"
+    }
 
     Write-Host ""
-    Write-Host "==> Critical endpoint probes  ($($probes.Count) checks)" -ForegroundColor Cyan
+    Write-Host "==> Endpoint probes  ($($contract.probes.Count) checks from $([System.IO.Path]::GetFileName($contractPath)))" -ForegroundColor Cyan
 
-    $results = foreach ($p in $probes) {
-        $r = Api $p.Method $p.Path $p.Hdrs
-        $pass = $p.Expect -contains $r.status
+    $results = foreach ($p in $contract.probes) {
+        $method  = ([string]$p.method).ToUpperInvariant()
+        $path    = [string]$p.path
+        $expect  = @($p.expect | ForEach-Object { [int]$_ })
+        $needAuth    = [bool]$p.requiresAuth
+        $needSchool  = [bool]$p.requiresSchoolId
+
+        # Build per-probe headers
+        $hdr = @{}
+        if ($needSchool) {
+            if ([string]::IsNullOrWhiteSpace($SchoolId)) {
+                Write-Warning "Skipping '$($p.name)': requires X-School-Id but RC_SCHOOL_ID is not set."
+                [pscustomobject]@{ Result="SKIP"; Status=0; Probe="$method $path" }
+                continue
+            }
+            $hdr["X-School-Id"] = $SchoolId
+        }
+        if ($needAuth) { $hdr["Authorization"] = "Bearer $token" }
+
+        $r    = Api $method $path $hdr
+        $pass = $expect -contains $r.status
         [pscustomobject]@{
-            Result  = if ($pass) { "PASS" } else { "FAIL" }
-            Status  = $r.status
-            Probe   = $p.Name
+            Result = if ($pass) { "PASS" } else { "FAIL" }
+            Status = $r.status
+            Probe  = "$method $path"
         }
     }
 
     $results | Format-Table -AutoSize
 
-    $failures = $results | Where-Object { $_.Result -eq "FAIL" }
-    if ($failures) {
-        $n = ($failures | Measure-Object).Count
-        Bail "$n probe(s) failed (see table). Common causes: missing/wrong token, missing RC_SCHOOL_ID, or endpoint not seeded."
+    $failures = @($results | Where-Object { $_.Result -eq "FAIL" })
+    if ($failures.Count -gt 0) {
+        Bail "$($failures.Count) probe(s) failed (see table). Edit $contractPath if paths changed."
     }
 
-    Write-Host ""
-    Write-Host "RC RUNBOOK PASSED  ($($probes.Count) probes + 4 gates green)" -ForegroundColor Green
+    $total = ($results | Measure-Object).Count
+    Write-Host "RC RUNBOOK PASSED  ($total probes + 4 gates green)" -ForegroundColor Green
     exit 0
 
 } finally {

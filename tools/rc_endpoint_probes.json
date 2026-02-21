@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "notes": "RC live endpoint probe contract. This is the SINGLE SOURCE OF TRUTH for endpoint paths and expected status codes. Edit ONLY this file when paths change -- never hardcode in scripts.",
+  "probes": [
+    {
+      "name": "Health",
+      "method": "GET",
+      "path": "/api/health/",
+      "expect": [200, 204],
+      "requiresAuth": false,
+      "requiresSchoolId": false
+    },
+    {
+      "name": "Auth Me",
+      "method": "GET",
+      "path": "/api/auth/me/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": false
+    },
+    {
+      "name": "Director Dashboard",
+      "method": "GET",
+      "path": "/api/director/dashboard/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Director Aid Summary",
+      "method": "GET",
+      "path": "/api/director/aid/summary/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Director Finance Summary",
+      "method": "GET",
+      "path": "/api/director/finance/summary/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Students",
+      "method": "GET",
+      "path": "/api/students/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Households",
+      "method": "GET",
+      "path": "/api/households/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Ledger Invariants",
+      "method": "GET",
+      "path": "/api/ledger/invariants/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Billing Invoices",
+      "method": "GET",
+      "path": "/api/billing/invoices/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Academics Courses",
+      "method": "GET",
+      "path": "/api/academics/courses/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Academics Sections",
+      "method": "GET",
+      "path": "/api/academics/sections/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Applications",
+      "method": "GET",
+      "path": "/api/applications/",
+      "expect": [200],
+      "requiresAuth": true,
+      "requiresSchoolId": true
+    },
+    {
+      "name": "Ops Summary",
+      "method": "GET",
+      "path": "/api/ops/summary/",
+      "expect": [200],
+      "requiresAuth": false,
+      "requiresSchoolId": false
+    }
+  ]
+}
