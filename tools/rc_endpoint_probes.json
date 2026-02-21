@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "RC live endpoint probe contract. This is the SINGLE SOURCE OF TRUTH for endpoint paths and expected status codes. Edit ONLY this file when paths change -- never hardcode in scripts.",
+  "notes": "RC live endpoint probe contract. SINGLE SOURCE OF TRUTH for endpoint paths and expected status codes. Edit ONLY this file when paths change -- never hardcode in scripts. Tier-1 (T1) = must pass before any demo/RC; protected by hash lock. Tier-2 (T2) = nice-to-have, not CI-blocking.",
   "probes": [
     {
       "name": "Health",
@@ -8,7 +8,8 @@
       "path": "/api/health/",
       "expect": [200, 204],
       "requiresAuth": false,
-      "requiresSchoolId": false
+      "requiresSchoolId": false,
+      "tier": "T1"
     },
     {
       "name": "Auth Me",
@@ -16,7 +17,8 @@
       "path": "/api/auth/me/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": false
+      "requiresSchoolId": false,
+      "tier": "T1"
     },
     {
       "name": "Director Dashboard",
@@ -24,7 +26,8 @@
       "path": "/api/director/dashboard/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Director Aid Summary",
@@ -32,7 +35,8 @@
       "path": "/api/director/aid/summary/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Director Finance Summary",
@@ -40,7 +44,8 @@
       "path": "/api/director/finance/summary/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Students",
@@ -48,7 +53,8 @@
       "path": "/api/students/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Households",
@@ -56,7 +62,8 @@
       "path": "/api/households/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Ledger Invariants",
@@ -64,7 +71,8 @@
       "path": "/api/ledger/invariants/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Billing Invoices",
@@ -72,7 +80,8 @@
       "path": "/api/billing/invoices/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Academics Courses",
@@ -80,7 +89,8 @@
       "path": "/api/academics/courses/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Academics Sections",
@@ -88,7 +98,8 @@
       "path": "/api/academics/sections/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Applications",
@@ -96,7 +107,8 @@
       "path": "/api/applications/",
       "expect": [200],
       "requiresAuth": true,
-      "requiresSchoolId": true
+      "requiresSchoolId": true,
+      "tier": "T1"
     },
     {
       "name": "Ops Summary",
@@ -104,7 +116,8 @@
       "path": "/api/ops/summary/",
       "expect": [200],
       "requiresAuth": false,
-      "requiresSchoolId": false
+      "requiresSchoolId": false,
+      "tier": "T2"
     }
   ]
 }
