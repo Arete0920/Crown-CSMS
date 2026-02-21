@@ -47,7 +47,9 @@ export function CategoryWeightsEditor() {
     setMsg("");
     try {
       const data = await getSectionCategories(id);
-      const normalized = (Array.isArray(data) ? data : []).map((c) => ({
+      // API may return either an array OR { categories: [...] }
+      const list = Array.isArray(data) ? data : (data?.categories ?? []);
+      const normalized = list.map((c) => ({
         id: c.id,
         name: c.name ?? c.category_name ?? "(unnamed)",
         weight_percent: c.weight_percent ?? "0.00",

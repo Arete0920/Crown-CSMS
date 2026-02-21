@@ -52,7 +52,10 @@ def crown_director_allowed(request):
     if not user or not user.is_authenticated:
         return False
     
-    return UserRole.objects.filter(user=user, role_code__in=ALLOWED_ROLE_CODES).exists()
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        return False
+    return UserRole.objects.filter(user_id=user_id, role_code__in=ALLOWED_ROLE_CODES).exists()
 
 
 def user_has_director_role(user):
@@ -60,7 +63,10 @@ def user_has_director_role(user):
         return False
     if getattr(user, "is_superuser", False):
         return True
-    return UserRole.objects.filter(user=user, role_code__in=ALLOWED_ROLE_CODES).exists()
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        return False
+    return UserRole.objects.filter(user_id=user_id, role_code__in=ALLOWED_ROLE_CODES).exists()
 
 
 def resolve_academic_year(school_id, academic_year_id=None):

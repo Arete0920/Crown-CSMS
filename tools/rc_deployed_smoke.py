@@ -165,6 +165,12 @@ def run_probe(
     if not path.startswith("/"):
         path = "/" + path
 
+    # When requiresSchoolId, also append school_id as a query parameter.
+    # Some endpoints (e.g. director/* ) read from query params rather than header.
+    if req_school and school_id:
+        sep = "&" if "?" in path else "?"
+        path = f"{path}{sep}school_id={school_id}"
+
     url = f"{base_url}{path}"
     headers = build_headers(token, school_id, demo_key, req_auth, req_school)
 

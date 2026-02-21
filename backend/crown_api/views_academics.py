@@ -79,7 +79,7 @@ def section_attendance_submit(request, section_id):
     school_id = get_request_school_id(request, required=False)
     if school_id:
         roles = set(
-            UserRole.objects.filter(user=request.user, school_id=school_id)
+            UserRole.objects.filter(user_id=request.user.id, school_id=school_id)
             .values_list("role_code", flat=True)
         )
         allowed = {"TEACHER", "ADMIN", "HEAD_OF_SCHOOL"}
