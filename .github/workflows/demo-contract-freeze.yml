@@ -1,0 +1,24 @@
+name: demo-contract-freeze
+
+on:
+  push:
+    branches:
+      - "rc/**"
+  pull_request:
+    branches:
+      - "rc/**"
+    paths:
+      - "tools/rc_endpoint_probes.json"
+      - "tools/demo_contract_t1.lock"
+      - "tools/verify_demo_contract_freeze.py"
+      - ".github/workflows/demo-contract-freeze.yml"
+
+jobs:
+  freeze:
+    name: "Demo Contract Freeze (Tier-1 hash lock)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify Tier-1 demo contract frozen
+        run: python3 tools/verify_demo_contract_freeze.py
