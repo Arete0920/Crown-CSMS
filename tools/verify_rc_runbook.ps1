@@ -31,15 +31,23 @@
 #   $env:RC_SKIP_SERVER_START = "1"
 #   pwsh -File tools/verify_rc_runbook.ps1
 #
-#   # Gate-only (no server, no probes):
-#   pwsh -File tools/verify_rc_runbook.ps1 -GatesOnly
+#   # Gate-only / CI-safe (no server, no probes):
+#   pwsh -File tools/verify_rc_runbook.ps1 -SkipProbes -SkipServerStart
+#   powershell -ExecutionPolicy Bypass -File tools/verify_rc_runbook.ps1 -SkipProbes -SkipServerStart
+#
+# Environment toggles:
+#   RC_SKIP_PROBES=1         -- same as -SkipProbes (CI mode)
+#   RC_SKIP_SERVER_START=1   -- same as -SkipServerStart
+#   RC_PROBES_FILE           -- override probe contract JSON path
 
 param(
-    [string]$BaseUrl       = $(if ($env:RC_BASE_URL)   { $env:RC_BASE_URL }   else { "http://127.0.0.1:8000" }),
-    [string]$SchoolId      = $(if ($env:RC_SCHOOL_ID)  { $env:RC_SCHOOL_ID }  else { "19801b59-8c05-4c84-9312-5d792e4e839d" }),
+    [string]$BaseUrl         = $(if ($env:RC_BASE_URL)      { $env:RC_BASE_URL }      else { "http://127.0.0.1:8000" }),
+    [string]$SchoolId        = $(if ($env:RC_SCHOOL_ID)     { $env:RC_SCHOOL_ID }     else { "19801b59-8c05-4c84-9312-5d792e4e839d" }),
     [switch]$SkipServerStart = $(if ($env:RC_SKIP_SERVER_START -eq "1") { $true } else { $false }),
-    [switch]$GatesOnly,
-    [int]$TimeoutSeconds   = 60
+    [switch]$SkipProbes      = $(if ($env:RC_SKIP_PROBES    -eq "1") { $true } else { $false }),
+    [switch]$GatesOnly,   # alias for -SkipProbes (backward compat)
+    [string]$ProbesFile      = $(if ($env:RC_PROBES_FILE)   { $env:RC_PROBES_FILE }   else { "tools/rc_endpoint_probes.json" }),
+    [int]$TimeoutSeconds     = 60
 )
 
 $ErrorActionPreference = "Stop"
@@ -112,9 +120,9 @@ Step "Migration lock gate (migrate + migrate --check + showmigrations scan)" {
     & $py tools/verify_migration_lock_gate.py
 }
 
-if ($GatesOnly) {
+if ($GatesOnly -or $SkipProbes) {
     Write-Host ""
-    Write-Host "RC RUNBOOK PASSED  (gates-only mode)" -ForegroundColor Green
+    Write-Host "RC RUNBOOK PASSED  (gate-only mode: 4 gates green, probes skipped)" -ForegroundColor Green
     exit 0
 }
 
