@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { getAdmissionsApplications, enrollApplicant } from "../api/admissions";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
@@ -158,8 +159,7 @@ export function AdmissionsPipelineList() {
   const hasApplications = applications.length > 0;
 
   return (
-    <div style={{ padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      <h2>Admissions Pipeline</h2>
+    <CrownLayout title="Admissions Pipeline" subtitle="Applicant tracking and enrollment">
 
       {error && (
         <div style={{ margin: "12px 0", padding: 12, border: "1px solid #cc0000", background: "#ffe6e6" }}>
@@ -190,8 +190,8 @@ export function AdmissionsPipelineList() {
           >
             <button
               type="button"
+              className="crown-btn"
               onClick={onExportCsv}
-              style={{ padding: "6px 10px", fontSize: 13 }}
             >
               Export CSV ↓
             </button>
@@ -482,6 +482,6 @@ export function AdmissionsPipelineList() {
           </div>
         )}
       </Drawer>
-    </div>
+    </CrownLayout>
   );
 }

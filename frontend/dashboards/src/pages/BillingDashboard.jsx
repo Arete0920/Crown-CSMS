@@ -61,7 +61,7 @@ export function BillingDashboard() {
     const d = new Date();
     return d.toISOString().slice(0, 10);
   });
-  const [paymentReference, setPaymentReference] = useState("SMOKE-0101");
+  const [paymentReference, setPaymentReference] = useState("");
   const [paymentSource, setPaymentSource] = useState("manual");
   const [accountId, setAccountId] = useState("");
 
@@ -394,16 +394,16 @@ export function BillingDashboard() {
           />
         </div>
 
-        <button 
-          onClick={loadDemoHousehold} 
+        <button
+          className="crown-btn"
+          onClick={loadDemoHousehold}
           disabled={loadingDemoHousehold}
-          style={{ padding: "8px 12px", backgroundColor: "#e3f2fd", border: "1px solid #1976d2", color: "#1976d2", cursor: "pointer" }}
           title="Load first household from database"
         >
           {loadingDemoHousehold ? "Loading..." : "Use Demo Household"}
         </button>
 
-        <button onClick={loadOpenInvoices} disabled={openBusy} style={{ padding: "8px 12px" }}>
+        <button className="crown-btn" onClick={loadOpenInvoices} disabled={openBusy}>
           {openBusy ? "Loading..." : "Load Open Invoices"}
         </button>
 
@@ -419,27 +419,28 @@ export function BillingDashboard() {
         {/* Exports */}
         <div style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap", marginBottom: 14 }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Year (for 0095)</label>
+            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Export Year</label>
             <input value={exportYear} onChange={(e) => setExportYear(e.target.value)} style={{ padding: 8, width: 120 }} />
           </div>
 
           <button
+            className="crown-btn"
             disabled={exportBusy}
             onClick={() => handleDownload("/api/exports/statements.csv", "statements.csv")}
-            style={{ padding: "8px 12px" }}
           >
-            0093 Statements CSV
+            Statements CSV
           </button>
 
           <button
+            className="crown-btn"
             disabled={exportBusy}
             onClick={() => handleDownload("/api/exports/statement-lines.csv", "statement_lines.csv")}
-            style={{ padding: "8px 12px" }}
           >
-            0094 Statement Lines CSV
+            Statement Lines CSV
           </button>
 
           <button
+            className="crown-btn"
             disabled={exportBusy}
             onClick={() =>
               handleDownload(
@@ -447,17 +448,16 @@ export function BillingDashboard() {
                 `tuition_paid_${exportYear}.csv`
               )
             }
-            style={{ padding: "8px 12px" }}
           >
-            0095 Tuition Paid CSV
+            Tuition Paid CSV
           </button>
 
           <button
+            className="crown-btn"
             disabled={exportBusy}
             onClick={() => handleDownload("/api/exports/accounting/payments-qb.csv", "payments_qb.csv")}
-            style={{ padding: "8px 12px" }}
           >
-            0096 Payments (QB) CSV
+            Payments (QB) CSV
           </button>
         </div>
 
@@ -530,7 +530,7 @@ export function BillingDashboard() {
 
       {/* Record payment */}
       <div style={{ border: "1px solid #ddd", borderRadius: 10, padding: 14 }}>
-        <h3 style={{ margin: "0 0 10px" }}>Record Payment (0102)</h3>
+        <h3 style={{ margin: "0 0 10px" }}>Record Payment</h3>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
           <div>
@@ -562,7 +562,7 @@ export function BillingDashboard() {
         {payError ? <div style={{ color: "#b00020", marginBottom: 8 }}>{payError}</div> : null}
         {payOk ? <div style={{ color: "#0b6b0b", marginBottom: 8 }}>{payOk}</div> : null}
 
-        <button onClick={recordPayment} disabled={payBusy} style={{ padding: "10px 14px" }}>
+        <button className="crown-btn crown-btn-primary" onClick={recordPayment} disabled={payBusy}>
           {payBusy ? "Posting..." : "Post Payment"}
         </button>
 
