@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -70,9 +71,7 @@ export default function TeacherAttendancePage() {
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>Teacher Attendance</h2>
-
+    <CrownLayout title="Teacher Attendance" subtitle="Mark daily attendance by section">
       <div style={{ marginBottom: 12 }}>
         <label>Section: </label>
         <select value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
@@ -85,6 +84,7 @@ export default function TeacherAttendancePage() {
         </select>
         <span style={{ marginLeft: 12 }}>Date: {today}</span>
         <button
+          className="crown-btn crown-btn-primary"
           style={{ marginLeft: 12 }}
           disabled={!sectionId || roster.length === 0}
           onClick={submit}
@@ -127,6 +127,6 @@ export default function TeacherAttendancePage() {
           })}
         </tbody>
       </table>
-    </div>
+    </CrownLayout>
   );
 }
