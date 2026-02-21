@@ -1,0 +1,56 @@
+name: prod-integrity-proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to verify (e.g., v0.4.0-rc1)"
+        required: true
+        default: "v0.4.0-rc1"
+      expected_sha:
+        description: "Expected commit SHA for the tag"
+        required: true
+        default: "80e22fe79ea55c69e68b0cb2712c10ae6dc00f9c"
+      health_url:
+        description: "Prod health endpoint URL"
+        required: true
+        default: "https://crown-api-prod.azurewebsites.net/api/health/"
+  schedule:
+    - cron: "15 3 * * *"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: GH auth sanity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh --version
+          gh api /repos/${{ github.repository }} --jq '{full_name:.full_name, default_branch:.default_branch}'
+
+      - name: Run prod integrity proof (PowerShell)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference="Stop"
+          $tag = "${{ inputs.tag }}"
+          $sha = "${{ inputs.expected_sha }}"
+          $url = "${{ inputs.health_url }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v0.4.0-rc1" }
+          if ([string]::IsNullOrWhiteSpace($sha)) { $sha = "80e22fe79ea55c69e68b0cb2712c10ae6dc00f9c" }
+          if ([string]::IsNullOrWhiteSpace($url)) { $url = "https://crown-api-prod.azurewebsites.net/api/health/" }
+
+          pwsh -File tools/prod_integrity_check.ps1 `
+            -Repo "${{ github.repository }}" `
+            -Tag $tag `
+            -ExpectedSha $sha `
+            -HealthUrl $url
