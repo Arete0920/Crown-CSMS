@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchStudents, fetchTranscript } from "../api/academics";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 export function TranscriptRO() {
   const [students, setStudents] = useState([]);
@@ -54,11 +55,9 @@ export function TranscriptRO() {
   };
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", maxWidth: 1200, margin: "0 auto", padding: 24 }}>
+    <CrownLayout title="Transcript" subtitle="Read Only">
       {/* Header - hidden in print */}
       <div className="no-print" style={{ marginBottom: 24 }}>
-        <h1 style={{ marginTop: 0 }}>Transcript (Read-Only)</h1>
-        
         <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
           <label style={{ fontWeight: 500 }}>
             Student:
@@ -86,18 +85,9 @@ export function TranscriptRO() {
           </label>
 
           <button
+            className="crown-btn crown-btn-primary"
             onClick={handlePrint}
             disabled={!transcript}
-            style={{
-              padding: "6px 16px",
-              fontSize: 14,
-              border: "1px solid #007bff",
-              borderRadius: 4,
-              backgroundColor: "#007bff",
-              color: "white",
-              cursor: transcript ? "pointer" : "not-allowed",
-              opacity: transcript ? 1 : 0.5,
-            }}
           >
             Print
           </button>
@@ -288,7 +278,7 @@ export function TranscriptRO() {
       {/* Print styles */}
       <style>{`
         @media print {
-          .no-print {
+          .no-print, .crown-sidebar, .crown-pagehead {
             display: none !important;
           }
           body {
@@ -306,6 +296,6 @@ export function TranscriptRO() {
           }
         }
       `}</style>
-    </div>
+    </CrownLayout>
   );
 }

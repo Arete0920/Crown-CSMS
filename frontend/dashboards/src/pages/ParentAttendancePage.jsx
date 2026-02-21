@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -41,9 +42,7 @@ export default function ParentAttendancePage() {
   }, [studentId]);
 
   return (
-    <div style={{ padding: 16 }}>
-      <h2>Parent Attendance</h2>
-
+    <CrownLayout title="Parent Attendance" subtitle="View your student's attendance record">
       <div style={{ marginBottom: 12 }}>
         <label>Student: </label>
         <select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
@@ -76,6 +75,6 @@ export default function ParentAttendancePage() {
           ))}
         </tbody>
       </table>
-    </div>
+    </CrownLayout>
   );
 }
