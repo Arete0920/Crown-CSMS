@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { authenticatedFetch } from "../utils/authClient.js";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path, opts = {}) {
   const base = import.meta.env.VITE_API_BASE_URL || "";
@@ -25,14 +26,10 @@ export default function CommsInboxPage() {
   useEffect(() => { load(); }, []);
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: "600" }}>Inbox</h1>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Link to="/comms/compose"><button style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}>Compose</button></Link>
-          <button onClick={load} style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}>Refresh</button>
-        </div>
-      </div>
+    <CrownLayout
+      title="Inbox"
+      right={<div style={{ display: "flex", gap: "0.5rem" }}><Link to="/comms/compose"><button className="crown-btn">Compose</button></Link><button className="crown-btn" onClick={load}>Refresh</button></div>}
+    >
 
       {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
 
@@ -51,6 +48,6 @@ export default function CommsInboxPage() {
           {threads.length === 0 ? <div style={{ fontSize: "0.875rem", opacity: 0.7 }}>No threads found.</div> : null}
         </div>
       </div>
-    </div>
+    </CrownLayout>
   );
 }
