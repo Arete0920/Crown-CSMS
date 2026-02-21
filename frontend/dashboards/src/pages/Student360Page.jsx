@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { authenticatedFetch } from "../utils/authClient.js";
 import { fetchGraduationAudit } from "../api/academics.js";
 import GraduationBreakdownDrawer from "../components/student360/GraduationBreakdownDrawer.jsx";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path) {
   const base = import.meta.env.VITE_API_BASE_URL || "";
@@ -56,19 +57,11 @@ export default function Student360Page() {
   const comms = data?.comms || {};
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "1rem" }}>
-        <div>
-          <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>Student 360</div>
-          <h1 style={{ fontSize: "1.6rem", fontWeight: 650, margin: 0 }}>
-            {s.name || "Student"} {s.grade ? <span style={{ fontSize: "1rem", opacity: 0.6 }}>• Grade {s.grade}</span> : null}
-          </h1>
-        </div>
-        <button onClick={load} style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}>
-          Refresh
-        </button>
-      </div>
-
+    <CrownLayout
+      title="Student 360"
+      subtitle={s.name ? (s.grade ? `${s.name} — Grade ${s.grade}` : s.name) : ""}
+      right={<button className="crown-btn" onClick={load}>Refresh</button>}
+    >
       {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
@@ -217,6 +210,6 @@ export default function Student360Page() {
         onClose={() => setGradDrawerOpen(false)}
         studentUuid={id}
       />
-    </div>
+    </CrownLayout>
   );
 }
