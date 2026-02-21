@@ -11,6 +11,7 @@ import { getGradebookGrades, getSectionAssignments } from '../api/gradebook.js';
 import { getSelectedSchoolId } from '../utils/authClient.js';
 import { logApiRequest, logApiError } from '../utils/requestTracing.js';
 import { CurriculumPacingCard } from '../components/CurriculumPacingCard.jsx';
+import CrownLayout from '../components/crown/CrownLayout.jsx';
 
 export function AcademicsDashboard() {
   const [schoolId, setSchoolId] = useState('');
@@ -228,8 +229,7 @@ export function AcademicsDashboard() {
   };
 
   return (
-    <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Academics (Read-only)</h1>
+    <CrownLayout title="Academics" subtitle="Read Only">
 
       {/* Curriculum Pacing Summary */}
       <section style={{ marginBottom: 32 }}>
@@ -739,6 +739,6 @@ export function AcademicsDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </CrownLayout>
   );
 }

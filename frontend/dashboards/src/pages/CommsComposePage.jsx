@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authenticatedFetch } from "../utils/authClient.js";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path, opts = {}) {
   const base = import.meta.env.VITE_API_BASE_URL || "";
@@ -30,14 +31,11 @@ export default function CommsComposePage() {
   };
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <div style={{ fontSize: "0.75rem", opacity: 0.7 }}><Link to="/comms">← Back to Inbox</Link></div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: "600" }}>Compose</h1>
-        </div>
-        <button onClick={send} style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}>Send</button>
-      </div>
+    <CrownLayout
+      title="Compose"
+      subtitle={<Link to="/comms">← Back to Inbox</Link>}
+      right={<button className="crown-btn crown-btn-primary" onClick={send}>Send</button>}
+    >
 
       {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
 
@@ -52,6 +50,6 @@ export default function CommsComposePage() {
           <textarea style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "0.5rem", fontSize: "0.875rem" }} rows={6} value={body} onChange={(e) => setBody(e.target.value)} />
         </div>
       </div>
-    </div>
+    </CrownLayout>
   );
 }

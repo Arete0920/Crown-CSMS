@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { authenticatedFetch } from "../utils/authClient.js";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path, opts = {}) {
   const base = import.meta.env.VITE_API_BASE_URL || "";
@@ -61,14 +62,11 @@ export default function CommsThreadPage() {
   };
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <div>
-          <div style={{ fontSize: "0.75rem", opacity: 0.7 }}><Link to="/comms">← Back to Inbox</Link></div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: "600" }}>{thread?.subject || "Thread"}</h1>
-        </div>
-        <button onClick={teamsPreview} style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}>Send to Teams (Preview)</button>
-      </div>
+    <CrownLayout
+      title={thread?.subject || "Thread"}
+      subtitle={<Link to="/comms">← Back to Inbox</Link>}
+      right={<button className="crown-btn" onClick={teamsPreview}>Send to Teams (Preview)</button>}
+    >
 
       {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
       {info ? <div style={{ color: "#15803d", fontSize: "0.875rem", marginBottom: "1rem" }}>{info}</div> : null}
@@ -97,6 +95,6 @@ export default function CommsThreadPage() {
           </div>
         </div>
       </div>
-    </div>
+    </CrownLayout>
   );
 }

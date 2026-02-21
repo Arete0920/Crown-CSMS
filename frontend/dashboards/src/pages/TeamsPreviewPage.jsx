@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import { authenticatedFetch } from "../utils/authClient.js";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path, opts = {}) {
   const base = import.meta.env.VITE_API_BASE_URL || "";
@@ -30,11 +31,7 @@ export default function TeamsPreviewPage() {
   };
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: "600" }}>Teams Integration Preview</h1>
-        <button onClick={send} style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", borderRadius: "6px", cursor: "pointer" }}>Send Preview</button>
-      </div>
+    <CrownLayout title="Teams Integration Preview" right={<button className="crown-btn crown-btn-primary" onClick={send}>Send Preview</button>}>
 
       {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
       {resp ? (
@@ -43,6 +40,6 @@ export default function TeamsPreviewPage() {
           <pre style={{ fontSize: "0.75rem", backgroundColor: "#f9fafb", padding: "0.75rem", borderRadius: "6px", overflow: "auto" }}>{JSON.stringify(resp, null, 2)}</pre>
         </div>
       ) : null}
-    </div>
+    </CrownLayout>
   );
 }
