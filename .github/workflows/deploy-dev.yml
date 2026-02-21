@@ -59,6 +59,16 @@ jobs:
       - name: Log in to Azure Container Registry
         run: az acr login --name crownregistry --only-show-errors
 
+      - name: Set BUILD_SHA app setting before deploy
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --settings BUILD_SHA=${{ env.DEPLOY_SHA }} \
+            --output none \
+            --only-show-errors
+          echo "✓ BUILD_SHA=${{ env.DEPLOY_SHA }} set (before image deploy)"
+
       - name: Bake BUILD_SHA into artifact
         run: |
           echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
@@ -81,25 +91,11 @@ jobs:
           app-name: ${{ env.WEBAPP_NAME }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
 
-      - name: Update BUILD_SHA app setting and restart
-        run: |
-          az webapp config appsettings set \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.WEBAPP_NAME }} \
-            --settings BUILD_SHA=${{ env.DEPLOY_SHA }} \
-            --output none \
-            --only-show-errors
-          az webapp restart \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.WEBAPP_NAME }} \
-            --only-show-errors
-          echo "✓ BUILD_SHA=${{ env.DEPLOY_SHA }} set on ${{ env.WEBAPP_NAME }}"
-
       - name: Health check (waits for startup + migrations + ensure_ci_user)
         run: |
           set -euo pipefail
-          echo "Waiting for app to come up (up to 5 minutes)..."
-          for i in $(seq 1 30); do
+          echo "Waiting for app to come up (up to 6 minutes)..."
+          for i in $(seq 1 36); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ || true)
             if [ "$STATUS" = "200" ]; then
               echo "✅ Health check passed (attempt $i)"
@@ -107,28 +103,35 @@ jobs:
             fi
             echo "  attempt $i: HTTP $STATUS — waiting 10s..."
             sleep 10
-            if [ "$i" = "30" ]; then
-              echo "❌ Health check timed out after 300s"
+            if [ "$i" = "36" ]; then
+              echo "❌ Health check timed out after 360s"
               exit 1
             fi
           done
 
-      - name: Verify BUILD_SHA matches deployed commit
+      - name: Verify BUILD_SHA matches deployed commit (with retry)
         run: |
           set -euo pipefail
           WANT="${{ env.DEPLOY_SHA }}"
-          BODY=$(curl -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
-          GOT=$(echo "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build_sha',''))")
-          if [ -z "$GOT" ]; then
-            echo "❌ Missing build_sha in /api/health/ response"
-            echo "Response: $BODY"
-            exit 1
-          fi
-          if [[ "$GOT" != "$WANT"* ]] && [[ "$WANT" != "$GOT"* ]]; then
-            echo "❌ build_sha mismatch: deployed=$GOT expected=$WANT"
-            exit 1
-          fi
-          echo "✅ build_sha verified: $GOT"
+          echo "Verifying deployed SHA matches $WANT ..."
+          for i in $(seq 1 12); do
+            BODY=$(curl -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ 2>/dev/null || true)
+            GOT=$(echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)
+            if [ -z "$GOT" ] || [ "$GOT" = "local-dev" ] || [ "$GOT" = "unknown" ]; then
+              echo "  attempt $i: SHA not ready yet (got: ${GOT:-empty}) — waiting 15s..."
+              sleep 15
+              continue
+            fi
+            if [[ "$GOT" == "$WANT"* ]] || [[ "$WANT" == "$GOT"* ]]; then
+              echo "✅ build_sha verified: $GOT"
+              exit 0
+            fi
+            echo "  attempt $i: mismatch — deployed=$GOT expected=$WANT — waiting 15s..."
+            sleep 15
+          done
+          echo "❌ build_sha did not converge to expected SHA after retries"
+          echo "   deployed=$GOT  expected=$WANT"
+          exit 1
 
       - name: Summary
         run: |

@@ -8,9 +8,14 @@ echo "ENTRYPOINT_SEES: RUN_DEV_BOOTSTRAP=${RUN_DEV_BOOTSTRAP:-<unset>}"
 echo "ENTRYPOINT_SEES: RUN_GOLDEN_PATH_BOOTSTRAP=${RUN_GOLDEN_PATH_BOOTSTRAP:-<unset>}"
 echo "ENTRYPOINT_SEES: PORT=${PORT:-<unset>} WEBSITES_PORT=${WEBSITES_PORT:-<unset>}"
 
-# Optional, idempotent startup tasks (safe for dev/CI).
-if [[ "${RUN_MIGRATE:-0}" == "1" ]]; then
-  python manage.py migrate --noinput
+# Always run migrations — safe, idempotent, required for schema consistency.
+echo "== entrypoint: migrate =="
+python manage.py migrate --noinput
+
+# Ensure CI smoke user exists when credentials are configured (dev/CI only).
+if [ -n "${CI_SMOKE_USERNAME:-}" ]; then
+  echo "== entrypoint: ensure_ci_user =="
+  python manage.py ensure_ci_user
 fi
 
 if [[ "${RUN_DEV_BOOTSTRAP:-0}" == "1" ]]; then
