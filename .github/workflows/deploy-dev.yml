@@ -79,6 +79,12 @@ jobs:
         with:
           context: .
           push: true
+          # Explicitly target linux/amd64 — multi-platform OCI index manifests
+          # (produced without this setting) cause ContainerCreateFailure on
+          # Azure App Service because it cannot resolve the platform from an
+          # OCI index containing unknown/unknown cache entries.
+          platforms: linux/amd64
+          provenance: false
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
