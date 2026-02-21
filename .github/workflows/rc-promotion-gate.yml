@@ -1,0 +1,47 @@
+name: rc-promotion-gate
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  gate:
+    name: rc-promotion-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Only run this gate for PRs coming FROM rc/crown-0.4.0
+    if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps (requests for deployed smoke)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
+
+      # M6 (deployed): build_sha must match the RC head SHA
+      - name: M6 — Build-SHA proof against deployed /api/health/
+        env:
+          RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
+          RC_EXPECT_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python tools/verify_build_sha.py
+
+      # M5 (deployed): Tier-1 probes must pass against deployed env
+      - name: M5 — Tier-1 deployed smoke against deployed env
+        env:
+          RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
+          RC_TOKEN: ${{ secrets.RC_TOKEN }}
+          RC_SCHOOL_ID: ${{ secrets.RC_SCHOOL_ID }}
+          RC_DEMO_KEY: ${{ secrets.RC_DEMO_KEY }}
+          RC_TIER: "T1"
+        run: |
+          python tools/rc_deployed_smoke.py
