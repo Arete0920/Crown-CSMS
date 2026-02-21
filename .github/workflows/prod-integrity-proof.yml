@@ -1,56 +1,119 @@
 name: prod-integrity-proof
 
 on:
+  schedule:
+    - cron: "15 6 * * *"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to verify (e.g., v0.4.0-rc1)"
-        required: true
-        default: "v0.4.0-rc1"
+        description: "Release tag label (optional; overrides JSON if provided)"
+        required: false
+        type: string
       expected_sha:
-        description: "Expected commit SHA for the tag"
-        required: true
-        default: "80e22fe79ea55c69e68b0cb2712c10ae6dc00f9c"
+        description: "Expected deployed BUILD SHA (optional; overrides JSON if provided)"
+        required: false
+        type: string
       health_url:
-        description: "Prod health endpoint URL"
-        required: true
-        default: "https://crown-api-prod.azurewebsites.net/api/health/"
-  schedule:
-    - cron: "15 3 * * *"
-
-permissions:
-  actions: read
-  contents: read
+        description: "Health endpoint URL (optional; overrides JSON if provided)"
+        required: false
+        type: string
 
 jobs:
-  proof:
+  prove:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: GH auth sanity
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Load defaults from tracked target file (unless manually overridden)
+        id: target
+        shell: bash
         run: |
-          gh --version
-          gh api /repos/${{ github.repository }} --jq '{full_name:.full_name, default_branch:.default_branch}'
+          set -euo pipefail
+          FILE=".github/prod-integrity-target.json"
 
-      - name: Run prod integrity proof (PowerShell)
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
+          if [[ ! -f "$FILE" ]]; then
+            echo "Missing $FILE" >&2
+            exit 1
+          fi
+
+          # Pull defaults from JSON
+          default_tag="$(jq -r '.tag' "$FILE")"
+          default_expected_sha="$(jq -r '.expected_sha' "$FILE")"
+          default_health_url="$(jq -r '.health_url' "$FILE")"
+
+          # Manual inputs (may be empty)
+          in_tag="${{ github.event.inputs.tag }}"
+          in_expected_sha="${{ github.event.inputs.expected_sha }}"
+          in_health_url="${{ github.event.inputs.health_url }}"
+
+          # Resolve final values (manual overrides only if non-empty)
+          tag="$default_tag"
+          expected_sha="$default_expected_sha"
+          health_url="$default_health_url"
+
+          if [[ -n "${in_tag:-}" ]]; then tag="$in_tag"; fi
+          if [[ -n "${in_expected_sha:-}" ]]; then expected_sha="$in_expected_sha"; fi
+          if [[ -n "${in_health_url:-}" ]]; then health_url="$in_health_url"; fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "expected_sha=$expected_sha" >> "$GITHUB_OUTPUT"
+          echo "health_url=$health_url" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch health JSON
+        id: health
+        shell: bash
         run: |
-          $ErrorActionPreference="Stop"
-          $tag = "${{ inputs.tag }}"
-          $sha = "${{ inputs.expected_sha }}"
-          $url = "${{ inputs.health_url }}"
-          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "v0.4.0-rc1" }
-          if ([string]::IsNullOrWhiteSpace($sha)) { $sha = "80e22fe79ea55c69e68b0cb2712c10ae6dc00f9c" }
-          if ([string]::IsNullOrWhiteSpace($url)) { $url = "https://crown-api-prod.azurewebsites.net/api/health/" }
+          set -euo pipefail
+          url="${{ steps.target.outputs.health_url }}"
+          echo "Hitting: $url"
+          body="$(curl -sSfL "$url")"
+          echo "$body" | jq . >/dev/null
+          echo "body=$body" >> "$GITHUB_OUTPUT"
 
-          pwsh -File tools/prod_integrity_check.ps1 `
-            -Repo "${{ github.repository }}" `
-            -Tag $tag `
-            -ExpectedSha $sha `
-            -HealthUrl $url
+      - name: Assert deployed SHA matches expected
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${{ steps.target.outputs.expected_sha }}"
+          tag="${{ steps.target.outputs.tag }}"
+          body='${{ steps.health.outputs.body }}'
+
+          python - <<'PY'
+          import json, os, sys
+
+          expected = os.environ["EXPECTED"]
+          tag = os.environ["TAG"]
+          body = os.environ["BODY"]
+
+          data = json.loads(body)
+
+          # Try common keys (adjust if your /api/health/ uses a different field name)
+          candidates = ["build_sha", "BUILD_SHA", "sha", "git_sha", "commit", "commit_sha"]
+          found = None
+          for k in candidates:
+            if k in data and isinstance(data[k], str) and data[k].strip():
+              found = data[k].strip()
+              break
+
+          if not found:
+            print("ERROR: Health JSON did not include a recognized SHA field.")
+            print("Expected one of:", candidates)
+            print("Health payload:", json.dumps(data, indent=2))
+            sys.exit(2)
+
+          if found != expected:
+            print(f"FAIL: deployed SHA mismatch for {tag}")
+            print(f"Expected: {expected}")
+            print(f"Found:    {found}")
+            sys.exit(3)
+
+          print(f"PASS: deployed SHA matches expected for {tag}: {found}")
+          PY
+        env:
+          EXPECTED: ${{ steps.target.outputs.expected_sha }}
+          TAG: ${{ steps.target.outputs.tag }}
+          BODY: ${{ steps.health.outputs.body }}
