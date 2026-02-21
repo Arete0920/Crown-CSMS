@@ -1,0 +1,5 @@
+﻿# RC1 Proof Commands (copy/paste)
+git fetch --tags origin
+git show -s --decorate v0.4.0-rc1
+gh release view v0.4.0-rc1 --repo tcmegahan/Crown2026
+powershell -ExecutionPolicy Bypass -File tools/rc_gate_check.ps1 -Tag v0.4.0-rc1 -Pr 298 -Repo tcmegahan/Crown2026 -HealthUrl https://crown-api-dev.azurewebsites.net/api/health/
