@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { getGradebookSections } from "../api/gradebook";
 import { getSectionCategories, putCategoryWeightsBatch } from "../api/academicsWeights";
 
@@ -90,8 +91,7 @@ export function CategoryWeightsEditor() {
   }
 
   return (
-    <div style={{ padding: 24, fontFamily: "system-ui, sans-serif", maxWidth: 1000 }}>
-      <h2>Category Weights Editor</h2>
+    <CrownLayout title="Category Weights" subtitle="Manage grade category weightings per section">
 
       <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
         <label style={{ fontWeight: 500 }}>
@@ -117,15 +117,9 @@ export function CategoryWeightsEditor() {
         </label>
 
         <button
+          className="crown-btn crown-btn-primary"
           disabled={loading || !sectionId || !sumOk}
           onClick={save}
-          style={{
-            padding: "8px 16px",
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: loading || !sectionId || !sumOk ? "not-allowed" : "pointer",
-            opacity: loading || !sectionId || !sumOk ? 0.5 : 1,
-          }}
         >
           {loading ? "Saving..." : "Save All"}
         </button>
@@ -276,6 +270,6 @@ export function CategoryWeightsEditor() {
           <li>Click "Save All" to update weights atomically</li>
         </ul>
       </div>
-    </div>
+    </CrownLayout>
   );
 }
