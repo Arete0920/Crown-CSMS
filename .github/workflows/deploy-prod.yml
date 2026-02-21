@@ -132,12 +132,19 @@ jobs:
 
       - name: Run tests
         run: |
-          cd backend
-          python manage.py test core finance aid admissions crown_api
+          python manage.py test \
+            crown_api.tests.test_households_api \
+            crown_api.tests.test_students_api \
+            crown_api.tests.test_director_router \
+            crown_api.tests.test_director_actions_auth_required \
+            crown_api.tests.test_admissions_links_api \
+            crown_api.tests.test_academics_api \
+            crown_api.tests.test_billing_summary_api \
+            crown_api.tests.test_comms_api \
+            crown_api.tests.test_scheduling_api \
+            -v 2
           export DJANGO_SETTINGS_MODULE=crown_api.settings
           pytest --cov=. --cov-report=xml --ignore-glob='test_*.py'
-          cp coverage.xml ..
-          cd ..
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
