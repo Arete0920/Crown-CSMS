@@ -6,6 +6,12 @@ cd /home/site/wwwroot/backend
 echo "== Crown startup: migrate =="
 python manage.py migrate --noinput
 
+# Ensure CI smoke user exists when credentials are configured (idempotent)
+if [ -n "${CI_SMOKE_USERNAME:-}" ]; then
+  echo "== Crown startup: ensure CI smoke user =="
+  python manage.py ensure_ci_user
+fi
+
 # Optional: only run when explicitly enabled
 if [ "${CROWN_RUN_BOOTSTRAP:-0}" = "1" ]; then
   echo "== Crown startup: bootstrap demo data =="
