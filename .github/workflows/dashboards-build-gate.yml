@@ -1,0 +1,36 @@
+﻿name: dashboards-build-gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/dashboards/**"
+      - ".github/workflows/dashboards-build-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "frontend/dashboards/**"
+      - ".github/workflows/dashboards-build-gate.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        env:
+          VITE_API_BASE_URL: "http://localhost:8000"
+        run: npm run build

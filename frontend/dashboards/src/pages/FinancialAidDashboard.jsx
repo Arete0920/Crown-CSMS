@@ -190,7 +190,10 @@ export function FinancialAidDashboard() {
           hasMore={drilldown && offset + drilldown.rows.length < drilldown.count}
         />
       )}
-    </div>
+          </CrownCard>
+        </Col>
+      </CrownGrid>
+    </CrownLayout>
   );
 }
 
@@ -282,9 +285,6 @@ function DrilldownDrawer({ drilldown, loading, error, onClose, onRetry, onLoadMo
           )}
         </>
       )}
-          </CrownCard>
-        </Col>
-      </CrownGrid>
-    </CrownLayout>
+    </div>
   );
 }
