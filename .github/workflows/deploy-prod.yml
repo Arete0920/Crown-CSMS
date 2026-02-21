@@ -163,7 +163,7 @@ jobs:
           az webapp config appsettings set \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --name ${{ env.WEBAPP_NAME }} \
-            --settings RUN_MIGRATIONS=true BUILD_SHA=${{ github.sha }} \
+            --settings RUN_MIGRATIONS=true BUILD_SHA=${{ env.DEPLOY_SHA }} \
             --output none \
             --only-show-errors
           az webapp restart \
