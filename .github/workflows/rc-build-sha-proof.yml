@@ -45,22 +45,22 @@ jobs:
 
       - name: Assert build_sha matches GITHUB_SHA
         env:
-          BUILD_SHA_PROOF_URL: "http://127.0.0.1:8001"
-          BUILD_SHA_PROOF_EXPECTED: ${{ github.sha }}
-          BUILD_SHA_PROOF_TIMEOUT: "20"
+          RC_BASE_URL: "http://127.0.0.1:8001"
+          RC_EXPECT_BUILD_SHA: ${{ github.sha }}
+          RC_TIMEOUT: "20"
         run: python tools/verify_build_sha.py
 
-      # Deployed check: only runs if RC_BASE_URL and RC_EXPECTED_SHA are set.
+      # Deployed check: only runs if RC_BASE_URL and RC_EXPECT_BUILD_SHA are set.
       # Skips gracefully (warns, does not fail) when secrets are absent.
       - name: "Check secrets for deployed SHA check"
         id: secrets-check
         env:
           RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
-          RC_EXPECTED_SHA: ${{ secrets.RC_EXPECTED_SHA }}
+          RC_EXPECT_BUILD_SHA: ${{ secrets.RC_EXPECT_BUILD_SHA }}
         run: |
-          if [ -z "$RC_BASE_URL" ] || [ -z "$RC_EXPECTED_SHA" ]; then
+          if [ -z "$RC_BASE_URL" ] || [ -z "$RC_EXPECT_BUILD_SHA" ]; then
             echo "SKIP=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::RC_BASE_URL or RC_EXPECTED_SHA not set — skipping deployed SHA check"
+            echo "::warning::RC_BASE_URL or RC_EXPECT_BUILD_SHA not set — skipping deployed SHA check"
           else
             echo "SKIP=false" >> "$GITHUB_OUTPUT"
           fi
@@ -68,7 +68,7 @@ jobs:
       - name: Assert deployed service runs expected commit
         if: steps.secrets-check.outputs.SKIP == 'false'
         env:
-          BUILD_SHA_PROOF_URL: ${{ secrets.RC_BASE_URL }}
-          BUILD_SHA_PROOF_EXPECTED: ${{ secrets.RC_EXPECTED_SHA }}
-          BUILD_SHA_PROOF_TIMEOUT: "30"
+          RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
+          RC_EXPECT_BUILD_SHA: ${{ secrets.RC_EXPECT_BUILD_SHA }}
+          RC_TIMEOUT: "30"
         run: python tools/verify_build_sha.py
