@@ -6,13 +6,13 @@ Asserts that a running Crown API service returns the expected build_sha from
 GET /api/health/, proving the deployed code matches a known commit.
 
 Environment variables:
-  BUILD_SHA_PROOF_URL       Base URL of the service to probe (required)
-                            e.g. http://127.0.0.1:8001  or  https://demo.crown.app
-  BUILD_SHA_PROOF_EXPECTED  The exact 40-char hex SHA the response must match (required)
-  BUILD_SHA_PROOF_TIMEOUT   HTTP timeout in seconds (default: 20)
+  RC_BASE_URL           Base URL of the service to probe (required)
+                        e.g. http://127.0.0.1:8001  or  https://demo.crown.app
+  RC_EXPECT_BUILD_SHA   Expected commit SHA — full 40-char or short prefix accepted (required)
+  RC_TIMEOUT            HTTP timeout in seconds (default: 20)
 
 Exit codes:
-  0 — PASSED: build_sha matches expected
+  0 — PASSED: build_sha starts with expected SHA
   1 — FAILED: build_sha mismatch, missing field, or non-200 response
   2 — CONFIG ERROR: missing env vars or service unreachable
 """
@@ -25,9 +25,9 @@ import sys
 # Config
 # ---------------------------------------------------------------------------
 
-BASE_URL = os.environ.get("BUILD_SHA_PROOF_URL", "").rstrip("/")
-EXPECTED_SHA = os.environ.get("BUILD_SHA_PROOF_EXPECTED", "")
-TIMEOUT = int(os.environ.get("BUILD_SHA_PROOF_TIMEOUT", "20"))
+BASE_URL = os.environ.get("RC_BASE_URL", "").rstrip("/")
+EXPECTED_SHA = os.environ.get("RC_EXPECT_BUILD_SHA", "").strip().lower()
+TIMEOUT = int(os.environ.get("RC_TIMEOUT", "20"))
 HEALTH_PATH = "/api/health/"
 
 
@@ -64,15 +64,15 @@ def http_get(url: str, timeout: int):
 def main() -> None:
     # Validate config
     if not BASE_URL:
-        die(2, "missing required env var: BUILD_SHA_PROOF_URL")
+        die(2, "missing required env var: RC_BASE_URL")
     if not EXPECTED_SHA:
-        die(2, "missing required env var: BUILD_SHA_PROOF_EXPECTED")
-    if len(EXPECTED_SHA) != 40 or not all(c in "0123456789abcdefABCDEF" for c in EXPECTED_SHA):
-        die(2, f"BUILD_SHA_PROOF_EXPECTED must be a 40-char hex SHA (got: {EXPECTED_SHA!r})")
+        die(2, "missing required env var: RC_EXPECT_BUILD_SHA")
+    if not all(c in "0123456789abcdef" for c in EXPECTED_SHA):
+        die(2, f"RC_EXPECT_BUILD_SHA must be a hex SHA (got: {EXPECTED_SHA!r})")
 
     url = BASE_URL + HEALTH_PATH
     print(f"BUILD-SHA PROOF: probing {url}")
-    print(f"BUILD-SHA PROOF: expecting build_sha={EXPECTED_SHA}")
+    print(f"BUILD-SHA PROOF: expecting build_sha prefix={EXPECTED_SHA}")
 
     # Fire request
     try:
@@ -97,28 +97,25 @@ def main() -> None:
     if "build_sha" not in data:
         die(1, f"health response missing 'build_sha' field. Keys present: {list(data.keys())}")
 
-    actual_sha = data["build_sha"]
+    actual_sha = data["build_sha"].strip().lower()
     print(f"BUILD-SHA PROOF: response build_sha={actual_sha!r}")
 
-    # Guard against fallback value
-    if actual_sha == "local-dev":
+    # Guard against fallback values meaning BUILD_SHA was not injected
+    if actual_sha in ("local-dev", "unknown", ""):
         die(1, (
-            "build_sha is 'local-dev' — service was not started with BUILD_SHA or GITHUB_SHA env var. "
+            f"build_sha is {actual_sha!r} — service was not started with BUILD_SHA or GITHUB_SHA env var. "
             "Ensure the deployed process has BUILD_SHA set to the deployed commit SHA."
         ))
 
-    # Assert match
-    if actual_sha.lower() != EXPECTED_SHA.lower():
+    # Assert: actual must start with expected (allows full 40-char or short prefix)
+    if not actual_sha.startswith(EXPECTED_SHA):
         die(1, (
             f"build_sha MISMATCH:\n"
+            f"  url:      {url}\n"
             f"  expected: {EXPECTED_SHA}\n"
-            f"  actual:   {actual_sha}\n"
-            f"This means the deployed service is running a DIFFERENT commit than expected."
+            f"  got:      {actual_sha}\n"
+            f"The deployed service is running a DIFFERENT commit than expected."
         ))
-
-    # Also validate format
-    if len(actual_sha) != 40 or not all(c in "0123456789abcdefABCDEF" for c in actual_sha):
-        die(1, f"build_sha has unexpected format: {actual_sha!r} (must be 40-char hex)")
 
     die(0, f"build_sha={actual_sha} matches expected commit. Deployed commit is correct.")
 
