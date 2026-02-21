@@ -1,0 +1,31 @@
+name: ui-shell-gate
+
+on:
+  pull_request:
+    paths:
+      - "frontend/dashboards/src/pages/**"
+      - "frontend/dashboards/src/components/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_ui_shell_gate.ps1"
+      - ".github/workflows/ui-shell-gate.yml"
+  push:
+    branches: [ main ]
+    paths:
+      - "frontend/dashboards/src/pages/**"
+      - "frontend/dashboards/src/components/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_ui_shell_gate.ps1"
+      - ".github/workflows/ui-shell-gate.yml"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: UI Shell Gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference="Stop"
+          ./tools/verify_ui_shell_gate.ps1
