@@ -36,10 +36,43 @@ jobs:
           python tools/verify_build_sha.py
 
       # M5 (deployed): Tier-1 probes must pass against deployed env
+      - name: M5 — Login and fetch fresh token for smoke probes
+        env:
+          RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
+          CI_SMOKE_USERNAME: ${{ secrets.CI_SMOKE_USERNAME }}
+          CI_SMOKE_PASSWORD: ${{ secrets.CI_SMOKE_PASSWORD }}
+        run: |
+          FRESH_TOKEN=$(python - <<'EOF'
+          import json, os, sys, urllib.request, urllib.error
+          base = os.environ["RC_BASE_URL"].rstrip("/")
+          username = os.environ["CI_SMOKE_USERNAME"]
+          password = os.environ["CI_SMOKE_PASSWORD"]
+          payload = json.dumps({"email": username, "password": password}).encode()
+          req = urllib.request.Request(
+              f"{base}/api/auth/login/",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  data = json.loads(r.read())
+          except urllib.error.HTTPError as e:
+              body = e.read().decode()
+              print(f"Login failed: {e.code} {body}", file=sys.stderr)
+              sys.exit(1)
+          access = data.get("access") or data.get("token")
+          if not access:
+              print(f"No access token in response: {data}", file=sys.stderr)
+              sys.exit(1)
+          print(access, end="")
+          EOF
+          )
+          echo "RC_TOKEN=$FRESH_TOKEN" >> $GITHUB_ENV
+
       - name: M5 — Tier-1 deployed smoke against deployed env
         env:
           RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
-          RC_TOKEN: ${{ secrets.RC_TOKEN }}
           RC_SCHOOL_ID: ${{ secrets.RC_SCHOOL_ID }}
           RC_DEMO_KEY: ${{ secrets.RC_DEMO_KEY }}
           RC_TIER: "T1"

@@ -56,6 +56,7 @@ class JwtAuthMiddleware:
                     role=p.get("role"),
                     school_id=p.get("school_id"),
                     is_authenticated=True,
+                    is_active=True,
                 )
                 request.auth = p
 

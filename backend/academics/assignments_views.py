@@ -34,8 +34,11 @@ def _role_codes(user, school_id) -> set[str]:
     """Get role codes for user in school."""
     if not user or not getattr(user, "is_authenticated", False):
         return set()
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        return set()
     return set(
-        UserRole.objects.filter(user=user, school_id=school_id).values_list("role_code", flat=True)
+        UserRole.objects.filter(user_id=user_id, school_id=school_id).values_list("role_code", flat=True)
     )
 
 

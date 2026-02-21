@@ -30,7 +30,6 @@ jobs:
     # The check is: if RC_BASE_URL secret is non-empty, proceed.
     env:
       RC_BASE_URL: ${{ inputs.rc_base_url != '' && inputs.rc_base_url || secrets.RC_BASE_URL }}
-      RC_TOKEN: ${{ secrets.RC_TOKEN }}
       RC_SCHOOL_ID: ${{ secrets.RC_SCHOOL_ID }}
       RC_DEMO_KEY: ${{ secrets.RC_DEMO_KEY }}
       RC_TIER: "T1"
@@ -51,12 +50,47 @@ jobs:
       - name: Check secrets configured
         id: secrets-check
         run: |
-          if [ -z "$RC_BASE_URL" ] || [ -z "$RC_TOKEN" ] || [ -z "$RC_SCHOOL_ID" ]; then
+          if [ -z "$RC_BASE_URL" ] || [ -z "$RC_SCHOOL_ID" ]; then
             echo "SKIP=true" >> $GITHUB_OUTPUT
-            echo "::warning::RC deployed smoke skipped — secrets not configured (RC_BASE_URL, RC_TOKEN, RC_SCHOOL_ID)"
+            echo "::warning::RC deployed smoke skipped — secrets not configured (RC_BASE_URL, RC_SCHOOL_ID)"
           else
             echo "SKIP=false" >> $GITHUB_OUTPUT
           fi
+
+      - name: Login and fetch fresh RC_TOKEN
+        if: steps.secrets-check.outputs.SKIP == 'false'
+        id: rc-login
+        env:
+          CI_SMOKE_USERNAME: ${{ secrets.CI_SMOKE_USERNAME }}
+          CI_SMOKE_PASSWORD: ${{ secrets.CI_SMOKE_PASSWORD }}
+        run: |
+          FRESH_TOKEN=$(python - <<'EOF'
+          import json, os, sys, urllib.request, urllib.error
+          base = os.environ["RC_BASE_URL"].rstrip("/")
+          username = os.environ["CI_SMOKE_USERNAME"]
+          password = os.environ["CI_SMOKE_PASSWORD"]
+          payload = json.dumps({"email": username, "password": password}).encode()
+          req = urllib.request.Request(
+              f"{base}/api/auth/login/",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=20) as r:
+                  data = json.loads(r.read())
+          except urllib.error.HTTPError as e:
+              body = e.read().decode()
+              print(f"Login failed: {e.code} {body}", file=sys.stderr)
+              sys.exit(1)
+          access = data.get("access") or data.get("token")
+          if not access:
+              print(f"No access token in response: {data}", file=sys.stderr)
+              sys.exit(1)
+          print(access, end="")
+          EOF
+          )
+          echo "RC_TOKEN=$FRESH_TOKEN" >> $GITHUB_ENV
 
       - name: Run Tier-1 deployed smoke probes
         if: steps.secrets-check.outputs.SKIP == 'false'
@@ -65,5 +99,5 @@ jobs:
       - name: Smoke skipped (secrets not set)
         if: steps.secrets-check.outputs.SKIP == 'true'
         run: |
-          echo "Deployed smoke skipped — add RC_BASE_URL, RC_TOKEN, RC_SCHOOL_ID as repository secrets to enable."
+          echo "Deployed smoke skipped — add RC_BASE_URL, RC_SCHOOL_ID as repository secrets to enable."
           echo "See: Settings → Secrets and variables → Actions"

@@ -590,7 +590,7 @@ def ledger_invariants(request: HttpRequest):
 
     # RBAC: HEAD_OF_SCHOOL or FINANCE_DIRECTOR only
     roles = set(
-        UserRole.objects.filter(user=request.user, school_id=sid)
+        UserRole.objects.filter(user_id=request.user.id, school_id=sid)
         .values_list("role_code", flat=True)
     )
     if not roles.intersection({"HEAD_OF_SCHOOL", "FINANCE_DIRECTOR"}):
