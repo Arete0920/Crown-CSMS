@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { getInvoices } from "../api/finance";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import Drawer from "../components/Drawer";
@@ -136,52 +137,40 @@ export default function FinanceInvoicesList() {
 
   if (loading) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <h1>Finance — Invoices</h1>
+      <CrownLayout title="Finance" subtitle="Invoice history and exports">
         <p>Loading...</p>
-      </div>
+      </CrownLayout>
     );
   }
 
   if (error) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <h1>Finance — Invoices</h1>
+      <CrownLayout title="Finance" subtitle="Invoice history and exports">
         <div style={{ color: "#dc2626", marginTop: "1rem" }}>
           Error: {error}
         </div>
-      </div>
+      </CrownLayout>
     );
   }
 
   if (data.length === 0) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <h1>Finance — Invoices</h1>
+      <CrownLayout title="Finance" subtitle="Invoice history and exports">
         <div style={{ marginTop: "1rem", color: "#6b7280" }}>
           No invoices yet
         </div>
-      </div>
+      </CrownLayout>
     );
   }
 
   return (
-    <div style={{ padding: "2rem", position: "relative" }}>
-      <h1>Finance — Invoices</h1>
+    <CrownLayout title="Finance" subtitle="Invoice history and exports">
 
       {/* Export bar */}
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+      <div style={{ marginBottom: "1rem" }}>
         <button
+          className="crown-btn"
           onClick={handleExport}
-          style={{
-            padding: "0.5rem 1rem",
-            background: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontSize: "0.875rem",
-          }}
         >
           Export CSV
         </button>
@@ -374,6 +363,6 @@ export default function FinanceInvoicesList() {
           </div>
         </Drawer>
       )}
-    </div>
+    </CrownLayout>
   );
 }
