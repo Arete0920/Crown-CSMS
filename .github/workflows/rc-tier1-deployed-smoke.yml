@@ -1,0 +1,69 @@
+name: rc-tier1-deployed-smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      rc_base_url:
+        description: "Override RC_BASE_URL (leave blank to use secret)"
+        required: false
+        default: ""
+  push:
+    branches:
+      - "rc/**"
+  pull_request:
+    branches:
+      - "rc/**"
+    paths:
+      - "tools/rc_deployed_smoke.py"
+      - "tools/rc_endpoint_probes.json"
+      - "tools/demo_contract_t1.lock"
+      - ".github/workflows/rc-tier1-deployed-smoke.yml"
+
+jobs:
+  deployed-smoke:
+    name: "Tier-1 Deployed Smoke"
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    # Only run if secrets are populated — this avoids noisy failures on forks
+    # or when secrets aren't configured yet.
+    # The check is: if RC_BASE_URL secret is non-empty, proceed.
+    env:
+      RC_BASE_URL: ${{ inputs.rc_base_url != '' && inputs.rc_base_url || secrets.RC_BASE_URL }}
+      RC_TOKEN: ${{ secrets.RC_TOKEN }}
+      RC_SCHOOL_ID: ${{ secrets.RC_SCHOOL_ID }}
+      RC_DEMO_KEY: ${{ secrets.RC_DEMO_KEY }}
+      RC_TIER: "T1"
+      RC_TIMEOUT: "20"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip requests
+
+      - name: Check secrets configured
+        id: secrets-check
+        run: |
+          if [ -z "$RC_BASE_URL" ] || [ -z "$RC_TOKEN" ] || [ -z "$RC_SCHOOL_ID" ]; then
+            echo "SKIP=true" >> $GITHUB_OUTPUT
+            echo "::warning::RC deployed smoke skipped — secrets not configured (RC_BASE_URL, RC_TOKEN, RC_SCHOOL_ID)"
+          else
+            echo "SKIP=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Tier-1 deployed smoke probes
+        if: steps.secrets-check.outputs.SKIP == 'false'
+        run: python tools/rc_deployed_smoke.py
+
+      - name: Smoke skipped (secrets not set)
+        if: steps.secrets-check.outputs.SKIP == 'true'
+        run: |
+          echo "Deployed smoke skipped — add RC_BASE_URL, RC_TOKEN, RC_SCHOOL_ID as repository secrets to enable."
+          echo "See: Settings → Secrets and variables → Actions"
