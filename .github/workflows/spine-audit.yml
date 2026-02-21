@@ -63,3 +63,6 @@ jobs:
             done
             echo "OK $file clean"
           done
+
+      - name: UI Shell Gate (CrownLayout enforcement)
+        run: python scripts/check_ui_shell.py
