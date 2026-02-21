@@ -1,0 +1,137 @@
+name: Dev Deploy (rc/**)
+
+on:
+  # Automatically deploy whenever rc/** is pushed — keeps dev in sync with RC
+  push:
+    branches:
+      - "rc/**"
+  # Also allow a manual trigger (e.g. to redeploy after secrets change)
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch/SHA/tag). Leave blank for default branch."
+        required: false
+        default: ""
+
+concurrency:
+  group: crown-api-dev-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  REGISTRY: crownregistry.azurecr.io
+  IMAGE_NAME: crown2026
+  RESOURCE_GROUP: crown-rg
+  WEBAPP_NAME: crown-api-dev
+
+jobs:
+  build-and-deploy:
+    name: "Build & Deploy → crown-api-dev"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
+          fetch-depth: 0
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Determine deploy SHA
+        id: vars
+        run: |
+          echo "deploy_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+          echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure Container Registry
+        run: az acr login --name crownregistry --only-show-errors
+
+      - name: Bake BUILD_SHA into artifact
+        run: |
+          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
+          echo "✓ build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
+
+      - name: Update BUILD_SHA app setting and restart
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --settings BUILD_SHA=${{ env.DEPLOY_SHA }} \
+            --output none \
+            --only-show-errors
+          az webapp restart \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --only-show-errors
+          echo "✓ BUILD_SHA=${{ env.DEPLOY_SHA }} set on ${{ env.WEBAPP_NAME }}"
+
+      - name: Health check (waits for startup + migrations + ensure_ci_user)
+        run: |
+          set -euo pipefail
+          echo "Waiting for app to come up (up to 5 minutes)..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Health check passed (attempt $i)"
+              break
+            fi
+            echo "  attempt $i: HTTP $STATUS — waiting 10s..."
+            sleep 10
+            if [ "$i" = "30" ]; then
+              echo "❌ Health check timed out after 300s"
+              exit 1
+            fi
+          done
+
+      - name: Verify BUILD_SHA matches deployed commit
+        run: |
+          set -euo pipefail
+          WANT="${{ env.DEPLOY_SHA }}"
+          BODY=$(curl -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
+          GOT=$(echo "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build_sha',''))")
+          if [ -z "$GOT" ]; then
+            echo "❌ Missing build_sha in /api/health/ response"
+            echo "Response: $BODY"
+            exit 1
+          fi
+          if [[ "$GOT" != "$WANT"* ]] && [[ "$WANT" != "$GOT"* ]]; then
+            echo "❌ build_sha mismatch: deployed=$GOT expected=$WANT"
+            exit 1
+          fi
+          echo "✅ build_sha verified: $GOT"
+
+      - name: Summary
+        run: |
+          echo "✅ crown-api-dev deployed successfully"
+          echo "   SHA: ${{ env.DEPLOY_SHA }}"
+          echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
