@@ -1,0 +1,251 @@
+import { useState, useEffect } from 'react';
+import CrownLayout from '../components/crown/CrownLayout.jsx';
+import CrownCard from '../components/crown/CrownCard.jsx';
+import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
+import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+
+/* ── Auth helpers (matches existing Crown pattern) ─────────────────── */
+function apiBase() {
+  const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+}
+function getSession() {
+  try {
+    return {
+      token:    sessionStorage.getItem('crown.jwt.access') || '',
+      schoolId: sessionStorage.getItem('crown.school.id')  || '',
+    };
+  } catch { return { token: '', schoolId: '' }; }
+}
+
+/* ── Static demo fallback (used when endpoint is unavailable) ───────── */
+const DEMO = {
+  enrolled: 312,
+  attendance_flags_today: 7,
+  discipline_incidents_week: 3,
+  messages_pending: 14,
+  billing_delinquencies: 11,
+  enrollment_funnel: { inquiries: 87, applicants: 54, admitted: 41, enrolled: 38 },
+  operational_alerts: [
+    { type: 'overdue_form',   label: 'Overdue enrollment forms',       count: 4 },
+    { type: 'missing_doc',    label: 'Missing health records',          count: 9 },
+    { type: 'staff_coverage', label: 'Staff coverage gaps this week',   count: 2 },
+    { type: 'comms',          label: 'Unanswered family messages >48h', count: 6 },
+  ],
+};
+
+async function fetchAdminMetrics() {
+  const { token, schoolId } = getSession();
+  const url = `${apiBase()}/api/v1/admin/metrics/`;
+  const headers = { Accept: 'application/json' };
+  if (token)    headers['Authorization'] = `Bearer ${token}`;
+  if (schoolId) headers['X-School-Id']   = schoolId;
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`${res.status}`);
+    return { ok: true, data: await res.json() };
+  } catch {
+    return { ok: false, data: DEMO };   // silent fallback — UI never crashes
+  }
+}
+
+/* ── Pill ────────────────────────────────────────────────────────────── */
+const PILL_COLORS = {
+  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
+  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
+  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
+  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
+};
+function Pill({ color = 'gray', children }) {
+  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  return (
+    <span style={{
+      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, border: `1px solid ${s.border}`,
+      background: s.background, color: s.color, letterSpacing: 0.2,
+    }}>{children}</span>
+  );
+}
+
+/* ── Alert severity color ────────────────────────────────────────────── */
+function alertColor(count) {
+  if (count === 0) return 'green';
+  if (count <= 3)  return 'yellow';
+  return 'red';
+}
+
+/* ── Funnel step ─────────────────────────────────────────────────────── */
+function FunnelStep({ label, value, isLast }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{
+        flex: 1, background: '#f8fafc', border: '1px solid #e5e7eb',
+        borderRadius: 6, padding: '8px 12px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span style={{ fontSize: 12, color: '#6b7280' }}>{label}</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{value}</span>
+      </div>
+      {!isLast && (
+        <span style={{ fontSize: 16, color: '#9ca3af', flexShrink: 0 }}>→</span>
+      )}
+    </div>
+  );
+}
+
+/* ── Quick action link ───────────────────────────────────────────────── */
+function QuickAction({ href, label }) {
+  return (
+    <a
+      href={href}
+      className="crown-btn"
+      style={{ justifyContent: 'flex-start', marginBottom: 4, display: 'flex' }}
+    >
+      {label} →
+    </a>
+  );
+}
+
+/* ── Main component ─────────────────────────────────────────────────── */
+export default function AdminDashboard() {
+  const [state, setState] = useState({ loading: true, live: false, data: DEMO });
+
+  useEffect(() => {
+    fetchAdminMetrics().then(({ ok, data }) => {
+      setState({ loading: false, live: ok, data });
+    });
+  }, []);
+
+  const { loading, live, data } = state;
+  const f = data.enrollment_funnel || DEMO.enrollment_funnel;
+  const alerts = data.operational_alerts || DEMO.operational_alerts;
+
+  return (
+    <CrownLayout title="Administration" subtitle="Principal & operations command center">
+      <CrownGrid>
+
+        {/* ── KPI row ───────────────────────────────────────────────── */}
+        <Col span={3}>
+          <CrownMetricCard
+            label="Enrolled"
+            value={loading ? '…' : String(data.enrolled ?? '—')}
+            hint="Active students"
+          />
+        </Col>
+        <Col span={3}>
+          <CrownMetricCard
+            label="Attendance Flags"
+            value={loading ? '…' : String(data.attendance_flags_today ?? '—')}
+            hint="Today"
+          />
+        </Col>
+        <Col span={3}>
+          <CrownMetricCard
+            label="Discipline"
+            value={loading ? '…' : String(data.discipline_incidents_week ?? '—')}
+            hint="Incidents this week"
+          />
+        </Col>
+        <Col span={3}>
+          <CrownMetricCard
+            label="Messages Pending"
+            value={loading ? '…' : String(data.messages_pending ?? '—')}
+            hint="Awaiting reply"
+          />
+        </Col>
+
+        {/* ── Enrollment funnel ─────────────────────────────────────── */}
+        <Col span={6}>
+          <CrownCard
+            title="Enrollment Funnel"
+            right={<Pill color="gray">Current year</Pill>}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+              <FunnelStep label="Inquiries"   value={f.inquiries}  />
+              <FunnelStep label="Applicants"  value={f.applicants} />
+              <FunnelStep label="Admitted"    value={f.admitted}   />
+              <FunnelStep label="Enrolled"    value={f.enrolled}   isLast />
+            </div>
+            <div style={{ marginTop: 12, fontSize: 11, color: '#9ca3af' }}>
+              Inquiry-to-enrolled conversion:{' '}
+              <strong style={{ color: '#374151' }}>
+                {f.inquiries ? Math.round((f.enrolled / f.inquiries) * 100) : '—'}%
+              </strong>
+            </div>
+          </CrownCard>
+        </Col>
+
+        {/* ── Today at a glance ─────────────────────────────────────── */}
+        <Col span={6}>
+          <CrownCard
+            title="Today at a Glance"
+            right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
+          >
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <tbody>
+                {[
+                  ['Attendance flags',      data.attendance_flags_today,    alertColor(data.attendance_flags_today)],
+                  ['Discipline incidents',  data.discipline_incidents_week,  alertColor(data.discipline_incidents_week)],
+                  ['Messages pending',      data.messages_pending,           alertColor(data.messages_pending)],
+                  ['Billing delinquencies', data.billing_delinquencies,      alertColor(data.billing_delinquencies)],
+                ].map(([label, val, color]) => (
+                  <tr key={label} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 0', color: '#6b7280' }}>{label}</td>
+                    <td style={{ padding: '8px 0', textAlign: 'right' }}>
+                      <Pill color={color}>{val ?? '—'}</Pill>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CrownCard>
+        </Col>
+
+        {/* ── Operational alerts ────────────────────────────────────── */}
+        <Col span={6}>
+          <CrownCard
+            title="Operational Alerts"
+            right={
+              <Pill color={alerts.some(a => a.count > 0) ? 'red' : 'green'}>
+                {alerts.filter(a => a.count > 0).length} active
+              </Pill>
+            }
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+              {alerts.map((a) => (
+                <div
+                  key={a.type}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '7px 10px', borderRadius: 6,
+                    background: a.count === 0 ? '#f0fdf4' : a.count <= 3 ? '#fefce8' : '#fef2f2',
+                    border: `1px solid ${a.count === 0 ? '#bbf7d0' : a.count <= 3 ? '#fde047' : '#fecaca'}`,
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: '#374151' }}>{a.label}</span>
+                  <span style={{ fontWeight: 800, fontSize: 14, color: a.count === 0 ? '#166534' : a.count <= 3 ? '#854d0e' : '#991b1b' }}>
+                    {a.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CrownCard>
+        </Col>
+
+        {/* ── Quick actions ─────────────────────────────────────────── */}
+        <Col span={6}>
+          <CrownCard title="Quick Actions">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+              <QuickAction href="/communications"  label="Compose announcement" />
+              <QuickAction href="/discipline"      label="Open incident report"  />
+              <QuickAction href="/financial-aid"   label="Review aid queue"      />
+              <QuickAction href="/admissions"      label="Admissions pipeline"   />
+              <QuickAction href="/integrity"       label="System integrity"      />
+            </div>
+          </CrownCard>
+        </Col>
+
+      </CrownGrid>
+    </CrownLayout>
+  );
+}
