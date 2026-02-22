@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 # tools/audit/make_workspace_index.ps1
 # Generates an evidence-based workspace index pack for Crown2026.
@@ -43,7 +43,7 @@ catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git log failed" }
 
 # 01 Tree (exclude big/generated dirs)
 Add-File (Join-Path $pack "01_TREE.txt") "Repo tree (excluding .git, .venv, node_modules, dist/build/coverage):"
-$exclude = @('\.git\', '\.venv\', '\node_modules\', '\dist\', '\build\', '\coverage\')
+$exclude = @('\\\.git\\', '\\\.venv\\', '\\node_modules\\', '\\dist\\', '\\build\\', '\\coverage\\')
 Get-ChildItem -Recurse -File | Where-Object {
   $p = $_.FullName
   foreach ($x in $exclude) { if ($p -match $x) { return $false } }
@@ -88,9 +88,9 @@ try {
 # 06 Backend URLs
 $urlsOut = Join-Path $pack "06_BACKEND_URLS.txt"
 try {
-  & ".\.venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-File $urlsOut -Encoding UTF8
+  & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-File $urlsOut -Encoding UTF8
 } catch {
-  Write-File $urlsOut "backend/manage.py show_urls failed."
+  Write-File $urlsOut "backend/manage.py show_urls failed (django-extensions may not be installed)."
 }
 
 # 07 Migrations
@@ -143,15 +143,16 @@ $patterns = @(
   @{ name="TokenLike";              re="(token|jwt)\s*=\s*['""]" }
 )
 
-$scanExclude = '\\\.git\\|\\\.venv\\|\\node_modules\\|\\dist\\|\\build\\|\\coverage\\'
+$scanExclude = '[/\\](\.git|\.venv|node_modules|dist|build|coverage|AUDIT_PACK_)[/\\]'
+$textExts    = @('.py','.js','.jsx','.ts','.tsx','.json','.yml','.yaml','.env','.cfg','.ini','.toml','.txt','.md','.sh','.ps1','.conf','.html','.css')
 $allFiles    = Get-ChildItem -Recurse -File -ErrorAction SilentlyContinue |
-               Where-Object { $_.FullName -notmatch $scanExclude }
+               Where-Object { $_.FullName -notmatch $scanExclude -and $textExts -contains $_.Extension.ToLower() }
 
 foreach ($p in $patterns) {
   $hits = 0
   foreach ($f in $allFiles) {
     try {
-      $m = Select-String -Path $f.FullName -Pattern $p.re -AllMatches -ErrorAction SilentlyContinue
+      $m = Select-String -Path $f.FullName -Pattern $p.re -AllMatches -Encoding UTF8 -ErrorAction SilentlyContinue
       if ($m) {
         foreach ($h in $m) {
           $rel = $h.Path.Substring($PWD.Path.Length + 1)
