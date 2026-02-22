@@ -104,6 +104,30 @@ const ROLE_ROUTE_MAP = new Map([
   ['admin',             '/admin'],
   ['director',          '/admin'],
   ['principal',         '/admin'],
+  // Academic Support / SPED
+  ['academic_support',          '/academic-support'],
+  ['sped',                      '/academic-support'],
+  ['learning_support',          '/academic-support'],
+  // Fine Arts
+  ['fine_arts',                 '/fine-arts'],
+  ['arts_director',             '/fine-arts'],
+  // Library / Media
+  ['librarian',                 '/library'],
+  ['library_media',             '/library'],
+  // Extended Care / Aftercare
+  ['extended_care',             '/extended-care'],
+  ['aftercare',                 '/extended-care'],
+  // Registrar / Records
+  ['registrar',                 '/registrar'],
+  ['records',                   '/registrar'],
+  // Communications Director
+  // NOTE: generic 'communications' token excluded — /communications is the comms-inbox route
+  ['communications_director',   '/communications-director'],
+  // PD / Staff Development
+  ['pd_director',               '/pd'],
+  ['staff_development',         '/pd'],
+  // Student Services
+  ['student_services',          '/student-services'],
 ]);
 
 function resolveDashboardPath() {
