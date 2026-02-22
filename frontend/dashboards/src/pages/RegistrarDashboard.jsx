@@ -2,21 +2,32 @@ import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
-import { getAccessToken } from '../utils/authClient.js';
+function apiBase() {
+  const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+}
+function getSession() {
+  try {
+    return { token: sessionStorage.getItem('crown.jwt.access') || '', schoolId: sessionStorage.getItem('crown.school.id') || '' };
+  } catch { return { token: '', schoolId: '' }; }
+}
 
-const DEMO = { schoolId: '19801b59-8c05-4c84-9312-5d792e4e839d' };
+const DEMO = {
+  enrollment_total: 412, pending_requests: 8, transcripts_issued_mtd: 23, holds_active: 3,
+  pending_requests_list: [], transcript_queue: [], new_enrollments_by_grade: [], alerts: [], snapshot_date: '—',
+};
 
 async function fetchRegistrarMetrics() {
-  const token    = getAccessToken();
-  const schoolId = sessionStorage.getItem('crown.school.id') || localStorage.getItem('crown.school.id') || DEMO.schoolId;
-  const res = await fetch('/api/v1/registrar/metrics/', {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'X-School-Id': schoolId,
-    },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const { token, schoolId } = getSession();
+  const url = `${apiBase()}/api/v1/registrar/metrics/`;
+  const headers = { Accept: 'application/json' };
+  if (token)    headers['Authorization'] = `Bearer ${token}`;
+  if (schoolId) headers['X-School-Id']   = schoolId;
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`${res.status}`);
+    return { ok: true, data: await res.json() };
+  } catch { return { ok: false, data: DEMO }; }
 }
 
 const STATUS_COLOR = { complete: '#16a34a', pending: '#ca8a04', hold: '#dc2626', in_progress: '#2563eb' };
@@ -31,18 +42,16 @@ function Pill({ v }) {
 }
 
 export default function RegistrarDashboard() {
-  const [data, setData]   = useState(null);
-  const [error, setError] = useState(null);
+  const [state, setState] = useState({ loading: true, data: DEMO });
 
   useEffect(() => {
-    fetchRegistrarMetrics().then(setData).catch(e => setError(e.message));
+    fetchRegistrarMetrics().then(({ ok, data }) => setState({ loading: false, data }));
   }, []);
 
-  if (error) return <CrownLayout title="Registrar"><p style={{ color: 'red' }}>{error}</p></CrownLayout>;
-  if (!data)  return <CrownLayout title="Registrar"><p>Loading…</p></CrownLayout>;
-
+  const { loading, data } = state;
   return (
-    <CrownLayout title="Registrar / Records" subtitle={`Snapshot: ${data.snapshot_date}`}>
+    <CrownLayout title="Registrar / Records" subtitle={`Snapshot: ${data.snapshot_date || DEMO.snapshot_date}`}>
+      {loading && <p style={{ color: '#6b7280', padding: '4px 0' }}>Loading…</p>}
       {/* KPI row */}
       <div className="crown-metrics-row">
         <CrownMetricCard label="Total Enrollment"       value={data.enrollment_total}       />

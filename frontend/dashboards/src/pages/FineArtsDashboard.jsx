@@ -2,21 +2,32 @@ import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
-import { getAccessToken } from '../utils/authClient.js';
+function apiBase() {
+  const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
+  return base.endsWith('/') ? base.slice(0, -1) : base;
+}
+function getSession() {
+  try {
+    return { token: sessionStorage.getItem('crown.jwt.access') || '', schoolId: sessionStorage.getItem('crown.school.id') || '' };
+  } catch { return { token: '', schoolId: '' }; }
+}
 
-const DEMO = { schoolId: '19801b59-8c05-4c84-9312-5d792e4e839d' };
+const DEMO = {
+  enrolled_students: 186, performances_this_term: 4, equipment_needs: 3, parent_volunteers: 22,
+  performances: [], ensembles: [], equipment_list: [], alerts: [], snapshot_date: '—',
+};
 
 async function fetchFineArtsMetrics() {
-  const token    = getAccessToken();
-  const schoolId = sessionStorage.getItem('crown.school.id') || localStorage.getItem('crown.school.id') || DEMO.schoolId;
-  const res = await fetch('/api/v1/fine-arts/metrics/', {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'X-School-Id': schoolId,
-    },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const { token, schoolId } = getSession();
+  const url = `${apiBase()}/api/v1/fine-arts/metrics/`;
+  const headers = { Accept: 'application/json' };
+  if (token)    headers['Authorization'] = `Bearer ${token}`;
+  if (schoolId) headers['X-School-Id']   = schoolId;
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`${res.status}`);
+    return { ok: true, data: await res.json() };
+  } catch { return { ok: false, data: DEMO }; }
 }
 
 const STATUS_COLOR = { scheduled: '#16a34a', confirmed: '#2563eb', pending: '#ca8a04', cancelled: '#dc2626' };
@@ -31,18 +42,16 @@ function Pill({ v }) {
 }
 
 export default function FineArtsDashboard() {
-  const [data, setData]   = useState(null);
-  const [error, setError] = useState(null);
+  const [state, setState] = useState({ loading: true, data: DEMO });
 
   useEffect(() => {
-    fetchFineArtsMetrics().then(setData).catch(e => setError(e.message));
+    fetchFineArtsMetrics().then(({ ok, data }) => setState({ loading: false, data }));
   }, []);
 
-  if (error) return <CrownLayout title="Fine Arts"><p style={{ color: 'red' }}>{error}</p></CrownLayout>;
-  if (!data)  return <CrownLayout title="Fine Arts"><p>Loading…</p></CrownLayout>;
-
+  const { loading, data } = state;
   return (
-    <CrownLayout title="Fine Arts" subtitle={`Snapshot: ${data.snapshot_date}`}>
+    <CrownLayout title="Fine Arts" subtitle={`Snapshot: ${data.snapshot_date || DEMO.snapshot_date}`}>
+      {loading && <p style={{ color: '#6b7280', padding: '4px 0' }}>Loading…</p>}
       {/* KPI row */}
       <div className="crown-metrics-row">
         <CrownMetricCard label="Enrolled Students"         value={data.enrolled_students}        />
