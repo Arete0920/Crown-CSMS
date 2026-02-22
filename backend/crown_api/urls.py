@@ -4,6 +4,7 @@ URL configuration for crown_api project.
 from django.urls import include, path
 from django.views.generic import RedirectView
 from crown_api.health_views import health, health_version, system_health
+from crown_api.views_integrity import integrity
 from crown_api.version_views import version
 from crown_api.views import director_dashboard_page, director_router
 from crown_api.ops_views import ops_summary, ops_alerts
@@ -22,6 +23,7 @@ urlpatterns = [
     path("api/v1/graduation/", include('graduation.urls')),
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
+    path("api/integrity/", integrity, name="api_integrity"),
     path("api/system/health/", system_health, name="system_health"),
     path("health/version/", health_version, name="health_version"),
     
