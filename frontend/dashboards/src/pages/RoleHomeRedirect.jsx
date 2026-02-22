@@ -50,10 +50,10 @@ function resolveDashboardPath() {
   if (role.includes('student'))                                               return '/student';
   if (role.includes('board') || role.includes('governor'))                    return '/board';
   if (role.includes('finance') || role.includes('biz_office'))                return '/finance';
+  if (role.includes('chaplain') || role.includes('spiritual_life'))           return '/spiritual-life';
   if (role.includes('it_director') || (role.includes('it') && !role.includes('audit'))) return '/it';
   if (role.includes('aid_director') || role.includes('financial_aid'))        return '/financial-aid';
   if (role.includes('marketing') || role.includes('advancement'))             return '/marketing';
-  if (role.includes('chaplain') || role.includes('spiritual_life'))           return '/spiritual-life';
   if (role.includes('office_manager') || role.includes('hr'))                 return '/office';
   if (role.includes('admin') || role.includes('director') || role.includes('principal')) return '/admin';
   return '/';
