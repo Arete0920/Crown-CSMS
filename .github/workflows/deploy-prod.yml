@@ -15,7 +15,6 @@ permissions:
   security-events: write
 
 env:
-  DEPLOY_TAG: ${{ github.ref_name }}
   REGISTRY: crownregistry.azurecr.io
   IMAGE_NAME: crown2026
   RESOURCE_GROUP: crown-rg
@@ -32,14 +31,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ env.DEPLOY_TAG }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Guard: tag name must match prod-deploy-*
         shell: bash
         run: |
-          echo "DEPLOY_TAG=${DEPLOY_TAG}"
-          if [[ "${DEPLOY_TAG}" != prod-deploy-* ]]; then
+          echo "DEPLOY_TAG=${{ github.ref_name }}"
+          if [[ "${{ github.ref_name }}" != prod-deploy-* ]]; then
             echo "ERROR: refusing prod deploy; tag must start with prod-deploy-"
             exit 1
           fi
@@ -47,7 +46,7 @@ jobs:
       - name: Guard: tag required and resolvable
         shell: pwsh
         run: |
-          ./tools/require_tag_input.ps1 -Tag "${{ env.DEPLOY_TAG }}"
+          ./tools/require_tag_input.ps1 -Tag "${{ github.ref_name }}"
 
       - name: Azure Login
         uses: azure/login@v1
