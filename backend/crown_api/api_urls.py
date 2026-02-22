@@ -25,7 +25,12 @@ from crown_api.director_views import (
     force_seed_user,
 )
 from crown_api.views_households import household_detail, households_list
-from crown_api.metrics_views import admin_metrics, board_metrics, finance_metrics
+from crown_api.metrics_views import (
+    admin_metrics, board_metrics, finance_metrics,
+    teacher_metrics, parent_metrics, student_metrics,
+    it_metrics, financial_aid_metrics, marketing_metrics,
+    spiritual_life_metrics, office_metrics,
+)
 from crown_api.views_students import student_detail, students_list
 from crown_api.views_academics import student_attendance_list, student_grades_list
 from crown_api.views_billing import household_billing_summary
@@ -38,9 +43,17 @@ from billing import api as billing_api
 
 urlpatterns = [
     # Dashboard metrics endpoints (read-only, persona-scoped)
-    path('admin/metrics/',  admin_metrics,  name='admin-metrics'),
-    path('board/metrics/',  board_metrics,  name='board-metrics'),
-    path('finance/metrics/', finance_metrics, name='finance-metrics'),
+    path('admin/metrics/',          admin_metrics,          name='admin-metrics'),
+    path('board/metrics/',          board_metrics,          name='board-metrics'),
+    path('finance/metrics/',        finance_metrics,        name='finance-metrics'),
+    path('teacher/metrics/',        teacher_metrics,        name='teacher-metrics'),
+    path('parent/metrics/',         parent_metrics,         name='parent-metrics'),
+    path('student/metrics/',        student_metrics,        name='student-metrics'),
+    path('it/metrics/',             it_metrics,             name='it-metrics'),
+    path('financial-aid/metrics/',  financial_aid_metrics,  name='financial-aid-metrics'),
+    path('marketing/metrics/',      marketing_metrics,      name='marketing-metrics'),
+    path('spiritual-life/metrics/', spiritual_life_metrics, name='spiritual-life-metrics'),
+    path('office/metrics/',         office_metrics,         name='office-metrics'),
 
     path('360/', include('student360.api.urls')),
     path('comms/', include('comms.api.urls')),
