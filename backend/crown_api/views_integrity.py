@@ -47,16 +47,25 @@ META_GATES = [
 
 GITHUB_REPO = "tcmegahan/Crown2026"
 
+# Last known successful prod deploy tag — overwritten each deploy via PROD_DEPLOY_TAG app setting.
+_FALLBACK_DEPLOY_TAG = "prod-deploy-2026-02-22-1315"
+
 
 def integrity(request):
     build_sha = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"
     env_name = os.getenv("CROWN_ENV", "dev")
     version = os.getenv("APP_VERSION", "crown-0.3.0")
+    prod_deploy_tag = os.getenv("PROD_DEPLOY_TAG") or _FALLBACK_DEPLOY_TAG
 
     is_real_sha = build_sha not in ("local-dev", "unknown")
     github_commit_url = (
         f"https://github.com/{GITHUB_REPO}/commit/{build_sha}"
         if is_real_sha
+        else None
+    )
+    github_tag_url = (
+        f"https://github.com/{GITHUB_REPO}/releases/tag/{prod_deploy_tag}"
+        if prod_deploy_tag
         else None
     )
 
@@ -68,6 +77,8 @@ def integrity(request):
             "github_repo": GITHUB_REPO,
             "env": env_name,
             "version": version,
+            "prod_deploy_tag": prod_deploy_tag,
+            "github_tag_url": github_tag_url,
             "timestamp": timezone.now().isoformat(),
             "required_checks": REQUIRED_CHECKS,
             "meta_gates": META_GATES,

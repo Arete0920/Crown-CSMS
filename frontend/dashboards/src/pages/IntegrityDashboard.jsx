@@ -52,20 +52,57 @@ function CheckRow({ label, ok = true }) {
   );
 }
 
-function ShaLink({ sha, url }) {
-  const short = sha && sha !== 'local-dev' ? sha.slice(0, 7) : sha;
-  if (!url) {
-    return <code style={{ fontSize: 13, color: '#6b7280' }}>{short}</code>;
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
   }
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      style={{ fontFamily: 'monospace', fontSize: 13, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+    <button
+      onClick={handleCopy}
+      title="Copy full SHA"
+      style={{
+        marginLeft: 6,
+        padding: '1px 7px',
+        fontSize: 11,
+        fontFamily: 'monospace',
+        color: copied ? '#065f46' : '#6b7280',
+        background: copied ? '#d1fae5' : '#f3f4f6',
+        border: '1px solid',
+        borderColor: copied ? '#6ee7b7' : '#d1d5db',
+        borderRadius: 6,
+        cursor: 'pointer',
+        lineHeight: '18px',
+        transition: 'all 0.15s',
+      }}
     >
-      {short} ↗
-    </a>
+      {copied ? 'copied!' : 'copy'}
+    </button>
+  );
+}
+
+function ShaLink({ sha, url }) {
+  const short = sha && sha !== 'local-dev' ? sha.slice(0, 7) : sha;
+  const isReal = sha && sha !== 'local-dev';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 0 }}>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontFamily: 'monospace', fontSize: 13, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+        >
+          {short} ↗
+        </a>
+      ) : (
+        <code style={{ fontSize: 13, color: '#6b7280' }}>{short}</code>
+      )}
+      {isReal && <CopyButton text={sha} />}
+    </span>
   );
 }
 
@@ -123,6 +160,23 @@ export default function IntegrityDashboard() {
                   <tr>
                     <td style={{ padding: '6px 0', color: '#6b7280' }}>Checked at</td>
                     <td style={{ color: '#374151' }}>{timestamp}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '6px 0', color: '#6b7280' }}>Deploy tag</td>
+                    <td>
+                      {data.github_tag_url ? (
+                        <a
+                          href={data.github_tag_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ fontFamily: 'monospace', fontSize: 12, color: '#2563eb', textDecoration: 'none' }}
+                        >
+                          {data.prod_deploy_tag} ↗
+                        </a>
+                      ) : (
+                        <code style={{ fontSize: 12, color: '#6b7280' }}>{data.prod_deploy_tag}</code>
+                      )}
+                    </td>
                   </tr>
                   <tr>
                     <td style={{ padding: '6px 0', color: '#6b7280' }}>Repo</td>
