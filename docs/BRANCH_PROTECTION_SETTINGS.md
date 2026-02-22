@@ -83,3 +83,47 @@
 | Merge without review | ✅ Possible | ❌ Blocked |
 | Admin bypass | ✅ Possible | ❌ Blocked |
 | Stale review override | ✅ Possible | ❌ Auto-dismissed |
+
+## CI Gate Authoring Rules (Enforced)
+
+**Required checks must never be job-skipped on PRs.**
+
+GitHub maps a skipped job to `neutral`. A `neutral` result on a required check blocks merge permanently.
+
+### Rule
+
+> Required checks must produce `SUCCESS` or `FAILURE` on every PR, never `SKIPPED`.
+> Use **step-level** `if:` guards + a pass-through step for non-applicable branches.
+> Never use a **job-level** `if:` to gate required checks.
+
+### Correct Pattern
+
+```yaml
+jobs:
+  my-required-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pass (not applicable to this branch)
+        if: ${{ github.event.pull_request.head.ref != 'rc/target-branch' }}
+        run: echo "Gate not applicable -- passed."
+
+      - name: Real check step
+        if: ${{ github.event.pull_request.head.ref == 'rc/target-branch' }}
+        run: python tools/verify_something.py
+```
+
+### Anti-Pattern (Never Do This)
+
+```yaml
+jobs:
+  my-required-gate:
+    if: ${{ github.event.pull_request.head.ref == 'rc/target-branch' }}  # BLOCKS MERGE ON ALL OTHER PRs
+    runs-on: ubuntu-latest
+    steps:
+      - run: python tools/verify_something.py
+```
+
+### Incident Reference
+
+2026-02-22: `rc-promotion-gate` job-level `if:` caused `neutral` on PR #323, blocking merge.
+Fixed by moving filter to step-level with a pass-through step. Confirmed via proof PR #324 (all checks SUCCESS).
