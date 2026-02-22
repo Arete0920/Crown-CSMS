@@ -11,6 +11,8 @@ from .models import (
     UserAccount,
     UserRole,
     Enrollment,
+    CrownPermission,
+    RolePermission,
 )
 from .models import LedgerEntry, StudentTuition, TuitionPlan
 
@@ -82,6 +84,20 @@ class EnrollmentAdmin(admin.ModelAdmin):
     list_display = ("school", "student", "academic_year", "grade_level", "status", "start_date", "end_date")
     list_filter = ("school", "academic_year", "grade_level", "status")
     search_fields = ("student__last_name", "student__first_name", "student__student_number")
+
+
+@admin.register(CrownPermission)
+class CrownPermissionAdmin(admin.ModelAdmin):
+    list_display = ("code", "description")
+    search_fields = ("code",)
+
+
+@admin.register(RolePermission)
+class RolePermissionAdmin(admin.ModelAdmin):
+    list_display = ("role_code", "permission")
+    list_filter = ("role_code",)
+    search_fields = ("role_code", "permission__code")
+    autocomplete_fields = ("permission",)
 
 
 # Ensure finance-owned views do not appear under Core

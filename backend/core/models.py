@@ -352,5 +352,51 @@ class LedgerEntry(BaseModel):
         )
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# LAYER 1 — CROWN PERMISSION ENGINE
+#
+# CrownPermission  — authoritative list of capability codes
+# RolePermission   — maps role_code strings (from UserRole) to permissions
+#
+# Named "Crown" prefix to avoid collision with Django's built-in Permission
+# model from django.contrib.auth.
+# ──────────────────────────────────────────────────────────────────────────────
+
+class CrownPermission(BaseModel):
+    """
+    A discrete, named capability within the Crown platform.
+    Codes follow the pattern  <module>.<action>  e.g. "finance.view".
+    """
+    code = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["code"]
+
+    def __str__(self):
+        return self.code
+
+
+class RolePermission(BaseModel):
+    """
+    Grants a capability to everyone who holds a given role_code.
+    role_code values must match UserRole.ROLE_CODE_CHOICES; no FK enforced so
+    that new roles can be seeded before the choices list is updated.
+    """
+    role_code = models.CharField(max_length=50, db_index=True)
+    permission = models.ForeignKey(
+        CrownPermission,
+        on_delete=models.CASCADE,
+        related_name="role_permissions",
+    )
+
+    class Meta:
+        unique_together = ("role_code", "permission")
+        ordering = ["role_code", "permission__code"]
+
+    def __str__(self):
+        return f"{self.role_code} → {self.permission.code}"
+
+
 # Ensure SeedRun is registered under the core app
 from .models_seed import SeedRun  # noqa: E402,F401
