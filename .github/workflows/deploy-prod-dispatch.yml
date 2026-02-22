@@ -7,6 +7,8 @@ on:
         description: "Git tag to deploy"
         required: true
         type: string
+  repository_dispatch:
+    types: [prod_deploy]
 
 concurrency:
   group: crown-api-prod-deploy
@@ -26,6 +28,8 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_TAG: ${{ inputs.deploy_tag || github.event.client_payload.deploy_tag }}
     outputs:
       deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
       deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
@@ -34,13 +38,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.deploy_tag }}
+          ref: ${{ env.DEPLOY_TAG }}
           fetch-depth: 0
 
       - name: Guard: tag required and resolvable
         shell: pwsh
         run: |
-          ./tools/require_tag_input.ps1 -Tag "${{ inputs.deploy_tag }}"
+          ./tools/require_tag_input.ps1 -Tag "${{ env.DEPLOY_TAG }}"
 
       - name: Azure Login
         uses: azure/login@v1
