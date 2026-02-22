@@ -1,0 +1,356 @@
+﻿/* Crown Global Theme (safe: CSS-only, no behavior changes) */
+
+:root{
+  /* Core tokens */
+  --crown-bg: #0b1220;          /* deep navy */
+  --crown-surface: #0f1a2f;     /* elevated navy */
+  --crown-card: #111f3a;        /* card surface */
+  --crown-text: #e7eefc;        /* primary text */
+  --crown-muted: #b8c5e6;       /* secondary text */
+  --crown-subtle: rgba(231,238,252,.08);
+  --crown-border: rgba(231,238,252,.14);
+
+  --crown-gold: #d4af37;
+  --crown-gold-2: #f1d88a;
+
+  --crown-danger: #ff5d5d;
+  --crown-warn: #ffbf5f;
+  --crown-ok: #4ee18a;
+
+  --crown-radius: 14px;
+  --crown-radius-sm: 10px;
+  --crown-shadow: 0 10px 30px rgba(0,0,0,.35);
+
+  --crown-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+}
+
+/* Base */
+html, body{
+  height:100%;
+  background: radial-gradient(1200px 800px at 20% 0%, rgba(212,175,55,.10), transparent 55%),
+              radial-gradient(1000px 700px at 90% 10%, rgba(241,216,138,.08), transparent 50%),
+              var(--crown-bg);
+  color: var(--crown-text);
+  font-family: var(--crown-font);
+}
+
+a{ color: var(--crown-gold-2); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+*{ box-sizing: border-box; }
+
+/* Page shell helpers (if your app already uses these, it will instantly improve) */
+.crown-main{
+  padding: 20px 22px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.crown-section{
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border: 1px solid var(--crown-border);
+  border-radius: var(--crown-radius);
+  box-shadow: var(--crown-shadow);
+  padding: 16px 16px;
+}
+
+/* Typography */
+h1{
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 0 0 12px 0;
+  letter-spacing: .2px;
+}
+h2{
+  font-size: 16px;
+  margin: 18px 0 10px 0;
+  color: var(--crown-muted);
+  letter-spacing: .2px;
+}
+.crown-muted{ color: var(--crown-muted); }
+
+/* Buttons (covers existing .crown-btn patterns) */
+.crown-btn, button.crown-btn, a.crown-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--crown-border);
+  background: rgba(255,255,255,.06);
+  color: var(--crown-text);
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform .05s ease, background .15s ease, border-color .15s ease;
+}
+.crown-btn:hover{
+  background: rgba(255,255,255,.10);
+  border-color: rgba(212,175,55,.40);
+}
+.crown-btn:active{ transform: translateY(1px); }
+
+.crown-btn-primary{
+  border-color: rgba(212,175,55,.45);
+  background: linear-gradient(180deg, rgba(212,175,55,.25), rgba(212,175,55,.12));
+}
+.crown-btn-primary:hover{
+  background: linear-gradient(180deg, rgba(212,175,55,.32), rgba(212,175,55,.16));
+}
+
+/* Inputs */
+input, select, textarea{
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--crown-border);
+  color: var(--crown-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(212,175,55,.55);
+  box-shadow: 0 0 0 3px rgba(212,175,55,.16);
+}
+
+/* Tables (safe defaults) */
+table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border-radius: var(--crown-radius);
+  border: 1px solid var(--crown-border);
+  background: rgba(255,255,255,.04);
+}
+thead th{
+  text-align: left;
+  font-size: 12px;
+  color: var(--crown-muted);
+  background: rgba(255,255,255,.06);
+  border-bottom: 1px solid var(--crown-border);
+  padding: 10px 10px;
+}
+tbody td{
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(231,238,252,.08);
+}
+tbody tr:hover{
+  background: rgba(212,175,55,.06);
+}
+
+/* Cards (opt-in via class) */
+.crown-card{
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--crown-border);
+  border-radius: var(--crown-radius);
+  box-shadow: var(--crown-shadow);
+  padding: 14px 14px;
+}
+
+/* Badges */
+.crown-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--crown-border);
+  background: rgba(255,255,255,.06);
+  color: var(--crown-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.crown-badge.ok{ border-color: rgba(78,225,138,.35); color: rgba(78,225,138,.95); }
+.crown-badge.warn{ border-color: rgba(255,191,95,.35); color: rgba(255,191,95,.95); }
+.crown-badge.danger{ border-color: rgba(255,93,93,.35); color: rgba(255,93,93,.95); }
+
+/* Scrollbars (non-critical) */
+*::-webkit-scrollbar{ height: 10px; width: 10px; }
+*::-webkit-scrollbar-thumb{
+  background: rgba(231,238,252,.14);
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,.15);
+}
+
+/* --- Contrast hotfix (demo-safe) --- */
+
+/* Some pages likely have existing input/button CSS (crown.css) overriding colors.
+   Force readable foreground and visible borders using higher specificity + !important. */
+
+.crown-main input,
+.crown-main select,
+.crown-main textarea,
+.crown-section input,
+.crown-section select,
+.crown-section textarea,
+input, select, textarea{
+  color: var(--crown-text) !important;
+  background-color: rgba(255,255,255,.08) !important;
+  border-color: rgba(231,238,252,.22) !important;
+}
+
+input::placeholder,
+textarea::placeholder{
+  color: rgba(231,238,252,.55) !important;
+}
+
+/* Buttons: ensure text is readable even if background is overridden elsewhere */
+button,
+.crown-btn,
+a.crown-btn{
+  color: var(--crown-text) !important;
+  background-color: rgba(255,255,255,.08) !important;
+  border-color: rgba(231,238,252,.22) !important;
+}
+
+/* Primary button: keep gold intent but ensure contrast */
+.crown-btn-primary{
+  color: var(--crown-text) !important;
+  background: linear-gradient(180deg, rgba(212,175,55,.30), rgba(212,175,55,.16)) !important;
+  border-color: rgba(212,175,55,.55) !important;
+}
+
+/* Dropdown arrow / calendar indicators (Windows/Chrome quirks) */
+select{
+  color-scheme: dark;
+}
+
+/* If any page sets a white background on inputs, keep text dark readable */
+input[style*="background: white"],
+input[style*="background-color: white"],
+textarea[style*="background: white"],
+textarea[style*="background-color: white"]{
+  color: #0b1220 !important;
+}
+
+
+
+/* --- Crown Inputs & Autofill (consolidated v2v5, behavior-preserving) --- */
+
+/* Global input/readability baseline */
+input, select, textarea{
+  color: var(--crown-text) !important;
+  caret-color: var(--crown-text) !important;
+  -webkit-text-fill-color: var(--crown-text) !important;
+
+  /* Dark field surface to avoid light-on-light across pages */
+  background-color: rgba(14,18,32,.55) !important;
+  border: 1px solid rgba(231,238,252,.22) !important;
+}
+
+input::placeholder,
+textarea::placeholder{
+  color: rgba(231,238,252,.55) !important;
+  -webkit-text-fill-color: rgba(231,238,252,.55) !important;
+  opacity: 1 !important;
+}
+
+select{
+  background-color: rgba(14,18,32,.55) !important;
+}
+
+/* Chrome/Edge autofill neutralization */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus{
+  -webkit-text-fill-color: var(--crown-text) !important;
+  caret-color: var(--crown-text) !important;
+  transition: background-color 999999s ease-in-out 0s;
+  box-shadow: 0 0 0px 1000px rgba(14,18,32,.55) inset !important;
+  border: 1px solid rgba(231,238,252,.22) !important;
+}
+
+/* Disabled/readonly states should still be readable */
+input:disabled, select:disabled, textarea:disabled,
+input[readonly], select[readonly], textarea[readonly]{
+  opacity: .85;
+  color: var(--crown-text) !important;
+  -webkit-text-fill-color: var(--crown-text) !important;
+}
+
+/* Table-context specificity bump (Attendance + other table-heavy pages) */
+html body table input,
+html body table select,
+html body table textarea,
+html body .crown-table input,
+html body .crown-table select,
+html body .crown-table textarea{
+  color: var(--crown-text) !important;
+  caret-color: var(--crown-text) !important;
+  -webkit-text-fill-color: var(--crown-text) !important;
+
+  background-color: rgba(14,18,32,.55) !important;
+  border: 1px solid rgba(231,238,252,.22) !important;
+}
+
+html body table input::placeholder,
+html body table textarea::placeholder,
+html body .crown-table input::placeholder,
+html body .crown-table textarea::placeholder{
+  color: rgba(231,238,252,.55) !important;
+  -webkit-text-fill-color: rgba(231,238,252,.55) !important;
+  opacity: 1 !important;
+}
+
+html body table input:-webkit-autofill,
+html body table input:-webkit-autofill:hover,
+html body table input:-webkit-autofill:focus,
+html body table textarea:-webkit-autofill,
+html body table textarea:-webkit-autofill:hover,
+html body table textarea:-webkit-autofill:focus,
+html body table select:-webkit-autofill,
+html body table select:-webkit-autofill:hover,
+html body table select:-webkit-autofill:focus{
+  -webkit-text-fill-color: var(--crown-text) !important;
+  caret-color: var(--crown-text) !important;
+  transition: background-color 999999s ease-in-out 0s;
+  box-shadow: 0 0 0px 1000px rgba(14,18,32,.55) inset !important;
+  border: 1px solid rgba(231,238,252,.22) !important;
+}
+
+/* Attendance-only override (uses stronger surface: .70) */
+.crown-attendance input,
+.crown-attendance select,
+.crown-attendance textarea{
+  color: var(--crown-text) !important;
+  caret-color: var(--crown-text) !important;
+  -webkit-text-fill-color: var(--crown-text) !important;
+
+  background-color: rgba(14,18,32,.70) !important;
+  border: 1px solid rgba(231,238,252,.22) !important;
+}
+
+.crown-attendance select{
+  background-color: rgba(14,18,32,.70) !important;
+}
+
+.crown-attendance input::placeholder,
+.crown-attendance textarea::placeholder{
+  color: rgba(231,238,252,.55) !important;
+  -webkit-text-fill-color: rgba(231,238,252,.55) !important;
+  opacity: 1 !important;
+}
+
+.crown-attendance input:-webkit-autofill,
+.crown-attendance input:-webkit-autofill:hover,
+.crown-attendance input:-webkit-autofill:focus,
+.crown-attendance textarea:-webkit-autofill,
+.crown-attendance textarea:-webkit-autofill:hover,
+.crown-attendance textarea:-webkit-autofill:focus,
+.crown-attendance select:-webkit-autofill,
+.crown-attendance select:-webkit-autofill:hover,
+.crown-attendance select:-webkit-autofill:focus{
+  -webkit-text-fill-color: var(--crown-text) !important;
+  caret-color: var(--crown-text) !important;
+  transition: background-color 999999s ease-in-out 0s;
+  box-shadow: 0 0 0px 1000px rgba(14,18,32,.70) inset !important;
+  border: 1px solid rgba(231,238,252,.22) !important;
+}
+
+/* --- end consolidated section --- */
+
+

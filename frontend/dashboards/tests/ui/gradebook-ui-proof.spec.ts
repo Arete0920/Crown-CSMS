@@ -1,16 +1,15 @@
 import { test, expect } from "@playwright/test";
 
-const BASE_URL = process.env.CROWN_UI_URL ?? "http://localhost:3000";
-const API_BASE = process.env.API_BASE_URL ?? "http://127.0.0.1:8000";
-
-const USERNAME = "head@crown-demo.local";
-const PASSWORD = "demo1234";
-const SCHOOL_ID = "b45b8c5a-6708-4597-aad9-a226627b2962";
+const TEST_USER = process.env.CROWN_TEST_USER ?? "teacher";
+const TEST_PASS = process.env.CROWN_TEST_PASS ?? "Crown2026!";
+const TEST_SCHOOL_ID = process.env.CROWN_TEST_SCHOOL_ID ?? "19801b59-8c05-4c84-9312-5d792e4e839d";
+const TEST_API_BASE = process.env.CROWN_TEST_API_BASE ?? "http://127.0.0.1:8000";
+const TEST_UI_BASE = process.env.CROWN_TEST_UI_BASE ?? "http://localhost:3000";
 
 test("gradebook loads assignments and rows with FK-backed data", async ({ page, request }) => {
   // Step 1: Acquire JWT via API
-  const loginResp = await request.post(`${API_BASE}/api/v1/auth/token/`, {
-    data: { username: USERNAME, password: PASSWORD },
+  const loginResp = await request.post(`${TEST_API_BASE}/api/v1/auth/token/`, {
+    data: { username: TEST_USER, password: TEST_PASS },
   });
   const authData: any = await loginResp.json();
   const token = authData?.access ?? authData?.token;
@@ -28,7 +27,7 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
       localStorage.setItem("crown.jwt.access", token);
       localStorage.setItem("crown.school.id", schoolId);
     },
-    { token, schoolId: SCHOOL_ID }
+    { token, schoolId: TEST_SCHOOL_ID }
   );
 
   // Step 3: Track API calls and log errors
@@ -59,7 +58,7 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
   });
 
   // Step 4: Navigate directly to gradebook (token is already injected)
-  await page.goto(`${BASE_URL}/gradebook`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${TEST_UI_BASE}/gradebook`, { waitUntil: "domcontentloaded" });
 
   // Step 4.5: Wait for page to auto-select first section and load grades (with extra time)
   await page.waitForTimeout(2000);

@@ -85,7 +85,7 @@ else:
     CSRF_TRUSTED_ORIGINS = []
 
 # CORS configuration for local development
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = _env_bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-school-id",

@@ -9,7 +9,7 @@ import React from "react";
  *   right    – JSX slotted to the top-right of the page header
  *   children – page body
  */
-export default function CrownLayout({ title, subtitle, right, children }) {
+export default function CrownLayout({ title, subtitle, right, children, mainClassName = "" }) {
   return (
     <div className="crown-app">
       <aside className="crown-sidebar">
@@ -27,7 +27,7 @@ export default function CrownLayout({ title, subtitle, right, children }) {
         </div>
       </aside>
 
-      <main className="crown-main">
+      <main className={`crown-main ${mainClassName}`.trim()}>
         {(title || subtitle || right) && (
           <div className="crown-pagehead">
             <div>
