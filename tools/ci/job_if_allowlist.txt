@@ -1,0 +1,4 @@
+# Allowlist for job-level `if:` rules that reference PR branch conditions.
+# Format: <workflow_filename>:<job_id>
+# Example:
+# rc-promotion-gate.yml:rc-promotion-gate
