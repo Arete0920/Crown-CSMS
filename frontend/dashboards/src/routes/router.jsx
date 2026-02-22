@@ -29,6 +29,7 @@ import RoleHomeRedirect from '../pages/RoleHomeRedirect.jsx';
 import TeacherAttendancePage from '../pages/TeacherAttendancePage.jsx';
 import ParentAttendancePage from '../pages/ParentAttendancePage.jsx';
 import { LoginPage } from '../pages/LoginPage.jsx';
+import IntegrityDashboard from '../pages/IntegrityDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -126,6 +127,10 @@ export const router = createBrowserRouter([
   {
     path: '/parent/students/:id',
     element: <ParentStudent360Page />,
+  },
+  {
+    path: '/integrity',
+    element: <IntegrityDashboard />,
   },
 ]);
 
