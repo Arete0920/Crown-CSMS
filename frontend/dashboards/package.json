@@ -13,7 +13,8 @@
     "ui:proof:gradebook": "playwright test tests/ui/gradebook-ui-proof.spec.ts --reporter=line",
     "ui:proof:nav": "playwright test tests/ui/nav-role-routing.spec.ts --reporter=line",
     "ui:proof:matrix": "playwright test tests/ui/role-dashboard-matrix.spec.ts --reporter=line",
-    "ui:proof:matrix-pack-2": "playwright test tests/ui/role-dashboard-matrix-pack-2.spec.ts --reporter=line"
+    "ui:proof:matrix-pack-2": "playwright test tests/ui/role-dashboard-matrix-pack-2.spec.ts --reporter=line",
+    "ui:proof:matrix-pack-3": "playwright test tests/ui/role-dashboard-matrix-pack-3.spec.ts --reporter=line"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
