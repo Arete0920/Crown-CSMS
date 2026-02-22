@@ -30,6 +30,9 @@ from crown_api.metrics_views import (
     teacher_metrics, parent_metrics, student_metrics,
     it_metrics, financial_aid_metrics, marketing_metrics,
     spiritual_life_metrics, office_metrics,
+    health_metrics, counseling_metrics, food_metrics,
+    athletics_metrics, advancement_metrics, transportation_metrics,
+    facilities_metrics, security_metrics,
 )
 from crown_api.views_students import student_detail, students_list
 from crown_api.views_academics import student_attendance_list, student_grades_list
@@ -54,6 +57,14 @@ urlpatterns = [
     path('marketing/metrics/',      marketing_metrics,      name='marketing-metrics'),
     path('spiritual-life/metrics/', spiritual_life_metrics, name='spiritual-life-metrics'),
     path('office/metrics/',         office_metrics,         name='office-metrics'),
+    path('health/metrics/',         health_metrics,         name='health-metrics'),
+    path('counseling/metrics/',     counseling_metrics,     name='counseling-metrics'),
+    path('food/metrics/',           food_metrics,           name='food-metrics'),
+    path('athletics/metrics/',      athletics_metrics,      name='athletics-metrics'),
+    path('advancement/metrics/',    advancement_metrics,    name='advancement-metrics'),
+    path('transportation/metrics/', transportation_metrics, name='transportation-metrics'),
+    path('facilities/metrics/',     facilities_metrics,     name='facilities-metrics'),
+    path('security/metrics/',       security_metrics,       name='security-metrics'),
 
     path('360/', include('student360.api.urls')),
     path('comms/', include('comms.api.urls')),
