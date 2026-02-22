@@ -648,8 +648,318 @@ def security_metrics(request):
         "alerts": [
             {"label": "Camera #7 offline — main hall west blind spot",        "severity": "red"},
             {"label": "3 door access exceptions logged — review required",    "severity": "yellow"},
-            {"label": "Next required drill Mar 5 — logistics not confirmed",  "severity": "yellow"},
-            {"label": "Annual safety checklist review due March 31",          "severity": "gray"},
+            {"label": "Next required drill Mar 5 — logistics not confirmed",    "severity": "yellow"},
+            {"label": "Annual safety checklist review due March 31",           "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def academic_support_metrics(request):
+    """Academic Support / SPED dashboard — IEPs, accommodations, caseload.
+    Privacy rule: all student references use opaque IDs, never names."""
+    return JsonResponse({
+        "students_on_iep":       47,
+        "upcoming_reviews":      9,
+        "accommodations_active": 112,
+        "referrals_pending":     4,
+        "iep_reviews": [
+            {"student_id": "STU-0441", "type": "Annual Review",    "due_date": "Mar 4",  "status": "pending"},
+            {"student_id": "STU-0221", "type": "Re-evaluation",    "due_date": "Mar 11", "status": "in_progress"},
+            {"student_id": "STU-0388", "type": "Annual Review",    "due_date": "Mar 18", "status": "pending"},
+            {"student_id": "STU-0092", "type": "Initial Eval",     "due_date": "Mar 25", "status": "pending"},
+            {"student_id": "STU-0567", "type": "504 Update",       "due_date": "Apr 1",  "status": "pending"},
+        ],
+        "accommodations_by_grade": [
+            {"grade": "K",  "count": 8,  "pct": 32},
+            {"grade": "1",  "count": 11, "pct": 44},
+            {"grade": "2",  "count": 14, "pct": 56},
+            {"grade": "3",  "count": 12, "pct": 48},
+            {"grade": "4",  "count": 18, "pct": 72},
+            {"grade": "5",  "count": 15, "pct": 60},
+            {"grade": "6",  "count": 9,  "pct": 36},
+            {"grade": "7",  "count": 13, "pct": 52},
+            {"grade": "8",  "count": 12, "pct": 48},
+        ],
+        "caseload": [
+            {"specialist": "Ms. Rivera",   "active_plans": 18, "pending_reviews": 3},
+            {"specialist": "Mr. Chen",     "active_plans": 15, "pending_reviews": 4},
+            {"specialist": "Ms. Johnson",  "active_plans": 14, "pending_reviews": 2},
+        ],
+        "alerts": [
+            {"label": "4 IEP annual reviews due before Mar 31 — schedule meetings",   "severity": "red"},
+            {"label": "STU-0221 re-evaluation window closes Mar 11",               "severity": "yellow"},
+            {"label": "Grade 4 accommodation rate 72% — verify documentation",     "severity": "yellow"},
+            {"label": "2 referrals pending initial eligibility determination",     "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def fine_arts_metrics(request):
+    """Fine Arts Director dashboard — performances, ensembles, equipment."""
+    return JsonResponse({
+        "enrolled_students":     186,
+        "performances_this_term": 4,
+        "equipment_needs":        3,
+        "parent_volunteers":      22,
+        "performances": [
+            {"event": "Spring Arts Showcase",  "date": "Mar 14", "venue": "Main Auditorium", "status": "confirmed"},
+            {"event": "Band Concert",          "date": "Apr 2",  "venue": "Main Auditorium", "status": "scheduled"},
+            {"event": "Drama Production",      "date": "Apr 24", "venue": "Black Box",       "status": "scheduled"},
+            {"event": "Year-End Recital",      "date": "May 19", "venue": "Main Auditorium", "status": "pending"},
+        ],
+        "ensembles": [
+            {"name": "Concert Band",       "students": 48, "pct": 80},
+            {"name": "Choir",              "students": 62, "pct": 100},
+            {"name": "Orchestra",          "students": 31, "pct": 52},
+            {"name": "Drama Club",         "students": 28, "pct": 47},
+            {"name": "Visual Arts Studio", "students": 17, "pct": 28},
+        ],
+        "equipment_list": [
+            {"item": "Trombone (replacement)",   "qty": 2, "est_cost": "$1,200", "priority": "high"},
+            {"item": "Art supply restock",       "qty": 1, "est_cost": "$340",   "priority": "medium"},
+            {"item": "Microphone stand set",     "qty": 4, "est_cost": "$200",   "priority": "low"},
+        ],
+        "alerts": [
+            {"label": "Spring Arts Showcase venue contract unsigned — due Feb 28",  "severity": "red"},
+            {"label": "2 replacement trombones needed before Mar 14 concert",    "severity": "yellow"},
+            {"label": "Parent volunteer sign-up open for Apr 2 concert",         "severity": "gray"},
+            {"label": "Year-End Recital budget request due Apr 1",               "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def library_metrics(request):
+    """Library / Media Center dashboard — circulation, collection, digital resources."""
+    return JsonResponse({
+        "books_checked_out":       248,
+        "overdue_items":           17,
+        "new_materials_this_month": 34,
+        "digital_resources_active": 6,
+        "overdue_list": [
+            {"borrower_id": "B-0441", "title": "The Giver",            "due_date": "Feb 8",  "days_overdue": 14},
+            {"borrower_id": "B-0092", "title": "Hatchet",             "due_date": "Feb 12", "days_overdue": 10},
+            {"borrower_id": "B-0388", "title": "Number the Stars",    "due_date": "Feb 15", "days_overdue":  7},
+            {"borrower_id": "B-0221", "title": "Charlotte's Web",     "due_date": "Feb 18", "days_overdue":  4},
+            {"borrower_id": "B-0567", "title": "Bridge to Terabithia","due_date": "Feb 19", "days_overdue":  3},
+        ],
+        "collection_by_category": [
+            {"category": "Fiction",        "count": 4200, "pct": 100},
+            {"category": "Non-Fiction",    "count": 2800, "pct": 67},
+            {"category": "Reference",      "count": 640,  "pct": 15},
+            {"category": "Graphic Novels", "count": 310,  "pct": 7},
+            {"category": "Periodicals",    "count": 85,   "pct": 2},
+        ],
+        "digital_resources": [
+            {"name": "Sora (eBooks)",         "licenses": 200, "usage_mtd": 142},
+            {"name": "encyclopedia Britannica","licenses":  50, "usage_mtd":  38},
+            {"name": "PebbleGo",              "licenses": 100, "usage_mtd":  87},
+            {"name": "Newsela",               "licenses": 300, "usage_mtd": 211},
+            {"name": "Follett Destiny",        "licenses":   1, "usage_mtd": "N/A"},
+            {"name": "Khan Academy",           "licenses": 500, "usage_mtd": 388},
+        ],
+        "alerts": [
+            {"label": "17 overdue items — 2 exceed 14 days",                "severity": "red"},
+            {"label": "Sora license utilization at 71% — consider expansion","severity": "yellow"},
+            {"label": "34 new materials catalogued this month",             "severity": "gray"},
+            {"label": "Annual weeding review scheduled for April",          "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def extended_care_metrics(request):
+    """Extended Care / Aftercare dashboard — roster, staff, trends.
+    Privacy rule: show aggregate program counts only, no student names."""
+    return JsonResponse({
+        "enrolled_today":   74,
+        "staff_ratio":      "1:8",
+        "incidents_week":    1,
+        "invoices_pending": 12,
+        "roster_summary": [
+            {"program": "AM Care (7:00–8:00)",    "enrolled": 18, "present": 16, "late_pickup": 0},
+            {"program": "PM Care (3:00–5:00)",    "enrolled": 42, "present": 39, "late_pickup": 2},
+            {"program": "PM Care (5:00–6:00)",    "enrolled": 14, "present": 12, "late_pickup": 1},
+        ],
+        "staff_schedule": [
+            {"name": "T. Williams",  "shift": "7:00–9:00 AM",  "program": "AM Care",   "status": "present"},
+            {"name": "L. Garcia",    "shift": "2:30–5:30 PM",  "program": "PM Care",   "status": "present"},
+            {"name": "R. Thompson",  "shift": "2:30–6:00 PM",  "program": "PM Care",   "status": "present"},
+            {"name": "M. Patel",     "shift": "4:30–6:00 PM",  "program": "PM Late",   "status": "present"},
+        ],
+        "weekly_trend": [
+            {"day": "Monday",    "count": 68, "pct": 92},
+            {"day": "Tuesday",   "count": 71, "pct": 96},
+            {"day": "Wednesday", "count": 74, "pct": 100},
+            {"day": "Thursday",  "count": 70, "pct": 95},
+            {"day": "Friday",    "count": 52, "pct": 70},
+        ],
+        "alerts": [
+            {"label": "2 late pickups today — guardian contact required by 6:15 PM", "severity": "yellow"},
+            {"label": "12 unpaid invoices for Feb — billing reminder due",           "severity": "yellow"},
+            {"label": "Staff:child ratio compliant across all programs",              "severity": "gray"},
+            {"label": "Spring break coverage plan due March 1",                       "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def registrar_metrics(request):
+    """Registrar / Records dashboard — enrollment, requests, transcripts, holds."""
+    return JsonResponse({
+        "enrollment_total":       412,
+        "pending_requests":         8,
+        "transcripts_issued_mtd":  23,
+        "holds_active":             3,
+        "pending_requests_list": [
+            {"type": "Records Transfer",   "submitted": "Feb 18", "target_date": "Feb 28", "status": "in_progress"},
+            {"type": "Transcript Request", "submitted": "Feb 19", "target_date": "Feb 26", "status": "pending"},
+            {"type": "Enrollment Verify",  "submitted": "Feb 20", "target_date": "Feb 27", "status": "pending"},
+            {"type": "Records Transfer",   "submitted": "Feb 21", "target_date": "Mar 3",  "status": "hold"},
+            {"type": "Transcript Request", "submitted": "Feb 22", "target_date": "Feb 29", "status": "pending"},
+        ],
+        "transcript_queue": [
+            {"destination_type": "High School",   "count": 9,  "avg_days": 3.2},
+            {"destination_type": "College",       "count": 6,  "avg_days": 4.1},
+            {"destination_type": "Transfer",      "count": 5,  "avg_days": 2.9},
+            {"destination_type": "Other",         "count": 3,  "avg_days": 5.0},
+        ],
+        "new_enrollments_by_grade": [
+            {"grade": "K",  "count": 4, "pct": 80},
+            {"grade": "1",  "count": 2, "pct": 40},
+            {"grade": "3",  "count": 1, "pct": 20},
+            {"grade": "5",  "count": 3, "pct": 60},
+            {"grade": "7",  "count": 1, "pct": 20},
+            {"grade": "8",  "count": 2, "pct": 40},
+        ],
+        "alerts": [
+            {"label": "3 enrollment holds require admin clearance before records release","severity": "red"},
+            {"label": "5 pending requests unacknowledged for 3+ days",                  "severity": "yellow"},
+            {"label": "23 transcripts issued MTD — on pace",                            "severity": "gray"},
+            {"label": "Year-end enrollment census due April 15",                        "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def communications_metrics(request):
+    """Communications Director dashboard — campaigns, engagement, announcements."""
+    return JsonResponse({
+        "messages_sent_week":       1840,
+        "open_rate_pct":             64,
+        "announcements_scheduled":    5,
+        "unsubscribes_week":           3,
+        "campaigns": [
+            {"name": "Feb Newsletter",        "sent": "Feb 14", "open_rate": "68%", "status": "sent"},
+            {"name": "Spring Break Reminder", "sent": "Feb 21", "open_rate": "72%", "status": "sent"},
+            {"name": "March Events Digest",   "sent": "Mar 1",  "open_rate": "—",    "status": "scheduled"},
+            {"name": "Fundraiser Kickoff",    "sent": "TBD",    "open_rate": "—",    "status": "draft"},
+        ],
+        "channel_engagement": [
+            {"channel": "Email",       "open_rate": "64%", "pct": 64},
+            {"channel": "Push (App)",  "open_rate": "41%", "pct": 41},
+            {"channel": "SMS",         "open_rate": "89%", "pct": 89},
+            {"channel": "Web Banner",  "open_rate": "22%", "pct": 22},
+        ],
+        "upcoming_announcements": [
+            {"subject": "Spring Break Schedule",  "audience": "All Families",     "scheduled": "Feb 28",  "status": "scheduled"},
+            {"subject": "March Hot Lunch Menu",   "audience": "All Families",     "scheduled": "Mar 1",   "status": "scheduled"},
+            {"subject": "Teacher Appreciation",  "audience": "Parent Group",     "scheduled": "Mar 10",  "status": "scheduled"},
+            {"subject": "Board Meeting Reminder","audience": "Board Members",    "scheduled": "Mar 14",  "status": "scheduled"},
+            {"subject": "Fundraiser Launch",      "audience": "All Families",     "scheduled": "TBD",     "status": "draft"},
+        ],
+        "alerts": [
+            {"label": "Fundraiser Kickoff campaign content missing — due Feb 28",       "severity": "red"},
+            {"label": "3 unsubscribes this week — monitor deliverability",             "severity": "yellow"},
+            {"label": "SMS engagement at 89% — consider SMS-first for urgent comms",  "severity": "gray"},
+            {"label": "App push notification opt-in rate below 50%",                  "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def pd_metrics(request):
+    """PD / Staff Development dashboard — sessions, certifications, completion."""
+    return JsonResponse({
+        "sessions_this_month":      6,
+        "staff_hours_logged":      142,
+        "certifications_expiring":   4,
+        "satisfaction_avg":         4.3,
+        "upcoming_sessions": [
+            {"title": "Differentiated Instruction",   "date": "Mar 4",  "facilitator": "Dr. Kim",     "registered": 24, "status": "upcoming"},
+            {"title": "Restorative Practices",        "date": "Mar 11", "facilitator": "Ms. Torres",  "registered": 18, "status": "upcoming"},
+            {"title": "Data-Driven Instruction",      "date": "Mar 18", "facilitator": "Mr. Hayes",   "registered": 21, "status": "upcoming"},
+            {"title": "Google Workspace Advanced",    "date": "Mar 25", "facilitator": "Tech Team",   "registered":  9, "status": "upcoming"},
+        ],
+        "certifications": [
+            {"name": "First Aid / CPR",           "staff_count": 38, "expiring_90d": 4},
+            {"name": "Mandated Reporter",          "staff_count": 42, "expiring_90d": 0},
+            {"name": "Safe Environment (VIRTUS)",  "staff_count": 42, "expiring_90d": 2},
+            {"name": "ALICE / Safety Training",   "staff_count": 40, "expiring_90d": 1},
+        ],
+        "completion_by_dept": [
+            {"dept": "Elementary",   "pct": 92},
+            {"dept": "Middle School","pct": 84},
+            {"dept": "Specials",     "pct": 78},
+            {"dept": "Support Staff","pct": 71},
+            {"dept": "Admin",        "pct": 100},
+        ],
+        "alerts": [
+            {"label": "4 First Aid/CPR certifications expire within 90 days",          "severity": "red"},
+            {"label": "Support Staff PD completion at 71% — below 80% target",         "severity": "yellow"},
+            {"label": "2 VIRTUS renewals due Q2 — schedule sessions",                  "severity": "yellow"},
+            {"label": "Overall satisfaction avg 4.3/5 across Feb sessions",            "severity": "gray"},
+        ],
+        "snapshot_date": _today(),
+    })
+
+
+@require_http_methods(["GET"])
+def student_services_metrics(request):
+    """Student Services dashboard — lunch balances, applications, active services.
+    Privacy rule: aggregate grade-level counts only, no individual records."""
+    return JsonResponse({
+        "lunch_balance_alerts":   31,
+        "unpaid_balances_total": 1140,
+        "applications_pending":    7,
+        "services_active":        89,
+        "balance_alerts_by_grade": [
+            {"grade": "K",  "below_five": 3, "at_zero": 1, "severity": "warning"},
+            {"grade": "1",  "below_five": 4, "at_zero": 2, "severity": "critical"},
+            {"grade": "2",  "below_five": 5, "at_zero": 1, "severity": "warning"},
+            {"grade": "3",  "below_five": 2, "at_zero": 0, "severity": "info"},
+            {"grade": "4",  "below_five": 4, "at_zero": 1, "severity": "warning"},
+            {"grade": "5",  "below_five": 3, "at_zero": 0, "severity": "info"},
+            {"grade": "6",  "below_five": 4, "at_zero": 2, "severity": "critical"},
+            {"grade": "7",  "below_five": 3, "at_zero": 1, "severity": "warning"},
+            {"grade": "8",  "below_five": 3, "at_zero": 1, "severity": "warning"},
+        ],
+        "services_by_type": [
+            {"type": "Free / Reduced Lunch",    "count": 48, "pct": 100},
+            {"type": "Before Care Subsidy",     "count": 12, "pct": 25},
+            {"type": "Tutoring Support",        "count": 19, "pct": 40},
+            {"type": "Uniform Assistance",      "count": 10, "pct": 21},
+        ],
+        "pending_applications": [
+            {"service_type": "Free Lunch",       "count": 3, "oldest_days": 5},
+            {"service_type": "Reduced Lunch",    "count": 2, "oldest_days": 12},
+            {"service_type": "Before Care Sub.","count": 1, "oldest_days": 8},
+            {"service_type": "Uniform Assist.", "count": 1, "oldest_days": 3},
+        ],
+        "alerts": [
+            {"label": "2 Free/Reduced Lunch applications unreviewed for 12+ days",       "severity": "red"},
+            {"label": "Grade 1 + Grade 6 have 2 zero-balance accounts each",             "severity": "yellow"},
+            {"label": "31 accounts below $5 — automated reminder batch queued",          "severity": "yellow"},
+            {"label": "7 open service applications pending review",                       "severity": "gray"},
         ],
         "snapshot_date": _today(),
     })
