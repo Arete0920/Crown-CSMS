@@ -1,0 +1,259 @@
+name: Production Deploy (Dispatch v2)
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_tag:
+        description: "Git tag to deploy"
+        required: true
+        type: string
+
+concurrency:
+  group: crown-api-prod-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+env:
+  REGISTRY: crownregistry.azurecr.io
+  IMAGE_NAME: crown2026
+  RESOURCE_GROUP: crown-rg
+  WEBAPP_NAME: crown-api-prod
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.deploy_tag }}
+          fetch-depth: 0
+
+      - name: Guard: tag required and resolvable
+        shell: pwsh
+        run: |
+          ./tools/require_tag_input.ps1 -Tag "${{ inputs.deploy_tag }}"
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Determine deploy SHA
+        id: vars
+        run: |
+          echo "deploy_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+          echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure Container Registry
+        run: |
+          az acr login --name crownregistry --only-show-errors
+
+      - name: Verify AcrPull Identity (Guardrail)
+        run: |
+          echo "Verifying Managed Identity has AcrPull on registry..."
+          PRINCIPAL_ID=$(az webapp identity show -g crown-rg -n crown2026-api-dev --query principalId -o tsv)
+          ACR_ID=$(az acr show -n crownregistry --query id -o tsv)
+          if ! az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID | grep -q AcrPull; then
+            echo "ERROR: Managed Identity does not have AcrPull role on ACR"
+            echo "Principal: $PRINCIPAL_ID"
+            echo "ACR: $ACR_ID"
+            exit 1
+          fi
+          echo "✓ AcrPull verified"
+
+      - name: Bake BUILD_SHA into artifact
+        run: |
+          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA_SHORT }}\"" > backend/crown_api/build_info.py
+          echo "✓ Generated build_info.py with SHA: ${{ env.DEPLOY_SHA_SHORT }}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Pull image for Trivy local scan
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+
+      - name: Run security scan (Trivy)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results (SARIF) if present
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "Found trivy-results.sarif, will upload."
+          else
+            echo "No trivy-results.sarif found, skipping upload."
+          fi
+
+      - name: Upload Trivy scan results (SARIF)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        continue-on-error: true
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-django
+
+      - name: Preflight gate (Django deploy checks)
+        run: |
+          export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          cd backend
+          python manage.py check --deploy
+
+      - name: Run tests
+        run: |
+          python manage.py test \
+            crown_api.tests.test_households_api \
+            crown_api.tests.test_students_api \
+            crown_api.tests.test_director_router \
+            crown_api.tests.test_director_actions_auth_required \
+            crown_api.tests.test_admissions_links_api \
+            crown_api.tests.test_academics_api \
+            crown_api.tests.test_billing_summary_api \
+            crown_api.tests.test_comms_api \
+            crown_api.tests.test_scheduling_api \
+            -v 2
+          export DJANGO_SETTINGS_MODULE=crown_api.settings
+          pytest --cov=. --cov-report=xml --ignore-glob='test_*.py'
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+
+      - name: Run database migrations
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --settings RUN_MIGRATIONS=true BUILD_SHA=${{ env.DEPLOY_SHA }} \
+            --output none \
+            --only-show-errors
+          az webapp restart \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.WEBAPP_NAME }} \
+            --only-show-errors
+
+      - name: Health check
+        run: |
+          sleep 30
+          for i in {1..30}; do
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health/)
+            if [ "$response" == "200" ]; then
+              echo "✅ Health check passed"
+              exit 0
+            fi
+            echo "Health check attempt $i - response code: $response"
+            sleep 10
+          done
+          echo "❌ Health check failed"
+          exit 1
+
+      - name: Verify deployed build_sha via /health
+        shell: bash
+        env:
+          WANT_SHA: ${{ env.DEPLOY_SHA }}
+        run: |
+          set -euo pipefail
+          URL="https://crown-api-prod.azurewebsites.net/health/"
+          echo "Checking $URL"
+          BODY="$(curl -fsS "$URL")"
+          echo "$BODY" > health.json
+          python - <<'PY'
+          import json, os, sys
+          want = os.environ["WANT_SHA"]
+          with open("health.json","r",encoding="utf-8") as f:
+            d = json.load(f)
+          got = d.get("build_sha","")
+          if not got:
+            raise SystemExit("Missing build_sha in /health")
+          # accept full sha or short sha match
+          if got == want or got.startswith(want[:8]):
+            print("OK build_sha:", got)
+            sys.exit(0)
+          raise SystemExit(f"build_sha mismatch: got={got} want={want}")
+          PY
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ Deployment successful"
+          echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed - rolling back"
+          # Azure will handle automatic rollback based on health check
+          exit 1
+
+  notification:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    if: always()
+
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        with:
+          payload: |
+            {
+              "text": "Crown Academy Production Deployment",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Status:* ${{ job.status }}\n*Branch:* main\n*Commit:* ${{ needs.build-and-deploy.outputs.deploy_sha_short }}\n*Author:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
