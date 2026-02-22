@@ -1,14 +1,9 @@
 name: Production Deploy
 
-# touch: reindex workflow_dispatch 2026-02-22T05:11:52
-
 on:
-  workflow_dispatch:
-    inputs:
-      deploy_tag:
-        description: "REQUIRED: Git tag to deploy (e.g., v0.4.0-rc1)"
-        required: true
-        type: string
+  push:
+    tags:
+      - "prod-deploy-*"
 
 concurrency:
   group: crown-api-prod-deploy
@@ -20,6 +15,7 @@ permissions:
   security-events: write
 
 env:
+  DEPLOY_TAG: ${{ github.ref_name }}
   REGISTRY: crownregistry.azurecr.io
   IMAGE_NAME: crown2026
   RESOURCE_GROUP: crown-rg
@@ -36,13 +32,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.deploy_tag }}
+          ref: ${{ env.DEPLOY_TAG }}
           fetch-depth: 0
+
+      - name: Guard: tag name must match prod-deploy-*
+        shell: bash
+        run: |
+          echo "DEPLOY_TAG=${DEPLOY_TAG}"
+          if [[ "${DEPLOY_TAG}" != prod-deploy-* ]]; then
+            echo "ERROR: refusing prod deploy; tag must start with prod-deploy-"
+            exit 1
+          fi
 
       - name: Guard: tag required and resolvable
         shell: pwsh
         run: |
-          ./tools/require_tag_input.ps1 -Tag "${{ inputs.deploy_tag }}"
+          ./tools/require_tag_input.ps1 -Tag "${{ env.DEPLOY_TAG }}"
 
       - name: Azure Login
         uses: azure/login@v1
