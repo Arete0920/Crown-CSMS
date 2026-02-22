@@ -53,9 +53,10 @@ const REDIRECT_CASES = [
   // Financial Aid Director
   { role: "aid_director",  expectPath: "/financial-aid" },
   { role: "financial_aid", expectPath: "/financial-aid" },
-  // Marketing / Advancement
+  // Marketing
   { role: "marketing",     expectPath: "/marketing"     },
-  { role: "advancement",   expectPath: "/marketing"     },
+  // Advancement (now exact-match routes to /advancement, not /marketing — see PR A2)
+  { role: "advancement",   expectPath: "/advancement"   },
   // Spiritual Life
   { role: "chaplain",      expectPath: "/spiritual-life" },
   { role: "spiritual_life",expectPath: "/spiritual-life" },
