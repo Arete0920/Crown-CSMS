@@ -45,10 +45,12 @@ function getJwtRole() {
 
 function resolveDashboardPath() {
   const role = `${getStoredRole()},${getJwtRole()}`;
-  if (role.includes('teacher')) return '/teacher';
-  if (role.includes('parent')) return '/parent';
-  if (role.includes('student')) return '/student';
-  if (role.includes('admin') || role.includes('director')) return '/';
+  if (role.includes('teacher'))                        return '/teacher';
+  if (role.includes('parent'))                         return '/parent';
+  if (role.includes('student'))                        return '/student';
+  if (role.includes('board') || role.includes('governor')) return '/board';
+  if (role.includes('finance') || role.includes('biz_office')) return '/finance';
+  if (role.includes('admin') || role.includes('director') || role.includes('principal')) return '/admin';
   return '/';
 }
 
