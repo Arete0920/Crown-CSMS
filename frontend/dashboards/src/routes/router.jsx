@@ -1,6 +1,5 @@
 ﻿import { createBrowserRouter } from 'react-router-dom';
 
-import { HomeDashboard } from '../pages/HomeDashboard.jsx';
 import { BillingDashboard } from '../pages/BillingDashboard.jsx';
 import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
 import { AcademicsDashboard } from '../pages/AcademicsDashboard.jsx';
@@ -24,6 +23,9 @@ import AcademicsTeacherGrading from '../pages/AcademicsTeacherGrading.jsx';
 import AcademicsStudentWork from '../pages/AcademicsStudentWork.jsx';
 import AcademicsParentSnapshot from '../pages/AcademicsParentSnapshot.jsx';
 import TeacherDashboard from '../pages/TeacherDashboard.jsx';
+import ParentDashboard from '../pages/ParentDashboard.jsx';
+import StudentDashboard from '../pages/StudentDashboard.jsx';
+import RoleHomeRedirect from '../pages/RoleHomeRedirect.jsx';
 import TeacherAttendancePage from '../pages/TeacherAttendancePage.jsx';
 import ParentAttendancePage from '../pages/ParentAttendancePage.jsx';
 import { LoginPage } from '../pages/LoginPage.jsx';
@@ -43,7 +45,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: <HomeDashboard />,
+    element: <RoleHomeRedirect />,
   },
   {
     path: '/billing',
@@ -60,6 +62,14 @@ export const router = createBrowserRouter([
   {
     path: '/teacher',
     element: <TeacherDashboard />,
+  },
+  {
+    path: '/parent',
+    element: <ParentDashboard />,
+  },
+  {
+    path: '/student',
+    element: <StudentDashboard />,
   },
   {
     path: '/classrooms',

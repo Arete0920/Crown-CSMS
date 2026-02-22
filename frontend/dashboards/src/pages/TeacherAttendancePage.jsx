@@ -71,7 +71,7 @@ export default function TeacherAttendancePage() {
   };
 
   return (
-    <CrownLayout title="Teacher Attendance" subtitle="Mark daily attendance by section">
+    <CrownLayout title="Teacher Attendance" subtitle="Mark daily attendance by section" mainClassName="crown-attendance">
       <div style={{ marginBottom: 12 }}>
         <label>Section: </label>
         <select value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
