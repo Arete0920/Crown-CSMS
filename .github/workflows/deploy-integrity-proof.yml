@@ -1,0 +1,37 @@
+﻿name: deploy-integrity-proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Environment to verify (dev|prod)"
+        required: true
+        default: "prod"
+      expected_tag:
+        description: "Git tag that should match deployed build SHA"
+        required: true
+      health_url:
+        description: "Health endpoint URL (e.g., https://.../health)"
+        required: true
+      expected_sha:
+        description: "Optional explicit SHA (leave blank usually)"
+        required: false
+        default: ""
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify deploy integrity
+        shell: pwsh
+        run: |
+          ./tools/verify_deploy_integrity.ps1 `
+            -Env "${{ inputs.env }}" `
+            -HealthUrl "${{ inputs.health_url }}" `
+            -ExpectedTag "${{ inputs.expected_tag }}" `
+            -ExpectedSha "${{ inputs.expected_sha }}"
