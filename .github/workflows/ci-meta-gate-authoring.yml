@@ -1,0 +1,32 @@
+name: ci-meta-gate-authoring
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "tools/ci/**"
+
+permissions:
+  contents: read
+
+jobs:
+  meta-check-job-if:
+    name: meta-check-job-if
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Enforce "no PR branch gating at job-level"
+        run: |
+          python tools/ci/check_no_pr_job_if.py
