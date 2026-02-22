@@ -43,19 +43,76 @@ function getJwtRole() {
   return candidates;
 }
 
+// Table-driven role routing: every token is an independent key.
+// To add a new persona: add one line per token. No Set groups to forget.
+// Acceptance invariant: every token in this map must appear in exactly one route's
+// backend metrics endpoint AND one frontend dashboard page.
+const ROLE_ROUTE_MAP = new Map([
+  // Teacher
+  ['teacher',           '/teacher'],
+  // Parent
+  ['parent',            '/parent'],
+  // Student
+  ['student',           '/student'],
+  // Board
+  ['board',             '/board'],
+  ['governor',          '/board'],
+  // Health / Nurse
+  ['nurse',             '/health'],
+  ['health',            '/health'],
+  // Counseling / Discipline
+  ['counselor',         '/counseling'],
+  ['discipline_dean',   '/counseling'],
+  ['dean_of_students',  '/counseling'],
+  // Food Services
+  ['food_service',      '/food'],
+  ['cafeteria',         '/food'],
+  // Athletics
+  ['athletic_director', '/athletics'],
+  ['ad',                '/athletics'],
+  // Transportation
+  ['transportation',    '/transportation'],
+  ['bus',               '/transportation'],
+  // Facilities
+  ['facilities',        '/facilities'],
+  ['maintenance',       '/facilities'],
+  // Security / Safety
+  ['security',          '/security'],
+  ['safety',            '/security'],
+  // Finance
+  ['finance',           '/finance'],
+  ['biz_office',        '/finance'],
+  // Spiritual Life
+  ['chaplain',          '/spiritual-life'],
+  ['spiritual_life',    '/spiritual-life'],
+  // IT
+  ['it_director',       '/it'],
+  ['it',                '/it'],
+  // Financial Aid
+  ['aid_director',      '/financial-aid'],
+  ['financial_aid',     '/financial-aid'],
+  // Marketing
+  ['marketing',         '/marketing'],
+  // Advancement / Fundraising
+  ['advancement',       '/advancement'],
+  ['fundraising',       '/advancement'],
+  ['development',       '/advancement'],
+  // Office / HR
+  ['office_manager',    '/office'],
+  ['hr',                '/office'],
+  // Admin
+  ['admin',             '/admin'],
+  ['director',          '/admin'],
+  ['principal',         '/admin'],
+]);
+
 function resolveDashboardPath() {
-  const role = `${getStoredRole()},${getJwtRole()}`;
-  if (role.includes('teacher'))                                               return '/teacher';
-  if (role.includes('parent'))                                                return '/parent';
-  if (role.includes('student'))                                               return '/student';
-  if (role.includes('board') || role.includes('governor'))                    return '/board';
-  if (role.includes('finance') || role.includes('biz_office'))                return '/finance';
-  if (role.includes('chaplain') || role.includes('spiritual_life'))           return '/spiritual-life';
-  if (role.includes('it_director') || (role.includes('it') && !role.includes('audit'))) return '/it';
-  if (role.includes('aid_director') || role.includes('financial_aid'))        return '/financial-aid';
-  if (role.includes('marketing') || role.includes('advancement'))             return '/marketing';
-  if (role.includes('office_manager') || role.includes('hr'))                 return '/office';
-  if (role.includes('admin') || role.includes('director') || role.includes('principal')) return '/admin';
+  const raw    = `${getStoredRole()},${getJwtRole()}`;
+  const tokens = raw.split(/[,\s]+/).filter(Boolean);
+  for (const tok of tokens) {
+    const route = ROLE_ROUTE_MAP.get(tok);
+    if (route) return route;
+  }
   return '/';
 }
 
