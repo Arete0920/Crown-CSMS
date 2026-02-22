@@ -37,6 +37,14 @@ import ITDashboard from '../pages/ITDashboard.jsx';
 import MarketingDashboard from '../pages/MarketingDashboard.jsx';
 import SpiritualLifeDashboard from '../pages/SpiritualLifeDashboard.jsx';
 import OfficeDashboard from '../pages/OfficeDashboard.jsx';
+import HealthDashboard from '../pages/HealthDashboard.jsx';
+import CounselingDashboard from '../pages/CounselingDashboard.jsx';
+import FoodDashboard from '../pages/FoodDashboard.jsx';
+import AthleticsDashboard from '../pages/AthleticsDashboard.jsx';
+import AdvancementDashboard from '../pages/AdvancementDashboard.jsx';
+import TransportationDashboard from '../pages/TransportationDashboard.jsx';
+import FacilitiesDashboard from '../pages/FacilitiesDashboard.jsx';
+import SecurityDashboard from '../pages/SecurityDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -166,6 +174,38 @@ export const router = createBrowserRouter([
   {
     path: '/office',
     element: <OfficeDashboard />,
+  },
+  {
+    path: '/health',
+    element: <HealthDashboard />,
+  },
+  {
+    path: '/counseling',
+    element: <CounselingDashboard />,
+  },
+  {
+    path: '/food',
+    element: <FoodDashboard />,
+  },
+  {
+    path: '/athletics',
+    element: <AthleticsDashboard />,
+  },
+  {
+    path: '/advancement',
+    element: <AdvancementDashboard />,
+  },
+  {
+    path: '/transportation',
+    element: <TransportationDashboard />,
+  },
+  {
+    path: '/facilities',
+    element: <FacilitiesDashboard />,
+  },
+  {
+    path: '/security',
+    element: <SecurityDashboard />,
   },
 ]);
 
