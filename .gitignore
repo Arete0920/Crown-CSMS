@@ -48,3 +48,13 @@ PACK3_ACCURATE_STATUS.md
 PACK3_VISUAL_PROOF_CHECKLIST.md
 pr_smoke_404.txt
 test_student360_auth.ps1
+
+# Audit pack outputs (generated locally, never commit)
+AUDIT_PACK_*/
+AUDIT_*.txt
+DEPLOYMENT_CONTRACT_*.txt
+pytest_out.txt
+_local_artifacts/
+
+# Test coverage
+coverage/
