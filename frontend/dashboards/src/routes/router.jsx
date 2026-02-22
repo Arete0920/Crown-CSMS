@@ -30,6 +30,9 @@ import TeacherAttendancePage from '../pages/TeacherAttendancePage.jsx';
 import ParentAttendancePage from '../pages/ParentAttendancePage.jsx';
 import { LoginPage } from '../pages/LoginPage.jsx';
 import IntegrityDashboard from '../pages/IntegrityDashboard.jsx';
+import AdminDashboard from '../pages/AdminDashboard.jsx';
+import BoardDashboard from '../pages/BoardDashboard.jsx';
+import FinanceDashboard from '../pages/FinanceDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -131,6 +134,18 @@ export const router = createBrowserRouter([
   {
     path: '/integrity',
     element: <IntegrityDashboard />,
+  },
+  {
+    path: '/admin',
+    element: <AdminDashboard />,
+  },
+  {
+    path: '/board',
+    element: <BoardDashboard />,
+  },
+  {
+    path: '/finance',
+    element: <FinanceDashboard />,
   },
 ]);
 

@@ -25,6 +25,7 @@ from crown_api.director_views import (
     force_seed_user,
 )
 from crown_api.views_households import household_detail, households_list
+from crown_api.metrics_views import admin_metrics, board_metrics, finance_metrics
 from crown_api.views_students import student_detail, students_list
 from crown_api.views_academics import student_attendance_list, student_grades_list
 from crown_api.views_billing import household_billing_summary
@@ -36,6 +37,11 @@ from academics import api as academics_api
 from billing import api as billing_api
 
 urlpatterns = [
+    # Dashboard metrics endpoints (read-only, persona-scoped)
+    path('admin/metrics/',  admin_metrics,  name='admin-metrics'),
+    path('board/metrics/',  board_metrics,  name='board-metrics'),
+    path('finance/metrics/', finance_metrics, name='finance-metrics'),
+
     path('360/', include('student360.api.urls')),
     path('comms/', include('comms.api.urls')),
     # Persona-specific API routes (NEW - per user spec)
