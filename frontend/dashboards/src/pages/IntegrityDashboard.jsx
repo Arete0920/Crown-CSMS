@@ -106,6 +106,45 @@ function ShaLink({ sha, url }) {
   );
 }
 
+function CopyProofButton({ data }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    const proof = JSON.stringify({
+      sha: data.build_sha,
+      env: data.env,
+      tag: data.prod_deploy_tag || null,
+      checks_count: data.required_checks?.length ?? 0,
+      timestamp: data.timestamp,
+    }, null, 2);
+    navigator.clipboard.writeText(proof).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copy integrity proof as JSON"
+      style={{
+        marginLeft: 8,
+        padding: '2px 10px',
+        fontSize: 11,
+        fontFamily: 'monospace',
+        color: copied ? '#065f46' : '#1d4ed8',
+        background: copied ? '#d1fae5' : '#eff6ff',
+        border: '1px solid',
+        borderColor: copied ? '#6ee7b7' : '#bfdbfe',
+        borderRadius: 6,
+        cursor: 'pointer',
+        lineHeight: '18px',
+        transition: 'all 0.15s',
+      }}
+    >
+      {copied ? '✓ copied!' : 'copy proof'}
+    </button>
+  );
+}
+
 export default function IntegrityDashboard() {
   const [state, setState] = useState({ loading: true, error: false, data: null });
 
@@ -134,6 +173,7 @@ export default function IntegrityDashboard() {
             {!loading && !error && <Pill color="green">LIVE</Pill>}
             {error && <Pill color="yellow">UNAVAILABLE</Pill>}
             {loading && <Pill color="gray">Loading…</Pill>}
+            {!loading && !error && data && <CopyProofButton data={data} />}
           </div>
         </Col>
 
@@ -161,6 +201,7 @@ export default function IntegrityDashboard() {
                     <td style={{ padding: '6px 0', color: '#6b7280' }}>Checked at</td>
                     <td style={{ color: '#374151' }}>{timestamp}</td>
                   </tr>
+                  {data.env === 'prod' && (
                   <tr>
                     <td style={{ padding: '6px 0', color: '#6b7280' }}>Deploy tag</td>
                     <td>
@@ -178,6 +219,7 @@ export default function IntegrityDashboard() {
                       )}
                     </td>
                   </tr>
+                  )}
                   <tr>
                     <td style={{ padding: '6px 0', color: '#6b7280' }}>Repo</td>
                     <td>
@@ -218,8 +260,8 @@ export default function IntegrityDashboard() {
         {/* Required checks */}
         <Col span={12}>
           <CrownCard
-            title="Required Branch Protection Checks"
-            right={data ? <Pill color="green">{data.required_checks?.length ?? 0} required</Pill> : null}
+            title="Known CI Checks"
+            right={data ? <Pill color="green">{data.required_checks?.length ?? 0} listed · 7 enforced</Pill> : null}
           >
             {loading && <p style={{ color: '#9ca3af', fontSize: 13 }}>Fetching…</p>}
             {error && <p style={{ color: '#dc2626', fontSize: 13 }}>Unavailable</p>}
