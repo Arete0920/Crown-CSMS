@@ -45,6 +45,14 @@ import AdvancementDashboard from '../pages/AdvancementDashboard.jsx';
 import TransportationDashboard from '../pages/TransportationDashboard.jsx';
 import FacilitiesDashboard from '../pages/FacilitiesDashboard.jsx';
 import SecurityDashboard from '../pages/SecurityDashboard.jsx';
+import AcademicSupportDashboard from '../pages/AcademicSupportDashboard.jsx';
+import FineArtsDashboard from '../pages/FineArtsDashboard.jsx';
+import LibraryDashboard from '../pages/LibraryDashboard.jsx';
+import ExtendedCareDashboard from '../pages/ExtendedCareDashboard.jsx';
+import RegistrarDashboard from '../pages/RegistrarDashboard.jsx';
+import CommunicationsDirectorDashboard from '../pages/CommunicationsDirectorDashboard.jsx';
+import PDDashboard from '../pages/PDDashboard.jsx';
+import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -206,6 +214,38 @@ export const router = createBrowserRouter([
   {
     path: '/security',
     element: <SecurityDashboard />,
+  },
+  {
+    path: '/academic-support',
+    element: <AcademicSupportDashboard />,
+  },
+  {
+    path: '/fine-arts',
+    element: <FineArtsDashboard />,
+  },
+  {
+    path: '/library',
+    element: <LibraryDashboard />,
+  },
+  {
+    path: '/extended-care',
+    element: <ExtendedCareDashboard />,
+  },
+  {
+    path: '/registrar',
+    element: <RegistrarDashboard />,
+  },
+  {
+    path: '/communications-director',
+    element: <CommunicationsDirectorDashboard />,
+  },
+  {
+    path: '/pd',
+    element: <PDDashboard />,
+  },
+  {
+    path: '/student-services',
+    element: <StudentServicesDashboard />,
   },
 ]);
 
