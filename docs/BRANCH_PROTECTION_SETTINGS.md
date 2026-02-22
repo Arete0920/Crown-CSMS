@@ -1,4 +1,4 @@
-# Branch Protection Settings for main
+﻿# Branch Protection Settings for main
 
 ## Current Status
 **main branch**: NOT PROTECTED (no rules)
@@ -6,15 +6,15 @@
 ## Recommended Rules (Apply These)
 
 ### 1. Dismiss stale PR approvals
-- ✅ **Enabled**
+- âœ… **Enabled**
 - When new commits are pushed, dismiss stale reviews
 
 ### 2. Require review from Code Owners
-- ✅ **Enabled**
+- âœ… **Enabled**
 - PRs must have at least one approval from `.github/CODEOWNERS`
 
 ### 3. Require status checks to pass
-- ✅ **Enabled**
+- âœ… **Enabled**
 - Require the following checks (strict):
   - `Secret Scan/Scan for secrets`
   - `Proof Ceremony/proof-ceremony`
@@ -24,11 +24,11 @@
   - `CI - Tests and Checks/verify-immutable-tags`
 
 ### 4. Require branches to be up to date
-- ✅ **Enabled**
+- âœ… **Enabled**
 - Branches must be up to date before merging
 
 ### 5. Restrict who can push
-- ✅ **Enabled (DO NOT allow forced pushes)**
+- âœ… **Enabled (DO NOT allow forced pushes)**
 - `Dismiss stale reviews`: Yes
 - `Allow force pushes`: **NO**
 - `Include administrators`: **YES** (admins also follow the rules)
@@ -42,15 +42,15 @@
 2. Click **Add rule**
 3. Branch name: `main`
 4. Enable:
-   - ✅ Require a pull request before merging
-   - ✅ Require approvals (1)
-   - ✅ Dismiss stale pull request approvals when new commits are pushed
-   - ✅ Require review from Code Owners
-   - ✅ Require status checks to pass before merging
-   - ✅ Require branches to be up to date before merging
-   - ✅ Include administrators
-   - ❌ Allow force pushes (keep disabled)
-   - ✅ Allow deletions (your choice, typically disabled)
+   - âœ… Require a pull request before merging
+   - âœ… Require approvals (1)
+   - âœ… Dismiss stale pull request approvals when new commits are pushed
+   - âœ… Require review from Code Owners
+   - âœ… Require status checks to pass before merging
+   - âœ… Require branches to be up to date before merging
+   - âœ… Include administrators
+   - âŒ Allow force pushes (keep disabled)
+   - âœ… Allow deletions (your choice, typically disabled)
 
 5. Status checks required (add these):
    ```
@@ -68,9 +68,9 @@
 
 - No one (including you) can directly push to main
 - All PRs must have:
-  - ✅ Green CI checks
-  - ✅ At least 1 approval (you or CODEOWNERS)
-  - ✅ Up-to-date branch
+  - âœ… Green CI checks
+  - âœ… At least 1 approval (you or CODEOWNERS)
+  - âœ… Up-to-date branch
 - Stale reviews auto-dismiss on new commits
 - Admins cannot bypass (enforce_admins = true)
 
@@ -78,11 +78,11 @@
 
 | Scenario | Before | After |
 |----------|--------|-------|
-| Hot-fix push | ✅ Possible | ❌ Blocked |
-| Merge broken CI | ✅ Possible | ❌ Blocked |
-| Merge without review | ✅ Possible | ❌ Blocked |
-| Admin bypass | ✅ Possible | ❌ Blocked |
-| Stale review override | ✅ Possible | ❌ Auto-dismissed |
+| Hot-fix push | âœ… Possible | âŒ Blocked |
+| Merge broken CI | âœ… Possible | âŒ Blocked |
+| Merge without review | âœ… Possible | âŒ Blocked |
+| Admin bypass | âœ… Possible | âŒ Blocked |
+| Stale review override | âœ… Possible | âŒ Auto-dismissed |
 
 ## CI Gate Authoring Rules (Enforced)
 
@@ -127,3 +127,4 @@ jobs:
 
 2026-02-22: `rc-promotion-gate` job-level `if:` caused `neutral` on PR #323, blocking merge.
 Fixed by moving filter to step-level with a pass-through step. Confirmed via proof PR #324 (all checks SUCCESS).
+
