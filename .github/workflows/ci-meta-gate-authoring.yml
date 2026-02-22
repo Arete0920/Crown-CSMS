@@ -30,3 +30,7 @@ jobs:
       - name: Enforce "no PR branch gating at job-level"
         run: |
           python tools/ci/check_no_pr_job_if.py
+
+      - name: Enforce "no unquoted step names with colon-space"
+        run: |
+          python tools/ci/check_workflow_step_names.py
