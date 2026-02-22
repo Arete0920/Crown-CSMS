@@ -41,7 +41,7 @@ jobs:
           ref: ${{ env.DEPLOY_TAG }}
           fetch-depth: 0
 
-      - name: Guard: tag required and resolvable
+      - name: "Guard: tag required and resolvable"
         shell: pwsh
         run: |
           ./tools/require_tag_input.ps1 -Tag "${{ env.DEPLOY_TAG }}"
