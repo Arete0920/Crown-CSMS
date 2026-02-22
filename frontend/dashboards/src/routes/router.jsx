@@ -33,6 +33,10 @@ import IntegrityDashboard from '../pages/IntegrityDashboard.jsx';
 import AdminDashboard from '../pages/AdminDashboard.jsx';
 import BoardDashboard from '../pages/BoardDashboard.jsx';
 import FinanceDashboard from '../pages/FinanceDashboard.jsx';
+import ITDashboard from '../pages/ITDashboard.jsx';
+import MarketingDashboard from '../pages/MarketingDashboard.jsx';
+import SpiritualLifeDashboard from '../pages/SpiritualLifeDashboard.jsx';
+import OfficeDashboard from '../pages/OfficeDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -146,6 +150,22 @@ export const router = createBrowserRouter([
   {
     path: '/finance',
     element: <FinanceDashboard />,
+  },
+  {
+    path: '/it',
+    element: <ITDashboard />,
+  },
+  {
+    path: '/marketing',
+    element: <MarketingDashboard />,
+  },
+  {
+    path: '/spiritual-life',
+    element: <SpiritualLifeDashboard />,
+  },
+  {
+    path: '/office',
+    element: <OfficeDashboard />,
   },
 ]);
 
