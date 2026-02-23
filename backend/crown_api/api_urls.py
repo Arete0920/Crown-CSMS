@@ -14,6 +14,7 @@ LEGACY unified APIs (deprecated):
 """
 
 from django.urls import path, include
+from core.views_nav import nav_view
 from crown_api.director_views import (
     aid_summary,
     finance_summary,
@@ -48,6 +49,9 @@ from academics import api as academics_api
 from billing import api as billing_api
 
 urlpatterns = [
+    # Permission-derived navigation
+    path('nav/',                    nav_view,               name='nav'),
+
     # Dashboard metrics endpoints (read-only, persona-scoped)
     path('admin/metrics/',          admin_metrics,          name='admin-metrics'),
     path('board/metrics/',          board_metrics,          name='board-metrics'),

@@ -1,7 +1,8 @@
 # backend/core/management/commands/seed_permissions.py
 #
-# Seeds CrownPermission codes and default RolePermission mappings.
-# Safe to re-run — uses get_or_create throughout.
+# Seeds CrownPermission codes and RolePermission defaults.
+# Idempotent — safe to re-run at any time.
+# Supports --dry-run to preview without writing.
 #
 # Usage:
 #   python manage.py seed_permissions
@@ -13,10 +14,11 @@ from core.models import CrownPermission, RolePermission
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Permission codes  (<module>.<action>)
+# Authoritative permission code registry   (<module>.<action>)
+# Must stay in sync with core/nav_registry.py permission values.
 # ──────────────────────────────────────────────────────────────────────────────
 PERMISSIONS = [
-    # ── core system ─────────────────────────────────────────────────────────
+    # ── core system ──────────────────────────────────────────────────────────
     ("health.view",                "View health / system-status dashboard"),
     ("director.actions",           "Execute director-level admin actions"),
     ("metrics.view",               "View all KPI dashboards"),
@@ -43,6 +45,7 @@ PERMISSIONS = [
 
     # ── Enrollment & Revenue tier ────────────────────────────────────────
     ("financial_aid.view",         "View financial aid dashboard"),
+    ("financial_aid.edit",         "Create or modify aid awards"),
     ("marketing.view",             "View marketing / enrollment funnel"),
     ("advancement.view",           "View advancement / fundraising dashboard"),
 
@@ -71,71 +74,92 @@ PERMISSIONS = [
     ("integrity.view",             "View academic-integrity dashboard"),
 ]
 
+
 # ──────────────────────────────────────────────────────────────────────────────
-# Default role → permission mappings
+# Role -> permission defaults
 #
-# role_code values must match core.models.UserRole.ROLE_CODE_CHOICES.
-#   HEAD_OF_SCHOOL | AID_DIRECTOR | FINANCE_DIRECTOR | REGISTRAR
-#   TEACHER | PARENT | STUDENT | SUPPORT
+# UPPERCASE codes match core.models.UserRole.ROLE_CODE_CHOICES (existing Crown).
+# Lowercase codes are expanded roles for future UserRole expansion.
+# Both are stored in RolePermission.role_code (CharField, no FK constraint).
 # ──────────────────────────────────────────────────────────────────────────────
-ROLE_PERMISSIONS = {
+ROLE_PERMISSIONS: dict = {
+    # Existing Crown uppercase role codes
     "HEAD_OF_SCHOOL": [
-        "health.view",
-        "finance.view",
-        "aid.view",
-        "admissions.view",
-        "academics.view",
-        "metrics.view",
-        "director.actions",
-        "academic_support.view",
-        "fine_arts.view",
-        "library.view",
-        "extended_care.view",
-        "registrar.view",
-        "communications.view",
-        "pd.view",
-        "student_services.view",
+        "admin.view", "board.view",
+        "finance.view", "billing.view",
+        "admissions.view", "financial_aid.view",
+        "academics.view", "teacher.view",
+        "registrar.view", "academic_support.view", "library.view",
+        "extended_care.view", "pd.view", "communications.view",
+        "health.view", "counseling.view", "food.view",
+        "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
+        "office.view", "it.view", "facilities.view", "transportation.view",
+        "security.view", "integrity.view", "metrics.view", "director.actions",
+        "marketing.view", "advancement.view",
     ],
     "FINANCE_DIRECTOR": [
-        "health.view",
-        "finance.view",
-        "finance.edit",
-        "finance.period_lock",
-        "aid.view",
-        "metrics.view",
-        "director.actions",
+        "finance.view", "finance.edit", "finance.period_lock",
+        "billing.view", "financial_aid.view",
+        "integrity.view", "metrics.view", "director.actions",
     ],
     "AID_DIRECTOR": [
-        "health.view",
-        "aid.view",
-        "aid.edit",
-        "metrics.view",
+        "financial_aid.view", "financial_aid.edit",
+        "admissions.view", "metrics.view",
     ],
     "REGISTRAR": [
-        "health.view",
-        "admissions.view",
-        "admissions.edit",
-        "academics.view",
-        "metrics.view",
-        "registrar.view",
+        "admissions.view", "admissions.edit",
+        "academics.view", "registrar.view", "metrics.view",
     ],
     "TEACHER": [
-        "academics.view",
-        "academics.edit",
+        "teacher.view", "academics.view", "academics.edit",
     ],
     "SUPPORT": [
-        "health.view",
-        "metrics.view",
-        "academic_support.view",
-        "student_services.view",
+        "health.view", "metrics.view",
+        "academic_support.view", "student_services.view",
     ],
-    "PARENT": [],
-    "STUDENT": [],
+    "PARENT": ["parent.view"],
+    "STUDENT": ["student.view"],
+
+    # Expanded lowercase role codes (forward-looking)
+    "head_of_school": [
+        "admin.view", "board.view",
+        "finance.view", "billing.view",
+        "admissions.view", "financial_aid.view",
+        "academics.view", "teacher.view",
+        "registrar.view", "academic_support.view", "library.view",
+        "extended_care.view", "pd.view", "communications.view",
+        "health.view", "counseling.view", "food.view",
+        "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
+        "office.view", "it.view", "facilities.view", "transportation.view",
+        "security.view", "integrity.view", "metrics.view", "director.actions",
+        "marketing.view", "advancement.view",
+    ],
+    "finance":         ["finance.view", "finance.edit", "billing.view", "integrity.view"],
+    "aid_director":    ["financial_aid.view", "financial_aid.edit", "admissions.view"],
+    "registrar":       ["admissions.view", "academics.view", "registrar.view"],
+    "teacher":         ["teacher.view", "academics.view", "academics.edit"],
+    "nurse":           ["health.view"],
+    "health":          ["health.view"],
+    "counselor":       ["counseling.view"],
+    "food_service":    ["food.view"],
+    "athletic_director": ["athletics.view"],
+    "transportation":  ["transportation.view"],
+    "facilities":      ["facilities.view"],
+    "security":        ["security.view"],
+    "it":              ["it.view", "integrity.view"],
+    "marketing":       ["marketing.view"],
+    "advancement":     ["advancement.view"],
+    "chaplain":        ["spiritual_life.view"],
+    "spiritual_life":  ["spiritual_life.view"],
+    "office_manager":  ["office.view"],
+    "parent":          ["parent.view"],
+    "student":         ["student.view"],
+    "board":           ["board.view"],
 }
 
 
 class Command(BaseCommand):
-    help = "Seed CrownPermission codes and default RolePermission mappings."
+    help = "Seeds CrownPermission codes and RolePermission defaults (idempotent)."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -145,47 +169,47 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        dry_run = options["dry_run"]
-        tag = "[DRY RUN] " if dry_run else ""
+        dry_run = bool(options.get("dry_run"))
+        new_perms = 0
+        new_maps = 0
 
-        # ── 1. Upsert permission codes ────────────────────────────────────────
-        self.stdout.write(self.style.MIGRATE_HEADING("── Permissions ──"))
+        # 1. Upsert permission codes
         for code, description in PERMISSIONS:
-            if not dry_run:
-                obj, created = CrownPermission.objects.get_or_create(
-                    code=code,
-                    defaults={"description": description},
-                )
-                verb = "CREATED" if created else "EXISTS "
-            else:
-                verb = "WOULD CREATE"
-            self.stdout.write(f"  {tag}{verb}  {code}")
+            if dry_run:
+                self.stdout.write(f"[dry-run] ensure permission: {code}")
+                continue
+            _, created = CrownPermission.objects.get_or_create(
+                code=code,
+                defaults={"description": description},
+            )
+            if created:
+                new_perms += 1
 
-        # ── 2. Upsert role → permission mappings ─────────────────────────────
-        self.stdout.write(self.style.MIGRATE_HEADING("── Role mappings ──"))
-        for role_code, permission_codes in ROLE_PERMISSIONS.items():
-            for perm_code in permission_codes:
-                if not dry_run:
-                    try:
-                        perm = CrownPermission.objects.get(code=perm_code)
-                    except CrownPermission.DoesNotExist:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f"  SKIP  {role_code} → {perm_code}  "
-                                f"(permission not found — run without --dry-run first)"
-                            )
-                        )
-                        continue
-                    _, created = RolePermission.objects.get_or_create(
-                        role_code=role_code,
-                        permission=perm,
+        # 2. Upsert role -> permission mappings
+        for role_code, perm_codes in ROLE_PERMISSIONS.items():
+            for perm_code in perm_codes:
+                if dry_run:
+                    self.stdout.write(f"[dry-run] map role={role_code} -> {perm_code}")
+                    continue
+                try:
+                    perm = CrownPermission.objects.get(code=perm_code)
+                except CrownPermission.DoesNotExist:
+                    self.stdout.write(
+                        self.style.WARNING(f"SKIP: {role_code} -> {perm_code} (not found)")
                     )
-                    verb = "CREATED" if created else "EXISTS "
-                else:
-                    verb = "WOULD MAP"
-                self.stdout.write(f"  {tag}{verb}  {role_code} → {perm_code}")
+                    continue
+                _, created = RolePermission.objects.get_or_create(
+                    role_code=role_code,
+                    permission=perm,
+                )
+                if created:
+                    new_maps += 1
 
         if dry_run:
-            self.stdout.write(self.style.WARNING("Dry run complete — no changes written."))
+            self.stdout.write(self.style.WARNING("Dry-run complete. No changes written."))
         else:
-            self.stdout.write(self.style.SUCCESS("Permissions seeded successfully."))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Seed complete. New permissions: {new_perms}. New role mappings: {new_maps}."
+                )
+            )
