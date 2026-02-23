@@ -69,6 +69,15 @@ urlpatterns = [
     # Classroom (read-only, demo-safe)
     path("api/classroom/", include("classroom.urls")),
     
+    # Student 360 overview (per-student dashboard data)
+    path("api/student360/", include("student360.api.urls")),
+
+    # Parent 360 overview (household-scoped dashboard data)
+    path("api/parent360/", include("parent360.api.urls")),
+
+    # Executive 360 overview (school-wide metrics for admins)
+    path("api/executive360/", include("executive360.api.urls")),
+
     # Integrations (webhooks, etc.)
     path("api/integrations/", include("integrations.urls")),
     

@@ -15,7 +15,10 @@
     "ui:proof:matrix": "playwright test tests/ui/role-dashboard-matrix.spec.ts --reporter=line",
     "ui:proof:matrix-pack-2": "playwright test tests/ui/role-dashboard-matrix-pack-2.spec.ts --reporter=line",
     "ui:proof:matrix-pack-3": "playwright test tests/ui/role-dashboard-matrix-pack-3.spec.ts --reporter=line",
-    "ui:proof:nav-perms": "playwright test tests/ui/nav-permissions.spec.ts --reporter=line"
+    "ui:proof:nav-perms": "npx playwright test tests/ui/nav-permissions.spec.ts --reporter=line",
+    "ui:proof:student-v2": "npx playwright test tests/ui/student-dashboard-v2.spec.ts --reporter=line",
+    "ui:proof:parent-v1": "npx playwright test tests/ui/parent-dashboard-v1.spec.ts --reporter=line",
+    "ui:proof:executive": "npx playwright test tests/ui/executive-dashboard-v1.spec.ts --reporter=line"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

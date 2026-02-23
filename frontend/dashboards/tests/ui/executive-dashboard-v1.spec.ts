@@ -1,0 +1,56 @@
+import { test, expect } from "@playwright/test";
+
+const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:3000";
+const DEMO_SCHOOL_ID =
+  process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
+const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
+
+async function seedSession(page, role: string) {
+  await page.addInitScript(
+    ({ token, role, schoolId }) => {
+      try {
+        sessionStorage.setItem("crown.jwt.access", token);
+        sessionStorage.setItem("crown.role", role);
+        sessionStorage.setItem("crown.school.id", schoolId);
+        localStorage.setItem("crown.jwt.access", token);
+        localStorage.setItem("crown.role", role);
+        localStorage.setItem("crown.school.id", schoolId);
+        localStorage.setItem("crown.demo.role", role);
+      } catch {
+        // ignore
+      }
+    },
+    { token: DEMO_TOKEN, role, schoolId: DEMO_SCHOOL_ID }
+  );
+}
+
+test("Executive Dashboard renders admin KPI cards and Executive Insights section", async ({
+  page,
+}) => {
+  await seedSession(page, "admin");
+  await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
+
+  // Page title from CrownLayout
+  await expect(
+    page.getByRole("heading", { name: /administration/i })
+  ).toBeVisible();
+
+  // Operational KPI cards (rendered from DEMO fallback — always present)
+  // .first() required: each label also appears in the "Today at a Glance" table row (case-insensitive substring match)
+  await expect(page.locator("text=Enrolled").first()).toBeVisible();  // KPI card + FunnelStep both render "Enrolled"
+  await expect(page.locator("text=Attendance Flags").first()).toBeVisible();
+  await expect(page.locator("text=Discipline").first()).toBeVisible();
+  await expect(page.locator("text=Messages Pending").first()).toBeVisible();
+
+  // Enrollment funnel section
+  await expect(page.locator("text=Enrollment Funnel")).toBeVisible();
+
+  // Executive Insights card title (added in this slice)
+  await expect(page.locator("text=Executive Insights")).toBeVisible();
+
+  // ExecMetric labels (always rendered regardless of API availability)
+  await expect(page.locator("text=Receivables")).toBeVisible();
+  await expect(page.locator("text=Aid Allocated")).toBeVisible();
+  await expect(page.locator("text=Academic Risk")).toBeVisible();
+  await expect(page.locator("text=Overdue Work")).toBeVisible();
+});
