@@ -7,6 +7,7 @@ import { pctFromCell, bgForPct } from "../lib/ui/gradeVisuals";
 import { fmt2 } from "../utils/number";
 import Drawer from "../components/Drawer";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner";
 
 
 const keyOf = (name) => String(name ?? "").trim();
@@ -76,6 +77,7 @@ export function GradebookRO() {
   // diagnostics state (kept from before)
   const [lastRequest, setLastRequest] = useState(null);
   const [lastError, setLastError] = useState(null);
+  const [sectionError, setSectionError] = useState("");
 
   // drilldown state
   const [drilldownStudent, setDrilldownStudent] = useState(null);
@@ -179,8 +181,8 @@ export function GradebookRO() {
         }
       })
       .catch((err) => {
-        // structured error panel will surface it
         console.error(err);
+        if (alive) setSectionError(err?.message || "Failed to load gradebook sections.");
       })
       .finally(() => {
         if (!alive) return;
@@ -649,6 +651,8 @@ export function GradebookRO() {
           </dl>
         </div>
       )}
+
+      <ErrorBanner title="Failed to load gradebook sections" message={sectionError} />
 
       {/* Sections chooser */}
       <div style={{ marginBottom: 12 }}>
