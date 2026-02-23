@@ -30,6 +30,15 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Stage 1 regression guard – no silent catch handlers
+        working-directory: .
+        run: |
+          if grep -rn --include="*.jsx" --include="*.js" -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*\{?\s*\}?\s*\)' frontend/dashboards/src/; then
+            echo "ERROR: Silent empty catch handler(s) detected. Stage 1 invariant violated."
+            exit 1
+          fi
+          echo "Stage 1 guard OK: no silent empty catch handlers found."
+
       - name: Write build.json
         run: |
           mkdir -p public
