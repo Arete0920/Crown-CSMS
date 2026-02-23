@@ -66,6 +66,10 @@ jobs:
           fi
 
       - name: Run UI proof gates
+        # IMPORTANT: specs are listed explicitly — do NOT replace with `tests/ui`.
+        # The folder contains matrix specs (role-dashboard-matrix*.spec.ts) that
+        # assert sidebar nav links which don't exist in CI, causing false failures.
+        # Add new dashboard specs here individually when they are ready to gate.
         env:
           VITE_DEV_BASE_URL: http://127.0.0.1:3000
           CROWN_DEMO_TOKEN: playwright-demo-token
