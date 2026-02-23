@@ -58,3 +58,18 @@ _local_artifacts/
 
 # Test coverage
 coverage/
+
+# Local dev process artifacts (django server output, local db)
+ci_local.sqlite3
+django_err.txt
+django_out.txt
+
+# Ad-hoc scratch files
+student360_test.txt
+tools/_step1a.py
+
+# PR body scratch files (created by CI agent during PR workflow)
+pr_*.txt
+
+# CI-generated build artifact (written by CI before npm build, not a source file)
+frontend/dashboards/public/build.json
