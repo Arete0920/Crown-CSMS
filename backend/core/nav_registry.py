@@ -56,7 +56,11 @@ NAV_ITEMS: List[NavItem] = [
     NavItem(group="Student & Family", label="Spiritual Life",      href="/spiritual-life", permission="spiritual_life.view"),
     NavItem(group="Student & Family", label="Student Services",    href="/student-services", permission="student_services.view"),
 
+    # ── Institutional Operations ──────────────────────────────────────────────
+    NavItem(group="Institutional Operations", label="Human Resources", href="/hr",          permission="hr.view"),
+
     # ── Safety & Integrity ─────────────────────────────────────────────────
-    NavItem(group="Safety & Integrity", label="Security",          href="/security",    permission="security.view"),
-    NavItem(group="Safety & Integrity", label="System Integrity",  href="/integrity",   permission="integrity.view"),
+    NavItem(group="Safety & Integrity", label="Safety",             href="/safety",      permission="safety.view"),
+    NavItem(group="Safety & Integrity", label="Security",           href="/security",    permission="security.view"),
+    NavItem(group="Safety & Integrity", label="System Integrity",   href="/integrity",   permission="integrity.view"),
 ]

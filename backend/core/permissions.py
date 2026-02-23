@@ -69,3 +69,45 @@ def require_permission(permission_code):
             return view_func(request, *args, **kwargs)
         return wrapper
     return decorator
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# DRF-compatible permission class for expansion module ViewSets.
+# ──────────────────────────────────────────────────────────────────────────────
+
+class CrownModulePermission:
+    """
+    DRF BasePermission factory.
+
+    Usage:
+        from core.permissions import CrownModulePermission
+        class EmployeeViewSet(viewsets.ModelViewSet):
+            permission_classes = [CrownModulePermission("hr.view")]
+
+    For write-scoped checks (list vs mutate):
+        permission_classes = [CrownModulePermission("hr.view", write_code="hr.edit")]
+
+    - Authenticated + school context required (middleware enforces X-School-Id).
+    - GET/HEAD/OPTIONS -> read_code; POST/PUT/PATCH/DELETE -> write_code (falls
+      back to read_code if write_code is not supplied).
+    """
+
+    def __new__(cls, read_code: str, write_code: str | None = None):
+        from rest_framework.permissions import BasePermission as _Base
+
+        _read_code = read_code
+        _write_code = write_code or read_code
+
+        class _CrownPerm(_Base):
+            def has_permission(self, request, view):
+                if not request.user or not request.user.is_authenticated:
+                    return False
+                school = getattr(request, "school", None)
+                if school is None:
+                    return False
+                code = _write_code if request.method not in ("GET", "HEAD", "OPTIONS") else _read_code
+                return user_has_permission(request.user, code, school=school)
+
+        _CrownPerm.__name__ = f"CrownPerm[{read_code}]"
+        return _CrownPerm
+

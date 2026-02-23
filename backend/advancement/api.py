@@ -1,88 +1,87 @@
-from rest_framework import viewsets, permissions
+﻿from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Count
 
+from core.audit import audit_event
+from core.permissions import CrownModulePermission
 from .models import Donor, Campaign
 from .serializers import DonorSerializer, CampaignSerializer
 
 
-def _school_id(request):
-    return request.headers.get("X-School-Id") or request.headers.get("X-School-ID")
+def _require_school(request):
+    school = getattr(request, "school", None)
+    if school is None:
+        raise PermissionDenied("Tenant context required (X-School-Id header missing).")
+    return school
 
 
 class DonorViewSet(viewsets.ModelViewSet):
     serializer_class = DonorSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
-        school_id = _school_id(self.request)
-        if not school_id:
-            return Donor.objects.none()
-        return Donor.objects.filter(school_id=school_id)
+        school = _require_school(self.request)
+        return Donor.objects.filter(school_id=school.id)
 
     def perform_create(self, serializer):
-        serializer.save(school_id=_school_id(self.request))
+        school = _require_school(self.request)
+        instance = serializer.save(school_id=school.id)
+        audit_event("advancement.donor.created", user=self.request.user, school=school,
+                    extra={"donor_id": str(instance.id)})
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        audit_event("advancement.donor.updated", user=self.request.user,
+                    school=getattr(self.request, "school", None),
+                    extra={"donor_id": str(instance.id)})
+
+    def perform_destroy(self, instance):
+        audit_event("advancement.donor.deleted", user=self.request.user,
+                    school=getattr(self.request, "school", None),
+                    extra={"donor_id": str(instance.id)})
+        instance.delete()
 
 
 class CampaignViewSet(viewsets.ModelViewSet):
     serializer_class = CampaignSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
-        school_id = _school_id(self.request)
-        if not school_id:
-            return Campaign.objects.none()
-        return Campaign.objects.filter(school_id=school_id)
+        school = _require_school(self.request)
+        return Campaign.objects.filter(school_id=school.id)
 
     def perform_create(self, serializer):
-        serializer.save(school_id=_school_id(self.request))
+        school = _require_school(self.request)
+        instance = serializer.save(school_id=school.id)
+        audit_event("advancement.campaign.created", user=self.request.user, school=school,
+                    extra={"campaign_id": str(instance.id)})
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        audit_event("advancement.campaign.updated", user=self.request.user,
+                    school=getattr(self.request, "school", None),
+                    extra={"campaign_id": str(instance.id)})
+
+    def perform_destroy(self, instance):
+        audit_event("advancement.campaign.deleted", user=self.request.user,
+                    school=getattr(self.request, "school", None),
+                    extra={"campaign_id": str(instance.id)})
+        instance.delete()
 
 
 @api_view(["GET"])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def advancement_metrics(request):
-    school_id = _school_id(request)
-    if not school_id:
-        return Response({"error": "X-School-Id required"}, status=400)
-
-    donors_qs = Donor.objects.filter(school_id=school_id, active=True)
-    campaigns_qs = Campaign.objects.filter(school_id=school_id)
-    active_campaigns = campaigns_qs.filter(status="active")
-
-    # Campaign progress: avg raised/goal across active campaigns
-    campaign_progress_pct = 0
-    if active_campaigns.exists():
-        total_goal = active_campaigns.aggregate(g=Sum("goal"))["g"] or 0
-        total_raised = active_campaigns.aggregate(r=Sum("raised"))["r"] or 0
-        if total_goal:
-            campaign_progress_pct = round(float(total_raised) / float(total_goal) * 100)
-
-    top_sources = list(
-        donors_qs.values("source")
-        .annotate(amount=Sum("lifetime_giving"))
-        .order_by("-amount")
-        .values("source", "amount")[:5]
-    )
-
-    campaigns_serialized = [
-        {
-            "name": c.name,
-            "goal": float(c.goal),
-            "raised": float(c.raised),
-            "donors": c.donors_count,
-            "status": c.status,
-        }
-        for c in campaigns_qs[:10]
-    ]
-
+    school = _require_school(request)
+    donors = Donor.objects.filter(school_id=school.id)
+    campaigns = Campaign.objects.filter(school_id=school.id)
+    total_raised = donors.aggregate(total=Sum("total_donated"))["total"] or 0
     return Response({
-        "donors_active": donors_qs.count(),
-        "campaign_progress_pct": campaign_progress_pct,
-        "pledges_outstanding": 0,
-        "thankyous_due": 0,
-        "campaigns": campaigns_serialized,
-        "top_sources": [{"source": r["source"] or "Unknown", "amount": float(r["amount"] or 0)} for r in top_sources],
-        "tasks": [],
-        "alerts": [],
+        "total_donors":   donors.count(),
+        "total_raised":   float(total_raised),
+        "active_campaigns": campaigns.filter(active=True).count(),
+        "total_campaigns":  campaigns.count(),
     })
