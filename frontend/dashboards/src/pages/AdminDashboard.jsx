@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
+import ErrorBanner from '../components/ui/ErrorBanner.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
@@ -126,6 +127,7 @@ function ExecMetric({ label, value, hint }) {
 export default function AdminDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
   const [exec, setExec] = useState(null);
+  const [execError, setExecError] = useState('');
 
   useEffect(() => {
     fetchAdminMetrics().then(({ ok, data }) => {
@@ -136,8 +138,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     authenticatedFetch('/api/executive360/me/overview/')
       .then((res) => (res.ok ? res.json() : null))
-      .then((d) => setExec(d && d.available ? d : null))
-      .catch(() => setExec(null));
+      .then((d) => {
+        setExec(d && d.available ? d : null);
+        setExecError('');
+      })
+      .catch((err) => {
+        setExec(null);
+        const msg =
+          err && err.message ? err.message :
+          typeof err === 'string' ? err :
+          'Unknown error';
+        setExecError(`Executive insights unavailable — API error: ${msg}`);
+      });
   }, []);
 
   const { loading, live, data } = state;
@@ -279,6 +291,9 @@ export default function AdminDashboard() {
               </Pill>
             }
           >
+            {execError ? (
+              <ErrorBanner title="Executive insights unavailable" message={execError} />
+            ) : null}
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
               <ExecMetric
                 label="Receivables"
