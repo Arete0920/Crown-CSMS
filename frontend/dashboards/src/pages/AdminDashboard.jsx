@@ -3,6 +3,7 @@ import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import { authenticatedFetch } from '../utils/authClient.js';
 
 /* ── Auth helpers (matches existing Crown pattern) ─────────────────── */
 function apiBase() {
@@ -106,14 +107,37 @@ function QuickAction({ href, label }) {
   );
 }
 
+/* ── Executive insight metric tile ──────────────────────────────────── */
+function ExecMetric({ label, value, hint }) {
+  return (
+    <div style={{
+      flex: '1 1 180px', minWidth: 160,
+      background: '#f8fafc', border: '1px solid #e5e7eb',
+      borderRadius: 8, padding: '12px 16px',
+    }}>
+      <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 2 }}>{value}</div>
+      {hint && <div style={{ fontSize: 11, color: '#9ca3af' }}>{hint}</div>}
+    </div>
+  );
+}
+
 /* ── Main component ─────────────────────────────────────────────────── */
 export default function AdminDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
+  const [exec, setExec] = useState(null);
 
   useEffect(() => {
     fetchAdminMetrics().then(({ ok, data }) => {
       setState({ loading: false, live: ok, data });
     });
+  }, []);
+
+  useEffect(() => {
+    authenticatedFetch('/api/executive360/me/overview/')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => setExec(d && d.available ? d : null))
+      .catch(() => setExec(null));
   }, []);
 
   const { loading, live, data } = state;
@@ -241,6 +265,41 @@ export default function AdminDashboard() {
               <QuickAction href="/financial-aid"   label="Review aid queue"      />
               <QuickAction href="/admissions"      label="Admissions pipeline"   />
               <QuickAction href="/integrity"       label="System integrity"      />
+            </div>
+          </CrownCard>
+        </Col>
+
+        {/* ── Executive Insights ────────────────────────────────────── */}
+        <Col span={12}>
+          <CrownCard
+            title="Executive Insights"
+            right={
+              <Pill color={exec ? 'green' : 'gray'}>
+                {exec ? 'LIVE' : 'NO DATA'}
+              </Pill>
+            }
+          >
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
+              <ExecMetric
+                label="Receivables"
+                value={exec ? `$${(exec.receivables_cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                hint="Total billed across all households"
+              />
+              <ExecMetric
+                label="Aid Allocated"
+                value={exec ? `$${(exec.aid_allocated_cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                hint="Total awarded this year"
+              />
+              <ExecMetric
+                label="Academic Risk"
+                value={exec ? String(exec.at_risk_count ?? '—') : '—'}
+                hint="Students below 75% in any subject"
+              />
+              <ExecMetric
+                label="Overdue Work"
+                value={exec ? String(exec.missing_assignments_total ?? '—') : '—'}
+                hint="Assignments past due date"
+              />
             </div>
           </CrownCard>
         </Col>

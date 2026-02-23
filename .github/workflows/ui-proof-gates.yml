@@ -1,0 +1,90 @@
+name: UI Proof — Dashboard Gates (Student · Parent · Executive)
+
+on:
+  workflow_dispatch:
+
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/ui-proof-gates.yml"
+      - "frontend/dashboards/tests/ui/student-dashboard-v2.spec.ts"
+      - "frontend/dashboards/tests/ui/parent-dashboard-v1.spec.ts"
+      - "frontend/dashboards/tests/ui/executive-dashboard-v1.spec.ts"
+      - "frontend/dashboards/src/pages/StudentDashboard.jsx"
+      - "frontend/dashboards/src/pages/ParentDashboard.jsx"
+      - "frontend/dashboards/src/pages/AdminDashboard.jsx"
+      - "backend/student360/**"
+      - "backend/parent360/**"
+      - "backend/executive360/**"
+
+concurrency:
+  group: ui-proof-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dashboard-ui-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Vite (background)
+        shell: bash
+        env:
+          VITE_API_BASE_URL: http://127.0.0.1:8000
+        run: |
+          nohup npm run dev -- --host 127.0.0.1 --port 3000 --strictPort >/tmp/vite.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null 2>&1; then echo "Vite is up"; break; fi
+            sleep 1
+          done
+          if ! curl -fsS http://127.0.0.1:3000/ >/dev/null 2>&1; then
+            echo "--- Vite never became reachable ---"
+            cat /tmp/vite.log || echo "(no vite.log)"
+            exit 1
+          fi
+
+      - name: Run UI proof gates
+        env:
+          VITE_DEV_BASE_URL: http://127.0.0.1:3000
+          CROWN_DEMO_TOKEN: playwright-demo-token
+          CROWN_DEMO_SCHOOL_ID: 19801b59-8c05-4c84-9312-5d792e4e839d
+        run: |
+          npx playwright test \
+            tests/ui/student-dashboard-v2.spec.ts \
+            tests/ui/parent-dashboard-v1.spec.ts \
+            tests/ui/executive-dashboard-v1.spec.ts \
+            --reporter=line
+
+      - name: Dump Vite log on failure
+        if: failure()
+        run: test -f /tmp/vite.log && tail -n 200 /tmp/vite.log || echo "(no vite.log)"
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-dashboard-report
+          path: frontend/dashboards/playwright-report/
+          retention-days: 7

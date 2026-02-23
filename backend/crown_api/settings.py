@@ -156,6 +156,8 @@ INSTALLED_APPS = [
     'servicehours',  # Service hours tracking & approvals
     'comms',
     'student360',
+    'parent360',
+    'executive360',
     'graduation',
 ]
 

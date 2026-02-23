@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
+from django.db.models import Sum, Q
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.http import JsonResponse
 from rest_framework.views import APIView
@@ -76,6 +79,70 @@ def _get_student(student_id, school):
         return qs.get(id=student_id)
     except Exception:
         return None
+
+
+# ---------------------------------------------------------------------------
+# Dashboard v2 helpers
+# ---------------------------------------------------------------------------
+
+def _safe_decimal(x, default=Decimal("0")):
+    try:
+        return Decimal(str(x))
+    except (InvalidOperation, TypeError, ValueError):
+        return default
+
+
+def _compute_weighted_percent(grade_qs):
+    """
+    Returns (percent_0_to_100, earned_sum, possible_sum).
+    Only includes entries where points_possible > 0.
+    """
+    earned = Decimal("0")
+    possible = Decimal("0")
+    for ge in grade_qs:
+        pe = _safe_decimal(getattr(ge, "points_earned", None))
+        pp = _safe_decimal(getattr(ge, "points_possible", None))
+        if pp > 0:
+            possible += pp
+            earned += pe
+    if possible <= 0:
+        return None, earned, possible
+    return (earned / possible) * Decimal("100"), earned, possible
+
+
+def _percent_to_gpa_proxy(pct):
+    """Simple 4.0-scale proxy — replace later with your actual grading scale."""
+    if pct is None:
+        return None
+    for threshold, gpa in [
+        (93, "4.0"), (90, "3.7"), (87, "3.3"), (83, "3.0"),
+        (80, "2.7"), (77, "2.3"), (73, "2.0"), (70, "1.7"),
+        (67, "1.3"), (65, "1.0"),
+    ]:
+        if pct >= threshold:
+            return Decimal(gpa)
+    return Decimal("0.0")
+
+
+def _try_get_core_student(households_student):
+    """Bridge households.Student → core.Student for ServiceEntry FK (legacy)."""
+    try:
+        from core.models import Student as CoreStudent
+    except Exception:
+        return None
+    email = getattr(households_student, "email", None)
+    if email:
+        cs = CoreStudent.objects.filter(email__iexact=email).first()
+        if cs:
+            return cs
+    first = getattr(households_student, "first_name", None)
+    last = getattr(households_student, "last_name", None)
+    if first and last:
+        cs = CoreStudent.objects.filter(first_name__iexact=first, last_name__iexact=last).first()
+        if cs:
+            return cs
+    return None
+
 
 class StudentOverview(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -217,6 +284,112 @@ class StudentOverview(APIView):
                 })
             comms["latest_threads"] = latest
 
+        # --- Student Dashboard v2 (read-only, degrades gracefully) ---
+        dashboard_v2 = {
+            "gpa": None,
+            "attendance": {"available": False},
+            "current_average": None,
+            "missing_assignments": 0,
+            "upcoming_assignments": [],
+            "today_schedule": [],
+            "service_hours": {"available": False, "completed": 0, "required": 30},
+            "financial": {"available": False, "balance_cents": 0},
+            "alerts": [],
+        }
+
+        # Grades + assignments (real data)
+        try:
+            from gradebook.models import GradeEntry
+            from academics.models import Assignment
+        except Exception:
+            GradeEntry = None
+            Assignment = None
+
+        if GradeEntry and Assignment and student:
+            today = timezone.now().date()
+            future = today + timedelta(days=7)
+
+            ge_qs = GradeEntry.objects.filter(student=student).select_related("assignment")
+
+            pct, _earned, _possible = _compute_weighted_percent(ge_qs)
+            if pct is not None:
+                dashboard_v2["current_average"] = float(pct.quantize(Decimal("0.1")))
+                gpa = _percent_to_gpa_proxy(pct)
+                dashboard_v2["gpa"] = float(gpa) if gpa is not None else None
+
+            # Missing: published, past due, no entry or entry lacks earned score
+            ge_assignment_ids = set(
+                ge_qs.exclude(assignment=None).values_list("assignment_id", flat=True)
+            )
+            past_published = Assignment.objects.filter(is_published=True, due_date__lt=today)
+            missing_no_entry = past_published.exclude(id__in=ge_assignment_ids).count()
+            missing_blank = ge_qs.filter(
+                assignment__is_published=True,
+                assignment__due_date__lt=today,
+            ).filter(Q(points_earned__isnull=True) | Q(points_possible__isnull=True)).count()
+            dashboard_v2["missing_assignments"] = int(missing_no_entry + missing_blank)
+
+            # Upcoming: next 7 days
+            upcoming = (
+                Assignment.objects.filter(is_published=True, due_date__gte=today, due_date__lte=future)
+                .order_by("due_date")[:10]
+            )
+            dashboard_v2["upcoming_assignments"] = [
+                {
+                    "id": str(a.id),
+                    "title": a.name,
+                    "due_date": a.due_date.isoformat() if a.due_date else None,
+                    "points_possible": float(_safe_decimal(a.points_possible)) if a.points_possible is not None else None,
+                }
+                for a in upcoming
+            ]
+
+        # Service hours (bridged via core.Student)
+        try:
+            from servicehours.models import ServiceEntry as SE
+            core_student = _try_get_core_student(student) if student else None
+            if core_student:
+                approved_qs = SE.objects.filter(student=core_student, status="approved")
+                total_hours = float(
+                    approved_qs.aggregate(t=Coalesce(Sum("hours"), Decimal("0")))[ "t"]
+                )
+                dashboard_v2["service_hours"] = {
+                    "available": True,
+                    "completed": round(total_hours, 1),
+                    "required": 30,
+                }
+        except Exception:
+            pass
+
+        # Finance: InvoiceLine is student-scoped (best available)
+        try:
+            from billing.models import InvoiceLine, Invoice as Inv
+            lines = InvoiceLine.objects.filter(student=student).select_related("invoice")
+            inv_filter = Q()
+            if hasattr(Inv, "status"):
+                inv_filter = Q(invoice__status__in=["open", "unpaid", "pending"])
+            elif hasattr(Inv, "is_paid"):
+                inv_filter = Q(invoice__is_paid=False)
+            elif hasattr(Inv, "paid_at"):
+                inv_filter = Q(invoice__paid_at__isnull=True)
+            if inv_filter:
+                lines = lines.filter(inv_filter)
+            total_amount = lines.aggregate(total=Coalesce(Sum("amount"), Decimal("0")))[ "total"]
+            balance_cents = int((_safe_decimal(total_amount) * Decimal("100")).quantize(Decimal("1")))
+            dashboard_v2["financial"] = {"available": True, "balance_cents": balance_cents}
+        except Exception:
+            pass
+
+        # Alerts
+        try:
+            avg = dashboard_v2.get("current_average")
+            if avg is not None and avg < 75:
+                dashboard_v2["alerts"].append({"type": "academic", "severity": "warning", "message": "Current average is below 75%."})
+            if dashboard_v2.get("missing_assignments", 0) >= 3:
+                dashboard_v2["alerts"].append({"type": "work", "severity": "warning", "message": "You have 3+ missing assignments."})
+        except Exception:
+            pass
+
         payload = {
             "student": {
                 "id": str(getattr(student, "id")) if student else str(student_id),
@@ -232,5 +405,47 @@ class StudentOverview(APIView):
             "discipline": discipline,
             "service_hours": service,
             "comms": comms,
+            "dashboard_v2": dashboard_v2,
         }
         return JsonResponse(payload, status=200, safe=True)
+
+
+class StudentSelfOverview(APIView):
+    """Resolve the calling user to their student record, then delegate to StudentOverview."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        school = _get_school(request)
+        if not school:
+            return JsonResponse({"detail": "Missing or invalid school context"}, status=400)
+
+        user = request.user
+        first_name = getattr(user, "first_name", "").strip()
+        last_name = getattr(user, "last_name", "").strip()
+
+        Student = _find_student_model()
+        if not Student:
+            return JsonResponse({"detail": "Student model unavailable"}, status=503)
+
+        qs = Student.objects.all()
+        if hasattr(Student, "school"):
+            qs = qs.filter(school=school)
+        elif hasattr(Student, "school_id"):
+            qs = qs.filter(school_id=str(school.id))
+
+        student = None
+        if first_name and last_name:
+            student = qs.filter(first_name__iexact=first_name, last_name__iexact=last_name).first()
+
+        if student is None:
+            return JsonResponse(
+                {"detail": "No student profile found for this user. Contact your school administrator."},
+                status=404,
+            )
+
+        # Delegate to the full overview view using the resolved student_id
+        delegate = StudentOverview()
+        delegate.request = request
+        delegate.args = []
+        delegate.kwargs = {"student_id": student.id}
+        return delegate.get(request, student_id=student.id)
