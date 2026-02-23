@@ -150,6 +150,10 @@ def _decision_from_payload(payload: dict) -> str | None:
 @permission_classes([IsAuthenticated])
 def admissions_summary(request):
     """GET /api/v1/admissions/summary/ - Pipeline KPIs for admissions director."""
+    from core.permissions import user_has_permission
+    school = getattr(request, "school", None)
+    if not user_has_permission(request.user, "admissions.view", school=school):
+        return Response({"detail": "Permission denied."}, status=403)
     school_id = _get_school_id(request)
     if not school_id:
         return Response({"detail": "Missing required header: X-School-Id"}, status=400)
@@ -289,6 +293,10 @@ def admissions_summary(request):
 @permission_classes([IsAuthenticated])
 def admissions_drilldown(request):
     """GET /api/v1/admissions/drilldown/ - Paginated lead details."""
+    from core.permissions import user_has_permission
+    school = getattr(request, "school", None)
+    if not user_has_permission(request.user, "admissions.view", school=school):
+        return Response({"detail": "Permission denied."}, status=403)
     school_id = _get_school_id(request)
     if not school_id:
         return Response({"detail": "Missing required header: X-School-Id"}, status=400)
