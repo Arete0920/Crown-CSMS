@@ -1,6 +1,7 @@
 from django.db.models import Count
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from core.permissions import CrownModulePermission
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
@@ -24,6 +25,7 @@ class ClassroomViewSet(viewsets.ReadOnlyModelViewSet):
     Read-only Classroom endpoints for demo + operator dashboards.
     Scoping: requires X-School-Id, filters by school.
     """
+    permission_classes = [CrownModulePermission("classroom.view")]
     lookup_field = "id"
 
     def get_queryset(self):

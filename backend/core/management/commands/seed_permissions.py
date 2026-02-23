@@ -72,6 +72,9 @@ PERMISSIONS = [
     ("communications.view",        "View communications dashboard"),
     ("student_services.view",      "View student-services dashboard"),
 
+    # ── Classroom tier ───────────────────────────────────────────────────
+    ("classroom.view",             "View classroom roster and snapshot data"),
+
     # ── Human Resources tier ─────────────────────────────────────────────
     ("hr.view",                    "View HR / staff directory dashboard"),
     ("hr.edit",                    "Create and edit employee records"),
@@ -107,6 +110,7 @@ ROLE_PERMISSIONS: dict = {
         "marketing.view", "advancement.view", "advancement.edit",
         "pd.view", "pd.edit",
         "hr.view", "hr.edit", "safety.view", "safety.edit",
+        "classroom.view",
     ],
     "FINANCE_DIRECTOR": [
         "finance.view", "finance.edit", "finance.period_lock",
@@ -119,10 +123,10 @@ ROLE_PERMISSIONS: dict = {
     ],
     "REGISTRAR": [
         "admissions.view", "admissions.edit",
-        "academics.view", "registrar.view", "metrics.view",
+        "academics.view", "registrar.view", "classroom.view", "metrics.view",
     ],
     "TEACHER": [
-        "teacher.view", "academics.view", "academics.edit",
+        "teacher.view", "academics.view", "academics.edit", "classroom.view",
     ],
     "SUPPORT": [
         "health.view", "metrics.view",
@@ -146,11 +150,12 @@ ROLE_PERMISSIONS: dict = {
         "marketing.view", "advancement.view", "advancement.edit",
         "pd.view", "pd.edit",
         "hr.view", "hr.edit", "safety.view", "safety.edit",
+        "classroom.view",
     ],
     "finance":         ["finance.view", "finance.edit", "billing.view", "integrity.view"],
     "aid_director":    ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view"],
-    "registrar":       ["admissions.view", "academics.view", "registrar.view"],
-    "teacher":         ["teacher.view", "academics.view", "academics.edit"],
+    "registrar":       ["admissions.view", "academics.view", "registrar.view", "classroom.view"],
+    "teacher":         ["teacher.view", "academics.view", "academics.edit", "classroom.view"],
     "nurse":           ["health.view"],
     "health":          ["health.view"],
     "counselor":       ["counseling.view"],
