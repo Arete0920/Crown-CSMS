@@ -225,31 +225,16 @@ jobs:
           for attempt in $(seq 1 20); do
             BODY="$(curl -fsS --max-time 10 "$URL" 2>/dev/null || true)"
             if [ -n "$BODY" ]; then
-              echo "$BODY" > health.json
-              result=$(python - <<'PY'
-import json, os, sys
-want = os.environ["WANT_SHA"]
-try:
-    with open("health.json","r",encoding="utf-8") as f:
-        d = json.load(f)
-except Exception as e:
-    print(f"PARSE_ERROR: {e}")
-    sys.exit(2)
-got = d.get("build_sha","")
-if not got:
-    print("MISSING_build_sha")
-    sys.exit(2)
-if got == want or got.startswith(want[:8]) or want.startswith(got[:7]):
-    print(f"OK got={got}")
-    sys.exit(0)
-print(f"MISMATCH got={got} want={want}")
-sys.exit(1)
-PY
-              )
-              echo "Attempt $attempt: $result"
-              if echo "$result" | grep -q "^OK"; then
-                echo "✅ build_sha verified: $result"
-                exit 0
+              GOT="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)"
+              if [ -n "$GOT" ]; then
+                if [ "$GOT" = "$WANT_SHA" ] || [ "${GOT:0:8}" = "${WANT_SHA:0:8}" ] || [ "${WANT_SHA:0:7}" = "${GOT:0:7}" ]; then
+                  echo "✅ build_sha verified: got=$GOT want=$WANT_SHA"
+                  exit 0
+                else
+                  echo "Attempt $attempt: MISMATCH got=$GOT want=$WANT_SHA"
+                fi
+              else
+                echo "Attempt $attempt: build_sha missing in response"
               fi
             else
               echo "Attempt $attempt: health probe returned empty (app still starting)"
