@@ -62,6 +62,16 @@ jobs:
 
           echo "DEPLOY_TAG=$DEPLOY_TAG" >> "$GITHUB_ENV"
 
+      - name: Guard PROD_API_BASE secret
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.PROD_API_BASE }}" ]; then
+            echo "RESULT=FAIL"
+            echo "FAIL: Missing repo secret PROD_API_BASE."
+            echo "      Set it to the backend prod URL, e.g. https://crown-api-prod.azurewebsites.net"
+            exit 1
+          fi
+
       - name: Run proof ceremony
         shell: pwsh
         env:
