@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 import { getInvoices } from "../api/finance";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import Drawer from "../components/Drawer";
@@ -146,9 +147,7 @@ export default function FinanceInvoicesList() {
   if (error) {
     return (
       <CrownLayout title="Finance" subtitle="Invoice history and exports">
-        <div style={{ color: "#dc2626", marginTop: "1rem" }}>
-          Error: {error}
-        </div>
+        <ErrorBanner title="Failed to load invoices" message={error} />
       </CrownLayout>
     );
   }

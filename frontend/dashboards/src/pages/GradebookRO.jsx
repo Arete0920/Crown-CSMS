@@ -1100,24 +1100,15 @@ export function GradebookRO() {
             </h2>
 
             {drilldownError && (
-              <div
-                style={{
-                  background: "#fee",
-                  border: "1px solid #c33",
-                  padding: "1rem",
-                  borderRadius: "0.5rem",
-                  marginBottom: "1rem",
-                  color: "#c33",
-                }}
-              >
-                <strong>Error:</strong> {drilldownError}
+              <>
+                <ErrorBanner title="Failed to load student summary" message={drilldownError} />
                 <button
                   onClick={() => handleOpenDrilldown(drilldownStudent.student_id, drilldownStudent.student_name)}
-                  style={{ marginLeft: "1rem", padding: "0.25rem 0.5rem" }}
+                  style={{ marginBottom: "1rem", padding: "0.25rem 0.5rem" }}
                 >
                   Retry
                 </button>
-              </div>
+              </>
             )}
 
             {drilldownLoading && (

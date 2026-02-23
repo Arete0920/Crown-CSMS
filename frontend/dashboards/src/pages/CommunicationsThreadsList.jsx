@@ -3,6 +3,7 @@ import { getThreads, getThreadDetail } from "../api/communications";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import Drawer from "../components/Drawer";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 
 export default function CommunicationsThreadsList() {
   const [data, setData] = useState([]);
@@ -170,9 +171,7 @@ export default function CommunicationsThreadsList() {
   if (error) {
     return (
       <CrownLayout title="Communications — Threads">
-        <div style={{ color: "#dc2626", marginTop: "1rem" }}>
-          Error: {error}
-        </div>
+        <ErrorBanner title="Failed to load threads" message={error} />
       </CrownLayout>
     );
   }
@@ -362,9 +361,7 @@ export default function CommunicationsThreadsList() {
             )}
 
             {!loadingThread && threadDetail && threadDetail.error && (
-              <div style={{ color: "#dc2626" }}>
-                Error loading messages: {threadDetail.error}
-              </div>
+              <ErrorBanner title="Failed to load messages" message={threadDetail.error} />
             )}
 
             {!loadingThread && threadDetail && threadDetail.messages && (

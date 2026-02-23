@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchStudents, fetchTranscript } from "../api/academics";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 
 export function TranscriptRO() {
   const [students, setStudents] = useState([]);
@@ -93,20 +94,7 @@ export function TranscriptRO() {
           </button>
         </div>
 
-        {error && (
-          <div
-            style={{
-              padding: 12,
-              backgroundColor: "#fee",
-              border: "1px solid #c33",
-              borderRadius: 4,
-              color: "#c33",
-              marginBottom: 16,
-            }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <ErrorBanner title="Transcript error" message={error} />}
       </div>
 
       {/* Loading state */}

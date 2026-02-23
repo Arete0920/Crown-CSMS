@@ -6,6 +6,7 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownCard from "../components/crown/CrownCard.jsx";
 import CrownMetricCard from "../components/crown/CrownMetricCard.jsx";
 import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 
 /*
   Crown2026 – Billing Dashboard (0101 UI)
@@ -410,7 +411,7 @@ export function BillingDashboard() {
         <div style={{ marginLeft: "auto" }} />
       </div>
 
-      {openError ? <div style={{ marginBottom: 12, color: "#b00020" }}>{openError}</div> : null}
+      {openError ? <ErrorBanner title="Open invoices error" message={openError} /> : null}
 
       {/* Billing Ops */}
       <div style={{ border: "1px solid #ddd", borderRadius: 10, padding: 14, marginBottom: 16 }}>
@@ -559,7 +560,7 @@ export function BillingDashboard() {
           </div>
         </div>
 
-        {payError ? <div style={{ color: "#b00020", marginBottom: 8 }}>{payError}</div> : null}
+        {payError ? <ErrorBanner title="Payment error" message={payError} /> : null}
         {payOk ? <div style={{ color: "#0b6b0b", marginBottom: 8 }}>{payOk}</div> : null}
 
         <button className="crown-btn crown-btn-primary" onClick={recordPayment} disabled={payBusy}>
