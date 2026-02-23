@@ -103,6 +103,10 @@ class FinancialAidDrilldownView(APIView):
         school = getattr(request, "school", None)
         if not user_has_permission(request.user, "financial_aid.view", school=school):
             return Response({"detail": "Permission denied."}, status=403)
+        # Rationale is sensitive — only visible to holders of financial_aid.view_rationale
+        can_see_rationale = user_has_permission(
+            request.user, "financial_aid.view_rationale", school=school
+        )
         school_id = require_school_id(request)
         academic_year = request.query_params.get("academic_year")
         bucket = request.query_params.get("bucket")  # optional
@@ -169,7 +173,7 @@ class FinancialAidDrilldownView(APIView):
                     "amount": str(a.amount),
                     "application_status": application_status,
                     "award_status": award_status,
-                    "rationale": a.rationale if a.rationale else None,
+                    "rationale": (a.rationale if a.rationale else None) if can_see_rationale else None,
                     "updated_at": a.updated_at.isoformat() if a.updated_at else None,
                 }
             )

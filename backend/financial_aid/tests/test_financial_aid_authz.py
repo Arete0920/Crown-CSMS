@@ -252,3 +252,83 @@ class TestFinancialAidTenantIsolation:
             f"Expected 1 award for school_a, got {data['total']} "
             f"(school_b data must not leak)"
         )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Layer C Phase 2 — rationale field redaction
+# ──────────────────────────────────────────────────────────────────────────────
+
+class TestRationaleFieldRedaction:
+    """
+    financial_aid.view_rationale gates the per-award rationale text.
+
+    AID_DIRECTOR holds this permission → sees the text.
+    FINANCE_DIRECTOR holds only financial_aid.view → gets null.
+    HEAD_OF_SCHOOL holds only financial_aid.view → gets null.
+    """
+
+    def test_aid_director_sees_rationale(self):
+        school = _school("Rationale AID")
+        user = _user("aid_see_rationale")
+        _assign_role(user, school, "AID_DIRECTOR")
+        _grant("AID_DIRECTOR", "financial_aid.view")
+        _grant("AID_DIRECTOR", "financial_aid.view_rationale")
+        _seed_fa_data(school.id)
+
+        c = Client()
+        c.force_login(user)
+        r = c.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        assert r.status_code == 200
+        rows = r.json().get("rows", [])
+        assert rows, "Expected at least one award row"
+        for row in rows:
+            assert row["rationale"] == "Demonstrable need", (
+                f"AID_DIRECTOR should see rationale text, got {row['rationale']!r}"
+            )
+
+    def test_finance_director_rationale_is_null(self):
+        school = _school("Rationale FIN")
+        user = _user("fin_no_rationale")
+        _assign_role(user, school, "FINANCE_DIRECTOR")
+        _grant("FINANCE_DIRECTOR", "financial_aid.view")
+        # FINANCE_DIRECTOR intentionally NOT granted financial_aid.view_rationale
+        _seed_fa_data(school.id)
+
+        c = Client()
+        c.force_login(user)
+        r = c.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        assert r.status_code == 200
+        rows = r.json().get("rows", [])
+        assert rows, "Expected at least one award row"
+        for row in rows:
+            assert row["rationale"] is None, (
+                f"FINANCE_DIRECTOR must not see rationale text, got {row['rationale']!r}"
+            )
+
+    def test_head_of_school_rationale_is_null(self):
+        school = _school("Rationale HOS")
+        user = _user("hos_no_rationale")
+        _assign_role(user, school, "HEAD_OF_SCHOOL")
+        _grant("HEAD_OF_SCHOOL", "financial_aid.view")
+        # HEAD_OF_SCHOOL intentionally NOT granted financial_aid.view_rationale
+        _seed_fa_data(school.id)
+
+        c = Client()
+        c.force_login(user)
+        r = c.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        assert r.status_code == 200
+        rows = r.json().get("rows", [])
+        assert rows, "Expected at least one award row"
+        for row in rows:
+            assert row["rationale"] is None, (
+                f"HEAD_OF_SCHOOL must not see rationale text, got {row['rationale']!r}"
+            )

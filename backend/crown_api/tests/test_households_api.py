@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import School, UserAccount, UserRole
 from households.models import Guardian, Household, Student
 
 
@@ -22,7 +22,7 @@ class HouseholdsApiTests(TestCase):
             school=self.school,
         )
 
-        # Non-staff user with school context
+        # Non-staff user with school context — guardian-scoped (PARENT role required)
         self.nonstaff_user = UserAccount.objects.create_user(
             username="normaluser",
             email="normal@example.com",
@@ -30,6 +30,7 @@ class HouseholdsApiTests(TestCase):
             is_staff=False,
             school=self.school,
         )
+        UserRole.objects.create(user=self.nonstaff_user, school=self.school, role_code="PARENT")
 
         # Households in test school
         self.household = Household.objects.create(
@@ -136,7 +137,7 @@ class HouseholdsApiTests(TestCase):
         self.assertEqual(no.status_code, 404)
 
     def test_unknown_email_nonstaff_empty_list_and_404_detail(self):
-        """Non-staff with no matching guardian sees nothing."""
+        """Non-staff PARENT with no matching guardian sees nothing."""
         unknown = UserAccount.objects.create_user(
             username="unknown",
             email="unknown@example.com",
@@ -144,6 +145,8 @@ class HouseholdsApiTests(TestCase):
             is_staff=False,
             school=self.school,
         )
+        # Must be PARENT role for guardian scoping to apply
+        UserRole.objects.create(user=unknown, school=self.school, role_code="PARENT")
         self.client.force_authenticate(user=unknown)
         resp = self.client.get("/api/households/")
         self.assertEqual(resp.status_code, 200)
@@ -173,7 +176,7 @@ class HouseholdsApiTests(TestCase):
         self.assertEqual(resp.status_code, 404)
 
     def test_nonstaff_blank_email_sees_nothing(self):
-        """Non-staff with blank email cannot see any households."""
+        """PARENT with blank email cannot see any households (no guardian match)."""
         blank_user = UserAccount.objects.create_user(
             username="blank_email",
             email="",
@@ -181,6 +184,8 @@ class HouseholdsApiTests(TestCase):
             is_staff=False,
             school=self.school,
         )
+        # Must be PARENT role; blank email → qs.none() in guardian scoping
+        UserRole.objects.create(user=blank_user, school=self.school, role_code="PARENT")
         self.client.force_authenticate(user=blank_user)
         resp = self.client.get("/api/households/")
         self.assertEqual(resp.status_code, 200)

@@ -1,8 +1,18 @@
 from django.conf import settings
 from rest_framework import permissions, viewsets
+from core.models import UserRole
 from .models import Guardian, Household, Student
 from .scoping import scope_to_school
 from .serializers import GuardianSerializer, HouseholdSerializer, StudentSerializer
+
+
+def _user_has_parent_role(user, school_id):
+    """Return True if user holds a PARENT role at this school."""
+    if not hasattr(user, "roles"):
+        return False
+    if school_id:
+        return user.roles.filter(role_code="PARENT", school_id=school_id).exists()
+    return user.roles.filter(role_code="PARENT").exists()
 
 
 class ScopedReadOnlyModelViewSet(viewsets.ReadOnlyModelViewSet):
@@ -24,16 +34,18 @@ class HouseholdViewSet(ScopedReadOnlyModelViewSet):
 		# Parent class (ScopedReadOnlyModelViewSet) handles school scoping via scope_to_school()
 		# We only add optional guardian-level filtering here
 		qs = super().get_queryset()
-		
-		# Apply guardian scoping if enabled (opt-in)
+
+		# Apply guardian scoping if enabled — PARENT role users only
 		if getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", False):
 			user = self.request.user
-			if not getattr(user, "is_staff", False):
+			school = getattr(self.request, "school", None)
+			school_id = school.id if school else None
+			if _user_has_parent_role(user, school_id):
 				email = getattr(user, "email", None)
 				if not email:
 					return qs.none()
 				qs = qs.filter(guardians__email__iexact=email).distinct()
-		
+
 		return qs
 
 
@@ -48,18 +60,20 @@ class StudentViewSet(ScopedReadOnlyModelViewSet):
 
 	def get_queryset(self):
 		qs = Student.objects.select_related("household").all()
-		
+
 		# Apply school scoping
 		qs = scope_to_school(self.request, qs)
-		
-		# Apply guardian scoping if enabled (opt-in)
+
+		# Apply guardian scoping if enabled — PARENT role users only
 		if getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", False):
 			user = self.request.user
-			if not getattr(user, "is_staff", False):
+			school = getattr(self.request, "school", None)
+			school_id = school.id if school else None
+			if _user_has_parent_role(user, school_id):
 				email = getattr(user, "email", None)
 				if not email:
 					return qs.none()
 				# Students must be in households where guardian email matches
 				qs = qs.filter(household__guardians__email__iexact=email).distinct()
-		
+
 		return qs
