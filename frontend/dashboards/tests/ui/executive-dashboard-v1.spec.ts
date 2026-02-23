@@ -46,7 +46,8 @@ test("Executive Dashboard renders admin KPI cards and Executive Insights section
   await expect(page.locator("text=Enrollment Funnel")).toBeVisible();
 
   // Executive Insights card title (added in this slice)
-  await expect(page.locator("text=Executive Insights")).toBeVisible();
+  // .first() required: ErrorBanner title also contains "Executive insights" as a substring (case-insensitive match)
+  await expect(page.locator("text=Executive Insights").first()).toBeVisible();
 
   // ExecMetric labels (always rendered regardless of API availability)
   await expect(page.locator("text=Receivables")).toBeVisible();
