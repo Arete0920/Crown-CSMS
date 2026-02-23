@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from core.permissions import user_has_permission
 from .models import FinancialAidApplication, AidAward, AidBucket
 from .tenant import require_school_id
 
@@ -11,6 +12,9 @@ class FinancialAidSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        school = getattr(request, "school", None)
+        if not user_has_permission(request.user, "financial_aid.view", school=school):
+            return Response({"detail": "Permission denied."}, status=403)
         school_id = require_school_id(request)
         academic_year = request.query_params.get("academic_year")
 
@@ -96,6 +100,9 @@ class FinancialAidDrilldownView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        school = getattr(request, "school", None)
+        if not user_has_permission(request.user, "financial_aid.view", school=school):
+            return Response({"detail": "Permission denied."}, status=403)
         school_id = require_school_id(request)
         academic_year = request.query_params.get("academic_year")
         bucket = request.query_params.get("bucket")  # optional

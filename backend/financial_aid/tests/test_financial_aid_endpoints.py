@@ -2,15 +2,27 @@ import uuid
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
+from core.models import CrownPermission, RolePermission, School, UserRole
 from financial_aid.models import FinancialAidApplication, AidAward, AidBucket
 
 class FinancialAidEndpointsTests(APITestCase):
     def setUp(self):
         User = get_user_model()
         self.user = User.objects.create_user(username="test@crown-demo.local", password="pass1234")
+
+        # Grant financial_aid.view so these contract tests reach the business logic.
+        # Permission gate tests live in test_financial_aid_authz.py.
+        self.school = School.objects.create(name="FA Endpoints Test School")
+        UserRole.objects.create(user=self.user, school=self.school, role_code="AID_DIRECTOR")
+        _perm, _ = CrownPermission.objects.get_or_create(
+            code="financial_aid.view", defaults={"description": "View financial aid"}
+        )
+        RolePermission.objects.get_or_create(role_code="AID_DIRECTOR", permission=_perm)
+
         self.client.force_authenticate(user=self.user)
 
-        self.school_id = uuid.uuid4()
+        # Use the real school's ID so the middleware can validate it.
+        self.school_id = self.school.id
         self.household_id = uuid.uuid4()
 
         app = FinancialAidApplication.objects.create(

@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from applications.models import Application, Applicant, ApplicationEvent
-from core.models import AcademicYear, School
+from core.models import AcademicYear, CrownPermission, RolePermission, School, UserRole
 from households.models import Household
 
 
@@ -14,11 +14,20 @@ class AdmissionsEndpointsTests(APITestCase):
     def setUp(self):
         User = get_user_model()
         self.user = User.objects.create_user(username="test@crown-demo.local", password="pass1234")
+
+        # Grant admissions.view so these contract tests reach the business logic.
+        # Permission gate tests live in test_admissions_authz.py (Layer C).
+        _perm, _ = CrownPermission.objects.get_or_create(
+            code="admissions.view", defaults={"description": "View admissions"}
+        )
+        RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=_perm)
+
         self.client.force_authenticate(user=self.user)
 
         # Create school
         self.school = School.objects.create(name="Test School")
         self.school_id = self.school.id
+        UserRole.objects.create(user=self.user, school=self.school, role_code="REGISTRAR")
 
         # Create a test household (required for Application)
         self.household = Household.objects.create(

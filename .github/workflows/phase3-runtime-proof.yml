@@ -58,6 +58,11 @@ jobs:
           cd backend
           python manage.py seed_demo_school --wipe
 
+      - name: Seed permissions (role → permission mappings required for authz gates)
+        run: |
+          cd backend
+          python manage.py seed_permissions
+
       - name: Seed minimum ledger entities (for parameterized proof)
         run: |
           cd backend
