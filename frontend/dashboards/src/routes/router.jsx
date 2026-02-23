@@ -53,6 +53,8 @@ import RegistrarDashboard from '../pages/RegistrarDashboard.jsx';
 import CommunicationsDirectorDashboard from '../pages/CommunicationsDirectorDashboard.jsx';
 import PDDashboard from '../pages/PDDashboard.jsx';
 import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
+import HumanResources from '../pages/HumanResources.jsx';
+import SafetyDashboard from '../pages/SafetyDashboard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -246,6 +248,14 @@ export const router = createBrowserRouter([
   {
     path: '/student-services',
     element: <StudentServicesDashboard />,
+  },
+  {
+    path: '/hr',
+    element: <HumanResources />,
+  },
+  {
+    path: '/safety',
+    element: <SafetyDashboard />,
   },
 ]);
 

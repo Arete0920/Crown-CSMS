@@ -44,4 +44,10 @@ urlpatterns = [
     path("", include("crown_api.api_urls")),
     # Financial Aid endpoints
     path("financial-aid/", include("financial_aid.urls")),
+    # Sprint expansion modules
+    path("hr/", include("hr.urls")),
+    path("advancement/", include("advancement.urls")),
+    path("pd/", include("pdhub.urls")),
+    path("safety/", include("safety.urls")),
+    path("connectors/", include("integrations_real.urls")),
 ]

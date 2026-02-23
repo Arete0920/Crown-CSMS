@@ -164,6 +164,11 @@ INSTALLED_APPS = [
     'parent360',
     'executive360',
     'graduation',
+    'hr.apps.HrConfig',
+    'advancement.apps.AdvancementConfig',
+    'pdhub.apps.PdhubConfig',
+    'safety.apps.SafetyConfig',
+    'integrations_real.apps.IntegrationsRealConfig',
 ]
 
 MIDDLEWARE = [
