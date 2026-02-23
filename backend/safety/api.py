@@ -1,52 +1,67 @@
-from rest_framework import viewsets, permissions
+﻿from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Count
 
+from core.audit import audit_event
+from core.permissions import CrownModulePermission
 from .models import IncidentReport
-from .serializers import IncidentSerializer
+from .serializers import IncidentSerializer as IncidentReportSerializer
 
 
-def _school_id(request):
-    return request.headers.get("X-School-Id") or request.headers.get("X-School-ID")
+def _require_school(request):
+    school = getattr(request, "school", None)
+    if school is None:
+        raise PermissionDenied("Tenant context required (X-School-Id header missing).")
+    return school
 
 
 class IncidentViewSet(viewsets.ModelViewSet):
-    serializer_class = IncidentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = IncidentReportSerializer
+    permission_classes = [CrownModulePermission("safety.view", write_code="safety.edit")]
 
     def get_queryset(self):
-        school_id = _school_id(self.request)
-        if not school_id:
-            return IncidentReport.objects.none()
-        return IncidentReport.objects.filter(school_id=school_id)
+        school = _require_school(self.request)
+        return IncidentReport.objects.filter(school_id=school.id)
 
     def perform_create(self, serializer):
-        serializer.save(school_id=_school_id(self.request))
+        school = _require_school(self.request)
+        instance = serializer.save(school_id=school.id)
+        audit_event("safety.incident.created", user=self.request.user, school=school,
+                    extra={"incident_id": str(instance.id)})
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        audit_event("safety.incident.updated", user=self.request.user,
+                    school=getattr(self.request, "school", None),
+                    extra={"incident_id": str(instance.id)})
+
+    def perform_destroy(self, instance):
+        audit_event("safety.incident.deleted", user=self.request.user,
+                    school=getattr(self.request, "school", None),
+                    extra={"incident_id": str(instance.id)})
+        instance.delete()
 
 
 @api_view(["GET"])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def safety_metrics(request):
-    school_id = _school_id(request)
-    if not school_id:
-        return Response({"error": "X-School-Id required"}, status=400)
-
-    qs = IncidentReport.objects.filter(school_id=school_id)
-    open_qs = qs.filter(resolved=False)
-
+    school = _require_school(request)
+    qs = IncidentReport.objects.filter(school_id=school.id)
     by_severity = list(
-        open_qs.values("severity").annotate(count=Count("id")).order_by("-count").values("severity", "count")
+        qs.values("severity").annotate(count=Count("id"))
+        .order_by("severity").values("severity", "count")
     )
-    by_category = list(
-        qs.values("category").annotate(count=Count("id")).order_by("-count")[:5].values("category", "count")
+    by_status = list(
+        qs.values("status").annotate(count=Count("id"))
+        .order_by("status").values("status", "count")
     )
-
     return Response({
-        "total_incidents": qs.count(),
-        "open_incidents": open_qs.count(),
-        "resolved_incidents": qs.filter(resolved=True).count(),
-        "critical_open": open_qs.filter(severity="critical").count(),
-        "by_severity": by_severity,
-        "by_category": by_category,
+        "total_incidents":  qs.count(),
+        "open_incidents":   qs.filter(status="open").count(),
+        "closed_incidents": qs.filter(status="closed").count(),
+        "by_severity":      by_severity,
+        "by_status":        by_status,
     })

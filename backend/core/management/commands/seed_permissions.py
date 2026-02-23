@@ -49,6 +49,7 @@ PERMISSIONS = [
     ("financial_aid.view_rationale", "View per-award case rationale text"),
     ("marketing.view",             "View marketing / enrollment funnel"),
     ("advancement.view",           "View advancement / fundraising dashboard"),
+    ("advancement.edit",           "Create or modify advancement / fundraising records"),
 
     # ── Academics tier ───────────────────────────────────────────────────
     ("teacher.view",               "View teacher dashboard"),
@@ -57,6 +58,7 @@ PERMISSIONS = [
     ("fine_arts.view",             "View fine-arts dashboard"),
     ("library.view",               "View library dashboard"),
     ("pd.view",                    "View professional-development dashboard"),
+    ("pd.edit",                    "Create or modify professional-development records"),
 
     # ── Student & Family tier ────────────────────────────────────────────
     ("parent.view",                "View parent dashboard"),
@@ -70,7 +72,13 @@ PERMISSIONS = [
     ("communications.view",        "View communications dashboard"),
     ("student_services.view",      "View student-services dashboard"),
 
+    # ── Human Resources tier ─────────────────────────────────────────────
+    ("hr.view",                    "View HR / staff directory dashboard"),
+    ("hr.edit",                    "Create and edit employee records"),
+
     # ── Safety & Integrity tier ──────────────────────────────────────────
+    ("safety.view",                "View campus safety / incident dashboard"),
+    ("safety.edit",                "Create and resolve safety incidents"),
     ("security.view",              "View security / safety dashboard"),
     ("integrity.view",             "View academic-integrity dashboard"),
 ]
@@ -96,7 +104,9 @@ ROLE_PERMISSIONS: dict = {
         "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
         "office.view", "it.view", "facilities.view", "transportation.view",
         "security.view", "integrity.view", "metrics.view", "director.actions",
-        "marketing.view", "advancement.view",
+        "marketing.view", "advancement.view", "advancement.edit",
+        "pd.view", "pd.edit",
+        "hr.view", "hr.edit", "safety.view", "safety.edit",
     ],
     "FINANCE_DIRECTOR": [
         "finance.view", "finance.edit", "finance.period_lock",
@@ -133,7 +143,9 @@ ROLE_PERMISSIONS: dict = {
         "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
         "office.view", "it.view", "facilities.view", "transportation.view",
         "security.view", "integrity.view", "metrics.view", "director.actions",
-        "marketing.view", "advancement.view",
+        "marketing.view", "advancement.view", "advancement.edit",
+        "pd.view", "pd.edit",
+        "hr.view", "hr.edit", "safety.view", "safety.edit",
     ],
     "finance":         ["finance.view", "finance.edit", "billing.view", "integrity.view"],
     "aid_director":    ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view"],
@@ -146,10 +158,13 @@ ROLE_PERMISSIONS: dict = {
     "athletic_director": ["athletics.view"],
     "transportation":  ["transportation.view"],
     "facilities":      ["facilities.view"],
+    "hr":              ["hr.view", "hr.edit"],
+    "safety":          ["safety.view", "safety.edit"],
     "security":        ["security.view"],
     "it":              ["it.view", "integrity.view"],
     "marketing":       ["marketing.view"],
-    "advancement":     ["advancement.view"],
+    "advancement":     ["advancement.view", "advancement.edit"],
+    "pd":              ["pd.view", "pd.edit"],
     "chaplain":        ["spiritual_life.view"],
     "spiritual_life":  ["spiritual_life.view"],
     "office_manager":  ["office.view"],

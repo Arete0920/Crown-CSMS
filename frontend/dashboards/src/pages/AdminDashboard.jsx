@@ -276,6 +276,8 @@ export default function AdminDashboard() {
               <QuickAction href="/discipline"      label="Open incident report"  />
               <QuickAction href="/financial-aid"   label="Review aid queue"      />
               <QuickAction href="/admissions"      label="Admissions pipeline"   />
+              <QuickAction href="/hr"              label="Human Resources"       />
+              <QuickAction href="/safety"          label="Safety incidents"      />
               <QuickAction href="/integrity"       label="System integrity"      />
             </div>
           </CrownCard>
