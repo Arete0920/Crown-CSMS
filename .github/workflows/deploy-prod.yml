@@ -60,6 +60,23 @@ jobs:
           echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
           echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
+      - name: "Guard: deploy contract — SHA and tag must be present and valid"
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          SHA="${{ env.DEPLOY_SHA }}"
+          if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
+            echo "ERROR: DEPLOY_SHA is not a full commit SHA (got: '$SHA')"
+            exit 1
+          fi
+          if [[ -z "$TAG" ]]; then
+            echo "ERROR: DEPLOY_TAG is empty — a prod-deploy-* tag is required"
+            exit 1
+          fi
+          echo "✓ Deploy contract satisfied: TAG=$TAG SHA=${SHA:0:7}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
