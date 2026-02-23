@@ -46,6 +46,7 @@ PERMISSIONS = [
     # ── Enrollment & Revenue tier ────────────────────────────────────────
     ("financial_aid.view",         "View financial aid dashboard"),
     ("financial_aid.edit",         "Create or modify aid awards"),
+    ("financial_aid.view_rationale", "View per-award case rationale text"),
     ("marketing.view",             "View marketing / enrollment funnel"),
     ("advancement.view",           "View advancement / fundraising dashboard"),
 
@@ -103,7 +104,7 @@ ROLE_PERMISSIONS: dict = {
         "integrity.view", "metrics.view", "director.actions",
     ],
     "AID_DIRECTOR": [
-        "financial_aid.view", "financial_aid.edit",
+        "financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale",
         "admissions.view", "metrics.view",
     ],
     "REGISTRAR": [
@@ -135,7 +136,7 @@ ROLE_PERMISSIONS: dict = {
         "marketing.view", "advancement.view",
     ],
     "finance":         ["finance.view", "finance.edit", "billing.view", "integrity.view"],
-    "aid_director":    ["financial_aid.view", "financial_aid.edit", "admissions.view"],
+    "aid_director":    ["financial_aid.view", "financial_aid.edit", "financial_aid.view_rationale", "admissions.view"],
     "registrar":       ["admissions.view", "academics.view", "registrar.view"],
     "teacher":         ["teacher.view", "academics.view", "academics.edit"],
     "nurse":           ["health.view"],

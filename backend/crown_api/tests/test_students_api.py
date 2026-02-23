@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import School, UserAccount, UserRole
 from households.models import Guardian, Household, Student
 
 
@@ -27,6 +27,8 @@ class StudentsApiTests(TestCase):
             is_staff=False,
             school=self.school,
         )
+        # PARENT role required for guardian scoping to apply
+        UserRole.objects.create(user=self.parent_user, school=self.school, role_code="PARENT")
 
         # Households in test school
         self.household_a = Household.objects.create(
