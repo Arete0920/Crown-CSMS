@@ -10,6 +10,24 @@ from rest_framework.views import APIView
 from rest_framework import permissions
 
 from core.models import School
+from django.core.exceptions import ImproperlyConfigured
+
+
+def _scope_qs_to_school(qs, model, school):
+    """
+    Fail-closed tenant scoping helper.
+    Every model used in student360 must have either school_id or school.
+    Raises ImproperlyConfigured if neither is present — fail loud, not silent.
+    """
+    if hasattr(model, "school_id"):
+        return qs.filter(school_id=str(school.id))
+    if hasattr(model, "school"):
+        return qs.filter(school=school)
+    raise ImproperlyConfigured(
+        f"{getattr(model, '__name__', str(model))} must have school_id or school "
+        f"for tenant scoping in student360"
+    )
+
 
 # Optional imports (only used if present)
 try:
@@ -162,8 +180,7 @@ class StudentOverview(APIView):
         if AttendanceRecord and student:
             attendance["available"] = True
             qs = AttendanceRecord.objects.all()
-            if hasattr(AttendanceRecord, "school_id"):
-                qs = qs.filter(school_id=str(school.id))
+            qs = _scope_qs_to_school(qs, AttendanceRecord, school)
             # common field names: student or student_id
             if hasattr(AttendanceRecord, "student"):
                 qs = qs.filter(student=student)
@@ -192,8 +209,7 @@ class StudentOverview(APIView):
         if Invoice and student:
             finance["available"] = True
             qs = Invoice.objects.all()
-            if hasattr(Invoice, "school_id"):
-                qs = qs.filter(school_id=str(school.id))
+            qs = _scope_qs_to_school(qs, Invoice, school)
             if hasattr(Invoice, "student"):
                 qs = qs.filter(student=student)
             elif hasattr(Invoice, "student_id"):
@@ -222,8 +238,7 @@ class StudentOverview(APIView):
         if DisciplineIncident and student:
             discipline["available"] = True
             qs = DisciplineIncident.objects.all()
-            if hasattr(DisciplineIncident, "school_id"):
-                qs = qs.filter(school_id=str(school.id))
+            qs = _scope_qs_to_school(qs, DisciplineIncident, school)
             if hasattr(DisciplineIncident, "student"):
                 qs = qs.filter(student=student)
             elif hasattr(DisciplineIncident, "student_id"):
@@ -240,8 +255,7 @@ class StudentOverview(APIView):
         if ServiceEntry and student:
             service["available"] = True
             qs = ServiceEntry.objects.all()
-            if hasattr(ServiceEntry, "school_id"):
-                qs = qs.filter(school_id=str(school.id))
+            qs = _scope_qs_to_school(qs, ServiceEntry, school)
             if hasattr(ServiceEntry, "student"):
                 qs = qs.filter(student=student)
             elif hasattr(ServiceEntry, "student_id"):
@@ -270,10 +284,7 @@ class StudentOverview(APIView):
         if MessageThread:
             comms["available"] = True
             qs = MessageThread.objects.all()
-            if hasattr(MessageThread, "school"):
-                qs = qs.filter(school=school)
-            elif hasattr(MessageThread, "school_id"):
-                qs = qs.filter(school_id=str(school.id))
+            qs = _scope_qs_to_school(qs, MessageThread, school)
             qs = qs.order_by("-created_at")[:3]
             latest = []
             for t in qs:
@@ -428,10 +439,7 @@ class StudentSelfOverview(APIView):
             return JsonResponse({"detail": "Student model unavailable"}, status=503)
 
         qs = Student.objects.all()
-        if hasattr(Student, "school"):
-            qs = qs.filter(school=school)
-        elif hasattr(Student, "school_id"):
-            qs = qs.filter(school_id=str(school.id))
+        qs = _scope_qs_to_school(qs, Student, school)
 
         student = None
         if first_name and last_name:
