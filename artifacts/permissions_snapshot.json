@@ -1,0 +1,206 @@
+﻿[
+  {
+    "code": "academic_support.view",
+    "description": "View SPED / academic-support dashboard"
+  },
+  {
+    "code": "academics.edit",
+    "description": "Enter grades and attendance records"
+  },
+  {
+    "code": "academics.view",
+    "description": "View course enrollment, grades, attendance"
+  },
+  {
+    "code": "admin.view",
+    "description": "View administration dashboard"
+  },
+  {
+    "code": "admissions.edit",
+    "description": "Advance, waitlist, or deny applicants"
+  },
+  {
+    "code": "admissions.view",
+    "description": "View admissions pipeline and applicants"
+  },
+  {
+    "code": "advancement.edit",
+    "description": "Create or modify advancement / fundraising records"
+  },
+  {
+    "code": "advancement.view",
+    "description": "View advancement / fundraising dashboard"
+  },
+  {
+    "code": "aid.edit",
+    "description": "Create or modify aid awards"
+  },
+  {
+    "code": "aid.view",
+    "description": "View aid applications and awards"
+  },
+  {
+    "code": "athletics.view",
+    "description": "View athletics dashboard"
+  },
+  {
+    "code": "billing.view",
+    "description": "View billing and fee dashboard"
+  },
+  {
+    "code": "board.view",
+    "description": "View board / governance dashboard"
+  },
+  {
+    "code": "communications.view",
+    "description": "View communications dashboard"
+  },
+  {
+    "code": "counseling.view",
+    "description": "View counseling dashboard"
+  },
+  {
+    "code": "director.actions",
+    "description": "Execute director-level admin actions"
+  },
+  {
+    "code": "enrollment.edit",
+    "description": "Create and update enrollment records"
+  },
+  {
+    "code": "enrollment.view",
+    "description": "View enrollment records"
+  },
+  {
+    "code": "extended_care.view",
+    "description": "View extended-care dashboard"
+  },
+  {
+    "code": "facilities.view",
+    "description": "View facilities dashboard"
+  },
+  {
+    "code": "finance.edit",
+    "description": "Post ledger entries, reverse transactions"
+  },
+  {
+    "code": "finance.period_lock",
+    "description": "Lock / unlock accounting periods"
+  },
+  {
+    "code": "finance.view",
+    "description": "View financial summaries and ledger"
+  },
+  {
+    "code": "financial_aid.edit",
+    "description": "Create or modify aid awards"
+  },
+  {
+    "code": "financial_aid.view",
+    "description": "View financial aid dashboard"
+  },
+  {
+    "code": "financial_aid.view_rationale",
+    "description": "View per-award case rationale text"
+  },
+  {
+    "code": "fine_arts.view",
+    "description": "View fine-arts dashboard"
+  },
+  {
+    "code": "food.view",
+    "description": "View food-services dashboard"
+  },
+  {
+    "code": "health.dashboard.view",
+    "description": "View student health dashboard"
+  },
+  {
+    "code": "health.view",
+    "description": "View health / system-status dashboard"
+  },
+  {
+    "code": "hr.edit",
+    "description": "Create and edit employee records"
+  },
+  {
+    "code": "hr.view",
+    "description": "View HR / staff directory dashboard"
+  },
+  {
+    "code": "integrity.view",
+    "description": "View academic-integrity dashboard"
+  },
+  {
+    "code": "it.view",
+    "description": "View IT / infrastructure dashboard"
+  },
+  {
+    "code": "ledger.view",
+    "description": "View ledger entries (read-only)"
+  },
+  {
+    "code": "library.view",
+    "description": "View library dashboard"
+  },
+  {
+    "code": "marketing.view",
+    "description": "View marketing / enrollment funnel"
+  },
+  {
+    "code": "metrics.view",
+    "description": "View all KPI dashboards"
+  },
+  {
+    "code": "office.view",
+    "description": "View office operations dashboard"
+  },
+  {
+    "code": "parent.view",
+    "description": "View parent dashboard"
+  },
+  {
+    "code": "pd.edit",
+    "description": "Create or modify professional-development records"
+  },
+  {
+    "code": "pd.view",
+    "description": "View professional-development dashboard"
+  },
+  {
+    "code": "registrar.view",
+    "description": "View registrar dashboard"
+  },
+  {
+    "code": "safety.edit",
+    "description": "Create and resolve safety incidents"
+  },
+  {
+    "code": "safety.view",
+    "description": "View campus safety / incident dashboard"
+  },
+  {
+    "code": "security.view",
+    "description": "View security / safety dashboard"
+  },
+  {
+    "code": "spiritual_life.view",
+    "description": "View spiritual-life dashboard"
+  },
+  {
+    "code": "student.view",
+    "description": "View student dashboard"
+  },
+  {
+    "code": "student_services.view",
+    "description": "View student-services dashboard"
+  },
+  {
+    "code": "teacher.view",
+    "description": "View teacher dashboard"
+  },
+  {
+    "code": "transportation.view",
+    "description": "View transportation dashboard"
+  }
+]
