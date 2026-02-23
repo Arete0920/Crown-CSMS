@@ -78,6 +78,7 @@ export function GradebookRO() {
   const [lastRequest, setLastRequest] = useState(null);
   const [lastError, setLastError] = useState(null);
   const [sectionError, setSectionError] = useState("");
+  const [gradesError, setGradesError] = useState("");
 
   // drilldown state
   const [drilldownStudent, setDrilldownStudent] = useState(null);
@@ -245,6 +246,7 @@ export function GradebookRO() {
           };
         });
 
+        setGradesError("");
         setAssignments(normalizedAssignments);
         setRows(normalizedRows);
         setLastRequest((prev) => ({ ...prev, status: 200, assignments: a.length, rows: r.length }));
@@ -253,7 +255,12 @@ export function GradebookRO() {
         // if aborted, ignore
         if (err?.name === "AbortError") return;
         console.error(err);
-        setLastError({ message: err.message, url: err.url, status: err.status, body: err.body });
+        const msg =
+          (err && err.message) ? err.message :
+          (typeof err === "string") ? err :
+          "Unknown error";
+        setGradesError(`Grades unavailable \u2014 API error: ${msg}`);
+        setLastError({ message: msg, url: err?.url, status: err?.status, body: err?.body });
       })
       .finally(() => {
         setLoadingGrades(false);
@@ -690,6 +697,9 @@ export function GradebookRO() {
 
       {/* Grades states */}
       {selectedSectionId && loadingGrades && <div>Loading grades…</div>}
+      {selectedSectionId && !loadingGrades && gradesError ? (
+        <ErrorBanner title="Failed to load grades" message={gradesError} />
+      ) : null}
 
       {/* Debug panel: show selected section details */}
       {selectedSectionId && !loadingGrades && showDevPanels && (
