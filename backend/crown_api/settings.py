@@ -84,9 +84,15 @@ elif _raw:
 else:
     CSRF_TRUSTED_ORIGINS = []
 
+# Production flag guard — raises RuntimeError if a dangerous flag is enabled with DEBUG=False.
+def _assert_not_prod_true(flag_name: str, flag_value: bool) -> None:
+    if not DEBUG and bool(flag_value):
+        raise RuntimeError(f"{flag_name} cannot be enabled in production.")
+
 # CORS configuration for local development
 CORS_ALLOW_ALL_ORIGINS = _env_bool("CORS_ALLOW_ALL_ORIGINS", default=False)
 CORS_ALLOW_CREDENTIALS = True
+_assert_not_prod_true("CORS_ALLOW_ALL_ORIGINS", CORS_ALLOW_ALL_ORIGINS)
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-school-id",
     "x-crown-school-id",
@@ -104,8 +110,7 @@ CROWN_ENV = os.getenv("CROWN_ENV", "")
 # Requires explicit CROWN_DEMO_MODE=true env var to enable.
 # When enabled, DemoWriteBlockMiddleware blocks all mutating requests.
 CROWN_DEMO_MODE = _env_bool("CROWN_DEMO_MODE", default=False)
-if not DEBUG and CROWN_DEMO_MODE:
-    raise RuntimeError("CROWN_DEMO_MODE cannot be enabled in production.")
+_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)
 CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "CrownDemoKey!2026" if DEBUG else "")
 
 # Tenant header enforcement
