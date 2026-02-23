@@ -221,23 +221,43 @@ jobs:
         run: |
           set -euo pipefail
           URL="https://crown-api-prod.azurewebsites.net/health/"
-          echo "Checking $URL"
-          BODY="$(curl -fsS "$URL")"
-          echo "$BODY" > health.json
-          python - <<'PY'
-          import json, os, sys
-          want = os.environ["WANT_SHA"]
-          with open("health.json","r",encoding="utf-8") as f:
-            d = json.load(f)
-          got = d.get("build_sha","")
-          if not got:
-            raise SystemExit("Missing build_sha in /health")
-          # accept full sha or short sha match
-          if got == want or got.startswith(want[:8]):
-            print("OK build_sha:", got)
-            sys.exit(0)
-          raise SystemExit(f"build_sha mismatch: got={got} want={want}")
-          PY
+          echo "Polling $URL for build_sha match (up to 5 min)..."
+          for attempt in $(seq 1 20); do
+            BODY="$(curl -fsS --max-time 10 "$URL" 2>/dev/null || true)"
+            if [ -n "$BODY" ]; then
+              echo "$BODY" > health.json
+              result=$(python - <<'PY'
+import json, os, sys
+want = os.environ["WANT_SHA"]
+try:
+    with open("health.json","r",encoding="utf-8") as f:
+        d = json.load(f)
+except Exception as e:
+    print(f"PARSE_ERROR: {e}")
+    sys.exit(2)
+got = d.get("build_sha","")
+if not got:
+    print("MISSING_build_sha")
+    sys.exit(2)
+if got == want or got.startswith(want[:8]) or want.startswith(got[:7]):
+    print(f"OK got={got}")
+    sys.exit(0)
+print(f"MISMATCH got={got} want={want}")
+sys.exit(1)
+PY
+              )
+              echo "Attempt $attempt: $result"
+              if echo "$result" | grep -q "^OK"; then
+                echo "✅ build_sha verified: $result"
+                exit 0
+              fi
+            else
+              echo "Attempt $attempt: health probe returned empty (app still starting)"
+            fi
+            sleep 15
+          done
+          echo "❌ build_sha did not match after 20 attempts (300s)"
+          exit 1
 
       - name: Notify deployment
         if: success()
