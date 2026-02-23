@@ -44,6 +44,7 @@ const FALLBACK_NAV = {
 };
 
 const BUILD_SHA = (import.meta?.env?.VITE_BUILD_SHA || "dev").slice(0, 7);
+const DEPLOY_TAG = import.meta?.env?.VITE_DEPLOY_TAG || "";
 
 export default function CrownLayout({ title, subtitle, right, children, mainClassName = "" }) {
   const [nav, setNav]         = useState(null);
@@ -126,7 +127,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         )}
         {children}
         <div style={{ marginTop: 24, paddingTop: 8, borderTop: "1px solid #f3f4f6", fontSize: 11, color: "#9ca3af", textAlign: "right" }}>
-          Build: {BUILD_SHA}
+          Build: {BUILD_SHA}{DEPLOY_TAG ? ` · ${DEPLOY_TAG}` : ""}
         </div>
       </main>
     </div>

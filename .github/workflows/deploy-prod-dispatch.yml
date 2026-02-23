@@ -58,6 +58,23 @@ jobs:
           echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
           echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
+      - name: "Guard: deploy contract — SHA and tag must be present and valid"
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ env.DEPLOY_TAG }}"
+          SHA="${{ env.DEPLOY_SHA }}"
+          if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
+            echo "ERROR: DEPLOY_SHA is not a full commit SHA (got: '$SHA')"
+            exit 1
+          fi
+          if [[ -z "$TAG" ]]; then
+            echo "ERROR: deploy_tag input is empty — a tag is required for prod dispatch deploy"
+            exit 1
+          fi
+          echo "✓ Deploy contract satisfied: TAG=$TAG SHA=${SHA:0:7}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -172,7 +189,7 @@ jobs:
           az webapp config appsettings set \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --name ${{ env.WEBAPP_NAME }} \
-            --settings RUN_MIGRATIONS=true BUILD_SHA=${{ env.DEPLOY_SHA }} \
+            --settings RUN_MIGRATIONS=true BUILD_SHA=${{ env.DEPLOY_SHA }} PROD_DEPLOY_TAG=${{ env.DEPLOY_TAG }} \
             --output none \
             --only-show-errors
           az webapp restart \

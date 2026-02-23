@@ -34,4 +34,5 @@ jobs:
         env:
           VITE_API_BASE_URL: "http://localhost:8000"
           VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_DEPLOY_TAG: ${{ github.ref_name }}
         run: npm run build
