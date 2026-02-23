@@ -1,0 +1,75 @@
+name: proof-ceremony-after-prod
+
+# Phase 7C — Auto Proof Ceremony
+#
+# Runs automatically after either prod deploy workflow succeeds.
+# Resolves the deployed tag from head_branch (tag-triggered deploys) or from
+# git tag --points-at head_sha (dispatch-triggered deploys where head_branch
+# is the source branch rather than the tag). Fails the run if no prod-deploy-*
+# tag can be resolved — this surfaces stale or tagless deploys immediately.
+#
+# Secrets required:
+#   PROD_API_BASE  — e.g. https://crown-api-prod.azurewebsites.net
+#   PROD_DASH_BASE — e.g. https://crown-dash.azurewebsites.net  (optional; skip UI check if absent)
+
+on:
+  workflow_run:
+    workflows:
+      - "Production Deploy"
+      - "Production Deploy (Dispatch v2)"
+    types: [completed]
+
+jobs:
+  proof:
+    name: "Auto proof — ${{ github.event.workflow_run.head_branch }}"
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve deploy tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          HEAD_BRANCH="${{ github.event.workflow_run.head_branch }}"
+          HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+
+          echo "head_branch: $HEAD_BRANCH"
+          echo "head_sha:    $HEAD_SHA"
+
+          # For tag-triggered deploys head_branch IS the tag name (prod-deploy-*)
+          if [[ "$HEAD_BRANCH" == prod-deploy-* ]]; then
+            DEPLOY_TAG="$HEAD_BRANCH"
+            echo "Resolved from head_branch: $DEPLOY_TAG"
+          else
+            # Dispatch deploys: head_branch is the source branch — resolve via SHA
+            git fetch --tags --quiet
+            DEPLOY_TAG="$(git tag --points-at "$HEAD_SHA" | grep '^prod-deploy-' | head -1 || true)"
+            if [[ -z "$DEPLOY_TAG" ]]; then
+              echo "ERROR: head_branch='$HEAD_BRANCH' is not a prod-deploy-* tag"
+              echo "       and no prod-deploy-* tag points at sha=$HEAD_SHA"
+              echo "       Prod deploys must be tagged with prod-deploy-* before running."
+              exit 1
+            fi
+            echo "Resolved from SHA ($HEAD_SHA): $DEPLOY_TAG"
+          fi
+
+          echo "DEPLOY_TAG=$DEPLOY_TAG" >> "$GITHUB_ENV"
+
+      - name: Run proof ceremony
+        shell: pwsh
+        env:
+          API_BASE:  ${{ secrets.PROD_API_BASE }}
+          DASH_BASE: ${{ secrets.PROD_DASH_BASE }}
+        run: |
+          $dashArg = if ($env:DASH_BASE) { @("-DashBase", $env:DASH_BASE) } else { @() }
+          ./tools/proof_ceremony.ps1 `
+            -Tag     "$env:DEPLOY_TAG" `
+            -ApiBase "$env:API_BASE" `
+            @dashArg
