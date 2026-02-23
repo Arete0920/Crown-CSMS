@@ -36,6 +36,18 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+# Guard: fail loud immediately if ApiBase is missing or not a URL.
+# Without this, an empty PROD_API_BASE secret produces a cryptic
+# "The format of the URI could not be determined" error that looks
+# like a network failure rather than a configuration problem.
+if (-not $ApiBase -or $ApiBase -notmatch '^https?://') {
+    Write-Host "RESULT=FAIL" -ForegroundColor Red
+    Write-Host "FAIL: -ApiBase is empty or not a valid URL (got: '$ApiBase')" -ForegroundColor Red
+    Write-Host "      Set the PROD_API_BASE repo secret to the backend prod URL." -ForegroundColor Red
+    Write-Host "      Example: https://crown-api-prod.azurewebsites.net" -ForegroundColor Red
+    exit 1
+}
+
 $failures = [System.Collections.Generic.List[string]]::new()
 
 function Fail([string]$msg) {
