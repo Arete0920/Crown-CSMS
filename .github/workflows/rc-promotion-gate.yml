@@ -31,6 +31,24 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install requests
 
+      # Preflight: fail loud if any required RC secret is missing
+      - name: Guard — RC secrets must be configured
+        if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
+        shell: bash
+        run: |
+          missing=""
+          [ -z "${{ secrets.RC_BASE_URL }}" ]        && missing="$missing RC_BASE_URL"
+          [ -z "${{ secrets.CI_SMOKE_USERNAME }}" ]  && missing="$missing CI_SMOKE_USERNAME"
+          [ -z "${{ secrets.CI_SMOKE_PASSWORD }}" ]  && missing="$missing CI_SMOKE_PASSWORD"
+          [ -z "${{ secrets.RC_SCHOOL_ID }}" ]       && missing="$missing RC_SCHOOL_ID"
+          [ -z "${{ secrets.RC_DEMO_KEY }}" ]        && missing="$missing RC_DEMO_KEY"
+          if [ -n "$missing" ]; then
+            echo "FAIL: RC promotion gate cannot run — missing secrets:$missing"
+            echo "      Configure them in Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "✓ All required RC secrets are present"
+
       # M6 (deployed): build_sha must match the RC head SHA
       - name: M6 — Build-SHA proof against deployed /api/health/
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
