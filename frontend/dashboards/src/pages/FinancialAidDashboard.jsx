@@ -4,6 +4,7 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownCard from "../components/crown/CrownCard.jsx";
 import CrownMetricCard from "../components/crown/CrownMetricCard.jsx";
 import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 
 /*
   Crown2026 – Financial Aid Dashboard
@@ -100,10 +101,10 @@ export function FinancialAidDashboard() {
           <CrownCard title="Financial Aid" right={<span className="crown-pill">Crown Dashboard</span>}>
 
       {summaryError && (
-        <div style={{ background: "#fee", border: "1px solid #c33", padding: 16, borderRadius: 8, marginBottom: 16 }}>
-          <strong>Error loading summary:</strong> {summaryError}
-          <button onClick={loadSummary} style={{ marginLeft: 16, padding: "4px 8px" }}>Retry</button>
-        </div>
+        <>
+          <ErrorBanner title="Financial aid unavailable" message={summaryError} />
+          <button onClick={loadSummary} style={{ marginBottom: 16, padding: "4px 8px" }}>Retry</button>
+        </>
       )}
 
       {summaryLoading ? (

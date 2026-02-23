@@ -12,6 +12,7 @@ import { getSelectedSchoolId } from '../utils/authClient.js';
 import { logApiRequest, logApiError } from '../utils/requestTracing.js';
 import { CurriculumPacingCard } from '../components/CurriculumPacingCard.jsx';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
+import ErrorBanner from '../components/ui/ErrorBanner.jsx';
 
 export function AcademicsDashboard() {
   const [schoolId, setSchoolId] = useState('');
@@ -239,7 +240,7 @@ export function AcademicsDashboard() {
       <section style={{ marginBottom: 32 }}>
         <h2>Teacher Sections</h2>
         {sectionsError ? (
-          <div style={{ color: 'crimson' }}>{sectionsError}</div>
+          <ErrorBanner title="Failed to load sections" message={sectionsError} />
         ) : (
           <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
             <thead>
@@ -276,7 +277,7 @@ export function AcademicsDashboard() {
       <section style={{ marginBottom: 32 }}>
         <h2>Parent Students</h2>
         {parentError ? (
-          <div style={{ color: 'crimson' }}>{parentError}</div>
+          <ErrorBanner title="Failed to load parent students" message={parentError} />
         ) : (
           <div>
             {parentStudents.length === 0 && <div>No linked students.</div>}
@@ -324,7 +325,7 @@ export function AcademicsDashboard() {
           />
           <button onClick={handleLookup}>Load</button>
         </div>
-        {lookupError && <div style={{ color: 'crimson' }}>{lookupError}</div>}
+        {lookupError && <ErrorBanner title="Student lookup error" message={lookupError} />}
         <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
             <tr>
@@ -409,7 +410,7 @@ export function AcademicsDashboard() {
             {/* Content */}
             <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
               {rosterLoading && <div>Loading roster...</div>}
-              {rosterError && <div style={{ color: 'crimson' }}>Error: {rosterError}</div>}
+              {rosterError && <ErrorBanner title="Failed to load roster" message={rosterError} />}
               {rosterData && (
                 <>
                   {/* Term + Teacher */}

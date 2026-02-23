@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchCurriculumPacingSummary } from "../api/curriculum.js";
+import ErrorBanner from "./ui/ErrorBanner.jsx";
 
 /**
  * CurriculumPacingCard - displays pacing progress for all active curriculum courses
@@ -45,12 +46,7 @@ export function CurriculumPacingCard({ schoolId }) {
   const asOf = rows?.[0]?.pacing?.as_of || null;
 
   if (error) {
-    return (
-      <div style={{ padding: 16, border: "1px solid #ccc", borderRadius: 4, backgroundColor: "#fff3cd" }}>
-        <h3>Curriculum Pacing</h3>
-        <p style={{ color: "#856404" }}>Error: {error}</p>
-      </div>
-    );
+    return <ErrorBanner title="Curriculum Pacing unavailable" message={error} />;
   }
 
   if (loading) {

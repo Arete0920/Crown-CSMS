@@ -4,6 +4,7 @@ import { getAdmissionsApplications, enrollApplicant } from "../api/admissions";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import Drawer from "../components/Drawer";
+import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 
 const STATUS_LABELS = {
   DRAFT: "Draft",
@@ -162,10 +163,10 @@ export function AdmissionsPipelineList() {
     <CrownLayout title="Admissions Pipeline" subtitle="Applicant tracking and enrollment">
 
       {error && (
-        <div style={{ margin: "12px 0", padding: 12, border: "1px solid #cc0000", background: "#ffe6e6" }}>
-          <strong>Error:</strong> {error.message}
-          {error.status && <div>Status: {error.status}</div>}
-        </div>
+        <ErrorBanner
+          title="Failed to load applications"
+          message={error.status ? `${error.message} [HTTP ${error.status}]` : error.message}
+        />
       )}
 
       {loading && <div>Loading applications…</div>}
