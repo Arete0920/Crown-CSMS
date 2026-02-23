@@ -6,8 +6,9 @@ import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 
 const API_BASE = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1';
 
-/* ── Static demo fallback (used when API is unreachable) ─────────────── */
+/* ── Static demo fallback (used when VITE_DEMO_MODE=1 and API is unreachable) ── */
 const STUDENT_DEMO = {
   student: { name: '', grade: '10' },   // falsy name → CrownLayout uses 'Student Dashboard' title
   dashboard_v2: {
@@ -83,7 +84,13 @@ export default function StudentDashboard() {
   useEffect(() => {
     fetchSelf()
       .then(setData)
-      .catch(() => setData(STUDENT_DEMO));   // silent fallback — UI never blank
+      .catch((err) => {
+        if (IS_DEMO_MODE) {
+          setData(STUDENT_DEMO); // demo mode: never blank
+        } else {
+          setError(`Dashboard unavailable — API error: ${err.message}`);
+        }
+      });
   }, []);
 
   const v2 = data?.dashboard_v2 || {};

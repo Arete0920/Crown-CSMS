@@ -6,8 +6,9 @@ import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 
 const API_BASE = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1';
 
-/* ── Static demo fallback (used when API is unreachable) ─────────────── */
+/* ── Static demo fallback (used when VITE_DEMO_MODE=1 and API is unreachable) ── */
 const PARENT_DEMO = {
   household: { name: 'Demo Family', balance_cents: 75000 },
   children: [],
@@ -134,7 +135,13 @@ export default function ParentDashboard() {
   useEffect(() => {
     fetchParentOverview()
       .then(setData)
-      .catch(() => setData(PARENT_DEMO));    // silent fallback — UI never blank
+      .catch((err) => {
+        if (IS_DEMO_MODE) {
+          setData(PARENT_DEMO); // demo mode: never blank
+        } else {
+          setError(`Dashboard unavailable — API error: ${err.message}`);
+        }
+      });
   }, []);
 
   const hh = data?.household || {};
