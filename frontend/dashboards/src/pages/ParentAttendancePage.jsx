@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner";
+import EmptyState from "../components/ui/EmptyState";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -55,7 +57,15 @@ export default function ParentAttendancePage() {
         </select>
       </div>
 
-      {msg ? <div style={{ marginBottom: 12, color: "red" }}>{msg}</div> : null}
+      <ErrorBanner title="Attendance error" message={msg} />
+      {studentId && !msg && rows.length === 0 && (
+        <EmptyState
+          title="No attendance records found"
+          message="If this is unexpected, verify the student has attendance data available."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      )}
 
       <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>

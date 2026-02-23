@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
+import ErrorBanner from "../components/ui/ErrorBanner";
+import EmptyState from "../components/ui/EmptyState";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -93,7 +95,19 @@ export default function TeacherAttendancePage() {
         </button>
       </div>
 
-      {msg ? <div style={{ marginBottom: 12, color: msg.startsWith("Saved") ? "green" : "red" }}>{msg}</div> : null}
+      {msg && msg.startsWith("Saved") ? (
+        <div style={{ marginBottom: 12, color: "green" }}>{msg}</div>
+      ) : (
+        <ErrorBanner title="Attendance error" message={msg} />
+      )}
+      {sectionId && !msg && roster.length === 0 && (
+        <EmptyState
+          title="No students in this section"
+          message="If this is unexpected, check that the section has enrolled students."
+          actionLabel="Reload"
+          onAction={() => window.location.reload()}
+        />
+      )}
 
       <table border="1" cellPadding="6" style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
