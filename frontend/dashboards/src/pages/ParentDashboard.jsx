@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { authenticatedFetch } from '../utils/authClient.js';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
+import ErrorBanner from '../components/ui/ErrorBanner.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
@@ -159,19 +160,7 @@ export default function ParentDashboard() {
       title="Parent Dashboard"
       subtitle={hh.name ? `${hh.name} · Family overview` : 'Family academics, finance, and alerts'}
     >
-      {error && (
-        <div
-          style={{
-            background: '#f8d7da',
-            border: '1px solid #f5c6cb',
-            borderRadius: 6,
-            padding: '10px 14px',
-            marginBottom: 16,
-          }}
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner title="Dashboard unavailable" message={error} />
 
       {!data && !error && (
         <div style={{ opacity: 0.6, padding: 24 }}>Loading dashboard…</div>
