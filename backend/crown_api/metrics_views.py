@@ -17,12 +17,15 @@ import datetime
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 
+from core.permissions import require_permission
+
 
 def _today() -> str:
     return datetime.date.today().isoformat()
 
 
 @require_http_methods(["GET"])
+@require_permission("admin.view")
 def admin_metrics(request):
     """
     Administration dashboard – principal / operations.
@@ -58,6 +61,7 @@ def admin_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("board.view")
 def board_metrics(request):
     """
     School Board dashboard – governance / mission / finance oversight.
@@ -99,6 +103,7 @@ def board_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("finance.view")
 def finance_metrics(request):
     """
     Finance dashboard – business office view.
@@ -152,6 +157,7 @@ def finance_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("teacher.view")
 def teacher_metrics(request):
     """Teacher dashboard — today's schedule, attendance, assignments."""
     return JsonResponse({
@@ -171,6 +177,7 @@ def teacher_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("parent.view")
 def parent_metrics(request):
     """Parent dashboard — child grades, missing work, messages, balance."""
     return JsonResponse({
@@ -204,6 +211,7 @@ def parent_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("student.view")
 def student_metrics(request):
     """Student dashboard — today's schedule, assignments due, grade snapshot."""
     return JsonResponse({
@@ -227,6 +235,7 @@ def student_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("it.view")
 def it_metrics(request):
     """IT Director dashboard — system health, open tickets, device compliance."""
     return JsonResponse({
@@ -251,6 +260,7 @@ def it_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("financial_aid.view")
 def financial_aid_metrics(request):
     """Financial Aid Director dashboard — applications, budget, overdue decisions."""
     return JsonResponse({
@@ -277,6 +287,7 @@ def financial_aid_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("marketing.view")
 def marketing_metrics(request):
     """Marketing & Advancement dashboard — inquiry funnel, source mix, campaigns."""
     return JsonResponse({
@@ -305,6 +316,7 @@ def marketing_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("spiritual_life.view")
 def spiritual_life_metrics(request):
     """Spiritual Life Director dashboard — chapel, service hours, pastoral care."""
     return JsonResponse({
@@ -329,6 +341,7 @@ def spiritual_life_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("office.view")
 def office_metrics(request):
     """Office Manager / HR dashboard — staff absences, requests, HR tasks, compliance."""
     return JsonResponse({
@@ -360,6 +373,7 @@ def office_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("health.view")
 def health_metrics(request):
     """Health / Nurse dashboard — daily visits, medications, immunization compliance."""
     return JsonResponse({
@@ -399,6 +413,7 @@ def health_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("counseling.view")
 def counseling_metrics(request):
     """Counseling / Discipline dashboard — referrals, plans, detentions, caseload."""
     return JsonResponse({
@@ -435,6 +450,7 @@ def counseling_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("food.view")
 def food_metrics(request):
     """Food Services dashboard — meals, inventory, participation, payments."""
     return JsonResponse({
@@ -477,6 +493,7 @@ def food_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("athletics.view")
 def athletics_metrics(request):
     """Athletic Director dashboard — events, eligibility, injuries, transport."""
     return JsonResponse({
@@ -513,6 +530,7 @@ def athletics_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("advancement.view")
 def advancement_metrics(request):
     """Advancement / Fundraising dashboard — donors, campaigns, pledges, stewardship."""
     return JsonResponse({
@@ -551,6 +569,7 @@ def advancement_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("transportation.view")
 def transportation_metrics(request):
     """Transportation dashboard — routes, riders, late runs, maintenance."""
     return JsonResponse({
@@ -583,6 +602,7 @@ def transportation_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("facilities.view")
 def facilities_metrics(request):
     """Facilities dashboard — work orders, SLA, PM calendar, vendor visits."""
     return JsonResponse({
@@ -622,6 +642,7 @@ def facilities_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("security.view")
 def security_metrics(request):
     """Security / Safety dashboard — drills, incidents, access exceptions, cameras."""
     return JsonResponse({
@@ -656,6 +677,7 @@ def security_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("academic_support.view")
 def academic_support_metrics(request):
     """Academic Support / SPED dashboard — IEPs, accommodations, caseload.
     Privacy rule: all student references use opaque IDs, never names."""
@@ -698,6 +720,7 @@ def academic_support_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("fine_arts.view")
 def fine_arts_metrics(request):
     """Fine Arts Director dashboard — performances, ensembles, equipment."""
     return JsonResponse({
@@ -734,6 +757,7 @@ def fine_arts_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("library.view")
 def library_metrics(request):
     """Library / Media Center dashboard — circulation, collection, digital resources."""
     return JsonResponse({
@@ -774,6 +798,7 @@ def library_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("extended_care.view")
 def extended_care_metrics(request):
     """Extended Care / Aftercare dashboard — roster, staff, trends.
     Privacy rule: show aggregate program counts only, no student names."""
@@ -811,6 +836,7 @@ def extended_care_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("registrar.view")
 def registrar_metrics(request):
     """Registrar / Records dashboard — enrollment, requests, transcripts, holds."""
     return JsonResponse({
@@ -850,6 +876,7 @@ def registrar_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("communications.view")
 def communications_metrics(request):
     """Communications Director dashboard — campaigns, engagement, announcements."""
     return JsonResponse({
@@ -887,6 +914,7 @@ def communications_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("pd.view")
 def pd_metrics(request):
     """PD / Staff Development dashboard — sessions, certifications, completion."""
     return JsonResponse({
@@ -924,6 +952,7 @@ def pd_metrics(request):
 
 
 @require_http_methods(["GET"])
+@require_permission("student_services.view")
 def student_services_metrics(request):
     """Student Services dashboard — lunch balances, applications, active services.
     Privacy rule: aggregate grade-level counts only, no individual records."""

@@ -16,8 +16,12 @@ from core.models import CrownPermission, RolePermission
 # Permission codes  (<module>.<action>)
 # ──────────────────────────────────────────────────────────────────────────────
 PERMISSIONS = [
-    ("health.view",                "View health & system-status dashboard"),
-    ("finance.view",               "View financial summaries and ledger"),
+    # ── core system ─────────────────────────────────────────────────────────
+    ("health.view",                "View health / system-status dashboard"),
+    ("director.actions",           "Execute director-level admin actions"),
+    ("metrics.view",               "View all KPI dashboards"),
+
+    # ── legacy codes kept for backwards compatibility ─────────────────────
     ("finance.edit",               "Post ledger entries, reverse transactions"),
     ("finance.period_lock",        "Lock / unlock accounting periods"),
     ("aid.view",                   "View aid applications and awards"),
@@ -26,16 +30,45 @@ PERMISSIONS = [
     ("admissions.edit",            "Advance, waitlist, or deny applicants"),
     ("academics.view",             "View course enrollment, grades, attendance"),
     ("academics.edit",             "Enter grades and attendance records"),
-    ("metrics.view",               "View all KPI dashboards"),
-    ("director.actions",           "Execute director-level admin actions"),
-    ("academic_support.view",      "View SPED / academic support dashboard"),
-    ("fine_arts.view",             "View fine arts dashboard"),
-    ("library.view",               "View library dashboard"),
-    ("extended_care.view",         "View extended care dashboard"),
+
+    # ── Operations tier ──────────────────────────────────────────────────
+    ("admin.view",                 "View administration dashboard"),
+    ("board.view",                 "View board / governance dashboard"),
+    ("finance.view",               "View financial summaries and ledger"),
+    ("billing.view",               "View billing and fee dashboard"),
+    ("office.view",                "View office operations dashboard"),
+    ("it.view",                    "View IT / infrastructure dashboard"),
+    ("facilities.view",            "View facilities dashboard"),
+    ("transportation.view",        "View transportation dashboard"),
+
+    # ── Enrollment & Revenue tier ────────────────────────────────────────
+    ("financial_aid.view",         "View financial aid dashboard"),
+    ("marketing.view",             "View marketing / enrollment funnel"),
+    ("advancement.view",           "View advancement / fundraising dashboard"),
+
+    # ── Academics tier ───────────────────────────────────────────────────
+    ("teacher.view",               "View teacher dashboard"),
     ("registrar.view",             "View registrar dashboard"),
-    ("communications.view",        "View communications director dashboard"),
-    ("pd.view",                    "View professional development dashboard"),
-    ("student_services.view",      "View student services dashboard"),
+    ("academic_support.view",      "View SPED / academic-support dashboard"),
+    ("fine_arts.view",             "View fine-arts dashboard"),
+    ("library.view",               "View library dashboard"),
+    ("pd.view",                    "View professional-development dashboard"),
+
+    # ── Student & Family tier ────────────────────────────────────────────
+    ("parent.view",                "View parent dashboard"),
+    ("student.view",               "View student dashboard"),
+    ("health.dashboard.view",      "View student health dashboard"),
+    ("counseling.view",            "View counseling dashboard"),
+    ("food.view",                  "View food-services dashboard"),
+    ("athletics.view",             "View athletics dashboard"),
+    ("spiritual_life.view",        "View spiritual-life dashboard"),
+    ("extended_care.view",         "View extended-care dashboard"),
+    ("communications.view",        "View communications dashboard"),
+    ("student_services.view",      "View student-services dashboard"),
+
+    # ── Safety & Integrity tier ──────────────────────────────────────────
+    ("security.view",              "View security / safety dashboard"),
+    ("integrity.view",             "View academic-integrity dashboard"),
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
