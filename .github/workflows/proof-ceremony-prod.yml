@@ -1,0 +1,48 @@
+name: proof-ceremony-prod
+
+# Phase 7C — Crown Proof Ceremony (Production)
+#
+# Manual dispatch only. Run this after any prod deploy to prove that:
+#   1. The backend /api/health/ reports the expected build_sha and prod_deploy_tag
+#   2. The frontend /build.json reports the same SHA and tag (if DashBase provided)
+#
+# Exits non-zero if any assertion fails — visible in the workflow run status.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to prove (e.g. phase7b-deploy-contract-2026-02-23)"
+        required: true
+        type: string
+      api_base:
+        description: "Backend base URL"
+        required: true
+        type: string
+        default: "https://crown-api-prod.azurewebsites.net"
+      dash_base:
+        description: "Frontend base URL for /build.json check (leave blank to skip)"
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  ceremony:
+    name: "Proof — ${{ inputs.tag }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout (fetch all tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run proof ceremony
+        shell: pwsh
+        run: |
+          ./tools/proof_ceremony.ps1 `
+            -Tag      "${{ inputs.tag }}" `
+            -ApiBase  "${{ inputs.api_base }}" `
+            -DashBase "${{ inputs.dash_base }}"

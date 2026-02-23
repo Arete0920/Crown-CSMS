@@ -22,6 +22,7 @@ def health(request):
     Returns: build_sha (40-char), env, build_time_utc, version, db status
     """
     build_sha = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"
+    prod_deploy_tag = os.getenv("PROD_DEPLOY_TAG", "")
     env_name = os.getenv("CROWN_ENV", "dev")
     build_time = datetime.now(timezone.utc).isoformat()
     version = os.getenv("APP_VERSION", "crown-0.3.0")
@@ -40,6 +41,7 @@ def health(request):
         "status": "ok",
         "demo_mode": _crown_env_true('CROWN_DEMO_MODE', default=False),
         "build_sha": build_sha,
+        "prod_deploy_tag": prod_deploy_tag,
         "env": env_name,
         "build_time_utc": build_time,
         "version": version,

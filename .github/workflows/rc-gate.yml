@@ -67,6 +67,11 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Write build.json
+        run: |
+          mkdir -p public
+          printf '{"build_sha":"%s","deploy_tag":"%s"}' "${{ github.sha }}" "${{ github.ref_name }}" > public/build.json
+
       - name: Build
         env:
           VITE_API_BASE_URL: "http://localhost:8000"
