@@ -128,7 +128,7 @@ def test_ensure_ci_user_prod_always_404():
 
 
 @pytest.mark.django_db
-def test_ensure_ci_user_no_ops_secret_configured_returns_404():
+def test_ensure_ci_user_missing_ops_secret_returns_404():
     """
     SECURITY INVARIANT: ensure_ci_user returns 404 when DEV_OPS_SECRET is not
     configured on the server (even in dev). Prevents accidental open access.

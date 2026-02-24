@@ -44,8 +44,13 @@ curl_examples_director_actions.sh:curl-auth-header:55
 docs/AZURE_DEV_APP_SETTINGS.md:project-ci-credential:13
 docs/AZURE_DEV_APP_SETTINGS.md:project-ops-credential:26
 docs/AZURE_DEV_APP_SETTINGS.md:project-ops-credential:27
+# Historical: CI user API test at backend/tests/test_ensure_ci_user_api.py L131
+# matched project-ops-credential regex (function name contained the pattern).
+# Test renamed in PR #405. Three immutable history commits need permanent fingerprints.
 eea15314c8a8270c1c2dbf1baa2f9fb850055f77:backend/tests/test_ensure_ci_user_api.py:project-ops-credential:131
 7a0ae7582cab927de783692edd946ce103840237:backend/tests/test_ensure_ci_user_api.py:project-ops-credential:131
+# PR #405 branch commit — .gitleaksignore comment itself contained the pattern (now cleaned):
+0d6d2d1fffa628cddacb2e0443eb7eec78a2a9f0:.gitleaksignore:project-ops-credential:47
 docs/DIRECTOR_ACTIONS_API.md:curl-auth-header:164
 scripts/README.md:postgres-connection-string:117
 # Historical false-positives / legacy examples (pre-policy)  fingerprint ignores
