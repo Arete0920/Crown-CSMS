@@ -199,6 +199,17 @@ jobs:
             --name ${{ env.WEBAPP_NAME }} \
             --only-show-errors
 
+      - name: "Guard: verify BUILD_SHA app setting matches deployed SHA"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $expected = "${{ env.DEPLOY_SHA }}"
+          Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
+          .\tools\verify_prod_build_sha.ps1 `
+            -ExpectedSha $expected `
+            -AppName "${{ env.WEBAPP_NAME }}" `
+            -ResourceGroup "${{ env.RESOURCE_GROUP }}"
+
       - name: Health check
         run: |
           sleep 30
