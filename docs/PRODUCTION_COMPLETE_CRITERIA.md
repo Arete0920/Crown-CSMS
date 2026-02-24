@@ -93,12 +93,15 @@
 
 | Check | Status | Notes |
 |---|---|---|
-| Admin dashboard loads + Quick Actions render | ✅ Manual | HR + Safety added (Phase 3) |
-| Teacher attendance submit | ✅ Manual | Gradebook/attendance proof Feb 16 |
-| Parent dashboard loads | ✅ Manual | Parent360 proof Feb 16 |
-| Playwright automated suite | ❌ Not built | No spec files exist outside node_modules — acceptance criteria for next phase |
-
-**UI blocker:** No automated Playwright specs exist. Manual proof passes. Automated UI proof is the next acceptance gate before investor handoff.
+| Admin dashboard loads + Quick Actions render | ✅ Automated | `proof-smoke.spec.ts::"/admin renders heading and quick-action links"` |
+| Teacher attendance page renders | ✅ Automated | `proof-smoke.spec.ts::"/teacher/attendance renders without JS errors"` |
+| Parent dashboard loads | ✅ Automated | `proof-smoke.spec.ts::"/parent renders heading without JS errors"` |
+| Gradebook RO loads | ✅ Automated | `proof-smoke.spec.ts::"/gradebook renders heading without JS errors"` |
+| Role home redirect (admin/teacher/parent) | ✅ Automated | `proof-smoke.spec.ts` — 3 redirect tests |
+| Login accessible without session | ✅ Automated | `proof-smoke.spec.ts::"/login renders without session"` |
+| No JS console errors | ✅ Automated | Hard-fail assertion in every test |
+| CI gate wired (runs on every PR to main) | ✅ | `.github/workflows/ui-proof-gate.yml` — PR #407 |
+| Playwright automated suite | ✅ **8/8 passed** | `tests/proof-smoke.spec.ts` (23.7s local, 58s CI) |
 
 ---
 
@@ -106,7 +109,7 @@
 
 | Item | Priority | Owner |
 |---|---|---|
-| Playwright smoke suite (4 critical paths) | HIGH | Next phase |
+| ~~Playwright smoke suite (4 critical paths)~~ | ~~HIGH~~ | ✅ Done PR #407 |
 | CodeQL code scanning enabled (workflow warning) | MEDIUM | Repo settings |
 | CodeQL Action v3 → v4 (deprecates Dec 2026) | LOW | Before Dec 2026 |
 | `DEMO_MODE` flag confirmed false in prod health | DONE | `"demo_mode": false` |
