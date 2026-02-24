@@ -98,3 +98,87 @@ def test_ensure_ci_user_idempotent_with_existing_school():
     
     # No duplicates
     assert School.objects.filter(id=test_school_id).count() == 1
+
+
+# ---------------------------------------------------------------------------
+# Security invariants — these must never regress
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+def test_ensure_ci_user_prod_always_404():
+    """
+    SECURITY INVARIANT: ensure_ci_user returns 404 in prod, unconditionally.
+    Even with a valid DEV_OPS_SECRET and correct header, prod must be closed.
+    """
+    client = APIClient()
+    with override_settings(ENVIRONMENT="prod", DEV_OPS_SECRET="test-secret-123"):
+        with patch.dict(os.environ, {
+            "CI_SMOKE_USERNAME": "ci@test.local",
+            "CI_SMOKE_PASSWORD": "TestPassword123!",
+            "CI_SMOKE_SCHOOL_ID": "a5351136-98fe-4d48-add0-fa8f62d9ceff",
+        }):
+            resp = client.post(
+                "/api/v1/system/ensure-ci-user/",
+                content_type="application/json",
+                HTTP_X_ADMIN_OPS_SECRET="test-secret-123",
+            )
+    assert resp.status_code == 404, (
+        f"SECURITY REGRESSION: ensure_ci_user returned {resp.status_code} in prod — must be 404"
+    )
+
+
+@pytest.mark.django_db
+def test_ensure_ci_user_no_ops_secret_configured_returns_404():
+    """
+    SECURITY INVARIANT: ensure_ci_user returns 404 when DEV_OPS_SECRET is not
+    configured on the server (even in dev). Prevents accidental open access.
+    """
+    client = APIClient()
+    with override_settings(ENVIRONMENT="dev", DEV_OPS_SECRET=""):
+        resp = client.post(
+            "/api/v1/system/ensure-ci-user/",
+            content_type="application/json",
+            HTTP_X_ADMIN_OPS_SECRET="anything",
+        )
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_ensure_ci_user_wrong_secret_returns_403():
+    """
+    SECURITY INVARIANT: ensure_ci_user returns 403 when the secret header is
+    wrong (dev env, secret configured, but caller provides wrong value).
+    """
+    client = APIClient()
+    with override_settings(ENVIRONMENT="dev", DEV_OPS_SECRET="correct-secret"):
+        with patch.dict(os.environ, {
+            "CI_SMOKE_USERNAME": "ci@test.local",
+            "CI_SMOKE_PASSWORD": "TestPassword123!",
+            "CI_SMOKE_SCHOOL_ID": "a5351136-98fe-4d48-add0-fa8f62d9ceff",
+        }):
+            resp = client.post(
+                "/api/v1/system/ensure-ci-user/",
+                content_type="application/json",
+                HTTP_X_ADMIN_OPS_SECRET="wrong-secret",
+            )
+    assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+def test_ensure_ci_user_no_header_returns_403():
+    """
+    SECURITY INVARIANT: ensure_ci_user returns 403 when no secret header is
+    provided at all (dev env, secret configured).
+    """
+    client = APIClient()
+    with override_settings(ENVIRONMENT="dev", DEV_OPS_SECRET="correct-secret"):
+        with patch.dict(os.environ, {
+            "CI_SMOKE_USERNAME": "ci@test.local",
+            "CI_SMOKE_PASSWORD": "TestPassword123!",
+            "CI_SMOKE_SCHOOL_ID": "a5351136-98fe-4d48-add0-fa8f62d9ceff",
+        }):
+            resp = client.post(
+                "/api/v1/system/ensure-ci-user/",
+                content_type="application/json",
+            )
+    assert resp.status_code == 403
