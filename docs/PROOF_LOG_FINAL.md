@@ -1,3 +1,16 @@
+## CERTIFICATION SUMMARY
+
+| Field | Value |
+|-------|-------|
+| **Deployed SHA** | `d671749e94a605bb116da76b9f687dc33f143841` |
+| **Deploy tag** | `prod-deploy-certify-2026-02-24` |
+| **Certification tag** | `prod-certified-2026-02-24` → `d671749e94a605bb116da76b9f687dc33f143841` |
+| **Docs/proof tag** | `docs-certified-2026-02-24` → `726fb832c5c494db2821222e5c8bca25fe36dc74` |
+| **Date** | 2026-02-24 |
+| **Prod health** | `build_sha: d671749e…` · `db: ok` · `ok: true` |
+
+---
+
 # Crown2026 — PROOF LOG FINAL
 **Certification Date:** 2026-02-24  
 **Certified HEAD SHA:** d671749e94a605bb116da76b9f687dc33f143841  
