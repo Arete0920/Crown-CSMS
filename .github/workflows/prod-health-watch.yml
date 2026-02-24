@@ -1,0 +1,92 @@
+name: prod-health-watch
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve health URL
+        id: url
+        run: |
+          if [ -z "${{ vars.CROWN_PROD_HEALTH_URL }}" ]; then
+            echo "missing=true" >> $GITHUB_OUTPUT
+            echo "CROWN_PROD_HEALTH_URL repo variable is not set — skipping probe."
+            exit 0
+          fi
+          echo "missing=false" >> $GITHUB_OUTPUT
+          echo "url=${{ vars.CROWN_PROD_HEALTH_URL }}" >> $GITHUB_OUTPUT
+
+      - name: Probe /health
+        id: probe
+        if: steps.url.outputs.missing != 'true'
+        run: |
+          URL="${{ steps.url.outputs.url }}"
+          echo "Probing $URL"
+          HTTP=$(curl -sS -m 20 -o health.json -w "%{http_code}" "$URL" || true)
+          echo "http_code=$HTTP" >> $GITHUB_OUTPUT
+          echo "HTTP=$HTTP"
+          echo "---- body ----"
+          cat health.json || true
+          echo "--------------"
+
+      - name: Validate build_sha present
+        id: validate
+        if: steps.url.outputs.missing != 'true'
+        run: |
+          if [ ! -f health.json ]; then
+            echo "ok=false" >> $GITHUB_OUTPUT
+            echo "reason=no health.json" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          SHA=$(jq -r '.build_sha // .sha // .version // ""' health.json 2>/dev/null || true)
+          if [ -z "$SHA" ]; then
+            echo "ok=false" >> $GITHUB_OUTPUT
+            echo "reason=missing build_sha/sha/version in response" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "ok=true" >> $GITHUB_OUTPUT
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "SHA confirmed: $SHA"
+
+      - name: Open issue on failure
+        if: steps.url.outputs.missing != 'true' && (steps.probe.outputs.http_code != '200' || steps.validate.outputs.ok != 'true')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL="${{ steps.url.outputs.url }}"
+          HTTP="${{ steps.probe.outputs.http_code }}"
+          REASON="${{ steps.validate.outputs.reason }}"
+          TS="$(date -u +'%Y-%m-%d %H:%M:%SZ')"
+          BODY="$(cat health.json 2>/dev/null || echo 'no body')"
+          gh issue create \
+            --repo ${{ github.repository }} \
+            --title "PROD HEALTH FAIL: ${TS}" \
+            --body "**Time (UTC):** ${TS}
+
+**URL:** ${URL}
+
+**HTTP:** ${HTTP}
+
+**Reason:** ${REASON}
+
+**Response body:**
+
+\`\`\`
+${BODY}
+\`\`\`" || true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "URL=${{ vars.CROWN_PROD_HEALTH_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "HTTP=${{ steps.probe.outputs.http_code }}" >> $GITHUB_STEP_SUMMARY
+          echo "SHA=${{ steps.validate.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "OK=${{ steps.validate.outputs.ok }}" >> $GITHUB_STEP_SUMMARY
