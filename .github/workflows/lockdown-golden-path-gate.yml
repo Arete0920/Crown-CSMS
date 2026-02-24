@@ -248,6 +248,23 @@ jobs:
             throw 'Frontend did not become healthy on :3000 after 2 minutes'
           }
 
+      - name: Acquire gate token
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # Authenticate as the seeded HEAD_OF_SCHOOL demo user.
+          # seed_demo_school always creates: head@crown-demo.local / demo1234
+          $body = '{"username":"head@crown-demo.local","password":"demo1234"}'
+          $resp = Invoke-RestMethod `
+            -Method Post `
+            -Uri "http://127.0.0.1:8000/api/v1/auth/token/" `
+            -ContentType "application/json" `
+            -Body $body
+          $token = $resp.access
+          if (-not $token) { throw "Failed to acquire gate JWT — check seed or token endpoint" }
+          Add-Content -Path $env:GITHUB_ENV -Value "CROWN_DEMO_TOKEN=$token"
+          Write-Host "Gate token acquired (length=$($token.Length))"
+
       - name: Run Golden Path gate
         shell: pwsh
         run: |
