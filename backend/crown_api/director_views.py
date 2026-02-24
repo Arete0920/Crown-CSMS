@@ -158,7 +158,7 @@ def build_director_priority_snapshot(school_id, academic_year):
     }
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def aid_summary(request):
     school_id = request.GET.get("school_id")
     academic_year_id = request.GET.get("academic_year_id")
@@ -211,7 +211,7 @@ def aid_summary(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def finance_summary(request):
     school_id = request.GET.get("school_id")
     academic_year_id = request.GET.get("academic_year_id")
@@ -268,7 +268,7 @@ def finance_summary(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def registrar_summary(request):
     school_id = request.GET.get("school_id")
     academic_year_id = request.GET.get("academic_year_id")
@@ -316,7 +316,7 @@ def registrar_summary(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def director_dashboard(request):
     """
     Unified dashboard payload for Head of School / Directors.
@@ -456,7 +456,7 @@ def director_dashboard(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def director_priority(request):
     """
     Priority queue for directors: the next items to work, ordered and limited.
@@ -710,7 +710,7 @@ def director_priority(request):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def director_actions(request):
     """
     Endpoint for director/Head of School actions.
@@ -1005,7 +1005,7 @@ Crown Financial Aid Office
         )
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def director_timeline(request):
     """
     Unified audit-style timeline of recent director-relevant events.
@@ -1172,7 +1172,6 @@ import os
 import logging
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -1194,7 +1193,7 @@ def _is_dev_env() -> bool:
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])   # we enforce auth manually (JWT OR seed key)
+@permission_classes([AllowAny])
 @authentication_classes([])       # prevent DRF from requiring JWT automatically
 def force_seed_user(request):
     """

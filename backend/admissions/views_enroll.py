@@ -14,7 +14,7 @@ import json
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -37,7 +37,7 @@ def _require_staff(request):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def enroll_applicant(request):
     denied = _require_staff(request)
     if denied is not None:

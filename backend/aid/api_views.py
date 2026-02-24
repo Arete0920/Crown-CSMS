@@ -6,7 +6,7 @@ Contract must be identical across all director personas.
 """
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
@@ -26,7 +26,7 @@ def days_waiting(dt):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def aid_priority_queue(request):
     """
     Priority queue for Aid Director - returns ONLY aid-related items.
@@ -125,7 +125,7 @@ def aid_priority_queue(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def aid_metrics(request):
     """
     Metrics for Aid Director - returns ONLY aid metrics.
@@ -186,7 +186,7 @@ def aid_metrics(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def aid_timeline(request):
     """
     Timeline for Aid Director - returns ONLY aid events.

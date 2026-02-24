@@ -1,7 +1,7 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from crown_api.access_households import resolve_household_access
@@ -18,7 +18,7 @@ def _require_auth_or_401(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def threads_list(request):
     unauth = _require_auth_or_401(request)
     if unauth is not None:
@@ -39,7 +39,7 @@ def threads_list(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def thread_detail(request, thread_id):
     unauth = _require_auth_or_401(request)
     if unauth is not None:

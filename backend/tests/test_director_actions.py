@@ -123,8 +123,8 @@ def test_post_director_actions():
         print(f"Status: {response.status_code}")
         print(f"Response: {response.json()}")
 
-        if response.status_code != 401:
-            raise AssertionError(f"Expected 401 for unauthenticated request, got {response.status_code}")
+        if response.status_code not in (401, 403):
+            raise AssertionError(f"Expected 401/403 for unauthenticated request, got {response.status_code}")
 
         # Ensure nothing was posted
         award.refresh_from_db()

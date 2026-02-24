@@ -1,7 +1,7 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from crown_api.access_households import resolve_person_for_user, resolve_household_access
@@ -35,7 +35,7 @@ def _assert_student_in_scope_or_404(request, student_id) -> None:
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def student_attendance_list(request, student_id):
     if not getattr(getattr(request, "user", None), "is_authenticated", False):
         return Response(
@@ -141,7 +141,7 @@ def section_attendance_submit(request, section_id):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def student_grades_list(request, student_id):
     if not getattr(getattr(request, "user", None), "is_authenticated", False):
         return Response(
