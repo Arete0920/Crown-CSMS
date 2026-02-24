@@ -189,6 +189,7 @@ class SchedulingApiTests(TestCase):
         resp_other = self.client.get(f"/api/students/{self.student_b.id}/schedule/")
         self.assertEqual(resp_other.status_code, 404)
 
-    def test_unauth_terms_401(self):
+    def test_unauth_terms_403(self):
+        # IsAuthenticated enforced at DRF permission layer → 403 for unauthenticated
         resp = self.client.get("/api/terms/")
-        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.status_code, 403)

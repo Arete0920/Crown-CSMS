@@ -35,7 +35,7 @@ class ExecutiveSelfOverview(APIView):
     cannot be resolved or any model is absent.
     """
 
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         school = _get_school(request)

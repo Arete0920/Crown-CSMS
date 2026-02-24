@@ -3,7 +3,7 @@ from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from crown_api.access_households import resolve_household_access
@@ -12,7 +12,7 @@ from crown_api.serializers_billing import InvoiceMiniSerializer
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def household_billing_summary(request, household_id):
     if not getattr(getattr(request, "user", None), "is_authenticated", False):
         return Response(

@@ -1,7 +1,7 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from admissions.models import AdmissionsApplication
@@ -22,7 +22,7 @@ def _require_staff(request) -> Response | None:
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def admissions_applications_list(request):
     denied = _require_staff(request)
     if denied is not None:
@@ -41,7 +41,7 @@ def admissions_applications_list(request):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def admissions_application_detail(request, application_id):
     denied = _require_staff(request)
     if denied is not None:

@@ -9,7 +9,7 @@ from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from households.scoping import get_request_school_id
@@ -257,7 +257,7 @@ def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def invoices(request):
     """
     Flat list of invoices for the current school context.

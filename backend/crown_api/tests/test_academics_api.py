@@ -178,9 +178,10 @@ class AcademicsApiTests(TestCase):
         no = self.client.get(f"/api/students/{self.student_b.id}/grades/")
         self.assertEqual(no.status_code, 404)
 
-    def test_academics_unauth_401(self):
+    def test_academics_unauth_403(self):
+        # IsAuthenticated enforced at DRF permission layer → 403 for unauthenticated
         resp = self.client.get(f"/api/students/{self.student_a.id}/attendance/")
-        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.status_code, 403)
 
         resp2 = self.client.get(f"/api/students/{self.student_a.id}/grades/")
-        self.assertEqual(resp2.status_code, 401)
+        self.assertEqual(resp2.status_code, 403)
