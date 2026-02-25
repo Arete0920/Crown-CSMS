@@ -197,3 +197,88 @@ prod /api/health/  build_sha: d671749e  ←→  HEAD d671749e  [MATCH ✅]
 All 7 sections of the MASTER EXECUTION SHEET completed with exit 0.
 
 Crown2026 is **certified production-ready** at SHA `d671749e` as of 2026-02-24.
+
+---
+
+## SECTION 8 — Phase 4B: Ledger-Integrated Financial Aid ✅
+
+**Merged:** PR #412 → SHA `6fd7a657` (2026-02-24)  
+**Branch deleted:** `feat/phase4b-ledger-aid-integration`
+
+### Problem Fixed
+`financial_aid/services.py` and `financial_aid/api.py` contained dead/broken imports
+(`AidApplication`, `AwardStatus`, `FinancialAidDisbursement`) referencing models
+that do not exist in `financial_aid/models.py`. The module compiled but would crash
+at every call site.
+
+Additionally, `financial_aid/urls.py` was never included in the project URL router —
+all three endpoints were unreachable before this fix.
+
+### New Routes Live
+```
+GET  /api/financial-aid/applications/
+GET  /api/financial-aid/awards/
+POST /api/financial-aid/billing-runs/<uuid>/disburse/
+```
+Verified via Django `resolve()` — all three resolve correctly.
+
+### Seed Command Proof Log
+```
+python manage.py seed_phase4b_scenario --reset
+
+[school]       created: Phase4B Demo School
+[household]    created: Demo Family
+[ledger_account] created: c05d4ce5-...
+[billing_run]  created: c86a7b48-...
+[charge]       created: e7758f02-... — $10,000.00
+[invoice]      created: ca16fa59-... — ledger_charge_id=e7758f02-...
+[aid_application] created: 356f59a5-...
+[aid_award]    created: 7edae45f-... — $3,000.00
+
+[apply_aid] payments_created=1 allocations_created=1 events_created=1 disbursed_total=3000.00
+
+--- Billing Run Summary ---
+  gross_total:       10000
+  aid_applied_total: 3000
+  net_due_total:     7000
+  invoice_count:     1
+
+--- Ledger Account Statement ---
+  account_id : c05d4ce5-...
+  balance    : $7000.00
+  [DEBIT ] CHARGE              $10000.00  source=n/a          balance=10000.00
+  [CREDIT] PAYMENT_ALLOCATION  $ 3000.00  source=FINANCIAL_AID balance= 7000.00
+
+[PASS] balance == $7,000.00 after aid applied.
+```
+
+### Acceptance Tests
+`backend/financial_aid/tests/test_phase4b_ledger_integration.py` — **6/6 passed**
+
+| Test | Result |
+|------|--------|
+| `test_apply_aid_creates_payment_and_allocation` | ✅ |
+| `test_apply_aid_is_idempotent` | ✅ |
+| `test_account_balance_reflects_aid` | ✅ |
+| `test_billing_run_summary_net_due_correct` | ✅ |
+| `test_account_statement_shows_financial_aid_entry` | ✅ |
+| `test_full_scenario_charge_aid_payment_zero_balance` | ✅ |
+
+**Full backend suite:** 599 passed · 11 skipped · 0 failed
+
+### Explicit Boundary
+| Flow | Status | Notes |
+|------|--------|-------|
+| `POST /api/financial-aid/billing-runs/<id>/disburse/` → new ledger | ✅ Complete | `ledger.Charge/Payment/Allocation` |
+| `POST /api/director/actions/ {POST_ACCEPTED_AWARDS}` → old ledger | ❌ Not migrated | Still writes `aid.LedgerEntry` (invisible to `billing_run_summary`) |
+
+Follow-up tracked in **Issue #413**: "Rewire POST_ACCEPTED_AWARDS director action to new ledger pipeline."
+
+### Files Changed in PR #412
+- `backend/financial_aid/services.py` — full replacement (dead imports removed)
+- `backend/financial_aid/api.py` — full replacement (correct model names/fields)
+- `backend/financial_aid/urls.py` — wired `applications/`, `awards/`, `disburse/`
+- `backend/crown_api/api_urls.py` — added `path('financial-aid/', include('financial_aid.urls'))`
+- `backend/financial_aid/management/commands/seed_phase4b_scenario.py` — new
+- `backend/financial_aid/tests/test_phase4b_ledger_integration.py` — new (6 tests)
+
