@@ -1,4 +1,6 @@
 # backend/crown_api/audit_views.py
+from uuid import UUID
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 
@@ -19,7 +21,19 @@ def recent_audit_events(request):
         limit = 25
     limit = max(1, min(limit, 100))
 
-    qs = AuditEvent.objects.all().order_by("-ts")[:limit]
+    qs = AuditEvent.objects.all().order_by("-ts")
+
+    # Tenant filter: scope to school when X-School-Id header is provided.
+    # This prevents cross-tenant audit event leakage for school-scoped callers.
+    raw_sid = request.META.get("HTTP_X_SCHOOL_ID") or request.headers.get("X-School-Id")
+    if raw_sid:
+        try:
+            school_uuid = UUID(str(raw_sid))
+        except Exception:
+            return JsonResponse({"ok": False, "error": "invalid X-School-Id header"}, status=400)
+        qs = qs.filter(school_id=school_uuid)
+
+    qs = qs[:limit]
 
     rows = []
     for e in qs:

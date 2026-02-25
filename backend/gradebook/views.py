@@ -566,9 +566,9 @@ def grade_entry_bulk_upsert(request, section_id, assignment_id):
                 continue
 
             try:
-                student = Student.objects.get(id=student_id)
+                student = Student.objects.get(id=student_id, school_id=school_id)
             except Student.DoesNotExist:
-                # Skip unknown students; do not fail the whole batch
+                # Skip unknown students (including cross-tenant IDs); do not fail the whole batch
                 continue
 
             obj, was_created = GradeEntry.objects.update_or_create(
