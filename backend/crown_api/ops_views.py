@@ -181,7 +181,7 @@ def ops_summary(request):
 
     # Build + mode
     build_sha = os.environ.get("BUILD_SHA") or "local-dev"
-    demo_mode = os.environ.get("CROWN_DEMO_MODE", "").lower() in ("1", "true", "yes", "on")
+    demo_mode = getattr(settings, "CROWN_DEMO_MODE", False)
 
     # SeedRun (if present)
     seed_last = None

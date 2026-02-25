@@ -7,21 +7,6 @@ import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 
 const API_BASE = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
-const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1';
-
-/* ── Static demo fallback (used when VITE_DEMO_MODE=1 and API is unreachable) ── */
-const STUDENT_DEMO = {
-  student: { name: '', grade: '10' },   // falsy name → CrownLayout uses 'Student Dashboard' title
-  dashboard_v2: {
-    gpa: 3.2,
-    current_average: 88.5,
-    missing_assignments: 2,
-    service_hours: { approved_hours: 10.0, pending_hours: 2.0 },
-    financial: { balance_cents: 50000 },
-    alerts: [],
-    upcoming_assignments: [],
-  },
-};
 
 async function fetchSelf() {
   const res = await authenticatedFetch(`${API_BASE}/api/student360/me/overview/`);
@@ -86,11 +71,7 @@ export default function StudentDashboard() {
     fetchSelf()
       .then(setData)
       .catch((err) => {
-        if (IS_DEMO_MODE) {
-          setData(STUDENT_DEMO); // demo mode: never blank
-        } else {
-          setError(`Dashboard unavailable — API error: ${err.message}`);
-        }
+        setError(`Dashboard unavailable — API error: ${err.message}`);
       });
   }, []);
 
