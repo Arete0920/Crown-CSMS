@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:3000";
+const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:4173";
 const DEMO_SCHOOL_ID =
   process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
@@ -28,6 +28,24 @@ test("Executive Dashboard renders admin KPI cards and Executive Insights section
   page,
 }) => {
   await seedSession(page, "admin");
+
+  // Mock the admin metrics API so the test is independent of any backend or demo fallback.
+  await page.route("**/api/v1/admin/metrics/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        enrolled: 320,
+        attendance_flags_today: 5,
+        discipline_incidents_week: 2,
+        messages_pending: 8,
+        billing_delinquencies: 3,
+        enrollment_funnel: { inquiries: 50, applicants: 30, admitted: 25, enrolled: 20 },
+        operational_alerts: [],
+      }),
+    })
+  );
+
   await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
 
   // Page title from CrownLayout
@@ -35,7 +53,7 @@ test("Executive Dashboard renders admin KPI cards and Executive Insights section
     page.getByRole("heading", { name: /administration/i })
   ).toBeVisible();
 
-  // Operational KPI cards (rendered from DEMO fallback — always present)
+  // Operational KPI cards (rendered from API mock — deterministic)
   // .first() required: each label also appears in the "Today at a Glance" table row (case-insensitive substring match)
   await expect(page.locator("text=Enrolled").first()).toBeVisible();  // KPI card + FunnelStep both render "Enrolled"
   await expect(page.locator("text=Attendance Flags").first()).toBeVisible();

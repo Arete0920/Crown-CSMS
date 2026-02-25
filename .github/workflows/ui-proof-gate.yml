@@ -39,7 +39,7 @@ jobs:
         run: npm run test:e2e:smoke
         env:
           CI: "1"
-          VITE_DEV_BASE_URL: "http://localhost:3000"
+          VITE_DEV_BASE_URL: "http://localhost:4173"
           CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
           CROWN_DEMO_TOKEN: "playwright-demo-token"
 

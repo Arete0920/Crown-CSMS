@@ -10,7 +10,9 @@ import { defineConfig, devices } from "@playwright/test";
  * VITE_DEV_BASE_URL env var overrides the baseURL (e.g. for staging).
  */
 
-const BASE_URL = process.env.VITE_DEV_BASE_URL ?? "http://localhost:3000";
+// Port 4173 = Vite preview default — avoids collision with port 3000 dev servers
+// in concurrent CI jobs. Can be overridden via VITE_DEV_BASE_URL env var.
+const BASE_URL = process.env.VITE_DEV_BASE_URL ?? "http://localhost:4173";
 
 export default defineConfig({
   testDir: "./tests",
@@ -45,9 +47,12 @@ export default defineConfig({
     },
   ],
 
-  /* Auto-start the Vite dev server when running locally or in CI */
+  /* Auto-start the Vite dev server when running locally or in CI.
+   * CI: Playwright is the sole owner of the server lifecycle — no separate
+   * workflow step pre-starts Vite, so reuseExistingServer=false is correct.
+   * Local: reuse an existing server if one is already running on the port. */
   webServer: {
-    command: "npm run dev",
+    command: "npm run dev -- --port 4173 --strictPort",
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
