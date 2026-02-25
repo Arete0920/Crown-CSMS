@@ -45,8 +45,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$prodCertTag = "prod-certified-$Date"
-$docsCertTag = "docs-certified-$Date"
+$prodCertTag   = "prod-certified-$Date"
+$prodCertTagTs = "prod-certified-$Date-$(Get-Date -Format 'HHmm')"  # immutable: never force-move this tag
+$docsCertTag   = "docs-certified-$Date"
 
 Write-Host ""
 Write-Host "=== CROWN2026 CERTIFICATION SCRIPT ===" -ForegroundColor Cyan
@@ -128,8 +129,9 @@ Write-Host "  All health assertions PASS." -ForegroundColor Green
 if (-not $Force) {
     Write-Host ""
     Write-Host "About to push:" -ForegroundColor Yellow
-    Write-Host "  $prodCertTag -> $deploySha"
-    Write-Host "  $docsCertTag -> $docsSha"
+    Write-Host "  $prodCertTag   -> $deploySha (force-moveable: latest that day)"
+    Write-Host "  $prodCertTagTs -> $deploySha (immutable: intra-day record)"
+    Write-Host "  $docsCertTag   -> $docsSha"
     Write-Host ""
     Write-Host "Confirm? (type 'yes' to continue)"
     $confirm = Read-Host
@@ -147,6 +149,14 @@ if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Failed to set $prodCertTag" -Foreg
 git push -f origin $prodCertTag
 if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Failed to push $prodCertTag" -ForegroundColor Red; exit 1 }
 
+# Timestamped tag — no -f. If it already exists, the push will fail loudly.
+# RULE: Never force-move prod-certified-YYYY-MM-DD-HHMM. If wrong, create a
+#       correction tag (e.g. prod-certified-...-CORRECTED) and document why.
+git tag $prodCertTagTs $deploySha
+if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Failed to set $prodCertTagTs (already exists?)" -ForegroundColor Red; exit 1 }
+git push origin $prodCertTagTs
+if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Failed to push $prodCertTagTs" -ForegroundColor Red; exit 1 }
+
 git tag -f $docsCertTag $docsSha
 if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Failed to set $docsCertTag" -ForegroundColor Red; exit 1 }
 git push -f origin $docsCertTag
@@ -158,8 +168,9 @@ Write-Host "=== CERTIFICATION COMPLETE ===" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Tag                          SHA"
 Write-Host "  ─────────────────────────────────────────────────────────────"
-Write-Host "  $prodCertTag  $((git rev-parse $prodCertTag).Trim())"
-Write-Host "  $docsCertTag  $((git rev-parse $docsCertTag).Trim())"
+Write-Host "  $prodCertTag   $((git rev-parse $prodCertTag).Trim())"
+  Write-Host "  $prodCertTagTs $((git rev-parse $prodCertTagTs).Trim()) [immutable]"
+  Write-Host "  $docsCertTag   $((git rev-parse $docsCertTag).Trim())"
 Write-Host ""
 Write-Host "  Prod health:"
 Write-Host "    build_sha:   $healthBuildSha"
