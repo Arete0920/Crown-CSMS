@@ -49,6 +49,15 @@ def test_unauthenticated_request_returns_auth_error(method, path):
         f"Expected 302/401/403 (auth wall).\n"
         f"  404 → route not wired into api_urls.py\n"
         f"  200 → @login_required / permission class missing\n"
-        f"  500 → server error (check logs)\n"
-        f"  302 Location: {response.get('Location', 'n/a')}"
+        f"  500 → server error (check logs)"
     )
+
+    # If Django session-auth redirect, verify it points to the canonical login URL.
+    # A redirect to an unexpected location means middleware is misconfigured.
+    if response.status_code == 302:
+        location = response.get("Location", "")
+        assert "/accounts/login/" in location, (
+            f"{method} {path!r} returned 302 but redirected to unexpected location.\n"
+            f"  Got:      {location!r}\n"
+            f"  Expected: URL containing '/accounts/login/'"
+        )
