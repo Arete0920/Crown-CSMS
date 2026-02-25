@@ -20,22 +20,6 @@ function getSession() {
   } catch { return { token: '', schoolId: '' }; }
 }
 
-/* ── Static demo fallback (used when endpoint is unavailable) ───────── */
-const DEMO = {
-  enrolled: 312,
-  attendance_flags_today: 7,
-  discipline_incidents_week: 3,
-  messages_pending: 14,
-  billing_delinquencies: 11,
-  enrollment_funnel: { inquiries: 87, applicants: 54, admitted: 41, enrolled: 38 },
-  operational_alerts: [
-    { type: 'overdue_form',   label: 'Overdue enrollment forms',       count: 4 },
-    { type: 'missing_doc',    label: 'Missing health records',          count: 9 },
-    { type: 'staff_coverage', label: 'Staff coverage gaps this week',   count: 2 },
-    { type: 'comms',          label: 'Unanswered family messages >48h', count: 6 },
-  ],
-};
-
 async function fetchAdminMetrics() {
   const { token, schoolId } = getSession();
   const url = `${apiBase()}/api/v1/admin/metrics/`;
@@ -47,7 +31,7 @@ async function fetchAdminMetrics() {
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
-    return { ok: false, data: DEMO };   // silent fallback — UI never crashes
+    return { ok: false, data: null };   // no silent fallback — follow DEMO_MODE_POLICY
   }
 }
 
@@ -125,13 +109,15 @@ function ExecMetric({ label, value, hint }) {
 
 /* ── Main component ─────────────────────────────────────────────────── */
 export default function AdminDashboard() {
-  const [state, setState] = useState({ loading: true, live: false, data: DEMO });
+  const [state, setState] = useState({ loading: true, live: false, data: null });
+  const [metricsError, setMetricsError] = useState('');
   const [exec, setExec] = useState(null);
   const [execError, setExecError] = useState('');
 
   useEffect(() => {
     fetchAdminMetrics().then(({ ok, data }) => {
-      setState({ loading: false, live: ok, data });
+      if (!ok || !data) setMetricsError('Admin metrics unavailable — API error');
+      setState({ loading: false, live: ok && !!data, data });
     });
   }, []);
 
@@ -153,11 +139,18 @@ export default function AdminDashboard() {
   }, []);
 
   const { loading, live, data } = state;
-  const f = data.enrollment_funnel || DEMO.enrollment_funnel;
-  const alerts = data.operational_alerts || DEMO.operational_alerts;
+  const f = data?.enrollment_funnel || {};
+  const alerts = data?.operational_alerts || [];
 
   return (
     <CrownLayout title="Administration" subtitle="Principal & operations command center">
+      <ErrorBanner title="Dashboard unavailable" message={metricsError} />
+
+      {!data && !metricsError && (
+        <div style={{ opacity: 0.6, padding: 24 }}>Loading dashboard…</div>
+      )}
+
+      {data && (
       <CrownGrid>
 
         {/* ── KPI row ───────────────────────────────────────────────── */}
@@ -322,6 +315,7 @@ export default function AdminDashboard() {
         </Col>
 
       </CrownGrid>
+      )}
     </CrownLayout>
   );
 }

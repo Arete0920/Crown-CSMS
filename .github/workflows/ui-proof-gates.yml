@@ -49,21 +49,10 @@ jobs:
       - name: Install Playwright browsers (chromium only)
         run: npx playwright install --with-deps chromium
 
-      - name: Start Vite (background)
-        shell: bash
-        env:
-          VITE_API_BASE_URL: http://127.0.0.1:8000
-        run: |
-          nohup npm run dev -- --host 127.0.0.1 --port 3000 --strictPort >/tmp/vite.log 2>&1 &
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:3000/ >/dev/null 2>&1; then echo "Vite is up"; break; fi
-            sleep 1
-          done
-          if ! curl -fsS http://127.0.0.1:3000/ >/dev/null 2>&1; then
-            echo "--- Vite never became reachable ---"
-            cat /tmp/vite.log || echo "(no vite.log)"
-            exit 1
-          fi
+      # NOTE: Vite is intentionally NOT pre-started here.
+      # playwright.config.ts webServer config owns the server lifecycle (port 4173).
+      # Pre-starting Vite separately caused a port collision (port 3000 already in use)
+      # because Playwright also tried to start the server when reuseExistingServer=false.
 
       - name: Run UI proof gates
         # IMPORTANT: specs are listed explicitly — do NOT replace with `tests/ui`.
@@ -71,7 +60,7 @@ jobs:
         # assert sidebar nav links which don't exist in CI, causing false failures.
         # Add new dashboard specs here individually when they are ready to gate.
         env:
-          VITE_DEV_BASE_URL: http://127.0.0.1:3000
+          VITE_DEV_BASE_URL: http://127.0.0.1:4173
           CROWN_DEMO_TOKEN: playwright-demo-token
           CROWN_DEMO_SCHOOL_ID: 19801b59-8c05-4c84-9312-5d792e4e839d
         run: |
@@ -81,9 +70,12 @@ jobs:
             tests/ui/executive-dashboard-v1.spec.ts \
             --reporter=line
 
-      - name: Dump Vite log on failure
+      - name: Dump Playwright webServer log on failure
         if: failure()
-        run: test -f /tmp/vite.log && tail -n 200 /tmp/vite.log || echo "(no vite.log)"
+        run: |
+          # Playwright writes its webServer stderr to the job log directly.
+          # This step is a placeholder for any additional debug artifacts.
+          echo "(Playwright webServer stderr is captured inline above)"
 
       - name: Upload Playwright report on failure
         if: failure()
