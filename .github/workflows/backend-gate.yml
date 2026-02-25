@@ -44,30 +44,8 @@ jobs:
         run: |
           python tools/verify_backend_gate.py
 
-      - name: "Tenant tripwire: no unscoped Section fetch"
+      - name: "Tenant tripwires (structural AST checks)"
         run: |
-          # Fail if any get_object_or_404(Section, id=...) line is missing a school_id= arg.
-          # This catches the CRITICAL #1 pattern before it can reach main.
-          HITS=$(grep -rn "get_object_or_404(Section, id=" backend/ | grep -v "school_id=" || true)
-          if [ -n "$HITS" ]; then
-            echo "FAIL: Unscoped Section fetch found — must include school_id="
-            echo "$HITS"
-            exit 1
-          fi
-          echo "PASS: All Section fetches by id are school-scoped"
-
-      - name: "Tenant tripwire: no required=False in write-handler call sites"
-        run: |
-          # Fail if any call-site passes required=False to get_request_school_id inside a
-          # write handler. Legitimate required=False uses are:
-          #   - households/scoping.py  (function definition default)
-          #   - crown_api/tenant_guards.py  (read-only validation mixin)
-          HITS=$(grep -rn "get_request_school_id(request, required=False)" backend/ \
-                 | grep -v "households/scoping.py" \
-                 | grep -v "tenant_guards.py" || true)
-          if [ -n "$HITS" ]; then
-            echo "FAIL: get_request_school_id(request, required=False) found in write handler"
-            echo "$HITS"
-            exit 1
-          fi
-          echo "PASS: No required=False call-sites in write handlers"
+          # Checks 4+5 from verify_backend_gate.py — multi-line-safe AST analysis.
+          # Replaces grep-based tripwires that could false-positive on multi-line calls.
+          python tools/verify_backend_gate.py --tenant-checks-only
