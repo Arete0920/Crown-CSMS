@@ -6,13 +6,14 @@
 # 3) Migration drift check (makemigrations --check --dry-run)
 # 4) Tenant tripwire: all get_object_or_404(Section, ...) calls include school_id= (AST, multi-line-safe)
 # 5) Tenant tripwire: get_request_school_id(..., required=False) only in approved files (AST)
+# 6) Tenant tripwire: Section.objects.get(id=...) and .get(pk=...) must include school_id= (AST)
 #
 # Designed to be deterministic in CI by setting safe env defaults.
 # No DB connection required for these checks.
 #
 # Usage:
 #   python tools/verify_backend_gate.py                  # run all checks
-#   python tools/verify_backend_gate.py --tenant-checks-only  # run only checks 4+5
+#   python tools/verify_backend_gate.py --tenant-checks-only  # run only checks 4-6
 
 import ast
 import os
@@ -99,6 +100,7 @@ def check_tenant_tripwires(backend: Path) -> list[str]:
     """
     Check 4: Every get_object_or_404(Section, ...) call must include school_id= keyword.
     Check 5: get_request_school_id(..., required=False) must only appear in approved files.
+    Check 6: Section.objects.get(id=...) and .get(pk=...) must include school_id= keyword.
 
     Returns a list of violation strings (empty = pass).
     """
@@ -150,6 +152,23 @@ def check_tenant_tripwires(backend: Path) -> list[str]:
                             f"tenant bypass risk"
                         )
 
+            # Check 6: Section.objects.get(id=...) / .get(pk=...) must have school_id=
+            # Detects: Section.objects.get(id=x) and Section.objects.get(pk=x) without school_id=
+            if (
+                name == "get"
+                and isinstance(node.func, ast.Attribute)
+                and isinstance(node.func.value, ast.Attribute)
+                and node.func.value.attr == "objects"
+                and _is_name(node.func.value.value, "Section")
+            ):
+                kws = _kwarg_names(node)
+                if ("id" in kws or "pk" in kws) and "school_id" not in kws:
+                    violations.append(
+                        f"  [check 6] {rel_str}:{node.lineno}: "
+                        f"Section.objects.get(id=/pk=) missing school_id= — "
+                        f"cross-tenant Section fetch"
+                    )
+
     return violations
 
 
@@ -161,7 +180,7 @@ def run_tenant_checks(backend: Path) -> int:
         for v in violations:
             print(v)
         return 1
-    print("PASS: Tenant tripwires — no violations (Section scoped, no rogue required=False)")
+    print("PASS: Tenant tripwires — no violations (Section scoped, no rogue required=False, no unscoped .get)")
     return 0
 
 
