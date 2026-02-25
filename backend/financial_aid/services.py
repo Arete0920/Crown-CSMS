@@ -1,162 +1,92 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID
 from django.db import transaction
-from django.utils import timezone
 
-from .models import AidApplication, AidAward, AidDisbursement, AidEvent, AidStatus, AwardStatus
-
-
-@dataclass(frozen=True)
-class DecisionResult:
-    award: AidAward | None
-
-
-def submit_aid_application(app: AidApplication):
-    if app.status != AidStatus.DRAFT:
-        raise ValueError("Only DRAFT aid applications can be submitted.")
-    app.status = AidStatus.SUBMITTED
-    app.submitted_at = timezone.now()
-    app.save(update_fields=["status", "submitted_at", "updated_at"])
-    AidEvent.objects.create(
-        school_id=app.school_id,
-        aid_application=app,
-        event_type="AID_APPLICATION_SUBMITTED",
-        payload={},
-    )
-
-
-def decide_aid_application(app: AidApplication, decision: str, amount_annual: Decimal | None):
-    """
-    decision: "APPROVE" or "DENY"
-    amount_annual required for APPROVE
-    """
-    if app.status != AidStatus.SUBMITTED:
-        raise ValueError("Only SUBMITTED aid applications can be decided.")
-    if decision not in ("APPROVE", "DENY"):
-        raise ValueError("decision must be APPROVE or DENY")
-
-    with transaction.atomic():
-        app.status = AidStatus.DECIDED
-        app.decided_at = timezone.now()
-        app.save(update_fields=["status", "decided_at", "updated_at"])
-
-        if decision == "DENY":
-            award = AidAward.objects.create(
-                school_id=app.school_id,
-                aid_application=app,
-                status=AwardStatus.DENIED,
-                amount_annual=Decimal("0.00"),
-            )
-            AidEvent.objects.create(
-                school_id=app.school_id,
-                aid_application=app,
-                event_type="AID_DENIED",
-                payload={},
-            )
-            return award
-
-        if amount_annual is None:
-            raise ValueError("amount_annual is required for APPROVE")
-
-        award = AidAward.objects.create(
-            school_id=app.school_id,
-            aid_application=app,
-            status=AwardStatus.APPROVED,
-            amount_annual=amount_annual,
-        )
-        AidEvent.objects.create(
-            school_id=app.school_id,
-            aid_application=app,
-            event_type="AID_APPROVED",
-            payload={"amount_annual": str(amount_annual)},
-        )
-        return award
-
-
-def create_disbursement(award: AidAward, amount: Decimal, disbursed_on):
-    if award.status != AwardStatus.APPROVED:
-        raise ValueError("Only APPROVED awards can be disbursed.")
-    d = AidDisbursement.objects.create(
-        school_id=award.school_id,
-        award=award,
-        amount=amount,
-        disbursed_on=disbursed_on,
-    )
-    AidEvent.objects.create(
-        school_id=award.school_id,
-        aid_application=award.aid_application,
-        event_type="AID_DISBURSED",
-        payload={"amount": str(amount), "disbursed_on": str(disbursed_on)},
-    )
-    return d
-
-
+from .models import AidAward, AidAuditEvent
 from billing.models import BillingRun, Invoice
 from ledger.models import LedgerAccount, Payment, Charge
-from ledger.models import Allocation as PaymentAllocation  # your repo has Allocation already
+from ledger.models import Allocation as PaymentAllocation
 
-from .models import FinancialAidDisbursement
+_DISBURSE_EVENT = "DISBURSED_TO_BILLING_RUN"
+_ENTITY_TYPE = "AID_AWARD"
+
+
+def _already_disbursed(*, school_id, award_id, billing_run_id) -> bool:
+    """
+    Idempotency guard: one Payment per (award, billing_run) pair.
+    Stored as an AidAuditEvent with event_type=DISBURSED_TO_BILLING_RUN,
+    entity_type=AID_AWARD, entity_id=award.id, message=str(billing_run_id).
+    """
+    return AidAuditEvent.objects.filter(
+        school_id=school_id,
+        event_type=_DISBURSE_EVENT,
+        entity_type=_ENTITY_TYPE,
+        entity_id=award_id,
+        message=str(billing_run_id),
+    ).exists()
 
 
 @transaction.atomic
 def apply_financial_aid_to_billing_run(*, school_id, billing_run_id: UUID) -> dict:
     """
-    Spine behavior:
-    - For each Invoice in the BillingRun, find awards for household/students in that term (simple: school-scoped, active awards)
-    - Create a Ledger Payment with source="FINANCIAL_AID"
-    - Allocate directly to the invoice’s ledger_charge_id
-    - Record FinancialAidDisbursement rows (idempotent per award+run)
+    For each Invoice in the BillingRun that has a ledger_charge_id:
+      - Find AidAwards for that household (school-scoped).
+      - Create a Ledger Payment(source='FINANCIAL_AID') per award.
+      - Allocate directly to the invoice's Charge (not FIFO).
+      - Record an AidAuditEvent for idempotency (one per award+run pair).
+
+    Calling this function twice with the same arguments is safe: awards
+    already disbursed to this billing run are silently skipped.
     """
     run = BillingRun.objects.get(id=billing_run_id, school_id=school_id)
-
-    invoices = Invoice.objects.filter(school_id=school_id, billing_run=run).order_by("created_at")
+    invoices = (
+        Invoice.objects.filter(school_id=school_id, billing_run=run)
+        .order_by("created_at")
+    )
 
     disbursed_total = Decimal("0.00")
     payments_created = 0
     allocations_created = 0
-    disbursements_created = 0
+    events_created = 0
 
     for inv in invoices:
         if not inv.ledger_charge_id:
             continue
 
-        # Determine household + ledger account
         household_id = inv.household_id
-        acct, _ = LedgerAccount.objects.get_or_create(school_id=school_id, household_id=household_id)
+        acct, _ = LedgerAccount.objects.get_or_create(
+            school_id=school_id,
+            household_id=household_id,
+        )
 
-        # Target charge is the one created by 0040 and stored on invoice
-        charge = Charge.objects.get(id=inv.ledger_charge_id, school_id=school_id, account=acct)
+        try:
+            charge = Charge.objects.get(
+                id=inv.ledger_charge_id,
+                school_id=school_id,
+                account=acct,
+            )
+        except Charge.DoesNotExist:
+            continue
 
-        # Spine award selection rule:
-        # - awards that match school_id
-        # - approved awards only (if your model has status field)
-        # - total award amount applied up to invoice total
-        awards_qs = AidAward.objects.filter(school_id=school_id)
-
-        # Prefer household match
-        awards_qs = awards_qs.filter(aid_application__household_id=household_id)
-
-        # Approved awards only
-        awards_qs = awards_qs.filter(status=AwardStatus.APPROVED)
-
-        awards = list(awards_qs)
+        awards = list(
+            AidAward.objects.filter(
+                school_id=school_id,
+                application__household_id=household_id,
+            )
+        )
 
         for aw in awards:
-            # amount field must exist
-            amt = getattr(aw, "amount", None)
-            if amt is None:
-                amt = getattr(aw, "amount_annual", None)
-            if amt is None:
-                continue
-            amt = Decimal(str(amt))
+            amt = Decimal(str(aw.amount))
             if amt <= Decimal("0.00"):
                 continue
 
-            # idempotency: one disbursement per (award, run)
-            if FinancialAidDisbursement.objects.filter(award=aw, billing_run=run).exists():
+            if _already_disbursed(
+                school_id=school_id,
+                award_id=aw.id,
+                billing_run_id=run.id,
+            ):
                 continue
 
             pay = Payment.objects.create(
@@ -168,7 +98,6 @@ def apply_financial_aid_to_billing_run(*, school_id, billing_run_id: UUID) -> di
             )
             payments_created += 1
 
-            # Allocate directly to this charge (not FIFO)
             alloc, created = PaymentAllocation.objects.get_or_create(
                 school_id=school_id,
                 payment=pay,
@@ -176,20 +105,18 @@ def apply_financial_aid_to_billing_run(*, school_id, billing_run_id: UUID) -> di
                 defaults={"amount": amt},
             )
             if not created:
-                # top up
                 alloc.amount = Decimal(str(alloc.amount)) + amt
                 alloc.save(update_fields=["amount"])
             allocations_created += 1
 
-            FinancialAidDisbursement.objects.create(
+            AidAuditEvent.objects.create(
                 school_id=school_id,
-                award=aw,
-                billing_run=run,
-                invoice=inv,
-                payment=pay,
-                amount=amt,
+                event_type=_DISBURSE_EVENT,
+                entity_type=_ENTITY_TYPE,
+                entity_id=aw.id,
+                message=str(run.id),
             )
-            disbursements_created += 1
+            events_created += 1
             disbursed_total += amt
 
     return {
@@ -197,6 +124,6 @@ def apply_financial_aid_to_billing_run(*, school_id, billing_run_id: UUID) -> di
         "term": run.term,
         "payments_created": payments_created,
         "allocations_created": allocations_created,
-        "disbursements_created": disbursements_created,
+        "events_created": events_created,
         "disbursed_total": str(disbursed_total),
     }
