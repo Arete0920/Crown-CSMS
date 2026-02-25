@@ -303,6 +303,14 @@ Most multi-tenant SaaS products rely on developer discipline ("remember to filte
 
 ## Change Log
 
+**2026-02-25:** Three critical tenant-isolation patches — PR #419 (commit `18363912`)
+- CRITICAL #1: `crown_api/views_academics.py::section_attendance_submit` — `required=False` bypass + unscoped `Section` fetch + no student-ownership guard → fixed (3-part patch: `required=True`, `Section` scoped with `school_id=`, student cross-tenant guard added)
+- CRITICAL #2: `gradebook/views.py` bulk grade upsert — `Student.objects.get(id=student_id)` with no `school_id` filter → `school_id=school_id` added; upstream `required=True` confirmed at line 540
+- CRITICAL #3: `crown_api/audit_views.py` — `AuditEvent.objects.all()` unfiltered → conditional `X-School-Id` filter added (UUID-validated; invalid UUID → 400)
+- 4 new invariant tests added: `backend/crown_api/tests/test_attendance_tenant_invariants.py` — all passing
+- Full suite after merge: 609 passed, 11 skipped, 0 failed
+- Patch notes: `docs/SECURITY_PATCH_NOTES_2026-02-25.md`
+
 **2026-02-18:** Initial canon baseline  
 - Layers 04-10 complete and tagged
 - All tests passing

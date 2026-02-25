@@ -109,6 +109,7 @@
 
 | Item | Priority | Owner |
 |---|---|---|
+| ~~Three critical tenant-isolation bypasses (attendance, gradebook, audit)~~ | ~~CRITICAL~~ | ✅ Done PR #419 · `18363912` · [SECURITY_PATCH_NOTES_2026-02-25.md](SECURITY_PATCH_NOTES_2026-02-25.md) |
 | ~~Playwright smoke suite (4 critical paths)~~ | ~~HIGH~~ | ✅ Done PR #407 |
 | CodeQL code scanning enabled (workflow warning) | MEDIUM | Repo settings |
 | CodeQL Action v3 → v4 (deprecates Dec 2026) | LOW | Before Dec 2026 |
@@ -119,3 +120,5 @@
 ## Proof Log
 
 See [PROOF_LOG_2026-02-24.md](PROOF_LOG_2026-02-24.md) for raw test output and health response.
+
+See [SECURITY_PATCH_NOTES_2026-02-25.md](SECURITY_PATCH_NOTES_2026-02-25.md) for the three critical tenant-isolation patches merged 2026-02-25 (PR #419, commit `18363912`): attendance bypass, gradebook unscoped student fetch, audit unfiltered event list.
