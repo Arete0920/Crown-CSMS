@@ -85,6 +85,7 @@ urlpatterns = [
     path('comms/', include('comms.api.urls')),
     # Persona-specific API routes (NEW - per user spec)
     path("aid/", include("aid.api_urls")),
+    path("financial-aid/", include("financial_aid.urls")),
     path("admissions/", include("admissions.api_urls")),
     
     # New demo pillars (discipline, service hours, Teams integration)
