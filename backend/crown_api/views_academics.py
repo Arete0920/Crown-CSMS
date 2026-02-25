@@ -76,15 +76,14 @@ def section_attendance_submit(request, section_id):
     Returns: {"ok": true, "date": "YYYY-MM-DD", "section_id": "...", "created": N, "updated": N}
     """
     # --- RBAC ---
-    school_id = get_request_school_id(request, required=False)
-    if school_id:
-        roles = set(
-            UserRole.objects.filter(user_id=request.user.id, school_id=school_id)
-            .values_list("role_code", flat=True)
-        )
-        allowed = {"TEACHER", "ADMIN", "HEAD_OF_SCHOOL"}
-        if not roles.intersection(allowed):
-            return Response({"detail": "Forbidden: requires TEACHER, ADMIN, or HEAD_OF_SCHOOL role."}, status=403)
+    school_id = get_request_school_id(request, required=True)
+    roles = set(
+        UserRole.objects.filter(user_id=request.user.id, school_id=school_id)
+        .values_list("role_code", flat=True)
+    )
+    allowed = {"TEACHER", "ADMIN", "HEAD_OF_SCHOOL"}
+    if not roles.intersection(allowed):
+        return Response({"detail": "Forbidden: requires TEACHER, ADMIN, or HEAD_OF_SCHOOL role."}, status=403)
 
     payload = request.data or {}
 
@@ -103,9 +102,9 @@ def section_attendance_submit(request, section_id):
     else:
         day = timezone.localdate()
 
-    # Resolve section to verify it exists
+    # Resolve section to verify it exists and belongs to this school
     from academics.models import Section
-    get_object_or_404(Section, id=section_id)
+    section = get_object_or_404(Section, id=section_id, school_id=school_id)
 
     VALID_STATUSES = {"PRESENT", "ABSENT", "TARDY", "EXCUSED"}
     created = 0
@@ -118,6 +117,9 @@ def section_attendance_submit(request, section_id):
             return Response({"ok": False, "error": "each item requires student_id"}, status=400)
         if raw_status not in VALID_STATUSES:
             raw_status = "PRESENT"
+
+        # Verify student belongs to this school before writing
+        get_object_or_404(Student, id=sid, school_id=school_id)
 
         try:
             obj, was_created = AttendanceRecord.objects.update_or_create(
