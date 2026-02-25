@@ -76,7 +76,7 @@ def allocate_payment_fifo(*, school_id, payment: Payment) -> AllocationResult:
 
     # charges FIFO (oldest first). If your Charge has a different timestamp field,
     # keep ordering by created_at if present.
-    qs = Charge.objects.filter(school_id=school_id, account=payment.account).order_by("created_at", "id")
+    qs = Charge.objects.filter(school_id=school_id, account=payment.account, is_void=False).order_by("created_at", "id")
 
     allocations_created = 0
 
