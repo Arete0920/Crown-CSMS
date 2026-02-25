@@ -29,6 +29,7 @@ docs/demo-proof/**/tmp/
 # Local generated artifacts
 db.sqlite3
 backend/db.sqlite3
+backend/ci.sqlite3
 _tmp/
 _local_proofs/
 app_logs/
