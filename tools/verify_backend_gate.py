@@ -137,7 +137,8 @@ def check_tenant_tripwires(backend: Path) -> list[str]:
                         violations.append(
                             f"  [check 4] {rel_str}:{node.lineno}: "
                             f"get_object_or_404(Section, ...) missing school_id= — "
-                            f"cross-tenant Section fetch"
+                            f"cross-tenant Section fetch\n"
+                            f"    fix: add school_id=school_id as a keyword argument"
                         )
 
             # Check 5: get_request_school_id(..., required=False) only in approved files
@@ -149,7 +150,8 @@ def check_tenant_tripwires(backend: Path) -> list[str]:
                         violations.append(
                             f"  [check 5] {rel_str}:{node.lineno}: "
                             f"get_request_school_id(required=False) outside approved files — "
-                            f"tenant bypass risk"
+                            f"tenant bypass risk\n"
+                            f"    fix: use get_request_school_id(request, required=True) in write endpoints"
                         )
 
             # Check 6: Section.objects.get(id=...) / .get(pk=...) must have school_id=
@@ -166,7 +168,8 @@ def check_tenant_tripwires(backend: Path) -> list[str]:
                     violations.append(
                         f"  [check 6] {rel_str}:{node.lineno}: "
                         f"Section.objects.get(id=/pk=) missing school_id= — "
-                        f"cross-tenant Section fetch"
+                        f"cross-tenant Section fetch\n"
+                        f"    fix: add school_id=school_id as a keyword argument"
                     )
 
     return violations
