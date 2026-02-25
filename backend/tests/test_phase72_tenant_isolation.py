@@ -175,70 +175,59 @@ class Phase72BillingRunsTenantTests(_TenantBase):
         self.assertIn(resp.status_code, (401, 403))
 
 
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-# 3. Discipline Incidents â€” NON-CANONICAL scoping (direct header read)
+# ---------------------------------------------------------------------------
+# 3. Discipline Incidents -- CANONICAL scoping (Phase 7.2B remediated)
 #    Endpoint: GET /api/v1/discipline/incidents/
 #    File:     backend/discipline/api/views.py
 #
-#  Gap note: discipline/api/views.py uses:
-#      school_id = request.headers.get("X-School-Id")
-#      school = School.objects.get(id=school_id)
-#  There is NO non-staff cross-tenant check â€” a user from school-A can
-#  request school-B's incidents by supplying school-B's header.
-#  However, ORM-level isolation holds: the query is
-#      DisciplineIncident.objects.filter(school=school_from_header)
-#  so school-A data never appears in a school-B-scoped response.
-#
-#  Recommendation (cert doc Â§6): upgrade to get_request_school_id().
-# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+#  Scoping upgraded to get_request_school_id() in Phase 7.2B:
+#    - Missing header           -> MissingSchoolContext (HTTP 400)
+#    - Non-staff, wrong school  -> NotFound (HTTP 404)
+#    - Correct school           -> HTTP 200
+# ---------------------------------------------------------------------------
 
 class Phase72DisciplineTenantTests(_TenantBase):
     """
-    Validates ORM-level data isolation for the weaker-scoped discipline module.
-    Cross-tenant call returns HTTP 200 with school-B's (empty) data â€” NOT school-A's.
+    Phase 7.2B: discipline upgraded to canonical get_request_school_id() scoping.
+    Wrong-tenant non-staff requests now return HTTP 404 (was 200 before remediation).
     """
 
     URL = "/api/v1/discipline/incidents/"
 
     def test_missing_header_returns_400(self):
-        """No X-School-Id â†’ _resolve_school() returns Response(status=400)."""
-        self.client.force_authenticate(user=self.user_a)
+        """
+        No X-School-Id header -> MissingSchoolContext (HTTP 400).
+        Must use user_noschool so the canonical resolver finds no header and no
+        user.school_id, returning None -> MissingSchoolContext -> 400.
+        """
+        self.client.force_authenticate(user=self.user_noschool)
         resp = self.client.get(self.URL)
         self.assertEqual(resp.status_code, 400)
 
     def test_correct_school_returns_200(self):
-        """Correct school header â†’ HTTP 200."""
+        """Correct school header -> HTTP 200."""
         self.client.force_authenticate(user=self.user_a)
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
         self.assertEqual(resp.status_code, 200)
 
-    def test_wrong_school_returns_200_not_404(self):
+    def test_wrong_school_nonstaff_returns_404(self):
         """
-        NON-canonical: user_a with school_b header gets HTTP 200 (not 404).
-        The module lacks the get_request_school_id() non-staff guard.
-        This test documents the CONFIRMED GAP for TENANT_AUDIT_CERTIFICATION.md Â§6.
+        Phase 7.2B: canonical scoping now in place.
+        Non-staff user_a with school_b header -> HTTP 404 (was 200 before remediation).
+        get_request_school_id() enforces the cross-tenant guard.
         """
         self.client.force_authenticate(user=self.user_a)
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_b.id))
-        # Gap: 200 instead of 404 â€” non-canonical scoping confirmed.
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 404)
 
-    def test_school_a_data_not_visible_under_school_b_scope(self):
+    def test_cross_tenant_data_isolation_confirmed(self):
         """
-        ORM isolation confirmation: even though cross-tenant call is allowed (200),
-        school-A data is never returned in a school-B-scoped response.
-        We have no incidents at school_b, so the list must be empty.
-        School_a incident IDs must not appear.
+        Cross-tenant request blocked at the scoping layer (404).
+        School-A data is unreachable under school-B scope.
         """
         self.client.force_authenticate(user=self.user_a)
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_b.id))
-        # school_b has NO incidents â€” the list must be empty.
-        if resp.status_code == 200:
-            self.assertEqual(len(resp.data), 0,
-                             "School-B incident list must be empty when school-B has no incidents")
-        else:
-            # Any non-200 (400, 403, 404) is also acceptable.
-            self.assertIn(resp.status_code, (400, 403, 404))
+        self.assertEqual(resp.status_code, 404)
 
     def test_unauthenticated_returns_401_or_403(self):
         """No credentials -> 401 or 403 (DRF bearer-token auth; 403 is normal)."""

@@ -1,8 +1,9 @@
-# Phase 7.2 — Tenant Isolation Audit Certification
+# Phase 7.2 / 7.2B — Tenant Isolation Audit Certification
 
-**Audit Phase:** 7.2  
+**Audit Phase:** 7.2 (audit) + 7.2B (discipline remediation)  
 **Branch:** `phase/7.2-tenant-isolation-audit`  
 **Base SHA (main at branch point):** `869d64e3ca01d16cb3a29e885bbdc08f131a9bb0`  
+**Phase 7.2B remediation SHA:** see PR #428 merged to main  
 **Test file:** `backend/tests/test_phase72_tenant_isolation.py`  
 **Test result:** 13 tests, 0 failures, 0 errors  
 **Status:** CERTIFIED ✓
@@ -59,14 +60,17 @@ any `UserRole` gets a 403 (permission denied) before reaching the school binding
 isolation is achieved via the permission layer rather than the scoping utility itself.
 The isolation holds in practice but the mechanism is indirect.
 
-### 2c. Non-canonical — Direct header read (discipline)
+### 2c. ~~Non-canonical~~ — Direct header read (discipline) — REMEDIATED in Phase 7.2B
 
-Located in `discipline/api/views.py`. Behaviour:
+**Before Phase 7.2B:** `discipline/api/views.py` read `X-School-Id` directly and performed
+no cross-tenant user-role check. Wrong-tenant non-staff requests returned HTTP 200.
 
-- Reads `school_id` directly from `request.headers.get("X-School-Id")`
-- Filters ORM queryset: `DisciplineIncident.objects.filter(school=school_from_header)`
-- No check that the requesting user has a role at that school
-- A non-staff user supplying another school's ID receives HTTP 200 with an empty queryset (no data leaks, but no 404 enforcement)
+**After Phase 7.2B:** `_get_school_from_request()` replaced with `_get_school()` which
+delegates to `get_request_school_id(request, required=True)`. Discipline is now canonical:
+
+- Missing or invalid header → MissingSchoolContext → HTTP 400
+- Non-staff user with wrong-school header → NotFound → HTTP 404
+- Staff users → pass-through
 
 ---
 
@@ -111,15 +115,13 @@ Located in `discipline/api/views.py`. Behaviour:
 - **Risk:** If a view were added that calls `require_school_id` without a preceding
   permission check, cross-tenant access would be possible for any authenticated user.
 
-### Discipline — NON-CANONICAL ⚠
+### Discipline — CANONICAL ✓ (remediated Phase 7.2B)
 
-- Direct header read; no cross-tenant user-role enforcement
-- ORM `filter(school=...)` prevents data leakage (school-A incidents never returned
-  under school-B scope), but a non-staff user with a wrong school header gets HTTP 200
-  rather than HTTP 404
-- **Risk:** Information disclosure via timing or response-shape differences is theoretically
-  possible; the absence of 404 also violates the "you don't see what you can't access"
-  principle.
+- `_get_school_from_request()` replaced with `_get_school()` calling `get_request_school_id(request, required=True)`
+- Missing header → HTTP 400 (MissingSchoolContext)
+- Non-staff user with wrong school header → HTTP 404 (NotFound)
+- Correct school → HTTP 200
+- All 4 discipline endpoints (`incidents/`, `incidents/<id>/`, `incidents/<id>/actions/`, `metrics/`) updated
 
 ### Admissions (dead code) — NOT REGISTERED
 
@@ -148,12 +150,11 @@ FK will need to be added and a migration written.
 |---|---|---|
 | `Phase72GradebookTenantTests` | 4 | missing header (400), unauthenticated (401/403), wrong school non-staff (404), correct school staff (200) |
 | `Phase72BillingRunsTenantTests` | 4 | missing header (400), unauthenticated (401/403), wrong school non-staff (404), correct school (200) |
-| `Phase72DisciplineTenantTests` | 5 | missing header (400), unauthenticated (401/403), wrong school returns 200 (documents non-canonical), ORM isolation confirmation (school-A data absent under school-B scope), correct school (200) |
+| `Phase72DisciplineTenantTests` | 5 | missing header (400, uses user_noschool), unauthenticated (401/403), wrong school non-staff (404, Phase 7.2B canonical), cross-tenant data isolation confirmed (404), correct school (200) |
 
 **Key assertions confirmed:**
 
-- Canonical modules (gradebook, billing) → wrong tenant → HTTP 404 ✓
-- Non-canonical discipline → wrong tenant → HTTP 200, **but** school-A data absent from response body ✓
+- Canonical modules (gradebook, billing, **discipline**) → wrong tenant → HTTP 404 ✓
 - All modules → missing header → HTTP 400 ✓
 - All modules → unauthenticated → HTTP 401 or 403 (DRF bearer-token auth behaviour) ✓
 
@@ -163,7 +164,7 @@ FK will need to be added and a migration written.
 
 | Risk | Severity | Module | Detail |
 |---|---|---|---|
-| Non-canonical discipline scoping | Medium | Discipline | Wrong-tenant requests return 200; no UserRole enforcement |
+| ~~Non-canonical discipline scoping~~ | ~~Medium~~ | Discipline | **RESOLVED in Phase 7.2B**: `_get_school()` now uses `get_request_school_id` — wrong tenant → 404 |
 | Non-canonical financial aid scoping | Low-Medium | Financial Aid | Isolation via permission layer, not scoping utility; fragile if new views added without permission check |
 | Dead admissions view files | Low | Admissions | Unrouted but unscoped; delete to reduce maintenance surface |
 | Global Term model | Informational | Scheduling | No school FK; acceptable for current single-tenant-per-instance model |
@@ -174,8 +175,8 @@ FK will need to be added and a migration written.
 
 > **Note:** These are observations, not implementation tasks for this PR.
 
-1. Migrate `discipline/api/views.py` to use `get_request_school_id(request, required=True)`.
-   This will make wrong-tenant requests return 404 consistently with all canonical modules.
+1. ~~Migrate `discipline/api/views.py` to use `get_request_school_id(request, required=True)`.~~
+   **RESOLVED in Phase 7.2B.** `_get_school()` now delegates to `get_request_school_id`.
 
 2. Migrate `financial_aid/tenant.py` → deprecate `require_school_id`; switch to
    `get_request_school_id`. Ensure permission checks remain in place.
@@ -189,11 +190,11 @@ FK will need to be added and a migration written.
 
 ## 8. Certification Sign-off
 
-All 13 Phase 7.2 tenant isolation tests pass as of this audit.
+All 13 Phase 7.2 / 7.2B tenant isolation tests pass.
 
-- **Canonical pattern confirmed in:** Gradebook, Billing, Billing API, Academics, Curricula, Exports
-- **Non-canonical documented in:** Discipline, Financial Aid
+- **Canonical pattern confirmed in:** Gradebook, Billing, Billing API, Academics, Curricula, Exports, **Discipline** (remediated Phase 7.2B)
+- **Non-canonical documented in:** Financial Aid (isolation via permission layer)
 - **Dead code flagged in:** Admissions
 - **Test file:** `backend/tests/test_phase72_tenant_isolation.py`
 - **Audit branch:** `phase/7.2-tenant-isolation-audit`
-- **Main HEAD at branch point:** `869d64e3ca01d16cb3a29e885bbdc08f131a9bb0`
+- **Phase 7.2B remediation branch:** `phase/7.2b-discipline-canonical`

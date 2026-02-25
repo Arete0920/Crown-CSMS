@@ -6,35 +6,36 @@ from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.models import School
 from discipline.models import DisciplineIncident, DisciplineAction
 from discipline.api.serializers import (
     DisciplineIncidentListSerializer,
     DisciplineIncidentDetailSerializer,
     DisciplineActionCreateSerializer,
 )
+from households.scoping import get_request_school_id
 
-def _get_school_from_request(request):
-    # Crown already enforces/sets school context; prefer request.school if present.
-    school = getattr(request, "school", None)
-    if school:
-        return school
-    # Fallback: X-School-Id header enforcement likely exists; if not, fail closed.
-    school_id = request.headers.get("X-School-Id")
-    if not school_id:
-        return None
-    from core.models import School
-    try:
-        return School.objects.get(id=school_id)
-    except School.DoesNotExist:
-        return None
+
+def _get_school(request) -> School:
+    """
+    Canonical tenant resolver for discipline views.
+
+    Delegates to get_request_school_id() which enforces:
+      - Missing or invalid X-School-Id header  -> MissingSchoolContext (HTTP 400)
+      - Non-staff user with wrong-school header -> NotFound (HTTP 404)
+      - Staff users                             -> pass-through (header wins)
+
+    Raises MissingSchoolContext or NotFound; DRF converts them to 400/404
+    automatically — callers do not need null checks.
+    """
+    sid = get_request_school_id(request, required=True)
+    return School.objects.get(id=sid)
 
 class DisciplineIncidentsListCreate(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        school = _get_school_from_request(request)
-        if not school:
-            return Response({"detail": "Missing or invalid school context"}, status=400)
+        school = _get_school(request)
 
         qs = DisciplineIncident.objects.filter(school=school)
 
@@ -54,9 +55,7 @@ class DisciplineIncidentsListCreate(APIView):
         return Response(data)
 
     def post(self, request):
-        school = _get_school_from_request(request)
-        if not school:
-            return Response({"detail": "Missing or invalid school context"}, status=400)
+        school = _get_school(request)
 
         # Minimal create: accept student UUID + basic fields
         payload = request.data or {}
@@ -96,9 +95,7 @@ class DisciplineIncidentDetail(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, incident_id):
-        school = _get_school_from_request(request)
-        if not school:
-            return Response({"detail": "Missing or invalid school context"}, status=400)
+        school = _get_school(request)
 
         try:
             inc = DisciplineIncident.objects.get(id=incident_id, school=school)
@@ -111,9 +108,7 @@ class DisciplineIncidentActions(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, incident_id):
-        school = _get_school_from_request(request)
-        if not school:
-            return Response({"detail": "Missing or invalid school context"}, status=400)
+        school = _get_school(request)
 
         try:
             inc = DisciplineIncident.objects.get(id=incident_id, school=school)
@@ -164,9 +159,7 @@ class DisciplineMetrics(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        school = _get_school_from_request(request)
-        if not school:
-            return Response({"detail": "Missing or invalid school context"}, status=400)
+        school = _get_school(request)
 
         qs = DisciplineIncident.objects.filter(school=school)
         by_status = list(qs.values("status").annotate(count=Count("id")).order_by("status"))
