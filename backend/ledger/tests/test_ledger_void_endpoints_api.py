@@ -174,3 +174,35 @@ def test_void_payment_removes_allocations():
     assert resp.status_code == 200
 
     assert Allocation.objects.filter(payment=pay).count() == 0, "Allocations should be deleted on void"
+
+
+# ---------------------------------------------------------------------------
+# 7. void_charge: voiding twice creates exactly one reversal JournalEntry
+# ---------------------------------------------------------------------------
+
+def test_void_charge_no_duplicate_reversal_entry():
+    """
+    POST void_charge twice must not create a second reversal JournalEntry.
+    The signal uses create_reversal_entry which is idempotent via OneToOne
+    reversal_of; additionally the API endpoint returns 200 early on repeat
+    calls without re-saving the model, so the signal does not re-fire.
+    """
+    from journal.models import JournalEntry
+
+    sid, acct, user = _school_and_account()
+    ch = _make_charge(sid, acct)
+    c, kwargs = _auth_client(user, sid)
+
+    resp1 = c.post(VOID_CHARGE_URL.format(ch.id), **kwargs)
+    assert resp1.status_code == 200
+
+    resp2 = c.post(VOID_CHARGE_URL.format(ch.id), **kwargs)
+    assert resp2.status_code == 200
+
+    reversals = JournalEntry.objects.filter(
+        reference_type="charge_void_reversal",
+        reference_id=ch.id,
+    )
+    assert reversals.count() == 1, (
+        f"Expected exactly 1 reversal JE after two void calls, got {reversals.count()}"
+    )

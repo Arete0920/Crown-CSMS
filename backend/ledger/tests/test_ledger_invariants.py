@@ -17,6 +17,7 @@ from django.test import Client
 from core.models import School, UserRole
 from households.models import Household
 from ledger.models import LedgerAccount, Charge, Payment, Allocation
+from ledger.services import allocate_payment_fifo
 
 pytestmark = pytest.mark.django_db
 
@@ -138,3 +139,50 @@ def test_invariants_tenant_isolation():
     assert body["data"]["school_id"] == str(sid_b)
     assert body["data"]["clean"] is True
     assert body["data"]["violations"]["over_allocated"] == []
+
+
+# ---------------------------------------------------------------------------
+# Test 5: service rejects cross-tenant allocation (payment school_a, arg school_b)
+# ---------------------------------------------------------------------------
+
+def test_allocation_cross_tenant_guard():
+    """allocate_payment_fifo raises ValueError when payment.school_id != school_id arg."""
+    sid_a, _ = _school_and_user()
+    sid_b, _ = _school_and_user()
+    acct_a = _make_account(sid_a)
+    payment_a = Payment.objects.create(
+        school_id=sid_a, account=acct_a, amount=Decimal("100.00")
+    )
+
+    with pytest.raises(ValueError, match="school_id mismatch"):
+        allocate_payment_fifo(school_id=sid_b, payment=payment_a)
+
+
+# ---------------------------------------------------------------------------
+# Test 6: FIFO allocator skips voided charges (is_void=True)
+# ---------------------------------------------------------------------------
+
+def test_allocation_on_voided_charge_skipped():
+    """allocate_payment_fifo must not allocate against a voided charge."""
+    sid, _ = _school_and_user()
+    acct = _make_account(sid)
+
+    charge = Charge.objects.create(
+        school_id=sid, account=acct, description="Void Fee", amount=Decimal("100.00")
+    )
+    # Void the charge (triggers reversal JE signal, which is fine)
+    charge.is_void = True
+    charge.save(update_fields=["is_void"])
+
+    payment = Payment.objects.create(
+        school_id=sid, account=acct, amount=Decimal("100.00")
+    )
+
+    result = allocate_payment_fifo(school_id=sid, payment=payment)
+
+    assert result.allocations_created == 0, (
+        "FIFO allocator must skip voided charges; allocations_created must be 0"
+    )
+    assert Allocation.objects.filter(payment=payment).count() == 0, (
+        "No Allocation rows should exist for a payment against only voided charges"
+    )
