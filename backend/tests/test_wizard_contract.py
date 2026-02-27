@@ -38,6 +38,7 @@ WIZARD_ENDPOINTS = [
     ("attendance_rules",          "/api/v1/attendance-rules-wizard/sessions/"),
     ("enrollment_conversion",     "/api/v1/enrollment-conversion-wizard/sessions/"),
     ("invoice_run",               "/api/v1/invoice-run-wizard/sessions/"),
+    ("staff_onboarding",          "/api/v1/staff-onboarding-wizard/sessions/"),
     # Add new wizards here ↓
 ]
 

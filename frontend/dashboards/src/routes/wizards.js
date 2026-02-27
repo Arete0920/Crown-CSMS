@@ -32,6 +32,7 @@ import GradebookSetupWizard        from '../pages/GradebookSetupWizard.jsx';
 import AttendanceRulesWizard       from '../pages/AttendanceRulesWizard.jsx';
 import EnrollmentConversionWizard  from '../pages/EnrollmentConversionWizard.jsx';
 import InvoiceRunWizard            from '../pages/InvoiceRunWizard.jsx';
+import StaffOnboardingWizard       from '../pages/StaffOnboardingWizard.jsx';
 // ↓ Add new wizard imports here
 
 export const WIZARD_REGISTRY = [
@@ -118,6 +119,13 @@ export const WIZARD_REGISTRY = [
     name:      'Invoice Run',
     apiPrefix: '/api/v1/invoice-run-wizard/sessions/',
     roles:     ['admin', 'finance'],
+  },
+  {
+    path:      '/staff-onboarding',
+    component: StaffOnboardingWizard,
+    name:      'Staff Onboarding',
+    apiPrefix: '/api/v1/staff-onboarding-wizard/sessions/',
+    roles:     ['admin', 'director', 'hr'],
   },
   // ↓ Add new wizard entries here
 ];

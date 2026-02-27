@@ -118,6 +118,13 @@ WIZARDS: list[_WizardEntry] = [
         "url_prefix": "api/v1/invoice-run-wizard/sessions/",
         "urls_module": "invoice_run_wizard.urls",
     },
+    # #13 — Staff Onboarding
+    {
+        "name":       "Staff Onboarding",
+        "app_config": "staff_onboarding_wizard.apps.StaffOnboardingWizardConfig",
+        "url_prefix": "api/v1/staff-onboarding-wizard/sessions/",
+        "urls_module": "staff_onboarding_wizard.urls",
+    },
     # ↓ Add new wizard entries here — one dict, zero other files to touch
 ]
 
