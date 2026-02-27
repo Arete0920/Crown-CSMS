@@ -1,0 +1,138 @@
+﻿"""
+Crown2026 — Wizard Registry (single source of truth)
+=====================================================
+Why this exists:
+  Prevents additive merge conflicts when adding new wizard apps / routes.
+  settings.py pulls WIZARD_INSTALLED_APPS; urls.py calls get_wizard_urlpatterns().
+  Adding a new wizard requires editing ONLY this file + the wizard app itself.
+
+To add a wizard:
+  1. Create the wizard app (manage.py startapp <name>_wizard, add apps.py/models/views/urls/tests).
+  2. Append ONE entry to WIZARDS below.
+  3. Done. settings.py and urls.py auto-pick it up.
+
+Design note:
+  WIZARD_INSTALLED_APPS is derived from WIZARDS at module level -- safe to import from
+  settings.py before Django apps are fully loaded (strings only, no Django calls).
+
+  get_wizard_urlpatterns() uses a deferred import of path/include so it is only
+  called from urls.py (AFTER apps are ready) and never at settings import time.
+"""
+
+from __future__ import annotations
+from typing import TypedDict
+
+
+class _WizardEntry(TypedDict):
+    name: str           # human label (for docs / debugging)
+    app_config: str     # dotted path to AppConfig, e.g. "myapp.apps.MyAppConfig"
+    url_prefix: str     # URL prefix, e.g. "api/v1/my-wizard/sessions/"
+    urls_module: str    # dotted module path for include(), e.g. "myapp.urls"
+
+
+# ------------------------------------------------------------------
+# WIZARDS — single source of truth.  To add a wizard, append here.
+# ------------------------------------------------------------------
+WIZARDS: list[_WizardEntry] = [
+    # #1 — Student Onboarding
+    {
+        "name":       "Student Onboarding",
+        "app_config": "onboarding.apps.OnboardingConfig",
+        "url_prefix": "api/v1/onboarding/imports/",
+        "urls_module": "onboarding.urls",
+    },
+    # #2 — Re-enrollment
+    {
+        "name":       "Re-enrollment",
+        "app_config": "reenrollment.apps.ReenrollmentConfig",
+        "url_prefix": "api/v1/reenrollment/sessions/",
+        "urls_module": "reenrollment.urls",
+    },
+    # #3 — Billing Setup
+    {
+        "name":       "Billing Setup",
+        "app_config": "billing_wizard.apps.BillingWizardConfig",
+        "url_prefix": "api/v1/billing-wizard/sessions/",
+        "urls_module": "billing_wizard.urls",
+    },
+    # #4 — Financial Aid Setup
+    {
+        "name":       "Financial Aid Setup",
+        "app_config": "financial_aid_wizard.apps.FinancialAidWizardConfig",
+        "url_prefix": "api/v1/aid-wizard/sessions/",
+        "urls_module": "financial_aid_wizard.urls",
+    },
+    # #5 — Scheduling Setup
+    {
+        "name":       "Scheduling Setup",
+        "app_config": "scheduling_wizard.apps.SchedulingWizardConfig",
+        "url_prefix": "api/v1/scheduling-wizard/sessions/",
+        "urls_module": "scheduling_wizard.urls",
+    },
+    # #6 — Communications Campaign
+    {
+        "name":       "Communications Campaign",
+        "app_config": "comms_wizard.apps.CommsWizardConfig",
+        "url_prefix": "api/v1/comms-wizard/sessions/",
+        "urls_module": "comms_wizard.urls",
+    },
+    # #7 — Section Assignments
+    {
+        "name":       "Section Assignments",
+        "app_config": "section_assign_wizard.apps.SectionAssignWizardConfig",
+        "url_prefix": "api/v1/section-assign-wizard/sessions/",
+        "urls_module": "section_assign_wizard.urls",
+    },
+    # #8 — Bell Schedule
+    {
+        "name":       "Bell Schedule",
+        "app_config": "bell_schedule_wizard.apps.BellScheduleWizardConfig",
+        "url_prefix": "api/v1/bell-schedule-wizard/sessions/",
+        "urls_module": "bell_schedule_wizard.urls",
+    },
+    # #9 — Gradebook Setup
+    {
+        "name":       "Gradebook Setup",
+        "app_config": "gradebook_setup_wizard.apps.GradebookSetupWizardConfig",
+        "url_prefix": "api/v1/gradebook-setup-wizard/sessions/",
+        "urls_module": "gradebook_setup_wizard.urls",
+    },
+    # #10 — Attendance Rules
+    {
+        "name":       "Attendance Rules",
+        "app_config": "attendance_rules_wizard.apps.AttendanceRulesWizardConfig",
+        "url_prefix": "api/v1/attendance-rules-wizard/sessions/",
+        "urls_module": "attendance_rules_wizard.urls",
+    },
+    # #11 — Enrollment Conversion
+    {
+        "name":       "Enrollment Conversion",
+        "app_config": "enrollment_conversion_wizard.apps.EnrollmentConversionWizardConfig",
+        "url_prefix": "api/v1/enrollment-conversion-wizard/sessions/",
+        "urls_module": "enrollment_conversion_wizard.urls",
+    },
+    # #12 — Invoice Run
+    {
+        "name":       "Invoice Run",
+        "app_config": "invoice_run_wizard.apps.InvoiceRunWizardConfig",
+        "url_prefix": "api/v1/invoice-run-wizard/sessions/",
+        "urls_module": "invoice_run_wizard.urls",
+    },
+    # ↓ Add new wizard entries here — one dict, zero other files to touch
+]
+
+# ------------------------------------------------------------------
+# Derived lists — consumed by settings.py and urls.py respectively.
+# DO NOT edit these directly; edit WIZARDS above.
+# ------------------------------------------------------------------
+WIZARD_INSTALLED_APPS: list[str] = [w["app_config"] for w in WIZARDS]
+
+
+def get_wizard_urlpatterns() -> list:
+    """
+    Returns a list of URL patterns for all registered wizards.
+    MUST only be called from urls.py, never from settings.py.
+    Uses deferred import to avoid AppRegistryNotReady at settings load time.
+    """
+    from django.urls import include, path  # deferred -- safe after app registry ready
+    return [path(w["url_prefix"], include(w["urls_module"])) for w in WIZARDS]

@@ -3,6 +3,7 @@ URL configuration for crown_api project.
 """
 from django.urls import include, path
 from django.views.generic import RedirectView
+from crown_api.wizard_registry import get_wizard_urlpatterns  # single source of truth
 from crown_api.health_views import health, health_version, system_health
 from crown_api.views_integrity import integrity
 from crown_api.version_views import version
@@ -21,12 +22,7 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
     path("api/v1/graduation/", include('graduation.urls')),
-    path("api/v1/onboarding/imports/", include('onboarding.urls')),
-    path("api/v1/reenrollment/sessions/", include('reenrollment.urls')),
-    path("api/v1/billing-wizard/sessions/", include('billing_wizard.urls')),
-    path("api/v1/aid-wizard/sessions/", include('financial_aid_wizard.urls')),
-    path("api/v1/scheduling-wizard/sessions/", include('scheduling_wizard.urls')),
-    path("api/v1/comms-wizard/sessions/", include('comms_wizard.urls')),
+    *get_wizard_urlpatterns(),  # wizard SDK: single source of truth in wizard_registry.py
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     path("api/integrity/", integrity, name="api_integrity"),
