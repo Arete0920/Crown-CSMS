@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/v1/onboarding/imports/", include('onboarding.urls')),
     path("api/v1/reenrollment/sessions/", include('reenrollment.urls')),
     path("api/v1/billing-wizard/sessions/", include('billing_wizard.urls')),
+    path("api/v1/aid-wizard/sessions/", include('financial_aid_wizard.urls')),
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     path("api/integrity/", integrity, name="api_integrity"),
