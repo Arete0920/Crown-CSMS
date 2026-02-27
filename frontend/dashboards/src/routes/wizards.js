@@ -18,6 +18,7 @@
  */
 
 import { createElement } from 'react';
+import { WIZARD_SLUGS } from './wizard-manifest.js';
 
 import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
 import ReenrollmentWizard     from '../pages/ReenrollmentWizard.jsx';
@@ -120,6 +121,12 @@ export const WIZARD_REGISTRY = [
   },
   // ↓ Add new wizard entries here
 ];
+
+/**
+ * Slugs imported from wizard-manifest.js (React-free) — safe for Playwright tests.
+ * Re-exported here for consumers within the app.
+ */
+export { WIZARD_SLUGS };
 
 /**
  * Returns React Router route objects for all registered wizards.
