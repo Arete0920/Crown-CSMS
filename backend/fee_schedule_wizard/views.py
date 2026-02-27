@@ -219,6 +219,19 @@ def commit_session(request, session_id):
             },
         )
 
+        # Ensure this schedule is active (covers idempotent re-commit)
+        if not schedule.is_active:
+            schedule.is_active = True
+            schedule.save(update_fields=["is_active"])
+
+        # Single-active enforcement: exactly one active FeeSchedule per school
+        deactivated_count = (
+            FeeSchedule.objects
+            .filter(school_id=school_id)
+            .exclude(pk=schedule.pk)
+            .update(is_active=False)
+        )
+
         lines_created = 0
         lines_updated = 0
         for idx, lc in enumerate(session.lines_config):
@@ -248,6 +261,7 @@ def commit_session(request, session_id):
             "created":       sched_created,
             "lines_created": lines_created,
             "lines_updated": lines_updated,
+            "deactivated_count": deactivated_count,
             "message": (
                 "Fee schedule created with {} line(s).".format(lines_created + lines_updated)
                 if sched_created
@@ -269,10 +283,11 @@ def commit_session(request, session_id):
                 "schedule_name": result["schedule_name"],
                 "term":          result["term"],
                 "created":       result["created"],
-                "lines_created": result["lines_created"],
-                "lines_updated": result["lines_updated"],
-                "school_id":     str(school_id),
-                "session_id":    str(session.id),
+                "lines_created":    result["lines_created"],
+                "lines_updated":    result["lines_updated"],
+                "deactivated_count": result["deactivated_count"],
+                "school_id":        str(school_id),
+                "session_id":       str(session.id),
             },
         )
     except Exception:

@@ -383,3 +383,48 @@ class FeeScheduleVerifyTest(TestCase):
         sid, _ = _advance_to_lines_set(client, school.id)
         r = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
+
+
+# ---------------------------------------------------------------------------
+# Single-active enforcement
+# ---------------------------------------------------------------------------
+
+class FeeScheduleSingleActiveTest(TestCase):
+    def test_activating_schedule_deactivates_others(self):
+        """Committing schedule B deactivates previously active schedule A."""
+        school = _make_school()
+        client = _authed_client()
+
+        # Commit schedule A
+        sid_a, _ = _advance_to_committed(client, school.id, name="Schedule A")
+        sched_a = FeeSchedule.objects.get(school=school, name="Schedule A")
+        self.assertTrue(sched_a.is_active)
+
+        # Commit schedule B (different name → new schedule)
+        lines_b = [{"code": "FEE-B", "label": "Fee B", "amount_cents": 5000, "kind": "fee", "frequency": "annual"}]
+        sid_b, _ = _advance_to_committed(client, school.id, name="Schedule B", lines=lines_b)
+        sched_b = FeeSchedule.objects.get(school=school, name="Schedule B")
+
+        # A must now be inactive, B active
+        sched_a.refresh_from_db()
+        sched_b.refresh_from_db()
+        self.assertFalse(sched_a.is_active, "Schedule A should have been deactivated")
+        self.assertTrue(sched_b.is_active, "Schedule B should be active")
+
+    def test_non_active_schedule_not_affected_when_committing_inactive(self):
+        """Committing schedule A (active) does not affect unrelated school schedules."""
+        school_a = _make_school("alpha")
+        school_b = _make_school("beta")
+        client = _authed_client()
+
+        # Commit a schedule for school_a
+        _advance_to_committed(client, school_a.id, name="Alpha Schedule")
+        sched_a = FeeSchedule.objects.get(school=school_a, name="Alpha Schedule")
+
+        # Commit a schedule for school_b
+        lines_b = [{"code": "FEE-X", "label": "Fee X", "amount_cents": 0, "kind": "fee", "frequency": "annual"}]
+        _advance_to_committed(client, school_b.id, name="Beta Schedule", lines=lines_b)
+
+        # school_a schedule remains active (different tenant)
+        sched_a.refresh_from_db()
+        self.assertTrue(sched_a.is_active, "Cross-tenant schedule must not be deactivated")
