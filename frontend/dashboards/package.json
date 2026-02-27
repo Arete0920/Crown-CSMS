@@ -25,6 +25,8 @@
     "ui:proof:executive": "npx playwright test tests/ui/executive-dashboard-v1.spec.ts --reporter=line"
   },
   "dependencies": {
+    "@azure/msal-browser": "^3.28.1",
+    "@azure/msal-react": "^2.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.8",

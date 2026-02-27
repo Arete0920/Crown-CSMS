@@ -169,6 +169,12 @@ INSTALLED_APPS = [
     'pdhub.apps.PdhubConfig',
     'safety.apps.SafetyConfig',
     'integrations_real.apps.IntegrationsRealConfig',
+    'spiritual_life.apps.SpiritualLifeConfig',
+    'outreach.apps.OutreachConfig',
+    'athletics.apps.AthleticsConfig',
+    'facops.apps.FacopsConfig',
+    'transportation.apps.TransportationConfig',
+    'msauth.apps.MsauthConfig',
 ]
 
 MIDDLEWARE = [
@@ -287,7 +293,11 @@ DRF_DEFAULT_RENDERERS = (
 # DRF Configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        # 1. Microsoft Entra ID bearer tokens (MSAL frontend)
+        "core.auth.authentication.AADBearerAuthentication",
+        # 2. Django session (server-side OAuth2 / msauth flow)
         "rest_framework.authentication.SessionAuthentication",
+        # 3. Crown custom JWT (existing login endpoint)
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -333,4 +343,136 @@ LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/director/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
+# ---------------------------------------------------------------------------
+# Microsoft SSO (msauth app)
+# ---------------------------------------------------------------------------
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
 
+# Secure session cookies — HTTPS required in prod, relaxed in dev
+SESSION_COOKIE_SECURE   = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE      = not DEBUG
+
+# Production integrity lock — demo bypass disabled unconditionally
+ALLOW_DEMO_ROLE_HEADER = False
+
+# ---------------------------------------------------------------------------
+# HTTPS / SSL hardening
+# ---------------------------------------------------------------------------
+SECURE_SSL_REDIRECT             = _env_is_prod()
+SECURE_HSTS_SECONDS             = 31536000 if _env_is_prod() else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS  = True
+SECURE_HSTS_PRELOAD             = True
+SECURE_CONTENT_TYPE_NOSNIFF     = True
+SECURE_BROWSER_XSS_FILTER       = True
+X_FRAME_OPTIONS                 = "DENY"
+
+# ---------------------------------------------------------------------------
+# Database SSL enforcement (PostgreSQL prod only)
+# ---------------------------------------------------------------------------
+if DATABASE_URL and _env_is_prod():
+    DATABASES["default"].setdefault("OPTIONS", {})
+    DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
+
+# ---------------------------------------------------------------------------
+# Azure AD / Entra ID settings
+# ---------------------------------------------------------------------------
+AAD_TENANT_ID    = os.getenv("AAD_TENANT_ID", os.getenv("AZURE_TENANT_ID", ""))
+AAD_API_AUDIENCE = os.getenv("AAD_API_AUDIENCE", "")  # api://<api-app-client-id>
+
+# Microsoft Graph sender — REQUIRED in production for outbox email delivery.
+# Must match the licensed M365 mailbox UPN (e.g. no-reply@yourdomain.com).
+# Celery drain_outbox will hard-fail at startup if this is empty.
+GRAPH_FROM_USER  = os.getenv("GRAPH_FROM_USER", "")
+
+# ---------------------------------------------------------------------------
+# Sentry telemetry (production only)
+# ---------------------------------------------------------------------------
+if _env_is_prod():
+    _sentry_dsn = os.getenv("SENTRY_DSN", "")
+    if _sentry_dsn:
+        try:
+            import sentry_sdk
+            from sentry_sdk.integrations.django import DjangoIntegration
+            sentry_sdk.init(
+                dsn=_sentry_dsn,
+                integrations=[DjangoIntegration()],
+                traces_sample_rate=0.2,
+                send_default_pii=False,
+                release=BUILD_SHA,
+            )
+        except ImportError:
+            pass  # sentry-sdk not installed in this environment
+
+# ---------------------------------------------------------------------------
+# Structured logging — crown.audit + request log
+# ---------------------------------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json",
+        },
+    },
+    "loggers": {
+        "crown.audit": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "crown.performance": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Celery (background tasks / outbox drain)
+# ---------------------------------------------------------------------------
+CELERY_BROKER_URL              = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND          = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+CELERY_TASK_ACKS_LATE          = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_SERIALIZER         = "json"
+CELERY_RESULT_SERIALIZER       = "json"
+CELERY_ACCEPT_CONTENT          = ["json"]
+CELERY_TIMEZONE                = TIME_ZONE
+
+try:
+    from celery.schedules import crontab  # noqa: F401
+    CELERY_BEAT_SCHEDULE = {
+        "drain-outbox-every-10-seconds": {
+            "task": "comms.tasks.drain_outbox",
+            "schedule": 10.0,
+        },
+    }
+except ImportError:
+    pass  # Celery not installed; beat schedule omitted
+
+# ---------------------------------------------------------------------------
+# CORS: explicit allowed list enforced (no allow-all in prod)
+# ---------------------------------------------------------------------------
+_cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if _cors_origins_raw:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]

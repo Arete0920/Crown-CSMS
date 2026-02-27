@@ -310,12 +310,15 @@ def category_batch_weights(request, section_id):
         )
     
     # All validations passed - apply updates atomically
-    with transaction.atomic():
-        for update in validated_updates:
-            AssignmentCategory.objects.filter(id=update["id"]).update(
-                weight_percent=update["weight_percent"],
-                is_active=update["is_active"]
-            )
+        with transaction.atomic():
+            for update in validated_updates:
+                AssignmentCategory.objects.filter(
+                    id=update["id"],
+                    school_id=school_id,
+                ).update(
+                    weight_percent=update["weight_percent"],
+                    is_active=update["is_active"]
+                )
     
     # Return updated categories in deterministic order
     updated_categories = AssignmentCategory.objects.filter(

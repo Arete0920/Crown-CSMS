@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
+
+logger = logging.getLogger(__name__)
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
 from django.utils import timezone
@@ -229,7 +232,7 @@ class StudentOverview(APIView):
                     amt = getattr(inv, "total", None)
                 try:
                     total_due += float(amt or 0)
-                except Exception:
+                except (ValueError, TypeError):
                     pass
             finance["open_balance_estimate"] = round(total_due, 2)
 
@@ -269,7 +272,7 @@ class StudentOverview(APIView):
                 h = getattr(e, "hours", None)
                 try:
                     approved_hours += float(h or 0)
-                except Exception:
+                except (ValueError, TypeError):
                     pass
 
             service.update({
@@ -398,7 +401,7 @@ class StudentOverview(APIView):
                 dashboard_v2["alerts"].append({"type": "academic", "severity": "warning", "message": "Current average is below 75%."})
             if dashboard_v2.get("missing_assignments", 0) >= 3:
                 dashboard_v2["alerts"].append({"type": "work", "severity": "warning", "message": "You have 3+ missing assignments."})
-        except Exception:
+        except (TypeError, AttributeError):
             pass
 
         payload = {

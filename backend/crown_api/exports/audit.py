@@ -1,4 +1,8 @@
+import logging
+
 from .models import ExportAuditLog
+
+logger = logging.getLogger(__name__)
 
 
 def _get_client_ip(request):
@@ -29,4 +33,4 @@ def log_export(request, export_name: str, status_code: int = 200, school_id: str
             user_agent=(request.META.get("HTTP_USER_AGENT", "") or "")[:1000],
         )
     except Exception:
-        pass
+        logger.error("Export audit log write failed — exports are unaffected", exc_info=True)

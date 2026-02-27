@@ -20,3 +20,21 @@ djangorestframework-simplejwt>=5.3.1
 
 # CORS headers for frontend integration
 django-cors-headers==4.3.1
+
+# Microsoft 365 SSO (OAuth2 via Authlib)
+authlib>=1.6.8
+requests>=2.32.0
+
+# Microsoft JWT validation (Entra ID Bearer tokens from MSAL frontend)
+PyJWT>=2.8.0
+cryptography>=43.0.0
+
+# Sentry error telemetry (production only; loaded conditionally in settings.py)
+sentry-sdk>=2.0.0
+
+# Celery task queue (outbox drain, background jobs)
+celery>=5.4.0
+redis>=5.0.0
+
+# Communications — Twilio SMS (optional; only needed if SMS channel enabled)
+twilio>=8.0.0

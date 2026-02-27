@@ -4,8 +4,11 @@ Guarded by X-Admin-Ops-Secret header.
 """
 from __future__ import annotations
 
+import logging
 import os
 from uuid import UUID
+
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -25,6 +28,19 @@ from core.seed_helpers import ensure_deterministic_school
 def _dev_ops_enabled() -> bool:
     # Only allow in DEV; keep this strict.
     return bool(getattr(settings, "DEV_OPS_SECRET", "")) and getattr(settings, "ENVIRONMENT", "dev") == "dev"
+
+
+def _dev_only():
+    """Raise Http404 if running in production. Call at the top of every dev/ops view."""
+    from django.http import Http404
+    env = (
+        os.getenv("ENVIRONMENT") or
+        os.getenv("CROWN_ENV") or
+        os.getenv("DJANGO_ENV") or
+        ""
+    ).strip().lower()
+    if env in {"prod", "production", "live"}:
+        raise Http404
 
 
 def _check_ops_secret(request) -> bool:
@@ -176,6 +192,7 @@ def ops_summary(request):
     Returns build SHA, demo mode, seed timestamps, and real counts across major modules.
     No auth assumptions here; keep it simple for demo hardening.
     """
+    _dev_only()
     from django.utils import timezone
     from core.models import AcademicYear
 
@@ -274,6 +291,7 @@ def ops_alerts(request):
     - Tracks dependency imports so failures are visible (not silent).
     - Strict mode (?strict=1) returns 500 if imports fail (useful for CI).
     """
+    _dev_only()
     from django.utils import timezone
     from django.db.models import Max
 
@@ -409,7 +427,7 @@ def ops_alerts(request):
                     threshold=">=0.05",
                 )
         except Exception:
-            pass
+            logger.debug("health rule: payment ratio check failed", exc_info=True)
 
     # --- Rule 5: Stale data indicator (info) ---
     # Uses max created/updated timestamps if available on one known model.
@@ -430,7 +448,7 @@ def ops_alerts(request):
                         threshold="<7",
                     )
         except Exception:
-            pass
+            logger.debug("health rule: stale data check failed", exc_info=True)
 
     # --- Strict mode: if imports failed + strict=1, return 500 for CI visibility ---
     if strict and errors:

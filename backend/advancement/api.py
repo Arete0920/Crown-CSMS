@@ -4,9 +4,11 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Count
+from django.http import JsonResponse
 
 from core.audit import audit_event
-from core.permissions import CrownModulePermission
+from core.permissions import CrownModulePermission, require_permission
+from households.scoping import get_request_school_id
 from .models import Donor, Campaign
 from .serializers import DonorSerializer, CampaignSerializer
 
@@ -72,16 +74,15 @@ class CampaignViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@require_permission("advancement.view")
 def advancement_metrics(request):
-    school = _require_school(request)
-    donors = Donor.objects.filter(school_id=school.id)
-    campaigns = Campaign.objects.filter(school_id=school.id)
-    total_raised = donors.aggregate(total=Sum("total_donated"))["total"] or 0
-    return Response({
-        "total_donors":   donors.count(),
-        "total_raised":   float(total_raised),
-        "active_campaigns": campaigns.filter(active=True).count(),
+    sid = get_request_school_id(request)
+    donors = Donor.objects.filter(school_id=sid)
+    campaigns = Campaign.objects.filter(school_id=sid)
+    total_raised = donors.aggregate(total=Sum("lifetime_giving"))["total"] or 0
+    return JsonResponse({
+        "total_donors":     donors.count(),
+        "total_raised":     float(total_raised),
+        "active_campaigns": campaigns.filter(status="active").count(),
         "total_campaigns":  campaigns.count(),
     })

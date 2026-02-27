@@ -41,7 +41,16 @@ class AidApplication(TimeStampedModel):
 
     household_size = models.PositiveSmallIntegerField(default=1)
     income_annual_cents = models.IntegerField(default=0)
+    assets_cents = models.IntegerField(default=0)
+    liabilities_cents = models.IntegerField(default=0)
     notes_internal = models.TextField(blank=True, default="")
+
+    # Mission Alignment Score (MAS) inputs — 0-100 each
+    statement_of_faith_score = models.IntegerField(default=0)
+    church_involvement_score = models.IntegerField(default=0)
+    family_values_survey_score = models.IntegerField(default=0)
+    pastoral_reference_score = models.IntegerField(default=0)
+    pog_preassessment_score = models.IntegerField(default=0)
 
     # Audit trail: when director last contacted family (e.g., needs-info email sent)
     last_contacted_at = models.DateTimeField(null=True, blank=True)
@@ -122,11 +131,13 @@ class AidAward(TimeStampedModel):
     TYPE_MISSION = "MISSION"
     TYPE_MERIT = "MERIT"
     TYPE_HARDSHIP = "HARDSHIP"
+    TYPE_MARKETING = "MARKETING"
     TYPE_CHOICES = [
         (TYPE_NEED, "Need"),
         (TYPE_MISSION, "Mission"),
         (TYPE_MERIT, "Merit"),
         (TYPE_HARDSHIP, "Hardship"),
+        (TYPE_MARKETING, "Marketing"),
     ]
 
     DECISION_OFFERED = "OFFERED"
@@ -142,8 +153,19 @@ class AidAward(TimeStampedModel):
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.PROTECT, related_name="aid_awards")
     student = models.ForeignKey(Student, on_delete=models.PROTECT, related_name="aid_awards")
 
+    # Link back to the application this award was derived from (optional)
+    aid_application = models.ForeignKey(
+        "AidApplication", null=True, blank=True, on_delete=models.SET_NULL, related_name="awards"
+    )
+
     award_type = models.CharField(max_length=16, choices=TYPE_CHOICES, default=TYPE_NEED)
     awarded_cents = models.IntegerField(default=0)
+
+    # Engine recommendation fields (populated by award_engine.recommend_award)
+    recommended_award_cents = models.IntegerField(default=0)
+    mas_score = models.IntegerField(default=0)
+    mas_modifier_bps = models.IntegerField(default=0)
+    explanation_json = models.JSONField(default=dict, blank=True)
 
     decision_status = models.CharField(max_length=16, choices=DECISION_CHOICES, default=DECISION_OFFERED)
     decided_by = models.ForeignKey(UserAccount, on_delete=models.PROTECT, related_name="aid_awards_decided", null=True, blank=True)
@@ -313,3 +335,92 @@ class AidAuditEvent(TimeStampedModel):
             timestamp=timezone.now(),
             details_json=details or {},
         )
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.5 additions: Policy + Budget governance
+# ---------------------------------------------------------------------------
+
+class AidPolicy(TimeStampedModel):
+    """
+    Per-school, per-year policy configuration.
+
+    Controls need formula guardrails, bucket allocation (basis points, sum to 10,000),
+    and MAS weighting (weights are relative; they are normalised at runtime).
+
+    unique_together = (school, academic_year) enforces one active policy per year.
+    """
+
+    school = models.ForeignKey(School, on_delete=models.PROTECT, related_name="aid_policies")
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.PROTECT, related_name="aid_policies")
+
+    # Need formula guardrails
+    need_income_floor_cents = models.BigIntegerField(
+        default=0,
+        help_text="Income below this floor is treated as $0 for need calculation.",
+    )
+    max_award_percent = models.IntegerField(
+        default=60,
+        help_text="Maximum award as % of gross tuition (0-100).",
+    )
+    min_award_percent = models.IntegerField(
+        default=0,
+        help_text="Minimum award as % of gross tuition (0-100).",
+    )
+
+    # Bucket allocations in basis points (design intent: sum to 10,000)
+    bucket_need_bps = models.IntegerField(default=6000)
+    bucket_mission_bps = models.IntegerField(default=1500)
+    bucket_marketing_bps = models.IntegerField(default=800)
+    bucket_merit_bps = models.IntegerField(default=800)
+    bucket_hardship_bps = models.IntegerField(default=900)
+
+    # MAS weighting (0-100 each; normalised at runtime)
+    mas_weight_statement_of_faith = models.IntegerField(default=25)
+    mas_weight_church_involvement = models.IntegerField(default=20)
+    mas_weight_family_values = models.IntegerField(default=20)
+    mas_weight_pastoral_reference = models.IntegerField(default=15)
+    mas_weight_pog_preassessment = models.IntegerField(default=20)
+
+    class Meta:
+        unique_together = ("school", "academic_year")
+
+    def __str__(self) -> str:
+        return f"AidPolicy — {self.school} — {self.academic_year}"
+
+
+class AidBudgetTracker(TimeStampedModel):
+    """
+    Per-school, per-year, per-bucket budget ledger.
+
+    allocated_cents: total available in the bucket.
+    awarded_cents: total approved awards against the bucket.
+    remaining = allocated_cents - awarded_cents; must be >= award before approval.
+
+    unique_together prevents duplicate rows.  select_for_update() is required before
+    any mutation to prevent concurrent budget overruns.
+    """
+
+    BUCKET_NEED = AidAward.TYPE_NEED
+    BUCKET_MISSION = AidAward.TYPE_MISSION
+    BUCKET_MERIT = AidAward.TYPE_MERIT
+    BUCKET_HARDSHIP = AidAward.TYPE_HARDSHIP
+    BUCKET_MARKETING = AidAward.TYPE_MARKETING
+    BUCKET_CHOICES = AidAward.TYPE_CHOICES
+
+    school = models.ForeignKey(School, on_delete=models.PROTECT, related_name="aid_budget_trackers")
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.PROTECT, related_name="aid_budget_trackers")
+    bucket = models.CharField(max_length=16, choices=BUCKET_CHOICES)
+
+    allocated_cents = models.BigIntegerField(default=0)
+    awarded_cents = models.BigIntegerField(default=0)
+
+    class Meta:
+        unique_together = ("school", "academic_year", "bucket")
+
+    def __str__(self) -> str:
+        return f"Budget — {self.school} — {self.academic_year} — {self.bucket}"
+
+    @property
+    def remaining_cents(self) -> int:
+        return int(self.allocated_cents - self.awarded_cents)

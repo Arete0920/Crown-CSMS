@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    define: {
+      // Injected at build time so the frontend can report its own deployment SHA.
+      __BUILD_SHA__: JSON.stringify(process.env.VITE_BUILD_SHA || env.VITE_BUILD_SHA || 'local-dev'),
+    },
     server: {
       host: true,
       port: 3000,

@@ -124,8 +124,13 @@ class CreditAuditService:
                 "notes": "No Student model found via known labels. Add your Student model label to CreditAuditService.STUDENT_MODEL_CANDIDATES.",
             }
 
-        # We do not assume fields; we just test existence by PK
-        student_obj = StudentModel.objects.filter(id=student_id).first()
+        # Scope to school when the model supports it (defense in depth)
+        filter_kwargs: dict = {"id": student_id}
+        if hasattr(StudentModel, "school_id"):
+            filter_kwargs["school_id"] = school.id
+        elif hasattr(StudentModel, "school"):
+            filter_kwargs["school"] = school
+        student_obj = StudentModel.objects.filter(**filter_kwargs).first()
         if student_obj is None:
             return {
                 "status": "STUDENT_NOT_FOUND",

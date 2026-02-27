@@ -18,7 +18,8 @@ class Command(BaseCommand):
             
             for app in apps_to_fix:
                 cursor.execute(
-                    f"SELECT app, name FROM django_migrations WHERE app = '{app}' ORDER BY applied;"
+                    "SELECT app, name FROM django_migrations WHERE app = %s ORDER BY applied;",
+                    [app],
                 )
                 rows = cursor.fetchall()
                 if rows:
@@ -34,7 +35,7 @@ class Command(BaseCommand):
             
             total_deleted = 0
             for app in apps_to_fix:
-                cursor.execute(f"DELETE FROM django_migrations WHERE app = '{app}';")
+                cursor.execute("DELETE FROM django_migrations WHERE app = %s;", [app])
                 deleted = cursor.rowcount
                 total_deleted += deleted
                 self.stdout.write(f"✓ Deleted {deleted} {app} ledger entry(ies)")
@@ -52,7 +53,9 @@ class Command(BaseCommand):
             self.stdout.write("\n=== AFTER: Migration Ledger ===")
             
             cursor.execute(
-                f"SELECT app, name FROM django_migrations WHERE app IN ('financial_aid', 'academics', 'billing') ORDER BY app, applied;"
+                "SELECT app, name FROM django_migrations"
+                " WHERE app IN ('financial_aid', 'academics', 'billing')"
+                " ORDER BY app, applied;"
             )
             after_rows = cursor.fetchall()
             if after_rows:
@@ -80,7 +83,8 @@ class Command(BaseCommand):
             ]
             
             for table_name, app_name in tables_to_check:
-                cursor.execute(f"SELECT to_regclass('public.{table_name}') AS tbl;")
+                # table_name is from hardcoded list above — safe to format here
+                cursor.execute("SELECT to_regclass(%s) AS tbl;", [f"public.{table_name}"])
                 row = cursor.fetchone()
                 table = row[0] if row else None
                 

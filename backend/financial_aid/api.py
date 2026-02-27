@@ -1,13 +1,20 @@
 ﻿from __future__ import annotations
 
+import datetime
 import json
+import logging
 from decimal import Decimal
 from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Avg, Count, Sum
 from django.http import JsonResponse, HttpRequest
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 
+log = logging.getLogger(__name__)
+
+from core.permissions import require_permission
 from households.scoping import get_request_school_id
 from .models import FinancialAidApplication, AidAward
 from .services import apply_financial_aid_to_billing_run
@@ -95,3 +102,68 @@ def disburse_to_billing_run(request: HttpRequest, billing_run_id: str):
         return _json_error(str(e), status=400)
 
     return _envelope(result, status=200)
+
+
+@require_permission("financial_aid.view")
+@require_http_methods(["GET"])
+def financial_aid_metrics(request: HttpRequest):
+    """
+    Financial Aid metrics — live DB queries, school-scoped.
+    Response shape matches the formerly-stubbed financial_aid_metrics in metrics_views.py.
+    """
+    sid = get_request_school_id(request)
+    if not sid:
+        return _json_error("school_id could not be derived for request", status=403)
+
+    try:
+        overdue_cutoff = timezone.now() - datetime.timedelta(days=7)
+
+        apps = FinancialAidApplication.objects.filter(school_id=sid)
+        submitted_count  = apps.filter(status="submitted").count()
+        in_review_count  = apps.filter(status="in_review").count()
+        decided_count    = apps.filter(status="decided").count()
+        overdue_count    = apps.filter(status="in_review", submitted_at__lt=overdue_cutoff).count()
+
+        awards = AidAward.objects.filter(school_id=sid)
+        budget_awarded = awards.aggregate(total=Sum("amount"))["total"] or Decimal("0")
+        avg_award_raw  = awards.aggregate(avg=Avg("amount"))["avg"] or Decimal("0")
+        avg_award      = int(avg_award_raw.quantize(Decimal("1")))
+
+        bucket_rows = (
+            awards.values("bucket")
+            .annotate(count=Count("id"))
+            .order_by("bucket")
+        )
+        needs_buckets = [
+            {"label": row["bucket"] or "unassigned", "count": row["count"]}
+            for row in bucket_rows
+        ]
+
+        alerts: list[dict] = []
+        if overdue_count > 0:
+            alerts.append({
+                "label": f"{overdue_count} application(s) in review >7 days without decision",
+                "severity": "red",
+            })
+        pending = submitted_count + in_review_count
+        if pending > 0:
+            alerts.append({
+                "label": f"{pending} application(s) pending action",
+                "severity": "yellow",
+            })
+
+        return JsonResponse({
+            "applications_submitted": submitted_count,
+            "applications_in_review": in_review_count,
+            "applications_decided":   decided_count,
+            "decisions_overdue":      overdue_count,
+            "budget_awarded":         str(budget_awarded),
+            "avg_award":              avg_award,
+            "needs_buckets":          needs_buckets,
+            "alerts":                 alerts,
+            "snapshot_date":          timezone.now().date().isoformat(),
+        })
+
+    except Exception:
+        log.exception("financial_aid_metrics: unexpected error computing metrics for school %s", sid)
+        return JsonResponse({"error": "metrics temporarily unavailable"}, status=503)

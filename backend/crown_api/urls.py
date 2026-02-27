@@ -78,9 +78,19 @@ urlpatterns = [
     # Executive 360 overview (school-wide metrics for admins)
     path("api/executive360/", include("executive360.api.urls")),
 
+    # Finance & Tuition Management (Phase 8)
+    path("api/finance/", include("finance.api_urls")),
+
     # Integrations (webhooks, etc.)
     path("api/integrations/", include("integrations.urls")),
     
+    # Microsoft SSO (session-based auth)
+    path("auth/", include("msauth.urls")),
+
+    # AAD-backed identity endpoints (Bearer token, Entra ID)
+    # Uses /api/iam/ prefix to avoid collision with legacy /api/auth/me/
+    path("api/iam/", include("core.auth.urls")),
+
     # Authentication URLs (login, logout, password reset, etc.)
     path("accounts/", include("django.contrib.auth.urls")),
     

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import logging
 from decimal import Decimal, InvalidOperation
+
+logger = logging.getLogger(__name__)
 from django.utils import timezone
 from django.db.models import Sum, Q
 from django.db.models.functions import Coalesce
@@ -181,7 +184,7 @@ class ParentSelfOverview(APIView):
                         (_safe_decimal(raw) * Decimal("100")).quantize(Decimal("1"))
                     )
             except Exception:
-                pass
+                logger.debug("household balance unavailable", exc_info=True)
 
         # ── Per-child blocks ──────────────────────────────────────────────────
         child_rows = []
@@ -259,7 +262,7 @@ class ParentSelfOverview(APIView):
                     missing_total += row["missing_assignments"]
                     upcoming_total += len(row["upcoming_assignments"])
                 except Exception:
-                    pass
+                    logger.debug("optional assignment data unavailable for child", exc_info=True)
 
             # ── Service hours ──────────────────────────────────────────────
             if ServiceEntry is not None:
@@ -278,7 +281,7 @@ class ParentSelfOverview(APIView):
                             "required": 30,
                         }
                 except Exception:
-                    pass
+                    logger.debug("optional service hours unavailable for child", exc_info=True)
 
             # ── Finance per student (InvoiceLine.student FK) ────────────────
             if InvoiceLine is not None and Invoice is not None:
@@ -304,7 +307,7 @@ class ParentSelfOverview(APIView):
                         ),
                     }
                 except Exception:
-                    pass
+                    logger.debug("optional finance data unavailable for child", exc_info=True)
 
             # ── Alerts ──────────────────────────────────────────────────────
             if row["current_average"] is not None and row["current_average"] < 75:

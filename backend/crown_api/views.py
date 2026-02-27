@@ -1,5 +1,8 @@
 ﻿from django.shortcuts import render
 from crown_api.director_router import get_director_persona, get_director_filter_config
+import logging
+
+logger = logging.getLogger(__name__)
 
 def director_dashboard_page(request, persona=None):
     """
@@ -72,7 +75,7 @@ def _get_active_persona(request) -> str | None:
                 obj = getattr(obj, part)
             if obj:
                 return str(obj).strip().lower()
-        except Exception:
+        except AttributeError:
             pass
 
     # 3) Group fallback (if you use Django groups)
@@ -84,7 +87,7 @@ def _get_active_persona(request) -> str | None:
             if g in DIRECTOR_ROUTE_BY_PERSONA:
                 return g
     except Exception:
-        pass
+        logger.debug("persona from Django groups unavailable", exc_info=True)
 
     return None
 

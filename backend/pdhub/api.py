@@ -4,10 +4,12 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Avg, Count, Sum
+from django.http import JsonResponse
 from django.utils import timezone
 
 from core.audit import audit_event
-from core.permissions import CrownModulePermission
+from core.permissions import CrownModulePermission, require_permission
+from households.scoping import get_request_school_id
 from .models import PDResource, PDSession
 from .serializers import PDResourceSerializer, PDSessionSerializer
 
@@ -73,20 +75,17 @@ class PDSessionViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@require_permission("pd.view")
 def pd_metrics(request):
-    school = _require_school(request)
-    resources = PDResource.objects.filter(school_id=school.id)
-    sessions = PDSession.objects.filter(school_id=school.id)
+    sid = get_request_school_id(request)
+    resources = PDResource.objects.filter(school_id=sid)
+    sessions = PDSession.objects.filter(school_id=sid)
     now = timezone.now()
     upcoming = sessions.filter(session_date__gte=now)
-    avg_rating = sessions.aggregate(avg=Avg("rating"))["avg"]
-    total_hours = sessions.aggregate(hours=Sum("duration_hours"))["hours"] or 0
-    return Response({
-        "total_resources":  resources.count(),
-        "total_sessions":   sessions.count(),
+    avg_rating = sessions.aggregate(avg=Avg("satisfaction_score"))["avg"]
+    return JsonResponse({
+        "total_resources":   resources.count(),
+        "total_sessions":    sessions.count(),
         "upcoming_sessions": upcoming.count(),
-        "average_rating":   round(avg_rating, 2) if avg_rating else None,
-        "total_hours":      float(total_hours),
+        "average_rating":    round(avg_rating, 2) if avg_rating else None,
     })
