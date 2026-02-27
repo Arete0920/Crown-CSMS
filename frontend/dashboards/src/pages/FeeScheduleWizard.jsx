@@ -41,6 +41,12 @@ function emptyLine() {
   };
 }
 
+function formatCents(cents) {
+  const n = Number(cents);
+  if (!Number.isFinite(n)) return "";
+  return (n / 100).toLocaleString(undefined, { style: "currency", currency: "USD" });
+}
+
 function Step({ title, children }) {
   return (
     <div style={{ marginBottom: 24 }}>
@@ -171,6 +177,9 @@ export default function FeeScheduleWizard() {
             <li><strong>Lines created:</strong> {result?.lines_created}</li>
             <li><strong>Lines updated:</strong> {result?.lines_updated}</li>
             <li><strong>Total lines:</strong> {result?.line_count}</li>
+            {result?.deactivated_count > 0 && (
+              <li><strong>Other schedules deactivated:</strong> {result.deactivated_count}</li>
+            )}
           </ul>
           <button onClick={() => { setPhase("configure"); setResult(null); setSessionId(null); setConfig({ schedule_name: "", term: "", effective_date: "" }); setLines([emptyLine()]); }}>
             Create Another
@@ -207,6 +216,8 @@ export default function FeeScheduleWizard() {
                   <label>Amount (cents)&nbsp;
                     <input type="number" min="0" {...lineField(idx, "amount_cents")} required style={{ width: 100 }} />
                   </label>
+                  &nbsp;
+                  <span style={{ color: "#555", fontSize: "0.9em" }}>{formatCents(line.amount_cents)}</span>
                   &nbsp;
                   <label>Kind&nbsp;
                     <select {...lineField(idx, "kind")}>
