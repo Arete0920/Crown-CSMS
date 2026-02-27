@@ -59,6 +59,7 @@ import SafetyDashboard from '../pages/SafetyDashboard.jsx';
 import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
 import ReenrollmentWizard from '../pages/ReenrollmentWizard.jsx';
 import BillingWizard from '../pages/BillingWizard.jsx';
+import FinancialAidWizard from '../pages/FinancialAidWizard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -141,6 +142,10 @@ export const router = createBrowserRouter([
   {
     path: '/billing-setup',
     element: <BillingWizard />,
+  },
+  {
+    path: '/aid-setup',
+    element: <FinancialAidWizard />,
   },
   {
     path: '/finance/invoices',
