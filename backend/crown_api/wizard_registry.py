@@ -128,6 +128,32 @@ WIZARDS: list[_WizardEntry] = [
 WIZARD_INSTALLED_APPS: list[str] = [w["app_config"] for w in WIZARDS]
 
 
+# ------------------------------------------------------------------
+# Public API — consumed by the wizard discovery endpoint.
+# ------------------------------------------------------------------
+
+def list_wizards() -> list[dict]:
+    """
+    Returns a stable, ordered list of wizard metadata for UI consumption.
+    Called by GET /api/v1/wizards/ — this is the single source of truth
+    for what the backend knows about available wizards.
+
+    Slug is derived from url_prefix: api/v1/<slug>/...
+    Key  is derived from urls_module: <app_module>.urls
+    """
+    result = []
+    for w in WIZARDS:
+        slug = w["url_prefix"].split("/")[2]          # "api/v1/<slug>/..."
+        key  = w["urls_module"].split(".")[0]          # "billing_wizard.urls" → "billing_wizard"
+        result.append({
+            "key":     key,
+            "slug":    slug,
+            "title":   w["name"],
+            "enabled": True,
+        })
+    return result
+
+
 def get_wizard_urlpatterns() -> list:
     """
     Returns a list of URL patterns for all registered wizards.
