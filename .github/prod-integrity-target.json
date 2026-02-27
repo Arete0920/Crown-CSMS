@@ -1,5 +1,5 @@
 {
-  "tag": "v0.4.0-rc1",
-  "expected_sha": "80e22fe79ea55c69e68b0cb2712c10ae6dc00f9c",
+  "tag": "prod-deploy-2026-02-27",
+  "expected_sha": "cfa5b4a0de90cbe0e7bad2717adf015453bd98f5",
   "health_url": "https://crown-api-prod.azurewebsites.net/api/health/"
 }
