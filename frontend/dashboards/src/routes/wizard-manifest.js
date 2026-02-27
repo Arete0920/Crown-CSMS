@@ -26,6 +26,7 @@ export const WIZARD_MANIFEST = [
   { slug: "invoice-run-wizard",           title: "Invoice Run",               path: "/invoice-run" },
   { slug: "staff-onboarding-wizard",      title: "Staff Onboarding",          path: "/staff-onboarding" },
   { slug: "fee-schedule-wizard",          title: "Fee Schedule Setup",         path: "/fee-schedule-setup" },
+  { slug: "academic-year-wizard",         title: "Academic Year Rollover",     path: "/academic-year-rollover" },
   // ↓ Add new wizards here (one line, include path matching WIZARD_REGISTRY)
 ];
 
