@@ -179,6 +179,7 @@ INSTALLED_APPS = [
     'reenrollment.apps.ReenrollmentConfig',
     'billing_wizard.apps.BillingWizardConfig',
     'financial_aid_wizard.apps.FinancialAidWizardConfig',
+    'scheduling_wizard.apps.SchedulingWizardConfig',
 ]
 
 MIDDLEWARE = [
