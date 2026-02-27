@@ -33,6 +33,7 @@ import AttendanceRulesWizard       from '../pages/AttendanceRulesWizard.jsx';
 import EnrollmentConversionWizard  from '../pages/EnrollmentConversionWizard.jsx';
 import InvoiceRunWizard            from '../pages/InvoiceRunWizard.jsx';
 import StaffOnboardingWizard       from '../pages/StaffOnboardingWizard.jsx';
+import FeeScheduleWizard           from '../pages/FeeScheduleWizard.jsx';
 // ↓ Add new wizard imports here
 
 export const WIZARD_REGISTRY = [
@@ -126,6 +127,13 @@ export const WIZARD_REGISTRY = [
     name:      'Staff Onboarding',
     apiPrefix: '/api/v1/staff-onboarding-wizard/sessions/',
     roles:     ['admin', 'director', 'hr'],
+  },
+  {
+    path:      '/fee-schedule-setup',
+    component: FeeScheduleWizard,
+    name:      'Fee Schedule Setup',
+    apiPrefix: '/api/v1/fee-schedule-wizard/sessions/',
+    roles:     ['admin', 'finance', 'director'],
   },
   // ↓ Add new wizard entries here
 ];
