@@ -146,6 +146,13 @@ WIZARDS: list[_WizardEntry] = [
         "url_prefix": "api/v1/enrollment-period-wizard/sessions/",
         "urls_module": "enrollment_period_wizard.urls",
     },
+    # #17 — Grade Scale & Report Card Settings
+    {
+        "name":       "Grade Scale Setup",
+        "app_config": "grade_scale_wizard.apps.GradeScaleWizardConfig",
+        "url_prefix": "api/v1/grade-scale-wizard/sessions/",
+        "urls_module": "grade_scale_wizard.urls",
+    },
     # ↓ Add new wizard entries here — one dict, zero other files to touch
 ]
 
