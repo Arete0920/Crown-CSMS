@@ -1288,7 +1288,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
                     try:
                         alloc_qs = alloc_qs.filter(**{f"payment__{pay_date_field}__year": year})
                     except Exception:
-                        pass
+                        EXPORT_AUDIT_LOGGER.debug("optional payment date filter failed", exc_info=True)
 
                 # Apply tuition classification filters via charge->account fields when present.
                 if "account" in charge_fields:
@@ -1296,17 +1296,17 @@ class YearEndTuitionPaidCSVExportView(APIView):
                         try:
                             alloc_qs = alloc_qs.filter(**{f"{alloc_charge_fk}__account_id": tuition_account_id})
                         except Exception:
-                            pass
+                            EXPORT_AUDIT_LOGGER.debug("optional tuition account_id filter failed", exc_info=True)
                     if tuition_account_code:
                         try:
                             alloc_qs = alloc_qs.filter(**{f"{alloc_charge_fk}__account__code": tuition_account_code})
                         except Exception:
-                            pass
+                            EXPORT_AUDIT_LOGGER.debug("optional tuition account code filter failed", exc_info=True)
                     if tuition_account_name:
                         try:
                             alloc_qs = alloc_qs.filter(**{f"{alloc_charge_fk}__account__name": tuition_account_name})
                         except Exception:
-                            pass
+                            EXPORT_AUDIT_LOGGER.debug("optional tuition account name filter failed", exc_info=True)
 
                 agg = alloc_qs.values(alloc_payment_group_field).annotate(total=Sum(alloc_amount_field))
                 for row in agg.iterator():
@@ -1443,7 +1443,7 @@ class PaymentsQuickBooksCSVExportView(APIView):
             elif "household" in pay_fields:
                 qs = qs.select_related("household")
         except Exception:
-            pass
+            EXPORT_AUDIT_LOGGER.debug("optional select_related failed", exc_info=True)
 
         if date_field and "id" in pay_fields:
             try:

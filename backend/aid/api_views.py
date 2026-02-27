@@ -12,8 +12,17 @@ from rest_framework import status
 from django.utils import timezone
 from django.db.models import Sum
 
-from aid.models import AidApplication, AidAward
+from aid.models import AidApplication, AidAward, AidPolicy, AidBudgetTracker
+from aid.serializers import (
+    AidApplicationSerializer,
+    AidAwardSerializer,
+    AidAwardWithExplanationSerializer,
+    AidBudgetTrackerSerializer,
+)
+from aid.services.award_engine import recommend_award
+from aid.services.ledger_bridge import AidBudgetError, approve_award
 from core.models import AcademicYear, LedgerEntry
+from households.scoping import MissingSchoolContext, get_request_school_id
 
 
 def days_waiting(dt):
@@ -233,4 +242,199 @@ def aid_timeline(request):
             "persona": "aid",
             "count": len(events[:50]),
         }
+    })
+
+
+# ---------------------------------------------------------------------------
+# Phase 7.5: Admin + Family endpoints
+# ---------------------------------------------------------------------------
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_aid_overview(request):
+    """
+    Admin overview: applications + awards + budgets for a school/year.
+
+    Required query params: academic_year_id (integer PK of AcademicYear)
+    Required header:       X-School-Id (tenant UUID)
+    """
+    school_id = get_request_school_id(request)
+    academic_year_id = request.query_params.get("academic_year_id")
+    if not academic_year_id:
+        return Response({"detail": "academic_year_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    applications = (
+        AidApplication.objects.filter(school_id=school_id, academic_year_id=academic_year_id)
+        .order_by("-submitted_at")
+    )
+    awards = (
+        AidAward.objects.filter(school_id=school_id, academic_year_id=academic_year_id)
+        .order_by("-created_at")
+    )
+    budgets = (
+        AidBudgetTracker.objects.filter(school_id=school_id, academic_year_id=academic_year_id)
+        .order_by("bucket")
+    )
+
+    return Response({
+        "applications": AidApplicationSerializer(applications, many=True).data,
+        "awards": AidAwardSerializer(awards, many=True).data,
+        "budgets": AidBudgetTrackerSerializer(budgets, many=True).data,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def admin_recommend_award(request):
+    """
+    Generate a new award recommendation via the award engine.
+
+    Required body fields:
+      application_id      (int PK of AidApplication to evaluate)
+      bucket              (award_type: NEED|MISSION|MERIT|HARDSHIP|MARKETING)
+      gross_tuition_cents (int, gross tuition for this student/year)
+
+    Required header: X-School-Id
+
+    Creates and returns an AidAward in status OFFERED with engine outputs stored.
+    """
+    school_id = get_request_school_id(request)
+
+    application_id = request.data.get("application_id")
+    bucket = request.data.get("bucket")
+    gross_tuition_cents_raw = request.data.get("gross_tuition_cents")
+
+    if not application_id or not bucket or gross_tuition_cents_raw is None:
+        return Response(
+            {"detail": "application_id, bucket, and gross_tuition_cents are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        gross_tuition_cents = int(gross_tuition_cents_raw)
+    except (TypeError, ValueError):
+        return Response({"detail": "gross_tuition_cents must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if gross_tuition_cents <= 0:
+        return Response({"detail": "gross_tuition_cents must be > 0"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        app = AidApplication.objects.get(id=application_id, school_id=school_id)
+    except (AidApplication.DoesNotExist, ValueError, TypeError):
+        return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        policy = AidPolicy.objects.get(school_id=school_id, academic_year=app.academic_year)
+    except AidPolicy.DoesNotExist:
+        return Response(
+            {"detail": "No AidPolicy found for this school and academic year"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    rec = recommend_award(policy, app, gross_tuition_cents)
+
+    award = AidAward.objects.create(
+        school=app.school,
+        academic_year=app.academic_year,
+        student=app.family.students.first(),  # one student per application (common case)
+        aid_application=app,
+        award_type=bucket,
+        awarded_cents=rec.recommended_award_cents,
+        recommended_award_cents=rec.recommended_award_cents,
+        mas_score=rec.mas_score,
+        mas_modifier_bps=rec.mas_modifier_bps,
+        explanation_json=rec.explanation,
+        decision_status=AidAward.DECISION_OFFERED,
+    )
+
+    return Response(
+        {
+            "award": AidAwardWithExplanationSerializer(award).data,
+            "explanation": rec.explanation,
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def admin_approve_award(request, award_id):
+    """
+    Approve an AidAward: budget check → ledger posting → audit log.
+
+    URL param: award_id (int PK)
+    Optional body: {"reason": "..."}
+    Required header: X-School-Id
+
+    Idempotent: approving an already-accepted award is a no-op (returns 200).
+    409 if bucket budget would be exceeded.
+    """
+    school_id = get_request_school_id(request)
+    reason = request.data.get("reason", "")
+
+    try:
+        award = AidAward.objects.get(id=award_id, school_id=school_id)
+    except AidAward.DoesNotExist:
+        return Response({"detail": "Award not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        approved = approve_award(
+            award=award,
+            actor_user=request.user if request.user.is_authenticated else None,
+            reason=reason,
+        )
+    except AidBudgetError as exc:
+        return Response({"error": str(exc)}, status=status.HTTP_409_CONFLICT)
+    except AidBudgetTracker.DoesNotExist:
+        return Response(
+            {"error": "No budget tracker found for this bucket. Create one before approving."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    return Response(AidAwardSerializer(approved).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def family_aid_status(request):
+    """
+    Family-portal view: application status + awards for a student/year.
+
+    Required query params:
+      student_id       (int PK of Student)
+      academic_year_id (int PK of AcademicYear)
+    Required header: X-School-Id
+    """
+    school_id = get_request_school_id(request)
+    student_id = request.query_params.get("student_id")
+    academic_year_id = request.query_params.get("academic_year_id")
+
+    if not student_id or not academic_year_id:
+        return Response(
+            {"detail": "student_id and academic_year_id are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Application is tied to the family, not the student — look up via student.family
+    from core.models import Student  # local import to avoid circular at module level
+    try:
+        student = Student.objects.get(id=student_id, school_id=school_id)
+    except Student.DoesNotExist:
+        return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    application = AidApplication.objects.filter(
+        school_id=school_id,
+        family=student.family,
+        academic_year_id=academic_year_id,
+    ).first()
+
+    awards = AidAward.objects.filter(
+        school_id=school_id,
+        student=student,
+        academic_year_id=academic_year_id,
+    ).order_by("-created_at")
+
+    return Response({
+        "application": AidApplicationSerializer(application).data if application else None,
+        "awards": AidAwardSerializer(awards, many=True).data,
     })

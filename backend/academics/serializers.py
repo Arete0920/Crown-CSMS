@@ -5,7 +5,8 @@ from households.models import Student
 from .models import (
     Course, Section, Term, Enrollment, Assignment, AssignmentCategory,
     CurriculumSource, Unit, Lesson, PublisherObjective,
-    Submission, Grade, MasteryRecord, TranscriptEntry
+    Submission, Grade, MasteryRecord, TranscriptEntry,
+    LessonPlan, LessonResource,
 )
 
 
@@ -335,4 +336,53 @@ class TranscriptEntrySerializer(serializers.ModelSerializer):
 
     def get_student_name(self, obj):
         return f"{obj.student.first_name} {obj.student.last_name}"
+
+
+class LessonResourceSerializer(serializers.ModelSerializer):
+    resource_id = serializers.UUIDField(source="id", read_only=True)
+    school_id = serializers.UUIDField(read_only=True)
+    lesson_id = serializers.UUIDField(read_only=True)
+
+    class Meta:
+        model = LessonResource
+        fields = [
+            "resource_id", "school_id", "lesson_id",
+            "title", "kind", "url", "file_ref",
+            "created_at", "updated_at",
+        ]
+
+
+class LessonPlanSerializer(serializers.ModelSerializer):
+    plan_id = serializers.UUIDField(source="id", read_only=True)
+    school_id = serializers.UUIDField(read_only=True)
+    section_id = serializers.UUIDField(read_only=True)
+    created_by_id = serializers.UUIDField(read_only=True, allow_null=True)
+    updated_by_id = serializers.UUIDField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = LessonPlan
+        fields = [
+            "plan_id", "school_id", "section_id", "plan_date",
+            "lesson_ids",
+            "objectives", "materials", "activities", "homework",
+            "teacher_notes_private",
+            "created_by_id", "updated_by_id",
+            "created_at", "updated_at",
+        ]
+
+
+class LessonPlanPublicSerializer(serializers.ModelSerializer):
+    """Read-only serializer for student/parent; omits teacher_notes_private."""
+    plan_id = serializers.UUIDField(source="id", read_only=True)
+    school_id = serializers.UUIDField(read_only=True)
+    section_id = serializers.UUIDField(read_only=True)
+
+    class Meta:
+        model = LessonPlan
+        fields = [
+            "plan_id", "school_id", "section_id", "plan_date",
+            "lesson_ids",
+            "objectives", "materials", "activities", "homework",
+            "created_at", "updated_at",
+        ]
 

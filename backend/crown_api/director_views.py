@@ -771,15 +771,7 @@ def director_actions(request):
                 
                 for award_id in ids:
                     try:
-                        award = AidAward.objects.get(id=award_id)
-                        
-                        # Verify this award belongs to the specified school/year
-                        if school_id and str(award.school_id) != str(school_id):
-                            errors.append({
-                                "award_id": award_id,
-                                "error": "Award does not belong to specified school",
-                            })
-                            continue
+                        award = AidAward.objects.get(id=award_id, school_id=school_id)
 
                         if year_id and str(award.academic_year_id) != str(year_id):
                             errors.append({
@@ -837,7 +829,7 @@ def director_actions(request):
             if year_id:
                 from core.models import AcademicYear
                 try:
-                    academic_year = AcademicYear.objects.get(id=year_id)
+                    academic_year = AcademicYear.objects.get(id=year_id, school_id=school_id)
                 except AcademicYear.DoesNotExist:
                     academic_year = None
             

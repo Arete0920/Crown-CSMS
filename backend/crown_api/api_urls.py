@@ -29,14 +29,15 @@ from crown_api.views_households import household_detail, households_list
 from crown_api.metrics_views import (
     admin_metrics, board_metrics, finance_metrics,
     teacher_metrics, parent_metrics, student_metrics,
-    it_metrics, financial_aid_metrics, marketing_metrics,
+    it_metrics, marketing_metrics,
     spiritual_life_metrics, office_metrics,
     health_metrics, counseling_metrics, food_metrics,
-    athletics_metrics, advancement_metrics, transportation_metrics,
+    athletics_metrics, transportation_metrics,
     facilities_metrics, security_metrics,
     academic_support_metrics, fine_arts_metrics, library_metrics,
     extended_care_metrics, registrar_metrics, communications_metrics,
-    pd_metrics, student_services_metrics,
+    student_services_metrics,
+    # advancement_metrics, pd_metrics omitted: real backends in app urls.py
 )
 from crown_api.views_students import student_detail, students_list
 from crown_api.views_academics import student_attendance_list, student_grades_list
@@ -60,7 +61,7 @@ urlpatterns = [
     path('parent/metrics/',         parent_metrics,         name='parent-metrics'),
     path('student/metrics/',        student_metrics,        name='student-metrics'),
     path('it/metrics/',             it_metrics,             name='it-metrics'),
-    path('financial-aid/metrics/',  financial_aid_metrics,  name='financial-aid-metrics'),
+    # financial-aid/metrics/ is registered in financial_aid/urls.py (real DB view)
     path('marketing/metrics/',      marketing_metrics,      name='marketing-metrics'),
     path('spiritual-life/metrics/', spiritual_life_metrics, name='spiritual-life-metrics'),
     path('office/metrics/',         office_metrics,         name='office-metrics'),
@@ -68,7 +69,11 @@ urlpatterns = [
     path('counseling/metrics/',     counseling_metrics,     name='counseling-metrics'),
     path('food/metrics/',           food_metrics,           name='food-metrics'),
     path('athletics/metrics/',      athletics_metrics,      name='athletics-metrics'),
-    path('advancement/metrics/',    advancement_metrics,    name='advancement-metrics'),
+    # NOTE: advancement/metrics/, pd/metrics/, safety/metrics/ are intentionally
+    # omitted here. Those real backends live in advancement/urls.py, pdhub/urls.py,
+    # and safety/urls.py, which are included BEFORE this file in api_v1_urls.py.
+    # Registering them here would create duplicate named-URL collisions and these
+    # stubs would shadow the real implementations.
     path('transportation/metrics/', transportation_metrics, name='transportation-metrics'),
     path('facilities/metrics/',     facilities_metrics,     name='facilities-metrics'),
     path('security/metrics/',       security_metrics,       name='security-metrics'),
@@ -78,20 +83,24 @@ urlpatterns = [
     path('extended-care/metrics/',   extended_care_metrics,  name='extended-care-metrics'),
     path('registrar/metrics/',       registrar_metrics,      name='registrar-metrics'),
     path('communications/metrics/',  communications_metrics, name='communications-metrics'),
-    path('pd/metrics/',              pd_metrics,             name='pd-metrics'),
     path('student-services/metrics/', student_services_metrics, name='student-services-metrics'),
 
     path('360/', include('student360.api.urls')),
     path('comms/', include('comms.api.urls')),
     # Persona-specific API routes (NEW - per user spec)
     path("aid/", include("aid.api_urls")),
-    path("financial-aid/", include("financial_aid.urls")),
+    # financial-aid/ registered in api_v1_urls.py (position 16) — do not re-register here
     path("admissions/", include("admissions.api_urls")),
     
     # New demo pillars (discipline, service hours, Teams integration)
     path("discipline/", include("discipline.api.urls")),
     path("service/", include("servicehours.api.urls")),
     path("integrations/", include("integrations.api.urls")),
+    path("spiritual-life/", include("spiritual_life.api.urls")),
+    path("outreach/", include("outreach.api.urls")),
+    path("athletics/", include("athletics.api.urls")),
+    path("", include("facops.api.urls")),
+    path("transportation/", include("transportation.api.urls")),
 
     # Households (Module 4 spine) - read-only
     path("households/", households_list, name="households_list"),

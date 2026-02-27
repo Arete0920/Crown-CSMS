@@ -65,10 +65,13 @@ Roles:
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Optional, Set, Type, Union
 
 from django.db.models import QuerySet
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +145,7 @@ def resolve_role(user, school_id=None) -> str:
                 if code in active_codes:
                     return _ROLE_CODE_TO_CANONICAL.get(code, code.lower())
         except Exception:
-            pass
+            logger.debug("role code lookup failed", exc_info=True)
 
     # Fallback: direct .role attribute (dev/test convenience)
     direct = getattr(user, "role", None)

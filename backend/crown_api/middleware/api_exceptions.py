@@ -27,8 +27,8 @@ class ApiExceptionMiddleware:
         # echo request id back so logs and client correlate
         try:
             response["X-Request-Id"] = request.request_id
-        except Exception:
-            pass
+        except (TypeError, AttributeError):
+            pass  # streaming or non-standard responses may not support header assignment
         
         return response
 

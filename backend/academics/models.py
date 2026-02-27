@@ -438,6 +438,96 @@ class MasteryRecord(TimeStampedModel):
         return f"Mastery({self.student_id} {self.objective.objective_code} => L{self.mastery_level})"
 
 
+class LessonPlan(TimeStampedModel):
+    """
+    Daily lesson plan authored by a teacher for a specific section and date.
+    Unique per (school_id, section, plan_date).
+    Audience: teacher (full); parent/student (objectives/materials/activities/homework only —
+    teacher_notes_private is excluded by serializer for non-staff).
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    school_id = models.UUIDField(db_index=True)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="lesson_plans")
+    plan_date = models.DateField(db_index=True)
+
+    # Optional curriculum links: list of Lesson IDs from this app
+    lesson_ids = models.JSONField(default=list, blank=True)  # list[str] (UUIDs)
+
+    objectives = models.TextField(blank=True, default="")
+    materials = models.TextField(blank=True, default="")
+    activities = models.TextField(blank=True, default="")
+    homework = models.TextField(blank=True, default="")
+    teacher_notes_private = models.TextField(blank=True, default="")
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lesson_plans_created",
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lesson_plans_updated",
+    )
+
+    class Meta:
+        db_table = "lesson_plan"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["school_id", "section", "plan_date"],
+                name="uniq_lesson_plan_school_section_date",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["school_id", "section", "plan_date"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"LessonPlan({self.section_id} {self.plan_date})"
+
+
+class LessonResource(TimeStampedModel):
+    """
+    External resource (link, file, video, doc) attached to a Lesson.
+    Keeps resource metadata only; we never store copyrighted content.
+    """
+    KIND_LINK = "link"
+    KIND_FILE = "file"
+    KIND_VIDEO = "video"
+    KIND_DOC = "doc"
+    KIND_CHOICES = [
+        (KIND_LINK, "Link"),
+        (KIND_FILE, "File"),
+        (KIND_VIDEO, "Video"),
+        (KIND_DOC, "Document"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    school_id = models.UUIDField(db_index=True)
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="resources")
+
+    title = models.CharField(max_length=255)
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES, default=KIND_LINK)
+    url = models.URLField(blank=True, default="")
+    # Reference to internal file service (if Crown has one)
+    file_ref = models.CharField(max_length=128, blank=True, default="")
+
+    class Meta:
+        db_table = "lesson_resource"
+        indexes = [
+            models.Index(fields=["school_id", "lesson"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"LessonResource({self.lesson_id} {self.kind}: {self.title})"
+
+
 class TranscriptEntry(TimeStampedModel):
     """
     Course-level transcript entry for a student.

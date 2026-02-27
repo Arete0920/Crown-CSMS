@@ -8,6 +8,12 @@ from .assignments_views import (
     category_list_create,
     category_update_delete,
 )
+from .lesson_plan_views import (
+    lesson_plan_list_create,
+    lesson_plan_detail,
+    lesson_resource_list_create,
+    lesson_resource_detail,
+)
 from .transcript_views import StudentTranscriptContractView, TranscriptROView
 from crown_api.views_academics import section_attendance_submit
 from .views import (
@@ -118,5 +124,27 @@ urlpatterns = [
         "academics/assignments/<uuid:assignment_id>/",
         assignment_update_delete,
         name="assignment-detail",
+    ),
+    # Lesson Plan endpoints (daily plan per section/date)
+    path(
+        "academics/sections/<uuid:section_id>/lesson-plans/",
+        lesson_plan_list_create,
+        name="section-lesson-plans",
+    ),
+    path(
+        "academics/lesson-plans/<uuid:plan_id>/",
+        lesson_plan_detail,
+        name="lesson-plan-detail",
+    ),
+    # Lesson Resource endpoints
+    path(
+        "academics/lessons/<uuid:lesson_id>/resources/",
+        lesson_resource_list_create,
+        name="lesson-resources",
+    ),
+    path(
+        "academics/lesson-resources/<uuid:resource_id>/",
+        lesson_resource_detail,
+        name="lesson-resource-detail",
     ),
 ]

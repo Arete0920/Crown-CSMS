@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +14,8 @@ from comms.api.serializers import (
     ThreadDetailSerializer,
     ComposeThreadSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 def _get_school_from_request(request):
     school = getattr(request, "school", None)
@@ -126,6 +129,60 @@ class ComposeThread(APIView):
                 try:
                     t.participants.add(*users)
                 except Exception:
-                    pass
+                    logger.debug("participants.add failed — non-critical", exc_info=True)
 
         return Response({"ok": True, "thread_id": str(t.id)}, status=201)
+
+
+# ---------------------------------------------------------------------------
+# Outbox smoke-test endpoint
+# ---------------------------------------------------------------------------
+
+class SendTestEmail(APIView):
+    """
+    POST /api/comms/send-test-email/
+
+    Enqueues a test email through the outbox so the full pipeline can be
+    verified without hitting production workloads.
+
+    Request body (JSON):
+        to        — recipient email address (required)
+        subject   — email subject            (optional)
+        body      — HTML email body          (optional)
+        school_id — tenant UUID              (optional, defaults to smoke-test sentinel)
+
+    Returns the outbox message ID for tracing in the Django admin panel.
+    Requires authentication.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from comms.outbox_service import enqueue_email  # local import to keep view thin
+
+        data      = request.data or {}
+        to        = (data.get("to") or "").strip()
+        subject   = (data.get("subject") or "Crown2026 Test Email").strip()
+        body      = (data.get("body") or "<p>Crown2026 outbox smoke test — if you see this, Graph delivery works.</p>").strip()
+        school_id = (data.get("school_id") or "smoke-test").strip()
+
+        if not to:
+            return Response({"error": "Field 'to' is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = enqueue_email(
+            school_id=school_id,
+            to=to,
+            subject=subject,
+            body_html=body,
+        )
+
+        return Response(
+            {
+                "status":     "queued",
+                "message_id": str(msg.id),
+                "channel":    msg.channel,
+                "to":         msg.to,
+                "subject":    msg.subject,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )

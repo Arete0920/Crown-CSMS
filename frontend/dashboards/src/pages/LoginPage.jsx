@@ -1,138 +1,99 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { jwtLogin, setSelectedSchoolId } from "../utils/authClient.js";
-
 /**
- * LoginPage
- * Simple manual login form (fallback for when auto-login disabled/fails)
+ * LoginPage — Microsoft 365 SSO only.
+ *
+ * Clicking "Sign in with Microsoft" redirects the browser to the Django
+ * /auth/microsoft/login/ endpoint which initiates the OAuth2 flow.
+ * On success Django sets a session cookie and redirects to /dash/<role>.
+ *
+ * No local password form. No JWT. No localStorage tokens.
  */
-export function LoginPage() {
-  const navigate = useNavigate();
-  const [username, setUsername] = useState("demo");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Paper from "@mui/material/Paper";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-    try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-      
-      // Use the existing jwtLogin helper (hits /api/v1/auth/token/)
-      await jwtLogin({ username, password, apiBase });
-      
-      // Set default school ID
-      const schoolId = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
-      setSelectedSchoolId(schoolId);
+/** Inline Microsoft logo SVG — no icon package required. */
+function MicrosoftLogo() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 21 21"
+      width="20"
+      height="20"
+      aria-hidden="true"
+    >
+      <rect x="0"  y="0"  width="10" height="10" fill="#f25022" />
+      <rect x="11" y="0"  width="10" height="10" fill="#7fba00" />
+      <rect x="0"  y="11" width="10" height="10" fill="#00a4ef" />
+      <rect x="11" y="11" width="10" height="10" fill="#ffb900" />
+    </svg>
+  );
+}
 
-      // Navigate to home
-      navigate("/");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+export default function LoginPage() {
+  const handleMicrosoftLogin = () => {
+    window.location.href = `${API_BASE}/auth/microsoft/login/`;
   };
 
   return (
-    <div style={{ 
-      display: "flex", 
-      justifyContent: "center", 
-      alignItems: "center", 
-      minHeight: "100vh",
-      backgroundColor: "#f5f5f5",
-      fontFamily: "system-ui, sans-serif"
-    }}>
-      <div style={{ 
-        backgroundColor: "white", 
-        padding: "2rem", 
-        borderRadius: "8px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        width: "100%",
-        maxWidth: "400px"
-      }}>
-        <h1 style={{ marginTop: 0 }}>Crown Login</h1>
-        
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              style={{ 
-                width: "100%", 
-                padding: "0.5rem", 
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                fontSize: "1rem"
-              }}
-            />
-          </div>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        bgcolor: "grey.100",
+      }}
+    >
+      <Paper
+        elevation={3}
+        sx={{
+          p: 6,
+          maxWidth: 400,
+          width: "100%",
+          textAlign: "center",
+          borderRadius: 2,
+        }}
+      >
+        <Stack spacing={4} alignItems="center">
+          {/* Wordmark */}
+          <Typography variant="h4" component="h1" fontWeight={700} letterSpacing={-0.5}>
+            Crown2026
+          </Typography>
 
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ 
-                width: "100%", 
-                padding: "0.5rem", 
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                fontSize: "1rem"
-              }}
-            />
-          </div>
+          <Typography variant="body2" color="text.secondary">
+            Sign in with your school Microsoft 365 account to continue.
+          </Typography>
 
-          {error && (
-            <div style={{ 
-              padding: "0.75rem", 
-              marginBottom: "1rem",
-              backgroundColor: "#fee",
-              color: "#c00",
-              borderRadius: "4px",
-              fontSize: "0.9rem"
-            }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
+          {/* M365 SSO button */}
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={handleMicrosoftLogin}
+            startIcon={<MicrosoftLogo />}
+            sx={{
               width: "100%",
-              padding: "0.75rem",
-              backgroundColor: loading ? "#ccc" : "#007bff",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              fontSize: "1rem",
+              textTransform: "none",
               fontWeight: 500,
-              cursor: loading ? "not-allowed" : "pointer"
+              borderColor: "grey.400",
+              color: "text.primary",
+              "&:hover": {
+                borderColor: "grey.600",
+                bgcolor: "grey.50",
+              },
             }}
           >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+            Sign in with Microsoft
+          </Button>
 
-        <div style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#666" }}>
-          <strong>Demo credentials:</strong><br />
-          Username: demo<br />
-          Password: DemoPass!232
-        </div>
-      </div>
-    </div>
+          <Typography variant="caption" color="text.disabled">
+            Access is restricted to provisioned accounts.
+          </Typography>
+        </Stack>
+      </Paper>
+    </Box>
   );
 }

@@ -215,9 +215,9 @@ class TranscriptROView(APIView):
         if not school_id:
             return JsonResponse({"detail": "Missing X-School-Id header."}, status=400)
 
-        # Student identity (global), but transcript is scoped by school via enrollments/grades.
+        # Student identity scoped to this school
         try:
-            student = Student.objects.get(id=student_id)
+            student = Student.objects.get(id=student_id, school_id=school_id)
         except Student.DoesNotExist:
             return JsonResponse({"detail": "Student not found."}, status=404)
 
@@ -338,7 +338,7 @@ class StudentTranscriptContractView(APIView):
             return JsonResponse({"detail": "Missing X-School-Id header."}, status=400)
 
         try:
-            student = Student.objects.get(id=student_id)
+            student = Student.objects.get(id=student_id, school_id=school_id)
         except Student.DoesNotExist:
             return JsonResponse({"detail": "Student not found."}, status=404)
 

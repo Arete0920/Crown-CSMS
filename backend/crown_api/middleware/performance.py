@@ -21,7 +21,7 @@ class PerformanceMiddleware:
         # Avoid any weirdness if response is non-standard
         try:
             response["X-Response-Time-ms"] = f"{duration_ms:.2f}"
-        except Exception:
-            pass
+        except (TypeError, AttributeError):
+            pass  # streaming or non-standard responses may not support header assignment
 
         return response

@@ -1,5 +1,6 @@
 ﻿import { createBrowserRouter } from 'react-router-dom';
 
+import RoleDashboardPage from '../pages/RoleDashboardPage.jsx';
 import { BillingDashboard } from '../pages/BillingDashboard.jsx';
 import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
 import { AcademicsDashboard } from '../pages/AcademicsDashboard.jsx';
@@ -28,7 +29,7 @@ import StudentDashboard from '../pages/StudentDashboard.jsx';
 import RoleHomeRedirect from '../pages/RoleHomeRedirect.jsx';
 import TeacherAttendancePage from '../pages/TeacherAttendancePage.jsx';
 import ParentAttendancePage from '../pages/ParentAttendancePage.jsx';
-import { LoginPage } from '../pages/LoginPage.jsx';
+import LoginPage from '../pages/LoginPage.jsx';
 import IntegrityDashboard from '../pages/IntegrityDashboard.jsx';
 import AdminDashboard from '../pages/AdminDashboard.jsx';
 import BoardDashboard from '../pages/BoardDashboard.jsx';
@@ -60,6 +61,11 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    // Unified role dashboard — /dash/admin, /dash/teacher, /dash/parent, etc.
+    path: '/dash/:role',
+    element: <RoleDashboardPage />,
   },
   {
     path: '/teacher/attendance',
