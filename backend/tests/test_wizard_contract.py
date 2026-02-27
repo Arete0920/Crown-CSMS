@@ -43,6 +43,7 @@ WIZARD_ENDPOINTS = [
     ("academic_year",              "/api/v1/academic-year-wizard/sessions/"),
     ("enrollment_period",           "/api/v1/enrollment-period-wizard/sessions/"),
     ("grade_scale",                  "/api/v1/grade-scale-wizard/sessions/"),
+    ("term_structure",               "/api/v1/term-structure-wizard/sessions/"),
     # Add new wizards here ↓
 ]
 

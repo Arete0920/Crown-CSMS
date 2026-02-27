@@ -153,6 +153,13 @@ WIZARDS: list[_WizardEntry] = [
         "url_prefix": "api/v1/grade-scale-wizard/sessions/",
         "urls_module": "grade_scale_wizard.urls",
     },
+    # #18 — Term & Marking Period Setup
+    {
+        "name":        "Term Structure Setup",
+        "app_config":  "term_structure_wizard.apps.TermStructureWizardConfig",
+        "url_prefix":  "api/v1/term-structure-wizard/sessions/",
+        "urls_module": "term_structure_wizard.urls",
+    },
     # ↓ Add new wizard entries here — one dict, zero other files to touch
 ]
 

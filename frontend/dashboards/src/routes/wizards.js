@@ -37,6 +37,7 @@ import FeeScheduleWizard           from '../pages/FeeScheduleWizard.jsx';
 import AcademicYearWizard          from '../pages/AcademicYearWizard.jsx';
 import EnrollmentPeriodWizard      from '../pages/EnrollmentPeriodWizard.jsx';
 import GradeScaleWizard            from '../pages/GradeScaleWizard.jsx';
+import TermStructureWizard         from '../pages/TermStructureWizard.jsx';
 // ↓ Add new wizard imports here
 
 export const WIZARD_REGISTRY = [
@@ -157,6 +158,13 @@ export const WIZARD_REGISTRY = [
     component: GradeScaleWizard,
     name:      'Grade Scale Setup',
     apiPrefix: '/api/v1/grade-scale-wizard/sessions/',
+    roles:     ['admin', 'academics', 'director'],
+  },
+  {
+    path:      '/term-structure-setup',
+    component: TermStructureWizard,
+    name:      'Term Structure Setup',
+    apiPrefix: '/api/v1/term-structure-wizard/sessions/',
     roles:     ['admin', 'academics', 'director'],
   },
   // ↓ Add new wizard entries here
