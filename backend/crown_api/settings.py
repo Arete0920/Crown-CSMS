@@ -180,6 +180,7 @@ INSTALLED_APPS = [
     'billing_wizard.apps.BillingWizardConfig',
     'financial_aid_wizard.apps.FinancialAidWizardConfig',
     'scheduling_wizard.apps.SchedulingWizardConfig',
+    'comms_wizard.apps.CommsWizardConfig',
 ]
 
 MIDDLEWARE = [

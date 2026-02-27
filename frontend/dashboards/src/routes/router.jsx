@@ -61,6 +61,7 @@ import ReenrollmentWizard from '../pages/ReenrollmentWizard.jsx';
 import BillingWizard from '../pages/BillingWizard.jsx';
 import FinancialAidWizard from '../pages/FinancialAidWizard.jsx';
 import SchedulingWizard from '../pages/SchedulingWizard.jsx';
+import CommsWizard from '../pages/CommsWizard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -151,6 +152,10 @@ export const router = createBrowserRouter([
   {
     path: '/scheduling-setup',
     element: <SchedulingWizard />,
+  },
+  {
+    path: '/comms-setup',
+    element: <CommsWizard />,
   },
   {
     path: '/finance/invoices',
