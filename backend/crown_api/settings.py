@@ -15,6 +15,7 @@ import json
 from datetime import timedelta
 from pathlib import Path
 from corsheaders.defaults import default_headers
+from crown_api.wizard_registry import WIZARD_INSTALLED_APPS  # single source of truth
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -175,13 +176,8 @@ INSTALLED_APPS = [
     'facops.apps.FacopsConfig',
     'transportation.apps.TransportationConfig',
     'msauth.apps.MsauthConfig',
-    'onboarding.apps.OnboardingConfig',
-    'reenrollment.apps.ReenrollmentConfig',
-    'billing_wizard.apps.BillingWizardConfig',
-    'financial_aid_wizard.apps.FinancialAidWizardConfig',
-    'scheduling_wizard.apps.SchedulingWizardConfig',
-    'comms_wizard.apps.CommsWizardConfig',
 ]
+INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
 MIDDLEWARE = [
     'core.middleware.DemoWriteBlockMiddleware',

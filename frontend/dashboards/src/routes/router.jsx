@@ -56,12 +56,7 @@ import PDDashboard from '../pages/PDDashboard.jsx';
 import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
 import HumanResources from '../pages/HumanResources.jsx';
 import SafetyDashboard from '../pages/SafetyDashboard.jsx';
-import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
-import ReenrollmentWizard from '../pages/ReenrollmentWizard.jsx';
-import BillingWizard from '../pages/BillingWizard.jsx';
-import FinancialAidWizard from '../pages/FinancialAidWizard.jsx';
-import SchedulingWizard from '../pages/SchedulingWizard.jsx';
-import CommsWizard from '../pages/CommsWizard.jsx';
+import { wizardRoutes } from './wizards.js';
 
 export const router = createBrowserRouter([
   {
@@ -133,30 +128,8 @@ export const router = createBrowserRouter([
     path: '/admissions',
     element: <AdmissionsPipelineList />,
   },
-  {
-    path: '/onboarding',
-    element: <AdmissionsIntakeWizard />,
-  },
-  {
-    path: '/reenrollment',
-    element: <ReenrollmentWizard />,
-  },
-  {
-    path: '/billing-setup',
-    element: <BillingWizard />,
-  },
-  {
-    path: '/aid-setup',
-    element: <FinancialAidWizard />,
-  },
-  {
-    path: '/scheduling-setup',
-    element: <SchedulingWizard />,
-  },
-  {
-    path: '/comms-setup',
-    element: <CommsWizard />,
-  },
+  // All setup wizards — registered in src/routes/wizards.js
+  ...wizardRoutes(),
   {
     path: '/finance/invoices',
     element: <FinanceInvoicesList />,
