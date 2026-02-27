@@ -28,6 +28,7 @@ export const WIZARD_MANIFEST = [
   { slug: "fee-schedule-wizard",          title: "Fee Schedule Setup",         path: "/fee-schedule-setup" },
   { slug: "academic-year-wizard",         title: "Academic Year Rollover",     path: "/academic-year-rollover" },
   { slug: "enrollment-period-wizard",     title: "Enrollment Period Setup",     path: "/enrollment-period-setup" },
+  { slug: "grade-scale-wizard",           title: "Grade Scale Setup",           path: "/grade-scale-setup" },
   // ↓ Add new wizards here (one line, include path matching WIZARD_REGISTRY)
 ];
 
