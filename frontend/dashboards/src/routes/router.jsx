@@ -58,6 +58,7 @@ import HumanResources from '../pages/HumanResources.jsx';
 import SafetyDashboard from '../pages/SafetyDashboard.jsx';
 import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
 import ReenrollmentWizard from '../pages/ReenrollmentWizard.jsx';
+import BillingWizard from '../pages/BillingWizard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -136,6 +137,10 @@ export const router = createBrowserRouter([
   {
     path: '/reenrollment',
     element: <ReenrollmentWizard />,
+  },
+  {
+    path: '/billing-setup',
+    element: <BillingWizard />,
   },
   {
     path: '/finance/invoices',
