@@ -1,0 +1,100 @@
+/* crown-wizard.css — tokens from crown-theme.css, no overrides */
+
+.crown-wizard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.crown-wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.crown-wizard-step-pill {
+  border: 1px solid var(--crown-border, rgba(255,255,255,0.15));
+  background: var(--crown-card, rgba(255,255,255,0.04));
+  color: var(--crown-muted, #b8c5e6);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+}
+
+.crown-wizard-step-pill.active {
+  border-color: var(--crown-gold, #d4af37);
+  color: var(--crown-gold-2, #f1d88a);
+  box-shadow: 0 0 0 2px rgba(212,175,55,0.14);
+}
+
+.crown-wizard-step-pill.done {
+  border-color: rgba(78,225,138,0.45);
+  color: rgba(78,225,138,0.9);
+}
+
+.crown-wizard-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--crown-border, rgba(255,255,255,0.12));
+}
+
+.crown-wizard-actions-right {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Alerts */
+.crown-alert {
+  border: 1px solid rgba(255,93,93,0.35);
+  background: rgba(255,93,93,0.10);
+  color: var(--crown-text, #e7eefc);
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+
+.crown-alert.success {
+  border-color: rgba(78,225,138,0.40);
+  background: rgba(78,225,138,0.09);
+}
+
+/* Table variants used inside wizard steps */
+.crown-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  border: 1px solid var(--crown-border, rgba(255,255,255,0.12));
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.crown-table th,
+.crown-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--crown-border, rgba(255,255,255,0.08));
+  text-align: left;
+  vertical-align: top;
+}
+
+.crown-table th {
+  font-weight: 600;
+  background: rgba(255,255,255,0.04);
+  color: var(--crown-muted, #b8c5e6);
+}
+
+.crown-table tbody tr:hover {
+  background: rgba(212,175,55,0.05);
+}

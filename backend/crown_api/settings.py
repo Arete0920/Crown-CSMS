@@ -175,6 +175,7 @@ INSTALLED_APPS = [
     'facops.apps.FacopsConfig',
     'transportation.apps.TransportationConfig',
     'msauth.apps.MsauthConfig',
+    'onboarding.apps.OnboardingConfig',
 ]
 
 MIDDLEWARE = [

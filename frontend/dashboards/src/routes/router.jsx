@@ -56,6 +56,7 @@ import PDDashboard from '../pages/PDDashboard.jsx';
 import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
 import HumanResources from '../pages/HumanResources.jsx';
 import SafetyDashboard from '../pages/SafetyDashboard.jsx';
+import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -126,6 +127,10 @@ export const router = createBrowserRouter([
   {
     path: '/admissions',
     element: <AdmissionsPipelineList />,
+  },
+  {
+    path: '/onboarding',
+    element: <AdmissionsIntakeWizard />,
   },
   {
     path: '/finance/invoices',
