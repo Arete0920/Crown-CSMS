@@ -176,6 +176,7 @@ INSTALLED_APPS = [
     'transportation.apps.TransportationConfig',
     'msauth.apps.MsauthConfig',
     'onboarding.apps.OnboardingConfig',
+    'reenrollment.apps.ReenrollmentConfig',
 ]
 
 MIDDLEWARE = [
