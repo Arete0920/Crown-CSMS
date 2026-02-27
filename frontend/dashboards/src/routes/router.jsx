@@ -57,6 +57,7 @@ import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
 import HumanResources from '../pages/HumanResources.jsx';
 import SafetyDashboard from '../pages/SafetyDashboard.jsx';
 import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
+import ReenrollmentWizard from '../pages/ReenrollmentWizard.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -131,6 +132,10 @@ export const router = createBrowserRouter([
   {
     path: '/onboarding',
     element: <AdmissionsIntakeWizard />,
+  },
+  {
+    path: '/reenrollment',
+    element: <ReenrollmentWizard />,
   },
   {
     path: '/finance/invoices',
