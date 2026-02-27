@@ -57,6 +57,7 @@ import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
 import HumanResources from '../pages/HumanResources.jsx';
 import SafetyDashboard from '../pages/SafetyDashboard.jsx';
 import { wizardRoutes } from './wizards.js';
+import WizardHub from '../pages/WizardHub.jsx';
 
 export const router = createBrowserRouter([
   {
@@ -127,6 +128,11 @@ export const router = createBrowserRouter([
   {
     path: '/admissions',
     element: <AdmissionsPipelineList />,
+  },
+  // Wizard Hub — lists all registered wizards from /api/v1/wizards/
+  {
+    path: '/wizards',
+    element: <WizardHub />,
   },
   // All setup wizards — registered in src/routes/wizards.js
   ...wizardRoutes(),
