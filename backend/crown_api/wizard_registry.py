@@ -125,6 +125,13 @@ WIZARDS: list[_WizardEntry] = [
         "url_prefix": "api/v1/staff-onboarding-wizard/sessions/",
         "urls_module": "staff_onboarding_wizard.urls",
     },
+    # #14 — Fee Schedule Setup
+    {
+        "name":       "Fee Schedule Setup",
+        "app_config": "fee_schedule_wizard.apps.FeeScheduleWizardConfig",
+        "url_prefix": "api/v1/fee-schedule-wizard/sessions/",
+        "urls_module": "fee_schedule_wizard.urls",
+    },
     # ↓ Add new wizard entries here — one dict, zero other files to touch
 ]
 
