@@ -177,6 +177,7 @@ INSTALLED_APPS = [
     'msauth.apps.MsauthConfig',
     'onboarding.apps.OnboardingConfig',
     'reenrollment.apps.ReenrollmentConfig',
+    'billing_wizard.apps.BillingWizardConfig',
 ]
 
 MIDDLEWARE = [
