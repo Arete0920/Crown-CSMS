@@ -272,6 +272,7 @@ export default function AdminDashboard() {
               <QuickAction href="/hr"              label="Human Resources"       />
               <QuickAction href="/safety"          label="Safety incidents"      />
               <QuickAction href="/integrity"       label="System integrity"      />
+              <QuickAction href="/wizards"         label="Wizard Hub"            />
             </div>
           </CrownCard>
         </Col>

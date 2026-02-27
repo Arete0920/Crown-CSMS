@@ -12,19 +12,19 @@
  *   3. The Playwright contract test will enforce that backend matches this list.
  */
 export const WIZARD_MANIFEST = [
-  { slug: "onboarding",                   title: "Student Onboarding" },
-  { slug: "reenrollment",                 title: "Re-enrollment" },
-  { slug: "billing-wizard",               title: "Billing Setup" },
-  { slug: "aid-wizard",                   title: "Financial Aid Setup" },
-  { slug: "scheduling-wizard",            title: "Scheduling Setup" },
-  { slug: "comms-wizard",                 title: "Communications Campaign" },
-  { slug: "section-assign-wizard",        title: "Section Assignments" },
-  { slug: "bell-schedule-wizard",         title: "Bell Schedule" },
-  { slug: "gradebook-setup-wizard",       title: "Gradebook Setup" },
-  { slug: "attendance-rules-wizard",      title: "Attendance Rules" },
-  { slug: "enrollment-conversion-wizard", title: "Enrollment Conversion" },
-  { slug: "invoice-run-wizard",           title: "Invoice Run" },
-  // ↓ Add new wizards here (one line)
+  { slug: "onboarding",                   title: "Student Onboarding",       path: "/onboarding" },
+  { slug: "reenrollment",                 title: "Re-enrollment",             path: "/reenrollment" },
+  { slug: "billing-wizard",               title: "Billing Setup",             path: "/billing-setup" },
+  { slug: "aid-wizard",                   title: "Financial Aid Setup",       path: "/aid-setup" },
+  { slug: "scheduling-wizard",            title: "Scheduling Setup",          path: "/scheduling-setup" },
+  { slug: "comms-wizard",                 title: "Communications Campaign",   path: "/comms-setup" },
+  { slug: "section-assign-wizard",        title: "Section Assignments",       path: "/section-assign-setup" },
+  { slug: "bell-schedule-wizard",         title: "Bell Schedule",             path: "/bell-schedule-setup" },
+  { slug: "gradebook-setup-wizard",       title: "Gradebook Setup",           path: "/gradebook-setup" },
+  { slug: "attendance-rules-wizard",      title: "Attendance Rules",          path: "/attendance-rules-setup" },
+  { slug: "enrollment-conversion-wizard", title: "Enrollment Conversion",     path: "/enrollment-conversion" },
+  { slug: "invoice-run-wizard",           title: "Invoice Run",               path: "/invoice-run" },
+  // ↓ Add new wizards here (one line, include path matching WIZARD_REGISTRY)
 ];
 
 /** Flat slug list — the frontend's commitment to which wizard slugs exist. */
