@@ -37,6 +37,12 @@ class Term(TimeStampedModel):
             models.Index(fields=["school_id", "academic_year"]),
             models.Index(fields=["school_id", "code"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["academic_year", "code"],
+                name="uniq_term_year_code",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.code} - {self.name}".strip()

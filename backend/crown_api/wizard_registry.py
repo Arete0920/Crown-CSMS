@@ -132,6 +132,13 @@ WIZARDS: list[_WizardEntry] = [
         "url_prefix": "api/v1/fee-schedule-wizard/sessions/",
         "urls_module": "fee_schedule_wizard.urls",
     },
+    # #15 — Academic Year Rollover
+    {
+        "name":       "Academic Year Rollover",
+        "app_config": "academic_year_wizard.apps.AcademicYearWizardConfig",
+        "url_prefix": "api/v1/academic-year-wizard/sessions/",
+        "urls_module": "academic_year_wizard.urls",
+    },
     # ↓ Add new wizard entries here — one dict, zero other files to touch
 ]
 

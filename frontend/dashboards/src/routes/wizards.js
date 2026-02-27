@@ -34,6 +34,7 @@ import EnrollmentConversionWizard  from '../pages/EnrollmentConversionWizard.jsx
 import InvoiceRunWizard            from '../pages/InvoiceRunWizard.jsx';
 import StaffOnboardingWizard       from '../pages/StaffOnboardingWizard.jsx';
 import FeeScheduleWizard           from '../pages/FeeScheduleWizard.jsx';
+import AcademicYearWizard          from '../pages/AcademicYearWizard.jsx';
 // ↓ Add new wizard imports here
 
 export const WIZARD_REGISTRY = [
@@ -134,6 +135,13 @@ export const WIZARD_REGISTRY = [
     name:      'Fee Schedule Setup',
     apiPrefix: '/api/v1/fee-schedule-wizard/sessions/',
     roles:     ['admin', 'finance', 'director'],
+  },
+  {
+    path:      '/academic-year-rollover',
+    component: AcademicYearWizard,
+    name:      'Academic Year Rollover',
+    apiPrefix: '/api/v1/academic-year-wizard/sessions/',
+    roles:     ['admin', 'director'],
   },
   // ↓ Add new wizard entries here
 ];
