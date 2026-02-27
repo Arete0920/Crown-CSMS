@@ -139,6 +139,13 @@ WIZARDS: list[_WizardEntry] = [
         "url_prefix": "api/v1/academic-year-wizard/sessions/",
         "urls_module": "academic_year_wizard.urls",
     },
+    # #16 — Enrollment Period Setup
+    {
+        "name":       "Enrollment Period Setup",
+        "app_config": "enrollment_period_wizard.apps.EnrollmentPeriodWizardConfig",
+        "url_prefix": "api/v1/enrollment-period-wizard/sessions/",
+        "urls_module": "enrollment_period_wizard.urls",
+    },
     # ↓ Add new wizard entries here — one dict, zero other files to touch
 ]
 

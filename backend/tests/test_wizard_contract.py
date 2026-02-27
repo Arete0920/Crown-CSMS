@@ -41,6 +41,7 @@ WIZARD_ENDPOINTS = [
     ("staff_onboarding",          "/api/v1/staff-onboarding-wizard/sessions/"),
     ("fee_schedule",               "/api/v1/fee-schedule-wizard/sessions/"),
     ("academic_year",              "/api/v1/academic-year-wizard/sessions/"),
+    ("enrollment_period",           "/api/v1/enrollment-period-wizard/sessions/"),
     # Add new wizards here ↓
 ]
 
