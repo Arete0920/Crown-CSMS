@@ -5,7 +5,7 @@ from . import views
 urlpatterns = [
     path("", views.create_session),
     path("<uuid:session_id>/configure/", views.configure_session),
-    path("<uuid:session_id>/periods/", views.define_periods),
+    path("<uuid:session_id>/blocks/", views.set_blocks),
     path("<uuid:session_id>/commit/", views.commit_session),
     path("<uuid:session_id>/verify/", views.verify_session),
 ]
