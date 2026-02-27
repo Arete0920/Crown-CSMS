@@ -272,6 +272,8 @@ class StaffOnboardingCommitTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn("staff_id", r.data["result"])
         self.assertTrue(r.data["result"]["created"])
+        self.assertIn("message", r.data["result"])
+        self.assertIn("created", r.data["result"]["message"].lower())
 
     def test_commit_on_draft_returns_400(self):
         school = _make_school()
@@ -293,6 +295,7 @@ class StaffOnboardingCommitTest(TestCase):
         r = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
         self.assertFalse(r.data["result"]["created"])  # existing record found
+        self.assertIn("already existed", r.data["result"]["message"])
 
 
 # ---------------------------------------------------------------------------
