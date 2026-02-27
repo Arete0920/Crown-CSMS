@@ -24,6 +24,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from audit.models import AuditLog
 from core.models import School, Staff
 from households.scoping import get_request_school_id
 
@@ -32,7 +33,8 @@ from .models import StaffOnboardingWizardSession
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
 
-VALID_ROLES = {c[0] for c in StaffOnboardingWizardSession.ROLE_CHOICES}
+# Single source of truth — mirrors core.Staff.ROLE_CHOICES exactly.
+VALID_ROLES = {c[0] for c in Staff.ROLE_CHOICES}
 
 
 # ---------------------------------------------------------------------------
@@ -184,10 +186,33 @@ def commit_session(request, session_id):
             "email":     staff.email,
             "role_type": staff.role_type,
             "created":   created,
+            "message":   (
+                "Staff member created."
+                if created
+                else "Staff already existed; linked to existing record."
+            ),
         }
         session.commit_result = result
         session.status        = StaffOnboardingWizardSession.STATUS_COMMITTED
         session.save()
+
+    # Audit log — non-fatal if it fails
+    try:
+        AuditLog.objects.create(
+            user_id=getattr(request.user, "id", None),
+            action="staff_onboarding.commit",
+            model="Staff",
+            object_id=result["staff_id"],
+            metadata={
+                "email":     result["email"],
+                "role_type": result["role_type"],
+                "created":   result["created"],
+                "school_id": str(school_id),
+                "session_id": str(session.id),
+            },
+        )
+    except Exception:
+        pass
 
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 

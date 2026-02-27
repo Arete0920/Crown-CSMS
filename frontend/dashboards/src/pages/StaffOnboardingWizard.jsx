@@ -177,7 +177,7 @@ export default function StaffOnboardingWizard() {
       {phase === "done" && result && (
         <Step title="Done">
           <p style={{ color: "var(--color-success, #388e3c)", fontWeight: 600 }}>
-            Staff member created successfully.
+            {result.message || "Staff member created successfully."}
           </p>
           <dl style={{ maxWidth: 360 }}>
             <dt style={{ fontWeight: 600 }}>Staff ID</dt>
