@@ -1,18 +1,4 @@
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Alert,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Paper,
-} from "@mui/material";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { fetchRosterToday, checkinStudent, checkoutStudent } from "../api/aftercareApi.js";
@@ -28,12 +14,24 @@ function getSession() {
   }
 }
 
+const TAG = {
+  base: { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600 },
+  default: { background: "#f5f5f5", color: "#555" },
+  primary:  { background: "#e3f2fd", color: "#1565c0" },
+  success:  { background: "#e8f5e9", color: "#1b5e20" },
+};
+
 function AttendanceChip({ row }) {
   const att = row.attendance;
-  if (!att) return <Chip label="Not checked in" color="default" size="small" />;
-  if (att.checkout_time) return <Chip label="Checked out" color="success" size="small" />;
-  return <Chip label="Checked in" color="primary" size="small" />;
+  if (!att) return <span style={{ ...TAG.base, ...TAG.default }}>Not checked in</span>;
+  if (att.checkout_time) return <span style={{ ...TAG.base, ...TAG.success }}>Checked out</span>;
+  return <span style={{ ...TAG.base, ...TAG.primary }}>Checked in</span>;
 }
+
+const TH = { padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, borderBottom: "2px solid #e0e0e0", whiteSpace: "nowrap" };
+const TD = { padding: "8px 12px", fontSize: 13, borderBottom: "1px solid #f0f0f0" };
+const BTN_OUT  = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "1px solid #999", background: "transparent" };
+const BTN_PRIM = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "none", background: "#388e3c", color: "#fff" };
 
 export default function AftercareRosterPage() {
   const { token, schoolId } = getSession();
@@ -77,63 +75,55 @@ export default function AftercareRosterPage() {
   return (
     <CrownLayout title="Aftercare Roster">
       <DashboardSection title={`Today's Aftercare Roster${roster ? ` — ${roster.date} (${roster.dow})` : ""}`}>
-        {loading && <CircularProgress size={28} />}
-        {error && <Alert severity="error">{error}</Alert>}
+        {loading && <span>Loading…</span>}
+        {error && <div style={{ color: "#c62828", background: "#ffebee", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
         {!loading && !error && roster && (
-          <Paper variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Student ID</TableCell>
-                  <TableCell>Billing</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Late Min</TableCell>
-                  <TableCell>Late Fee</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+          <div style={{ border: "1px solid #e0e0e0", borderRadius: 4, overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={TH}>Student ID</th>
+                  <th style={TH}>Billing</th>
+                  <th style={TH}>Status</th>
+                  <th style={TH}>Late Min</th>
+                  <th style={TH}>Late Fee</th>
+                  <th style={TH}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
                 {roster.rows.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        No students scheduled today.
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
+                  <tr>
+                    <td colSpan={6} style={{ ...TD, color: "#888" }}>No students scheduled today.</td>
+                  </tr>
                 )}
                 {roster.rows.map((row) => {
                   const hasCheckin = !!row.attendance;
                   const hasCheckout = row.attendance?.checkout_time;
                   return (
-                    <TableRow key={row.student_id}>
-                      <TableCell>{row.student_id}</TableCell>
-                      <TableCell>{row.enrollment?.billing_model}</TableCell>
-                      <TableCell><AttendanceChip row={row} /></TableCell>
-                      <TableCell>{row.attendance?.late_minutes ?? "—"}</TableCell>
-                      <TableCell>
+                    <tr key={row.student_id}>
+                      <td style={TD}>{row.student_id}</td>
+                      <td style={TD}>{row.enrollment?.billing_model}</td>
+                      <td style={TD}><AttendanceChip row={row} /></td>
+                      <td style={TD}>{row.attendance?.late_minutes ?? "—"}</td>
+                      <td style={TD}>
                         {row.attendance?.late_fee_cents
                           ? `$${(row.attendance.late_fee_cents / 100).toFixed(2)}`
                           : "—"}
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td style={TD}>
                         {!hasCheckin && (
-                          <Button size="small" variant="outlined" onClick={() => handleCheckin(row.student_id)}>
-                            Check In
-                          </Button>
+                          <button style={BTN_OUT} onClick={() => handleCheckin(row.student_id)}>Check In</button>
                         )}
                         {hasCheckin && !hasCheckout && (
-                          <Button size="small" variant="contained" color="success" onClick={() => handleCheckout(row.student_id)}>
-                            Check Out
-                          </Button>
+                          <button style={BTN_PRIM} onClick={() => handleCheckout(row.student_id)}>Check Out</button>
                         )}
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   );
                 })}
-              </TableBody>
-            </Table>
-          </Paper>
+              </tbody>
+            </table>
+          </div>
         )}
       </DashboardSection>
     </CrownLayout>
