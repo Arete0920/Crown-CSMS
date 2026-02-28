@@ -194,9 +194,10 @@ if (-not $NoSecrets) {
             "AWS_SECRET_ACCESS_KEY\s*=\s*[A-Za-z0-9/+]{20,}",
             "stripe.*sk_live_[A-Za-z0-9]{24,}"
         )
-        # git pathspecs to exclude generated/minified files
+        # git pathspecs to exclude generated/minified files and the scanner itself
         $excl = @(":(exclude)*.min.js",":(exclude)package-lock.json",":(exclude)yarn.lock",
-                  ":(exclude)artifacts/**",":(exclude)*.log",":(exclude)*.lock")
+                  ":(exclude)artifacts/**",":(exclude)*.log",":(exclude)*.lock",
+                  ":(exclude).github/workflows/**",":(exclude)tools/audit/**")
 
         $scanResults = @()
         $hitCount    = 0
