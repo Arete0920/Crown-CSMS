@@ -46,6 +46,7 @@ urlpatterns = [
     # Sprint expansion modules — must come BEFORE crown_api.api_urls to avoid shadowing.
     # crown_api.api_urls registers legacy hardcoded metric stubs for these paths;
     # placing real includes first ensures Django first-match resolves to real views.
+    path("board/", include("board_oversight.urls")),
     path("hr/", include("hr.urls")),
     path("advancement/", include("advancement.urls")),
     path("pd/", include("pdhub.urls")),
