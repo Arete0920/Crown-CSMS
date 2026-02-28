@@ -85,6 +85,9 @@ urlpatterns = [
     # Finance & Tuition Management (Phase 8)
     path("api/finance/", include("finance.api_urls")),
 
+    # Platform Operations (super-admin, cross-tenant, no X-School-ID required)
+    path("api/platform/", include("platform_ops.urls")),
+
     # Integrations (webhooks, etc.)
     path("api/integrations/", include("integrations.urls")),
     
