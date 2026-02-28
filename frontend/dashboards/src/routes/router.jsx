@@ -59,6 +59,7 @@ import SafetyDashboard from '../pages/SafetyDashboard.jsx';
 import BoardExecutiveDashboard from '../pages/BoardExecutiveDashboard.jsx';
 import AftercareRosterPage from '../pages/AftercareRosterPage.jsx';
 import AftercareSetupWizard from '../pages/wizards/AftercareSetupWizard.jsx';
+import FinanceSetupWizard from '../pages/wizards/FinanceSetupWizard.jsx';
 import { wizardRoutes } from './wizards.js';
 import WizardHub from '../pages/WizardHub.jsx';
 
@@ -286,6 +287,10 @@ export const router = createBrowserRouter([
   {
     path: '/wizards/aftercare-setup',
     element: <AftercareSetupWizard />,
+  },
+  {
+    path: '/wizards/finance-setup',
+    element: <FinanceSetupWizard />,
   },
 ]);
 

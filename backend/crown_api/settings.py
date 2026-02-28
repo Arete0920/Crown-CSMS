@@ -187,6 +187,8 @@ INSTALLED_APPS = [
     'signals',
     # Aftercare Module
     'aftercare',
+    # Finance Setup (Policy Wizard)
+    'finance_setup.apps.FinanceSetupConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
