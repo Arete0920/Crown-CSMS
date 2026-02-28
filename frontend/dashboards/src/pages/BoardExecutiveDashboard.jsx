@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Grid, Alert, Chip } from "@mui/material";
+import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import BoardKpiTile from "../components/board/BoardKpiTile.jsx";
@@ -31,12 +31,37 @@ function currency(n) {
   });
 }
 
-/* ── Risk status chip colors ─────────────────────────────────────────── */
-const STATUS_COLOR = {
-  Stable: "success",
-  Watch:  "warning",
-  Risk:   "error",
-};
+/* ── Status badge (no MUI Chip) ─────────────────────────────────────── */
+const STATUS_BG   = { Stable: "#e8f5e9", Watch: "#fffde7", Risk:  "#ffebee" };
+const STATUS_TEXT = { Stable: "#1b5e20", Watch: "#f57f17", Risk:  "#b71c1c" };
+
+function StatusBadge({ label }) {
+  const s = {
+    display: "inline-block", padding: "2px 10px", borderRadius: 12,
+    fontSize: 12, fontWeight: 600,
+    background: STATUS_BG[label]   || "#f5f5f5",
+    color:      STATUS_TEXT[label] || "#333",
+  };
+  return <span style={s}>{label}</span>;
+}
+
+function LiveBadge({ live }) {
+  const s = { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: live ? "#e8f5e9" : "#f5f5f5", color: live ? "#1b5e20" : "#888" };
+  return <span style={s}>{live ? "LIVE" : "DEMO"}</span>;
+}
+
+function TextBadge({ label }) {
+  const s = { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: "#f5f5f5", color: "#888" };
+  return <span style={s}>{label}</span>;
+}
+
+function WarnBanner({ children }) {
+  return <div style={{ padding: "12px 16px", marginBottom: 16, background: "#fff3e0", borderLeft: "4px solid #ef6c00", borderRadius: 4 }}>{children}</div>;
+}
+
+function InfoBanner({ children }) {
+  return <div style={{ padding: "12px 16px", marginBottom: 16, background: "#e3f2fd", borderLeft: "4px solid #1565c0", borderRadius: 4 }}>{children}</div>;
+}
 
 /* ── Column definitions ──────────────────────────────────────────────── */
 const riskColumns = [
@@ -44,14 +69,7 @@ const riskColumns = [
   {
     key: "status",
     label: "Status",
-    render: (r) => (
-      <Chip
-        size="small"
-        label={r.status}
-        color={STATUS_COLOR[r.status] || "default"}
-        sx={{ fontWeight: 600 }}
-      />
-    ),
+    render: (r) => <StatusBadge label={r.status} />,
   },
   { key: "note", label: "Note" },
 ];
@@ -92,141 +110,95 @@ export default function BoardExecutiveDashboard() {
       subtitle={`Read-only governance view${live ? " · LIVE" : " · DEMO data"}`}
     >
       {error && (
-        <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>
+        <WarnBanner>{error}</WarnBanner>
       )}
       {loading && (
-        <Alert severity="info" sx={{ mb: 2 }}>Loading latest board metrics…</Alert>
+        <InfoBanner>Loading latest board metrics…</InfoBanner>
       )}
 
       {/* ── Executive Snapshot ───────────────────────────────────────── */}
       <DashboardSection title="Executive Snapshot">
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
-            <BoardKpiTile
-              label="Enrollment"
-              value={data.kpis.enrollment}
-              meta="Current student count"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <BoardKpiTile
-              label="Net Tuition"
-              value={currency(data.kpis.netTuition)}
-              meta="YTD recognized"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <BoardKpiTile
-              label="Aid Awarded"
-              value={currency(data.kpis.aidAwarded)}
-              meta="YTD total awards"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <BoardKpiTile
-              label="Attendance"
-              value={`${data.kpis.attendancePct}%`}
-              meta="Rolling 30 days"
-            />
-          </Grid>
-        </Grid>
+        <CrownGrid>
+          <Col span={3}>
+            <BoardKpiTile label="Enrollment" value={data.kpis.enrollment} meta="Current student count" />
+          </Col>
+          <Col span={3}>
+            <BoardKpiTile label="Net Tuition" value={currency(data.kpis.netTuition)} meta="YTD recognized" />
+          </Col>
+          <Col span={3}>
+            <BoardKpiTile label="Aid Awarded" value={currency(data.kpis.aidAwarded)} meta="YTD total awards" />
+          </Col>
+          <Col span={3}>
+            <BoardKpiTile label="Attendance" value={`${data.kpis.attendancePct}%`} meta="Rolling 30 days" />
+          </Col>
+        </CrownGrid>
       </DashboardSection>
 
       {/* ── Trends ───────────────────────────────────────────────────── */}
       <DashboardSection title="Trends">
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <BoardCard
-              title="Enrollment Trend"
-              subtitle="Last 5 reporting periods"
-              right={<Chip size="small" label={live ? "LIVE" : "DEMO"} color={live ? "success" : "default"} />}
-            >
+        <CrownGrid>
+          <Col span={6}>
+            <BoardCard title="Enrollment Trend" subtitle="Last 5 reporting periods" right={<LiveBadge live={live} />}>
               <BoardTrendChart data={data.trends.enrollment} yKey="value" />
             </BoardCard>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <BoardCard
-              title="Net Tuition Trend"
-              subtitle="Last 5 reporting periods"
-              right={<Chip size="small" label="USD" />}
-            >
-              <BoardTrendChart
-                data={data.trends.netTuition}
-                yKey="value"
-                format="currency"
-              />
+          </Col>
+          <Col span={6}>
+            <BoardCard title="Net Tuition Trend" subtitle="Last 5 reporting periods" right={<TextBadge label="USD" />}>
+              <BoardTrendChart data={data.trends.netTuition} yKey="value" format="currency" />
             </BoardCard>
-          </Grid>
-        </Grid>
+          </Col>
+        </CrownGrid>
       </DashboardSection>
 
       {/* ── Crown Compass — demo signals (DEMO fallback data) ─────── */}
       <DashboardSection title="Crown Compass — Signals">
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
-            <BoardCard
-              title="Risk &amp; Watchlist"
-              subtitle="Board-level attention items"
-            >
+        <CrownGrid>
+          <Col span={6}>
+            <BoardCard title="Risk &amp; Watchlist" subtitle="Board-level attention items">
               <BoardSimpleTable columns={riskColumns} rows={data.risk} />
             </BoardCard>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <BoardCard
-              title="Top Drivers"
-              subtitle="What is moving outcomes right now"
-            >
+          </Col>
+          <Col span={6}>
+            <BoardCard title="Top Drivers" subtitle="What is moving outcomes right now">
               <BoardSimpleTable columns={driversColumns} rows={data.topDrivers} />
             </BoardCard>
-          </Grid>
-        </Grid>
+          </Col>
+        </CrownGrid>
       </DashboardSection>
 
       {/* ── Crown Compass 2.0 — live composite indexes ────────────── */}
       {compass && (
         <DashboardSection title="Crown Compass 2.0">
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
+          <CrownGrid>
+            <Col span={12}>
               <BoardCompassCard compass={compass} />
-            </Grid>
-          </Grid>
+            </Col>
+          </CrownGrid>
         </DashboardSection>
       )}
 
       {/* ── Student Risk Distribution ─────────────────────────────── */}
       {riskCounts && (
         <DashboardSection title="Student Risk Distribution">
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
-              <BoardKpiTile
-                label="Low Risk"
-                value={riskCounts.low}
-                meta={`As of ${riskCounts.as_of_date}`}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <BoardKpiTile
-                label="Medium Risk"
-                value={riskCounts.med}
-                meta="Needs monitoring"
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <BoardKpiTile
-                label="High Risk"
-                value={riskCounts.high}
-                meta="Intervention priority"
-              />
-            </Grid>
-          </Grid>
+          <CrownGrid>
+            <Col span={4}>
+              <BoardKpiTile label="Low Risk" value={riskCounts.low} meta={`As of ${riskCounts.as_of_date}`} />
+            </Col>
+            <Col span={4}>
+              <BoardKpiTile label="Medium Risk" value={riskCounts.med} meta="Needs monitoring" />
+            </Col>
+            <Col span={4}>
+              <BoardKpiTile label="High Risk" value={riskCounts.high} meta="Intervention priority" />
+            </Col>
+          </CrownGrid>
         </DashboardSection>
       )}
       <DashboardSection title="Programs">
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
+        <CrownGrid>
+          <Col span={12}>
             <AftercareBoardCard token={token} schoolId={schoolId} />
-          </Grid>
-        </Grid>
+          </Col>
+        </CrownGrid>
       </DashboardSection>
     </CrownLayout>
   );
