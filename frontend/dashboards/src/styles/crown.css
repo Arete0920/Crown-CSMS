@@ -202,3 +202,46 @@ tbody td {
 tbody tr:hover {
   background: rgba(176, 141, 87, 0.06);
 }
+
+/* ── Micro-interactions ───────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  transition:
+    background-color 150ms ease-in-out,
+    box-shadow      150ms ease-in-out,
+    border-color    150ms ease-in-out,
+    transform       150ms ease-in-out;
+}
+
+button:active,
+.crown-btn:active {
+  transform: scale(0.98);
+}
+
+/* Eliminate heavy box-shadows — replaced by subtle border + small elevation */
+.crown-card,
+.crown-section {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Consistent button shape */
+button, .MuiButton-root {
+  border-radius: 8px;
+}
+
+/* Label-above-input pattern helper */
+.crown-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.crown-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--crown-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
