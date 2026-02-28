@@ -3,7 +3,7 @@
 > **Purpose:** Pre-merge / pre-demo / pre-release human gate.  
 > **Automated companion:** `tools/audit/CROWN_MAGUS0_AUDIT.ps1`  
 > **Gate workflow:** `.github/workflows/crown-magus0-gate.yml`  
-> **Last updated:** 2026-02-28
+> **Last updated:** 2026-02-28 — secret scan gate fixed (PRs #488 #489); tag `magus0-gate-green-2026-02-28` @ `5041c574`
 
 Mark every item `[x]` before signing off. Any unchecked `[ ]` = BLOCK.
 
@@ -36,7 +36,7 @@ Mark every item `[x]` before signing off. Any unchecked `[ ]` = BLOCK.
 - [ ] No `CORS_ALLOW_ALL_ORIGINS = True` (automated: settings scan)
 - [ ] `ALLOWED_HOSTS` does not contain `*` in production
 - [ ] `SESSION_COOKIE_SECURE = True` and `CSRF_COOKIE_SECURE = True` in production
-- [ ] Secret scan: zero hits for AWS keys, OpenAI keys, Stripe live keys, private key material in tracked files
+  - [x] Secret scan: zero hits for AWS keys, OpenAI keys, Stripe live keys, private key material in tracked files — **verified 2026-02-28; scanner self-hit fixed in PRs #488 #489**
 - [ ] No `.env` files tracked in git
 - [ ] `local.secrets.ps1` is in `.gitignore`
 
@@ -83,11 +83,11 @@ Mark every item `[x]` before signing off. Any unchecked `[ ]` = BLOCK.
 ### CI/CD Gates
 - [ ] `backend-gate` (compile + checks + migration drift + tenant tripwire) passes
 - [ ] `pytest-gate` passes
-- [ ] `secret-scan` passes
-- [ ] `dashboards-build-gate` passes
+- [x] `secret-scan` passes — **2026-02-28, PR #488 #489**
+- [x] `dashboards-build-gate` passes — **2026-02-28, 1974 modules, 0 errors**
 - [ ] `migration-lock-gate` passes
 - [ ] `contract-gate` passes
-- [ ] `crown-magus0-gate` passes (new — see `.github/workflows/crown-magus0-gate.yml`)
+- [x] `crown-magus0-gate` passes — **2026-02-28, all 4 jobs green @ 5041c574**
 - [ ] Required checks in branch protection match the list above (no bypasses)
 
 ### DB / Migrations
