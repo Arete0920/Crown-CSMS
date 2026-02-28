@@ -15,10 +15,6 @@ from crown_api.audit_views import recent_audit_events
 from crown_api.auth_views import login, refresh, me
 from crown_api.dev_token_views import dev_token
 from crown_api.system_views import whoami
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
 
 urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
@@ -56,10 +52,6 @@ urlpatterns = [
     
     # Demo-only dev token endpoint (fail-closed)
     path("api/dev/token/", dev_token, name="dev_token"),
-    
-    # Authentication URLs (must come BEFORE api/ includes)
-    path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     
     # Canonical API
     path("api/v1/", include("crown_api.api_v1_urls")),

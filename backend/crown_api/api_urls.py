@@ -27,7 +27,7 @@ from crown_api.director_views import (
 )
 from crown_api.views_households import household_detail, households_list
 from crown_api.metrics_views import (
-    admin_metrics, board_metrics, finance_metrics,
+    admin_metrics, finance_metrics,
     teacher_metrics, parent_metrics, student_metrics,
     it_metrics, marketing_metrics,
     spiritual_life_metrics, office_metrics,
@@ -55,7 +55,6 @@ urlpatterns = [
 
     # Dashboard metrics endpoints (read-only, persona-scoped)
     path('admin/metrics/',          admin_metrics,          name='admin-metrics'),
-    path('board/metrics/',          board_metrics,          name='board-metrics'),
     path('finance/metrics/',        finance_metrics,        name='finance-metrics'),
     path('teacher/metrics/',        teacher_metrics,        name='teacher-metrics'),
     path('parent/metrics/',         parent_metrics,         name='parent-metrics'),
