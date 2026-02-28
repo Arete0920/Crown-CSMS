@@ -56,6 +56,7 @@ import PDDashboard from '../pages/PDDashboard.jsx';
 import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
 import HumanResources from '../pages/HumanResources.jsx';
 import SafetyDashboard from '../pages/SafetyDashboard.jsx';
+import BoardExecutiveDashboard from '../pages/BoardExecutiveDashboard.jsx';
 import { wizardRoutes } from './wizards.js';
 import WizardHub from '../pages/WizardHub.jsx';
 
@@ -271,6 +272,10 @@ export const router = createBrowserRouter([
   {
     path: '/safety',
     element: <SafetyDashboard />,
+  },
+  {
+    path: '/board/executive',
+    element: <BoardExecutiveDashboard />,
   },
 ]);
 
