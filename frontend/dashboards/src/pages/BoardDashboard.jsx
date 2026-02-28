@@ -3,6 +3,7 @@ import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
 
 /* ── Auth helpers ────────────────────────────────────────────────────── */
 function apiBase() {
@@ -123,7 +124,8 @@ export default function BoardDashboard() {
 
   return (
     <CrownLayout title="School Board" subtitle="Governance · mission · finance oversight">
-      <CrownGrid>
+      <DashboardSection title="Key Indicators">
+        <CrownGrid>
 
         {/* ── KPI row ───────────────────────────────────────────────── */}
         <Col span={3}>
@@ -154,6 +156,12 @@ export default function BoardDashboard() {
             hint="Current year"
           />
         </Col>
+
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Mission & Finance">
+        <CrownGrid>
 
         {/* ── Mission & culture ─────────────────────────────────────── */}
         <Col span={6}>
@@ -204,6 +212,12 @@ export default function BoardDashboard() {
           </CrownCard>
         </Col>
 
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Enrollment & Compliance">
+        <CrownGrid>
+
         {/* ── Enrollment trend ──────────────────────────────────────── */}
         <Col span={6}>
           <CrownCard title="Enrollment Trend">
@@ -249,7 +263,8 @@ export default function BoardDashboard() {
           </CrownCard>
         </Col>
 
-      </CrownGrid>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

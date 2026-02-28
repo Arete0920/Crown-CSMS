@@ -3,6 +3,7 @@ import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
 
 /* ── Auth helpers ────────────────────────────────────────────────────── */
 function apiBase() {
@@ -140,7 +141,8 @@ export default function FinanceDashboard() {
 
   return (
     <CrownLayout title="Finance" subtitle="Business office · AR · collections · financial aid">
-      <CrownGrid>
+      <DashboardSection title="Key Indicators">
+        <CrownGrid>
 
         {/* ── KPI row ───────────────────────────────────────────────── */}
         <Col span={3}>
@@ -171,6 +173,12 @@ export default function FinanceDashboard() {
             hint="Needs resolution"
           />
         </Col>
+
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Accounts Receivable">
+        <CrownGrid>
 
         {/* ── AR Aging table ────────────────────────────────────────── */}
         <Col span={8}>
@@ -247,7 +255,11 @@ export default function FinanceDashboard() {
             </div>
           </CrownCard>
         </Col>
+        </CrownGrid>
+      </DashboardSection>
 
+      <DashboardSection title="Collections & Aid">
+        <CrownGrid>
         {/* ── Collections ───────────────────────────────────────────── */}
         <Col span={6}>
           <CrownCard title="Collections">
@@ -293,6 +305,12 @@ export default function FinanceDashboard() {
           </CrownCard>
         </Col>
 
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Operational">
+        <CrownGrid>
+
         {/* ── Operational counters ──────────────────────────────────── */}
         <Col span={12}>
           <CrownCard title="Operational">
@@ -321,7 +339,8 @@ export default function FinanceDashboard() {
           </CrownCard>
         </Col>
 
-      </CrownGrid>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }
