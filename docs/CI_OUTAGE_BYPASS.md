@@ -96,7 +96,15 @@ gh pr merge <PR_NUMBER> --squash --delete-branch --admin
 git checkout main
 git pull --ff-only
 git log --oneline -3
+
+# Step 5: Re-run cert gates on main and post output as PR comment
+# (this is your audit trail when CI is down)
+& ".venv\Scripts\python.exe" backend\manage.py check
+& ".venv\Scripts\python.exe" -m pytest backend/tests/test_wizard_contract.py backend/tests/test_wizard_discovery.py -q --tb=short 2>&1 | Select-String "passed|failed" | Select-Object -Last 2
+& ".venv\Scripts\python.exe" tools\verify_backend_gate.py
 ```
+
+Post the output of Step 5 as a comment on the merged PR. That is the audit trail when CI logs are unavailable.
 
 **Do NOT** toggle `enforce_admins` on/off as the bypass mechanism. The ruleset bypass is the correct lever. `enforce_admins` governs structural rules (linear history, PR required), not CI checks.
 
@@ -117,6 +125,22 @@ gh api repos/tcmegahan/Crown2026/actions/runs/<RUN_ID>/jobs |
   ConvertFrom-Json | Select-Object -ExpandProperty jobs |
   Select-Object name, conclusion, runner_name
 ```
+
+---
+
+## Known brittleness: `integration_id` in ruleset
+
+The `main-protection` ruleset pins `integration_id = 15368` (GitHub Actions app) on each required check. This ID is stable for the repo but:
+
+- If you ever see required checks "disappear" from PRs despite being listed in the ruleset, verify the integration_id still matches the GitHub Actions app for this repo:
+  ```powershell
+  # Check current integration_id in ruleset
+  (gh api repos/tcmegahan/Crown2026/rulesets/12558681 | ConvertFrom-Json).rules |
+    Where-Object { $_.type -eq "required_status_checks" } |
+    Select-Object -ExpandProperty parameters |
+    Select-Object -ExpandProperty required_status_checks
+  ```
+- Safe fallback: remove `integration_id` from each check entry in the ruleset (context name alone is sufficient for matching).
 
 ---
 
