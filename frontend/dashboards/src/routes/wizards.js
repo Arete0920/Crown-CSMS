@@ -39,6 +39,11 @@ import EnrollmentPeriodWizard      from '../pages/EnrollmentPeriodWizard.jsx';
 import GradeScaleWizard            from '../pages/GradeScaleWizard.jsx';
 import TermStructureWizard         from '../pages/TermStructureWizard.jsx';
 // ↓ Add new wizard imports here
+import SectionSchedulerWizard     from '../pages/SectionSchedulerWizard.jsx';
+import StaffSetupWizard           from '../pages/StaffSetupWizard.jsx';
+import CourseCatalogWizard        from '../pages/CourseCatalogWizard.jsx';
+import RoomSetupWizard            from '../pages/RoomSetupWizard.jsx';
+import PromotionWizard            from '../pages/PromotionWizard.jsx';
 
 export const WIZARD_REGISTRY = [
   {
@@ -168,6 +173,41 @@ export const WIZARD_REGISTRY = [
     roles:     ['admin', 'academics', 'director'],
   },
   // ↓ Add new wizard entries here
+  {
+    path:      '/section-scheduler-setup',
+    component: SectionSchedulerWizard,
+    name:      'Section Scheduler Seed',
+    apiPrefix: '/api/v1/section-scheduler-wizard/sessions/',
+    roles:     ['admin', 'academics', 'director'],
+  },
+  {
+    path:      '/staff-setup',
+    component: StaffSetupWizard,
+    name:      'Staff & Roles Setup',
+    apiPrefix: '/api/v1/staff-setup-wizard/sessions/',
+    roles:     ['admin', 'director'],
+  },
+  {
+    path:      '/course-catalog-setup',
+    component: CourseCatalogWizard,
+    name:      'Course Catalog Setup',
+    apiPrefix: '/api/v1/course-catalog-wizard/sessions/',
+    roles:     ['admin', 'academics', 'director'],
+  },
+  {
+    path:      '/room-setup',
+    component: RoomSetupWizard,
+    name:      'Rooms Setup',
+    apiPrefix: '/api/v1/room-setup-wizard/sessions/',
+    roles:     ['admin', 'director'],
+  },
+  {
+    path:      '/promotion-setup',
+    component: PromotionWizard,
+    name:      'Promotion Map Setup',
+    apiPrefix: '/api/v1/promotion-wizard/sessions/',
+    roles:     ['admin', 'academics', 'director'],
+  },
 ];
 
 /**
