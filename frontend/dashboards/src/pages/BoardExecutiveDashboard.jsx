@@ -9,6 +9,7 @@ import BoardSimpleTable from "../components/board/BoardSimpleTable.jsx";
 import { useBoardExecutiveData } from "../hooks/useBoardExecutiveData.js";
 import { fetchBoardCompass, fetchBoardRiskCounts } from "../api/signalsApi.js";
 import BoardCompassCard from "../components/board/BoardCompassCard.jsx";
+import AftercareBoardCard from "../components/board/AftercareBoardCard.jsx";
 
 /* ── Auth helpers (matches Crown sessionStorage pattern) ─────────────── */
 function getSession() {
@@ -220,6 +221,13 @@ export default function BoardExecutiveDashboard() {
           </Grid>
         </DashboardSection>
       )}
+      <DashboardSection title="Programs">
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <AftercareBoardCard token={token} schoolId={schoolId} />
+          </Grid>
+        </Grid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

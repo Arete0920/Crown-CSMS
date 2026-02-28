@@ -46,6 +46,9 @@ def compute_student_features(school_id: int, student_id: int) -> dict:
         "days_past_due": 0,
         "balance_due": 0.0,
         "discipline_30d": 0,
+        # Aftercare signals — replace with real DB queries
+        "aftercare_late_30d": 0,
+        "aftercare_incident_30d": 0,
     }
 
 
@@ -116,6 +119,38 @@ def evaluate_signal(defn: SignalDefinition, features: dict) -> dict | None:
                 "signal_key": defn.key,
                 "weight": defn.severity_weight,
                 "summary": f"Discipline incidents spike ({cnt} in {window} days)",
+                "details": {
+                    "window_days": window,
+                    "count": cnt,
+                    "threshold": threshold,
+                },
+            }
+
+    elif rule_type == "aftercare_late_spike":
+        window = int(rule.get("window_days", 30))
+        threshold = int(rule.get("threshold_count", 3))
+        cnt = int(features.get(f"aftercare_late_{window}d", features.get("aftercare_late_30d", 0)))
+        if cnt >= threshold:
+            return {
+                "signal_key": defn.key,
+                "weight": defn.severity_weight,
+                "summary": f"Aftercare late pickups spike ({cnt} in {window} days)",
+                "details": {
+                    "window_days": window,
+                    "count": cnt,
+                    "threshold": threshold,
+                },
+            }
+
+    elif rule_type == "aftercare_incident_spike":
+        window = int(rule.get("window_days", 30))
+        threshold = int(rule.get("threshold_count", 2))
+        cnt = int(features.get(f"aftercare_incident_{window}d", features.get("aftercare_incident_30d", 0)))
+        if cnt >= threshold:
+            return {
+                "signal_key": defn.key,
+                "weight": defn.severity_weight,
+                "summary": f"Aftercare incidents spike ({cnt} in {window} days)",
                 "details": {
                     "window_days": window,
                     "count": cnt,

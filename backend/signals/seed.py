@@ -36,6 +36,20 @@ DEFAULTS = [
         severity_weight=15,
         rule={"type": "discipline_spike", "window_days": 30, "threshold_count": 3},
     ),
+    dict(
+        key="aftercare_late_spike_30d",
+        name="Aftercare late pickup spike",
+        description="Flags repeated late pickups in aftercare.",
+        severity_weight=15,
+        rule={"type": "aftercare_late_spike", "window_days": 30, "threshold_count": 3},
+    ),
+    dict(
+        key="aftercare_incident_spike_30d",
+        name="Aftercare incident spike",
+        description="Flags elevated incidents during aftercare.",
+        severity_weight=20,
+        rule={"type": "aftercare_incident_spike", "window_days": 30, "threshold_count": 2},
+    ),
 ]
 
 

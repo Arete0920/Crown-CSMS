@@ -200,6 +200,8 @@ urlpatterns = [
 
     # Signal Engine + Crown Compass 2.0 + Intervention Workflow
     path("signals/", include("signals.urls")),
+    # Aftercare Module
+    path("aftercare/", include("aftercare.urls")),
 ]
 
 
