@@ -4,8 +4,7 @@ import { getAdmissionsApplications, enrollApplicant } from "../api/admissions";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import Drawer from "../components/Drawer";
-import ErrorBanner from "../components/ui/ErrorBanner.jsx";
-
+import ErrorBanner from "../components/ui/ErrorBanner.jsx";import DashboardSection from '../components/layout/DashboardSection.jsx';
 const STATUS_LABELS = {
   DRAFT: "Draft",
   SUBMITTED: "Submitted",
@@ -179,7 +178,7 @@ export function AdmissionsPipelineList() {
       )}
 
       {!loading && hasApplications && (
-        <>
+        <DashboardSection title="Applications">
           <div
             style={{
               display: "flex",
@@ -396,7 +395,7 @@ export function AdmissionsPipelineList() {
               </tbody>
             </table>
           </div>
-        </>
+        </DashboardSection>
       )}
 
       <Drawer

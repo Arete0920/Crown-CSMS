@@ -5,6 +5,7 @@ import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import { authenticatedFetch } from '../utils/authClient.js';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
 
 /* ── Auth helpers (matches existing Crown pattern) ─────────────────── */
 function apiBase() {
@@ -150,8 +151,9 @@ export default function AdminDashboard() {
         <div style={{ opacity: 0.6, padding: 24 }}>Loading dashboard…</div>
       )}
 
-      {data && (
-      <CrownGrid>
+      {data && (<>
+      <DashboardSection title="Overview">
+        <CrownGrid>
 
         {/* ── KPI row ───────────────────────────────────────────────── */}
         <Col span={3}>
@@ -182,6 +184,12 @@ export default function AdminDashboard() {
             hint="Awaiting reply"
           />
         </Col>
+
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Operations">
+        <CrownGrid>
 
         {/* ── Enrollment funnel ─────────────────────────────────────── */}
         <Col span={6}>
@@ -277,6 +285,12 @@ export default function AdminDashboard() {
           </CrownCard>
         </Col>
 
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Executive Insights">
+        <CrownGrid>
+
         {/* ── Executive Insights ────────────────────────────────────── */}
         <Col span={12}>
           <CrownCard
@@ -315,8 +329,9 @@ export default function AdminDashboard() {
           </CrownCard>
         </Col>
 
-      </CrownGrid>
-      )}
+        </CrownGrid>
+      </DashboardSection>
+    </>)}
     </CrownLayout>
   );
 }
