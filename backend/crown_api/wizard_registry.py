@@ -196,6 +196,41 @@ WIZARDS: list[_WizardEntry] = [
         "url_prefix":  "api/v1/promotion-wizard/sessions/",
         "urls_module": "promotion_wizard.urls",
     },
+    # #25 — Student Import
+    {
+        "name":        "Student Import",
+        "app_config":  "student_import_wizard.apps.StudentImportWizardConfig",
+        "url_prefix":  "api/v1/student-import-wizard/sessions/",
+        "urls_module": "student_import_wizard.urls",
+    },
+    # #26 — Guardian & Household Setup
+    {
+        "name":        "Guardian & Household Setup",
+        "app_config":  "guardian_household_wizard.apps.GuardianHouseholdWizardConfig",
+        "url_prefix":  "api/v1/guardian-household-wizard/sessions/",
+        "urls_module": "guardian_household_wizard.urls",
+    },
+    # #27 — Section Staffing
+    {
+        "name":        "Section Staffing",
+        "app_config":  "section_staffing_wizard.apps.SectionStaffingWizardConfig",
+        "url_prefix":  "api/v1/section-staffing-wizard/sessions/",
+        "urls_module": "section_staffing_wizard.urls",
+    },
+    # #28 — Attendance Codes Setup
+    {
+        "name":        "Attendance Codes Setup",
+        "app_config":  "attendance_codes_wizard.apps.AttendanceCodesWizardConfig",
+        "url_prefix":  "api/v1/attendance-codes-wizard/sessions/",
+        "urls_module": "attendance_codes_wizard.urls",
+    },
+    # #29 — Grade Weights & Categories
+    {
+        "name":        "Grade Weights & Categories",
+        "app_config":  "grade_weights_wizard.apps.GradeWeightsWizardConfig",
+        "url_prefix":  "api/v1/grade-weights-wizard/sessions/",
+        "urls_module": "grade_weights_wizard.urls",
+    },
 ]
 
 # ------------------------------------------------------------------
