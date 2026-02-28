@@ -176,6 +176,7 @@ INSTALLED_APPS = [
     'facops.apps.FacopsConfig',
     'transportation.apps.TransportationConfig',
     'msauth.apps.MsauthConfig',
+    'board_oversight',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
