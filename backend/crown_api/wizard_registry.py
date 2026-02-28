@@ -161,6 +161,41 @@ WIZARDS: list[_WizardEntry] = [
         "urls_module": "term_structure_wizard.urls",
     },
     # ↓ Add new wizard entries here — one dict, zero other files to touch
+    # #20 — Section Scheduler Seed
+    {
+        "name":        "Section Scheduler Seed",
+        "app_config":  "section_scheduler_wizard.apps.SectionSchedulerWizardConfig",
+        "url_prefix":  "api/v1/section-scheduler-wizard/sessions/",
+        "urls_module": "section_scheduler_wizard.urls",
+    },
+    # #21 — Staff & Roles Setup
+    {
+        "name":        "Staff & Roles Setup",
+        "app_config":  "staff_setup_wizard.apps.StaffSetupWizardConfig",
+        "url_prefix":  "api/v1/staff-setup-wizard/sessions/",
+        "urls_module": "staff_setup_wizard.urls",
+    },
+    # #22 — Course Catalog Setup
+    {
+        "name":        "Course Catalog Setup",
+        "app_config":  "course_catalog_wizard.apps.CourseCatalogWizardConfig",
+        "url_prefix":  "api/v1/course-catalog-wizard/sessions/",
+        "urls_module": "course_catalog_wizard.urls",
+    },
+    # #23 — Rooms Setup
+    {
+        "name":        "Rooms Setup",
+        "app_config":  "room_setup_wizard.apps.RoomSetupWizardConfig",
+        "url_prefix":  "api/v1/room-setup-wizard/sessions/",
+        "urls_module": "room_setup_wizard.urls",
+    },
+    # #24 — Promotion Map Setup
+    {
+        "name":        "Promotion Map Setup",
+        "app_config":  "promotion_wizard.apps.PromotionWizardConfig",
+        "url_prefix":  "api/v1/promotion-wizard/sessions/",
+        "urls_module": "promotion_wizard.urls",
+    },
 ]
 
 # ------------------------------------------------------------------

@@ -31,6 +31,11 @@ export const WIZARD_MANIFEST = [
   { slug: "grade-scale-wizard",           title: "Grade Scale Setup",           path: "/grade-scale-setup" },
   { slug: "term-structure-wizard",        title: "Term Structure Setup",        path: "/term-structure-setup" },
   // ↓ Add new wizards here (one line, include path matching WIZARD_REGISTRY)
+  { slug: "section-scheduler-wizard",    title: "Section Scheduler Seed",      path: "/section-scheduler-setup" },
+  { slug: "staff-setup-wizard",          title: "Staff & Roles Setup",         path: "/staff-setup" },
+  { slug: "course-catalog-wizard",       title: "Course Catalog Setup",        path: "/course-catalog-setup" },
+  { slug: "room-setup-wizard",           title: "Rooms Setup",                 path: "/room-setup" },
+  { slug: "promotion-wizard",            title: "Promotion Map Setup",         path: "/promotion-setup" },
 ];
 
 /** Flat slug list — the frontend's commitment to which wizard slugs exist. */

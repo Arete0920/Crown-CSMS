@@ -45,6 +45,11 @@ WIZARD_ENDPOINTS = [
     ("grade_scale",                  "/api/v1/grade-scale-wizard/sessions/"),
     ("term_structure",               "/api/v1/term-structure-wizard/sessions/"),
     # Add new wizards here ↓
+    ("section_scheduler",            "/api/v1/section-scheduler-wizard/sessions/"),
+    ("staff_setup",                  "/api/v1/staff-setup-wizard/sessions/"),
+    ("course_catalog",               "/api/v1/course-catalog-wizard/sessions/"),
+    ("room_setup",                   "/api/v1/room-setup-wizard/sessions/"),
+    ("promotion",                    "/api/v1/promotion-wizard/sessions/"),
 ]
 
 
