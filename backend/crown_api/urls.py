@@ -88,6 +88,9 @@ urlpatterns = [
     # Platform Operations (super-admin, cross-tenant, no X-School-ID required)
     path("api/platform/", include("platform_ops.urls")),
 
+    # Subscriptions & Entitlements
+    path("api/v1/subscriptions/", include("subscriptions.api.urls")),
+
     # Integrations (webhooks, etc.)
     path("api/integrations/", include("integrations.urls")),
     
