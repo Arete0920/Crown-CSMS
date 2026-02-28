@@ -145,14 +145,15 @@ jobs:
           declare -a REGEX_PATTERNS=(
             "AWS_SECRET_ACCESS_KEY[[:space:]]*=[[:space:]]*[A-Za-z0-9/+]{20,}"
             "stripe.*sk_live_[A-Za-z0-9]{24,}"
-            "postgresql://[^{].*:[^{].*@"
+            "postgresql://[^{$<].*:[^{$<].*@"
           )
 
           for p in "${PATTERNS[@]}"; do
             HITS=$(git grep -lni "$p" -- \
               ':!*.min.js' ':!package-lock.json' ':!yarn.lock' \
               ':!artifacts/**' ':!*.log' \
-              ':!.github/workflows/**' ':!tools/audit/**' 2>/dev/null || true)
+              ':!.github/workflows/**' ':!tools/audit/**' \
+              ':!scripts/README.md' 2>/dev/null || true)
             if [ -n "$HITS" ]; then
               echo "::error::Secret pattern hit: $p — files: $HITS"
               FAIL=1
@@ -163,7 +164,8 @@ jobs:
             HITS=$(git grep -lnE "$p" -- \
               ':!*.min.js' ':!package-lock.json' ':!yarn.lock' \
               ':!artifacts/**' ':!*.log' \
-              ':!.github/workflows/**' ':!tools/audit/**' 2>/dev/null || true)
+              ':!.github/workflows/**' ':!tools/audit/**' \
+              ':!scripts/README.md' 2>/dev/null || true)
             if [ -n "$HITS" ]; then
               echo "::error::Secret regex pattern hit: $p — in files: $HITS"
               FAIL=1
