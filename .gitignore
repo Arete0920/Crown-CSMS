@@ -30,10 +30,14 @@ docs/demo-proof/**/tmp/
 db.sqlite3
 backend/db.sqlite3
 backend/ci.sqlite3
+backend/ci_audit.sqlite3
 _tmp/
 _local_proofs/
 app_logs/
 media/
+
+# Audit runner output (attach to PRs/tags manually)
+artifacts/
 
 # Editor/OS
 .vscode/

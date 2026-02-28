@@ -104,10 +104,16 @@ def check_tenant_tripwires(backend: Path) -> list[str]:
 
     Returns a list of violation strings (empty = pass).
     """
-    # Files where required=False is explicitly approved
+    # Files where required=False is explicitly approved.
+    # Each entry must be justified:
+    #   households/scoping.py        -- canonical resolver; it IS the required= source of truth
+    #   crown_api/tenant_guards.py   -- low-level guard that inspects the header before raising
+    #   tenants/tenant_context.py    -- thin wrapper; resolve_tenant() explicitly returns None
+    #                                   for middleware/platform callers that handle absence
     ALLOWED_REQUIRED_FALSE = {
         "households/scoping.py",
         "crown_api/tenant_guards.py",
+        "tenants/tenant_context.py",
     }
 
     violations: list[str] = []
