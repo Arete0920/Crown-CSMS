@@ -118,7 +118,23 @@ jobs:
           # Fail if pytest failed (tee masks exit code)
           grep -qE "^FAILED|error in" ../proof_pytest.txt && exit 1 || true
           grep -qE "[0-9]+ failed" ../proof_pytest.txt && exit 1 || true
-      
+
+      - name: "CrownMagus III: Mutation + Audit + Idempotency Proof"
+        run: |
+          cd backend
+          echo "--- CrownMagus III: Write-RBAC, Object-Level, Idempotency, Audit ---"
+          python -m pytest \
+            crown_api/tests/test_rbac_matrix_writes.py \
+            crown_api/tests/test_object_level_permissions.py \
+            crown_api/tests/test_idempotency_keys.py \
+            crown_api/tests/test_audit_log_contract.py \
+            -v --tb=short 2>&1 | tee ../proof_magus3.txt
+          # Surface summary
+          grep -E "passed|failed|error|warning" ../proof_magus3.txt | tail -5 || true
+          # Propagate failure (tee masks exit code)
+          grep -qE "^FAILED|error in" ../proof_magus3.txt && exit 1 || true
+          grep -qE "[0-9]+ failed" ../proof_magus3.txt && exit 1 || true
+
       - name: Capture proof artifacts
         if: always()
         run: |
@@ -133,6 +149,9 @@ jobs:
           echo "" >> proof_manifest.txt
           echo "--- pytest summary ---" >> proof_manifest.txt
           grep -E "passed|failed|error|warning" proof_pytest.txt | tail -5 >> proof_manifest.txt 2>/dev/null || echo "(pytest not captured)" >> proof_manifest.txt
+          echo "" >> proof_manifest.txt
+          echo "--- magus3 summary ---" >> proof_manifest.txt
+          grep -E "passed|failed|error|warning" proof_magus3.txt | tail -5 >> proof_manifest.txt 2>/dev/null || echo "(magus3 not captured)" >> proof_manifest.txt
       
       - name: Upload proof artifacts
         if: always()
@@ -142,6 +161,7 @@ jobs:
           path: |
             proof_health.json
             proof_pytest.txt
+            proof_magus3.txt
             proof_manifest.txt
           retention-days: 90
       
@@ -158,5 +178,6 @@ jobs:
           echo "Health check: PASSED"
           echo "Django check: PASSED"
           echo "Pytest:       PASSED"
+          echo "Magus III:    PASSED"
           echo "Artifacts:    proof-ceremony-${GITHUB_SHA}"
           echo "=========================================="
