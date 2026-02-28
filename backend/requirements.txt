@@ -38,3 +38,5 @@ redis>=5.0.0
 
 # Communications — Twilio SMS (optional; only needed if SMS channel enabled)
 twilio>=8.0.0
+# Payment orchestration — Stripe Connect (optional; only needed if payment_provider=stripe)
+stripe>=10.0.0

@@ -177,6 +177,10 @@ INSTALLED_APPS = [
     'transportation.apps.TransportationConfig',
     'msauth.apps.MsauthConfig',
     'board_oversight',
+    # Platform layer (multi-tenant SaaS scaling)
+    'tenants.apps.TenantsConfig',
+    'platform_ops.apps.PlatformOpsConfig',
+    'payments.apps.PaymentsConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
