@@ -16,6 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Runner env probe
+        shell: bash
+        working-directory: .
+        run: |
+          echo "HOST=$(hostname)"
+          echo "WHO=$(whoami)"
+          python3 --version || python --version || true
+          node --version || true
+          npm --version || true
+          docker --version || true
+          df -h || true
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

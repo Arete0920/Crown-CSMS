@@ -39,6 +39,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Runner env probe
+        run: |
+          echo "HOST=$(hostname)"
+          echo "WHO=$(whoami)"
+          python3 --version || python --version || true
+          node --version || true
+          npm --version || true
+          docker --version || true
+          df -h || true
       
       - name: Set up Python 3.12
         uses: actions/setup-python@v5

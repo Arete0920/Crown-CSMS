@@ -1,0 +1,30 @@
+# Crown2026 — RBAC matrix: read-only endpoints
+# Format: one URL path per line.
+# Lines starting with # are ignored.
+# These endpoints must NEVER return HTTP 500 for any role.
+#
+# Maintained by: CrownMagus0 full verification pack
+# Last updated: 2026-02-28
+
+# --- Core health ---
+/api/health/
+
+# --- Dashboard surfaces ---
+/api/v1/dashboards/finance/
+/api/v1/dashboards/admissions/
+/api/v1/dashboards/academics/
+
+# --- Board oversight (Mode A, read-only) ---
+/api/v1/board/metrics/
+/api/v1/board/dashboard/
+/api/v1/board/snapshots/
+/api/v1/board/packets/
+
+# --- Financial aid ---
+/api/v1/financial-aid/summary/
+
+# --- Households ---
+/api/v1/households/
+
+# --- Students ---
+/api/v1/students/
