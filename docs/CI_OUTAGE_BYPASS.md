@@ -104,9 +104,45 @@ git log --oneline -3
 & ".venv\Scripts\python.exe" tools\verify_backend_gate.py
 ```
 
-Post the output of Step 5 as a comment on the merged PR. That is the audit trail when CI logs are unavailable.
+Post the output of Step 5 as a comment on the merged PR using this exact template:
+
+```
+## Bypass audit trail
+
+- **Merged PR:** #<NUMBER>
+- **main SHA after merge:** <SHA>
+- **Bypass reason:** GitHub Actions minutes exhausted — no runners assigned (all checks failed in < 5s)
+- **Local cert gates run on:** origin/main @ <SHA>
+
+| Gate | Result |
+|---|---|
+| `manage.py check` | PASS |
+| `pytest` (N/N) | PASS |
+| `verify_backend_gate.py` | PASS |
+| `npm run build` | PASS |
+```
 
 **Do NOT** toggle `enforce_admins` on/off as the bypass mechanism. The ruleset bypass is the correct lever. `enforce_admins` governs structural rules (linear history, PR required), not CI checks.
+
+---
+
+## Detecting quota exhaustion in 30 seconds
+
+Run this immediately when checks fail on a PR:
+
+```powershell
+# One-liner: get runner_name for each job in the most recent run on your branch
+$runId = (gh run list --branch (git branch --show-current) --limit 1 --json databaseId | ConvertFrom-Json)[0].databaseId
+gh api repos/tcmegahan/Crown2026/actions/runs/$runId/jobs | ConvertFrom-Json |
+  Select-Object -ExpandProperty jobs |
+  Select-Object name, conclusion, @{n='elapsed_s';e={ ([datetime]$_.completedAt - [datetime]$_.startedAt).TotalSeconds }}, runner_name |
+  Format-Table
+```
+
+**Quota exhaustion signature:** all jobs show `elapsed_s < 10` AND `runner_name` is blank.  
+**Real failure signature:** at least one job shows `elapsed_s > 30` AND `runner_name` is populated.
+
+Once confirmed exhausted → proceed to Bypass procedure above.
 
 ---
 
@@ -132,14 +168,20 @@ gh api repos/tcmegahan/Crown2026/actions/runs/<RUN_ID>/jobs |
 
 The `main-protection` ruleset pins `integration_id = 15368` (GitHub Actions app) on each required check. This ID is stable for the repo but:
 
-- If you ever see required checks "disappear" from PRs despite being listed in the ruleset, verify the integration_id still matches the GitHub Actions app for this repo:
+- If you ever see required checks "disappear" from PRs despite being listed in the ruleset, run this sanity check:
   ```powershell
-  # Check current integration_id in ruleset
+  # Show check contexts GitHub actually sees on the current HEAD
+  $sha = git rev-parse HEAD
+  (gh api repos/tcmegahan/Crown2026/commits/$sha/check-runs | ConvertFrom-Json).check_runs.name | Sort-Object -Unique
+
+  # Show what the ruleset expects
   (gh api repos/tcmegahan/Crown2026/rulesets/12558681 | ConvertFrom-Json).rules |
     Where-Object { $_.type -eq "required_status_checks" } |
     Select-Object -ExpandProperty parameters |
-    Select-Object -ExpandProperty required_status_checks
+    Select-Object -ExpandProperty required_status_checks |
+    Select-Object context, integration_id
   ```
+  If the two lists diverge, the `integration_id` has likely drifted.
 - Safe fallback: remove `integration_id` from each check entry in the ruleset (context name alone is sufficient for matching).
 
 ---
