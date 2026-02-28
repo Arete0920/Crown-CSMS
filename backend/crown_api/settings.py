@@ -183,6 +183,8 @@ INSTALLED_APPS = [
     'payments.apps.PaymentsConfig',
     # Subscriptions & Entitlements
     'subscriptions.apps.SubscriptionsConfig',
+    # Signal Engine + Crown Compass 2.0 + Intervention Workflow
+    'signals',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 

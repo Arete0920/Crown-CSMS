@@ -197,6 +197,9 @@ urlpatterns = [
     path("director/actions/", director_actions, name="director_actions"),
     path("director/timeline/", director_timeline, name="director_timeline"),
     path("director/force_seed_user/", force_seed_user, name="force_seed_user"),
+
+    # Signal Engine + Crown Compass 2.0 + Intervention Workflow
+    path("signals/", include("signals.urls")),
 ]
 
 

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Grid, Alert, Chip } from "@mui/material";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
@@ -6,6 +7,8 @@ import BoardCard from "../components/board/BoardCard.jsx";
 import BoardTrendChart from "../components/board/BoardTrendChart.jsx";
 import BoardSimpleTable from "../components/board/BoardSimpleTable.jsx";
 import { useBoardExecutiveData } from "../hooks/useBoardExecutiveData.js";
+import { fetchBoardCompass, fetchBoardRiskCounts } from "../api/signalsApi.js";
+import BoardCompassCard from "../components/board/BoardCompassCard.jsx";
 
 /* ── Auth helpers (matches Crown sessionStorage pattern) ─────────────── */
 function getSession() {
@@ -62,6 +65,25 @@ const driversColumns = [
 export default function BoardExecutiveDashboard() {
   const { token, schoolId } = getSession();
   const { data, loading, live, error } = useBoardExecutiveData({ token, schoolId });
+
+  const [compass, setCompass] = useState(null);
+  const [riskCounts, setRiskCounts] = useState(null);
+
+  useEffect(() => {
+    let dead = false;
+    async function load() {
+      const [c, r] = await Promise.all([
+        fetchBoardCompass({ token, schoolId }),
+        fetchBoardRiskCounts({ token, schoolId }),
+      ]);
+      if (!dead) {
+        setCompass(c);
+        setRiskCounts(r);
+      }
+    }
+    load();
+    return () => { dead = true; };
+  }, [token, schoolId]);
 
   return (
     <CrownLayout
@@ -137,8 +159,8 @@ export default function BoardExecutiveDashboard() {
         </Grid>
       </DashboardSection>
 
-      {/* ── Crown Compass ────────────────────────────────────────────── */}
-      <DashboardSection title="Crown Compass">
+      {/* ── Crown Compass — demo signals (DEMO fallback data) ─────── */}
+      <DashboardSection title="Crown Compass — Signals">
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>
             <BoardCard
@@ -158,6 +180,46 @@ export default function BoardExecutiveDashboard() {
           </Grid>
         </Grid>
       </DashboardSection>
+
+      {/* ── Crown Compass 2.0 — live composite indexes ────────────── */}
+      {compass && (
+        <DashboardSection title="Crown Compass 2.0">
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <BoardCompassCard compass={compass} />
+            </Grid>
+          </Grid>
+        </DashboardSection>
+      )}
+
+      {/* ── Student Risk Distribution ─────────────────────────────── */}
+      {riskCounts && (
+        <DashboardSection title="Student Risk Distribution">
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <BoardKpiTile
+                label="Low Risk"
+                value={riskCounts.low}
+                meta={`As of ${riskCounts.as_of_date}`}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <BoardKpiTile
+                label="Medium Risk"
+                value={riskCounts.med}
+                meta="Needs monitoring"
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <BoardKpiTile
+                label="High Risk"
+                value={riskCounts.high}
+                meta="Intervention priority"
+              />
+            </Grid>
+          </Grid>
+        </DashboardSection>
+      )}
     </CrownLayout>
   );
 }
