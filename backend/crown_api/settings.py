@@ -181,6 +181,8 @@ INSTALLED_APPS = [
     'tenants.apps.TenantsConfig',
     'platform_ops.apps.PlatformOpsConfig',
     'payments.apps.PaymentsConfig',
+    # Subscriptions & Entitlements
+    'subscriptions.apps.SubscriptionsConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
