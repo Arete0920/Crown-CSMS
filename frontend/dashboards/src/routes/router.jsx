@@ -57,6 +57,8 @@ import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
 import HumanResources from '../pages/HumanResources.jsx';
 import SafetyDashboard from '../pages/SafetyDashboard.jsx';
 import BoardExecutiveDashboard from '../pages/BoardExecutiveDashboard.jsx';
+import AftercareRosterPage from '../pages/AftercareRosterPage.jsx';
+import AftercareSetupWizard from '../pages/wizards/AftercareSetupWizard.jsx';
 import { wizardRoutes } from './wizards.js';
 import WizardHub from '../pages/WizardHub.jsx';
 
@@ -276,6 +278,14 @@ export const router = createBrowserRouter([
   {
     path: '/board/executive',
     element: <BoardExecutiveDashboard />,
+  },
+  {
+    path: '/aftercare/roster',
+    element: <AftercareRosterPage />,
+  },
+  {
+    path: '/wizards/aftercare-setup',
+    element: <AftercareSetupWizard />,
   },
 ]);
 
