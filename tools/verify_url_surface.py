@@ -11,7 +11,7 @@ Exit codes:
   1 — unexpected error
 
 Usage (from repo root):
-  .\.venv\Scripts\python.exe tools\verify_url_surface.py
+  .venv\\Scripts\\python.exe tools\\verify_url_surface.py
 """
 from __future__ import annotations
 
