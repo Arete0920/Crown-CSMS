@@ -71,6 +71,10 @@ tools/_step1a.py
 
 # PR body scratch files (created by CI agent during PR workflow)
 pr_*.txt
+# Temp agent/automation scratch files
+_*.txt
+commit_result.txt
+PYTEST_PROOF_*.txt
 
 # CI-generated build artifact (written by CI before npm build, not a source file)
 frontend/dashboards/public/build.json
