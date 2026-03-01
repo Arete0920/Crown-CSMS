@@ -26,6 +26,8 @@ def health(request):
     env_name = os.getenv("CROWN_ENV", "dev")
     build_time = datetime.now(timezone.utc).isoformat()
     version = os.getenv("APP_VERSION", "crown-0.3.0")
+    deploy_run_id = os.getenv("DEPLOY_RUN_ID", "")
+    deploy_workflow = os.getenv("DEPLOY_WORKFLOW", "")
     
     # Quick DB check
     db_status = "ok"
@@ -46,6 +48,8 @@ def health(request):
         "build_time_utc": build_time,
         "version": version,
         "db": db_status,
+        "deploy_run_id": deploy_run_id,
+        "deploy_workflow": deploy_workflow,
     })
 
 
