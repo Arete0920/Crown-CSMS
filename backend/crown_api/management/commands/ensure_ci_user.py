@@ -2,6 +2,7 @@
 Management command: ensure_ci_user
 
 Creates or updates the CrownUser row used by CI smoke testing.
+Also creates the demo school (deterministic UUID) if CI_SMOKE_SCHOOL_ID is set.
 Safe to run repeatedly — fully idempotent.
 
 Reads from environment variables:
@@ -12,6 +13,7 @@ Reads from environment variables:
 Called automatically from startup.sh when CI_SMOKE_USERNAME is set.
 """
 import os
+from uuid import UUID
 
 from django.contrib.auth.hashers import make_password
 from django.core.management.base import BaseCommand
@@ -33,6 +35,17 @@ class Command(BaseCommand):
                 "ensure_ci_user: CI_SMOKE_USERNAME or CI_SMOKE_PASSWORD not set — skipping"
             )
             return
+
+        # Ensure the demo school exists in prod DB before creating the user
+        if school_id:
+            try:
+                from core.seed_helpers import ensure_deterministic_school
+                school_uuid = UUID(school_id)
+                school, school_created = ensure_deterministic_school(school_uuid)
+                verb = "Created" if school_created else "Found"
+                self.stdout.write(f"ensure_ci_user: {verb} school {school_uuid}")
+            except Exception as exc:
+                self.stdout.write(f"ensure_ci_user: WARNING — could not ensure school: {exc}")
 
         password_hash = make_password(password)
 
