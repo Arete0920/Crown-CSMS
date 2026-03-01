@@ -23,6 +23,7 @@ env:
 
 jobs:
   build-and-deploy:
+    environment: prod
     runs-on: ubuntu-latest
     outputs:
       deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
