@@ -33,8 +33,8 @@ class Gate1CAuthProofTestCase(TestCase):
     def test_whoami_requires_authentication(self):
         """Whoami endpoint requires authentication (default-deny)."""
         response = self.client.get('/api/system/whoami/')
-        # DRF IsAuthenticated returns 403 Forbidden for unauthenticated requests
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # DRF IsAuthenticated returns 401 when JWTAuthentication is configured
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
     
     def test_whoami_returns_user_info(self):
         """Authenticated whoami returns user data."""

@@ -293,10 +293,10 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertIsNotNone(r.data["academic_year"])
 
     def test_drilldown_missing_auth(self):
-        """Missing auth returns 403."""
+        """Missing auth returns 401 (JWT configured — DRF emits 401 not 403)."""
         self.client.force_authenticate(user=None)
         r = self.client.get(
             "/api/v1/admissions/drilldown/",
             HTTP_X_SCHOOL_ID=str(self.school_id),
         )
-        self.assertEqual(r.status_code, 403)
+        self.assertEqual(r.status_code, 401)
