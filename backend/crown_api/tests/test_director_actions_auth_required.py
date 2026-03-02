@@ -54,9 +54,9 @@ class DirectorActionsAuthRequiredTests(TestCase):
             "ids": [str(award.id)],
         }
 
-        # 1) Unauthenticated -> 403 (IsAuthenticated at DRF layer)
+        # 1) Unauthenticated -> 401 (JWT configured — DRF emits 401, not 403)
         resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json")
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
         award.refresh_from_db()
         self.assertIsNone(award.ledger_entry_id)

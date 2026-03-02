@@ -101,9 +101,9 @@ class BillingSummaryApiTests(TestCase):
         self.assertEqual(no.status_code, 404)
 
     def test_unauth_403(self):
-        # IsAuthenticated enforced at DRF permission layer → 403 for unauthenticated
+        # IsAuthenticated + JWT configured → DRF emits 401 (not 403) for unauthenticated
         resp = self.client.get(f"/api/households/{self.household_a.id}/billing/summary/")
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
     def test_recent_invoices_limited_and_contains_invoice_number(self):
         self.client.force_authenticate(user=self.staff_user)
