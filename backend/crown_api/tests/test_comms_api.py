@@ -191,6 +191,6 @@ class CommsApiTests(TestCase):
         self.assertEqual(resp.status_code, 404)
 
     def test_threads_unauth_403(self):
-        # IsAuthenticated enforced at DRF permission layer → 403 for unauthenticated
+        # IsAuthenticated + JWT configured → DRF emits 401 (not 403) for unauthenticated
         resp = self.client.get("/api/threads/")
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)

@@ -94,8 +94,8 @@ class StudentsApiTests(TestCase):
         self.assertEqual(no.status_code, 404)
 
     def test_students_unauth_403(self):
-        """Unauthenticated requests return 403 (DRF default)."""
+        """Unauthenticated requests return 401 (JWT auth configured — DRF emits 401 not 403)."""
         resp = self.client.get("/api/students/")
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
         resp2 = self.client.get(f"/api/students/{self.student_a.id}/")
-        self.assertEqual(resp2.status_code, 403)
+        self.assertEqual(resp2.status_code, 401)
