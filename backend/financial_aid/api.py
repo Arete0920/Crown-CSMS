@@ -6,11 +6,12 @@ import logging
 from decimal import Decimal
 from uuid import UUID
 
-from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Sum
 from django.http import JsonResponse, HttpRequest
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ def _json_error(message: str, status: int = 400) -> JsonResponse:
 
 def _envelope(data, status: int = 200) -> JsonResponse:
     return JsonResponse({"ok": True, "data": data}, status=status, safe=False)
+
 
 
 def _parse_json(request: HttpRequest):
@@ -64,9 +66,9 @@ def _award_to_dict(w: AidAward) -> dict:
     }
 
 
-@login_required
-@require_http_methods(["GET"])
-def aid_applications(request: HttpRequest):
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def aid_applications(request):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
@@ -75,9 +77,9 @@ def aid_applications(request: HttpRequest):
     return _envelope([_app_to_dict(a) for a in qs], status=200)
 
 
-@login_required
-@require_http_methods(["GET"])
-def aid_awards(request: HttpRequest):
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def aid_awards(request):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
@@ -86,9 +88,9 @@ def aid_awards(request: HttpRequest):
     return _envelope([_award_to_dict(w) for w in qs], status=200)
 
 
-@login_required
-@require_http_methods(["POST"])
-def disburse_to_billing_run(request: HttpRequest, billing_run_id: str):
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def disburse_to_billing_run(request, billing_run_id: str):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
