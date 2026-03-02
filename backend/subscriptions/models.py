@@ -68,11 +68,12 @@ class PlanEntitlement(models.Model):
 
 class TenantSubscription(models.Model):
     """
-    One active subscription per tenant/school.
+    Subscription history per tenant/school.
     school_id aligns with the X-School-ID tenant header UUID.
-    ended_at=null means currently active.
+    ended_at=null means currently active; each plan change ends the previous
+    row and creates a new one, so a school may have multiple historical rows.
     """
-    school_id = models.UUIDField(db_index=True, unique=True)
+    school_id = models.UUIDField(db_index=True)
     plan = models.ForeignKey(Plan, on_delete=models.PROTECT, related_name="subscriptions")
     started_at = models.DateTimeField(default=timezone.now)
     ended_at = models.DateTimeField(null=True, blank=True)  # null = active

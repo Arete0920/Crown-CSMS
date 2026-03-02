@@ -308,12 +308,13 @@ DRF_DEFAULT_RENDERERS = (
 # DRF Configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        # 1. Microsoft Entra ID bearer tokens (MSAL frontend)
-        "core.auth.authentication.AADBearerAuthentication",
-        # 2. Django session (server-side OAuth2 / msauth flow)
-        "rest_framework.authentication.SessionAuthentication",
-        # 3. Crown custom JWT (existing login endpoint)
+        # JWT first — its authenticate_header() returns 'Bearer realm="api"'
+        # which causes DRF to emit 401 (not 403) for unauthenticated requests.
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Microsoft Entra ID bearer tokens (MSAL frontend)
+        "core.auth.authentication.AADBearerAuthentication",
+        # Django session (server-side OAuth2 / msauth flow)
+        "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",

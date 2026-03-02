@@ -230,7 +230,18 @@ def payment_intent_create(request):
     """
     POST — Create a pending FinancePayment record (intent before processor settlement).
     Body: amount_cents, processor (optional), idempotency_key (optional)
+
+    Requires an explicit X-School-ID header. Falls back to user.school_id are
+    intentionally NOT accepted here to prevent payment creation without an
+    explicit tenant context assertion.
     """
+    # Require the school header to be explicitly present — never fall back to
+    # user.school_id for payment operations (tenant isolation requirement).
+    if "HTTP_X_SCHOOL_ID" not in request.META and "HTTP_X_CROWN_SCHOOL_ID" not in request.META:
+        return Response(
+            {"detail": "X-School-ID header is required for payment operations."},
+            status=400,
+        )
     school = get_request_school_id(request, required=True)
 
     try:
