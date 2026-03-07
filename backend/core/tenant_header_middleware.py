@@ -71,10 +71,19 @@ class TenantHeaderRequiredMiddleware:
             resolved = resolve_tenant_school_id(request)
             school_id = resolved.school_id
 
+            if resolved.source == "header_invalid":
+                return JsonResponse(
+                    {
+                        "detail": "Invalid X-School-Id (must be UUID).",
+                        "code": "invalid_tenant_header",
+                    },
+                    status=400,
+                )
+
             if not school_id:
                 return JsonResponse(
                     {
-                        "detail": "Missing tenant context. Provide X-School-Id header or authenticate with a school-scoped user.",
+                        "detail": "Missing required header: X-School-Id.",
                         "code": "missing_tenant",
                     },
                     status=400,
@@ -85,7 +94,7 @@ class TenantHeaderRequiredMiddleware:
             if school is None:
                 return JsonResponse(
                     {
-                        "detail": "Tenant school not found.",
+                        "detail": "Unknown X-School-Id.",
                         "code": "invalid_tenant",
                     },
                     status=404,
