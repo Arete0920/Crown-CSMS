@@ -16,7 +16,7 @@ class FinanceSummaryDashboard(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        school_id = get_dashboard_school_id(request, required=True)
+        school_id = get_dashboard_school_id(request, required=True, require_header=True)
 
         billed = (
             Invoice.objects.filter(school_id=school_id).aggregate(total=Sum("total_amount"))["total"]
