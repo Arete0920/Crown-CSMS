@@ -117,25 +117,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to Azure Web App (with ACR credentials)
+      - name: Deploy to Azure Web App (managed identity pull)
         run: |
-          # Fetch ACR admin credentials at runtime so the App Service
-          # can pull the new image. webapps-deploy@v2 sets the image
-          # but does NOT configure registry auth — so the container
-          # gets ImagePullFailure unless we pass credentials here too.
-          ACR_USER=$(az acr credential show --name crownregistry --query username -o tsv 2>/dev/null)
-          ACR_PASS=$(az acr credential show --name crownregistry --query "passwords[0].value" -o tsv 2>/dev/null)
-
+          # ACR admin is disabled. The App Service system-assigned managed identity
+          # holds AcrPull on crownregistry — no credentials needed here.
           az webapp config container set \
             --name ${{ env.WEBAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --docker-registry-server-url https://${{ env.REGISTRY }} \
-            --docker-registry-server-user "$ACR_USER" \
-            --docker-registry-server-password "$ACR_PASS" \
             --docker-custom-image-name ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }} \
             --output none \
             --only-show-errors
-          echo "✓ Container image + ACR credentials set: dev-${{ env.DEPLOY_SHA_SHORT }}"
+          echo "✓ Container image set: dev-${{ env.DEPLOY_SHA_SHORT }} (managed identity pull)"
 
           # Restart the app so it picks up the new image immediately
           az webapp restart \

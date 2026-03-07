@@ -166,3 +166,6 @@ def compute_account_balance(account: LedgerAccount) -> Decimal:
 		or Decimal("0.00")
 	)
 	return charges_total - alloc_total
+
+# Stage 2 — Revenue Integrity models registered under the ledger app
+from .models_dunning import DunningRecord, Chargeback, DailyPayoutAudit  # noqa: E402,F401

@@ -1,0 +1,33 @@
+# Crown2026 – Docker Compose (dev + wallet service)
+#
+# Usage:
+#   cp .env.example .env          # fill in real values
+#   cp local.secrets.ps1.example local.secrets.env  # or use env file
+#   docker compose up apple-pass
+#
+# See services/wallet/apple-pass-service/template/README.md for cert setup.
+
+version: "3.9"
+
+services:
+  # ── Apple Wallet pass signer ─────────────────────────────────────────────
+  apple-pass:
+    build:
+      context: ./services/wallet/apple-pass-service
+      dockerfile: Dockerfile
+    environment:
+      - APPLE_TEAM_IDENTIFIER=${APPLE_TEAM_IDENTIFIER:-}
+      - APPLE_PASS_TYPE_IDENTIFIER=${APPLE_PASS_TYPE_IDENTIFIER:-}
+      - APPLE_PASS_CERT_P12_PATH=/certs/pass-cert.p12
+      - APPLE_PASS_CERT_P12_PASSWORD=${APPLE_PASS_CERT_P12_PASSWORD:-}
+      - APPLE_WWDR_PEM_PATH=/certs/wwdr.pem
+      - APPLE_PASS_TEMPLATE_PATH=/template
+      - PORT=7071
+    volumes:
+      # Mount your signing certs (NEVER commit these files)
+      - ./secrets/apple:/certs:ro
+      # Mount pass template assets (safe to commit; images added by operator)
+      - ./services/wallet/apple-pass-service/template:/template:ro
+    ports:
+      - "7071:7071"
+    restart: unless-stopped

@@ -25,6 +25,7 @@ jobs:
   build-and-deploy:
     environment: prod
     runs-on: ubuntu-latest
+    environment: production
     outputs:
       deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
       deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
@@ -91,15 +92,19 @@ jobs:
       - name: Verify AcrPull Identity (Guardrail)
         run: |
           echo "Verifying Managed Identity has AcrPull on registry..."
-          PRINCIPAL_ID=$(az webapp identity show -g crown-rg -n crown2026-api-dev --query principalId -o tsv)
+          PRINCIPAL_ID=$(az webapp identity show -g ${{ env.RESOURCE_GROUP }} -n ${{ env.WEBAPP_NAME }} --query principalId -o tsv)
           ACR_ID=$(az acr show -n crownregistry --query id -o tsv)
+          if [ -z "$PRINCIPAL_ID" ]; then
+            echo "ERROR: App Service has no managed identity assigned"
+            exit 1
+          fi
           if ! az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID | grep -q AcrPull; then
             echo "ERROR: Managed Identity does not have AcrPull role on ACR"
             echo "Principal: $PRINCIPAL_ID"
             echo "ACR: $ACR_ID"
             exit 1
           fi
-          echo "✓ AcrPull verified"
+          echo "✓ AcrPull verified for ${{ env.WEBAPP_NAME }} ($PRINCIPAL_ID)"
 
       - name: Bake BUILD_SHA into artifact
         run: |
@@ -244,7 +249,7 @@ jobs:
         run: |
           sleep 30
           for i in {1..30}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health/)
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
             if [ "$response" == "200" ]; then
               echo "✅ Health check passed"
               exit 0
@@ -261,7 +266,7 @@ jobs:
           WANT_SHA: ${{ env.DEPLOY_SHA }}
         run: |
           set -euo pipefail
-          URL="https://crown-api-prod.azurewebsites.net/health/"
+          URL="https://crown-api-prod.azurewebsites.net/api/health/"
           echo "Polling $URL for build_sha match (up to 5 min)..."
           for attempt in $(seq 1 20); do
             BODY="$(curl -fsS --max-time 10 "$URL" 2>/dev/null || true)"

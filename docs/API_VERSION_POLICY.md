@@ -1,0 +1,54 @@
+# Crown2026 — API Version & Deprecation Policy
+
+**Version:** 1.0  
+**Effective:** 2026-02-28  
+**Owner:** Engineering
+
+---
+
+## Version Support Window
+
+| Rule | Value |
+|------|-------|
+| Minimum support window | **18 months** from GA release |
+| Deprecation notice period | **6 months** before removal |
+| Breaking change policy | Major version bump required |
+
+---
+
+## Current API Versions
+
+| Version | Status | GA Date | End of Life |
+|---------|--------|---------|-------------|
+| `/api/v1/` | Active (deprecation signalled) | 2025-01-01 | 2027-01-01 |
+| `/api/` | Legacy aliases | — | Aligns with v1 |
+
+---
+
+## Deprecation Header
+
+All responses on deprecated API paths include:
+
+```
+X-API-Deprecated-After: 2027-01-01
+```
+
+Middleware: `crown_api.middleware.api_version.APIVersionMiddleware`
+
+---
+
+## Breaking Change Process
+
+1. Open RFC issue with `api-breaking-change` label.
+2. Announce in release notes ≥ 6 months before removal.
+3. Bump major version (`/api/v2/`).
+4. Maintain old version for overlap window.
+5. Remove after EOL date with server-level 410 Gone.
+
+---
+
+## Versioning Rules
+
+- **Non-breaking** (additive fields, new optional params): no version bump required.
+- **Breaking** (removed fields, changed types, removed endpoints): major version bump.
+- All public API changes must be documented in `RELEASE_NOTES.md`.

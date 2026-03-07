@@ -400,3 +400,6 @@ class RolePermission(BaseModel):
 
 # Ensure SeedRun is registered under the core app
 from .models_seed import SeedRun  # noqa: E402,F401
+
+# Data retention policies — registered under core app
+from .models_retention import DataRetentionPolicy  # noqa: E402,F401

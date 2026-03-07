@@ -1,0 +1,14 @@
+{
+  "name": "crown-apple-pass-service",
+  "version": "0.1.0",
+  "description": "Microservice: signs Apple Wallet .pkpass files for Crown event tickets.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "passkit-generator": "^3.2.0"
+  }
+}

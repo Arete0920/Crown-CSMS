@@ -1,0 +1,31 @@
+"""
+Management command: enforce_grace_period
+
+Suspends households that have exceeded the configured grace period.
+
+Usage:
+    python manage.py enforce_grace_period
+
+Cron (daily at 03:00 UTC):
+    0 3 * * * /app/.venv/bin/python /app/manage.py enforce_grace_period
+"""
+from django.core.management.base import BaseCommand
+
+from billing.services_grace import enforce_grace_period
+
+
+class Command(BaseCommand):
+    help = "Suspend households that have exceeded the grace period after delinquency."
+
+    def handle(self, *args, **options):
+        self.stdout.write("Enforcing grace period...")
+        result = enforce_grace_period()
+        msg = (
+            f"Grace period enforcement complete — "
+            f"suspended: {result['suspended_count']} "
+            f"(grace: {result['grace_days']} days)"
+        )
+        if result["suspended_count"] > 0:
+            self.stdout.write(self.style.WARNING(msg))
+        else:
+            self.stdout.write(self.style.SUCCESS(msg))

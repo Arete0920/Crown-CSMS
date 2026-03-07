@@ -46,8 +46,13 @@ from crown_api.views_scheduling import terms_list, term_sections, student_schedu
 from crown_api.views_comms import threads_list, thread_detail
 from applications import api as applications_api
 from ledger import api as ledger_api
+from ledger import api_finance as finance_api
 from academics import api as academics_api
 from billing import api as billing_api
+from onboarding import api_onboarding
+from board_oversight import api_governance
+from support import api_support
+from analytics import api_health
 
 urlpatterns = [
     # Permission-derived navigation
@@ -151,6 +156,13 @@ urlpatterns = [
     # Phase 2 invariants — read-only sanity check, tenant-scoped
     path("ledger/invariants/", ledger_api.ledger_invariants, name="ledger-invariants"),
 
+    # Stage 2 — Finance & Revenue Integrity (CFO dashboard endpoints)
+    path("v1/finance/kpis/", finance_api.finance_kpis, name="finance-kpis"),
+    path("v1/finance/chargebacks/", finance_api.chargeback_metrics, name="finance-chargebacks"),
+    path("v1/finance/monthly-summary/", finance_api.monthly_financial_summary, name="finance-monthly-summary"),
+    path("v1/finance/payout-audit/", finance_api.payout_audit_list, name="finance-payout-audit"),
+    path("v1/finance/dunning/", finance_api.dunning_status, name="finance-dunning"),
+
 
     path("academics/courses/", academics_api.courses, name="academics-courses"),
     path("academics/sections/", academics_api.sections, name="academics-sections"),
@@ -204,6 +216,28 @@ urlpatterns = [
     path("aftercare/", include("aftercare.urls")),
     # Finance Setup (Policy Wizard)
     path("v1/finance-setup/", include("finance_setup.urls")),
+
+    # ── Stage 3: Onboarding + Import Engine ──────────────────────────────
+    path("v1/onboarding/<str:school_id>/progress/", api_onboarding.onboarding_progress, name="onboarding-progress"),
+    path("v1/onboarding/<str:school_id>/tasks/<int:task_id>/complete/", api_onboarding.mark_task_complete, name="onboarding-task-complete"),
+    path("v1/onboarding/<str:school_id>/can-activate/", api_onboarding.activation_gate, name="onboarding-activation-gate"),
+    path("v1/help/<slug:slug>/", api_onboarding.help_article, name="help-article"),
+
+    # ── Stage 4: Board Intelligence ──────────────────────────────────────
+    path("v1/board/packet/download/", api_governance.download_board_packet, name="board-packet-download"),
+    path("v1/board/compass/", api_governance.compass_executive, name="board-compass"),
+    path("v1/board/initiatives/", api_governance.initiative_summary, name="board-initiatives"),
+    path("v1/board/trends/", api_governance.board_trends, name="board-trends"),
+    path("v1/board/roadmap/", api_governance.public_roadmap, name="board-roadmap"),
+    path("v1/board/releases/", api_governance.release_notes, name="board-releases"),
+
+    # ── Stage 5: Support, Health, Export, Status ─────────────────────────
+    path("v1/support/tickets/", api_support.tickets, name="support-tickets"),
+    path("v1/support/tickets/<int:ticket_id>/resolve/", api_support.resolve_ticket, name="support-resolve-ticket"),
+    path("v1/support/escalation/run/", api_support.run_escalation, name="support-run-escalation"),
+    path("v1/analytics/health/", api_health.customer_health, name="analytics-customer-health"),
+    path("v1/analytics/export/", api_health.export_school, name="analytics-export"),
+    path("v1/status/", api_health.public_status, name="public-status"),
 ]
 
 
