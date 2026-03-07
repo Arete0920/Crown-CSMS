@@ -19,6 +19,8 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from admissions.models import AdmissionsApplication
+from core.models import School
+from households.scoping import get_request_school_id
 
 
 def _require_staff(request):
@@ -39,6 +41,9 @@ def _require_staff(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def enroll_applicant(request):
+    school_id = get_request_school_id(request, required=True)  # 400 if missing, 404 if wrong tenant
+    school = School.objects.get(id=school_id)
+
     denied = _require_staff(request)
     if denied is not None:
         return denied
@@ -57,7 +62,7 @@ def enroll_applicant(request):
 
     try:
         app = AdmissionsApplication.objects.select_related("sis_student").get(
-            id=application_id
+            id=application_id, school=school
         )
     except AdmissionsApplication.DoesNotExist:
         return Response(

@@ -4,18 +4,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
+from core.models import School
 from core.permissions import user_has_permission
+from households.scoping import get_request_school_id
 from .models import FinancialAidApplication, AidAward, AidBucket
-from .tenant import require_school_id
 
 class FinancialAidSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        school = getattr(request, "school", None)
+        # Canonical scoping: missing header -> 400, wrong-tenant non-staff -> 404.
+        school_id = get_request_school_id(request, required=True)
+        school = School.objects.get(id=school_id)
         if not user_has_permission(request.user, "financial_aid.view", school=school):
             return Response({"detail": "Permission denied."}, status=403)
-        school_id = require_school_id(request)
         academic_year = request.query_params.get("academic_year")
 
         # If academic_year not provided, use latest year for this school
@@ -100,14 +102,15 @@ class FinancialAidDrilldownView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        school = getattr(request, "school", None)
+        # Canonical scoping: missing header -> 400, wrong-tenant non-staff -> 404.
+        school_id = get_request_school_id(request, required=True)
+        school = School.objects.get(id=school_id)
         if not user_has_permission(request.user, "financial_aid.view", school=school):
             return Response({"detail": "Permission denied."}, status=403)
         # Rationale is sensitive — only visible to holders of financial_aid.view_rationale
         can_see_rationale = user_has_permission(
             request.user, "financial_aid.view_rationale", school=school
         )
-        school_id = require_school_id(request)
         academic_year = request.query_params.get("academic_year")
         bucket = request.query_params.get("bucket")  # optional
 

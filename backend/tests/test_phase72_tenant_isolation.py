@@ -233,3 +233,123 @@ class Phase72DisciplineTenantTests(_TenantBase):
         """No credentials -> 401 or 403 (DRF bearer-token auth; 403 is normal)."""
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
         self.assertIn(resp.status_code, (401, 403))
+
+
+# ---------------------------------------------------------------------------
+# 4. Financial Aid -- CANONICAL scoping (Phase 7.2B.2 remediated)
+#    Endpoint: GET /api/v1/financial-aid/summary/
+#    File:     backend/financial_aid/views.py
+# ---------------------------------------------------------------------------
+
+class Phase72FinancialAidTenantTests(_TenantBase):
+    """
+    Phase 7.2B.2: Financial Aid upgraded to canonical get_request_school_id() scoping.
+    Scoping now fires before permission check; wrong-tenant -> 404.
+    """
+
+    URL = "/api/v1/financial-aid/summary/"
+
+    def test_missing_header_returns_400(self):
+        """No X-School-Id -> MissingSchoolContext (HTTP 400). Uses user_noschool."""
+        self.client.force_authenticate(user=self.user_noschool)
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, 400)
+
+    def test_correct_school_scoping_passes(self):
+        """Correct school header -> scoping passes (200 or 403 from permission check)."""
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
+        self.assertIn(resp.status_code, (200, 403))
+
+    def test_wrong_school_nonstaff_returns_404(self):
+        """Non-staff user_a with school_b header -> 404 (canonical cross-tenant guard)."""
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_b.id))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_unauthenticated_returns_401_or_403(self):
+        """No credentials -> 401 or 403 (DRF bearer-token auth behaviour)."""
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
+        self.assertIn(resp.status_code, (401, 403))
+
+
+# ---------------------------------------------------------------------------
+# 5. Admissions -- CANONICAL scoping (Phase 7.2B.3 remediated)
+#    Endpoint: GET /api/admissions/applications/
+#    File:     backend/admissions/views_admissions_links.py
+#
+#    Note: enroll/ (views_enroll.py) and applications/<id>/ use the identical
+#    canonical pattern; scoping fires before staff/permission checks in all three.
+# ---------------------------------------------------------------------------
+
+class Phase72AdmissionsApplicationsTenantTests(_TenantBase):
+    """
+    Phase 7.2B.3: Admissions applications/ upgraded to canonical get_request_school_id().
+    Scoping fires before staff check; wrong-tenant -> 404, missing header -> 400.
+    """
+
+    URL = "/api/admissions/applications/"
+
+    def test_missing_header_returns_400(self):
+        """No X-School-Id -> MissingSchoolContext (HTTP 400). Uses user_noschool."""
+        self.client.force_authenticate(user=self.user_noschool)
+        resp = self.client.get(self.URL)
+        self.assertEqual(resp.status_code, 400)
+
+    def test_correct_school_scoping_passes(self):
+        """Correct school header -> scoping passes (403 from staff check for non-staff user)."""
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
+        self.assertIn(resp.status_code, (200, 403))
+
+    def test_wrong_school_nonstaff_returns_404(self):
+        """Non-staff user_a with school_b header -> 404 (canonical cross-tenant guard)."""
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_b.id))
+        self.assertEqual(resp.status_code, 404)
+
+    def test_unauthenticated_returns_401_or_403(self):
+        """No credentials -> 401 or 403 (DRF bearer-token auth behaviour)."""
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
+        self.assertIn(resp.status_code, (401, 403))
+
+
+class Phase72AdmissionsEnrollTenantTests(_TenantBase):
+    """
+    Phase 7.2B.3: Admissions enroll/ upgraded to canonical get_request_school_id().
+    Scoping fires before staff check; no request body required for scoping assertions.
+    """
+
+    URL = "/api/admissions/enroll/"
+
+    def test_missing_header_returns_400(self):
+        """No X-School-Id -> MissingSchoolContext (HTTP 400). Scoping fires before body parse."""
+        self.client.force_authenticate(user=self.user_noschool)
+        resp = self.client.post(self.URL, data={}, content_type="application/json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_correct_school_scoping_passes(self):
+        """Correct school header -> scoping passes (403 from staff check for non-staff user)."""
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.post(
+            self.URL, data={}, content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(self.school_a.id),
+        )
+        self.assertIn(resp.status_code, (200, 400, 403))
+
+    def test_wrong_school_nonstaff_returns_404(self):
+        """Non-staff user_a with school_b header -> 404 (canonical cross-tenant guard)."""
+        self.client.force_authenticate(user=self.user_a)
+        resp = self.client.post(
+            self.URL, data={}, content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(self.school_b.id),
+        )
+        self.assertEqual(resp.status_code, 404)
+
+    def test_unauthenticated_returns_401_or_403(self):
+        """No credentials -> 401 or 403 (DRF bearer-token auth behaviour)."""
+        resp = self.client.post(
+            self.URL, data={}, content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(self.school_a.id),
+        )
+        self.assertIn(resp.status_code, (401, 403))

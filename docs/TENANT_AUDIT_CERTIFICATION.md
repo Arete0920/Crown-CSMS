@@ -1,11 +1,13 @@
 # Phase 7.2 / 7.2B — Tenant Isolation Audit Certification
 
-**Audit Phase:** 7.2 (audit) + 7.2B (discipline remediation)  
+**Audit Phase:** 7.2 (audit) + 7.2B (discipline remediation) + 7.2B.2 (financial aid remediation) + 7.2B.3 (admissions remediation)  
 **Branch:** `phase/7.2-tenant-isolation-audit`  
 **Base SHA (main at branch point):** `869d64e3ca01d16cb3a29e885bbdc08f131a9bb0`  
 **Phase 7.2B remediation SHA:** see PR #428 merged to main  
+**Phase 7.2B.2 remediation SHA:** see PR merged to main  
+**Phase 7.2B.3 remediation SHA:** see PR #429  
 **Test file:** `backend/tests/test_phase72_tenant_isolation.py`  
-**Test result:** 13 tests, 0 failures, 0 errors  
+**Test result:** 25 tests, 0 failures, 0 errors  
 **Status:** CERTIFIED ✓
 
 ---
@@ -29,7 +31,7 @@ Modules audited:
 | Exports | `/api/v1/exports/` | `exports/views.py` |
 | Financial Aid | `/api/v1/financial-aid/` | `financial_aid/views.py` |
 | Discipline | `/api/v1/discipline/` | `discipline/api/views.py` |
-| Admissions (dead code) | *(unregistered)* | `admissions/views_admissions_links.py`, `admissions/views_enroll.py` |
+| Admissions | `/api/admissions/` | `admissions/api_urls.py`, `admissions/views_admissions_links.py`, `admissions/views_enroll.py` |
 
 ---
 
@@ -46,19 +48,22 @@ Located in `households/scoping.py`. Behaviour:
 
 This is the **gold-standard** enforcement mechanism.
 
-### 2b. Non-canonical — `require_school_id` (financial_aid)
+### ~~2b. Non-canonical — `require_school_id` (financial_aid)~~ — REMEDIATED in Phase 7.2B.2
 
-Located in `financial_aid/tenant.py`. Behaviour:
+Located in `financial_aid/tenant.py`. **This utility is now unused by all views.**
 
-- Validates that the header is a well-formed UUID
-- Sets `request.school` to the fetched `School` object
-- Does **not** check whether the requesting user has a role at that school
-- Permission enforcement happens separately via `user_has_permission(request.user, "...", school=request.school)`
+**Before Phase 7.2B.2:** `financial_aid/views.py` called `require_school_id` (UUID validation only,
+no user-school binding) after running a permission check with `school=getattr(request, "school", None)`,
+meaning isolation relied on the permission layer rather than the scoping utility.
 
-Because `user_has_permission` runs before `require_school_id` in the view, a user without
-any `UserRole` gets a 403 (permission denied) before reaching the school binding. This means
-isolation is achieved via the permission layer rather than the scoping utility itself.
-The isolation holds in practice but the mechanism is indirect.
+**After Phase 7.2B.2:** Both views now call `get_request_school_id(request, required=True)` first,
+then resolve the `School` object, then pass it to `user_has_permission`. Financial Aid is now canonical:
+
+- Missing header → MissingSchoolContext → HTTP 400
+- Non-staff user with wrong-school header → NotFound → HTTP 404
+- Staff users → pass-through
+
+`financial_aid/tenant.py` → `require_school_id` has zero callers; candidate for deletion.
 
 ### 2c. ~~Non-canonical~~ — Direct header read (discipline) — REMEDIATED in Phase 7.2B
 
@@ -107,13 +112,13 @@ delegates to `get_request_school_id(request, required=True)`. Discipline is now 
 
 - Uses `get_request_school_id`; confirmed in `exports/views.py`
 
-### Financial Aid — NON-CANONICAL ⚠
+### Financial Aid — CANONICAL ✓ (remediated Phase 7.2B.2)
 
-- Uses `require_school_id` from `financial_aid/tenant.py`
-- No direct user-school binding check in the scoping utility
-- Isolation relies on `user_has_permission` (permission check executed first)
-- **Risk:** If a view were added that calls `require_school_id` without a preceding
-  permission check, cross-tenant access would be possible for any authenticated user.
+- `require_school_id` (from `financial_aid/tenant.py`) replaced with `get_request_school_id(request, required=True)`
+- Scoping fires **before** permission check in both `FinancialAidSummaryView` and `FinancialAidDrilldownView`
+- Missing header → HTTP 400 (MissingSchoolContext)
+- Non-staff user with wrong school header → HTTP 404 (NotFound)
+- `financial_aid/tenant.py` → `require_school_id` now has zero callers (candidate for deletion)
 
 ### Discipline — CANONICAL ✓ (remediated Phase 7.2B)
 
@@ -123,11 +128,16 @@ delegates to `get_request_school_id(request, required=True)`. Discipline is now 
 - Correct school → HTTP 200
 - All 4 discipline endpoints (`incidents/`, `incidents/<id>/`, `incidents/<id>/actions/`, `metrics/`) updated
 
-### Admissions (dead code) — NOT REGISTERED
+### Admissions — CANONICAL ✓ (remediated Phase 7.2B.3)
 
-- `admissions/views_admissions_links.py` and `admissions/views_enroll.py` contain views
-  that are **not registered** in any active URLconf. They are unreachable in production.
-- These files lack canonical scoping. Their presence is a maintenance liability.
+- `get_request_school_id(request, required=True)` now fires **before** the `_require_staff` check
+  in all three active view handlers
+- `admissions_applications_list`: queryset filtered by `school=school`
+- `admissions_application_detail`: `get_object_or_404(qs, id=application_id, school=school)`
+  (tenant tripwire fixed — was `get(id=application_id)` without school filter)
+- `enroll_applicant`: `AdmissionsApplication.objects...get(id=application_id, school=school)`
+  (tenant tripwire fixed)
+- Missing header → HTTP 400; non-staff wrong-tenant → HTTP 404; correct school → staff check proceeds
 
 ---
 
@@ -143,7 +153,7 @@ FK will need to be added and a migration written.
 ## 5. Test Coverage
 
 **File:** `backend/tests/test_phase72_tenant_isolation.py`  
-**Total tests:** 13  
+**Total tests:** 25  
 **Result:** All pass
 
 | Class | Tests | Coverage |
@@ -151,10 +161,13 @@ FK will need to be added and a migration written.
 | `Phase72GradebookTenantTests` | 4 | missing header (400), unauthenticated (401/403), wrong school non-staff (404), correct school staff (200) |
 | `Phase72BillingRunsTenantTests` | 4 | missing header (400), unauthenticated (401/403), wrong school non-staff (404), correct school (200) |
 | `Phase72DisciplineTenantTests` | 5 | missing header (400, uses user_noschool), unauthenticated (401/403), wrong school non-staff (404, Phase 7.2B canonical), cross-tenant data isolation confirmed (404), correct school (200) |
+| `Phase72FinancialAidTenantTests` | 4 | missing header (400, uses user_noschool), unauthenticated (401/403), wrong school non-staff (404, Phase 7.2B.2 canonical), correct school (200/403) |
+| `Phase72AdmissionsApplicationsTenantTests` | 4 | missing header (400, uses user_noschool), unauthenticated (401/403), wrong school non-staff (404, Phase 7.2B.3 canonical), correct school (200/403) |
+| `Phase72AdmissionsEnrollTenantTests` | 4 | missing header (400, uses user_noschool), unauthenticated (401/403), wrong school non-staff (404, Phase 7.2B.3 canonical), correct school (200/400/403) |
 
 **Key assertions confirmed:**
 
-- Canonical modules (gradebook, billing, **discipline**) → wrong tenant → HTTP 404 ✓
+- Canonical modules (gradebook, billing, **discipline**, **financial aid**, **admissions**) → wrong tenant → HTTP 404 ✓
 - All modules → missing header → HTTP 400 ✓
 - All modules → unauthenticated → HTTP 401 or 403 (DRF bearer-token auth behaviour) ✓
 
@@ -165,8 +178,8 @@ FK will need to be added and a migration written.
 | Risk | Severity | Module | Detail |
 |---|---|---|---|
 | ~~Non-canonical discipline scoping~~ | ~~Medium~~ | Discipline | **RESOLVED in Phase 7.2B**: `_get_school()` now uses `get_request_school_id` — wrong tenant → 404 |
-| Non-canonical financial aid scoping | Low-Medium | Financial Aid | Isolation via permission layer, not scoping utility; fragile if new views added without permission check |
-| Dead admissions view files | Low | Admissions | Unrouted but unscoped; delete to reduce maintenance surface |
+| ~~Non-canonical financial aid scoping~~ | ~~Low-Medium~~ | Financial Aid | **RESOLVED in Phase 7.2B.2**: `get_request_school_id` now used in both views — wrong tenant → 404 |
+| ~~Active admissions views — non-canonical scoping~~ | ~~Medium~~ | Admissions | **RESOLVED in Phase 7.2B.3**: `get_request_school_id` now in all 3 handlers; tenant tripwire `.get(id=...)` → `.get(id=..., school=school)` |
 | Global Term model | Informational | Scheduling | No school FK; acceptable for current single-tenant-per-instance model |
 
 ---
@@ -178,11 +191,14 @@ FK will need to be added and a migration written.
 1. ~~Migrate `discipline/api/views.py` to use `get_request_school_id(request, required=True)`.~~
    **RESOLVED in Phase 7.2B.** `_get_school()` now delegates to `get_request_school_id`.
 
-2. Migrate `financial_aid/tenant.py` → deprecate `require_school_id`; switch to
-   `get_request_school_id`. Ensure permission checks remain in place.
+2. ~~Migrate `financial_aid/tenant.py` → deprecate `require_school_id`; switch to
+   `get_request_school_id`. Ensure permission checks remain in place.~~
+   **RESOLVED in Phase 7.2B.2.** Both FA views now use canonical scoping. `require_school_id` has zero callers.
 
-3. Delete `admissions/views_admissions_links.py` and `admissions/views_enroll.py`
-   (or move to an archived branch). Unregistered, unscoped views are a maintenance hazard.
+3. ~~Apply canonical scoping (`get_request_school_id`) to `admissions/views_admissions_links.py`
+   and `admissions/views_enroll.py`. These files ARE active (registered in `admissions/api_urls.py`
+   under `/api/admissions/`) and currently lack cross-tenant guard. **Do not delete.**~~
+   **RESOLVED in Phase 7.2B.3.** All 3 admissions handlers now use canonical scoping.
 
 4. Consider adding a `school` FK to `Term` if multi-tenant scheduling is planned.
 
@@ -190,11 +206,10 @@ FK will need to be added and a migration written.
 
 ## 8. Certification Sign-off
 
-All 13 Phase 7.2 / 7.2B tenant isolation tests pass.
+All 25 Phase 7.2 / 7.2B / 7.2B.2 / 7.2B.3 tenant isolation tests pass.
 
-- **Canonical pattern confirmed in:** Gradebook, Billing, Billing API, Academics, Curricula, Exports, **Discipline** (remediated Phase 7.2B)
-- **Non-canonical documented in:** Financial Aid (isolation via permission layer)
-- **Dead code flagged in:** Admissions
+- **Canonical pattern confirmed in:** Gradebook, Billing, Billing API, Academics, Curricula, Exports, **Discipline** (remediated Phase 7.2B), **Financial Aid** (remediated Phase 7.2B.2), **Admissions** (remediated Phase 7.2B.3)
 - **Test file:** `backend/tests/test_phase72_tenant_isolation.py`
 - **Audit branch:** `phase/7.2-tenant-isolation-audit`
 - **Phase 7.2B remediation branch:** `phase/7.2b-discipline-canonical`
+- **Phase 7.2B.2 + 7.2B.3 remediation branch:** `phase/7.2b2-financial-aid-canonical` (PR #429)
