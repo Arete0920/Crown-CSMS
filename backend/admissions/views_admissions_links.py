@@ -6,6 +6,8 @@ from rest_framework.response import Response
 
 from admissions.models import AdmissionsApplication
 from admissions.serializers_admissions_links import AdmissionsApplicationLinkReadSerializer
+from core.models import School
+from households.scoping import get_request_school_id
 
 
 def _require_staff(request) -> Response | None:
@@ -24,6 +26,9 @@ def _require_staff(request) -> Response | None:
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_applications_list(request):
+    school_id = get_request_school_id(request, required=True)  # 400 if missing, 404 if wrong tenant
+    school = School.objects.get(id=school_id)
+
     denied = _require_staff(request)
     if denied is not None:
         return denied
@@ -34,6 +39,7 @@ def admissions_applications_list(request):
             "household",
             "sis_student__person",
         )
+        .filter(school=school)
         .order_by("-created_at")
     )
 
@@ -43,6 +49,9 @@ def admissions_applications_list(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_application_detail(request, application_id):
+    school_id = get_request_school_id(request, required=True)  # 400 if missing, 404 if wrong tenant
+    school = School.objects.get(id=school_id)
+
     denied = _require_staff(request)
     if denied is not None:
         return denied
@@ -53,5 +62,5 @@ def admissions_application_detail(request, application_id):
         "sis_student__person",
     )
 
-    obj = get_object_or_404(qs, id=application_id)
+    obj = get_object_or_404(qs, id=application_id, school=school)
     return Response(AdmissionsApplicationLinkReadSerializer(obj).data)
