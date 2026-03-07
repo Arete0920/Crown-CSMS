@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.models import AcademicYear, UserRole
-from crown_api.tenant_guards import TenantRequiredMixin
+from core.viewsets import TenantScopedViewSet
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
 
@@ -595,8 +595,11 @@ class PublisherObjectiveViewSet(PaginatedReadOnlyViewSet):
 # =============================================================================
 
 
-class SubmissionViewSet(AuditMutationMixin, TenantRequiredMixin, viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+class SubmissionViewSet(TenantScopedViewSet):
+    """
+    Writable ViewSet for student submissions.
+    Inherits tenant scoping from TenantScopedViewSet.
+    """
     queryset = Submission.objects.select_related(
         "assignment", "enrollment", "enrollment__student"
     ).all()
@@ -607,8 +610,7 @@ class SubmissionViewSet(AuditMutationMixin, TenantRequiredMixin, viewsets.ModelV
         return SubmissionSerializer
 
     def get_queryset(self):
-        school_id = get_request_school_id(self.request)
-        qs = self.queryset.filter(school_id=school_id)
+        qs = super().get_queryset()  # school scoping handled by base class
         
         # Filter by assignment if provided
         assignment_id = self.request.query_params.get("assignment_id")

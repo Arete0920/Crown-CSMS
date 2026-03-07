@@ -1,4 +1,5 @@
 # backend/core/permissions.py
+<<<<<<< HEAD
 #
 # Crown Central Permission Engine — Layer 1 of the institutional architecture.
 #
@@ -111,3 +112,30 @@ class CrownModulePermission:
         _CrownPerm.__name__ = f"CrownPerm[{read_code}]"
         return _CrownPerm
 
+=======
+"""
+Centralized role-gate permissions for DRF ViewSets.
+"""
+from rest_framework.permissions import BasePermission
+
+
+class RoleRequired(BasePermission):
+    """
+    DRF permission that checks the user's role field.
+
+    Usage on a ViewSet:
+        permission_classes = [RoleRequired]
+        required_roles = {"ADMIN", "STAFF"}
+
+    If required_roles is empty or not set, all authenticated users pass.
+    """
+
+    def has_permission(self, request, view):
+        if not request.user or not getattr(request.user, "is_authenticated", False):
+            return False
+        roles = getattr(view, "required_roles", None) or set()
+        if not roles:
+            return True
+        user_role = getattr(request.user, "role", None)
+        return user_role in roles
+>>>>>>> 84a7e585 (harden(core): tenant-scoped viewsets + centralized role gates + isolation proof)
