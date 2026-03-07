@@ -194,7 +194,6 @@ INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in
 
 MIDDLEWARE = [
     'core.middleware.DemoWriteBlockMiddleware',
-    'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',
     'crown_api.middleware.api_exceptions.ApiExceptionMiddleware',  # Exception envelope (outermost)
     'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing
     'corsheaders.middleware.CorsMiddleware',
@@ -204,6 +203,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
+    'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard — after auth so user.school_id is available for header-less fallback
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -347,9 +347,6 @@ SIMPLE_JWT = {
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-
-# Custom User Model
-AUTH_USER_MODEL = 'core.UserAccount'
 
 # Default auto field
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

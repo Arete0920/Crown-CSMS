@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import { apiFetch } from '../lib/api.js';
 
@@ -197,7 +197,7 @@ export default function EnrollmentPeriodWizard() {
           </label>
 
           <label style={labelStyle}>
-            Re-enrollment Close Date <span style={{ color: '#888', fontWeight: 400 }}>(optional)</span>
+            Re-enrollment Close Date <span style={{ color: 'var(--crown-muted)', fontWeight: 400 }}>(optional)</span>
             <input
               type="date"
               value={reenrollCloseDate}
@@ -231,13 +231,13 @@ export default function EnrollmentPeriodWizard() {
       {phase === 'capacities' && (
         <div style={{ maxWidth: 720 }}>
           <h2 style={{ marginBottom: 8 }}>Step 2: Grade Capacities</h2>
-          <p style={{ color: '#555', marginBottom: 24 }}>
+          <p style={{ color: 'var(--crown-muted)', marginBottom: 24 }}>
             Set target seat counts per grade. Each grade code may only appear once.
           </p>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 16 }}>
             <thead>
-              <tr style={{ background: '#f5f5f5' }}>
+              <tr style={{ background: 'var(--crown-surface-2)' }}>
                 <th style={thStyle}>Grade</th>
                 <th style={thStyle}>Target Seats</th>
                 <th style={thStyle}>New Students Allowed</th>
@@ -285,7 +285,7 @@ export default function EnrollmentPeriodWizard() {
                     {capRows.length > 1 && (
                       <button
                         onClick={() => removeCapRow(idx)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c00', fontSize: 18 }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--crown-danger)', fontSize: 18 }}
                       >
                         ✕
                       </button>
@@ -296,7 +296,7 @@ export default function EnrollmentPeriodWizard() {
             </tbody>
           </table>
 
-          <button onClick={addCapRow} style={{ ...btnStyle, background: '#555', marginRight: 12 }}>
+          <button onClick={addCapRow} style={{ ...btnStyle, background: 'var(--crown-muted)', marginRight: 12 }}>
             + Add Grade
           </button>
 
@@ -315,7 +315,7 @@ export default function EnrollmentPeriodWizard() {
       {/* ── PHASE: done ── */}
       {phase === 'done' && result && (
         <div style={{ maxWidth: 560 }}>
-          <h2 style={{ color: '#2e7d32', marginBottom: 16 }}>✓ Enrollment Period Committed</h2>
+          <h2 style={{ color: 'var(--crown-ok)', marginBottom: 16 }}>✓ Enrollment Period Committed</h2>
           <p>{result.message}</p>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20 }}>
@@ -331,7 +331,7 @@ export default function EnrollmentPeriodWizard() {
                 ['Period ID',         result.enrollment_period_id],
               ].map(([label, val]) => (
                 <tr key={label}>
-                  <td style={{ padding: '6px 12px', fontWeight: 600, background: '#fafafa', width: '40%' }}>{label}</td>
+                  <td style={{ padding: '6px 12px', fontWeight: 600, background: 'var(--crown-surface-2)', width: '40%' }}>{label}</td>
                   <td style={{ padding: '6px 12px', fontFamily: 'monospace' }}>{val}</td>
                 </tr>
               ))}
@@ -351,7 +351,7 @@ export default function EnrollmentPeriodWizard() {
               setResult(null);
               setError('');
             }}
-            style={{ ...btnStyle, marginTop: 24, background: '#555' }}
+            style={{ ...btnStyle, marginTop: 24, background: 'var(--crown-muted)' }}
           >
             Start Another Enrollment Period
           </button>
@@ -373,7 +373,7 @@ const labelStyle = {
 const inputStyle = {
   padding: '8px 10px',
   fontSize: 14,
-  border: '1px solid #ccc',
+  border: '1px solid var(--crown-border)',
   borderRadius: 4,
   marginTop: 4,
   width: '100%',
@@ -381,8 +381,8 @@ const inputStyle = {
 };
 const btnStyle = {
   padding: '10px 22px',
-  background: '#1565c0',
-  color: '#fff',
+  background: 'var(--crown-brand)',
+  color: 'var(--crown-surface)',
   border: 'none',
   borderRadius: 4,
   cursor: 'pointer',
@@ -390,6 +390,6 @@ const btnStyle = {
   fontWeight: 600,
   marginTop: 8,
 };
-const errorStyle = { color: '#c00', marginTop: 8, fontSize: 14 };
-const thStyle = { padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid #ddd', fontSize: 13 };
-const tdStyle = { padding: '6px 8px', borderBottom: '1px solid #eee' };
+const errorStyle = { color: 'var(--crown-danger)', marginTop: 8, fontSize: 14 };
+const thStyle = { padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid var(--crown-border)', fontSize: 13 };
+const tdStyle = { padding: '6px 8px', borderBottom: '1px solid var(--crown-border)' };

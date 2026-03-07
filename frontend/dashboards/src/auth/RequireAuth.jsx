@@ -1,4 +1,4 @@
-// frontend/dashboards/src/auth/RequireAuth.jsx
+﻿// frontend/dashboards/src/auth/RequireAuth.jsx
 // Gate component: redirects to Microsoft login if user is not authenticated.
 // Use this to wrap any route or component that requires sign-in.
 //
@@ -24,7 +24,7 @@ export default function RequireAuth({ children }) {
   if (!isAuthenticated) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-        <p style={{ color: "#888" }}>Redirecting to Microsoft sign-in…</p>
+        <p style={{ color: "var(--crown-muted)" }}>Redirecting to Microsoft sign-in…</p>
       </div>
     );
   }

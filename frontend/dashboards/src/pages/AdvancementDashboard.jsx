@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection   from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -65,26 +67,41 @@ async function fetchAdvancementMetrics() {
   }
 }
 
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
 const STATUS_COLOR = { active: 'green', closing: 'yellow', upcoming: 'gray' };
 const fmt = n => `$${n.toLocaleString()}`;
 
+/* â”€â”€ Advancement KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Active Donors",       value: "127",     trend: "+14 vs last yr", trendUp: true,
+    definition: "Unique donors who have given at least one gift in the current fiscal year.",
+    dataSource: "Advancement Module", dataHref: "/advancement" },
+  { label: "Campaign Progress",   value: "64%",     trend: "+18% MTD",       trendUp: true,
+    definition: "Weighted average of progress across all active campaigns (raised ÷ goal).",
+    dataSource: "Campaign Scoreboard", dataHref: "/advancement" },
+  { label: "YTD Raised",          value: "$177,400", trend: null,             trendUp: null,
+    definition: "Total gifts and pledges received year-to-date across all campaigns.",
+    dataSource: "Advancement Module", dataHref: "/advancement" },
+  { label: "Pledges Outstanding", value: "23",      trend: null,             trendUp: null,
+    definition: "Number of pledge commitments not yet fulfilled — follow-up queue ready.",
+    dataSource: "Advancement Module", dataHref: "/advancement" },
+  { label: "Thank-Yous Due",      value: "9",       trend: null,             trendUp: null,
+    definition: "Acknowledgement letters or calls not yet completed within the 48-hr stewardship window.",
+    dataSource: "Advancement Module", dataHref: "/advancement" },
+];
 export default function AdvancementDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -107,109 +124,101 @@ export default function AdvancementDashboard() {
       subtitle="Campaign progress, donor stewardship, pledges, and task queue"
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      {loading && <p style={{ color: '#6b7280', padding: 16 }}>Loading…</p>}
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      <CrownGrid>
-        <Col span={3}>
-          <CrownMetricCard label="Active Donors"          value={data.donors_active           ?? DEMO.donors_active} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Campaign Progress"      value={`${data.campaign_progress_pct ?? DEMO.campaign_progress_pct}%`} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Pledges Outstanding"    value={data.pledges_outstanding     ?? DEMO.pledges_outstanding} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Thank-Yous Due"         value={data.thankyous_due           ?? DEMO.thankyous_due} />
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}><CrownMetricCard label="Active Donors" value={data.donors_active ?? DEMO.donors_active} /></Col>
+          <Col span={3}><CrownMetricCard label="Campaign Progress" value={`${data.campaign_progress_pct ?? DEMO.campaign_progress_pct}%`} /></Col>
+          <Col span={3}><CrownMetricCard label="Pledges Outstanding" value={data.pledges_outstanding ?? DEMO.pledges_outstanding} /></Col>
+          <Col span={3}><CrownMetricCard label="Thank-Yous Due" value={data.thankyous_due ?? DEMO.thankyous_due} /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Campaign Scoreboard ── */}
-        <Col span={8}>
-          <CrownCard title="Campaign Scoreboard">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {campaigns.map((c, i) => {
-                const pct = Math.round((c.raised / c.goal) * 100);
-                return (
-                  <div key={i}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, fontSize: 13 }}>
-                      <span style={{ fontWeight: 600 }}>{c.name}</span>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <span style={{ color: '#6b7280', fontSize: 12 }}>{fmt(c.raised)} / {fmt(c.goal)}</span>
-                        <Pill color={STATUS_COLOR[c.status] || 'gray'}>{c.status}</Pill>
+      <DashboardSection title="Campaign Scoreboard">
+        <CrownGrid>
+          <Col span={8}>
+            <CrownCard title="Campaign Scoreboard">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {campaigns.map((c, i) => {
+                  const pct = Math.round((c.raised / c.goal) * 100);
+                  return (
+                    <div key={i}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, fontSize: 13 }}>
+                        <span style={{ fontWeight: 600, color: 'var(--crown-ink)' }}>{c.name}</span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ color: 'var(--crown-muted)', fontSize: 12 }}>{fmt(c.raised)} / {fmt(c.goal)}</span>
+                          <Pill color={STATUS_COLOR[c.status] || 'gray'}>{c.status}</Pill>
+                        </div>
                       </div>
+                      <div style={{ height: 8, background: 'var(--crown-border)', borderRadius: 4 }}>
+                        <div style={{ height: 8, borderRadius: 4, width: `${Math.min(pct, 100)}%`,
+                          background: pct >= 100 ? 'var(--crown-ok)' : pct >= 60 ? 'var(--crown-brand)' : 'var(--crown-warn)' }} />
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--crown-muted)', marginTop: 2 }}>{pct}% — {c.donors} donors</div>
                     </div>
-                    <div style={{ height: 8, background: '#e5e7eb', borderRadius: 4 }}>
-                      <div style={{ height: 8, borderRadius: 4, width: `${Math.min(pct, 100)}%`, background: pct >= 100 ? '#22c55e' : pct >= 60 ? '#6366f1' : '#f59e0b' }} />
+                  );
+                })}
+              </div>
+            </CrownCard>
+          </Col>
+          <Col span={4}>
+            <CrownCard title="Top Giving Sources (YTD)">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {sources.map((s, i) => (
+                  <div key={i}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
+                      <span style={{ fontWeight: 500, color: 'var(--crown-ink)' }}>{s.source}</span>
+                      <span style={{ color: 'var(--crown-ink)' }}>{fmt(s.amount)}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{pct}% — {c.donors} donors</div>
+                    <div style={{ height: 6, background: 'var(--crown-border)', borderRadius: 4 }}>
+                      <div style={{ height: 6, borderRadius: 4, width: `${Math.round((s.amount / maxSource) * 100)}%`, background: 'var(--crown-brand)' }} />
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          </CrownCard>
-        </Col>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-        {/* ── Top Sources ── */}
-        <Col span={4}>
-          <CrownCard title="Top Giving Sources (YTD)">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {sources.map((s, i) => (
-                <div key={i}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                    <span style={{ fontWeight: 500 }}>{s.source}</span>
-                    <span style={{ color: '#374151' }}>{fmt(s.amount)}</span>
+      <DashboardSection title="Tasks &amp; Alerts">
+        <CrownGrid>
+          <Col span={6}>
+            <CrownCard title="Tasks Queue">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {tasks.map((t, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '7px 10px', borderRadius: 5,
+                    background: t.priority === 'high' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                    border: '1px solid var(--crown-border)',
+                  }}>
+                    <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{t.task}</span>
+                    <span style={{ fontSize: 11, color: 'var(--crown-muted)', whiteSpace: 'nowrap', marginLeft: 8 }}>Due {t.due}</span>
                   </div>
-                  <div style={{ height: 6, background: '#e5e7eb', borderRadius: 4 }}>
-                    <div style={{ height: 6, borderRadius: 4, width: `${Math.round((s.amount / maxSource) * 100)}%`, background: '#6366f1' }} />
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+          <Col span={6}>
+            <CrownCard title="Alerts &amp; Stewardship">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {alerts.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                    background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                    border: '1px solid var(--crown-border)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: a.severity === 'red' ? 'var(--crown-danger)' : a.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{a.label}</span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
-
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Task Queue ── */}
-        <Col span={6}>
-          <CrownCard title="Tasks Queue">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {tasks.map((t, i) => (
-                <div key={i} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '7px 10px', borderRadius: 5,
-                  background: t.priority === 'high' ? '#fef9c3' : '#f9fafb',
-                  border: `1px solid ${t.priority === 'high' ? '#fde047' : '#e5e7eb'}`,
-                }}>
-                  <span style={{ fontSize: 13, color: '#374151' }}>{t.task}</span>
-                  <span style={{ fontSize: 11, color: '#6b7280', whiteSpace: 'nowrap', marginLeft: 8 }}>Due {t.due}</span>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-
-        {/* ── Alerts ── */}
-        <Col span={6}>
-          <CrownCard title="Alerts &amp; Stewardship">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {alerts.map((a, i) => (
-                <div key={i} style={{
-                  padding: '8px 12px', borderRadius: 6,
-                  background: a.severity === 'red' ? '#fee2e2' : a.severity === 'yellow' ? '#fef9c3' : '#f3f4f6',
-                  border: `1px solid ${a.severity === 'red' ? '#fca5a5' : a.severity === 'yellow' ? '#fde047' : '#e5e7eb'}`,
-                }}>
-                  <span style={{ fontSize: 13, color: a.severity === 'red' ? '#991b1b' : a.severity === 'yellow' ? '#854d0e' : '#374151' }}>
-                    {a.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { fetchCurriculumPacingSummary } from "../api/curriculum.js";
 import ErrorBanner from "./ui/ErrorBanner.jsx";
 
@@ -14,9 +14,9 @@ export function CurriculumPacingCard({ schoolId }) {
   // Guard: ensure schoolId is provided
   if (!schoolId) {
     return (
-      <div style={{ padding: 16, border: "1px solid #ddd", borderRadius: 4, backgroundColor: "#fff3cd" }}>
+      <div style={{ padding: 16, border: "1px solid var(--crown-border)", borderRadius: 4, backgroundColor: "var(--crown-warn-bg)" }}>
         <h3>Curriculum Pacing</h3>
-        <p style={{ color: "#856404", fontSize: "0.9em" }}>
+        <p style={{ color: "var(--crown-warn)", fontSize: "0.9em" }}>
           School context missing. Select a school or re-login to see curriculum pacing.
         </p>
       </div>
@@ -51,7 +51,7 @@ export function CurriculumPacingCard({ schoolId }) {
 
   if (loading) {
     return (
-      <div style={{ padding: 16, border: "1px solid #ddd", borderRadius: 4 }}>
+      <div style={{ padding: 16, border: "1px solid var(--crown-border)", borderRadius: 4 }}>
         <h3>Curriculum Pacing</h3>
         <p>Loading…</p>
       </div>
@@ -60,7 +60,7 @@ export function CurriculumPacingCard({ schoolId }) {
 
   if (rows.length === 0) {
     return (
-      <div style={{ padding: 16, border: "1px solid #ddd", borderRadius: 4 }}>
+      <div style={{ padding: 16, border: "1px solid var(--crown-border)", borderRadius: 4 }}>
         <h3>Curriculum Pacing</h3>
         <p>No active courses found.</p>
       </div>
@@ -72,9 +72,9 @@ export function CurriculumPacingCard({ schoolId }) {
   };
 
   return (
-    <div style={{ padding: 16, border: "1px solid #ddd", borderRadius: 4, backgroundColor: "#fff" }}>
+    <div style={{ padding: 16, border: "1px solid var(--crown-border)", borderRadius: 4, backgroundColor: "var(--crown-surface)" }}>
       <h3>Curriculum Pacing</h3>
-      <p style={{ fontSize: "0.9em", color: "#666" }}>
+      <p style={{ fontSize: "0.9em", color: "var(--crown-muted)" }}>
         {asOf ? `As of ${asOf}` : "As of today"} • Click course to expand units and lessons
       </p>
 
@@ -87,7 +87,7 @@ export function CurriculumPacingCard({ schoolId }) {
           const units = c?.units || [];
 
           return (
-            <div key={c.course_id} style={{ marginBottom: 12, borderBottom: "1px solid #f0f0f0", paddingBottom: 12 }}>
+            <div key={c.course_id} style={{ marginBottom: 12, borderBottom: "1px solid var(--crown-border)", paddingBottom: 12 }}>
               {/* Course Header (Clickable) */}
               <div 
                 onClick={() => handleCourseClick(c.course_id)}
@@ -98,7 +98,7 @@ export function CurriculumPacingCard({ schoolId }) {
                   alignItems: "baseline", 
                   marginBottom: 4,
                   padding: 8,
-                  backgroundColor: isExpanded ? "#f5f5f5" : "transparent",
+                  backgroundColor: isExpanded ? "var(--crown-surface-2)" : "transparent",
                   borderRadius: 4,
                   transition: "background-color 0.2s"
                 }}
@@ -106,18 +106,18 @@ export function CurriculumPacingCard({ schoolId }) {
                 <strong style={{ flex: 1 }}>
                   {isExpanded ? "▼" : "▶"} {c.code} — {c.name}
                 </strong>
-                <span style={{ fontSize: "0.9em", color: "#666" }}>
+                <span style={{ fontSize: "0.9em", color: "var(--crown-muted)" }}>
                   {pct}% ({due}/{total})
                 </span>
               </div>
 
               {/* Progress Bar */}
-              <div style={{ width: "100%", height: 8, backgroundColor: "#e0e0e0", borderRadius: 4, overflow: "hidden" }}>
+              <div style={{ width: "100%", height: 8, backgroundColor: "var(--crown-border)", borderRadius: 4, overflow: "hidden" }}>
                 <div
                   style={{
                     height: "100%",
                     width: `${pct}%`,
-                    backgroundColor: "#4CAF50",
+                    backgroundColor: "var(--crown-ok)",
                     transition: "width 0.3s ease",
                   }}
                 />
@@ -125,7 +125,7 @@ export function CurriculumPacingCard({ schoolId }) {
 
               {/* Expanded Units & Lessons */}
               {isExpanded && units.length > 0 && (
-                <div style={{ marginTop: 12, marginLeft: 16, paddingLeft: 12, borderLeft: "2px solid #ddd" }}>
+                <div style={{ marginTop: 12, marginLeft: 16, paddingLeft: 12, borderLeft: "2px solid var(--crown-border)" }}>
                   {units.map((unit, unitIdx) => {
                     const lessons = unit?.lessons || [];
                     const lessonsWithDate = lessons.filter(l => l.planned_date);
@@ -135,23 +135,23 @@ export function CurriculumPacingCard({ schoolId }) {
                       <div key={unit.id || unitIdx} style={{ marginBottom: 16 }}>
                         {/* Unit Header */}
                         <div style={{ marginBottom: 8 }}>
-                          <strong style={{ fontSize: "0.95em", color: "#333" }}>
+                          <strong style={{ fontSize: "0.95em", color: "var(--crown-ink)" }}>
                             Unit {unit.order || unitIdx + 1}: {unit.title}
                           </strong>
-                          <p style={{ margin: "4px 0", fontSize: "0.85em", color: "#666", fontStyle: "italic" }}>
+                          <p style={{ margin: "4px 0", fontSize: "0.85em", color: "var(--crown-muted)", fontStyle: "italic" }}>
                             "{unit.essential_question}"
                           </p>
                           {unit.worldview_focus && (
-                            <p style={{ margin: "4px 0", fontSize: "0.8em", color: "#999" }}>
+                            <p style={{ margin: "4px 0", fontSize: "0.8em", color: "var(--crown-muted)" }}>
                               Worldview: {unit.worldview_focus}
                             </p>
                           )}
                         </div>
 
                         {/* Lessons List */}
-                        <div style={{ fontSize: "0.85em", color: "#555" }}>
+                        <div style={{ fontSize: "0.85em", color: "var(--crown-muted)" }}>
                           {lessons.length === 0 ? (
-                            <p style={{ color: "#999", fontStyle: "italic" }}>No lessons defined</p>
+                            <p style={{ color: "var(--crown-muted)", fontStyle: "italic" }}>No lessons defined</p>
                           ) : (
                             <ul style={{ margin: "4px 0", paddingLeft: 16 }}>
                               {lessons.map((lesson, lessonIdx) => {
@@ -161,13 +161,13 @@ export function CurriculumPacingCard({ schoolId }) {
                                     key={lesson.id || lessonIdx} 
                                     style={{ 
                                       marginBottom: 4,
-                                      color: isPast ? "#4CAF50" : "#999",
+                                      color: isPast ? "var(--crown-ok)" : "var(--crown-muted)",
                                       fontWeight: isPast ? "500" : "400"
                                     }}
                                   >
                                     {isPast ? "✓ " : "○ "}{lesson.title}
                                     {lesson.planned_date && (
-                                      <span style={{ fontSize: "0.75em", color: "#999", marginLeft: 8 }}>
+                                      <span style={{ fontSize: "0.75em", color: "var(--crown-muted)", marginLeft: 8 }}>
                                         {new Date(lesson.planned_date).toLocaleDateString('en-US', { 
                                           month: 'short', 
                                           day: 'numeric' 

@@ -30,9 +30,25 @@ from finance.models import (
 
 
 # ---------------------------------------------------------------------------
-# Ledger bridge stubs
+# Ledger bridge
 # These return a result dataclass so callers know posting was attempted.
-# Replace with actual Crown ledger API calls once wiring is confirmed.
+#
+# BLOCKED: wiring requires a UserAccount → LedgerAccount path.
+# LedgerAccount (ledger app) is keyed per-household (households.Household UUID PK).
+# FinanceObligation.payer_user → UserAccount has no direct household FK.
+# The resolution path (Guardian.email == user.email → Household → LedgerAccount)
+# is not atomically safe without a UserAccount.household OneToOne or explicit join.
+#
+# Until that link is added (or a household_id is stored on UserAccount or
+# FinanceObligation), these functions return a safe no-op result to avoid
+# creating orphaned or incorrectly attributed LedgerAccount entries.
+#
+# When ready to wire:
+#   1. Ensure payer_user.email → Guardian → Household → LedgerAccount path is stable.
+#   2. Replace each stub body with:
+#        from ledger.models import LedgerAccount, Charge, Payment, Allocation
+#        account = LedgerAccount.objects.get(household__guardians__email=obligation.payer_user.email, school_id=...)
+#        Charge.objects.create(school_id=..., account=account, description=..., amount=obligation.amount_cents / 100)
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -44,7 +60,9 @@ class LedgerPostResult:
 def ledger_post_obligation(obligation: FinanceObligation) -> LedgerPostResult:
     """
     Post A/R debit + Tuition/Fee revenue credit for a new obligation.
-    TODO: integrate with Crown ledger primitives (LedgerEntry / ChartAccount).
+
+    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
+    Returns safe no-op until that path is established.
     """
     return LedgerPostResult(ok=True, reference=f"obligation:{obligation.id}")
 
@@ -55,7 +73,9 @@ def ledger_post_payment_settled(
 ) -> LedgerPostResult:
     """
     Post Cash debit + A/R credit for each allocation on settlement.
-    TODO: integrate with Crown ledger primitives.
+
+    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
+    Returns safe no-op until that path is established.
     """
     return LedgerPostResult(ok=True, reference=f"payment:{payment.id}")
 
@@ -63,7 +83,9 @@ def ledger_post_payment_settled(
 def ledger_post_refund(refund: FinanceRefund) -> LedgerPostResult:
     """
     Post reversal pair: Cash credit + A/R debit (or Refund expense).
-    TODO: integrate with Crown ledger primitives.
+
+    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
+    Returns safe no-op until that path is established.
     """
     return LedgerPostResult(ok=True, reference=f"refund:{refund.id}")
 
@@ -74,7 +96,9 @@ def ledger_post_donation(
 ) -> LedgerPostResult:
     """
     Post Cash debit + Donation revenue credit.
-    TODO: integrate with Crown ledger primitives.
+
+    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
+    Returns safe no-op until that path is established.
     """
     return LedgerPostResult(ok=True, reference=f"donation:{donation.id}")
 

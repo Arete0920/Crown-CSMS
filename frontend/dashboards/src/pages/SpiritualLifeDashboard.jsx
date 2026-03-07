@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 /* ── Auth helpers ─────────────────────────────────────────────────────── */
 function apiBase() {
@@ -54,24 +56,36 @@ async function fetchSpiritualLifeMetrics() {
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
 /* ── Main component ───────────────────────────────────────────────────── */
+/* â”€â”€ Spiritual Life KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Chapel Attendance",  value: "94%",  trend: "+2% vs last wk",  trendUp: true,
+    definition: "Percentage of enrolled students present at the most recent chapel service.",
+    dataSource: "Attendance Module", dataHref: "/attendance" },
+  { label: "Service Hours",      value: "847",  trend: "+112 MTD",         trendUp: true,
+    definition: "Total community service hours logged by students this academic year.",
+    dataSource: "Service Hours Module", dataHref: "/service-hours" },
+  { label: "Events This Month",  value: "3",    trend: null,               trendUp: null,
+    definition: "Spiritual life events (retreats, guest speakers, prayer events) scheduled this month.",
+    dataSource: "Calendar Module", dataHref: "/calendar" },
+  { label: "Devotions Sent",     value: "14",   trend: null,               trendUp: null,
+    definition: "Daily devotions and reflections distributed to staff and families this term.",
+    dataSource: "Communications Module", dataHref: "/communications" },
+];
 export default function SpiritualLifeDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -88,100 +102,120 @@ export default function SpiritualLifeDashboard() {
     ? Math.round((data.service_hours_ytd / data.service_hours_goal) * 100)
     : 0;
 
+  const TH = { padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 };
+  const TD = { padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' };
+
   return (
     <CrownLayout
       title="Spiritual Life"
       subtitle="Chapel program, service hours, and pastoral care"
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      {loading && <p style={{ color: '#6b7280', padding: 16 }}>Loading…</p>}
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      {/* ── KPI row ── */}
-      <CrownGrid>
-        <Col span={3}>
-          <CrownMetricCard label="Chapel Sessions (month)" value={data.chapel_sessions_this_month ?? DEMO.chapel_sessions_this_month} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Avg Attendance" value={`${data.avg_chapel_attendance_pct ?? DEMO.avg_chapel_attendance_pct}%`} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Service Hours YTD" value={data.service_hours_ytd ?? DEMO.service_hours_ytd} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Open Care Referrals" value={data.care_referrals_open ?? DEMO.care_referrals_open} />
-        </Col>
-      </CrownGrid>
+      {/* ── Section 1: Overview KPIs ── */}
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}>
+            <CrownMetricCard label="Chapel Sessions (month)" value={data.chapel_sessions_this_month ?? DEMO.chapel_sessions_this_month} />
+          </Col>
+          <Col span={3}>
+            <CrownMetricCard label="Avg Attendance" value={`${data.avg_chapel_attendance_pct ?? DEMO.avg_chapel_attendance_pct}%`} />
+          </Col>
+          <Col span={3}>
+            <CrownMetricCard label="Service Hours YTD" value={data.service_hours_ytd ?? DEMO.service_hours_ytd} />
+          </Col>
+          <Col span={3}>
+            <CrownMetricCard label="Open Care Referrals" value={data.care_referrals_open ?? DEMO.care_referrals_open} />
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Upcoming Chapel ── */}
-        <Col span={6}>
-          <CrownCard title="Upcoming Chapel Schedule">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead>
-                <tr style={{ color: '#6b7280', textAlign: 'left', borderBottom: '1px solid #f3f4f6' }}>
-                  <th style={{ padding: '4px 0' }}>Date</th>
-                  <th style={{ padding: '4px 8px' }}>Topic</th>
-                  <th style={{ padding: '4px 0' }}>Speaker</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upcoming.map((u) => (
-                  <tr key={u.date} style={{ borderBottom: '1px solid #f9fafb' }}>
-                    <td style={{ padding: '6px 0', fontWeight: 700, color: '#111827', whiteSpace: 'nowrap' }}>{u.date}</td>
-                    <td style={{ padding: '6px 8px', color: '#374151' }}>{u.topic}</td>
-                    <td style={{ padding: '6px 0', color: '#6b7280', fontSize: 11 }}>{u.speaker}</td>
+      {/* ── Section 2: Chapel & Service ── */}
+      <DashboardSection title="Chapel & Service">
+        <CrownGrid>
+          {/* Upcoming Chapel Schedule */}
+          <Col span={6}>
+            <CrownCard title="Upcoming Chapel Schedule">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    <th style={TH}>Date</th>
+                    <th style={TH}>Topic</th>
+                    <th style={TH}>Speaker</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
+                </thead>
+                <tbody>
+                  {upcoming.map((u) => (
+                    <tr key={u.date}>
+                      <td style={{ ...TD, fontWeight: 700, whiteSpace: 'nowrap' }}>{u.date}</td>
+                      <td style={TD}>{u.topic}</td>
+                      <td style={{ ...TD, color: 'var(--crown-muted)', fontSize: 11 }}>{u.speaker}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
 
-        {/* ── Service Hours ── */}
-        <Col span={6}>
-          <CrownCard title="Service Hours YTD">
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                <span style={{ color: '#6b7280' }}>Progress toward annual goal</span>
-                <strong>{serviceGoalPct}%</strong>
+          {/* Service Hours */}
+          <Col span={6}>
+            <CrownCard title="Service Hours YTD">
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ color: 'var(--crown-muted)' }}>Progress toward annual goal</span>
+                  <strong>{serviceGoalPct}%</strong>
+                </div>
+                <div style={{ height: 10, borderRadius: 5, background: 'var(--crown-surface-2)', overflow: 'hidden', border: '1px solid var(--crown-border)' }}>
+                  <div style={{ width: `${Math.min(serviceGoalPct, 100)}%`, height: '100%', background: 'var(--crown-brand)', borderRadius: 5 }} />
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--crown-muted)', marginTop: 4 }}>
+                  {data.service_hours_ytd ?? DEMO.service_hours_ytd} of {data.service_hours_goal ?? DEMO.service_hours_goal} hours
+                </p>
               </div>
-              <div style={{ height: 10, borderRadius: 5, background: '#f3f4f6', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(serviceGoalPct, 100)}%`, height: '100%', background: '#6366f1', borderRadius: 5 }} />
+              <div style={{ display: 'flex', gap: 24, fontSize: 13 }}>
+                <div>
+                  <div style={{ color: 'var(--crown-muted)', fontSize: 11 }}>Referrals resolved (month)</div>
+                  <strong style={{ fontSize: 20, color: 'var(--crown-ink)' }}>{data.care_referrals_resolved_mtd ?? DEMO.care_referrals_resolved_mtd}</strong>
+                </div>
+                <div>
+                  <div style={{ color: 'var(--crown-muted)', fontSize: 11 }}>Students flagged for support</div>
+                  <strong style={{ fontSize: 20, color: (data.support_flagged_students ?? DEMO.support_flagged_students) > 0 ? 'var(--crown-warn)' : 'var(--crown-ok)' }}>
+                    {data.support_flagged_students ?? DEMO.support_flagged_students}
+                  </strong>
+                </div>
               </div>
-              <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
-                {data.service_hours_ytd ?? DEMO.service_hours_ytd} of {data.service_hours_goal ?? DEMO.service_hours_goal} hours
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
-              <div>
-                <div style={{ color: '#6b7280', fontSize: 11 }}>Referrals resolved (month)</div>
-                <strong style={{ fontSize: 20 }}>{data.care_referrals_resolved_mtd ?? DEMO.care_referrals_resolved_mtd}</strong>
-              </div>
-              <div>
-                <div style={{ color: '#6b7280', fontSize: 11 }}>Students flagged for support</div>
-                <strong style={{ fontSize: 20, color: (data.support_flagged_students ?? DEMO.support_flagged_students) > 0 ? '#f59e0b' : '#22c55e' }}>
-                  {data.support_flagged_students ?? DEMO.support_flagged_students}
-                </strong>
-              </div>
-            </div>
-          </CrownCard>
-        </Col>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-        {/* ── Alerts ── */}
-        <Col span={12}>
-          <CrownCard title="Pastoral Alerts">
-            {alerts.length === 0
-              ? <p style={{ fontSize: 13, color: '#22c55e' }}>No active pastoral alerts.</p>
-              : alerts.map((a, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <Pill color={a.severity}>{a.severity.toUpperCase()}</Pill>
-                    <span style={{ fontSize: 13, color: '#374151' }}>{a.label}</span>
+      {/* ── Section 3: Pastoral Alerts ── */}
+      <DashboardSection title="Pastoral Alerts">
+        <CrownGrid>
+          <Col span={12}>
+            <CrownCard title="Pastoral Alerts">
+              {alerts.length === 0
+                ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No active pastoral alerts.</p>
+                : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {alerts.map((a, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                        background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                        border: '1px solid var(--crown-border)',
+                      }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                          background: a.severity === 'red' ? 'var(--crown-danger)' : a.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                        <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{a.label}</span>
+                      </div>
+                    ))}
                   </div>
-                ))
-            }
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+              }
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

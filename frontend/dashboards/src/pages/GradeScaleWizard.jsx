@@ -1,4 +1,4 @@
-/**
+﻿/**
  * GradeScaleWizard.jsx
  *
  * Wizard #17 — Grade Scale & Report Card Settings
@@ -219,14 +219,14 @@ export default function GradeScaleWizard() {
       {phase === "bands" && (
         <div style={{ maxWidth: 680 }}>
           <h2 style={h2}>Step 2: Grade Bands</h2>
-          <p style={{ color: "#555", marginBottom: 16 }}>
+          <p style={{ color: "var(--crown-muted)", marginBottom: 16 }}>
             Bands must together cover exactly 0–100 with no gaps or overlaps.
             Adjacent bands must satisfy <code>max[i] + 1 == min[i+1]</code>.
           </p>
 
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
             <thead>
-              <tr style={{ background: "#f5f5f5" }}>
+              <tr style={{ background: "var(--crown-surface-2)" }}>
                 <th style={th}>Label</th>
                 <th style={th}>Min %</th>
                 <th style={th}>Max %</th>
@@ -286,7 +286,7 @@ export default function GradeScaleWizard() {
             </tbody>
           </table>
 
-          <button onClick={addBand} style={{ ...btn, background: "#555", marginRight: 12 }}>
+          <button onClick={addBand} style={{ ...btn, background: "var(--crown-muted)", marginRight: 12 }}>
             + Add Band
           </button>
 
@@ -317,12 +317,12 @@ export default function GradeScaleWizard() {
 
           {weightsEnabled && (
             <>
-              <p style={{ color: "#555", marginBottom: 12 }}>
+              <p style={{ color: "var(--crown-muted)", marginBottom: 12 }}>
                 Weights stored as basis points (bp). Must sum to exactly 10 000 bp = 100 %.
               </p>
               <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
                 <thead>
-                  <tr style={{ background: "#f5f5f5" }}>
+                  <tr style={{ background: "var(--crown-surface-2)" }}>
                     <th style={th}>Term Code</th>
                     <th style={th}>Weight (bp)</th>
                     <th style={th}></th>
@@ -361,12 +361,12 @@ export default function GradeScaleWizard() {
                 </tbody>
               </table>
 
-              <p style={{ color: "#777", fontSize: 13 }}>
+              <p style={{ color: "var(--crown-muted)", fontSize: 13 }}>
                 Total: {weights.reduce((a, w) => a + (parseInt(w.weight_bp, 10) || 0), 0)} bp
                 {" "}(need 10 000)
               </p>
 
-              <button onClick={addWeight} style={{ ...btn, background: "#555", marginBottom: 12 }}>
+              <button onClick={addWeight} style={{ ...btn, background: "var(--crown-muted)", marginBottom: 12 }}>
                 + Add Term
               </button>
             </>
@@ -384,7 +384,7 @@ export default function GradeScaleWizard() {
 
       {phase === "done" && result && (
         <div style={{ maxWidth: 520 }}>
-          <h2 style={{ color: "#2e7d32", marginBottom: 16 }}>✓ Grade Scale Committed</h2>
+          <h2 style={{ color: "var(--crown-ok)", marginBottom: 16 }}>✓ Grade Scale Committed</h2>
           <p>{result.message}</p>
 
           <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 20 }}>
@@ -401,14 +401,14 @@ export default function GradeScaleWizard() {
                 ["Scale ID",       result.scale_id],
               ].map(([label, val]) => (
                 <tr key={label}>
-                  <td style={{ padding: "6px 12px", fontWeight: 600, background: "#fafafa", width: "40%" }}>{label}</td>
+                  <td style={{ padding: "6px 12px", fontWeight: 600, background: "var(--crown-surface-2)", width: "40%" }}>{label}</td>
                   <td style={{ padding: "6px 12px", fontFamily: "monospace" }}>{String(val ?? "—")}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <button onClick={reset} style={{ ...btn, marginTop: 24, background: "#555" }}>
+          <button onClick={reset} style={{ ...btn, marginTop: 24, background: "var(--crown-muted)" }}>
             Configure Another Scale
           </button>
         </div>
@@ -420,9 +420,9 @@ export default function GradeScaleWizard() {
 // ── Styles ──────────────────────────────────────────────────────────────────
 const h2  = { marginBottom: 20 };
 const lbl = { display: "flex", flexDirection: "column", fontWeight: 600, marginBottom: 16, fontSize: 14, gap: 4 };
-const inp = { padding: "8px 10px", fontSize: 14, border: "1px solid #ccc", borderRadius: 4, marginTop: 4, width: "100%", boxSizing: "border-box" };
-const btn = { padding: "10px 22px", background: "#1565c0", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 15, fontWeight: 600, marginTop: 8 };
-const err = { color: "#c00", marginTop: 8, fontSize: 14 };
-const th  = { padding: "8px 10px", textAlign: "left", borderBottom: "2px solid #ddd", fontSize: 13 };
-const td  = { padding: "6px 8px", borderBottom: "1px solid #eee" };
-const rmBtn = { background: "none", border: "none", cursor: "pointer", color: "#c00", fontSize: 18 };
+const inp = { padding: "8px 10px", fontSize: 14, border: "1px solid var(--crown-border)", borderRadius: 4, marginTop: 4, width: "100%", boxSizing: "border-box" };
+const btn = { padding: "10px 22px", background: "var(--crown-brand)", color: "var(--crown-surface)", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 15, fontWeight: 600, marginTop: 8 };
+const err = { color: "var(--crown-danger)", marginTop: 8, fontSize: 14 };
+const th  = { padding: "8px 10px", textAlign: "left", borderBottom: "2px solid var(--crown-border)", fontSize: 13 };
+const td  = { padding: "6px 8px", borderBottom: "1px solid var(--crown-border)" };
+const rmBtn = { background: "none", border: "none", cursor: "pointer", color: "var(--crown-danger)", fontSize: 18 };

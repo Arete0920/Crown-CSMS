@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown, patchGradeEntry, upsertAssignmentGrades } from "../api/gradebook";
 import { patchAssignment } from "../api/academics";
 import { getSchoolId, getToken } from "../lib/api";
@@ -566,16 +566,16 @@ export function GradebookRO() {
       subtitle="Read Only"
       right={<button className="crown-btn" onClick={() => window.print()}>Print</button>}
     >
-      <style>{`.muted{color:#666;font-size:0.9rem;margin-top:0.5rem}.error-box{margin:12px 0;padding:12px;border:1px solid #cc0000;background:#ffe6e6}.empty-state{margin:24px 0;padding:16px;border-left:4px solid #ddd;background:#f9f9f9}.empty-state h3{margin:0 0 8px 0;font-size:1.1rem}.debug-panel{margin:12px 0;padding:12px;background:#f0f8ff;border:1px solid #4a90e2;font-size:13px;font-family:monospace}.debug-panel h4{margin:0 0 8px 0;font-size:14px;font-family:system-ui}.debug-panel dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:4px}.debug-panel dt{font-weight:600}.debug-panel dd{margin:0;color:#333}`}</style>
+      <style>{`.muted{color:var(--crown-muted);font-size:0.9rem;margin-top:0.5rem}.error-box{margin:12px 0;padding:12px;border:1px solid var(--crown-danger);background:var(--crown-danger-bg)}.empty-state{margin:24px 0;padding:16px;border-left:4px solid var(--crown-border);background:var(--crown-surface-2)}.empty-state h3{margin:0 0 8px 0;font-size:1.1rem}.debug-panel{margin:12px 0;padding:12px;background:#f0f8ff;border:1px solid #4a90e2;font-size:13px;font-family:monospace}.debug-panel h4{margin:0 0 8px 0;font-size:14px;font-family:system-ui}.debug-panel dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:4px}.debug-panel dt{font-weight:600}.debug-panel dd{margin:0;color:var(--crown-ink)}`}</style>
 
       {/* Lane 4: Teacher grade-edit toolbar */}
       {canWriteAssignments && (
-        <div style={{ marginBottom: 12, padding: '8px 12px', border: '1px solid #ddd', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', background: lane4EditMode ? '#fffbf0' : '#fafafa' }}>
+        <div style={{ marginBottom: 12, padding: '8px 12px', border: '1px solid var(--crown-border)', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', background: lane4EditMode ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)' }}>
           <span style={{ fontWeight: 500, fontSize: 13 }}>Grade Edit</span>
           <button
             onClick={() => { setLane4EditMode(v => !v); setLane4Msg(null); }}
             disabled={lane4Saving}
-            style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: lane4EditMode ? 600 : 400, border: '1px solid #bbb', borderRadius: 3, background: lane4EditMode ? '#1976d2' : '#fff', color: lane4EditMode ? '#fff' : '#333' }}
+            style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: lane4EditMode ? 600 : 400, border: '1px solid var(--crown-border)', borderRadius: 3, background: lane4EditMode ? 'var(--crown-brand)' : 'var(--crown-surface)', color: lane4EditMode ? 'var(--crown-surface)' : 'var(--crown-ink)' }}
           >
             {lane4EditMode ? 'Editing ✓' : 'Edit Grades'}
           </button>
@@ -584,26 +584,26 @@ export function GradebookRO() {
               <button
                 onClick={lane4SaveAll}
                 disabled={lane4Saving}
-                style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid #1976d2', borderRadius: 3, background: '#1976d2', color: '#fff' }}
+                style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid var(--crown-brand)', borderRadius: 3, background: 'var(--crown-brand)', color: 'var(--crown-surface)' }}
               >
                 {lane4Saving ? 'Saving…' : 'Save Grades'}
               </button>
               <button
                 onClick={() => { setLane4Edits({}); setLane4EditMode(false); setLane4Msg(null); }}
                 disabled={lane4Saving}
-                style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', border: '1px solid #bbb', borderRadius: 3, background: '#fff', color: '#555' }}
+                style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', border: '1px solid var(--crown-border)', borderRadius: 3, background: 'var(--crown-surface)', color: 'var(--crown-muted)' }}
               >
                 Cancel
               </button>
             </>
           )}
           {lane4Msg && (
-            <span style={{ fontSize: 13, marginLeft: 8, color: lane4Msg.type === 'error' ? '#c62828' : lane4Msg.type === 'success' ? '#2e7d32' : '#555' }}>
+            <span style={{ fontSize: 13, marginLeft: 8, color: lane4Msg.type === 'error' ? 'var(--crown-danger)' : lane4Msg.type === 'success' ? 'var(--crown-ok)' : 'var(--crown-muted)' }}>
               {lane4Msg.type === 'success' ? '✅ ' : lane4Msg.type === 'error' ? '⛔ ' : 'ℹ️ '}{lane4Msg.text}
             </span>
           )}
           {lane4EditMode && (
-            <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>Edit cells below, then click Save Grades.</span>
+            <span style={{ fontSize: 12, color: 'var(--crown-muted)', marginLeft: 8 }}>Edit cells below, then click Save Grades.</span>
           )}
         </div>
       )}
@@ -651,7 +651,7 @@ export function GradebookRO() {
                 <dd style={{ color: "red" }}>
                   {lastError.message}
                   {lastError.status && ` [${lastError.status}]`}
-                  {lastError.body && <div style={{ marginTop: 4, fontSize: 11, color: "#666" }}>{lastError.body}</div>}
+                  {lastError.body && <div style={{ marginTop: 4, fontSize: 11, color: "var(--crown-muted)" }}>{lastError.body}</div>}
                 </dd>
               </>
             )}
@@ -703,7 +703,7 @@ export function GradebookRO() {
 
       {/* Debug panel: show selected section details */}
       {selectedSectionId && !loadingGrades && showDevPanels && (
-        <div className="debug-panel" style={{ background: "#fff8e1", borderColor: "#ffa726" }}>
+        <div className="debug-panel" style={{ background: "var(--crown-warn-bg)", borderColor: "var(--crown-warn)" }}>
           <h4>📊 Selected Section State</h4>
           <dl>
             <dt>Section ID:</dt>
@@ -723,7 +723,7 @@ export function GradebookRO() {
           <h3>No grades found</h3>
           <p>
             This section has no assignments or grades recorded.
-            {isDev && <><br />Tip: Run <code style={{ background: "#f0f0f0", padding: "2px 6px", borderRadius: 3 }}>python manage.py seed_gradebook_demo --school-id &lt;uuid&gt;</code></>}
+            {isDev && <><br />Tip: Run <code style={{ background: "var(--crown-surface-2)", padding: "2px 6px", borderRadius: 3 }}>python manage.py seed_gradebook_demo --school-id &lt;uuid&gt;</code></>}
           </p>
         </div>
       )}
@@ -751,8 +751,8 @@ export function GradebookRO() {
                 style={{
                   padding: "6px 12px",
                   fontSize: 13,
-                  background: editMsg.includes("✅") ? "#e6ffe6" : "#ffe6e6",
-                  border: `1px solid ${editMsg.includes("✅") ? "#00cc00" : "#cc0000"}`,
+                  background: editMsg.includes("✅") ? "var(--crown-ok-bg)" : "var(--crown-danger-bg)",
+                  border: `1px solid ${editMsg.includes("✅") ? "var(--crown-ok)" : "var(--crown-danger)"}`,
                   borderRadius: 4,
                 }}
               >
@@ -780,9 +780,9 @@ export function GradebookRO() {
                     position: "sticky",
                     left: 0,
                     top: 0,
-                    background: "#fff",
+                    background: "var(--crown-surface)",
                     zIndex: 11,
-                    borderBottom: "1px solid #ddd",
+                    borderBottom: "1px solid var(--crown-border)",
                     padding: "8px",
                     textAlign: "left",
                     fontWeight: 600,
@@ -798,7 +798,7 @@ export function GradebookRO() {
                           dir: s.key === "name" ? (s.dir === "asc" ? "desc" : "asc") : "asc",
                         }))
                       }
-                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
                       Name {rowSort.key === "name" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
                     </button>
@@ -810,7 +810,7 @@ export function GradebookRO() {
                           dir: s.key === "totalPct" ? (s.dir === "asc" ? "desc" : "asc") : "desc",
                         }))
                       }
-                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
                       Avg {rowSort.key === "totalPct" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
                     </button>
@@ -824,9 +824,9 @@ export function GradebookRO() {
                     style={{
                       position: "sticky",
                       top: 0,
-                      background: "#fff",
+                      background: "var(--crown-surface)",
                       zIndex: 10,
-                      borderBottom: "1px solid #ddd",
+                      borderBottom: "1px solid var(--crown-border)",
                       padding: "8px",
                       whiteSpace: "nowrap",
                       textAlign: "center",
@@ -862,7 +862,7 @@ export function GradebookRO() {
                               padding: "2px 6px",
                               cursor: token && canWriteAssignments ? "pointer" : "not-allowed",
                               background: "none",
-                              border: "1px solid #ccc",
+                              border: "1px solid var(--crown-border)",
                               borderRadius: 3,
                               opacity: token && canWriteAssignments ? 0.7 : 0.4,
                             }}
@@ -880,9 +880,9 @@ export function GradebookRO() {
                     position: "sticky",
                     right: 0,
                     top: 0,
-                    background: "#fff",
+                    background: "var(--crown-surface)",
                     zIndex: 12,
-                    borderBottom: "1px solid #ddd",
+                    borderBottom: "1px solid var(--crown-border)",
                     padding: "8px",
                     textAlign: "center",
                     fontWeight: 600,
@@ -900,13 +900,13 @@ export function GradebookRO() {
                     position: "sticky",
                     left: 0,
                     top: HEADER_ROW_HEIGHT,
-                    background: "#fff",
+                    background: "var(--crown-surface)",
                     zIndex: 11,
-                    borderBottom: "1px solid #ddd",
+                    borderBottom: "1px solid var(--crown-border)",
                     padding: "6px 8px",
                     textAlign: "left",
                     fontWeight: 400,
-                    color: "#555",
+                    color: "var(--crown-muted)",
                   }}
                 >
                   <div style={{ display: "flex", gap: 8 }}>
@@ -918,7 +918,7 @@ export function GradebookRO() {
                           dir: s.key === "title" ? (s.dir === "asc" ? "desc" : "asc") : "asc",
                         }))
                       }
-                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
                       Sort cols: Title {colSort.key === "title" ? (colSort.dir === "asc" ? "↑" : "↓") : ""}
                     </button>
@@ -931,7 +931,7 @@ export function GradebookRO() {
                           dir: s.key === "avgPct" ? (s.dir === "asc" ? "desc" : "asc") : "desc",
                         }))
                       }
-                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                      style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
                       Avg {colSort.key === "avgPct" ? (colSort.dir === "asc" ? "↑" : "↓") : ""}
                     </button>
@@ -950,13 +950,13 @@ export function GradebookRO() {
                       style={{
                         position: "sticky",
                         top: HEADER_ROW_HEIGHT,
-                        background: "#fff",
+                        background: "var(--crown-surface)",
                         zIndex: 10,
-                        borderBottom: "1px solid #ddd",
+                        borderBottom: "1px solid var(--crown-border)",
                         padding: "6px 8px",
                         textAlign: "center",
                         fontWeight: 400,
-                        color: "#555",
+                        color: "var(--crown-muted)",
                         whiteSpace: "nowrap",
                       }}
                       title={s && s.possible > 0 ? `${s.earned} / ${s.possible}` : ""}
@@ -971,13 +971,13 @@ export function GradebookRO() {
                     position: "sticky",
                     right: 0,
                     top: HEADER_ROW_HEIGHT,
-                    background: "#fff",
+                    background: "var(--crown-surface)",
                     zIndex: 12,
-                    borderBottom: "1px solid #ddd",
+                    borderBottom: "1px solid var(--crown-border)",
                     padding: "6px 8px",
                     textAlign: "center",
                     fontWeight: 400,
-                    color: "#555",
+                    color: "var(--crown-muted)",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -998,15 +998,15 @@ export function GradebookRO() {
                       style={{
                         position: "sticky",
                         left: 0,
-                        background: "#fff",
+                        background: "var(--crown-surface)",
                         zIndex: 1,
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid var(--crown-border)",
                         padding: "8px",
                         cursor: "pointer",
                         transition: "background 0.2s",
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f9f9f9")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--crown-surface-2)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "var(--crown-surface)")}
                       onClick={() => handleOpenDrilldown(s.student_id, label)}
                     >
                       <div style={{ fontWeight: 500 }}>{label || "Unnamed Student"}</div>
@@ -1026,7 +1026,7 @@ export function GradebookRO() {
                         <td
                           key={`${studentId}:${a._key}`}
                           style={{
-                            borderBottom: "1px solid #eee",
+                            borderBottom: "1px solid var(--crown-border)",
                             padding: "8px",
                             textAlign: "center",
                             lineHeight: "1.3",
@@ -1040,7 +1040,7 @@ export function GradebookRO() {
                               min="0"
                               value={lane4Edits[`${a.assignment_id}:${studentId}`]?.points_earned ?? (earned === "" || earned === null ? "" : earned)}
                               onChange={(e) => lane4SetEdit(a.assignment_id, studentId, { points_earned: e.target.value })}
-                              style={{ width: 72, textAlign: 'center', padding: '2px 4px', fontSize: 13, border: '1px solid #1976d2', borderRadius: 3 }}
+                              style={{ width: 72, textAlign: 'center', padding: '2px 4px', fontSize: 13, border: '1px solid var(--crown-brand)', borderRadius: 3 }}
                               aria-label={`Score for student on ${a.assignment_name}`}
                             />
                           ) : (
@@ -1063,10 +1063,10 @@ export function GradebookRO() {
                           style={{
                             position: "sticky",
                             right: 0,
-                            background: bg ?? "#fff",
+                            background: bg ?? "var(--crown-surface)",
                             zIndex: 3,
-                            borderLeft: "1px solid #f3f4f6",
-                            borderBottom: "1px solid #eee",
+                            borderLeft: "1px solid var(--crown-border)",
+                            borderBottom: "1px solid var(--crown-border)",
                             padding: "8px 10px",
                             textAlign: "center",
                             whiteSpace: "nowrap",
@@ -1112,7 +1112,7 @@ export function GradebookRO() {
             )}
 
             {drilldownLoading && (
-              <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
+              <div style={{ padding: "2rem", textAlign: "center", color: "var(--crown-muted)" }}>
                 Loading...
               </div>
             )}
@@ -1120,7 +1120,7 @@ export function GradebookRO() {
             {drilldownData && !drilldownLoading && (
               <>
                 {drilldownData.rows.length === 0 ? (
-                  <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
+                  <div style={{ padding: "2rem", textAlign: "center", color: "var(--crown-muted)" }}>
                     No data available for this student.
                   </div>
                 ) : (
@@ -1135,7 +1135,7 @@ export function GradebookRO() {
                     <details
                       open
                       style={{
-                        border: "1px solid #ddd",
+                        border: "1px solid var(--crown-border)",
                         borderRadius: "0.5rem",
                         padding: "1rem",
                         marginTop: "1rem",
@@ -1149,7 +1149,7 @@ export function GradebookRO() {
                           key={row.student_id}
                           style={{
                             padding: "0.75rem",
-                            borderBottom: "1px solid #eee",
+                            borderBottom: "1px solid var(--crown-border)",
                             fontSize: "0.875rem",
                           }}
                         >
@@ -1158,7 +1158,7 @@ export function GradebookRO() {
                             <span
                               style={{
                                 background:
-                                  row.pct >= 80 ? "#e8f5e9" : row.pct >= 70 ? "#fff9c4" : "#ffebee",
+                                  row.pct >= 80 ? "var(--crown-ok-bg)" : row.pct >= 70 ? "var(--crown-warn-bg)" : "var(--crown-danger-bg)",
                                 padding: "0.25rem 0.5rem",
                                 borderRadius: "0.25rem",
                               }}
@@ -1166,7 +1166,7 @@ export function GradebookRO() {
                               {row.pct.toFixed(1)}%
                             </span>
                           </div>
-                          <div style={{ color: "#666", marginTop: "0.25rem", fontSize: "0.75rem" }}>
+                          <div style={{ color: "var(--crown-muted)", marginTop: "0.25rem", fontSize: "0.75rem" }}>
                             {row.total_points_earned} / {row.total_points_possible} points
                             {row.missing_count > 0 && ` • ${row.missing_count} missing`}
                             {row.status !== "normal" && ` • [${row.status}]`}

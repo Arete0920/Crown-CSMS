@@ -14,14 +14,14 @@ export default function Login() {
         sx={{
           flex: 1,
           background: "linear-gradient(135deg, #1B3A6F 0%, #274C91 100%)",
-          color: "#fff",
+          color: "var(--crown-surface)",
           p: 6,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
         }}
       >
-        <Typography variant="h1" sx={{ color: "#fff", mb: 1 }}>
+        <Typography variant="h1" sx={{ color: "var(--crown-surface)", mb: 1 }}>
           Crown2026
         </Typography>
         <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.72)" }}>

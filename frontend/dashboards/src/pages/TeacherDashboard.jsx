@@ -32,18 +32,19 @@ import {
   Badge,
   Divider,
 } from "@mui/material";
-// Inline icon components — forbidden icon packages are not used.
+// Inline icon components � forbidden icon packages are not used.
 // Unicode characters replace icon imports per CI guardrail.
-const ClassIcon        = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>⊟</span>;
-const GradeIcon        = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>📋</span>;
-const AttendanceIcon   = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>✅</span>;
-const MessageIcon      = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>✉</span>;
-const AnnouncementIcon = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>📢</span>;
-const AddIcon          = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>＋</span>;
-const EditIcon         = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>✎</span>;
-const CheckIcon        = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>✓</span>;
-const TimeIcon         = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>⏱</span>;
+const ClassIcon        = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>?</span>;
+const GradeIcon        = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>??</span>;
+const AttendanceIcon   = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>?</span>;
+const MessageIcon      = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>?</span>;
+const AnnouncementIcon = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>??</span>;
+const AddIcon          = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>+</span>;
+const EditIcon         = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>?</span>;
+const CheckIcon        = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>?</span>;
+const TimeIcon         = () => <span aria-hidden="true" style={{fontSize:'1.1em'}}>?</span>;
 import { getSelectedSchoolId } from '../utils/authClient';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function normalizeBaseUrl(url) {
   if (!url) return "";
@@ -59,6 +60,22 @@ function getAuthHeaders() {
   if (schoolId) h["X-School-Id"] = schoolId;
   return h;
 }
+
+/* ── Teacher KPI flip cards ─────────────────────────────────────────── */
+const ADMIN_KPI = [
+  { label: "Present Today",     value: "—",    trend: null,             trendUp: null,
+    definition: "Number of students marked present in your sections today vs. total enrolled.",
+    dataSource: "Attendance Module", dataHref: "/attendance" },
+  { label: "Avg Class Grade",   value: "—",    trend: null,             trendUp: null,
+    definition: "Weighted mean grade across all assignments in your active sections this term.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+  { label: "Missing Work",      value: "—",    trend: null,             trendUp: null,
+    definition: "Total count of assignments past due with no submission, across all your sections.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+  { label: "Assignments Due",   value: "3",    trend: null,             trendUp: null,
+    definition: "Number of assignments due this week that still require grading.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+];
 
 export default function TeacherDashboard() {
   const schoolId = useMemo(() => getSelectedSchoolId(), []);
@@ -118,7 +135,7 @@ export default function TeacherDashboard() {
 
         if (!res.ok) {
           const text = await res.text().catch(() => "");
-          throw new Error(`Sections failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`);
+          throw new Error(`Sections failed: ${res.status} ${res.statusText}${text ? ` � ${text}` : ""}`);
         }
 
         const json = await res.json();
@@ -360,6 +377,7 @@ export default function TeacherDashboard() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <KpiStrip cards={ADMIN_KPI} />
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           Teacher Dashboard
@@ -401,7 +419,7 @@ export default function TeacherDashboard() {
                           />
                         </Stack>
                         <Typography variant="body2" color="text.secondary">
-                          {classItem.time} • {classItem.room} • {classItem.roster_count || 0} students
+                          {classItem.time} � {classItem.room} � {classItem.roster_count || 0} students
                         </Typography>
                       </Box>
                       <Stack direction="row" spacing={1}>
@@ -503,7 +521,7 @@ export default function TeacherDashboard() {
                   <CardContent>
                     <Typography variant="subtitle1">{classItem.course_name}</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {classItem.roster_count || 0} students • {classItem.time}
+                      {classItem.roster_count || 0} students � {classItem.time}
                     </Typography>
                     <Button
                       variant="outlined"
@@ -619,7 +637,7 @@ export default function TeacherDashboard() {
                   {sectionRoster.map((student, index) => (
                     <Box key={student.student_id} sx={{ 
                       p: 2, 
-                      borderBottom: index < sectionRoster.length - 1 ? '1px solid #e0e0e0' : 'none',
+                      borderBottom: index < sectionRoster.length - 1 ? '1px solid var(--crown-border)' : 'none',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between'
@@ -652,7 +670,7 @@ export default function TeacherDashboard() {
               )}
               
               {sectionRoster.length > 0 && (
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', border: '1px solid var(--crown-border)', borderRadius: 1 }}>
                   <Typography variant="body2" color="text.secondary">
                     Summary: {sectionRoster.length} students | 
                     Present: {Object.values(attendanceRecords).filter(status => status === "PRESENT").length} | 
@@ -720,8 +738,8 @@ export default function TeacherDashboard() {
                               justifyContent: 'space-between',
                               py: 1,
                               px: 2,
-                              borderBottom: studentIndex < gradebookData.rows.length - 1 ? '1px solid #f0f0f0' : 'none',
-                              bgcolor: pendingChange ? '#fff3e0' : 'transparent'
+                              borderBottom: studentIndex < gradebookData.rows.length - 1 ? '1px solid var(--crown-border)' : 'none',
+                              bgcolor: pendingChange ? 'var(--crown-warn-bg)' : 'transparent'
                             }}>
                               <Box sx={{ flex: 1 }}>
                                 <Typography variant="body2">
@@ -836,10 +854,10 @@ export default function TeacherDashboard() {
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="body2">
               <strong>Quick Templates:</strong><br />
-              • Weekly update about class progress<br />
-              • Reminder about upcoming assignments or tests<br />
-              • Positive feedback about student participation<br />
-              • Request for parent-teacher conference
+              � Weekly update about class progress<br />
+              � Reminder about upcoming assignments or tests<br />
+              � Positive feedback about student participation<br />
+              � Request for parent-teacher conference
             </Typography>
           </Alert>
         </DialogContent>

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 /* ── Auth helpers ────────────────────────────────────────────────────── */
 function apiBase() {
@@ -63,29 +64,26 @@ function fmt$(n) {
 }
 
 /* ── Pill ────────────────────────────────────────────────────────────── */
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  blue:   { background: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    blue:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-brand)'   },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
-function ProgressBar({ pct, color = '#10b981' }) {
+function ProgressBar({ pct, color = 'var(--crown-brand)' }) {
   const clamped = Math.min(100, Math.max(0, pct));
   return (
-    <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
+    <div style={{ height: 6, background: 'var(--crown-border)', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
       <div style={{ height: '100%', width: `${clamped}%`, background: color, borderRadius: 3, transition: 'width 0.4s' }} />
     </div>
   );
@@ -94,17 +92,32 @@ function ProgressBar({ pct, color = '#10b981' }) {
 /* ── StatRow ─────────────────────────────────────────────────────────── */
 function StatRow({ label, value, sub }) {
   return (
-    <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-      <td style={{ padding: '8px 0', color: '#6b7280', fontSize: 13 }}>{label}</td>
+    <tr style={{ borderBottom: '1px solid var(--crown-border)' }}>
+      <td style={{ padding: '8px 0', color: 'var(--crown-muted)', fontSize: 13 }}>{label}</td>
       <td style={{ padding: '8px 0', textAlign: 'right' }}>
-        <span style={{ fontWeight: 700, color: '#111827', fontSize: 14 }}>{value}</span>
-        {sub && <span style={{ marginLeft: 6, fontSize: 11, color: '#9ca3af' }}>{sub}</span>}
+        <span style={{ fontWeight: 700, color: 'var(--crown-ink)', fontSize: 14 }}>{value}</span>
+        {sub && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--crown-muted)' }}>{sub}</span>}
       </td>
     </tr>
   );
 }
 
 /* ── Main component ─────────────────────────────────────────────────── */
+/* â”€â”€ Board KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Enrollment",         value: "742",    trend: "+4.1% vs goal",    trendUp: true,
+    definition: "Total active student enrollment for the current academic year.",
+    dataSource: "Enrollment Module", dataHref: "/admissions" },
+  { label: "Net Tuition Rev",    value: "$6.8M",  trend: "+10% vs last yr",  trendUp: true,
+    definition: "Gross tuition collected minus total financial aid awarded — year-to-date.",
+    dataSource: "Billing Module", dataHref: "/billing" },
+  { label: "Staff Retention",    value: "94%",    trend: "+2% vs last yr",   trendUp: true,
+    definition: "Percentage of employees who remained from the start to current date this year.",
+    dataSource: "HR Module", dataHref: "/human-resources" },
+  { label: "Endowment Balance",  value: "$2.1M",  trend: "+$80K vs last yr", trendUp: true,
+    definition: "Current endowment fund balance including investment returns and new gifts.",
+    dataSource: "Finance Module", dataHref: "/finance" },
+];
 export default function BoardDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -123,7 +136,10 @@ export default function BoardDashboard() {
   const enrollPct = enr.target ? Math.round((enr.current / enr.target) * 100) : 0;
 
   return (
-    <CrownLayout title="School Board" subtitle="Governance · mission · finance oversight">
+    <CrownLayout title="School Board" subtitle="Governance · mission · finance oversight"
+      right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
+    >
+      <KpiStrip cards={ADMIN_KPI} />
       <DashboardSection title="Key Indicators">
         <CrownGrid>
 
@@ -165,10 +181,7 @@ export default function BoardDashboard() {
 
         {/* ── Mission & culture ─────────────────────────────────────── */}
         <Col span={6}>
-          <CrownCard
-            title="Mission &amp; Culture"
-            right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
-          >
+          <CrownCard title="Mission &amp; Culture">
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
                 <StatRow
@@ -203,11 +216,11 @@ export default function BoardDashboard() {
               </tbody>
             </table>
             <div style={{ marginTop: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--crown-muted)', marginBottom: 2 }}>
                 <span>Collection progress</span>
                 <span>{fin.collection_pct}%</span>
               </div>
-              <ProgressBar pct={fin.collection_pct} color="#10b981" />
+              <ProgressBar pct={fin.collection_pct} color="var(--crown-ok)" />
             </div>
           </CrownCard>
         </Col>
@@ -230,11 +243,11 @@ export default function BoardDashboard() {
               </tbody>
             </table>
             <div style={{ marginTop: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--crown-muted)', marginBottom: 2 }}>
                 <span>Enrolled vs target</span>
                 <span>{enrollPct}%</span>
               </div>
-              <ProgressBar pct={enrollPct} color={enrollPct >= 90 ? '#10b981' : enrollPct >= 75 ? '#f59e0b' : '#ef4444'} />
+              <ProgressBar pct={enrollPct} color={enrollPct >= 90 ? 'var(--crown-ok)' : enrollPct >= 75 ? 'var(--crown-warn)' : 'var(--crown-danger)'} />
             </div>
           </CrownCard>
         </Col>
@@ -255,7 +268,7 @@ export default function BoardDashboard() {
             <div style={{ marginTop: 12 }}>
               <a
                 href="/integrity"
-                style={{ fontSize: 12, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+                style={{ fontSize: 12, color: 'var(--crown-brand)', textDecoration: 'none', fontWeight: 600 }}
               >
                 View live system integrity →
               </a>

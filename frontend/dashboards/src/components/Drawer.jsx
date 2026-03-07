@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 
 export default function Drawer({
   open,
@@ -41,7 +41,7 @@ export default function Drawer({
           right: 0,
           height: "100vh",
           width,
-          background: "#fff",
+          background: "var(--crown-surface)",
           zIndex: 1001,
           boxShadow: "-8px 0 24px rgba(0,0,0,0.15)",
           display: "flex",
@@ -52,7 +52,7 @@ export default function Drawer({
         <div
           style={{
             padding: "14px 16px",
-            borderBottom: "1px solid #eee",
+            borderBottom: "1px solid var(--crown-border)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",

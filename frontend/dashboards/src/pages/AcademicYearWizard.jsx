@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AcademicYearWizard.jsx
  *
  * Wizard #15 — Academic Year Rollover
@@ -167,7 +167,7 @@ export default function AcademicYearWizard() {
           {err && <p style={{ color: "red" }}>{err}</p>}
           <form onSubmit={handleTerms}>
             {terms.map((term, idx) => (
-              <div key={idx} style={{ border: "1px solid #ddd", borderRadius: 4, padding: 12, marginBottom: 12 }}>
+              <div key={idx} style={{ border: "1px solid var(--crown-border)", borderRadius: 4, padding: 12, marginBottom: 12 }}>
                 <div style={{ marginBottom: 6 }}>
                   <label>Code&nbsp;
                     <input
@@ -224,7 +224,7 @@ export default function AcademicYearWizard() {
     <CrownLayout title="Academic Year Rollover" subtitle="Wizard #15 — Academic Year Rollover">
       <Step title="Step 1 of 2 — Year Details">
         {err && <p style={{ color: "red" }}>{err}</p>}
-        <p style={{ color: "#666", marginBottom: 16 }}>
+        <p style={{ color: "var(--crown-muted)", marginBottom: 16 }}>
           This wizard creates a new academic year and marks it as current.
           The previous current year will be deactivated automatically.
         </p>

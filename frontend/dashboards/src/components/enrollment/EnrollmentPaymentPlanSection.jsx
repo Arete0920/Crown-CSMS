@@ -1,4 +1,4 @@
-/**
+﻿/**
  * EnrollmentPaymentPlanSection.jsx
  * =================================
  * Read-only aid-aware payment plan preview for the enrollment UI.
@@ -63,43 +63,43 @@ export default function EnrollmentPaymentPlanSection({
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e2e8f0",
+        background: "var(--crown-surface)",
+        border: "1px solid var(--crown-border)",
         borderRadius: 8,
         padding: 20,
         maxWidth: 600,
       }}
     >
-      <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: "#1e293b" }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: "var(--crown-ink)" }}>
         Payment Plan Options
       </h3>
 
-      <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 16 }}>
+      <div style={{ fontSize: 12, color: "var(--crown-muted)", marginBottom: 16 }}>
         <span>Gross tuition: {fmt(tuitionCents)}</span>
         {aidCents > 0 && (
           <>
             &nbsp;·&nbsp;
-            <span style={{ color: "#15803d" }}>Aid: −{fmt(aidCents)}</span>
+            <span style={{ color: "var(--crown-ok)" }}>Aid: −{fmt(aidCents)}</span>
             &nbsp;·&nbsp;
-            <span style={{ fontWeight: 600, color: "#0f172a" }}>Net: {fmt(netCents)}</span>
+            <span style={{ fontWeight: 600, color: "var(--crown-ink)" }}>Net: {fmt(netCents)}</span>
           </>
         )}
       </div>
 
       {activePlans.length === 0 && (
-        <p style={{ fontSize: 13, color: "#9ca3af" }}>No payment plans configured.</p>
+        <p style={{ fontSize: 13, color: "var(--crown-muted)" }}>No payment plans configured.</p>
       )}
 
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
-          <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-            <th style={{ textAlign: "left", paddingBottom: 8, color: "#64748b", fontWeight: 500 }}>
+          <tr style={{ borderBottom: "1px solid var(--crown-border)" }}>
+            <th style={{ textAlign: "left", paddingBottom: 8, color: "var(--crown-muted)", fontWeight: 500 }}>
               Plan
             </th>
-            <th style={{ textAlign: "right", paddingBottom: 8, color: "#64748b", fontWeight: 500 }}>
+            <th style={{ textAlign: "right", paddingBottom: 8, color: "var(--crown-muted)", fontWeight: 500 }}>
               Installments
             </th>
-            <th style={{ textAlign: "right", paddingBottom: 8, color: "#64748b", fontWeight: 500 }}>
+            <th style={{ textAlign: "right", paddingBottom: 8, color: "var(--crown-muted)", fontWeight: 500 }}>
               Each
             </th>
           </tr>
@@ -108,12 +108,12 @@ export default function EnrollmentPaymentPlanSection({
           {activePlans.map(({ key, label, installments, perInstallment, discountNote }) => (
             <tr
               key={key}
-              style={{ borderBottom: "1px solid #f8fafc" }}
+              style={{ borderBottom: "1px solid var(--crown-border)" }}
             >
               <td style={{ padding: "8px 0", verticalAlign: "top" }}>
                 <div>{label}</div>
                 {discountNote && (
-                  <div style={{ fontSize: 11, color: "#15803d", marginTop: 2 }}>{discountNote}</div>
+                  <div style={{ fontSize: 11, color: "var(--crown-ok)", marginTop: 2 }}>{discountNote}</div>
                 )}
               </td>
               <td style={{ textAlign: "right", padding: "8px 0", verticalAlign: "top" }}>
@@ -132,10 +132,10 @@ export default function EnrollmentPaymentPlanSection({
           style={{
             marginTop: 14,
             padding: "10px 12px",
-            background: "#f8fafc",
+            background: "var(--crown-surface-2)",
             borderRadius: 6,
             fontSize: 12,
-            color: "#475569",
+            color: "var(--crown-muted)",
           }}
         >
           {achNote && <div>ℹ {achNote}</div>}

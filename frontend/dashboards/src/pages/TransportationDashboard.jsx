@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection   from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -69,25 +71,37 @@ async function fetchTransportationMetrics() {
   }
 }
 
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
 const STATUS_COLOR = { on_time: 'green', late: 'red', cancelled: 'red' };
 
+/* â”€â”€ Transportation KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Routes Active",     value: "8",    trend: null,              trendUp: null,
+    definition: "Bus and carpool routes currently in operation for morning and afternoon runs.",
+    dataSource: "Transportation Module", dataHref: "/transportation" },
+  { label: "Students on Bus",   value: "142",  trend: null,              trendUp: null,
+    definition: "Total students registered on daily bus routes (AM + PM).",
+    dataSource: "Transportation Module", dataHref: "/transportation" },
+  { label: "On-Time Rate",      value: "97%",  trend: "+1% vs last wk",  trendUp: true,
+    definition: "Percentage of route arrivals within 5 minutes of scheduled pickup/drop-off.",
+    dataSource: "Transportation Module", dataHref: "/transportation" },
+  { label: "Incidents MTD",     value: "1",    trend: null,              trendUp: null,
+    definition: "Transportation incidents (late, breakdown, safety issue) reported this month.",
+    dataSource: "Transportation Module", dataHref: "/transportation" },
+];
 export default function TransportationDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -109,89 +123,82 @@ export default function TransportationDashboard() {
       subtitle="Route status, driver coverage, riders, and maintenance tracking"
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      {loading && <p style={{ color: '#6b7280', padding: 16 }}>Loading…</p>}
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      <CrownGrid>
-        <Col span={3}>
-          <CrownMetricCard label="Routes Today"         value={data.routes_today        ?? DEMO.routes_today} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Riders Today"         value={data.riders_today        ?? DEMO.riders_today} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Late Runs"            value={data.late_runs           ?? DEMO.late_runs} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Maintenance Flags"    value={data.maintenance_flags   ?? DEMO.maintenance_flags} />
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}><CrownMetricCard label="Routes Today" value={data.routes_today ?? DEMO.routes_today} /></Col>
+          <Col span={3}><CrownMetricCard label="Riders Today" value={data.riders_today ?? DEMO.riders_today} /></Col>
+          <Col span={3}><CrownMetricCard label="Late Runs" value={data.late_runs ?? DEMO.late_runs} /></Col>
+          <Col span={3}><CrownMetricCard label="Maintenance Flags" value={data.maintenance_flags ?? DEMO.maintenance_flags} /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Route Status ── */}
-        <Col span={8}>
-          <CrownCard title="Route Status">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Route', 'Driver', 'Riders', 'Status'].map(h => (
-                    <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {routes.map((r, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 500 }}>{r.route}</td>
-                    <td style={{ padding: '6px 8px', color: '#374151' }}>{r.driver}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280' }}>{r.riders}</td>
-                    <td style={{ padding: '6px 8px' }}><Pill color={STATUS_COLOR[r.status] || 'gray'}>{r.status.replace('_', ' ')}</Pill></td>
+      <DashboardSection title="Routes &amp; Incidents">
+        <CrownGrid>
+          <Col span={8}>
+            <CrownCard title="Route Status">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Route', 'Driver', 'Riders', 'Status'].map(h => (
+                      <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
+                </thead>
+                <tbody>
+                  {routes.map((r, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{r.route}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{r.driver}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{r.riders}</td>
+                      <td style={{ padding: '6px 8px' }}><Pill color={STATUS_COLOR[r.status] || 'gray'}>{r.status.replace('_', ' ')}</Pill></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+          <Col span={4}>
+            <CrownCard title="Recent Incidents">
+              {incidents.length === 0 ? (
+                <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No incidents this week ✓</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {incidents.map((inc, i) => (
+                    <div key={i} style={{ padding: '8px 10px', borderRadius: 5, background: 'var(--crown-surface-2)', border: '1px solid var(--crown-border)', fontSize: 13 }}>
+                      <div style={{ fontWeight: 600, color: 'var(--crown-ink)' }}>{inc.route} — {inc.date}</div>
+                      <div style={{ color: 'var(--crown-muted)', marginTop: 2 }}>{inc.description}</div>
+                      {inc.resolved && <div style={{ color: 'var(--crown-ok)', fontSize: 11, marginTop: 4 }}>✓ Resolved</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-        {/* ── Incidents ── */}
-        <Col span={4}>
-          <CrownCard title="Recent Incidents">
-            {incidents.length === 0 ? (
-              <p style={{ fontSize: 13, color: '#16a34a' }}>No incidents this week ✓</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {incidents.map((inc, i) => (
-                  <div key={i} style={{ padding: '8px 10px', borderRadius: 5, background: '#f9fafb', border: '1px solid #e5e7eb', fontSize: 13 }}>
-                    <div style={{ fontWeight: 600, color: '#374151' }}>{inc.route} — {inc.date}</div>
-                    <div style={{ color: '#6b7280', marginTop: 2 }}>{inc.description}</div>
-                    {inc.resolved && <div style={{ color: '#16a34a', fontSize: 11, marginTop: 4 }}>✓ Resolved</div>}
+      <DashboardSection title="Alerts">
+        <CrownGrid>
+          <Col span={12}>
+            <CrownCard title="Alerts &amp; Maintenance">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {alerts.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                    background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                    border: '1px solid var(--crown-border)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: a.severity === 'red' ? 'var(--crown-danger)' : a.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{a.label}</span>
                   </div>
                 ))}
               </div>
-            )}
-          </CrownCard>
-        </Col>
-      </CrownGrid>
-
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Alerts ── */}
-        <Col span={12}>
-          <CrownCard title="Alerts &amp; Maintenance">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {alerts.map((a, i) => (
-                <div key={i} style={{
-                  padding: '8px 12px', borderRadius: 6,
-                  background: a.severity === 'red' ? '#fee2e2' : a.severity === 'yellow' ? '#fef9c3' : '#f3f4f6',
-                  border: `1px solid ${a.severity === 'red' ? '#fca5a5' : a.severity === 'yellow' ? '#fde047' : '#e5e7eb'}`,
-                }}>
-                  <span style={{ fontSize: 13, color: a.severity === 'red' ? '#991b1b' : a.severity === 'yellow' ? '#854d0e' : '#374151' }}>
-                    {a.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

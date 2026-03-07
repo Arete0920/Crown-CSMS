@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { authenticatedFetch } from '../utils/authClient.js';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import ErrorBanner from '../components/ui/ErrorBanner.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 const API_BASE = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
 
@@ -32,8 +34,8 @@ function AlertBanner({ alerts }) {
         <div
           key={i}
           style={{
-            background: '#fff3cd',
-            border: '1px solid #ffc107',
+            background: 'var(--crown-warn-bg)',
+            border: '1px solid var(--crown-warn)',
             borderRadius: 6,
             padding: '7px 12px',
             marginBottom: 5,
@@ -58,17 +60,17 @@ function ChildCard({ child }) {
   return (
     <div
       style={{
-        border: '1px solid #e5e7eb',
+        border: '1px solid var(--crown-border)',
         borderRadius: 10,
         padding: '14px 16px',
         marginBottom: 12,
-        background: '#fff',
+        background: 'var(--crown-surface)',
       }}
     >
       <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 8 }}>
         {child.first_name} {child.last_name}
         {child.grade_level ? (
-          <span style={{ fontWeight: 400, color: '#6b7280', marginLeft: 8, fontSize: '0.85rem' }}>
+          <span style={{ fontWeight: 400, color: 'var(--crown-muted)', marginLeft: 8, fontSize: '0.85rem' }}>
             Grade {child.grade_level}
           </span>
         ) : null}
@@ -87,14 +89,14 @@ function ChildCard({ child }) {
           <div
             key={label}
             style={{
-              background: '#f9fafb',
-              border: '1px solid #e5e7eb',
+              background: 'var(--crown-surface-2)',
+              border: '1px solid var(--crown-border)',
               borderRadius: 6,
               padding: '6px 12px',
               minWidth: 90,
             }}
           >
-            <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase' }}>{label}</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--crown-muted)', textTransform: 'uppercase' }}>{label}</div>
             <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{value}</div>
           </div>
         ))}
@@ -102,13 +104,13 @@ function ChildCard({ child }) {
 
       {child.upcoming_assignments?.length > 0 && (
         <div>
-          <div style={{ fontSize: '0.8rem', color: '#6b7280', marginBottom: 4 }}>Upcoming</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--crown-muted)', marginBottom: 4 }}>Upcoming</div>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.85rem' }}>
             {child.upcoming_assignments.map((a, i) => {
               const due = a.due_date ? new Date(a.due_date).toLocaleDateString() : '—';
               return (
                 <li key={i} style={{ marginBottom: 2 }}>
-                  {a.name} <span style={{ color: '#9ca3af' }}>· due {due}</span>
+                  {a.name} <span style={{ color: 'var(--crown-muted)' }}>· due {due}</span>
                 </li>
               );
             })}
@@ -119,6 +121,21 @@ function ChildCard({ child }) {
   );
 }
 
+/* â”€â”€ Parent KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "My Children",       value: "2",    trend: null,              trendUp: null,
+    definition: "Number of enrolled students linked to your parent or guardian account.",
+    dataSource: "Enrollment Module", dataHref: "/student" },
+  { label: "Upcoming Events",   value: "4",    trend: null,              trendUp: null,
+    definition: "School events in the next 14 days relevant to your family.",
+    dataSource: "Calendar Module", dataHref: "/calendar" },
+  { label: "Unread Messages",   value: "3",    trend: null,              trendUp: null,
+    definition: "Unread messages from teachers, administrators, or the school office.",
+    dataSource: "Communications Module", dataHref: "/communications" },
+  { label: "Balance Due",       value: "$450", trend: null,              trendUp: null,
+    definition: "Total outstanding tuition or fee balance on your household account.",
+    dataSource: "Billing Module", dataHref: "/billing" },
+];
 export default function ParentDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -146,6 +163,7 @@ export default function ParentDashboard() {
       title="Parent Dashboard"
       subtitle={hh.name ? `${hh.name} · Family overview` : 'Family academics, finance, and alerts'}
     >
+      <KpiStrip cards={ADMIN_KPI} />
       <ErrorBanner title="Dashboard unavailable" message={error} />
 
       {!data && !error && (

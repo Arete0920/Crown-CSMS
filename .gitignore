@@ -36,6 +36,11 @@ _local_proofs/
 app_logs/
 media/
 
+# Local secrets (never commit — contains rotated credentials)
+local.secrets.ps1
+local.secrets.sh
+*.local.secrets
+
 # Audit runner output (attach to PRs/tags manually)
 artifacts/
 

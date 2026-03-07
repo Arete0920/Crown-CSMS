@@ -1,14 +1,14 @@
 ﻿/**
  * BellScheduleWizard.jsx
  *
- * Wizard #19 — Bell Schedule / Day Template Seed
+ * Wizard #19 � Bell Schedule / Day Template Seed
  *
  * Phases:
- *   1. Configure  — schedule name, mode (SINGLE_DAY | DAY_TEMPLATES), academic year ID
- *   2. Blocks     — define period blocks per template
+ *   1. Configure  � schedule name, mode (SINGLE_DAY | DAY_TEMPLATES), academic year ID
+ *   2. Blocks     � define period blocks per template
  *                   SINGLE_DAY: 1 template (DEFAULT), N blocks
  *                   DAY_TEMPLATES: 2+ templates (e.g. A/B or MON-FRI), each with N blocks
- *   3. Done       — commit result: schedule_id, template_count, snapshot
+ *   3. Done       � commit result: schedule_id, template_count, snapshot
  */
 import { useState, useCallback } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
@@ -36,7 +36,7 @@ async function _post(path, body) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 1 — Configure
+// Phase 1 � Configure
 // ---------------------------------------------------------------------------
 
 function PhaseConfig({ onDone }) {
@@ -69,7 +69,7 @@ function PhaseConfig({ onDone }) {
 
   return (
     <section>
-      <h3 style={{ marginBottom: 16 }}>Step 1 — Configure Bell Schedule</h3>
+      <h3 style={{ marginBottom: 16 }}>Step 1 � Configure Bell Schedule</h3>
       <table style={{ borderCollapse: "collapse", width: "100%", maxWidth: 520 }}>
         <tbody>
           <tr>
@@ -89,7 +89,7 @@ function PhaseConfig({ onDone }) {
               <select value={scheduleMode} onChange={e => setScheduleMode(e.target.value)} style={{ padding: "6px 8px" }}>
                 {SCHEDULE_MODES.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "var(--crown-muted)", marginTop: 4 }}>
                 {scheduleMode === "SINGLE_DAY" ? "All days follow one pattern (1 template: DEFAULT)." : "Different day types (A/B or Mon-Fri) each have their own periods."}
               </div>
             </td>
@@ -113,7 +113,7 @@ function PhaseConfig({ onDone }) {
         disabled={busy}
         style={{ marginTop: 16, padding: "8px 20px", fontWeight: 600 }}
       >
-        {busy ? "Saving…" : "Next: Define Period Blocks →"}
+        {busy ? "Saving�" : "Next: Define Period Blocks ?"}
       </button>
     </section>
   );
@@ -135,7 +135,7 @@ function BlockTable({ blocks, onChange }) {
     <div>
       <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
         <thead>
-          <tr style={{ background: "#f0f0f0" }}>
+          <tr style={{ background: "var(--crown-surface-2)" }}>
             <th style={thS}>Code</th>
             <th style={thS}>Label</th>
             <th style={thS}>Start</th>
@@ -156,7 +156,7 @@ function BlockTable({ blocks, onChange }) {
               <td style={{ ...tdS, textAlign: "center" }}><input type="checkbox" checked={b.is_instructional} onChange={e => update(i, "is_instructional", e.target.checked)} /></td>
               <td style={{ ...tdS, textAlign: "center" }}><input type="checkbox" checked={b.is_lunch} onChange={e => update(i, "is_lunch", e.target.checked)} /></td>
               <td style={{ ...tdS, textAlign: "center" }}><input type="checkbox" checked={b.is_break} onChange={e => update(i, "is_break", e.target.checked)} /></td>
-              <td style={tdS}><button onClick={() => removeBlock(i)} title="Remove block" style={{ color: "red", background: "none", border: "none", cursor: "pointer", fontSize: 16 }}>✕</button></td>
+              <td style={tdS}><button onClick={() => removeBlock(i)} title="Remove block" style={{ color: "red", background: "none", border: "none", cursor: "pointer", fontSize: 16 }}>?</button></td>
             </tr>
           ))}
         </tbody>
@@ -166,12 +166,12 @@ function BlockTable({ blocks, onChange }) {
   );
 }
 
-const thS = { padding: "6px 8px", textAlign: "left", fontWeight: 600, border: "1px solid #ddd" };
-const tdS = { padding: "4px 6px", border: "1px solid #ddd", verticalAlign: "middle" };
-const inputS = { width: "100%", padding: "4px 6px", boxSizing: "border-box", border: "1px solid #ccc" };
+const thS = { padding: "6px 8px", textAlign: "left", fontWeight: 600, border: "1px solid var(--crown-border)" };
+const tdS = { padding: "4px 6px", border: "1px solid var(--crown-border)", verticalAlign: "middle" };
+const inputS = { width: "100%", padding: "4px 6px", boxSizing: "border-box", border: "1px solid var(--crown-border)" };
 
 // ---------------------------------------------------------------------------
-// Phase 2 — Blocks
+// Phase 2 � Blocks
 // ---------------------------------------------------------------------------
 
 function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
@@ -204,20 +204,20 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
 
   return (
     <section>
-      <h3 style={{ marginBottom: 8 }}>Step 2 — Define Period Blocks</h3>
+      <h3 style={{ marginBottom: 8 }}>Step 2 � Define Period Blocks</h3>
       {scheduleMode === "SINGLE_DAY" && (
-        <p style={{ fontSize: 13, color: "#555", marginBottom: 12 }}>
+        <p style={{ fontSize: 13, color: "var(--crown-muted)", marginBottom: 12 }}>
           SINGLE_DAY: one template (DEFAULT) applied to all days. Gaps between blocks are allowed.
         </p>
       )}
       {scheduleMode === "DAY_TEMPLATES" && (
-        <p style={{ fontSize: 13, color: "#555", marginBottom: 12 }}>
+        <p style={{ fontSize: 13, color: "var(--crown-muted)", marginBottom: 12 }}>
           DAY_TEMPLATES: define 2+ templates (e.g. A/B or MON/TUE/WED/THU/FRI), each with their own block set.
         </p>
       )}
 
       {templates.map((tpl, i) => (
-        <div key={i} style={{ border: "1px solid #ccc", borderRadius: 6, padding: 12, marginBottom: 14 }}>
+        <div key={i} style={{ border: "1px solid var(--crown-border)", borderRadius: 6, padding: 12, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             {scheduleMode === "SINGLE_DAY" ? (
               <strong>Template: DEFAULT</strong>
@@ -227,11 +227,11 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
                 <input
                   value={tpl.template_code}
                   onChange={e => updateTemplateCode(i, e.target.value.toUpperCase())}
-                  placeholder="A, B, MON, TUE…"
+                  placeholder="A, B, MON, TUE�"
                   style={{ padding: "4px 8px", width: 100, textTransform: "uppercase" }}
                 />
                 {templates.length > 2 && (
-                  <button onClick={() => removeTemplate(i)} style={{ color: "red", background: "none", border: "none", cursor: "pointer" }}>✕ Remove</button>
+                  <button onClick={() => removeTemplate(i)} style={{ color: "red", background: "none", border: "none", cursor: "pointer" }}>? Remove</button>
                 )}
               </>
             )}
@@ -251,7 +251,7 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
           disabled={busy}
           style={{ padding: "8px 20px", fontWeight: 600 }}
         >
-          {busy ? "Committing…" : "Commit Bell Schedule →"}
+          {busy ? "Committing�" : "Commit Bell Schedule ?"}
         </button>
       </div>
     </section>
@@ -259,13 +259,13 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 3 — Done
+// Phase 3 � Done
 // ---------------------------------------------------------------------------
 
 function PhaseDone({ result, onReset }) {
   return (
     <section>
-      <h3 style={{ marginBottom: 12, color: "#1a7f37" }}>✓ Bell Schedule Committed</h3>
+      <h3 style={{ marginBottom: 12, color: "var(--crown-ok)" }}>? Bell Schedule Committed</h3>
       <table style={{ borderCollapse: "collapse", marginBottom: 16 }}>
         <tbody>
           {[
@@ -284,10 +284,10 @@ function PhaseDone({ result, onReset }) {
       </table>
       {result.templates?.map((tpl, i) => (
         <div key={i} style={{ marginBottom: 10 }}>
-          <strong>Template: {tpl.template_code}</strong> — {tpl.block_count} block{tpl.block_count !== 1 ? "s" : ""}
+          <strong>Template: {tpl.template_code}</strong> � {tpl.block_count} block{tpl.block_count !== 1 ? "s" : ""}
           <ul style={{ margin: "4px 0 0 20px", fontSize: 13 }}>
             {tpl.blocks.map(b => (
-              <li key={b.code}>{b.code}: {b.start_time} – {b.end_time}</li>
+              <li key={b.code}>{b.code}: {b.start_time} � {b.end_time}</li>
             ))}
           </ul>
         </div>
@@ -327,7 +327,7 @@ export default function BellScheduleWizard() {
       <div className="crown-card" style={{ padding: "22px 24px" }}>
         <div style={{ display: "flex", gap: 24, marginBottom: 20, fontSize: 13 }}>
           {["configure", "blocks", "done"].map((p, i) => (
-            <span key={p} style={{ fontWeight: phase === p ? 700 : 400, color: phase === p ? "#0066cc" : "#999" }}>
+            <span key={p} style={{ fontWeight: phase === p ? 700 : 400, color: phase === p ? "var(--crown-brand)" : "var(--crown-muted)" }}>
               {i + 1}. {p.charAt(0).toUpperCase() + p.slice(1)}
             </span>
           ))}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { authenticatedFetch } from "../utils/authClient.js";
 import { fetchGraduationAudit } from "../api/academics.js";
@@ -13,8 +13,8 @@ async function api(path) {
 
 function Tile({ title, children }) {
   return (
-    <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "1rem" }}>
-      <div style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "0.5rem" }}>{title}</div>
+    <div style={{ border: "1px solid var(--crown-border)", borderRadius: "12px", padding: "1rem" }}>
+      <div style={{ fontSize: "0.85rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>{title}</div>
       {children}
     </div>
   );
@@ -62,7 +62,7 @@ export default function Student360Page() {
       subtitle={s.name ? (s.grade ? `${s.name} — Grade ${s.grade}` : s.name) : ""}
       right={<button className="crown-btn" onClick={load}>Refresh</button>}
     >
-      {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
+      {err ? <div style={{ color: "var(--crown-danger)", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
         <Tile title="Attendance">
@@ -83,7 +83,7 @@ export default function Student360Page() {
             style={{ cursor: (graduation && !gradErr) ? "pointer" : "default" }}
           >
             {gradErr ? (
-              <div style={{ fontSize: "0.85rem", color: "#dc2626" }}>{gradErr}</div>
+              <div style={{ fontSize: "0.85rem", color: "var(--crown-danger)" }}>{gradErr}</div>
             ) : !graduation ? (
               <div style={{ fontSize: "0.85rem", opacity: 0.7 }}>Loading...</div>
             ) : graduation.status === "STUDENT_NOT_FOUND" ? (
@@ -97,8 +97,8 @@ export default function Student360Page() {
                     fontWeight: 600,
                     padding: "0.25rem 0.5rem",
                     borderRadius: "4px",
-                    backgroundColor: graduation.on_track ? "#10b981" : "#ef4444",
-                    color: "white"
+                    backgroundColor: graduation.on_track ? "var(--crown-ok)" : "var(--crown-danger)",
+                    color: "var(--crown-surface)"
                   }}
                 >
                   {graduation.on_track ? "On Track" : "Off Track"}
@@ -114,14 +114,14 @@ export default function Student360Page() {
                 <div style={{ 
                   width: "100%", 
                   height: "8px", 
-                  backgroundColor: "#e5e7eb", 
+                  backgroundColor: "var(--crown-border)", 
                   borderRadius: "4px",
                   overflow: "hidden"
                 }}>
                   <div style={{ 
                     width: `${Math.min(100, (parseFloat(graduation.earned_credits || 0) / parseFloat(graduation.required_credits || 1)) * 100)}%`,
                     height: "100%",
-                    backgroundColor: graduation.on_track ? "#10b981" : "#f59e0b",
+                    backgroundColor: graduation.on_track ? "var(--crown-ok)" : "var(--crown-warn)",
                     transition: "width 0.3s ease"
                   }} />
                 </div>
@@ -185,8 +185,8 @@ export default function Student360Page() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {(comms.latest_threads || []).map((t) => (
                 <Link key={t.id} to={`/comms/thread/${t.id}`} style={{ textDecoration: "none" }}>
-                  <div style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "0.5rem" }}>
-                    <div style={{ fontSize: "0.9rem", fontWeight: 500, color: "#111827" }}>{t.subject}</div>
+                  <div style={{ border: "1px solid var(--crown-border)", borderRadius: "8px", padding: "0.5rem" }}>
+                    <div style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--crown-ink)" }}>{t.subject}</div>
                     <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{t.created_at || ""}</div>
                   </div>
                 </Link>

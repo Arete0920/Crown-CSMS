@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { createBillingWizardSession, configureWizardSession } from "../../api/billing_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -88,7 +88,7 @@ export default function Step1Mode({ context, setContext, goNext, stepIndex, tota
                   border: `1px solid ${mode === m.value ? "var(--crown-primary)" : "var(--crown-border)"}`,
                   borderRadius: 6,
                   cursor: "pointer",
-                  background: mode === m.value ? "var(--crown-primary-bg, #f0f7ff)" : "transparent",
+                  background: mode === m.value ? "var(--crown-surface-2)" : "transparent",
                 }}
               >
                 <input

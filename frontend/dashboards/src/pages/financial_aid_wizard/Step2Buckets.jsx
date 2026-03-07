@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { saveAidBuckets } from "../../api/financial_aid_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -59,7 +59,7 @@ export default function Step2Buckets({ context, setContext, goNext, goPrev, step
               border: `1px solid ${selected.includes(b.value) ? "var(--crown-primary)" : "var(--crown-border)"}`,
               borderRadius: 6,
               cursor: "pointer",
-              background: selected.includes(b.value) ? "var(--crown-primary-bg, #f0f7ff)" : "transparent",
+              background: selected.includes(b.value) ? "var(--crown-surface-2)" : "transparent",
             }}
           >
             <input

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { getAdmissionsApplications, enrollApplicant } from "../api/admissions";
 import { getSchoolId, getToken } from "../lib/api";
@@ -171,7 +171,7 @@ export function AdmissionsPipelineList() {
       {loading && <div>Loading applications…</div>}
 
       {!loading && !hasApplications && (
-        <div style={{ margin: "24px 0", padding: 16, borderLeft: "4px solid #ddd", background: "#f9f9f9" }}>
+        <div style={{ margin: "24px 0", padding: 16, borderLeft: "4px solid var(--crown-border)", background: "var(--crown-surface-2)" }}>
           <h3 style={{ margin: "0 0 8px 0", fontSize: "1.1rem" }}>No applications yet</h3>
           <p>There are no applications to display.</p>
         </div>
@@ -206,9 +206,9 @@ export function AdmissionsPipelineList() {
                       position: "sticky",
                       left: 0,
                       top: 0,
-                      background: "#fff",
+                      background: "var(--crown-surface)",
                       zIndex: 11,
-                      borderBottom: "1px solid #ddd",
+                      borderBottom: "1px solid var(--crown-border)",
                       padding: "8px",
                       textAlign: "left",
                       fontWeight: 600,
@@ -224,7 +224,7 @@ export function AdmissionsPipelineList() {
                             dir: s.key === "applicant" ? (s.dir === "asc" ? "desc" : "asc") : "asc",
                           }))
                         }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                       >
                         {rowSort.key === "applicant" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
                       </button>
@@ -235,9 +235,9 @@ export function AdmissionsPipelineList() {
                     style={{
                       position: "sticky",
                       top: 0,
-                      background: "#fff",
+                      background: "var(--crown-surface)",
                       zIndex: 10,
-                      borderBottom: "1px solid #ddd",
+                      borderBottom: "1px solid var(--crown-border)",
                       padding: "8px",
                       textAlign: "left",
                       fontWeight: 600,
@@ -253,7 +253,7 @@ export function AdmissionsPipelineList() {
                             dir: s.key === "status" ? (s.dir === "asc" ? "desc" : "asc") : "asc",
                           }))
                         }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                       >
                         {rowSort.key === "status" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
                       </button>
@@ -264,9 +264,9 @@ export function AdmissionsPipelineList() {
                     style={{
                       position: "sticky",
                       top: 0,
-                      background: "#fff",
+                      background: "var(--crown-surface)",
                       zIndex: 10,
-                      borderBottom: "1px solid #ddd",
+                      borderBottom: "1px solid var(--crown-border)",
                       padding: "8px",
                       textAlign: "left",
                       fontWeight: 600,
@@ -279,9 +279,9 @@ export function AdmissionsPipelineList() {
                     style={{
                       position: "sticky",
                       top: 0,
-                      background: "#fff",
+                      background: "var(--crown-surface)",
                       zIndex: 10,
-                      borderBottom: "1px solid #ddd",
+                      borderBottom: "1px solid var(--crown-border)",
                       padding: "8px",
                       textAlign: "left",
                       fontWeight: 600,
@@ -297,7 +297,7 @@ export function AdmissionsPipelineList() {
                             dir: s.key === "created_at" ? (s.dir === "asc" ? "desc" : "asc") : "desc",
                           }))
                         }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                       >
                         {rowSort.key === "created_at" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
                       </button>
@@ -308,9 +308,9 @@ export function AdmissionsPipelineList() {
                     style={{
                       position: "sticky",
                       top: 0,
-                      background: "#fff",
+                      background: "var(--crown-surface)",
                       zIndex: 10,
-                      borderBottom: "1px solid #ddd",
+                      borderBottom: "1px solid var(--crown-border)",
                       padding: "8px",
                       textAlign: "left",
                       fontWeight: 600,
@@ -326,7 +326,7 @@ export function AdmissionsPipelineList() {
                             dir: s.key === "updated_at" ? (s.dir === "asc" ? "desc" : "asc") : "desc",
                           }))
                         }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid #ccc", borderRadius: "3px" }}
+                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                       >
                         {rowSort.key === "updated_at" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
                       </button>
@@ -346,9 +346,9 @@ export function AdmissionsPipelineList() {
                       style={{
                         position: "sticky",
                         left: 0,
-                        background: "#fff",
+                        background: "var(--crown-surface)",
                         zIndex: 1,
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid var(--crown-border)",
                         padding: "8px",
                       }}
                     >
@@ -357,7 +357,7 @@ export function AdmissionsPipelineList() {
 
                     <td
                       style={{
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid var(--crown-border)",
                         padding: "8px",
                       }}
                     >
@@ -366,7 +366,7 @@ export function AdmissionsPipelineList() {
 
                     <td
                       style={{
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid var(--crown-border)",
                         padding: "8px",
                       }}
                     >
@@ -375,7 +375,7 @@ export function AdmissionsPipelineList() {
 
                     <td
                       style={{
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid var(--crown-border)",
                         padding: "8px",
                       }}
                     >
@@ -384,7 +384,7 @@ export function AdmissionsPipelineList() {
 
                     <td
                       style={{
-                        borderBottom: "1px solid #eee",
+                        borderBottom: "1px solid var(--crown-border)",
                         padding: "8px",
                       }}
                     >
@@ -422,8 +422,8 @@ export function AdmissionsPipelineList() {
                   disabled={enrolling}
                   style={{
                     padding: "8px 16px",
-                    background: enrolling ? "#999" : "#1a5c2a",
-                    color: "#fff",
+                    background: enrolling ? "var(--crown-muted)" : "var(--crown-ok)",
+                    color: "var(--crown-surface)",
                     border: "none",
                     borderRadius: 4,
                     cursor: enrolling ? "not-allowed" : "pointer",
@@ -438,15 +438,15 @@ export function AdmissionsPipelineList() {
                     style={{
                       marginTop: 8,
                       padding: "8px 12px",
-                      background: enrollResult.ok ? "#e6f4ea" : "#fce8e8",
-                      border: `1px solid ${enrollResult.ok ? "#34a853" : "#cc0000"}`,
+                      background: enrollResult.ok ? "var(--crown-ok-bg)" : "var(--crown-danger-bg)",
+                      border: `1px solid ${enrollResult.ok ? "var(--crown-ok)" : "var(--crown-danger)"}`,
                       borderRadius: 4,
                       fontSize: 13,
                     }}
                   >
                     {enrollResult.message}
                     {enrollResult.ok && enrollResult.studentId && (
-                      <div style={{ marginTop: 4, color: "#555", fontSize: 12 }}>
+                      <div style={{ marginTop: 4, color: "var(--crown-muted)", fontSize: 12 }}>
                         Student ID: {enrollResult.studentId}
                       </div>
                     )}
@@ -457,7 +457,7 @@ export function AdmissionsPipelineList() {
 
             {selected.status === "ENROLLED" && (
               <section>
-                <div style={{ padding: "8px 12px", background: "#e6f4ea", border: "1px solid #34a853", borderRadius: 4, fontSize: 13 }}>
+                <div style={{ padding: "8px 12px", background: "var(--crown-ok-bg)", border: "1px solid var(--crown-ok)", borderRadius: 4, fontSize: 13 }}>
                   Student is enrolled.
                 </div>
               </section>
@@ -471,7 +471,7 @@ export function AdmissionsPipelineList() {
             </section>
 
             {/* Identifiers */}
-            <section style={{ fontSize: 12, color: "#666" }}>
+            <section style={{ fontSize: 12, color: "var(--crown-muted)" }}>
               <details>
                 <summary style={{ cursor: "pointer" }}>Identifiers</summary>
                 <div style={{ marginTop: 6 }}>

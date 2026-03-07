@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { verifyAidSetup } from "../../api/financial_aid_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -56,11 +56,11 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div
               style={{
-                background: "var(--crown-success-bg, #f0fdf4)",
-                border: "1px solid var(--crown-success, #16a34a)",
+                background: "var(--crown-ok-bg)",
+                border: "1px solid var(--crown-ok)",
                 borderRadius: 6,
                 padding: "16px",
-                color: "var(--crown-success, #16a34a)",
+                color: "var(--crown-ok)",
                 fontWeight: 600,
               }}
             >
@@ -85,7 +85,7 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
                   <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Errors</div>
                   <div style={{ fontWeight: 700, fontSize: 18 }}>
                     {(result.errors?.length ?? 0) > 0 ? (
-                      <span style={{ color: "var(--crown-error, #dc2626)" }}>{result.errors.length}</span>
+                      <span style={{ color: "var(--crown-danger)" }}>{result.errors.length}</span>
                     ) : 0}
                   </div>
                 </div>
@@ -93,11 +93,11 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
 
               {result.errors?.length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--crown-error, #dc2626)", marginBottom: 6 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--crown-danger)", marginBottom: 6 }}>
                     Errors during commit:
                   </div>
                   {result.errors.map((e, i) => (
-                    <div key={i} style={{ fontSize: 12, color: "var(--crown-error, #dc2626)" }}>{e}</div>
+                    <div key={i} style={{ fontSize: 12, color: "var(--crown-danger)" }}>{e}</div>
                   ))}
                 </div>
               )}

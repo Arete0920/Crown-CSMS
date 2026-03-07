@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { fetchOpsSummary, fetchOpsAlerts } from "../api/ops";
 
 export default function OpsCommandCenter() {
@@ -94,20 +94,20 @@ export default function OpsCommandCenter() {
       </div>
 
       {err && (
-        <div style={{ padding: 12, border: "1px solid #c00", marginBottom: 12 }}>
+        <div style={{ padding: 12, border: "1px solid var(--crown-danger)", marginBottom: 12 }}>
           <strong>Error:</strong> {err}
         </div>
       )}
 
       {depErrors.length > 0 && (
-        <div style={{ padding: 12, border: "1px solid #f60", backgroundColor: "#fff4e6", marginBottom: 12 }}>
-          <strong style={{ color: "#f60" }}>⚠ Ops Alerts Degraded:</strong>
+        <div style={{ padding: 12, border: "1px solid var(--crown-warn)", backgroundColor: "var(--crown-warn-bg)", marginBottom: 12 }}>
+          <strong style={{ color: "var(--crown-warn)" }}>⚠ Ops Alerts Degraded:</strong>
           <div style={{ fontSize: 12, marginTop: 8 }}>
             {depErrors.map((e, i) => (
               <div key={i} style={{ marginBottom: 4 }}>• {e}</div>
             ))}
           </div>
-          <div style={{ fontSize: 11, marginTop: 8, color: "#666" }}>
+          <div style={{ fontSize: 11, marginTop: 8, color: "var(--crown-muted)" }}>
             Some alert rules may be unavailable. Deps: admissions={String(deps.admissions)}, finance={String(deps.finance)}, gradebook={String(deps.gradebook)}
           </div>
         </div>
@@ -115,33 +115,33 @@ export default function OpsCommandCenter() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(180px, 1fr))", gap: 12 }}>
         {tiles.map(([k, v]) => (
-          <div key={k} style={{ border: "1px solid #ddd", padding: 12, borderRadius: 8 }}>
+          <div key={k} style={{ border: "1px solid var(--crown-border)", padding: 12, borderRadius: 8 }}>
             <div style={{ fontSize: 12, opacity: 0.7 }}>{k}</div>
             <div style={{ fontSize: 18, fontWeight: 600 }}>{v ?? "n/a"}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ marginTop: 16, padding: 12, border: "1px solid #ddd", borderRadius: 8 }}>
+      <div style={{ marginTop: 16, padding: 12, border: "1px solid var(--crown-border)", borderRadius: 8 }}>
         <h3 style={{ marginTop: 0, marginBottom: 12 }}>Predictive Alerts (Lite)</h3>
-        <div style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>
+        <div style={{ fontSize: 12, color: "var(--crown-muted)", marginBottom: 12 }}>
           Deterministic rules based on current demo data
         </div>
         {alerts.length === 0 ? (
-          <div style={{ fontSize: 14, color: "#666" }}>No alerts. Demo data looks healthy.</div>
+          <div style={{ fontSize: 14, color: "var(--crown-muted)" }}>No alerts. Demo data looks healthy.</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {alerts.map((a) => (
-              <div key={a.id} style={{ padding: 10, border: "1px solid #ddd", borderRadius: 4 }}>
+              <div key={a.id} style={{ padding: 10, border: "1px solid var(--crown-border)", borderRadius: 4 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <span style={{ fontWeight: 600, fontSize: 14 }}>{a.title}</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: a.severity === "critical" ? "#c00" : a.severity === "warning" ? "#f60" : "#999" }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: a.severity === "critical" ? "var(--crown-danger)" : a.severity === "warning" ? "var(--crown-warn)" : "var(--crown-muted)" }}>
                     {a.severity}
                   </span>
                 </div>
                 <div style={{ fontSize: 13, marginBottom: 6 }}>{a.detail}</div>
                 {a.metric && (
-                  <div style={{ fontSize: 11, color: "#666", fontFamily: "monospace" }}>
+                  <div style={{ fontSize: 11, color: "var(--crown-muted)", fontFamily: "monospace" }}>
                     metric: {a.metric} • value: {JSON.stringify(a.value)} • threshold: {JSON.stringify(a.threshold)}
                   </div>
                 )}
@@ -152,7 +152,7 @@ export default function OpsCommandCenter() {
       </div>
 
       <h3 style={{ marginTop: 16 }}>Proof Block</h3>
-      <pre style={{ border: "1px solid #ddd", padding: 12, borderRadius: 8, overflow: "auto" }}>
+      <pre style={{ border: "1px solid var(--crown-border)", padding: 12, borderRadius: 8, overflow: "auto" }}>
         {proof || "Loading..."}
       </pre>
     </div>

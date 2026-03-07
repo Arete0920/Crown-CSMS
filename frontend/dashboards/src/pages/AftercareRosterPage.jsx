@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { fetchRosterToday, checkinStudent, checkoutStudent } from "../api/aftercareApi.js";
@@ -16,9 +16,9 @@ function getSession() {
 
 const TAG = {
   base: { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600 },
-  default: { background: "#f5f5f5", color: "#555" },
-  primary:  { background: "#e3f2fd", color: "#1565c0" },
-  success:  { background: "#e8f5e9", color: "#1b5e20" },
+  default: { background: "var(--crown-surface-2)", color: "var(--crown-muted)" },
+  primary:  { background: "var(--crown-surface-2)", color: "var(--crown-brand)" },
+  success:  { background: "var(--crown-ok-bg)", color: "var(--crown-ok)" },
 };
 
 function AttendanceChip({ row }) {
@@ -28,10 +28,10 @@ function AttendanceChip({ row }) {
   return <span style={{ ...TAG.base, ...TAG.primary }}>Checked in</span>;
 }
 
-const TH = { padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, borderBottom: "2px solid #e0e0e0", whiteSpace: "nowrap" };
-const TD = { padding: "8px 12px", fontSize: 13, borderBottom: "1px solid #f0f0f0" };
-const BTN_OUT  = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "1px solid #999", background: "transparent" };
-const BTN_PRIM = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "none", background: "#388e3c", color: "#fff" };
+const TH = { padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, borderBottom: "2px solid var(--crown-border)", whiteSpace: "nowrap" };
+const TD = { padding: "8px 12px", fontSize: 13, borderBottom: "1px solid var(--crown-border)" };
+const BTN_OUT  = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "1px solid var(--crown-border)", background: "transparent" };
+const BTN_PRIM = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "none", background: "var(--crown-ok)", color: "var(--crown-surface)" };
 
 export default function AftercareRosterPage() {
   const { token, schoolId } = getSession();
@@ -76,9 +76,9 @@ export default function AftercareRosterPage() {
     <CrownLayout title="Aftercare Roster">
       <DashboardSection title={`Today's Aftercare Roster${roster ? ` — ${roster.date} (${roster.dow})` : ""}`}>
         {loading && <span>Loading…</span>}
-        {error && <div style={{ color: "#c62828", background: "#ffebee", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
+        {error && <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
         {!loading && !error && roster && (
-          <div style={{ border: "1px solid #e0e0e0", borderRadius: 4, overflowX: "auto" }}>
+          <div style={{ border: "1px solid var(--crown-border)", borderRadius: 4, overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
@@ -93,7 +93,7 @@ export default function AftercareRosterPage() {
               <tbody>
                 {roster.rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ ...TD, color: "#888" }}>No students scheduled today.</td>
+                    <td colSpan={6} style={{ ...TD, color: "var(--crown-muted)" }}>No students scheduled today.</td>
                   </tr>
                 )}
                 {roster.rows.map((row) => {

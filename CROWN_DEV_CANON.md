@@ -318,3 +318,59 @@ npm run dev -- --host 127.0.0.1 --port 3000
 ---
 
 _This canon is live. Update it when the path changes, commit the change._
+
+---
+
+## Environment Variable Canon (Prod)
+
+| Variable | Value | Notes |
+|---|---|---|
+| `CROWN_ENV` | `prod` | **Canonical** env discriminator. Used by `health_views`, `system_views`, `settings._env_is_prod()` |
+| `ENVIRONMENT` | `prod` | Legacy. Still guards `ops_views._dev_ops_enabled()`. Must stay set. |
+| `DJANGO_DEBUG` | `false` | Must be set explicitly in Azure — do not rely on sniffing |
+| `TENANT_HEADER_REQUIRED` | `true` | Must be set explicitly in Azure |
+| `CROWN_DEMO_MODE` | (unset or `false`) | Only active demo flag. `DEMO_MODE` is inert — do not use |
+| `CROWN_OPS_SECRET` | (unset) | Safe to leave unset in prod — dev-env gate fires first |
+| `DEV_OPS_SECRET` | (unset) | **Must not be set in prod**. Dev/staging only |
+
+**Canonical order of precedence** in `_env_is_prod()`: `CROWN_ENV` → `DJANGO_ENV` → `ENVIRONMENT` → `APP_ENV`.
+Do not add new usages of the legacy vars. New code reads `CROWN_ENV` only.
+
+---
+
+## Dev-Ops Endpoint Policy
+
+### `system_views.py` — dev-only, 403 in prod
+
+All three are gated by `_is_dev_env()` (checks `CROWN_ENV`/`DJANGO_ENV`) **before** any secret is evaluated.
+With `CROWN_ENV=prod`, they hard-stop at 403 and `CROWN_OPS_SECRET` is never consulted.
+
+| Path | Guard | Prod behavior |
+|---|---|---|
+| `POST /api/v1/system/demo-reset/` | `_is_dev_env()` | 403 |
+| `GET /api/v1/system/diagnose-db-tables/` | `_is_dev_env()` | 403 |
+| `POST /api/v1/system/fix-schema-drift/` | `_is_dev_env()` | 403 |
+
+### `ops_views.py` — dev-only, 404 in prod
+
+Gated by `_dev_ops_enabled()` (checks `DEV_OPS_SECRET` + `settings.ENVIRONMENT == "dev"`).
+404 (not 403) — existence is obscured. Do not set `DEV_OPS_SECRET` in prod.
+
+| Path | Guard | Prod behavior |
+|---|---|---|
+| `POST /api/v1/system/ensure-ci-user/` | `_dev_ops_enabled()` | 404 |
+| `POST /api/v1/system/demo-school/` | `_dev_ops_enabled()` | 404 |
+
+### Prod-allowed admin endpoints
+
+| Path | Guard | Notes |
+|---|---|---|
+| `GET /api/v1/system/seed-status/` | `IsAdminUser` | Intentionally prod-visible. Admin auth required. No dev-only gate. |
+
+---
+
+## Director Router: Superuser Fallback
+
+`/director/` routes authenticated users by persona group or session.
+Superusers and staff with no persona set are routed to `financial_aid_director` (primary demo persona).
+This is intentional — it prevents the admin account from 403-ing during demos.

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+﻿import { useEffect, useState, useMemo } from "react";
 import { getThreads, getThreadDetail } from "../api/communications";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
 import Drawer from "../components/Drawer";
@@ -179,7 +179,7 @@ export default function CommunicationsThreadsList() {
   if (data.length === 0) {
     return (
       <CrownLayout title="Communications — Threads">
-        <div style={{ marginTop: "1rem", color: "#6b7280" }}>
+        <div style={{ marginTop: "1rem", color: "var(--crown-muted)" }}>
           No message threads yet
         </div>
       </CrownLayout>
@@ -208,18 +208,18 @@ export default function CommunicationsThreadsList() {
           }}
         >
           <thead>
-            <tr style={{ background: "#f3f4f6" }}>
+            <tr style={{ background: "var(--crown-surface-2)" }}>
               <th
                 onClick={() => handleSort("household_name")}
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -231,12 +231,12 @@ export default function CommunicationsThreadsList() {
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -248,12 +248,12 @@ export default function CommunicationsThreadsList() {
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -265,12 +265,12 @@ export default function CommunicationsThreadsList() {
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -282,12 +282,12 @@ export default function CommunicationsThreadsList() {
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -303,13 +303,13 @@ export default function CommunicationsThreadsList() {
                 onClick={() => setSelected(thread)}
                 style={{
                   cursor: "pointer",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f9fafb";
+                  e.currentTarget.style.background = "var(--crown-surface-2)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "white";
+                  e.currentTarget.style.background = "var(--crown-surface)";
                 }}
               >
                 <td style={{ padding: "0.75rem" }}>{thread.household_name}</td>
@@ -336,7 +336,7 @@ export default function CommunicationsThreadsList() {
             </h2>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
                 Thread Info
               </h3>
               <div>
@@ -357,7 +357,7 @@ export default function CommunicationsThreadsList() {
             </div>
 
             {loadingThread && (
-              <div style={{ color: "#6b7280" }}>Loading messages...</div>
+              <div style={{ color: "var(--crown-muted)" }}>Loading messages...</div>
             )}
 
             {!loadingThread && threadDetail && threadDetail.error && (
@@ -366,19 +366,19 @@ export default function CommunicationsThreadsList() {
 
             {!loadingThread && threadDetail && threadDetail.messages && (
               <div>
-                <h3 style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+                <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
                   Messages ({threadDetail.messages.length})
                 </h3>
                 <div
                   style={{
                     maxHeight: "400px",
                     overflowY: "auto",
-                    border: "1px solid #e5e7eb",
+                    border: "1px solid var(--crown-border)",
                     borderRadius: "4px",
                   }}
                 >
                   {threadDetail.messages.length === 0 && (
-                    <div style={{ padding: "1rem", color: "#6b7280" }}>
+                    <div style={{ padding: "1rem", color: "var(--crown-muted)" }}>
                       No messages in this thread
                     </div>
                   )}
@@ -387,10 +387,10 @@ export default function CommunicationsThreadsList() {
                       key={idx}
                       style={{
                         padding: "1rem",
-                        borderBottom: idx < threadDetail.messages.length - 1 ? "1px solid #f3f4f6" : "none",
+                        borderBottom: idx < threadDetail.messages.length - 1 ? "1px solid var(--crown-border)" : "none",
                       }}
                     >
-                      <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.25rem" }}>
+                      <div style={{ fontSize: "0.75rem", color: "var(--crown-muted)", marginBottom: "0.25rem" }}>
                         {msg.sender_person
                           ? `${msg.sender_person.first_name} ${msg.sender_person.last_name}`
                           : "(Unknown sender)"}{" "}
@@ -406,7 +406,7 @@ export default function CommunicationsThreadsList() {
             )}
 
             <details style={{ fontSize: "0.875rem", marginTop: "1.5rem" }}>
-              <summary style={{ cursor: "pointer", color: "#6b7280" }}>
+              <summary style={{ cursor: "pointer", color: "var(--crown-muted)" }}>
                 Identifiers
               </summary>
               <div style={{ marginTop: "0.5rem", fontFamily: "monospace", fontSize: "0.75rem" }}>

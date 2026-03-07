@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { getGradebookSections } from "../api/gradebook";
 import { getSectionCategories, putCategoryWeightsBatch } from "../api/academicsWeights";
@@ -138,8 +138,8 @@ export function CategoryWeightsEditor() {
           style={{
             padding: 12,
             marginBottom: 16,
-            background: msg.includes("✅") ? "#e6ffe6" : "#ffe6e6",
-            border: `1px solid ${msg.includes("✅") ? "#00cc00" : "#cc0000"}`,
+            background: msg.includes("✅") ? "var(--crown-ok-bg)" : "var(--crown-danger-bg)",
+            border: `1px solid ${msg.includes("✅") ? "var(--crown-ok)" : "var(--crown-danger)"}`,
             borderRadius: 4,
           }}
         >
@@ -151,13 +151,13 @@ export function CategoryWeightsEditor() {
         <div
           style={{
             padding: 24,
-            background: "#f9f9f9",
-            border: "1px solid #ddd",
+            background: "var(--crown-surface-2)",
+            border: "1px solid var(--crown-border)",
             borderRadius: 4,
             textAlign: "center",
           }}
         >
-          <p style={{ margin: 0, color: "#666" }}>
+          <p style={{ margin: 0, color: "var(--crown-muted)" }}>
             No categories found for this section.
           </p>
         </div>
@@ -168,16 +168,16 @@ export function CategoryWeightsEditor() {
           style={{
             width: "100%",
             borderCollapse: "collapse",
-            border: "1px solid #ddd",
+            border: "1px solid var(--crown-border)",
           }}
         >
           <thead>
-            <tr style={{ background: "#f5f5f5" }}>
+            <tr style={{ background: "var(--crown-surface-2)" }}>
               <th
                 style={{
                   textAlign: "left",
                   padding: "12px",
-                  borderBottom: "2px solid #ddd",
+                  borderBottom: "2px solid var(--crown-border)",
                   fontWeight: 600,
                 }}
               >
@@ -188,7 +188,7 @@ export function CategoryWeightsEditor() {
                   width: 120,
                   textAlign: "center",
                   padding: "12px",
-                  borderBottom: "2px solid #ddd",
+                  borderBottom: "2px solid var(--crown-border)",
                   fontWeight: 600,
                 }}
               >
@@ -199,7 +199,7 @@ export function CategoryWeightsEditor() {
                   width: 160,
                   textAlign: "center",
                   padding: "12px",
-                  borderBottom: "2px solid #ddd",
+                  borderBottom: "2px solid var(--crown-border)",
                   fontWeight: 600,
                 }}
               >
@@ -212,8 +212,8 @@ export function CategoryWeightsEditor() {
               <tr
                 key={r.id}
                 style={{
-                  borderBottom: "1px solid #eee",
-                  background: r.is_active ? "#fff" : "#fafafa",
+                  borderBottom: "1px solid var(--crown-border)",
+                  background: r.is_active ? "var(--crown-surface)" : "var(--crown-surface-2)",
                 }}
               >
                 <td style={{ padding: "10px 12px" }}>
@@ -247,7 +247,7 @@ export function CategoryWeightsEditor() {
                       width: "100%",
                       padding: "6px 8px",
                       fontSize: 14,
-                      border: "1px solid #ddd",
+                      border: "1px solid var(--crown-border)",
                       borderRadius: 3,
                       textAlign: "right",
                     }}
@@ -260,7 +260,7 @@ export function CategoryWeightsEditor() {
         </table>
       )}
 
-      <div style={{ marginTop: 16, fontSize: 13, color: "#666" }}>
+      <div style={{ marginTop: 16, fontSize: 13, color: "var(--crown-muted)" }}>
         <p style={{ margin: "4px 0" }}>
           <strong>Instructions:</strong>
         </p>

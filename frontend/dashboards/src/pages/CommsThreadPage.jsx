@@ -64,34 +64,34 @@ export default function CommsThreadPage() {
   return (
     <CrownLayout
       title={thread?.subject || "Thread"}
-      subtitle={<Link to="/comms">← Back to Inbox</Link>}
+      subtitle={<Link to="/comms">? Back to Inbox</Link>}
       right={<button className="crown-btn" onClick={teamsPreview}>Send to Teams (Preview)</button>}
     >
 
-      {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
-      {info ? <div style={{ color: "#15803d", fontSize: "0.875rem", marginBottom: "1rem" }}>{info}</div> : null}
+      {err ? <div style={{ color: "var(--crown-danger)", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
+      {info ? <div style={{ color: "var(--crown-ok)", fontSize: "0.875rem", marginBottom: "1rem" }}>{info}</div> : null}
 
-      <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "1rem" }}>
+      <div style={{ border: "1px solid var(--crown-border)", borderRadius: "12px", padding: "1rem" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
           {(thread?.messages || []).map((m) => (
-            <div key={m.id} style={{ border: "1px solid #e5e7eb", borderRadius: "8px", padding: "0.75rem" }}>
-              <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{m.sender_name || "User"} • {m.created_at}</div>
+            <div key={m.id} style={{ border: "1px solid var(--crown-border)", borderRadius: "8px", padding: "0.75rem" }}>
+              <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{m.sender_name || "User"} � {m.created_at}</div>
               <div style={{ fontSize: "0.875rem" }}>{m.body}</div>
             </div>
           ))}
           {!thread?.messages?.length ? <div style={{ fontSize: "0.875rem", opacity: 0.7 }}>No messages.</div> : null}
         </div>
 
-        <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div style={{ borderTop: "1px solid var(--crown-border)", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <textarea
-            style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: "8px", padding: "0.5rem", fontSize: "0.875rem" }}
+            style={{ width: "100%", border: "1px solid var(--crown-border)", borderRadius: "8px", padding: "0.5rem", fontSize: "0.875rem" }}
             rows={3}
-            placeholder="Type a message…"
+            placeholder="Type a message�"
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={send} disabled={!body.trim()} style={{ padding: "0.5rem 1rem", border: "1px solid #ccc", borderRadius: "6px", cursor: body.trim() ? "pointer" : "not-allowed", opacity: body.trim() ? 1 : 0.5 }}>Send</button>
+            <button onClick={send} disabled={!body.trim()} style={{ padding: "0.5rem 1rem", border: "1px solid var(--crown-border)", borderRadius: "6px", cursor: body.trim() ? "pointer" : "not-allowed", opacity: body.trim() ? 1 : 0.5 }}>Send</button>
           </div>
         </div>
       </div>

@@ -1,0 +1,9 @@
+=ADMISSIONS=
+{"ok": false, "error": "Internal Server Error", "ts": "2026-03-01T18:55:59.722032+00:00", "request_id": "5e55737c-132b-482d-82ed-9d24dc7becbe"}
+STATUS:500
+=FINANCIAL_AID=
+{"ok": false, "error": "Internal Server Error", "ts": "2026-03-01T18:55:59.872604+00:00", "request_id": "1713818a-6fde-4cdf-84c1-929520f37e59"}
+STATUS:500
+=NAV=
+{"detail": "Missing required header: X-School-Id"}
+STATUS:400

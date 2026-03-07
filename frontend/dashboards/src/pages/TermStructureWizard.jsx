@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TermStructureWizard.jsx
  *
  * Wizard #18 — Term & Marking Period Setup
@@ -157,7 +157,7 @@ export default function TermStructureWizard() {
       {phase === "periods" && (
         <div style={{ maxWidth: 820 }}>
           <h2>Step 2 — Marking Periods</h2>
-          <p style={{ color: "#666", fontSize: 13 }}>
+          <p style={{ color: "var(--crown-muted)", fontSize: 13 }}>
             Periods must be non-overlapping and cover the full academic year with no gaps.
             Adjacent periods: <code>period[i].end_date + 1 day == period[i+1].start_date</code>
           </p>
@@ -166,7 +166,7 @@ export default function TermStructureWizard() {
             <thead>
               <tr>
                 {["Code", "Name", "Start Date", "End Date", "Grade Term?", ""].map((h) => (
-                  <th key={h} style={{ textAlign: "left", padding: "4px 8px", borderBottom: "1px solid #ccc" }}>
+                  <th key={h} style={{ textAlign: "left", padding: "4px 8px", borderBottom: "1px solid var(--crown-border)" }}>
                     {h}
                   </th>
                 ))}
@@ -260,7 +260,7 @@ export default function TermStructureWizard() {
               ))}
             </tbody>
           </table>
-          <p style={{ marginTop: 16, color: "#555" }}>{result.message}</p>
+          <p style={{ marginTop: 16, color: "var(--crown-muted)" }}>{result.message}</p>
           <button
             onClick={() => {
               setPhase("configure");

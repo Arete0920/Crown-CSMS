@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { verifyImport } from "../../api/onboarding.js";
 import "../../styles/crown-wizard.css";
@@ -39,7 +39,7 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
 
   function statusColor(status) {
     if (status === "ok" || status === "pass") return "rgba(78,225,138,0.9)";
-    if (status === "warning") return "var(--crown-gold-2, #f1d88a)";
+    if (status === "warning") return "var(--crown-gold)";
     return "rgb(255,120,120)";
   }
 
