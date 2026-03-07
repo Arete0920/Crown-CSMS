@@ -1,5 +1,7 @@
 ﻿import { createBrowserRouter } from 'react-router-dom';
 
+// No-op touch to ensure required route/dashboard gate contexts run on this PR.
+
 import RoleDashboardPage from '../pages/RoleDashboardPage.jsx';
 import { BillingDashboard } from '../pages/BillingDashboard.jsx';
 import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
