@@ -1,0 +1,189 @@
+name: Azure Drift Watchdog
+
+on:
+  schedule:
+    # Every 6 hours — 00:00, 06:00, 12:00, 18:00 UTC
+    - cron: "0 0,6,12,18 * * *"
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: "Print full appsettings name list (no values)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  assert-invariants:
+    name: Assert Azure Infrastructure Invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      RESOURCE_GROUP: crown-rg
+      PROD_APP: crown-api-prod
+      DEV_APP: crown-api-dev
+      ACR_NAME: crownregistry
+      PROD_URL: https://crown-api-prod.azurewebsites.net/api/health/
+
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "Assert: ACR admin is disabled"
+        run: |
+          ADMIN=$(az acr show -n $ACR_NAME --query "adminUserEnabled" -o tsv)
+          if [ "$ADMIN" != "false" ]; then
+            echo "❌ DRIFT: ACR admin is ENABLED (adminUserEnabled=$ADMIN)"
+            echo "   Expected: false — run: az acr update -n $ACR_NAME --admin-enabled false"
+            exit 1
+          fi
+          echo "✅ ACR admin disabled: $ADMIN"
+
+      - name: "Assert: No DOCKER_REGISTRY_SERVER_PASSWORD in prod"
+        run: |
+          SETTING=$(az webapp config appsettings list \
+            -g $RESOURCE_GROUP -n $PROD_APP \
+            --query "[?name=='DOCKER_REGISTRY_SERVER_PASSWORD'].name | [0]" \
+            -o tsv 2>/dev/null || true)
+          if [ -n "$SETTING" ]; then
+            echo "❌ DRIFT: DOCKER_REGISTRY_SERVER_PASSWORD is present in $PROD_APP app settings"
+            echo "   Remove it: az webapp config appsettings delete -g $RESOURCE_GROUP -n $PROD_APP --setting-names DOCKER_REGISTRY_SERVER_PASSWORD DOCKER_REGISTRY_SERVER_USERNAME"
+            exit 1
+          fi
+          echo "✅ No DOCKER_REGISTRY_SERVER_PASSWORD in $PROD_APP"
+
+      - name: "Assert: No DOCKER_REGISTRY_SERVER_PASSWORD in dev"
+        run: |
+          SETTING=$(az webapp config appsettings list \
+            -g $RESOURCE_GROUP -n $DEV_APP \
+            --query "[?name=='DOCKER_REGISTRY_SERVER_PASSWORD'].name | [0]" \
+            -o tsv 2>/dev/null || true)
+          if [ -n "$SETTING" ]; then
+            echo "❌ DRIFT: DOCKER_REGISTRY_SERVER_PASSWORD is present in $DEV_APP app settings"
+            exit 1
+          fi
+          echo "✅ No DOCKER_REGISTRY_SERVER_PASSWORD in $DEV_APP"
+
+      - name: "Assert: Prod alwaysOn = true"
+        run: |
+          ALWAYS_ON=$(az webapp config show \
+            -g $RESOURCE_GROUP -n $PROD_APP \
+            --query "alwaysOn" -o tsv)
+          if [ "$ALWAYS_ON" != "true" ]; then
+            echo "❌ DRIFT: Prod alwaysOn=$ALWAYS_ON (expected true)"
+            echo "   Fix: az webapp config set -g $RESOURCE_GROUP -n $PROD_APP --always-on true"
+            exit 1
+          fi
+          echo "✅ Prod alwaysOn: $ALWAYS_ON"
+
+      - name: "Assert: Prod managed identity assigned"
+        run: |
+          IDENTITY=$(az webapp identity show \
+            -g $RESOURCE_GROUP -n $PROD_APP \
+            --query "type" -o tsv 2>/dev/null || echo "none")
+          if [[ "$IDENTITY" != *"SystemAssigned"* ]]; then
+            echo "❌ DRIFT: Prod app has no SystemAssigned managed identity (got: $IDENTITY)"
+            exit 1
+          fi
+          echo "✅ Prod managed identity: $IDENTITY"
+
+      - name: "Assert: Dev managed identity assigned"
+        run: |
+          IDENTITY=$(az webapp identity show \
+            -g $RESOURCE_GROUP -n $DEV_APP \
+            --query "type" -o tsv 2>/dev/null || echo "none")
+          if [[ "$IDENTITY" != *"SystemAssigned"* ]]; then
+            echo "❌ DRIFT: Dev app has no SystemAssigned managed identity (got: $IDENTITY)"
+            exit 1
+          fi
+          echo "✅ Dev managed identity: $IDENTITY"
+
+      - name: "Assert: Prod SECRET_KEY is a KV reference"
+        run: |
+          VAL=$(az webapp config appsettings list \
+            -g $RESOURCE_GROUP -n $PROD_APP \
+            --query "[?name=='SECRET_KEY'].value | [0]" -o tsv)
+          if [[ "$VAL" != "@Microsoft.KeyVault"* ]]; then
+            echo "❌ DRIFT: Prod SECRET_KEY is NOT a Key Vault reference"
+            echo "   Found prefix: ${VAL:0:20}..."
+            exit 1
+          fi
+          echo "✅ Prod SECRET_KEY is KV reference"
+
+      - name: "Assert: Prod DB_PASSWORD is a KV reference"
+        run: |
+          VAL=$(az webapp config appsettings list \
+            -g $RESOURCE_GROUP -n $PROD_APP \
+            --query "[?name=='DB_PASSWORD'].value | [0]" -o tsv)
+          if [[ "$VAL" != "@Microsoft.KeyVault"* ]]; then
+            echo "❌ DRIFT: Prod DB_PASSWORD is NOT a Key Vault reference"
+            echo "   Found prefix: ${VAL:0:20}..."
+            exit 1
+          fi
+          echo "✅ Prod DB_PASSWORD is KV reference"
+
+      - name: "Assert: Dev ACR uses managed identity (not admin creds)"
+        run: |
+          ACR_MI=$(az webapp config show \
+            -g $RESOURCE_GROUP -n $DEV_APP \
+            --query "acrUseManagedIdentityCreds" -o tsv)
+          if [ "$ACR_MI" != "true" ]; then
+            echo "❌ DRIFT: Dev app acrUseManagedIdentityCreds=$ACR_MI (expected true)"
+            echo "   ACR admin is disabled — dev will 503 until this is fixed."
+            echo "   Fix via REST API PATCH on web config: acrUseManagedIdentityCreds=true"
+            exit 1
+          fi
+          echo "✅ Dev ACR uses managed identity: $ACR_MI"
+
+      - name: "Assert: Dev DATABASE_URL is a KV reference"
+        run: |
+          VAL=$(az webapp config appsettings list \
+            -g $RESOURCE_GROUP -n $DEV_APP \
+            --query "[?name=='DATABASE_URL'].value | [0]" -o tsv 2>/dev/null || true)
+          if [[ "$VAL" != "@Microsoft.KeyVault"* ]]; then
+            echo "❌ DRIFT: Dev DATABASE_URL is NOT a Key Vault reference"
+            exit 1
+          fi
+          echo "✅ Dev DATABASE_URL is KV reference"
+
+      - name: "Assert: Prod /api/health/ ok:true and build_sha present"
+        run: |
+          for i in $(seq 1 6); do
+            BODY="$(curl -fsS --max-time 15 "$PROD_URL" 2>/dev/null || true)"
+            if [ -n "$BODY" ]; then
+              OK="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('ok',''))" 2>/dev/null || true)"
+              SHA="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)"
+              DB="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('db',''))" 2>/dev/null || true)"
+              if [ "$OK" = "True" ] && [ -n "$SHA" ] && [ "$SHA" != "local-dev" ]; then
+                echo "✅ Prod health: ok=$OK db=$DB build_sha=${SHA:0:8}"
+                exit 0
+              fi
+              echo "Attempt $i: ok=$OK db=$DB sha=${SHA:0:8} — waiting 10s"
+            else
+              echo "Attempt $i: empty response — waiting 10s"
+            fi
+            sleep 10
+          done
+          echo "❌ DRIFT: Prod /api/health/ did not return ok:true with a valid build_sha"
+          exit 1
+
+      - name: "Summary: all invariants passed"
+        if: success()
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════╗"
+          echo "║  All Azure infrastructure invariants satisfied ✅    ║"
+          echo "╚══════════════════════════════════════════════════════╝"
+          echo "  ACR admin:    disabled"
+          echo "  DOCKER creds: absent from prod + dev"
+          echo "  alwaysOn:     true"
+          echo "  Identities:   SystemAssigned (prod + dev)"
+          echo "  KV refs:      SECRET_KEY + DB_PASSWORD (prod), DATABASE_URL (dev)"
+          echo "  Dev ACR:      acrUseManagedIdentityCreds=true"
+          echo "  Health:       ok:true, build_sha present"
+          echo "  Run at: $(date -u '+%Y-%m-%d %H:%M UTC')"

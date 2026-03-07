@@ -40,3 +40,6 @@ redis>=5.0.0
 twilio>=8.0.0
 # Payment orchestration — Stripe Connect (optional; only needed if payment_provider=stripe)
 stripe>=10.0.0
+
+# Board Packet PDF generation (Stage 4)
+reportlab>=4.2.0

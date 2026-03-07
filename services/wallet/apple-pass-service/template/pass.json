@@ -1,0 +1,25 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.placeholder",
+  "serialNumber": "placeholder",
+  "teamIdentifier": "placeholder",
+  "organizationName": "Crown",
+  "description": "Crown Event Ticket",
+  "backgroundColor": "rgb(20, 60, 120)",
+  "foregroundColor": "rgb(255, 255, 255)",
+  "labelColor": "rgb(180, 200, 255)",
+  "logoText": "Crown",
+  "eventTicket": {
+    "headerFields": [],
+    "primaryFields": [],
+    "secondaryFields": [],
+    "auxiliaryFields": [],
+    "backFields": [
+      {
+        "key": "terms",
+        "label": "Event Policy",
+        "value": "Tickets are non-refundable. Present this pass at the door."
+      }
+    ]
+  }
+}

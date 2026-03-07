@@ -36,9 +36,20 @@ class ApiExceptionMiddleware:
         """
         Called when a view raises an exception.
         Returns a JsonResponse with error details.
+        Http404 → 404 JSON (not 500).
         """
+        from django.http import Http404
+
         request_id = getattr(request, 'request_id', str(uuid.uuid4()))
-        
+
+        if isinstance(exception, Http404):
+            response = JsonResponse(
+                {"ok": False, "error": "Not Found", "request_id": request_id},
+                status=404,
+            )
+            response["X-Request-Id"] = request_id
+            return response
+
         payload = {
             "ok": False,
             "error": "Internal Server Error",

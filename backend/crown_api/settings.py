@@ -126,6 +126,16 @@ DEV_OPS_SECRET = os.getenv("DEV_OPS_SECRET", "")
 # Build SHA for deployment determinism proof (Gate 1C)
 BUILD_SHA = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"
 
+# ---------------------------------------------------------------------------
+# Disaster Recovery configuration (Stage 1 — Production Hardening)
+# ---------------------------------------------------------------------------
+CROWN_RTO_HOURS = int(os.getenv("CROWN_RTO_HOURS", "4"))       # Recovery Time Objective
+CROWN_RPO_HOURS = int(os.getenv("CROWN_RPO_HOURS", "1"))       # Recovery Point Objective
+CROWN_BACKUP_BUCKET = os.getenv("CROWN_BACKUP_BUCKET", "crown-backups")
+CROWN_BACKUP_RETENTION_DAYS = int(os.getenv("CROWN_BACKUP_RETENTION_DAYS", "30"))
+# Grace period before delinquent households are suspended (Stage 2)
+CROWN_GRACE_PERIOD_DAYS = int(os.getenv("CROWN_GRACE_PERIOD_DAYS", "30"))
+
 
 # Application definition
 
@@ -189,6 +199,9 @@ INSTALLED_APPS = [
     'aftercare',
     # Finance Setup (Policy Wizard)
     'finance_setup.apps.FinanceSetupConfig',
+    # Stage 5 — Org Scalability (onboarding already in WIZARD_INSTALLED_APPS)
+    'support.apps.SupportConfig',
+    'analytics.apps.AnalyticsConfig',
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
@@ -196,6 +209,7 @@ MIDDLEWARE = [
     'core.middleware.DemoWriteBlockMiddleware',
     'crown_api.middleware.api_exceptions.ApiExceptionMiddleware',  # Exception envelope (outermost)
     'crown_api.middleware.performance.PerformanceMiddleware',  # Performance timing
+    'crown_api.middleware.api_version.APIVersionMiddleware',   # API deprecation headers
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -479,6 +493,34 @@ try:
             "task": "comms.tasks.drain_outbox",
             "schedule": 10.0,
         },
+        # Stage 2 — Revenue Integrity automation
+        "dunning-cycle-every-30-minutes": {
+            "task": "ledger.tasks.run_dunning_cycle",
+            "schedule": crontab(minute="*/30"),
+        },
+        "daily-payout-audit-0100-utc": {
+            "task": "ledger.tasks.run_daily_payout_audit",
+            "schedule": crontab(hour=1, minute=0),
+        },
+        "enforce-grace-period-0300-utc": {
+            "task": "billing.tasks.enforce_grace_period",
+            "schedule": crontab(hour=3, minute=0),
+        },
+        # Stage 1 — Data retention purge (02:00 UTC daily)
+        "retention-purge-0200-utc": {
+            "task": "core.tasks.purge_expired_records",
+            "schedule": crontab(hour=2, minute=0),
+        },
+        # Stage 5 — SLA escalation check (every hour)
+        "sla-escalation-hourly": {
+            "task": "support.tasks.escalate_overdue_tickets",
+            "schedule": crontab(minute=0),
+        },
+        # Stage 5 — Customer health scoring (03:30 UTC daily)
+        "customer-health-0330-utc": {
+            "task": "analytics.tasks.refresh_all_health_scores",
+            "schedule": crontab(hour=3, minute=30),
+        },
     }
 except ImportError:
     pass  # Celery not installed; beat schedule omitted
@@ -489,3 +531,34 @@ except ImportError:
 _cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
 if _cors_origins_raw:
     CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
+
+# ---------------------------------------------------------------------------
+# Advancement payment provider
+# Supported values: "fake" (default, dev/test), future: "stripe"
+# ---------------------------------------------------------------------------
+ADVANCEMENT_PAYMENT_PROVIDER = os.getenv("ADVANCEMENT_PAYMENT_PROVIDER", "fake")
+ADVANCEMENT_CURRENCY = os.getenv("ADVANCEMENT_CURRENCY", "usd")
+# Stage 3.2 – Stripe Checkout integration
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+# Public-facing URLs used in Stripe success/cancel redirects
+PUBLIC_APP_BASE_URL = os.getenv("PUBLIC_APP_BASE_URL", "http://localhost:5173")
+PUBLIC_API_BASE_URL = os.getenv("PUBLIC_API_BASE_URL", "http://localhost:8000")
+
+# Stage 3.4 – Receipts, donation upsell, sponsor assets, Wallet passes
+RECEIPTS_FROM_EMAIL = os.getenv("RECEIPTS_FROM_EMAIL", "no-reply@school.invalid")
+DONATION_PRESETS_USD = os.getenv("DONATION_PRESETS_USD", "10,25,50")   # CSV of integer dollar amounts
+SPONSOR_ASSET_BASE_URL = os.getenv("SPONSOR_ASSET_BASE_URL", "http://localhost:8000/media/")
+
+# Apple Wallet (PassKit) – all must be set in production; empty = returns 501
+APPLE_PASS_TYPE_IDENTIFIER = os.getenv("APPLE_PASS_TYPE_IDENTIFIER", "")   # pass.com.yourorg.crown
+APPLE_TEAM_IDENTIFIER = os.getenv("APPLE_TEAM_IDENTIFIER", "")
+APPLE_PASS_CERT_P12_PATH = os.getenv("APPLE_PASS_CERT_P12_PATH", "")       # secure path, never in repo
+APPLE_PASS_CERT_P12_PASSWORD = os.getenv("APPLE_PASS_CERT_P12_PASSWORD", "")
+APPLE_WWDR_PEM_PATH = os.getenv("APPLE_WWDR_PEM_PATH", "")                 # Apple WWDR G4 pem
+APPLE_PASS_SERVICE_URL = os.getenv("APPLE_PASS_SERVICE_URL", "http://apple-pass:7071/pkpass")
+
+# Google Wallet – both must be set in production; empty = returns 501
+GOOGLE_WALLET_ISSUER_ID = os.getenv("GOOGLE_WALLET_ISSUER_ID", "")
+GOOGLE_WALLET_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_WALLET_SERVICE_ACCOUNT_JSON", "")  # JSON string or file path
+GOOGLE_WALLET_BASE_URL = os.getenv("GOOGLE_WALLET_BASE_URL", "https://pay.google.com/gp/v/save/")

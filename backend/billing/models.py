@@ -189,3 +189,6 @@ class BillingAuditEvent(TimeStampedModel):
 			timestamp=timezone.now(),
 			details_json=details or {},
 		)
+
+# Stage 2 — Revenue Integrity models registered under the billing app
+from .models_delinquency import HouseholdDelinquency  # noqa: E402,F401
