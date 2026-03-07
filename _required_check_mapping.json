@@ -1,0 +1,242 @@
+[
+    {
+        "file":  "backend-gate.yml",
+        "workflow":  "backend-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\backend-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\backend-gate.yml:9:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\backend-gate.yml:17:  gate"
+    },
+    {
+        "file":  "canon-gate.yml",
+        "workflow":  "canon-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\canon-gate.yml:3:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\canon-gate.yml:4:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\canon-gate.yml:8:  canon_gate"
+    },
+    {
+        "file":  "ci.yml",
+        "workflow":  "CI - Tests and Checks",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ci.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ci.yml:6:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ci.yml:10:  verify-immutable-tags, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ci.yml:78:  test"
+    },
+    {
+        "file":  "ci-meta-gate-authoring.yml",
+        "workflow":  "ci-meta-gate-authoring",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ci-meta-gate-authoring.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ci-meta-gate-authoring.yml:13:  meta-check-job-if"
+    },
+    {
+        "file":  "contract-gate.yml",
+        "workflow":  "contract-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\contract-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\contract-gate.yml:12:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\contract-gate.yml:23:  gate, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\contract-gate.yml:53:  source-contracts"
+    },
+    {
+        "file":  "crown-magus0-gate.yml",
+        "workflow":  "crown-magus0-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:12:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:19:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:21:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:37:  backend-audit, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:126:  secret-audit, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:184:  frontend-audit, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:226:  dep-audit, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\crown-magus0-gate.yml:279:  pytest-audit"
+    },
+    {
+        "file":  "dashboards-build-gate.yml",
+        "workflow":  "dashboards-build-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dashboards-build-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dashboards-build-gate.yml:8:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dashboards-build-gate.yml:15:  build"
+    },
+    {
+        "file":  "demo-contract-freeze.yml",
+        "workflow":  "demo-contract-freeze",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-contract-freeze.yml:4:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-contract-freeze.yml:7:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-contract-freeze.yml:17:  freeze"
+    },
+    {
+        "file":  "demo-reset.yml",
+        "workflow":  "Demo Reset",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-reset.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-reset.yml:15:  reset"
+    },
+    {
+        "file":  "demo-reset-smoke.yml",
+        "workflow":  "Demo Reset + Smoke (runtime proof)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-reset-smoke.yml:7:  demo-reset-smoke"
+    },
+    {
+        "file":  "demo-surface-gate.yml",
+        "workflow":  "demo-surface-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-surface-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-surface-gate.yml:6:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\demo-surface-gate.yml:10:  demo-surface-static-gate"
+    },
+    {
+        "file":  "deploy-dashboard.yml",
+        "workflow":  "Deploy Dashboard (Production)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-dashboard.yml:23:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-dashboard.yml:34:  build-and-deploy"
+    },
+    {
+        "file":  "deploy-dev.yml",
+        "workflow":  "Dev Deploy (rc/**)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-dev.yml:5:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-dev.yml:28:  build-and-deploy"
+    },
+    {
+        "file":  "deploy-integrity-proof.yml",
+        "workflow":  "deploy-integrity-proof",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-integrity-proof.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-integrity-proof.yml:22:  verify"
+    },
+    {
+        "file":  "deploy-prod.yml",
+        "workflow":  "Production Deploy",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-prod.yml:5:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-prod.yml:24:  build-and-deploy, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-prod.yml:300:  notification"
+    },
+    {
+        "file":  "deploy-prod-dispatch.yml",
+        "workflow":  "Production Deploy (Dispatch v2)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-prod-dispatch.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-prod-dispatch.yml:10:  repository_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-prod-dispatch.yml:29:  build-and-deploy, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\deploy-prod-dispatch.yml:253:  notification"
+    },
+    {
+        "file":  "dev-smoke.yml",
+        "workflow":  "DEV Smoke - Golden Path",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dev-smoke.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dev-smoke.yml:30:  dev-smoke"
+    },
+    {
+        "file":  "dev-smoke-azure-dev.yml",
+        "workflow":  "Azure DEV Smoke (Deterministic)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dev-smoke-azure-dev.yml:7:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dev-smoke-azure-dev.yml:8:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\dev-smoke-azure-dev.yml:12:  smoke"
+    },
+    {
+        "file":  "gradebookro-ui-gate.yml",
+        "workflow":  "gradebookro-ui-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\gradebookro-ui-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\gradebookro-ui-gate.yml:11:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\gradebookro-ui-gate.yml:21:  gate"
+    },
+    {
+        "file":  "lockdown-golden-path-gate.yml",
+        "workflow":  "Lockdown Golden Path Gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\lockdown-golden-path-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\lockdown-golden-path-gate.yml:5:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\lockdown-golden-path-gate.yml:7:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\lockdown-golden-path-gate.yml:10:  changes, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\lockdown-golden-path-gate.yml:47:  lockdown-gate"
+    },
+    {
+        "file":  "migration-lock-gate.yml",
+        "workflow":  "migration-lock-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\migration-lock-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\migration-lock-gate.yml:9:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\migration-lock-gate.yml:17:  gate"
+    },
+    {
+        "file":  "msgraph-smoke.yml",
+        "workflow":  "MS Graph Smoke Test (OIDC)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\msgraph-smoke.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\msgraph-smoke.yml:5:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\msgraph-smoke.yml:7:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\msgraph-smoke.yml:15:  graph-smoke"
+    },
+    {
+        "file":  "ops-reset-dev.yml",
+        "workflow":  "OPS - Reset DEV Demo (migrate + reseed + smoke)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ops-reset-dev.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ops-reset-dev.yml:19:  reset_dev"
+    },
+    {
+        "file":  "phase1-gate.yml",
+        "workflow":  "phase1-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase1-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase1-gate.yml:9:  phase1-contract"
+    },
+    {
+        "file":  "phase3-demo-proof-pack.yml",
+        "workflow":  "Phase3 Demo Proof Pack Gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase3-demo-proof-pack.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase3-demo-proof-pack.yml:9:  demo-proof-static"
+    },
+    {
+        "file":  "phase3-runtime-proof.yml",
+        "workflow":  "Phase3 Runtime Proof Ceremony",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase3-runtime-proof.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase3-runtime-proof.yml:9:  phase3-runtime-proof"
+    },
+    {
+        "file":  "phase4-gradebook-demo-proof.yml",
+        "workflow":  "Phase4 Gradebook Demo Proof",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase4-gradebook-demo-proof.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase4-gradebook-demo-proof.yml:5:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\phase4-gradebook-demo-proof.yml:13:  phase4-gradebook-demo-proof"
+    },
+    {
+        "file":  "prod-health-watch.yml",
+        "workflow":  "prod-health-watch",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\prod-health-watch.yml:11:  check"
+    },
+    {
+        "file":  "prod-integrity-proof.yml",
+        "workflow":  "prod-integrity-proof",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\prod-integrity-proof.yml:4:  schedule, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\prod-integrity-proof.yml:6:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\prod-integrity-proof.yml:22:  prove"
+    },
+    {
+        "file":  "proof-ceremony.yml",
+        "workflow":  "Proof Ceremony",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony.yml:5:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony.yml:10:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony.yml:16:  proof-ceremony"
+    },
+    {
+        "file":  "proof-ceremony-after-prod.yml",
+        "workflow":  "proof-ceremony-after-prod",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony-after-prod.yml:16:  workflow_run, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony-after-prod.yml:23:  proof"
+    },
+    {
+        "file":  "proof-ceremony-prod.yml",
+        "workflow":  "proof-ceremony-prod",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony-prod.yml:12:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-ceremony-prod.yml:30:  ceremony"
+    },
+    {
+        "file":  "proof-gradebook.yml",
+        "workflow":  "Proof — Gradebook (UI + API)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-gradebook.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\proof-gradebook.yml:11:  gradebook-proof"
+    },
+    {
+        "file":  "pytest-gate.yml",
+        "workflow":  "pytest-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\pytest-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\pytest-gate.yml:9:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\pytest-gate.yml:17:  gate"
+    },
+    {
+        "file":  "rc-build-sha-proof.yml",
+        "workflow":  "RC Build-SHA Health Proof",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-build-sha-proof.yml:4:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-build-sha-proof.yml:7:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-build-sha-proof.yml:10:  build-sha-proof"
+    },
+    {
+        "file":  "rc-gate.yml",
+        "workflow":  "rc-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-gate.yml:4:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-gate.yml:7:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-gate.yml:12:  backend-gates, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-gate.yml:52:  frontend-build, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-gate.yml:82:  ui-static-gates"
+    },
+    {
+        "file":  "rc-promotion-gate.yml",
+        "workflow":  "rc-promotion-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-promotion-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-promotion-gate.yml:8:  gate"
+    },
+    {
+        "file":  "rc-runbook.yml",
+        "workflow":  "rc-runbook",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-runbook.yml:4:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-runbook.yml:7:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-runbook.yml:18:  runbook"
+    },
+    {
+        "file":  "rc-tier1-deployed-smoke.yml",
+        "workflow":  "rc-tier1-deployed-smoke",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-tier1-deployed-smoke.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-tier1-deployed-smoke.yml:10:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-tier1-deployed-smoke.yml:13:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\rc-tier1-deployed-smoke.yml:23:  deployed-smoke"
+    },
+    {
+        "file":  "routes-gate.yml",
+        "workflow":  "routes-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\routes-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\routes-gate.yml:10:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\routes-gate.yml:19:  gate"
+    },
+    {
+        "file":  "secret-scan.yml",
+        "workflow":  "Secret Scan",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\secret-scan.yml:8:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\secret-scan.yml:10:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\secret-scan.yml:14:  gitleaks"
+    },
+    {
+        "file":  "spine-audit.yml",
+        "workflow":  "Spine Audit (Canon Guard)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\spine-audit.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\spine-audit.yml:7:  spine-audit"
+    },
+    {
+        "file":  "stabilization-20260116-spine_crown-api-dev.yml",
+        "workflow":  "Build and deploy Python app to Azure Web App - crown-api-dev",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\stabilization-20260116-spine_crown-api-dev.yml:10:  build-and-deploy"
+    },
+    {
+        "file":  "system-health.yml",
+        "workflow":  "Crown System Health Gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\system-health.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\system-health.yml:5:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\system-health.yml:17:  health-check"
+    },
+    {
+        "file":  "tests.yml",
+        "workflow":  "Tests",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\tests.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\tests.yml:5:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\tests.yml:11:  pytest"
+    },
+    {
+        "file":  "ui-proof-gate.yml",
+        "workflow":  "UI Proof Gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-proof-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-proof-gate.yml:6:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-proof-gate.yml:14:  ui-smoke"
+    },
+    {
+        "file":  "ui-proof-gates.yml",
+        "workflow":  "UI Proof — Dashboard Gates (Student · Parent · Executive)",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-proof-gates.yml:4:  workflow_dispatch, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-proof-gates.yml:6:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-proof-gates.yml:25:  dashboard-ui-gates"
+    },
+    {
+        "file":  "ui-shell-gate.yml",
+        "workflow":  "ui-shell-gate",
+        "jobs":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-shell-gate.yml:4:  pull_request, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-shell-gate.yml:11:  push, C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026\\.github\\workflows\\ui-shell-gate.yml:21:  gate"
+    }
+]

@@ -12,7 +12,8 @@ on:
       - ".github/workflows/dashboards-build-gate.yml"
 
 jobs:
-  build:
+  dashboards-build-gate:
+    name: dashboards-build-gate
     runs-on: ubuntu-latest
     defaults:
       run:
