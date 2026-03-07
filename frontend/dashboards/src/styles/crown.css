@@ -27,6 +27,19 @@
   /* Typography */
   --crown-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
     Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+  /* Status / health colors (light-mode calibrated) */
+  --crown-ok:     #166534;   /* green text on light bg */
+  --crown-warn:   #92400e;   /* amber text on light bg */
+  --crown-danger: #991b1b;   /* red text on light bg */
+  --crown-gold:   #b08d57;   /* warm gold (= accent) */
+  --crown-info:   #1e40af;   /* info blue */
+
+  /* Status surface fills */
+  --crown-ok-bg:     #dcfce7;
+  --crown-warn-bg:   #fef9c3;
+  --crown-danger-bg: #fee2e2;
+  --crown-info-bg:   #dbeafe;
 }
 
 html,
@@ -245,3 +258,49 @@ button, .MuiButton-root {
   letter-spacing: 0.5px;
 }
 
+/* ── Light-mode override (wins over crown-theme.css !important rules) ───── */
+
+body,
+.crown-app,
+.crown-main {
+  color: var(--crown-ink) !important;
+  background-color: var(--crown-bg) !important;
+}
+
+/* Restore readable buttons on light pages */
+button,
+.crown-btn,
+a.crown-btn {
+  color: var(--crown-ink) !important;
+  background-color: var(--crown-surface) !important;
+  border-color: var(--crown-border) !important;
+  -webkit-text-fill-color: var(--crown-ink) !important;
+}
+
+.crown-btn-primary {
+  background-color: var(--crown-brand) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Light-mode inputs */
+.crown-main input,
+.crown-main select,
+.crown-main textarea,
+.crown-section input,
+.crown-section select,
+.crown-section textarea {
+  color: var(--crown-ink) !important;
+  background-color: var(--crown-surface) !important;
+  border: 1px solid var(--crown-border) !important;
+  -webkit-text-fill-color: var(--crown-ink) !important;
+  caret-color: var(--crown-ink) !important;
+}
+
+.crown-main input::placeholder,
+.crown-main textarea::placeholder {
+  color: var(--crown-muted) !important;
+  -webkit-text-fill-color: var(--crown-muted) !important;
+  opacity: 1 !important;
+}

@@ -33,11 +33,11 @@ export default function TeamsPreviewPage() {
   return (
     <CrownLayout title="Teams Integration Preview" right={<button className="crown-btn crown-btn-primary" onClick={send}>Send Preview</button>}>
 
-      {err ? <div style={{ color: "#dc2626", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
+      {err ? <div style={{ color: "var(--crown-danger)", fontSize: "0.875rem", marginBottom: "1rem" }}>{err}</div> : null}
       {resp ? (
-        <div style={{ border: "1px solid #e5e7eb", borderRadius: "12px", padding: "1rem" }}>
-          <div style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.75rem" }}>Response (demo mode, no outbound calls)</div>
-          <pre style={{ fontSize: "0.75rem", backgroundColor: "#f9fafb", padding: "0.75rem", borderRadius: "6px", overflow: "auto" }}>{JSON.stringify(resp, null, 2)}</pre>
+        <div style={{ border: "1px solid var(--crown-border)", borderRadius: "12px", padding: "1rem" }}>
+          <div style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.75rem" }}>Response (demo mode, no outbound calls)</div>
+          <pre style={{ fontSize: "0.75rem", backgroundColor: "var(--crown-surface-2)", padding: "0.75rem", borderRadius: "6px", overflow: "auto" }}>{JSON.stringify(resp, null, 2)}</pre>
         </div>
       ) : null}
     </CrownLayout>

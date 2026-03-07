@@ -1,5 +1,6 @@
 ﻿from django.shortcuts import render
 from crown_api.director_router import get_director_persona, get_director_filter_config
+from core.models import AcademicYear, School
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,11 +18,37 @@ def director_dashboard_page(request, persona=None):
         persona = get_director_persona(request.user)
     
     filter_config = get_director_filter_config(persona)
-    
+
+    # Look up real school + academic year from DB so the template doesn't use
+    # hardcoded dev UUIDs. Use the first school with a current academic year.
+    school_id = ""
+    year_id = ""
+    try:
+        ay = (
+            AcademicYear.objects
+            .filter(is_current=True)
+            .select_related()
+            .order_by("-start_date")
+            .first()
+        )
+        if ay:
+            school_id = str(ay.school_id)
+            year_id = str(ay.id)
+        else:
+            # Fallback: any academic year ordered by most recent start date
+            ay = AcademicYear.objects.order_by("-start_date").first()
+            if ay:
+                school_id = str(ay.school_id)
+                year_id = str(ay.id)
+    except Exception:
+        logger.warning("director_dashboard_page: could not resolve school/year from DB", exc_info=True)
+
     context = {
         'persona': persona,
         'page_title': filter_config['title'],
         'filter_config': filter_config,
+        'school_id': school_id,
+        'year_id': year_id,
         'api_endpoints': {
             'dashboard': '/api/director/dashboard/',
             'priority': '/api/director/priority/',
@@ -104,10 +131,9 @@ def director_router(request):
     if persona in DIRECTOR_ROUTE_BY_PERSONA:
         return redirect(DIRECTOR_ROUTE_BY_PERSONA[persona])
 
-    # If the user is authenticated but not a director persona,
-    # you can either:
-    # A) send them to a generic dashboard/home
-    # B) forbid access (strict)
-    #
-    # Choose B for security clarity:
+    # Superusers/staff get routed to the primary demo persona.
+    # This avoids a 403 when admin logs in during demo without a persona group.
+    if request.user.is_superuser or request.user.is_staff:
+        return redirect(DIRECTOR_ROUTE_BY_PERSONA["financial_aid_director"])
+
     return HttpResponseForbidden("Director dashboard access not available for this persona.")

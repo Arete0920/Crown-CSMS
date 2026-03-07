@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { verifySectionAssign } from "../../api/section_assign_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -42,12 +42,12 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{
               padding: "12px 16px",
-              background: "var(--crown-success-bg, #f0faf0)",
-              border: "1px solid var(--crown-success-border, #b7dfb7)",
+              background: "var(--crown-ok-bg)",
+              border: "1px solid var(--crown-ok)",
               borderRadius: 6,
               fontSize: 13,
               fontWeight: 600,
-              color: "var(--crown-success, #2d7a2d)",
+              color: "var(--crown-ok)",
             }}>
               Section roster committed and verified. Status: {result.status}
             </div>

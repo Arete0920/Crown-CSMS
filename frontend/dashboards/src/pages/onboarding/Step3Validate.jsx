@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { validateImport } from "../../api/onboarding.js";
 import "../../styles/crown-wizard.css";
@@ -84,7 +84,7 @@ export default function Step3Validate({ context, setContext, goBack, goNext, ste
                     <tr key={i}>
                       <td>{w.row}</td>
                       <td>{w.field}</td>
-                      <td style={{ color: "var(--crown-gold-2, #f1d88a)" }}>{w.message}</td>
+                      <td style={{ color: "var(--crown-gold)" }}>{w.message}</td>
                     </tr>
                   ))}
                 </tbody>

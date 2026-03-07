@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 
 /**
  * CrownLayout – app shell with permission-derived sidebar + main content area.
@@ -99,7 +99,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
                       padding: "5px 10px",
                       borderRadius: 5,
                       fontSize: 13,
-                      color: active ? "#fff" : "rgba(255,255,255,0.72)",
+                      color: active ? "var(--crown-surface)" : "rgba(255,255,255,0.72)",
                       background: active ? "rgba(255,255,255,0.15)" : "transparent",
                       fontWeight: active ? 700 : 400,
                       textDecoration: "none",
@@ -126,7 +126,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
           </div>
         )}
         {children}
-        <div style={{ marginTop: 24, paddingTop: 8, borderTop: "1px solid #f3f4f6", fontSize: 11, color: "#9ca3af", textAlign: "right" }}>
+        <div style={{ marginTop: 24, paddingTop: 8, borderTop: "1px solid var(--crown-border)", fontSize: 11, color: "var(--crown-muted)", textAlign: "right" }}>
           Build: {BUILD_SHA}{DEPLOY_TAG ? ` · ${DEPLOY_TAG}` : ""}
         </div>
       </main>

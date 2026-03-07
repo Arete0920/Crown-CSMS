@@ -4,6 +4,7 @@ import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 /* ── Auth helpers ────────────────────────────────────────────────────── */
 function apiBase() {
@@ -46,6 +47,22 @@ const DEMO = {
   operational: { payment_failures: 3, refunds: 1, chargebacks: 0 },
 };
 
+/* ── Finance KPI flip cards ──────────────────────────────────────────── */
+const FINANCE_KPI = [
+  { label: "AR Outstanding",    value: "$237K",   trend: null,             trendUp: null,
+    definition: "Total accounts receivable across all family balances currently due.",
+    dataSource: "Finance Module", dataHref: "/finance" },
+  { label: "Collected (Month)", value: "$184.5K", trend: null,             trendUp: null,
+    definition: "Payments posted to student accounts in the current calendar month.",
+    dataSource: "Finance Module", dataHref: "/finance" },
+  { label: "Aid Awarded",       value: "$312.5K", trend: null,             trendUp: null,
+    definition: "Financial aid awards applied to family balances for the current year.",
+    dataSource: "Financial Aid Module", dataHref: "/financial-aid" },
+  { label: "Payment Failures",  value: "3",       trend: "needs attention", trendUp: false,
+    definition: "ACH, card, or check payments declined — require staff follow-up and re-processing.",
+    dataSource: "Finance Module", dataHref: "/finance" },
+];
+
 async function fetchFinanceMetrics() {
   const { token, schoolId } = getSession();
   const url = `${apiBase()}/api/v1/finance/metrics/`;
@@ -69,28 +86,26 @@ function fmt$(n) {
 }
 
 /* ── Pill ────────────────────────────────────────────────────────────── */
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    blue:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-brand)'   },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
 /* ── Progress bar ────────────────────────────────────────────────────── */
-function ProgressBar({ pct, color = '#10b981' }) {
+function ProgressBar({ pct, color = 'var(--crown-brand)' }) {
   const clamped = Math.min(100, Math.max(0, pct));
   return (
-    <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
+    <div style={{ height: 6, background: 'var(--crown-border)', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
       <div style={{ height: '100%', width: `${clamped}%`, background: color, borderRadius: 3, transition: 'width 0.4s' }} />
     </div>
   );
@@ -100,8 +115,8 @@ function ProgressBar({ pct, color = '#10b981' }) {
 function AgingBar({ amount, maxAmount }) {
   const pct = maxAmount ? (amount / maxAmount) * 100 : 0;
   return (
-    <div style={{ height: 4, background: '#e5e7eb', borderRadius: 2, overflow: 'hidden', width: '100%', marginTop: 3 }}>
-      <div style={{ height: '100%', width: `${pct}%`, background: '#3b82f6', borderRadius: 2 }} />
+    <div style={{ height: 4, background: 'var(--crown-border)', borderRadius: 2, overflow: 'hidden', width: '100%', marginTop: 3 }}>
+      <div style={{ height: '100%', width: `${pct}%`, background: 'var(--crown-brand)', borderRadius: 2 }} />
     </div>
   );
 }
@@ -109,11 +124,11 @@ function AgingBar({ amount, maxAmount }) {
 /* ── StatRow ─────────────────────────────────────────────────────────── */
 function StatRow({ label, value, sub, highlight }) {
   return (
-    <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
-      <td style={{ padding: '8px 0', color: '#6b7280', fontSize: 13 }}>{label}</td>
+    <tr style={{ borderBottom: '1px solid var(--crown-border)' }}>
+      <td style={{ padding: '8px 0', color: 'var(--crown-muted)', fontSize: 13 }}>{label}</td>
       <td style={{ padding: '8px 0', textAlign: 'right' }}>
-        <span style={{ fontWeight: 700, color: highlight || '#111827', fontSize: 14 }}>{value}</span>
-        {sub && <span style={{ marginLeft: 6, fontSize: 11, color: '#9ca3af' }}>{sub}</span>}
+        <span style={{ fontWeight: 700, color: highlight || 'var(--crown-ink)', fontSize: 14 }}>{value}</span>
+        {sub && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--crown-muted)' }}>{sub}</span>}
       </td>
     </tr>
   );
@@ -140,7 +155,10 @@ export default function FinanceDashboard() {
   const aidPct = aid.budget ? Math.round((aid.awarded / aid.budget) * 100) : 0;
 
   return (
-    <CrownLayout title="Finance" subtitle="Business office · AR · collections · financial aid">
+    <CrownLayout title="Finance" subtitle="Business office · AR · collections · financial aid"
+      right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
+    >
+      <KpiStrip cards={FINANCE_KPI} />
       <DashboardSection title="Key Indicators">
         <CrownGrid>
 
@@ -182,36 +200,33 @@ export default function FinanceDashboard() {
 
         {/* ── AR Aging table ────────────────────────────────────────── */}
         <Col span={8}>
-          <CrownCard
-            title="AR Aging"
-            right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
-          >
+          <CrownCard title="AR Aging">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
-                  <th style={{ padding: '6px 0', textAlign: 'left',  color: '#6b7280', fontWeight: 600 }}>Bucket</th>
-                  <th style={{ padding: '6px 0', textAlign: 'center', color: '#6b7280', fontWeight: 600 }}>Accounts</th>
-                  <th style={{ padding: '6px 0', textAlign: 'right',  color: '#6b7280', fontWeight: 600 }}>Amount</th>
+                <tr style={{ borderBottom: '2px solid var(--crown-border)' }}>
+                  <th style={{ padding: '6px 0', textAlign: 'left',  color: 'var(--crown-muted)', fontWeight: 600 }}>Bucket</th>
+                  <th style={{ padding: '6px 0', textAlign: 'center', color: 'var(--crown-muted)', fontWeight: 600 }}>Accounts</th>
+                  <th style={{ padding: '6px 0', textAlign: 'right',  color: 'var(--crown-muted)', fontWeight: 600 }}>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {aging.map((row, i) => (
-                  <tr key={row.bucket} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <tr key={row.bucket} style={{ borderBottom: '1px solid var(--crown-border)' }}>
                     <td style={{ padding: '10px 0' }}>
                       <div style={{
                         fontSize: 13, fontWeight: 600,
-                        color: i === aging.length - 1 ? '#dc2626' : '#374151',
+                        color: i === aging.length - 1 ? 'var(--crown-danger)' : 'var(--crown-ink)',
                       }}>
                         {row.bucket}
                       </div>
                       <AgingBar amount={row.amount} maxAmount={maxAgingAmount} />
                     </td>
-                    <td style={{ padding: '10px 0', textAlign: 'center', color: '#6b7280', fontSize: 13 }}>
+                    <td style={{ padding: '10px 0', textAlign: 'center', color: 'var(--crown-muted)', fontSize: 13 }}>
                       {row.count}
                     </td>
                     <td style={{
                       padding: '10px 0', textAlign: 'right', fontWeight: 700,
-                      color: i === aging.length - 1 ? '#dc2626' : '#111827',
+                      color: i === aging.length - 1 ? 'var(--crown-danger)' : 'var(--crown-ink)',
                       fontSize: 14,
                     }}>
                       {fmt$(row.amount)}
@@ -219,11 +234,11 @@ export default function FinanceDashboard() {
                   </tr>
                 ))}
                 <tr>
-                  <td style={{ padding: '10px 0', fontWeight: 700, color: '#374151' }}>Total</td>
-                  <td style={{ padding: '10px 0', textAlign: 'center', fontWeight: 700, color: '#374151' }}>
+                  <td style={{ padding: '10px 0', fontWeight: 700, color: 'var(--crown-ink)' }}>Total</td>
+                  <td style={{ padding: '10px 0', textAlign: 'center', fontWeight: 700, color: 'var(--crown-ink)' }}>
                     {aging.reduce((s, b) => s + b.count, 0)}
                   </td>
-                  <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 800, fontSize: 15, color: '#111827' }}>
+                  <td style={{ padding: '10px 0', textAlign: 'right', fontWeight: 800, fontSize: 15, color: 'var(--crown-ink)' }}>
                     {fmt$(aging.reduce((s, b) => s + b.amount, 0))}
                   </td>
                 </tr>
@@ -242,13 +257,13 @@ export default function FinanceDashboard() {
                 return (
                   <div key={method}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 2 }}>
-                      <span style={{ color: '#374151', textTransform: 'uppercase', fontWeight: 600, fontSize: 11 }}>
+                      <span style={{ color: 'var(--crown-ink)', textTransform: 'uppercase', fontWeight: 600, fontSize: 11 }}>
                         {method}
                       </span>
-                      <span style={{ color: '#111827', fontWeight: 700 }}>{fmt$(amount)}</span>
+                      <span style={{ color: 'var(--crown-ink)', fontWeight: 700 }}>{fmt$(amount)}</span>
                     </div>
-                    <ProgressBar pct={pct} color="#6366f1" />
-                    <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 1 }}>{pct}% of collected</div>
+                    <ProgressBar pct={pct} color="var(--crown-brand)" />
+                    <div style={{ fontSize: 10, color: 'var(--crown-muted)', marginTop: 1 }}>{pct}% of collected</div>
                   </div>
                 );
               })}
@@ -267,7 +282,7 @@ export default function FinanceDashboard() {
               <tbody>
                 <StatRow label="Paid this week"  value={fmt$(coll.paid_this_week)} />
                 <StatRow label="Paid this month"  value={fmt$(coll.paid_this_month)} />
-                <StatRow label="Outstanding"      value={fmt$(coll.outstanding)}   highlight="#dc2626" />
+                <StatRow label="Outstanding"      value={fmt$(coll.outstanding)}   highlight="var(--crown-danger)" />
               </tbody>
             </table>
           </CrownCard>
@@ -288,16 +303,16 @@ export default function FinanceDashboard() {
               </tbody>
             </table>
             <div style={{ marginTop: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--crown-muted)', marginBottom: 2 }}>
                 <span>Budget utilization</span>
                 <span>{aidPct}%</span>
               </div>
-              <ProgressBar pct={aidPct} color={aidPct > 90 ? '#ef4444' : '#10b981'} />
+              <ProgressBar pct={aidPct} color={aidPct > 90 ? 'var(--crown-danger)' : 'var(--crown-ok)'} />
             </div>
             <div style={{ marginTop: 10 }}>
               <a
                 href="/financial-aid"
-                style={{ fontSize: 12, color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}
+                style={{ fontSize: 12, color: 'var(--crown-brand)', textDecoration: 'none', fontWeight: 600 }}
               >
                 Open Financial Aid dashboard →
               </a>
@@ -326,13 +341,13 @@ export default function FinanceDashboard() {
                     flex: '1 1 160px',
                     padding: '12px 16px',
                     borderRadius: 6,
-                    background: warn ? '#fef2f2' : '#f0fdf4',
-                    border: `1px solid ${warn ? '#fecaca' : '#bbf7d0'}`,
+                    background: warn ? 'var(--crown-danger-bg)' : 'var(--crown-ok-bg)',
+                    border: `1px solid var(--crown-border)`,
                     textAlign: 'center',
                   }}
                 >
-                  <div style={{ fontSize: 24, fontWeight: 900, color: warn ? '#dc2626' : '#166534' }}>{value}</div>
-                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: warn ? 'var(--crown-danger)' : 'var(--crown-ok)' }}>{value}</div>
+                  <div style={{ fontSize: 12, color: 'var(--crown-muted)', marginTop: 2 }}>{label}</div>
                 </div>
               ))}
             </div>

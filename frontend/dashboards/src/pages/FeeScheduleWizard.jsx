@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FeeScheduleWizard.jsx
  *
  * Wizard #14 — Fee Schedule Setup
@@ -196,7 +196,7 @@ export default function FeeScheduleWizard() {
           {err && <p style={{ color: "red" }}>{err}</p>}
           <form onSubmit={handleLines}>
             {lines.map((line, idx) => (
-              <div key={idx} style={{ border: "1px solid #ddd", borderRadius: 4, padding: 12, marginBottom: 12 }}>
+              <div key={idx} style={{ border: "1px solid var(--crown-border)", borderRadius: 4, padding: 12, marginBottom: 12 }}>
                 <div style={{ marginBottom: 6 }}>
                   <label>Code&nbsp;
                     <input
@@ -217,7 +217,7 @@ export default function FeeScheduleWizard() {
                     <input type="number" min="0" {...lineField(idx, "amount_cents")} required style={{ width: 100 }} />
                   </label>
                   &nbsp;
-                  <span style={{ color: "#555", fontSize: "0.9em" }}>{formatCents(line.amount_cents)}</span>
+                  <span style={{ color: "var(--crown-muted)", fontSize: "0.9em" }}>{formatCents(line.amount_cents)}</span>
                   &nbsp;
                   <label>Kind&nbsp;
                     <select {...lineField(idx, "kind")}>

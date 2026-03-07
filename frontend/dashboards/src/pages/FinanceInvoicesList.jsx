@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+﻿import { useEffect, useState, useMemo } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 import { getInvoices } from "../api/finance";
@@ -155,7 +155,7 @@ export default function FinanceInvoicesList() {
   if (data.length === 0) {
     return (
       <CrownLayout title="Finance" subtitle="Invoice history and exports">
-        <div style={{ marginTop: "1rem", color: "#6b7280" }}>
+        <div style={{ marginTop: "1rem", color: "var(--crown-muted)" }}>
           No invoices yet
         </div>
       </CrownLayout>
@@ -185,18 +185,18 @@ export default function FinanceInvoicesList() {
           }}
         >
           <thead>
-            <tr style={{ background: "#f3f4f6" }}>
+            <tr style={{ background: "var(--crown-surface-2)" }}>
               <th
                 onClick={() => handleSort("household_name")}
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -208,12 +208,12 @@ export default function FinanceInvoicesList() {
                 style={{
                   textAlign: "right",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -225,12 +225,12 @@ export default function FinanceInvoicesList() {
                 style={{
                   textAlign: "right",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -242,12 +242,12 @@ export default function FinanceInvoicesList() {
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -259,12 +259,12 @@ export default function FinanceInvoicesList() {
                 style={{
                   textAlign: "left",
                   padding: "0.75rem",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                   cursor: "pointer",
                   userSelect: "none",
                   position: "sticky",
                   top: 0,
-                  background: "#f3f4f6",
+                  background: "var(--crown-surface-2)",
                   zIndex: 10,
                 }}
               >
@@ -280,13 +280,13 @@ export default function FinanceInvoicesList() {
                 onClick={() => setSelected(inv)}
                 style={{
                   cursor: "pointer",
-                  borderBottom: "1px solid #e5e7eb",
+                  borderBottom: "1px solid var(--crown-border)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#f9fafb";
+                  e.currentTarget.style.background = "var(--crown-surface-2)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "white";
+                  e.currentTarget.style.background = "var(--crown-surface)";
                 }}
               >
                 <td style={{ padding: "0.75rem" }}>{inv.household_name}</td>
@@ -315,14 +315,14 @@ export default function FinanceInvoicesList() {
             </h2>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
                 Payer
               </h3>
               <div>{selected.household_name}</div>
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
                 Amounts
               </h3>
               <div>
@@ -334,7 +334,7 @@ export default function FinanceInvoicesList() {
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
                 Dates
               </h3>
               <div>
@@ -350,7 +350,7 @@ export default function FinanceInvoicesList() {
             </div>
 
             <details style={{ fontSize: "0.875rem" }}>
-              <summary style={{ cursor: "pointer", color: "#6b7280" }}>
+              <summary style={{ cursor: "pointer", color: "var(--crown-muted)" }}>
                 Identifiers
               </summary>
               <div style={{ marginTop: "0.5rem", fontFamily: "monospace", fontSize: "0.75rem" }}>

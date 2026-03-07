@@ -66,7 +66,7 @@ def board_risk_counts(request):
 # ---------------------------------------------------------------------------
 
 @api_view(["GET"])
-def student_signals(request, student_id: int):
+def student_signals(request, student_id):
     """Per-student: latest snapshot + recent signal events."""
     school_id = school_id_from_request(request, required=True)
     events = (
@@ -101,13 +101,18 @@ def intervention_cases(request):
 
     # POST — manual case creation
     payload = request.data or {}
-    student_id = int(payload.get("student_id", 0))
-    if not student_id:
+    from uuid import UUID as _UUID
+    student_id_raw = payload.get("student_id")
+    if not student_id_raw:
         return Response({"detail": "student_id required."}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        student_uuid = _UUID(str(student_id_raw))
+    except Exception:
+        return Response({"detail": "student_id must be a valid UUID."}, status=status.HTTP_400_BAD_REQUEST)
 
     case = InterventionCase.objects.create(
         school_id=school_id,
-        student_id=student_id,
+        student_id=student_uuid,
         reason=payload.get("reason", "Manual intervention case"),
         priority=payload.get("priority", "MED"),
         status="OPEN",
@@ -118,7 +123,7 @@ def intervention_cases(request):
 
 
 @api_view(["GET", "POST"])
-def intervention_actions(request, case_id: int):
+def intervention_actions(request, case_id):
     """Action timeline for a specific case (GET list / POST add action)."""
     school_id = school_id_from_request(request, required=True)
 

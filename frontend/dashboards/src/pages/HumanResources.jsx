@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -57,95 +59,110 @@ async function fetchHRData() {
   }
 }
 
-const DEPT_COLOR = {
-  Academics: '#2563eb', Administration: '#7c3aed', Finance: '#16a34a',
-  'Student Services': '#ca8a04', Facilities: '#dc2626', Technology: '#0891b2',
-};
+function Pill({ color = 'gray', children }) {
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    blue:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-brand)'   },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
+  return (
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
+  );
+}
 
+/* â”€â”€ HR / Staff KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Staff Active",         value: "84",   trend: null,              trendUp: null,
+    definition: "Total full-time and part-time staff with active employment records.",
+    dataSource: "HR Module", dataHref: "/human-resources" },
+  { label: "Open Positions",       value: "2",    trend: null,              trendUp: null,
+    definition: "Approved positions currently posted or in search phase.",
+    dataSource: "HR Module", dataHref: "/human-resources" },
+  { label: "Retention Rate",       value: "94%",  trend: "+2% vs last yr",  trendUp: true,
+    definition: "Percentage of employees who remained employed from the start of the school year to today.",
+    dataSource: "HR Module", dataHref: "/human-resources" },
+  { label: "Trainings Due",        value: "7",    trend: null,              trendUp: null,
+    definition: "Required professional development trainings due within the next 30 days.",
+    dataSource: "HR Module", dataHref: "/human-resources" },
+];
 export default function HumanResources() {
-  const [state, setState] = useState({ loading: true, data: DEMO });
+  const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
   useEffect(() => {
-    fetchHRData().then(({ ok, data }) => setState({ loading: false, data }));
+    fetchHRData().then(({ ok, data }) => setState({ loading: false, live: ok, data }));
   }, []);
 
-  const { loading, data } = state;
+  const { loading, live, data } = state;
 
   return (
-    <CrownLayout title="Human Resources" subtitle="Staff directory &amp; workforce overview">
-      {loading && <p style={{ color: '#6b7280', padding: '4px 0' }}>Loading…</p>}
+    <CrownLayout title="Human Resources" subtitle="Staff directory &amp; workforce overview"
+      right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
+    >
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      {/* KPI row */}
-      <div className="crown-metrics-row">
-        <CrownMetricCard label="Total Staff"    value={data.total_employees}    />
-        <CrownMetricCard label="Active"          value={data.active_employees}   />
-        <CrownMetricCard label="Inactive"        value={data.inactive_employees} />
-      </div>
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={4}><CrownMetricCard label="Total Staff"    value={data.total_employees}    /></Col>
+          <Col span={4}><CrownMetricCard label="Active"          value={data.active_employees}   /></Col>
+          <Col span={4}><CrownMetricCard label="Inactive"        value={data.inactive_employees} /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid>
-        {/* By Department */}
-        <Col span={5}>
-          <CrownCard title="Staff by Department">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ textAlign: 'left', padding: '6px 8px', color: '#6b7280', fontWeight: 600 }}>Department</th>
-                  <th style={{ textAlign: 'right', padding: '6px 8px', color: '#6b7280', fontWeight: 600 }}>Count</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(data.by_department || []).map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px' }}>
-                      <span style={{
-                        display: 'inline-block', width: 10, height: 10, borderRadius: '50%',
-                        background: DEPT_COLOR[row.department] || '#9ca3af',
-                        marginRight: 6, verticalAlign: 'middle',
-                      }} />
-                      {row.department || 'Unassigned'}
-                    </td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{row.count}</td>
+      <DashboardSection title="Directory">
+        <CrownGrid>
+          <Col span={5}>
+            <CrownCard title="Staff by Department">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    <th style={{ textAlign: 'left', padding: '6px 8px', color: 'var(--crown-muted)', fontWeight: 600 }}>Department</th>
+                    <th style={{ textAlign: 'right', padding: '6px 8px', color: 'var(--crown-muted)', fontWeight: 600 }}>Count</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
-
-        {/* Employee List */}
-        <Col span={7}>
-          <CrownCard title="Staff Directory">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ textAlign: 'left', padding: '6px 8px', color: '#6b7280', fontWeight: 600 }}>Name</th>
-                  <th style={{ textAlign: 'left', padding: '6px 8px', color: '#6b7280', fontWeight: 600 }}>Role</th>
-                  <th style={{ textAlign: 'left', padding: '6px 8px', color: '#6b7280', fontWeight: 600 }}>Department</th>
-                  <th style={{ textAlign: 'center', padding: '6px 8px', color: '#6b7280', fontWeight: 600 }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(data.employees || []).map((e, i) => (
-                  <tr key={e.id || i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 500 }}>{e.first_name} {e.last_name}</td>
-                    <td style={{ padding: '6px 8px', color: '#374151' }}>{e.role}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280' }}>{e.department || '—'}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                      <span style={{
-                        background: e.active ? '#dcfce7' : '#fee2e2',
-                        color: e.active ? '#16a34a' : '#dc2626',
-                        borderRadius: 4, padding: '2px 7px', fontSize: 11, fontWeight: 700,
-                      }}>
-                        {e.active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
+                </thead>
+                <tbody>
+                  {(data.by_department || []).map((row, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{row.department || 'Unassigned'}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--crown-ink)' }}>{row.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+          <Col span={7}>
+            <CrownCard title="Staff Directory">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    <th style={{ textAlign: 'left', padding: '6px 8px', color: 'var(--crown-muted)', fontWeight: 600 }}>Name</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px', color: 'var(--crown-muted)', fontWeight: 600 }}>Role</th>
+                    <th style={{ textAlign: 'left', padding: '6px 8px', color: 'var(--crown-muted)', fontWeight: 600 }}>Department</th>
+                    <th style={{ textAlign: 'center', padding: '6px 8px', color: 'var(--crown-muted)', fontWeight: 600 }}>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+                </thead>
+                <tbody>
+                  {(data.employees || []).map((e, i) => (
+                    <tr key={e.id || i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{e.first_name} {e.last_name}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{e.role}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{e.department || '—'}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'center' }}>
+                        <Pill color={e.active ? 'green' : 'red'}>{e.active ? 'Active' : 'Inactive'}</Pill>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

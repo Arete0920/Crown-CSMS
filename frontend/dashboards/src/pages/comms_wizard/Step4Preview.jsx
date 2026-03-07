@@ -1,4 +1,4 @@
-import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
+﻿import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import "../../styles/crown-wizard.css";
 
 export default function Step4Preview({ context, goNext, goPrev, stepIndex, totalSteps, steps }) {
@@ -23,7 +23,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
           <div style={{ marginTop: 6 }}>
             <strong>Channels:</strong>{" "}
             {channels.length > 0
-              ? channels.map((c) => <span key={c} style={{ display: "inline-block", marginRight: 8, padding: "2px 8px", background: "var(--crown-accent-light, #e8f4fd)", borderRadius: 10, fontSize: 11, fontWeight: 600, color: "var(--crown-accent, #1a73e8)" }}>{c.toUpperCase()}</span>)
+              ? channels.map((c) => <span key={c} style={{ display: "inline-block", marginRight: 8, padding: "2px 8px", background: "var(--crown-surface-2)", borderRadius: 10, fontSize: 11, fontWeight: 600, color: "var(--crown-brand)" }}>{c.toUpperCase()}</span>)
               : "—"}
           </div>
         </div>
@@ -56,7 +56,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
               </thead>
               <tbody>
                 {recipients.map((r, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+                  <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                     <td style={{ padding: "6px 12px", fontFamily: "monospace", fontSize: 11 }}>{r.to}</td>
                     <td style={{ padding: "6px 12px" }}>{r.name || "—"}</td>
                   </tr>

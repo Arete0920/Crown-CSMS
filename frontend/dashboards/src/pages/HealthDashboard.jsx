@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 /* ── Auth helpers ─────────────────────────────────────────────────────── */
 function apiBase() {
@@ -69,24 +71,36 @@ async function fetchHealthMetrics() {
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
 /* ── Main component ───────────────────────────────────────────────────── */
+/* â”€â”€ Health / Nurse KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Students Seen Today", value: "4",  trend: null,              trendUp: null,
+    definition: "Students who visited the health office today for any reason.",
+    dataSource: "Health Module", dataHref: "/health" },
+  { label: "Medication Pending",  value: "2",  trend: null,              trendUp: null,
+    definition: "Scheduled medication administrations not yet marked complete today.",
+    dataSource: "Health Module", dataHref: "/health" },
+  { label: "Immunization Gaps",   value: "3",  trend: "-1 vs last wk",  trendUp: true,
+    definition: "Students whose immunization records have outstanding or expiring requirements.",
+    dataSource: "Health Module", dataHref: "/health" },
+  { label: "Incidents MTD",       value: "8",  trend: null,              trendUp: null,
+    definition: "Total health-related incidents logged this month (injury, illness, referral).",
+    dataSource: "Health Module", dataHref: "/health" },
+];
 export default function HealthDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -97,10 +111,13 @@ export default function HealthDashboard() {
   }, []);
 
   const { loading, live, data } = state;
-  const alerts         = data.alerts         || DEMO.alerts;
-  const todaysVisits   = data.todays_visits  || DEMO.todays_visits;
-  const medLog         = data.medication_log || DEMO.medication_log;
-  const immunComp      = data.immunization_compliance || DEMO.immunization_compliance;
+  const alerts       = data.alerts                   || DEMO.alerts;
+  const todaysVisits = data.todays_visits            || DEMO.todays_visits;
+  const medLog       = data.medication_log           || DEMO.medication_log;
+  const immunComp    = data.immunization_compliance  || DEMO.immunization_compliance;
+
+  const TH = { padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 };
+  const TD = { padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' };
 
   return (
     <CrownLayout
@@ -108,122 +125,131 @@ export default function HealthDashboard() {
       subtitle="Daily visits, medications, immunization compliance, and incident tracking"
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      {loading && <p style={{ color: '#6b7280', padding: 16 }}>Loading…</p>}
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      {/* ── KPI row ── */}
-      <CrownGrid>
-        <Col span={3}>
-          <CrownMetricCard label="Visits Today"             value={data.visits_today             ?? DEMO.visits_today} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Meds Administered"        value={data.meds_administered        ?? DEMO.meds_administered} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Immunizations Missing"    value={data.immunizations_missing    ?? DEMO.immunizations_missing} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Incidents (This Week)"    value={data.incident_reports_week    ?? DEMO.incident_reports_week} />
-        </Col>
-      </CrownGrid>
+      {/* ── Section 1: Overview KPIs ── */}
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}>
+            <CrownMetricCard label="Visits Today"          value={data.visits_today          ?? DEMO.visits_today} />
+          </Col>
+          <Col span={3}>
+            <CrownMetricCard label="Meds Administered"     value={data.meds_administered     ?? DEMO.meds_administered} />
+          </Col>
+          <Col span={3}>
+            <CrownMetricCard label="Immunizations Missing" value={data.immunizations_missing  ?? DEMO.immunizations_missing} />
+          </Col>
+          <Col span={3}>
+            <CrownMetricCard label="Incidents (This Week)" value={data.incident_reports_week  ?? DEMO.incident_reports_week} />
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Today's Visits ── */}
-        <Col span={6}>
-          <CrownCard title="Today's Visits">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Student', 'Gr', 'Reason', 'Time', 'Disposition'].map(h => (
-                    <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {todaysVisits.map((v, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 500 }}>{v.name}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280' }}>{v.grade}</td>
-                    <td style={{ padding: '6px 8px', color: '#374151' }}>{v.reason}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{v.time}</td>
-                    <td style={{ padding: '6px 8px', color: '#374151' }}>{v.disposition}</td>
+      {/* ── Section 2: Daily Activity ── */}
+      <DashboardSection title="Daily Activity">
+        <CrownGrid>
+          {/* Today's Visits */}
+          <Col span={6}>
+            <CrownCard title="Today's Visits">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Student', 'Gr', 'Reason', 'Time', 'Disposition'].map(h => (
+                      <th key={h} style={TH}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
-
-        {/* ── Medication Log Summary ── */}
-        <Col span={6}>
-          <CrownCard title="Medication Log Summary">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Medication', 'Students', 'Doses Given'].map(h => (
-                    <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                </thead>
+                <tbody>
+                  {todaysVisits.map((v, i) => (
+                    <tr key={i}>
+                      <td style={{ ...TD, fontWeight: 500 }}>{v.name}</td>
+                      <td style={{ ...TD, color: 'var(--crown-muted)' }}>{v.grade}</td>
+                      <td style={TD}>{v.reason}</td>
+                      <td style={{ ...TD, color: 'var(--crown-muted)', whiteSpace: 'nowrap' }}>{v.time}</td>
+                      <td style={TD}>{v.disposition}</td>
+                    </tr>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {medLog.map((m, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 500 }}>{m.medication}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280' }}>{m.students}</td>
-                    <td style={{ padding: '6px 8px', color: m.doses_given > 0 ? '#166534' : '#9ca3af' }}>{m.doses_given}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Immunization Compliance ── */}
-        <Col span={6}>
-          <CrownCard title="Immunization Compliance by Grade">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {immunComp.map((g, i) => {
-                const total = g.compliant + g.missing;
-                const pct   = total ? Math.round((g.compliant / total) * 100) : 100;
-                return (
-                  <div key={i}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
-                      <span style={{ fontWeight: 500 }}>{g.grade}</span>
-                      <span style={{ color: g.missing > 0 ? '#dc2626' : '#16a34a' }}>
-                        {pct}% — {g.missing > 0 ? `${g.missing} missing` : 'complete'}
-                      </span>
+          {/* Medication Log Summary */}
+          <Col span={6}>
+            <CrownCard title="Medication Log Summary">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Medication', 'Students', 'Doses Given'].map(h => (
+                      <th key={h} style={TH}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {medLog.map((m, i) => (
+                    <tr key={i}>
+                      <td style={{ ...TD, fontWeight: 500 }}>{m.medication}</td>
+                      <td style={{ ...TD, color: 'var(--crown-muted)' }}>{m.students}</td>
+                      <td style={{ ...TD, color: m.doses_given > 0 ? 'var(--crown-ok)' : 'var(--crown-muted)' }}>{m.doses_given}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      {/* ── Section 3: Compliance & Alerts ── */}
+      <DashboardSection title="Compliance & Alerts">
+        <CrownGrid>
+          {/* Immunization Compliance by Grade */}
+          <Col span={6}>
+            <CrownCard title="Immunization Compliance by Grade">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {immunComp.map((g, i) => {
+                  const total = g.compliant + g.missing;
+                  const pct   = total ? Math.round((g.compliant / total) * 100) : 100;
+                  return (
+                    <div key={i}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
+                        <span style={{ fontWeight: 500, color: 'var(--crown-ink)' }}>{g.grade}</span>
+                        <span style={{ color: g.missing > 0 ? 'var(--crown-danger)' : 'var(--crown-ok)' }}>
+                          {pct}% — {g.missing > 0 ? `${g.missing} missing` : 'complete'}
+                        </span>
+                      </div>
+                      <div style={{ height: 6, background: 'var(--crown-surface-2)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--crown-border)' }}>
+                        <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`,
+                          background: g.missing > 0 ? 'var(--crown-warn)' : 'var(--crown-ok)' }} />
+                      </div>
                     </div>
-                    <div style={{ height: 6, background: '#e5e7eb', borderRadius: 4 }}>
-                      <div style={{ height: 6, borderRadius: 4, width: `${pct}%`, background: g.missing > 0 ? '#f59e0b' : '#22c55e' }} />
-                    </div>
+                  );
+                })}
+              </div>
+            </CrownCard>
+          </Col>
+
+          {/* Alerts */}
+          <Col span={6}>
+            <CrownCard title="Alerts &amp; Action Items">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {alerts.map((a, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                    background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                    border: '1px solid var(--crown-border)',
+                  }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: a.severity === 'red' ? 'var(--crown-danger)' : a.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{a.label}</span>
                   </div>
-                );
-              })}
-            </div>
-          </CrownCard>
-        </Col>
-
-        {/* ── Alerts ── */}
-        <Col span={6}>
-          <CrownCard title="Alerts &amp; Action Items">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {alerts.map((a, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 12px', borderRadius: 6,
-                  background: a.severity === 'red' ? '#fee2e2' : a.severity === 'yellow' ? '#fef9c3' : '#f3f4f6',
-                  border: `1px solid ${a.severity === 'red' ? '#fca5a5' : a.severity === 'yellow' ? '#fde047' : '#e5e7eb'}`,
-                }}>
-                  <span style={{ fontSize: 13, color: a.severity === 'red' ? '#991b1b' : a.severity === 'yellow' ? '#854d0e' : '#374151' }}>
-                    {a.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

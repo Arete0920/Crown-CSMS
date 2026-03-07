@@ -1,4 +1,4 @@
-import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
+﻿import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import "../../styles/crown-wizard.css";
 
 export default function Step4Preview({ context, goNext, goPrev, stepIndex, totalSteps, steps }) {
@@ -27,7 +27,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
 
         {adds.length > 0 && (
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--crown-success, #2d7a2d)" }}>Adding ({adds.length})</div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--crown-ok)" }}>Adding ({adds.length})</div>
             <ul style={{ margin: 0, padding: "0 0 0 18px", fontSize: 12, fontFamily: "monospace" }}>
               {adds.map((c) => <li key={c.student_id}>{c.student_id}</li>)}
             </ul>
@@ -36,7 +36,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
 
         {removes.length > 0 && (
           <div>
-            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--crown-danger, #c0392b)" }}>Removing ({removes.length})</div>
+            <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: "var(--crown-danger)" }}>Removing ({removes.length})</div>
             <ul style={{ margin: 0, padding: "0 0 0 18px", fontSize: 12, fontFamily: "monospace" }}>
               {removes.map((c) => <li key={c.student_id}>{c.student_id}</li>)}
             </ul>

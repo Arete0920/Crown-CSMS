@@ -166,6 +166,8 @@ class AdmissionsEndpointsTests(APITestCase):
         """Empty results still return valid contract shape."""
         # Create a different school with no applications
         other_school = School.objects.create(name="Other School")
+        # User must have a role at other_school now that permission is scoped.
+        UserRole.objects.create(user=self.user, school=other_school, role_code="REGISTRAR")
         r = self.client.get(
             "/api/v1/admissions/summary/",
             HTTP_X_SCHOOL_ID=str(other_school.id),
@@ -283,6 +285,8 @@ class AdmissionsEndpointsTests(APITestCase):
         """Empty results still return valid contract."""
         # Create a different school
         other_school = School.objects.create(name="Other School 2")
+        # User must have a role at other_school now that permission is scoped.
+        UserRole.objects.create(user=self.user, school=other_school, role_code="REGISTRAR")
         r = self.client.get(
             "/api/v1/admissions/drilldown/",
             HTTP_X_SCHOOL_ID=str(other_school.id),

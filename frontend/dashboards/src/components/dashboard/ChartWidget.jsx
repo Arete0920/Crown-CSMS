@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ChartWidget — sparkline/donut stub for Phase A.
  * Phase B: replace with recharts or similar.
  */
@@ -70,7 +70,7 @@ function DonutChart({ segments }) {
 // Simple sparkline using SVG path.
 function SparkLine({ series }) {
   if (!series?.length) return <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>No data</div>;
-  const COLORS = ["var(--crown-gold)", "var(--crown-ok)", "var(--crown-info, #5aa9e6)"];
+  const COLORS = ["var(--crown-gold)", "var(--crown-ok)", "var(--crown-info)"];
 
   return (
     <div>

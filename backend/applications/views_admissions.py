@@ -50,14 +50,6 @@ def _rate(numer: int, denom: int) -> str:
     return _d2(Decimal(numer) / Decimal(denom))
 
 
-def _get_school_id(request) -> str:
-    school_id = request.headers.get("X-School-Id")
-    if not school_id:
-        # Match your Financial Aid behavior
-        return ""
-    return school_id
-
-
 def _normalize_ay_name(name: str) -> str:
     """Normalize academic year name: en-dash (–) and em-dash (—) to hyphen (-)."""
     return (name or "").strip().replace("\u2013", "-").replace("\u2014", "-")
@@ -152,11 +144,11 @@ def admissions_summary(request):
     """GET /api/v1/admissions/summary/ - Pipeline KPIs for admissions director."""
     from core.permissions import user_has_permission
     school = getattr(request, "school", None)
+    if school is None:
+        return Response({"detail": "Tenant not resolved."}, status=400)
     if not user_has_permission(request.user, "admissions.view", school=school):
         return Response({"detail": "Permission denied."}, status=403)
-    school_id = _get_school_id(request)
-    if not school_id:
-        return Response({"detail": "Missing required header: X-School-Id"}, status=400)
+    school_id = school.pk
 
     academic_year = request.query_params.get("academic_year")
     date_from = (
@@ -295,11 +287,11 @@ def admissions_drilldown(request):
     """GET /api/v1/admissions/drilldown/ - Paginated lead details."""
     from core.permissions import user_has_permission
     school = getattr(request, "school", None)
+    if school is None:
+        return Response({"detail": "Tenant not resolved."}, status=400)
     if not user_has_permission(request.user, "admissions.view", school=school):
         return Response({"detail": "Permission denied."}, status=403)
-    school_id = _get_school_id(request)
-    if not school_id:
-        return Response({"detail": "Missing required header: X-School-Id"}, status=400)
+    school_id = school.pk
 
     academic_year = request.query_params.get("academic_year")
     stage = request.query_params.get("stage")

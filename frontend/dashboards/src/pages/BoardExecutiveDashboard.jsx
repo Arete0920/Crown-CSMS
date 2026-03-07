@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
@@ -10,14 +10,20 @@ import { useBoardExecutiveData } from "../hooks/useBoardExecutiveData.js";
 import { fetchBoardCompass, fetchBoardRiskCounts } from "../api/signalsApi.js";
 import BoardCompassCard from "../components/board/BoardCompassCard.jsx";
 import AftercareBoardCard from "../components/board/AftercareBoardCard.jsx";
+import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
 
 /* ── Auth helpers (matches Crown sessionStorage pattern) ─────────────── */
 function getSession() {
   try {
-    return {
-      token:    sessionStorage.getItem("crown.jwt.access") || "",
-      schoolId: sessionStorage.getItem("crown.school.id")  || "",
-    };
+    const token = sessionStorage.getItem("crown.jwt.access") || "";
+    // sessionStorage clears on tab close; fall back to localStorage so a page
+    // refresh during a session doesn't blank the board widgets.
+    const schoolId =
+      sessionStorage.getItem("crown.school.id") ||
+      localStorage.getItem("crown.school.id") ||
+      localStorage.getItem("schoolId") ||
+      "";
+    return { token, schoolId };
   } catch { return { token: "", schoolId: "" }; }
 }
 
@@ -32,35 +38,38 @@ function currency(n) {
 }
 
 /* ── Status badge (no MUI Chip) ─────────────────────────────────────── */
-const STATUS_BG   = { Stable: "#e8f5e9", Watch: "#fffde7", Risk:  "#ffebee" };
-const STATUS_TEXT = { Stable: "#1b5e20", Watch: "#f57f17", Risk:  "#b71c1c" };
+const STATUS_BG   = { Stable: 'var(--crown-ok-bg)',   Watch: 'var(--crown-warn-bg)',   Risk: 'var(--crown-danger-bg)' };
+const STATUS_TEXT = { Stable: 'var(--crown-ok)',      Watch: 'var(--crown-warn)',       Risk: 'var(--crown-danger)'    };
 
 function StatusBadge({ label }) {
   const s = {
     display: "inline-block", padding: "2px 10px", borderRadius: 12,
     fontSize: 12, fontWeight: 600,
-    background: STATUS_BG[label]   || "#f5f5f5",
-    color:      STATUS_TEXT[label] || "#333",
+    background: STATUS_BG[label]   || 'var(--crown-surface-2)',
+    color:      STATUS_TEXT[label] || 'var(--crown-muted)',
   };
   return <span style={s}>{label}</span>;
 }
 
 function LiveBadge({ live }) {
-  const s = { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: live ? "#e8f5e9" : "#f5f5f5", color: live ? "#1b5e20" : "#888" };
+  const s = { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+    background: live ? 'var(--crown-ok-bg)' : 'var(--crown-surface-2)',
+    color: live ? 'var(--crown-ok)' : 'var(--crown-muted)' };
   return <span style={s}>{live ? "LIVE" : "DEMO"}</span>;
 }
 
 function TextBadge({ label }) {
-  const s = { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600, background: "#f5f5f5", color: "#888" };
+  const s = { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+    background: 'var(--crown-surface-2)', color: 'var(--crown-muted)' };
   return <span style={s}>{label}</span>;
 }
 
 function WarnBanner({ children }) {
-  return <div style={{ padding: "12px 16px", marginBottom: 16, background: "#fff3e0", borderLeft: "4px solid #ef6c00", borderRadius: 4 }}>{children}</div>;
+  return <div style={{ padding: "12px 16px", marginBottom: 16, background: 'var(--crown-warn-bg)', borderLeft: '4px solid var(--crown-warn)', borderRadius: 4 }}>{children}</div>;
 }
 
 function InfoBanner({ children }) {
-  return <div style={{ padding: "12px 16px", marginBottom: 16, background: "#e3f2fd", borderLeft: "4px solid #1565c0", borderRadius: 4 }}>{children}</div>;
+  return <div style={{ padding: "12px 16px", marginBottom: 16, background: 'var(--crown-surface-2)', borderLeft: '4px solid var(--crown-brand)', borderRadius: 4 }}>{children}</div>;
 }
 
 /* ── Column definitions ──────────────────────────────────────────────── */
@@ -81,6 +90,24 @@ const driversColumns = [
 ];
 
 /* ── Page ────────────────────────────────────────────────────────────── */
+/* â”€â”€ Board Executive / Strategic Command KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Net Tuition Rev",    value: "$6.8M",  trend: "+10% vs last yr",  trendUp: true,
+    definition: "Gross tuition billings minus total aid awarded, year-to-date. Key indicator of financial sustainability.",
+    dataSource: "Billing Module", dataHref: "/billing" },
+  { label: "Staff Retention",    value: "87.2%",  trend: "+1.2% vs last yr", trendUp: true,
+    definition: "Percentage of staff retained from start of year to today. Reflects culture and compensation health.",
+    dataSource: "HR Module", dataHref: "/human-resources" },
+  { label: "Cash Runway",        value: "6.5 mo", trend: "+0.4 mo",          trendUp: true,
+    definition: "Months of operating expenses currently covered by unrestricted cash and liquid reserves.",
+    dataSource: "Finance Module", dataHref: "/finance" },
+  { label: "Yield Rate",         value: "11.2%",  trend: "-2.3%",            trendUp: false,
+    definition: "Percentage of prospective-student inquiries that converted to enrolled students.",
+    dataSource: "Admissions Pipeline", dataHref: "/admissions" },
+  { label: "Re-enrollment Rate", value: "87.2%",  trend: "+41.6%",           trendUp: true,
+    definition: "Percentage of currently-enrolled families who have completed re-enrollment for the next year.",
+    dataSource: "Enrollment Module", dataHref: "/admissions" },
+];
 export default function BoardExecutiveDashboard() {
   const { token, schoolId } = getSession();
   const { data, loading, live, error } = useBoardExecutiveData({ token, schoolId });
@@ -109,6 +136,7 @@ export default function BoardExecutiveDashboard() {
       title="Board Executive Dashboard"
       subtitle={`Read-only governance view${live ? " · LIVE" : " · DEMO data"}`}
     >
+      <KpiStrip cards={ADMIN_KPI} />
       {error && (
         <WarnBanner>{error}</WarnBanner>
       )}

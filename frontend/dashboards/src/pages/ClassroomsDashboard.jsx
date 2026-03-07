@@ -3,9 +3,26 @@ import { Box, Typography, Grid, Alert, CircularProgress } from "@mui/material";
 
 import { getSelectedSchoolId } from "../utils/authClient";
 import { listClassrooms, getClassroom } from "../api/classrooms";
+import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
 
 import ClassroomCard from "../components/classroom/ClassroomCard";
 import ClassroomDetailDrawer from "../components/classroom/ClassroomDetailDrawer";
+
+/* ── Classrooms KPI flip cards ───────────────────────────────────── */
+const CLASSROOMS_KPI = [
+  { label: "Classrooms",     value: "18",  trend: null, trendUp: null,
+    definition: "Active homeroom classrooms registered for the current school year.",
+    dataSource: "Classrooms Module", dataHref: "/classrooms" },
+  { label: "Students Rostered", value: "247", trend: null, trendUp: null,
+    definition: "Total students rostered across all active classroom sections.",
+    dataSource: "Classrooms Module", dataHref: "/classrooms" },
+  { label: "Teachers",       value: "14",  trend: null, trendUp: null,
+    definition: "Homeroom teachers currently assigned to active classroom sections.",
+    dataSource: "Classrooms Module", dataHref: "/classrooms" },
+  { label: "Announcements",  value: "4",   trend: null, trendUp: null,
+    definition: "Active classroom announcements published to students and parents this week.",
+    dataSource: "Classrooms Module", dataHref: "/classrooms" },
+];
 
 export default function ClassroomsDashboard() {
   const schoolId = useMemo(() => getSelectedSchoolId(), []);
@@ -68,6 +85,8 @@ export default function ClassroomsDashboard() {
           Homerooms, rosters, seating charts, assignments, and announcements (read-only demo).
         </Typography>
       </Box>
+
+      <KpiStrip cards={CLASSROOMS_KPI} />
 
       {!!error && <Alert severity="warning" sx={{ mb: 2 }}>{error}</Alert>}
 

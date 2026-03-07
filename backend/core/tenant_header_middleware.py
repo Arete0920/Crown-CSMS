@@ -1,22 +1,44 @@
+# backend/core/tenant_header_middleware.py
+from __future__ import annotations
+
 from django.conf import settings
-from django.http import HttpResponse, JsonResponse
-import uuid
+from django.http import JsonResponse
+
 from core.models import School
 from core.tenant_models import set_current_school, clear_current_school
+from crown_api.tenant import resolve_tenant_school_id
+
 
 class TenantHeaderRequiredMiddleware:
     """
-    Enforces tenant safety for /api/v1/* by requiring X-School-Id.
-    - Exempts auth + health endpoints.
-    - Lets OPTIONS pass through so CORS middleware can add headers.
-    - Validates X-School-Id is a UUID and that the School exists.
-    - Attaches request.school_id and request.school for downstream use.
+    Enforces tenant resolution for /api/* calls.
+
+    Policy (in priority order):
+    1. X-School-Id header — used when present (primary)
+    2. Authenticated user.school_id — fallback for session/JWT users without a header
+    3. Missing tenant → 400
+
+    IMPORTANT: This middleware MUST run after AuthenticationMiddleware and
+    JwtAuthMiddleware so request.user is populated and the user.school_id
+    fallback path works correctly.
+
+    Exempted paths: /api/auth/*, /api/v1/auth/*, /api/health/*, /api/v1/health/*,
+    /api/schema/*, /api/docs/*
+
+    Attaches request.school (School instance) and request.school_id (str UUID)
+    for downstream view usage, and sets the thread-local tenant context so audit
+    and scoping utilities pick up the right school.
     """
 
     EXEMPT_PREFIXES = (
+        "/api/health",
         "/api/v1/health",
         "/api/v1/system/health",
+        "/api/auth",
         "/api/v1/auth",
+        "/api/dev/token",   # dev token endpoint returns school_id — no tenant context needed
+        "/api/schema",
+        "/api/docs",
     )
 
     def __init__(self, get_response):
@@ -24,46 +46,58 @@ class TenantHeaderRequiredMiddleware:
 
     def __call__(self, request):
         try:
-            # Allow CORS preflight to flow to CorsMiddleware
+            # CORS preflight — pass through so CORS middleware adds headers
             if request.method == "OPTIONS":
                 return self.get_response(request)
 
-            # If enforcement disabled, just pass through
+            # Tenant enforcement can be disabled in test/dev via env flag
             if not getattr(settings, "TENANT_HEADER_REQUIRED", True):
                 return self.get_response(request)
 
-            path = request.path or ""
+            path = getattr(request, "path", "") or ""
 
-            # Only enforce /api/v1/*
-            if not path.startswith("/api/v1/"):
+            # Only enforce on /api/* paths
+            if not path.startswith("/api/"):
                 return self.get_response(request)
 
-            # Exempt prefixes
+            # Exempt auth, health, schema, docs
             for prefix in self.EXEMPT_PREFIXES:
                 if path.startswith(prefix):
                     return self.get_response(request)
 
-            school_id_raw = request.headers.get("X-School-Id") or request.META.get("HTTP_X_SCHOOL_ID")
-            if not school_id_raw:
-                return JsonResponse({"detail": "Missing required header: X-School-Id"}, status=400)
+            # Resolve tenant: header wins over user.school_id fallback.
+            # resolve_tenant_school_id() handles both paths since we now run
+            # after AuthenticationMiddleware (request.user is populated).
+            resolved = resolve_tenant_school_id(request)
+            school_id = resolved.school_id
 
-            # Validate UUID
-            try:
-                school_uuid = uuid.UUID(str(school_id_raw))
-            except Exception:
-                return JsonResponse({"detail": "Invalid X-School-Id (must be UUID)"}, status=400)
+            if not school_id:
+                return JsonResponse(
+                    {
+                        "detail": "Missing tenant context. Provide X-School-Id header or authenticate with a school-scoped user.",
+                        "code": "missing_tenant",
+                    },
+                    status=400,
+                )
 
-            # Validate School exists
-            school = School.objects.filter(id=school_uuid).only("id").first()
+            # Validate the school actually exists in this database
+            school = School.objects.filter(id=school_id).only("id", "name").first()
             if school is None:
-                return JsonResponse({"detail": "Unknown X-School-Id"}, status=404)
+                return JsonResponse(
+                    {
+                        "detail": "Tenant school not found.",
+                        "code": "invalid_tenant",
+                    },
+                    status=404,
+                )
 
-            # Attach for downstream consumption
-            request.school_id = str(school_uuid)
+            # Attach for downstream view usage
+            request.school_id = str(school_id)
             request.school = school
             set_current_school(school)
 
             return self.get_response(request)
+
         finally:
-            # Always clear tenant context after request (even on exceptions)
+            # Always clear thread-local tenant context, even on exceptions
             clear_current_school()

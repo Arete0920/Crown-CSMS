@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { stageSchedulingSections } from "../../api/scheduling_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -75,7 +75,7 @@ export default function Step3Sections({ context, setContext, goNext, goPrev, ste
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+              <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                 <td style={{ padding: "4px 8px" }}>
                   {courseCodes.length > 0 ? (
                     <select
@@ -121,7 +121,7 @@ export default function Step3Sections({ context, setContext, goNext, goPrev, ste
                   {rows.length > 1 && (
                     <button
                       onClick={() => removeRow(i)}
-                      style={{ background: "none", border: "none", color: "var(--crown-danger, #c0392b)", cursor: "pointer", fontSize: 16 }}
+                      style={{ background: "none", border: "none", color: "var(--crown-danger)", cursor: "pointer", fontSize: 16 }}
                       title="Remove row"
                     >✕</button>
                   )}

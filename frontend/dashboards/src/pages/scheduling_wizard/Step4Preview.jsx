@@ -1,4 +1,4 @@
-import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
+﻿import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import "../../styles/crown-wizard.css";
 
 export default function Step4Preview({ context, goNext, goPrev, stepIndex, totalSteps, steps }) {
@@ -46,7 +46,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
             </thead>
             <tbody>
               {courses.map((c, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+                <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                   <td style={{ padding: "6px 12px", fontFamily: "monospace", fontWeight: 600 }}>{c.code}</td>
                   <td style={{ padding: "6px 12px" }}>{c.name}</td>
                   <td style={{ padding: "6px 12px", color: "var(--crown-muted)" }}>{c.department || "—"}</td>
@@ -70,7 +70,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
             </thead>
             <tbody>
               {sections.map((s, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+                <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                   <td style={{ padding: "6px 12px", fontFamily: "monospace", fontWeight: 600 }}>{s.course_code}</td>
                   <td style={{ padding: "6px 12px" }}>{s.teacher_name || "—"}</td>
                   <td style={{ padding: "6px 12px" }}>{s.grade_band || "—"}</td>

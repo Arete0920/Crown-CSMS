@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -44,8 +46,7 @@ const DEMO = {
   ],
 };
 
-const SEV_COLOR = { low: '#16a34a', medium: '#ca8a04', high: '#dc2626', critical: '#7f1d1d' };
-const SEV_BG    = { low: '#dcfce7', medium: '#fef9c3', high: '#fee2e2', critical: '#fecaca' };
+const SEV_PILL = { low: 'green', medium: 'yellow', high: 'red', critical: 'red' };
 
 async function fetchSafetyData() {
   const { token, schoolId } = getSession();
@@ -69,89 +70,111 @@ async function fetchSafetyData() {
   }
 }
 
-function SevBadge({ v }) {
+function Pill({ color = 'gray', children }) {
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      background: SEV_BG[v] || '#f3f4f6',
-      color: SEV_COLOR[v] || '#374151',
-      borderRadius: 4, padding: '2px 7px', fontSize: 11, fontWeight: 700,
-    }}>
-      {v}
-    </span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
+/* â”€â”€ Safety KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Incidents MTD",     value: "2",    trend: "-1 vs last mo",  trendUp: true,
+    definition: "Safety incidents (injury, near-miss, property damage) logged this month.",
+    dataSource: "Safety Module", dataHref: "/safety" },
+  { label: "Drills Completed",  value: "3/5",  trend: null,              trendUp: null,
+    definition: "Emergency drills (fire, lockdown, shelter-in-place) completed vs. scheduled this year.",
+    dataSource: "Safety Module", dataHref: "/safety" },
+  { label: "Visitors Today",    value: "14",   trend: null,              trendUp: null,
+    definition: "Visitors checked in through the front office visitor management system today.",
+    dataSource: "Security Module", dataHref: "/security" },
+  { label: "Open Hazards",      value: "0",    trend: null,              trendUp: null,
+    definition: "Reported safety hazards not yet resolved by facilities or administration.",
+    dataSource: "Safety Module", dataHref: "/safety" },
+];
 export default function SafetyDashboard() {
-  const [state, setState] = useState({ loading: true, data: DEMO });
+  const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
   useEffect(() => {
-    fetchSafetyData().then(({ ok, data }) => setState({ loading: false, data }));
+    fetchSafetyData().then(({ ok, data }) => setState({ loading: false, live: ok, data }));
   }, []);
 
-  const { loading, data } = state;
+  const { loading, live, data } = state;
 
   return (
-    <CrownLayout title="Safety" subtitle="Campus incident tracking &amp; resolution">
-      {loading && <p style={{ color: '#6b7280', padding: '4px 0' }}>Loading…</p>}
+    <CrownLayout title="Safety" subtitle="Campus incident tracking &amp; resolution"
+      right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
+    >
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      {/* KPI row */}
-      <div className="crown-metrics-row">
-        <CrownMetricCard label="Total Incidents"    value={data.total_incidents}    />
-        <CrownMetricCard label="Open"               value={data.open_incidents}     />
-        <CrownMetricCard label="Resolved"           value={data.resolved_incidents} />
-        <CrownMetricCard label="Critical Open"      value={data.critical_open}      />
-      </div>
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}><CrownMetricCard label="Total Incidents"    value={data.total_incidents}    /></Col>
+          <Col span={3}><CrownMetricCard label="Open"               value={data.open_incidents}     /></Col>
+          <Col span={3}><CrownMetricCard label="Resolved"           value={data.resolved_incidents} /></Col>
+          <Col span={3}><CrownMetricCard label="Critical Open"      value={data.critical_open}      /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid>
-        {/* By Severity */}
-        <Col span={4}>
-          <CrownCard title="Open by Severity">
-            {(data.by_severity || []).map((row, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #f3f4f6' }}>
-                <SevBadge v={row.severity} />
-                <span style={{ fontWeight: 700, fontSize: 15 }}>{row.count}</span>
-              </div>
-            ))}
-          </CrownCard>
-        </Col>
-
-        {/* By Category */}
-        <Col span={4}>
-          <CrownCard title="Top Categories">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <tbody>
-                {(data.by_category || []).map((row, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px' }}>{row.category}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{row.count}</td>
-                  </tr>
+      <DashboardSection title="Incidents">
+        <CrownGrid>
+          <Col span={4}>
+            <CrownCard title="Open by Severity">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {(data.by_severity || []).map((row, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--crown-border)' }}>
+                    <Pill color={SEV_PILL[row.severity] || 'gray'}>{row.severity}</Pill>
+                    <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--crown-ink)' }}>{row.count}</span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
-
-        {/* Recent Incidents */}
-        <Col span={4}>
-          <CrownCard title="Recent Incidents">
-            {(data.recent || []).slice(0, 5).map((inc, i) => (
-              <div key={inc.id || i} style={{ padding: '7px 0', borderBottom: '1px solid #f3f4f6' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                  <span style={{ fontWeight: 600, fontSize: 12 }}>{inc.category}</span>
-                  <SevBadge v={inc.severity} />
-                </div>
-                <div style={{ fontSize: 12, color: '#4b5563', marginBottom: 3 }}>{inc.description}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#9ca3af' }}>
-                  <span>{inc.created_at ? String(inc.created_at).slice(0, 10) : ''}</span>
-                  <span style={{ color: inc.resolved ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
-                    {inc.resolved ? '✓ Resolved' : '● Open'}
-                  </span>
-                </div>
               </div>
-            ))}
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+            </CrownCard>
+          </Col>
+          <Col span={4}>
+            <CrownCard title="Top Categories">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <tbody>
+                  {(data.by_category || []).map((row, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{row.category}</td>
+                      <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, color: 'var(--crown-ink)' }}>{row.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+          <Col span={4}>
+            <CrownCard title="Recent Incidents">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                {(data.recent || []).slice(0, 5).map((inc, i) => (
+                  <div key={inc.id || i} style={{ padding: '7px 0', borderBottom: '1px solid var(--crown-border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                      <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--crown-ink)' }}>{inc.category}</span>
+                      <Pill color={SEV_PILL[inc.severity] || 'gray'}>{inc.severity}</Pill>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--crown-muted)', marginBottom: 3 }}>{inc.description}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--crown-muted)' }}>
+                      <span>{inc.created_at ? String(inc.created_at).slice(0, 10) : ''}</span>
+                      <span style={{ color: inc.resolved ? 'var(--crown-ok)' : 'var(--crown-danger)', fontWeight: 600 }}>
+                        {inc.resolved ? '✓ Resolved' : '● Open'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

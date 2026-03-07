@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection   from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -63,23 +65,35 @@ async function fetchAthleticsMetrics() {
   }
 }
 
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
+/* â”€â”€ Athletics KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Teams Active",      value: "6",   trend: null,              trendUp: null,
+    definition: "Active sports teams in season currently rostered and scheduled.",
+    dataSource: "Athletics Module", dataHref: "/athletics" },
+  { label: "Athletes Eligible", value: "90%", trend: null,              trendUp: null,
+    definition: "Percentage of rostered athletes meeting academic eligibility requirements.",
+    dataSource: "Gradebook + Athletics", dataHref: "/athletics" },
+  { label: "Games This Week",   value: "2",   trend: null,              trendUp: null,
+    definition: "Scheduled games and matches for all active teams this calendar week.",
+    dataSource: "Athletics Module", dataHref: "/athletics" },
+  { label: "Win Rate (Season)", value: "65%", trend: "+8% vs last yr",  trendUp: true,
+    definition: "Aggregate win percentage across all active teams this season.",
+    dataSource: "Athletics Module", dataHref: "/athletics" },
+];
 export default function AthleticsDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -90,10 +104,10 @@ export default function AthleticsDashboard() {
   }, []);
 
   const { loading, live, data } = state;
-  const alerts      = data.alerts              || DEMO.alerts;
-  const schedule    = data.week_schedule       || DEMO.week_schedule;
-  const eligWatch   = data.eligibility_watch   || DEMO.eligibility_watch;
-  const compliance  = data.roster_compliance   || DEMO.roster_compliance;
+  const alerts     = data.alerts            || DEMO.alerts;
+  const schedule   = data.week_schedule     || DEMO.week_schedule;
+  const eligWatch  = data.eligibility_watch || DEMO.eligibility_watch;
+  const compliance = data.roster_compliance || DEMO.roster_compliance;
 
   return (
     <CrownLayout
@@ -101,124 +115,116 @@ export default function AthleticsDashboard() {
       subtitle="Events, eligibility, roster compliance, and transportation"
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      {loading && <p style={{ color: '#6b7280', padding: 16 }}>Loading…</p>}
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      <CrownGrid>
-        <Col span={3}>
-          <CrownMetricCard label="Upcoming Events"       value={data.upcoming_events      ?? DEMO.upcoming_events} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Eligibility Issues"    value={data.eligibility_issues   ?? DEMO.eligibility_issues} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Injuries (Active)"     value={data.injuries_count       ?? DEMO.injuries_count} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Transport Needs"       value={data.transportation_needs ?? DEMO.transportation_needs} />
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}><CrownMetricCard label="Upcoming Events" value={data.upcoming_events ?? DEMO.upcoming_events} /></Col>
+          <Col span={3}><CrownMetricCard label="Eligibility Issues" value={data.eligibility_issues ?? DEMO.eligibility_issues} /></Col>
+          <Col span={3}><CrownMetricCard label="Injuries (Active)" value={data.injuries_count ?? DEMO.injuries_count} /></Col>
+          <Col span={3}><CrownMetricCard label="Transport Needs" value={data.transportation_needs ?? DEMO.transportation_needs} /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── This Week Schedule ── */}
-        <Col span={8}>
-          <CrownCard title="This Week's Schedule">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Sport', 'Opponent', 'Date', 'Time', 'Location'].map(h => (
-                    <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.map((e, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 500 }}>{e.sport}</td>
-                    <td style={{ padding: '6px 8px', color: '#374151' }}>{e.opponent}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{e.date}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280' }}>{e.time}</td>
-                    <td style={{ padding: '6px 8px' }}><Pill color={e.home ? 'green' : 'gray'}>{e.home ? 'Home' : 'Away'}</Pill></td>
+      <DashboardSection title="Schedule &amp; Eligibility">
+        <CrownGrid>
+          <Col span={8}>
+            <CrownCard title="This Week's Schedule">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Sport', 'Opponent', 'Date', 'Time', 'Location'].map(h => (
+                      <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
-
-        {/* ── Eligibility Watch ── */}
-        <Col span={4}>
-          <CrownCard title="Eligibility Watch List">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {eligWatch.map((e, i) => (
-                <div key={i} style={{
-                  padding: '8px 12px', borderRadius: 6, background: '#fee2e2',
-                  border: '1px solid #fca5a5',
-                }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{e.sport}</div>
-                  <div style={{ fontSize: 12, color: '#991b1b' }}>{e.count} student — {e.issue}</div>
-                </div>
-              ))}
-              {eligWatch.length === 0 && (
-                <p style={{ fontSize: 13, color: '#16a34a' }}>All athletes eligible ✓</p>
-              )}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
-
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Roster Compliance ── */}
-        <Col span={6}>
-          <CrownCard title="Roster Compliance">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Sport', 'Roster', 'Forms', 'Physicals'].map(h => (
-                    <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
+                </thead>
+                <tbody>
+                  {schedule.map((e, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{e.sport}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{e.opponent}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)', whiteSpace: 'nowrap' }}>{e.date}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{e.time}</td>
+                      <td style={{ padding: '6px 8px' }}><Pill color={e.home ? 'green' : 'gray'}>{e.home ? 'Home' : 'Away'}</Pill></td>
+                    </tr>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {compliance.map((c, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px', fontWeight: 500 }}>{c.sport}</td>
-                    <td style={{ padding: '6px 8px', color: '#6b7280' }}>{c.roster}</td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <span style={{ color: c.forms_complete < c.roster ? '#dc2626' : '#16a34a', fontWeight: 600 }}>
-                        {c.forms_complete}/{c.roster}
-                      </span>
-                    </td>
-                    <td style={{ padding: '6px 8px' }}>
-                      <span style={{ color: c.physicals_ok < c.roster ? '#dc2626' : '#16a34a', fontWeight: 600 }}>
-                        {c.physicals_ok}/{c.roster}
-                      </span>
-                    </td>
-                  </tr>
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+          <Col span={4}>
+            <CrownCard title="Eligibility Watch List">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {eligWatch.map((e, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 12px', borderRadius: 6,
+                    background: 'var(--crown-danger-bg)', border: '1px solid var(--crown-border)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: 3, background: 'var(--crown-danger)' }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--crown-ink)' }}>{e.sport}</div>
+                      <div style={{ fontSize: 12, color: 'var(--crown-danger)' }}>{e.count} student — {e.issue}</div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
+                {eligWatch.length === 0 && (
+                  <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>All athletes eligible ✓</p>
+                )}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-        {/* ── Alerts ── */}
-        <Col span={6}>
-          <CrownCard title="Alerts &amp; Action Items">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {alerts.map((a, i) => (
-                <div key={i} style={{
-                  padding: '8px 12px', borderRadius: 6,
-                  background: a.severity === 'red' ? '#fee2e2' : a.severity === 'yellow' ? '#fef9c3' : '#f3f4f6',
-                  border: `1px solid ${a.severity === 'red' ? '#fca5a5' : a.severity === 'yellow' ? '#fde047' : '#e5e7eb'}`,
-                }}>
-                  <span style={{ fontSize: 13, color: a.severity === 'red' ? '#991b1b' : a.severity === 'yellow' ? '#854d0e' : '#374151' }}>
-                    {a.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Compliance &amp; Alerts">
+        <CrownGrid>
+          <Col span={6}>
+            <CrownCard title="Roster Compliance">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Sport', 'Roster', 'Forms', 'Physicals'].map(h => (
+                      <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {compliance.map((c, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{c.sport}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{c.roster}</td>
+                      <td style={{ padding: '6px 8px' }}>
+                        <span style={{ color: c.forms_complete < c.roster ? 'var(--crown-danger)' : 'var(--crown-ok)', fontWeight: 600 }}>
+                          {c.forms_complete}/{c.roster}
+                        </span>
+                      </td>
+                      <td style={{ padding: '6px 8px' }}>
+                        <span style={{ color: c.physicals_ok < c.roster ? 'var(--crown-danger)' : 'var(--crown-ok)', fontWeight: 600 }}>
+                          {c.physicals_ok}/{c.roster}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+          <Col span={6}>
+            <CrownCard title="Alerts &amp; Action Items">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {alerts.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                    background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                    border: '1px solid var(--crown-border)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: a.severity === 'red' ? 'var(--crown-danger)' : a.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{a.label}</span>
+                  </div>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

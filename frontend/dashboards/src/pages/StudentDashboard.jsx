@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { authenticatedFetch } from '../utils/authClient.js';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import ErrorBanner from '../components/ui/ErrorBanner.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 const API_BASE = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
 
@@ -37,8 +39,8 @@ function AlertBanner({ alerts }) {
         <div
           key={i}
           style={{
-            background: a.severity === 'warning' ? '#fff3cd' : '#f8d7da',
-            border: `1px solid ${a.severity === 'warning' ? '#ffc107' : '#f5c6cb'}`,
+            background: a.severity === 'warning' ? 'var(--crown-warn-bg)' : 'var(--crown-danger-bg)',
+            border: `1px solid ${a.severity === 'warning' ? 'var(--crown-warn)' : 'var(--crown-danger)'}`,
             borderRadius: 6,
             padding: '8px 12px',
             marginBottom: 6,
@@ -57,12 +59,27 @@ function AssignmentRow({ a }) {
   return (
     <tr>
       <td style={{ padding: '6px 8px' }}>{a.name}</td>
-      <td style={{ padding: '6px 8px', color: '#6b7280' }}>{due}</td>
-      <td style={{ padding: '6px 8px', color: '#6b7280' }}>{fmt(a.points_possible)}</td>
+      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{due}</td>
+      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{fmt(a.points_possible)}</td>
     </tr>
   );
 }
 
+/* â”€â”€ Student KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "My GPA",            value: "3.4",  trend: "+0.2 this term",  trendUp: true,
+    definition: "Your weighted grade point average across all current courses this term.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+  { label: "Attendance Rate",   value: "97.1%",trend: null,               trendUp: null,
+    definition: "Percentage of scheduled class days you have been marked present this term.",
+    dataSource: "Attendance Module", dataHref: "/attendance" },
+  { label: "Missing Work",      value: "1",    trend: null,               trendUp: null,
+    definition: "Assignments that are past due with no submission recorded.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+  { label: "Next Due Date",     value: "Tomorrow", trend: null,           trendUp: null,
+    definition: "Your nearest upcoming assignment deadline across all courses.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+];
 export default function StudentDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -97,6 +114,7 @@ export default function StudentDashboard() {
       title={student.name ? `${student.name} — Dashboard` : 'Student Dashboard'}
       subtitle={`Grade ${student.grade || '—'} · Today's snapshot`}
     >
+      <KpiStrip cards={ADMIN_KPI} />
       <ErrorBanner title="Dashboard unavailable" message={error} />
 
       {!data && !error && (
@@ -120,7 +138,7 @@ export default function StudentDashboard() {
                 ) : (
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #e5e7eb', textAlign: 'left', color: '#6b7280' }}>
+                      <tr style={{ borderBottom: '1px solid var(--crown-border)', textAlign: 'left', color: 'var(--crown-muted)' }}>
                         <th style={{ padding: '4px 8px' }}>Assignment</th>
                         <th style={{ padding: '4px 8px' }}>Due</th>
                         <th style={{ padding: '4px 8px' }}>Points</th>
@@ -137,7 +155,7 @@ export default function StudentDashboard() {
             <Col span={4}>
               <CrownCard title="Service Hours">
                 <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: '4px 0' }}>{serviceHrs}</p>
-                <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: 0 }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--crown-muted)', margin: 0 }}>
                   {v2.service_hours?.pending_hours !== undefined
                     ? `${Number(v2.service_hours.pending_hours).toFixed(1)} hrs pending`
                     : 'Approved hours'}

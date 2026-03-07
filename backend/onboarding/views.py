@@ -16,6 +16,7 @@ Tenant isolation: every ImportSession lookup uses ImportSession.objects.get(id=�
 """
 import csv
 import io
+import itertools
 import re
 
 from django.db import transaction
@@ -26,6 +27,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.authentication import SessionAuthentication
 
+from households.models import Household, Guardian, Student
 from households.scoping import get_request_school_id
 from .models import ImportSession
 
@@ -361,25 +363,91 @@ def commit_session(request, session_id):
     parsed = _parse_csv(session.raw_csv, required)
 
     with transaction.atomic():
-        # TODO: When Student/Household intake models are ready, replace this block
-        # with actual ORM record creation.
-        # Pattern:
-        #   school = School.objects.get(id=school_id)
-        #   for student_id, group in itertools.groupby(rows, key=lambda r: r["student_external_id"]):
-        #       household, _ = Household.objects.get_or_create(school=school, external_id=...,
-        #                                                       defaults={...})
-        #       student, _ = Student.objects.get_or_create(school=school, external_id=...,
-        #                                                   defaults={...})
-
         exceptions = []
+        students_imported = 0
+        guardians_imported = 0
+        households_imported = 0
+
+        if session.mode == ImportSession.MODE_STUDENTS_GUARDIANS:
+            # Group rows by household_external_id, then process per-household.
+            # get_or_create key: (school_id, name) for Household; (school_id, first_name, last_name) for
+            # Student and Guardian. No external_id field on models — name-based deduplication for MVP.
+            rows_by_household: dict[str, list[dict]] = {}
+            for row in parsed["rows"]:
+                hid = row.get("household_external_id") or ""
+                rows_by_household.setdefault(hid, []).append(row)
+
+            school = session.school
+            school_uuid = school.id
+
+            seen_student_keys: set[tuple] = set()
+            seen_guardian_keys: set[tuple] = set()
+
+            for hid, hrows in rows_by_household.items():
+                first_row = hrows[0]
+                # Derive household name from first guardian last name, or fallback.
+                hh_name = (
+                    f"{first_row.get('guardian_last_name', '').strip()} Family"
+                    or hid
+                    or "Unknown Family"
+                )
+                try:
+                    household, hh_created = Household.objects.get_or_create(
+                        school_id=school_uuid,
+                        name=hh_name,
+                        defaults={"is_active": True},
+                    )
+                    if hh_created:
+                        households_imported += 1
+
+                    for row in hrows:
+                        # Student
+                        s_first = row.get("student_first_name", "").strip()
+                        s_last = row.get("student_last_name", "").strip()
+                        grade = row.get("grade_level", "").strip()
+                        s_key = (school_uuid, household.id, s_first, s_last)
+                        if s_first and s_last and s_key not in seen_student_keys:
+                            seen_student_keys.add(s_key)
+                            _, s_created = Student.objects.get_or_create(
+                                school_id=school_uuid,
+                                household=household,
+                                first_name=s_first,
+                                last_name=s_last,
+                                defaults={"grade_level": grade, "is_active": True},
+                            )
+                            if s_created:
+                                students_imported += 1
+
+                        # Guardian
+                        g_first = row.get("guardian_first_name", "").strip()
+                        g_last = row.get("guardian_last_name", "").strip()
+                        g_email = row.get("guardian_email", "").strip()
+                        g_key = (school_uuid, household.id, g_first, g_last)
+                        if g_first and g_last and g_key not in seen_guardian_keys:
+                            seen_guardian_keys.add(g_key)
+                            _, g_created = Guardian.objects.get_or_create(
+                                school_id=school_uuid,
+                                household=household,
+                                first_name=g_first,
+                                last_name=g_last,
+                                defaults={"email": g_email},
+                            )
+                            if g_created:
+                                guardians_imported += 1
+
+                except Exception as exc:
+                    exceptions.append({
+                        "household_external_id": hid,
+                        "error": str(exc),
+                    })
+
         commit_result = {
             "mode": session.mode,
-            "students_imported": len(parsed["students"]),
-            "guardians_imported": len(parsed["guardians"]),
-            "households_imported": len(parsed["households"]),
+            "students_imported": students_imported,
+            "guardians_imported": guardians_imported,
+            "households_imported": households_imported,
             "exceptions_count": len(exceptions),
             "exceptions": exceptions,
-            "note": "MVP scaffolded commit — extend with ORM creation when intake models are ready.",
         }
 
         session.commit_result = commit_result

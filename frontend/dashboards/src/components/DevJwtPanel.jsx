@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import {
   clearAccessToken,
   getAccessToken,
@@ -79,7 +79,7 @@ export default function DevJwtPanel() {
         padding: 12,
         borderRadius: 12,
         background: "rgba(20,20,30,.92)",
-        color: "#fff",
+        color: "var(--crown-surface)",
         zIndex: 9999,
         fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
         boxShadow: "0 10px 30px rgba(0,0,0,.35)",
@@ -103,8 +103,8 @@ export default function DevJwtPanel() {
             borderRadius: 10,
             border: 0,
             cursor: "pointer",
-            background: "#3b82f6",
-            color: "#fff",
+            background: "var(--crown-brand)",
+            color: "var(--crown-surface)",
             fontWeight: 600,
           }}
         >
@@ -119,7 +119,7 @@ export default function DevJwtPanel() {
             border: 0,
             cursor: "pointer",
             background: "rgba(255,255,255,.15)",
-            color: "#fff",
+            color: "var(--crown-surface)",
           }}
         >
           Clear
@@ -127,7 +127,7 @@ export default function DevJwtPanel() {
       </div>
 
       {err ? (
-        <div style={{ marginTop: 10, fontSize: 12, color: "#ffb3b3", whiteSpace: "pre-wrap" }}>{err}</div>
+        <div style={{ marginTop: 10, fontSize: 12, color: "var(--crown-danger-bg)", whiteSpace: "pre-wrap" }}>{err}</div>
       ) : null}
     </div>
   );

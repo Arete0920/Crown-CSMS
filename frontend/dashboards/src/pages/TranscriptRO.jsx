@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { fetchStudents, fetchTranscript } from "../api/academics";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner.jsx";
@@ -71,7 +71,7 @@ export function TranscriptRO() {
                 padding: "6px 12px",
                 fontSize: 14,
                 borderRadius: 4,
-                border: "1px solid #ccc",
+                border: "1px solid var(--crown-border)",
                 minWidth: 300,
               }}
             >
@@ -99,7 +99,7 @@ export function TranscriptRO() {
 
       {/* Loading state */}
       {loadingTranscript && (
-        <div style={{ textAlign: "center", padding: 40, color: "#666" }}>
+        <div style={{ textAlign: "center", padding: 40, color: "var(--crown-muted)" }}>
           <p>Loading transcript...</p>
         </div>
       )}
@@ -142,12 +142,12 @@ export function TranscriptRO() {
                       marginTop: 0,
                       marginBottom: 12,
                       paddingBottom: 8,
-                      borderBottom: "2px solid #333",
+                      borderBottom: "2px solid var(--crown-ink)",
                     }}
                   >
                     {term.term_code}
                     {term.term_gpa_mvp !== null && term.term_gpa_mvp !== undefined && (
-                      <span style={{ float: "right", fontSize: 14, fontWeight: 400, color: "#666" }}>
+                      <span style={{ float: "right", fontSize: 14, fontWeight: 400, color: "var(--crown-muted)" }}>
                         Term GPA (MVP): {Number(term.term_gpa_mvp).toFixed(2)}
                       </span>
                     )}
@@ -163,7 +163,7 @@ export function TranscriptRO() {
                       }}
                     >
                       <thead>
-                        <tr style={{ backgroundColor: "#f5f5f5", borderBottom: "2px solid #ccc" }}>
+                        <tr style={{ backgroundColor: "var(--crown-surface-2)", borderBottom: "2px solid var(--crown-border)" }}>
                           <th style={{ textAlign: "left", padding: "8px 12px" }}>Course</th>
                           <th style={{ textAlign: "left", padding: "8px 12px" }}>Course Name</th>
                           <th style={{ textAlign: "left", padding: "8px 12px" }}>Teacher</th>
@@ -176,7 +176,7 @@ export function TranscriptRO() {
                         {term.courses.map((course, cIdx) => (
                           <tr
                             key={course.section_id || cIdx}
-                            style={{ borderBottom: "1px solid #e0e0e0" }}
+                            style={{ borderBottom: "1px solid var(--crown-border)" }}
                           >
                             <td style={{ padding: "8px 12px" }}>{course.course_code}</td>
                             <td style={{ padding: "8px 12px" }}>{course.course_name}</td>
@@ -205,13 +205,13 @@ export function TranscriptRO() {
                       </tbody>
                     </table>
                   ) : (
-                    <p style={{ color: "#999", fontStyle: "italic" }}>No courses for this term.</p>
+                    <p style={{ color: "var(--crown-muted)", fontStyle: "italic" }}>No courses for this term.</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ color: "#999", fontStyle: "italic", textAlign: "center", padding: 40 }}>
+            <p style={{ color: "var(--crown-muted)", fontStyle: "italic", textAlign: "center", padding: 40 }}>
               No transcript data available for this student.
             </p>
           )}
@@ -222,15 +222,15 @@ export function TranscriptRO() {
               style={{
                 marginTop: 32,
                 padding: 16,
-                backgroundColor: "#f9f9f9",
-                border: "1px solid #ddd",
+                backgroundColor: "var(--crown-surface-2)",
+                border: "1px solid var(--crown-border)",
                 borderRadius: 4,
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h4 style={{ margin: 0, marginBottom: 4 }}>Cumulative GPA (MVP)</h4>
-                  <p style={{ margin: 0, fontSize: 13, color: "#666" }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--crown-muted)" }}>
                     This is a placeholder calculation pending grade weighting and official credit values.
                   </p>
                 </div>
@@ -238,7 +238,7 @@ export function TranscriptRO() {
                   style={{
                     fontSize: 32,
                     fontWeight: 700,
-                    color: "#333",
+                    color: "var(--crown-ink)",
                   }}
                 >
                   {Number(transcript.cumulative_gpa_mvp).toFixed(2)}
@@ -249,7 +249,7 @@ export function TranscriptRO() {
 
           {/* Notes */}
           {transcript.notes && transcript.notes.length > 0 && (
-            <div style={{ marginTop: 24, fontSize: 12, color: "#666", borderTop: "1px solid #ddd", paddingTop: 16 }}>
+            <div style={{ marginTop: 24, fontSize: 12, color: "var(--crown-muted)", borderTop: "1px solid var(--crown-border)", paddingTop: 16 }}>
               <p style={{ margin: 0, marginBottom: 8, fontWeight: 500 }}>Notes:</p>
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {transcript.notes.map((note, idx) => (

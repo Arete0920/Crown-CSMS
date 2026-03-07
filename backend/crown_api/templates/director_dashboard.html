@@ -1,268 +1,385 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Crown2026 – Director Dashboard</title>
+  <title>{{ page_title }} — Crown2026</title>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #f6f7fb; }
-    header { background: #0b2a5a; color: white; padding: 16px 20px; }
-    header h1 { margin: 0; font-size: 18px; font-weight: 700; }
-    header .meta { opacity: .85; font-size: 12px; margin-top: 4px; }
-    .wrap { padding: 16px 20px; display: grid; gap: 14px; }
-    .grid { display: grid; gap: 14px; grid-template-columns: 2fr 1fr; }
-    .row { display: grid; gap: 14px; grid-template-columns: repeat(6, 1fr); }
-    .card { background: white; border: 1px solid #e6e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
-    .kpi .label { font-size: 12px; color: #5b6476; }
-    .kpi .value { font-size: 22px; font-weight: 800; margin-top: 6px; }
-    .kpi .sub { font-size: 12px; color: #5b6476; margin-top: 6px; }
-    h2 { margin: 0 0 10px 0; font-size: 14px; color: #111827; }
-    .muted { color: #5b6476; font-size: 12px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eef0f6; font-size: 12px; vertical-align: top; }
-    th { color: #5b6476; font-weight: 700; }
-    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; border: 1px solid #e6e8f0; background: #fafbff; }
-    .btn { padding: 6px 10px; border-radius: 10px; border: 1px solid #d7dbea; background: #ffffff; cursor: pointer; font-size: 12px; }
-    .btn.primary { background: #0b2a5a; color: white; border-color: #0b2a5a; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      background: #F4F6F8;
+      color: #1F2933;
+    }
+    /* ── Header ── */
+    .site-header {
+      background: #0F2C4C;
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .site-header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+    .site-header .meta { font-size: 12px; opacity: .8; margin-top: 4px; }
+    .site-header .header-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    /* ── Page layout ── */
+    .page { padding: 24px; display: grid; gap: 24px; max-width: 1400px; margin: 0 auto; }
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border: 1px solid #E1E5EA;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 600; color: #1F2933; }
+    /* ── Buttons ── */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid #E1E5EA;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      color: #1F2933;
+    }
+    .btn.primary { background: #1C4E80; color: #fff; border-color: #1C4E80; }
+    .btn.primary:hover { background: #163b60; border-color: #163b60; }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .ok { color: #067647; }
-    .warn { color: #a16207; }
-    .err { color: #b42318; }
-    .split { display: grid; gap: 14px; grid-template-columns: 1fr 1fr 1fr; }
-    pre { margin: 0; font-size: 11px; background: #0b1020; color: #d7e0ff; padding: 10px; border-radius: 10px; overflow:auto; }
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left;
+      padding: 8px 10px;
+      font-size: 12px;
+      color: #52606D;
+      font-weight: 700;
+      background: #F4F6F8;
+      border-bottom: 1px solid #E1E5EA;
+    }
+    td { text-align: left; padding: 10px; border-bottom: 1px solid #E1E5EA; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    /* ── Status pills ── */
+    .pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid #E1E5EA;
+      background: #F4F6F8;
+      color: #1F2933;
+    }
+    .pill.high  { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+    .pill.medium{ background: #DBEAFE; border-color: #93C5FD; color: #1E40AF; }
+    .pill.low   { background: #F0FDF4; border-color: #86EFAC; color: #166534; }
+    /* ── Metrics grid ── */
+    .section-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #1F2933; }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    .kpi-card {
+      background: #fff;
+      border: 1px solid #E1E5EA;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .kpi-card.accent { border-left: 4px solid #C6A54A; }
+    .kpi-label { font-size: 11px; color: #52606D; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .kpi-value { font-size: 26px; font-weight: 600; color: #0F2C4C; margin: 8px 0 4px; }
+    .kpi-sub   { font-size: 12px; color: #52606D; }
+    /* ── Timeline ── */
+    .timeline-list { list-style: none; margin: 0; padding: 0; }
+    .timeline-item { padding: 10px 0; border-bottom: 1px solid #E1E5EA; }
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-meta { font-size: 11px; color: #52606D; margin-bottom: 2px; }
+    /* ── Utility ── */
+    .muted { color: #52606D; font-size: 12px; }
+    .priority-hint { font-size: 12px; color: #52606D; margin: 0 0 12px; }
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Crown Director Dashboard</h1>
-    <div class="meta" id="metaLine">Loading…</div>
-  </header>
 
-  <div class="wrap">
-
-    <div class="row" id="kpis">
-      <!-- KPI cards injected -->
-    </div>
-
-    <div class="grid">
-      <div class="card">
-        <h2>Priority Worklist (Top 10)</h2>
-        <div class="muted" id="priorityHint">Loading…</div>
-        <div class="actions" style="margin:10px 0;">
-          <button class="btn primary" id="btnRefresh">Refresh</button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Score</th>
-              <th>Type</th>
-              <th>Summary</th>
-              <th>Amount</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="worklistBody"></tbody>
-        </table>
-        <div class="muted" style="margin-top:10px;">Tip: This is the "director's next 10 moves," sorted by urgency.</div>
-      </div>
-
-      <div class="card">
-        <h2>Director Timeline (Recent)</h2>
-        <div class="muted" id="timelineHint">Loading…</div>
-        <table>
-          <thead>
-            <tr>
-              <th>When</th>
-              <th>Type</th>
-              <th>Summary</th>
-            </tr>
-          </thead>
-          <tbody id="timelineBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Debug (for build only)</h2>
-      <div class="muted">If something breaks, copy/paste this JSON into chat.</div>
-      <pre id="debugOut">{}</pre>
-    </div>
-
+<header class="site-header">
+  <div>
+    <h1>{{ page_title }}</h1>
+    <div class="meta" id="metaLine">Loading&hellip;</div>
   </div>
+  <div class="header-actions">
+    <button class="btn primary" id="btnRefresh">Refresh</button>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ① Priority Queue (HERO) ─────────────────────────────────────────── -->
+  <section class="card">
+    <h2>Priority Queue</h2>
+    <p class="priority-hint" id="priorityHint">Loading&hellip;</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Application / Item</th>
+          <th>Submitted / Created</th>
+          <th>Waiting (days)</th>
+          <th>Status</th>
+          <th>Reason</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="worklistBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ② Metrics ────────────────────────────────────────────────────────── -->
+  <section>
+    <h2 class="section-title">Metrics</h2>
+    <div class="metrics-grid" id="metricsGrid">
+      <!-- KPI cards injected by JS -->
+    </div>
+  </section>
+
+  <!-- ③ Timeline ──────────────────────────────────────────────────────── -->
+  <section class="card">
+    <h2>Recent Activity</h2>
+    <p class="muted" id="timelineHint">Loading&hellip;</p>
+    <ul class="timeline-list" id="timelineBody"></ul>
+  </section>
+
+</main>
 
 <script>
-  // ======= CONFIG (demo IDs) =======
-  // Replace these with your current demo UUIDs:
+  // ── Server-injected CONFIG ─────────────────────────────────────────────
   const CONFIG = {
-    school_id: "852e31bc-d953-48c5-b081-98d27469d634",
-    year_id: "a3e4bc0c-f0db-481b-b5e4-9ec86d45f50a",
+    school_id: "{{ school_id }}",
+    year_id:   "{{ year_id }}",
   };
 
-  const endpoints = {
-    dashboard: () => `/api/director/dashboard/?school_id=${CONFIG.school_id}&year_id=${CONFIG.year_id}`,
-    priority:  () => `/api/director/priority/?school_id=${CONFIG.school_id}&year_id=${CONFIG.year_id}`,
-    timeline:  () => `/api/director/timeline/?school_id=${CONFIG.school_id}&year_id=${CONFIG.year_id}&limit=20`,
-    actions:   () => `/api/director/actions/`,
-  };
-
-  const el = (id) => document.getElementById(id);
-
-  function money(cents){
-    if (cents === null || cents === undefined) return "";
-    const dollars = (Number(cents) / 100);
-    return dollars.toLocaleString(undefined, { style: "currency", currency: "USD" });
-  }
-
-  function safeDate(x){
-    if (!x) return "";
-    const d = new Date(x);
-    if (isNaN(d)) return String(x);
-    return d.toLocaleString();
-  }
-
-  function setDebug(obj){
-    el("debugOut").textContent = JSON.stringify(obj, null, 2);
-  }
-
-  async function getJSON(url){
-    const res = await fetch(url, { headers: { "Accept": "application/json" }});
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
-    return await res.json();
-  }
-
-  async function postJSON(url, body){
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify(body)
+  // ── URL helpers ────────────────────────────────────────────────────────
+  function buildUrl(base, extra) {
+    const p = new URLSearchParams({
+      school_id: CONFIG.school_id,
+      year_id:   CONFIG.year_id,
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${JSON.stringify(data)}`);
-    return data;
+    if (extra) Object.entries(extra).forEach(([k, v]) => p.set(k, v));
+    return base + "?" + p.toString();
   }
 
-  function renderKPIs(d){
-    // Expecting d.sections.aid / d.sections.finance / d.sections.registrar (per your unified dashboard)
-    const aid = d.sections?.aid || d.aid || {};
-    const fin = d.sections?.finance || d.finance || {};
-    const reg = d.sections?.registrar || d.registrar || {};
+  const ENDPOINTS = {
+    dashboard: () => buildUrl("/api/director/dashboard/"),
+    priority:  () => buildUrl("/api/director/priority/"),
+    timeline:  () => buildUrl("/api/director/timeline/", { limit: 20 }),
+    actions:   "/api/director/actions/",
+  };
 
-    const cards = [
-      { label: "Aid Applications", value: aid.applications?.total ?? "—", sub: `Needs Info: ${aid.applications?.needs_info ?? 0}` },
-      { label: "Awards Posted", value: aid.awards?.posted_to_ledger ?? "—", sub: `Accepted not posted: ${aid.awards?.accepted_not_posted ?? 0}` },
-      { label: "Aid Awarded", value: money(aid.awards?.total_awarded_cents ?? 0), sub: `Total awards: ${aid.awards?.total_awards ?? 0}` },
-      { label: "Tuition Gross", value: money(fin.tuition?.gross_tuition_cents ?? fin.tuition_gross_cents ?? 0), sub: "PK–12 / $12k demo" },
-      { label: "Net Receivable", value: money(fin.ledger?.net_receivables_cents ?? fin.net_receivables_cents ?? 0), sub: "After aid credits" },
-      { label: "Enrollment", value: reg.enrollment?.total ?? reg.total ?? "—", sub: "Students" },
-    ];
+  const el = id => document.getElementById(id);
 
-    const html = cards.map(c => `
-      <div class="card kpi">
-        <div class="label">${c.label}</div>
-        <div class="value">${c.value}</div>
-        <div class="sub">${c.sub}</div>
-      </div>
-    `).join("");
-
-    el("kpis").innerHTML = html;
+  // ── Formatting helpers ─────────────────────────────────────────────────
+  function money(cents) {
+    if (cents == null) return "—";
+    return (Number(cents) / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
   }
 
-  function renderWorklist(p){
-    const worklist = p.worklist_top_10 || [];
-    el("priorityHint").textContent = `${worklist.length} items loaded • sorted by urgency`;
-
-    const rows = worklist.map(item => {
-      const amt = item.awarded_cents ?? item.balance_cents ?? item.amount_cents;
-      const actionBtn = buildActionButton(item);
-      return `
-        <tr>
-          <td><span class="pill">${item.score ?? "—"}</span></td>
-          <td>${item.type ?? ""}</td>
-          <td>${item.summary ?? ""}</td>
-          <td>${money(amt)}</td>
-          <td>${actionBtn}</td>
-        </tr>
-      `;
-    }).join("");
-
-    el("worklistBody").innerHTML = rows || `<tr><td colspan="5" class="muted">No priority items (seed may be too clean).</td></tr>`;
+  function safeDate(x) {
+    if (!x) return "—";
+    const d = new Date(x);
+    return isNaN(d) ? String(x) : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   }
 
-  function buildActionButton(item){
-    // Minimal actions for demo:
-    // - AID_AWARD_ACCEPTED_NOT_POSTED -> post awards
-    // - AID_APPLICATION_NEEDS_INFO -> generate email + mark sent
+  function daysWaiting(submittedAt) {
+    if (!submittedAt) return "—";
+    const days = Math.floor((Date.now() - new Date(submittedAt)) / 86400000);
+    return days >= 0 ? String(days) : "—";
+  }
+
+  function statusLabel(type) {
+    const MAP = {
+      AID_APPLICATION_NEEDS_INFO:      "Needs Info",
+      AID_APPLICATION_UNDER_REVIEW:    "Under Review",
+      AID_AWARD_ACCEPTED_NOT_POSTED:   "Accepted — Not Posted",
+      ADMISSIONS_APPLICATION_NEEDS_INFO:   "Needs Info",
+      ADMISSIONS_APPLICATION_UNDER_REVIEW: "Under Review",
+      FINANCE_BALANCE_DUE: "Balance Due",
+    };
+    return MAP[type] || (type || "—").replace(/_/g, " ");
+  }
+
+  function pillCls(type) {
+    if (!type) return "pill";
+    if (type.includes("NEEDS_INFO"))  return "pill high";
+    if (type.includes("UNDER_REVIEW") || type.includes("ACCEPTED")) return "pill medium";
+    return "pill";
+  }
+
+  function actionLabel(item) {
+    if (item.summary)         return item.summary;
+    if (item.priority_reason) return item.priority_reason;
+    return "—";
+  }
+
+  function buildActionBtn(item) {
     if (item.type === "AID_AWARD_ACCEPTED_NOT_POSTED") {
-      return `<button class="btn" onclick='runAction("AID_POST_ACCEPTED_AWARDS", ["${item.id}"])'>Post</button>`;
+      return `<button class="btn" onclick='runAction("AID_POST_ACCEPTED_AWARDS",["${item.id}"])'>Post Award</button>`;
     }
     if (item.type === "AID_APPLICATION_NEEDS_INFO") {
-      return `
-        <div class="actions">
-          <button class="btn" onclick='runAction("AID_GENERATE_NEEDS_INFO_EMAILS", ["${item.id}"])'>Draft Email</button>
-          <button class="btn" onclick='runAction("AID_MARK_NEEDS_INFO_EMAIL_SENT", ["${item.id}"], {move_to_under_review:false})'>Mark Sent</button>
-        </div>
-      `;
+      return `<button class="btn" onclick='runAction("AID_GENERATE_NEEDS_INFO_EMAILS",["${item.id}"])'>Draft Email</button>`;
+    }
+    if (item.next_action_label && item.next_action_url) {
+      return `<a class="btn" href="${item.next_action_url}">${item.next_action_label}</a>`;
     }
     return `<span class="muted">—</span>`;
   }
 
-  function renderTimeline(t){
-    const rows = (t.timeline || []).map(x => `
-      <tr>
-        <td>${safeDate(x.ts)}</td>
-        <td><span class="pill">${x.type}</span></td>
-        <td>${x.summary}</td>
-      </tr>
-    `).join("");
+  // ── Renderers ─────────────────────────────────────────────────────────
+  function renderPriorityQueue(p) {
+    const worklist = p.worklist_top_10 || [];
+    el("priorityHint").textContent =
+      worklist.length
+        ? `${worklist.length} item${worklist.length !== 1 ? "s" : ""} — sorted by urgency`
+        : "No priority items at this time.";
 
-    el("timelineBody").innerHTML = rows || `<tr><td colspan="3" class="muted">No recent events yet.</td></tr>`;
-    el("timelineHint").textContent = `${(t.timeline || []).length} events`;
+    el("worklistBody").innerHTML = worklist.length
+      ? worklist.map(item => {
+          const submitted = item.submitted_date || item.submitted_at;
+          return `
+            <tr>
+              <td>${item.label || item.family || "—"}</td>
+              <td>${safeDate(submitted)}</td>
+              <td>${daysWaiting(submitted)}</td>
+              <td><span class="${pillCls(item.type)}">${statusLabel(item.type)}</span></td>
+              <td>${actionLabel(item)}</td>
+              <td>${buildActionBtn(item)}</td>
+            </tr>`;
+        }).join("")
+      : `<tr><td colspan="6" class="muted" style="text-align:center;padding:24px;">
+           No priority items at this time.
+         </td></tr>`;
   }
 
-  async function runAction(action, ids, extra={}){
-    try{
+  function renderMetrics(d) {
+    const aid = d.sections?.aid || d.aid || {};
+    const fin = d.sections?.finance || d.finance || {};
+    const reg = d.sections?.registrar || d.registrar || {};
+
+    const kpis = [
+      {
+        label: "Aid Applications",
+        value: aid.applications?.total ?? aid.applications_count ?? "—",
+        sub:   `Needs Info: ${aid.applications?.needs_info ?? aid.needs_info_count ?? 0}`,
+        accent: true,
+      },
+      {
+        label: "Awards Posted",
+        value: aid.awards?.posted_to_ledger ?? "—",
+        sub:   `Accepted not posted: ${aid.awards?.accepted_not_posted ?? 0}`,
+      },
+      {
+        label: "Aid Awarded",
+        value: money(aid.awards?.total_awarded_cents ?? 0),
+        sub:   `Total awards: ${aid.awards?.total_awards ?? 0}`,
+        accent: true,
+      },
+      {
+        label: "Tuition Gross",
+        value: money(fin.tuition?.gross_tuition_cents ?? fin.tuition_gross_cents ?? fin.total_billed_cents ?? 0),
+        sub:   "Billed",
+      },
+      {
+        label: "Net Receivable",
+        value: money(fin.ledger?.net_receivables_cents ?? fin.net_receivables_cents ?? 0),
+        sub:   "After aid credits",
+      },
+      {
+        label: "Enrollment",
+        value: reg.enrollment?.total ?? reg.total ?? reg.total_enrollments ?? "—",
+        sub:   "Active students",
+      },
+    ];
+
+    el("metricsGrid").innerHTML = kpis.map(k => `
+      <div class="kpi-card${k.accent ? " accent" : ""}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-sub">${k.sub}</div>
+      </div>`).join("");
+  }
+
+  function renderTimeline(t) {
+    const events = t.timeline || t.events || [];
+    el("timelineHint").textContent =
+      `${events.length} recent event${events.length !== 1 ? "s" : ""}`;
+
+    el("timelineBody").innerHTML = events.length
+      ? events.map(x => `
+          <li class="timeline-item">
+            <div class="timeline-meta">
+              ${safeDate(x.ts || x.timestamp)}
+              &middot;
+              <span class="pill">${x.type || x.event_type || ""}</span>
+            </div>
+            <div>${x.summary || x.title || x.detail || "—"}</div>
+          </li>`).join("")
+      : `<li class="timeline-item muted">No recent events.</li>`;
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────
+  async function getJSON(url) {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return res.json();
+  }
+
+  async function postJSON(url, body) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`${res.status}: ${JSON.stringify(data)}`);
+    return data;
+  }
+
+  async function runAction(action, ids, extra = {}) {
+    try {
       const payload = { action, school_id: CONFIG.school_id, year_id: CONFIG.year_id, ids, ...extra };
-      const res = await postJSON(endpoints.actions(), payload);
-      setDebug(res);
-
-      // If your actions return priority_refresh, use it immediately:
-      if (res.priority_refresh) {
-        // Your refresh snapshot may not match full priority payload shape; safest: full refresh:
-        await refreshAll();
-      } else {
-        await refreshAll();
-      }
-
-      alert(`✅ ${action} complete\nSuccess: ${res.success_count ?? res.draft_count ?? 0}\nFailures: ${res.failure_count ?? 0}`);
-    } catch(e){
-      alert(`❌ Action failed:\n${e.message}`);
-      console.error(e);
+      await postJSON(ENDPOINTS.actions, payload);
+      await loadAll();
+      alert(`Action complete: ${action}`);
+    } catch (e) {
+      alert(`Action failed:\n${e.message}`);
     }
   }
 
-  async function refreshAll(){
-    try{
-      el("metaLine").textContent = `School: ${CONFIG.school_id} • Year: ${CONFIG.year_id}`;
+  async function loadAll() {
+    el("metaLine").textContent = `School: ${CONFIG.school_id.slice(0, 8)}\u2026  Year: ${CONFIG.year_id.slice(0, 8)}\u2026`;
+    try {
       const [dash, prio, time] = await Promise.all([
-        getJSON(endpoints.dashboard()),
-        getJSON(endpoints.priority()),
-        getJSON(endpoints.timeline()),
+        getJSON(ENDPOINTS.dashboard()),
+        getJSON(ENDPOINTS.priority()),
+        getJSON(ENDPOINTS.timeline()),
       ]);
-      setDebug({ dashboard: dash, priority: prio, timeline: time });
-      renderKPIs(dash);
-      renderWorklist(prio);
+      renderPriorityQueue(prio);
+      renderMetrics(dash);
       renderTimeline(time);
-    } catch(e){
-      setDebug({ error: e.message });
-      console.error(e);
-      el("priorityHint").textContent = "Error loading priority.";
-      el("timelineHint").textContent = "Error loading timeline.";
+    } catch (e) {
+      el("priorityHint").textContent = "Error loading data — " + e.message;
+      el("timelineHint").textContent = "Error.";
+      el("metricsGrid").innerHTML = `<p class="muted">Failed to load metrics: ${e.message}</p>`;
     }
   }
 
-  el("btnRefresh").addEventListener("click", refreshAll);
-  refreshAll();
+  el("btnRefresh").addEventListener("click", loadAll);
+  loadAll();
 </script>
 </body>
 </html>

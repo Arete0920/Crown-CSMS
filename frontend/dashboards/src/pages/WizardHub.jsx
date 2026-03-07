@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WizardHub — Crown2026
  * =====================
  * Fetches all registered wizards from GET /api/v1/wizards/ and renders
@@ -56,7 +56,7 @@ export default function WizardHub() {
   if (err) {
     return (
       <CrownLayout title="Wizard Hub" subtitle="Setup wizards">
-        <p style={{ color: "var(--color-error, #f44336)" }}>Error: {err}</p>
+        <p style={{ color: "var(--crown-danger)" }}>Error: {err}</p>
       </CrownLayout>
     );
   }

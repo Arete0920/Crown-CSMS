@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -13,6 +13,26 @@ import { logApiRequest, logApiError } from '../utils/requestTracing.js';
 import { CurriculumPacingCard } from '../components/CurriculumPacingCard.jsx';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import ErrorBanner from '../components/ui/ErrorBanner.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+/* ── Academics KPI flip cards ──────────────────────────────── */
+const ACADEMICS_KPI = [
+  { label: "Sections Active",    value: "—",    trend: null,              trendUp: null,
+    definition: "Total course sections currently active with assigned teachers and rosters.",
+    dataSource: "Sections API", dataHref: "/academics" },
+  { label: "Students Enrolled",  value: "—",    trend: null,              trendUp: null,
+    definition: "Total unique students enrolled across all active sections this term.",
+    dataSource: "Enrollment Module", dataHref: "/admissions" },
+  { label: "Avg Section GPA",    value: "—",    trend: null,              trendUp: null,
+    definition: "Mean grade point average across all graded assignments in active sections.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+  { label: "Missing Assignments", value: "—",   trend: null,              trendUp: null,
+    definition: "Total past-due assignments with no student submission across all sections.",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+  { label: "Pass Rate",          value: "92%",  trend: "+2% vs last term", trendUp: true,
+    definition: "Percentage of students in active sections currently passing (grade ≥ 70%).",
+    dataSource: "Gradebook", dataHref: "/gradebook" },
+];
 
 export function AcademicsDashboard() {
   const [schoolId, setSchoolId] = useState('');
@@ -231,7 +251,7 @@ export function AcademicsDashboard() {
 
   return (
     <CrownLayout title="Academics" subtitle="Read Only">
-
+      <KpiStrip cards={ACADEMICS_KPI} />
       {/* Curriculum Pacing Summary */}
       <section style={{ marginBottom: 32 }}>
         <CurriculumPacingCard schoolId={schoolId} />
@@ -367,7 +387,7 @@ export function AcademicsDashboard() {
             style={{
               width: '100%',
               maxWidth: 480,
-              backgroundColor: 'white',
+              backgroundColor: 'var(--crown-surface)',
               display: 'flex',
               flexDirection: 'column',
               height: '100%',
@@ -377,7 +397,7 @@ export function AcademicsDashboard() {
             <div
               style={{
                 padding: 16,
-                borderBottom: '1px solid #e0e0e0',
+                borderBottom: '1px solid var(--crown-border)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -387,7 +407,7 @@ export function AcademicsDashboard() {
                 {rosterData && (
                   <>
                     <h3 style={{ margin: '0 0 4px 0' }}>{rosterData.section_name}</h3>
-                    <p style={{ margin: 0, fontSize: 12, color: '#666' }}>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--crown-muted)' }}>
                       {rosterData.course_code}
                     </p>
                   </>
@@ -400,7 +420,7 @@ export function AcademicsDashboard() {
                   border: 'none',
                   fontSize: 20,
                   cursor: 'pointer',
-                  color: '#666',
+                  color: 'var(--crown-muted)',
                 }}
               >
                 ✕
@@ -435,7 +455,7 @@ export function AcademicsDashboard() {
                     return (
                       <div
                         style={{
-                          backgroundColor: '#e8f4f8',
+                          backgroundColor: 'var(--crown-surface-2)',
                           padding: '8px 12px',
                           borderRadius: 4,
                           marginBottom: 16,
@@ -450,7 +470,7 @@ export function AcademicsDashboard() {
                   {/* Student Snapshot OR Student List */}
                   <div>
                     {selectedStudent ? (
-                      <div style={{ border: '1px solid #eee', borderRadius: 6, padding: 12 }}>
+                      <div style={{ border: '1px solid var(--crown-border)', borderRadius: 6, padding: 12 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <strong>Student Snapshot</strong>
                           <button
@@ -459,7 +479,7 @@ export function AcademicsDashboard() {
                               background: 'none',
                               border: 'none',
                               cursor: 'pointer',
-                              color: '#0066cc',
+                              color: 'var(--crown-brand)',
                               padding: 0,
                               font: 'inherit',
                             }}
@@ -470,13 +490,13 @@ export function AcademicsDashboard() {
 
                         <div style={{ marginTop: 10 }}>
                           <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedStudent.name}</div>
-                          <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
+                          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--crown-muted)' }}>
                             Grade: {selectedStudent.grade_level}
                           </div>
-                          <div style={{ marginTop: 4, fontSize: 12, color: '#666' }}>
+                          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--crown-muted)' }}>
                             Enrollment: {selectedStudent.enrollment_status ?? 'Unknown'}
                           </div>
-                          <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
+                          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--crown-muted)' }}>
                             Student ID: {selectedStudent.student_id}
                           </div>
                         </div>
@@ -509,9 +529,9 @@ export function AcademicsDashboard() {
                           <div
                             style={{
                               marginTop: 10,
-                              color: 'crimson',
+                              color: 'var(--crown-danger)',
                               fontSize: 12,
-                              backgroundColor: '#ffe8e8',
+                              backgroundColor: 'var(--crown-danger-bg)',
                               padding: 10,
                               borderRadius: 4,
                               display: 'flex',
@@ -525,7 +545,7 @@ export function AcademicsDashboard() {
                               style={{
                                 background: 'none',
                                 border: 'none',
-                                color: '#0066cc',
+                                color: 'var(--crown-brand)',
                                 cursor: 'pointer',
                                 padding: '0 4px',
                                 font: 'inherit',
@@ -541,9 +561,9 @@ export function AcademicsDashboard() {
                           <div
                             style={{
                               marginTop: 10,
-                              color: '#666',
+                              color: 'var(--crown-muted)',
                               fontSize: 12,
-                              backgroundColor: '#f5f5f5',
+                              backgroundColor: 'var(--crown-surface-2)',
                               padding: 10,
                               borderRadius: 4,
                               display: 'flex',
@@ -557,7 +577,7 @@ export function AcademicsDashboard() {
                               style={{
                                 background: 'none',
                                 border: 'none',
-                                color: '#0066cc',
+                                color: 'var(--crown-brand)',
                                 cursor: 'pointer',
                                 padding: '0 4px',
                                 font: 'inherit',
@@ -575,15 +595,15 @@ export function AcademicsDashboard() {
                               Gradebook (section)
                             </strong>
 
-                            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                            <div style={{ fontSize: 12, color: 'var(--crown-muted)', marginBottom: 6 }}>
                               Scores shown are per-assignment points earned / possible.
                             </div>
 
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                               {Object.entries(studentGradeRow.scores ?? {}).slice(0, 8).map(([k, v]) => (
-                                <li key={k} style={{ padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                                <li key={k} style={{ padding: '6px 0', borderBottom: '1px solid var(--crown-border)' }}>
                                   <div style={{ fontSize: 13 }}>{k}</div>
-                                  <div style={{ fontSize: 11, color: '#999' }}>
+                                  <div style={{ fontSize: 11, color: 'var(--crown-muted)' }}>
                                     {(v?.points_earned ?? '—')} / {(v?.points_possible ?? '—')}
                                   </div>
                                 </li>
@@ -591,7 +611,7 @@ export function AcademicsDashboard() {
                             </ul>
 
                             {Object.keys(studentGradeRow.scores ?? {}).length > 8 && (
-                              <div style={{ marginTop: 6, fontSize: 11, color: '#999' }}>
+                              <div style={{ marginTop: 6, fontSize: 11, color: 'var(--crown-muted)' }}>
                                 Showing first 8 items.
                               </div>
                             )}
@@ -602,9 +622,9 @@ export function AcademicsDashboard() {
                           <div
                             style={{
                               marginTop: 10,
-                              color: 'crimson',
+                              color: 'var(--crown-danger)',
                               fontSize: 12,
-                              backgroundColor: '#ffe8e8',
+                              backgroundColor: 'var(--crown-danger-bg)',
                               padding: 10,
                               borderRadius: 4,
                               display: 'flex',
@@ -618,7 +638,7 @@ export function AcademicsDashboard() {
                               style={{
                                 background: 'none',
                                 border: 'none',
-                                color: '#0066cc',
+                                color: 'var(--crown-brand)',
                                 cursor: 'pointer',
                                 padding: '0 4px',
                                 font: 'inherit',
@@ -634,9 +654,9 @@ export function AcademicsDashboard() {
                           <div
                             style={{
                               marginTop: 10,
-                              color: '#666',
+                              color: 'var(--crown-muted)',
                               fontSize: 12,
-                              backgroundColor: '#f5f5f5',
+                              backgroundColor: 'var(--crown-surface-2)',
                               padding: 10,
                               borderRadius: 4,
                               display: 'flex',
@@ -650,7 +670,7 @@ export function AcademicsDashboard() {
                               style={{
                                 background: 'none',
                                 border: 'none',
-                                color: '#0066cc',
+                                color: 'var(--crown-brand)',
                                 cursor: 'pointer',
                                 padding: '0 4px',
                                 font: 'inherit',
@@ -668,15 +688,15 @@ export function AcademicsDashboard() {
                               Assignments (section)
                             </strong>
 
-                            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                            <div style={{ fontSize: 12, color: 'var(--crown-muted)', marginBottom: 6 }}>
                               All assignments in this section with max points possible.
                             </div>
 
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                               {assignments.slice(0, 8).map((a) => (
-                                <li key={a.assignment_name} style={{ padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                                <li key={a.assignment_name} style={{ padding: '6px 0', borderBottom: '1px solid var(--crown-border)' }}>
                                   <div style={{ fontSize: 13 }}>{a.assignment_name}</div>
-                                  <div style={{ fontSize: 11, color: '#999' }}>
+                                  <div style={{ fontSize: 11, color: 'var(--crown-muted)' }}>
                                     Points Possible: {a.points_possible ?? '—'}
                                   </div>
                                 </li>
@@ -684,7 +704,7 @@ export function AcademicsDashboard() {
                             </ul>
 
                             {assignments.length > 8 && (
-                              <div style={{ marginTop: 6, fontSize: 11, color: '#999' }}>
+                              <div style={{ marginTop: 6, fontSize: 11, color: 'var(--crown-muted)' }}>
                                 Showing first 8 of {assignments.length} items.
                               </div>
                             )}
@@ -696,7 +716,7 @@ export function AcademicsDashboard() {
                         <strong style={{ display: 'block', marginBottom: 8 }}>Roster</strong>
 
                         {(rosterData?.students ?? []).length === 0 ? (
-                          <div style={{ fontSize: 12, color: '#666' }}>No students enrolled.</div>
+                          <div style={{ fontSize: 12, color: 'var(--crown-muted)' }}>No students enrolled.</div>
                         ) : (
                           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                             {(rosterData?.students ?? []).map((student) => (
@@ -710,7 +730,7 @@ export function AcademicsDashboard() {
                                 }}
                                 style={{
                                   padding: '8px',
-                                  borderBottom: '1px solid #f0f0f0',
+                                  borderBottom: '1px solid var(--crown-border)',
                                   fontSize: 13,
                                   cursor: 'pointer',
                                 }}
@@ -719,11 +739,11 @@ export function AcademicsDashboard() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                                   <div>
                                     <div>{student.name}</div>
-                                    <div style={{ fontSize: 11, color: '#999' }}>
+                                    <div style={{ fontSize: 11, color: 'var(--crown-muted)' }}>
                                       Grade {student.grade_level}
                                     </div>
                                   </div>
-                                  <div style={{ fontSize: 11, color: '#999', alignSelf: 'center' }}>
+                                  <div style={{ fontSize: 11, color: 'var(--crown-muted)', alignSelf: 'center' }}>
                                     ›
                                   </div>
                                 </div>

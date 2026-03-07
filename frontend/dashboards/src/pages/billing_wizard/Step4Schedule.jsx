@@ -1,4 +1,4 @@
-import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
+﻿import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import "../../styles/crown-wizard.css";
 
 function addDays(dateStr, days) {
@@ -48,7 +48,7 @@ export default function Step4Schedule({ context, setContext, goNext, goBack, ste
           const schedule = buildSchedule(plan);
           return (
             <div key={pi} style={{ border: "1px solid var(--crown-border)", borderRadius: 6, overflow: "hidden" }}>
-              <div style={{ padding: "10px 14px", background: "var(--crown-surface, #f8f9fa)", borderBottom: "1px solid var(--crown-border)", fontWeight: 600, fontSize: 13 }}>
+              <div style={{ padding: "10px 14px", background: "var(--crown-surface)", borderBottom: "1px solid var(--crown-border)", fontWeight: 600, fontSize: 13 }}>
                 {plan.name} — ${parseFloat(plan.total_amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })} · {plan.installment_count} payment{plan.installment_count !== 1 ? "s" : ""}
               </div>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -61,7 +61,7 @@ export default function Step4Schedule({ context, setContext, goNext, goBack, ste
                 </thead>
                 <tbody>
                   {schedule.map((row) => (
-                    <tr key={row.seq} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+                    <tr key={row.seq} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                       <td style={{ padding: "6px 14px" }}>{row.seq}</td>
                       <td style={{ padding: "6px 14px" }}>{row.due_on}</td>
                       <td style={{ padding: "6px 14px", textAlign: "right" }}>${row.amount.toFixed(2)}</td>
@@ -87,7 +87,7 @@ export default function Step4Schedule({ context, setContext, goNext, goBack, ste
               </thead>
               <tbody>
                 {fees.map((fee, fi) => (
-                  <tr key={fi} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+                  <tr key={fi} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                     <td style={{ padding: "6px 14px" }}>{fee.name}</td>
                     <td style={{ padding: "6px 14px" }}>{fee.fee_type}</td>
                     <td style={{ padding: "6px 14px", textAlign: "right" }}>${parseFloat(fee.amount).toFixed(2)}</td>

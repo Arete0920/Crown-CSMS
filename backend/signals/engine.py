@@ -1,25 +1,36 @@
 """
-Crown Signal Engine — deterministic + explainable.
-Each signal has a rule type, fires observable events, and rolls up into a
-StudentRiskSnapshot. BoardExecutiveMetric is computed separately.
+Crown Signal Engine v2 -- deterministic + explainable.
 
-TODO: replace compute_student_features stubs with real module queries:
-  - Attendance app
-  - Gradebook app
-  - Ledger / billing app
-  - Discipline app
+Migrated to UUID FKs (2026-03-02):
+  SignalDefinition, StudentRiskSnapshot, SignalEvent, InterventionCase, and
+  BoardExecutiveMetric all have proper ForeignKey references to core.School
+  (UUID PK) and households.Student (UUID PK).
+
+  Aftercare queries now use the new school_fk / student_fk nullable FK fields
+  added via aftercare.migrations.0002_add_uuid_fks.  Records seeded by
+  seed_demo have these FKs set; old integer-only rows are invisible to the
+  engine until back-filled.
+
+Public callables:
+  compute_snapshots_for_school(school)       -- nightly / on-demand
+  compute_board_metrics(school)              -- board dashboard roll-up
 """
-from datetime import date
+from datetime import date, timedelta
+
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from .models import (
+    BoardExecutiveMetric,
+    InterventionCase,
     SignalDefinition,
     SignalEvent,
     StudentRiskSnapshot,
-    InterventionCase,
-    BoardExecutiveMetric,
 )
+
+
+# ------------------------------------------------------------------ helpers --
 
 
 def clamp(n: int, lo: int = 0, hi: int = 100) -> int:
@@ -34,28 +45,62 @@ def risk_level(score: int) -> str:
     return "LOW"
 
 
-def compute_student_features(school_id: int, student_id: int) -> dict:
+def _window_start(days: int) -> date:
+    return timezone.now().date() - timedelta(days=days)
+
+
+# ---------------------------------------------- feature extraction per student
+
+
+def compute_student_features(school, student) -> dict:
     """
     Gather raw features for deterministic rule evaluation.
-    STUB — replace each value with a real DB query against the relevant app.
+
+    school  -- core.School instance
+    student -- households.Student instance
+
+    Aftercare features are wired to real DB queries via the new UUID FK columns
+    (school_fk / student_fk on aftercare models).
+
+    GPA, discipline, and finance signals remain at safe zero values until those
+    apps expose queryable views that join through UUID FKs -- no integer casting.
     """
+    from aftercare.models import AftercareAttendance, AftercareIncident
+
+    window_30 = _window_start(30)
+
+    aftercare_late_30d = AftercareAttendance.objects.filter(
+        school_fk=school,
+        student_fk=student,
+        date__gte=window_30,
+        late_minutes__gt=0,
+    ).count()
+
+    aftercare_incident_30d = AftercareIncident.objects.filter(
+        school_fk=school,
+        student_fk=student,
+        occurred_at__date__gte=window_30,
+    ).count()
+
     return {
-        "attendance_pct_30d": 94.0,
-        "gpa_current": 3.0,
-        "gpa_prev": 3.2,
-        "days_past_due": 0,
-        "balance_due": 0.0,
-        "discipline_30d": 0,
-        # Aftercare signals — replace with real DB queries
-        "aftercare_late_30d": 0,
-        "aftercare_incident_30d": 0,
+        "attendance_pct_30d": 100.0,       # not wired: UUID join to academics TBD
+        "gpa_current": 4.0,                # not wired: UUID join to gradebook TBD
+        "gpa_prev": 4.0,                   # not wired
+        "days_past_due": 0,                # not wired: UUID join to finance TBD
+        "balance_due": 0.0,                # not wired
+        "discipline_30d": 0,               # not wired: UUID join to discipline TBD
+        "aftercare_late_30d": aftercare_late_30d,
+        "aftercare_incident_30d": aftercare_incident_30d,
     }
+
+
+# -------------------------------------------------- deterministic rule engine
 
 
 def evaluate_signal(defn: SignalDefinition, features: dict) -> dict | None:
     """
     Returns a fired-event dict if the rule is triggered, otherwise None.
-    Each rule type is deterministic and fully explainable via 'details'.
+    Each rule type is deterministic and fully explainable.
     """
     rule = defn.rule or {}
     rule_type = rule.get("type")
@@ -84,7 +129,7 @@ def evaluate_signal(defn: SignalDefinition, features: dict) -> dict | None:
             return {
                 "signal_key": defn.key,
                 "weight": defn.severity_weight,
-                "summary": f"GPA drop {prev:.2f} → {cur:.2f}",
+                "summary": f"GPA drop {prev:.2f} -> {cur:.2f}",
                 "details": {
                     "gpa_prev": prev,
                     "gpa_current": cur,
@@ -134,7 +179,7 @@ def evaluate_signal(defn: SignalDefinition, features: dict) -> dict | None:
             return {
                 "signal_key": defn.key,
                 "weight": defn.severity_weight,
-                "summary": f"Aftercare late pickups spike ({cnt} in {window} days)",
+                "summary": f"Aftercare late pickups ({cnt} in {window} days)",
                 "details": {
                     "window_days": window,
                     "count": cnt,
@@ -150,7 +195,7 @@ def evaluate_signal(defn: SignalDefinition, features: dict) -> dict | None:
             return {
                 "signal_key": defn.key,
                 "weight": defn.severity_weight,
-                "summary": f"Aftercare incidents spike ({cnt} in {window} days)",
+                "summary": f"Aftercare incidents ({cnt} in {window} days)",
                 "details": {
                     "window_days": window,
                     "count": cnt,
@@ -161,31 +206,41 @@ def evaluate_signal(defn: SignalDefinition, features: dict) -> dict | None:
     return None
 
 
-@transaction.atomic
-def compute_snapshots_for_school(school_id: int, as_of: date | None = None):
-    """
-    Computes SignalEvents and StudentRiskSnapshot for all active students.
-    Idempotent per (school_id, student_id, as_of_date): uses update_or_create.
+# --------------------------------------------------- school-level batch compute
 
-    TODO: replace the demo student_ids with a real roster query, e.g.:
-        from academics.models import Enrollment
-        student_ids = list(
-            Enrollment.objects.filter(school_id=school_id, is_active=True)
-            .values_list("student_id", flat=True)
-        )
+
+@transaction.atomic
+def compute_snapshots_for_school(school, as_of: date | None = None):
+    """
+    Compute SignalEvents and StudentRiskSnapshot for all active aftercare students.
+    Idempotent per (school, student, as_of_date): uses update_or_create.
+
+    school -- core.School instance
     """
     as_of = as_of or timezone.now().date()
 
-    # STUB: demo roster
-    student_ids = list(range(1001, 1021))
+    from aftercare.models import AftercareEnrollment
+
+    # Roster: active aftercare enrollments with UUID FK populated.
+    enrollments = (
+        AftercareEnrollment.objects.filter(school_fk=school, is_active=True)
+        .exclude(student_fk__isnull=True)
+        .select_related("student_fk")
+        .distinct()
+    )
+
+    students = list({e.student_fk for e in enrollments})
+
+    if not students:
+        return
 
     defs = list(
-        SignalDefinition.objects.filter(school_id=school_id, is_active=True)
+        SignalDefinition.objects.filter(school=school, is_active=True)
         .order_by("-severity_weight")
     )
 
-    for sid in student_ids:
-        features = compute_student_features(school_id, sid)
+    for student in students:
+        features = compute_student_features(school, student)
 
         fired = []
         score = 0
@@ -196,8 +251,8 @@ def compute_snapshots_for_school(school_id: int, as_of: date | None = None):
                 score += int(evt["weight"])
 
                 SignalEvent.objects.create(
-                    school_id=school_id,
-                    student_id=sid,
+                    school=school,
+                    student=student,
                     signal_key=evt["signal_key"],
                     weight=int(evt["weight"]),
                     summary=evt["summary"],
@@ -208,8 +263,8 @@ def compute_snapshots_for_school(school_id: int, as_of: date | None = None):
         drivers = sorted(fired, key=lambda x: x["weight"], reverse=True)[:3]
 
         StudentRiskSnapshot.objects.update_or_create(
-            school_id=school_id,
-            student_id=sid,
+            school=school,
+            student=student,
             as_of_date=as_of,
             defaults={
                 "risk_score": score,
@@ -221,11 +276,10 @@ def compute_snapshots_for_school(school_id: int, as_of: date | None = None):
             },
         )
 
-        # Auto-open InterventionCase for HIGH-risk students
         if score >= 70:
             InterventionCase.objects.get_or_create(
-                school_id=school_id,
-                student_id=sid,
+                school=school,
+                student=student,
                 status="OPEN",
                 defaults={
                     "priority": "HIGH",
@@ -239,35 +293,73 @@ def compute_snapshots_for_school(school_id: int, as_of: date | None = None):
 
 
 @transaction.atomic
-def compute_board_metrics(school_id: int, as_of: date | None = None):
+def compute_board_metrics(school, as_of: date | None = None):
     """
-    Crown Compass 2.0 — deterministic indexes, explainable highlights/watchlist.
+    Crown Compass 2.0 -- deterministic indexes, explainable highlights/watchlist.
 
-    TODO: replace the placeholder values with real aggregates from:
-      - admissions app (enrollment_health)
-      - ledger/billing app (financial_health)
-      - discipline/attendance app (culture_health)
-      - spiritual_life/mission metrics (mission_health)
-      - StudentRiskSnapshot HIGH-count ratio (retention_risk)
+    Wired:
+      retention_risk   -- % of aftercare students with HIGH risk snapshot
+      aftercare watchlist -- late pickup count (30d)
+
+    UUID-blocked (safe defaults until those apps surface UUID-queryable views):
+      enrollment_health, financial_health, culture_health, mission_health
+
+    school -- core.School instance
     """
     as_of = as_of or timezone.now().date()
 
-    enrollment_health = 78
-    financial_health = 74
-    culture_health = 81
-    mission_health = 86
-    retention_risk = 22
+    from aftercare.models import AftercareAttendance, AftercareEnrollment
 
-    highlights = [
-        "Re-enrollment trending +2.1% YoY",
-        "Attendance stable (rolling 30 days)",
-    ]
-    watchlist = [
-        "2 family accounts >30 days past due",
-    ]
+    # Active aftercare students (UUID FK routed)
+    enrollments = (
+        AftercareEnrollment.objects.filter(school_fk=school, is_active=True)
+        .exclude(student_fk__isnull=True)
+        .select_related("student_fk")
+        .distinct()
+    )
+    students = list({e.student_fk for e in enrollments})
+    total_active = len(students)
+
+    if total_active > 0:
+        high_risk_count = (
+            StudentRiskSnapshot.objects.filter(
+                school=school,
+                student__in=students,
+                risk_level="HIGH",
+            )
+            .values("student")
+            .distinct()
+            .count()
+        )
+        retention_risk = clamp(round(high_risk_count / total_active * 100))
+    else:
+        retention_risk = 0
+
+    window_30 = _window_start(30)
+    total_late = AftercareAttendance.objects.filter(
+        school_fk=school,
+        date__gte=window_30,
+        late_minutes__gt=0,
+    ).count()
+
+    highlights = []
+    watchlist = []
+
+    if total_active > 0:
+        highlights.append(f"{total_active} student(s) actively enrolled in aftercare")
+    if total_late > 0:
+        watchlist.append(f"{total_late} late pickup(s) in the last 30 days")
+    if retention_risk >= 20:
+        watchlist.append(f"{retention_risk}% of aftercare students currently flagged HIGH risk")
+
+    # UUID-blocked indexes -- safe defaults
+    enrollment_health = 0
+    financial_health = 0
+    culture_health = 0
+    mission_health = 0
 
     BoardExecutiveMetric.objects.update_or_create(
-        school_id=school_id,
+        school=school,
         as_of_date=as_of,
         defaults=dict(
             enrollment_health=enrollment_health,

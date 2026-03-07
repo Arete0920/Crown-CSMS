@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FinanceSetupWizard.jsx
  * ======================
  * Year-locked financial canon wizard: Tuition → Discounts → Aid → Plans → Extended Care → Review.
@@ -23,14 +23,14 @@ function StepCard({ label, children }) {
   return (
     <div
       style={{
-        background: "#fff",
-        border: "1px solid #e2e8f0",
+        background: "var(--crown-surface)",
+        border: "1px solid var(--crown-border)",
         borderRadius: 8,
         padding: 24,
         marginBottom: 24,
       }}
     >
-      <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: "#1e293b" }}>{label}</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16, color: "var(--crown-ink)" }}>{label}</h2>
       {children}
     </div>
   );
@@ -40,8 +40,8 @@ function FieldRow({ label, hint, children }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 12, marginBottom: 14, alignItems: "start" }}>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "#374151" }}>{label}</div>
-        {hint && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{hint}</div>}
+        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--crown-ink)" }}>{label}</div>
+        {hint && <div style={{ fontSize: 11, color: "var(--crown-muted)", marginTop: 2 }}>{hint}</div>}
       </div>
       <div>{children}</div>
     </div>
@@ -58,7 +58,7 @@ function Toggle({ value, onChange, disabled }) {
         disabled={disabled}
         style={{ width: 16, height: 16 }}
       />
-      <span style={{ fontSize: 13, color: disabled ? "#9ca3af" : "#111827" }}>
+      <span style={{ fontSize: 13, color: disabled ? "var(--crown-muted)" : "var(--crown-ink)" }}>
         {value ? "Enabled" : "Disabled"}
       </span>
     </label>
@@ -77,10 +77,10 @@ function NumInput({ value, onChange, disabled, min = 0, step = 1 }) {
       style={{
         width: 140,
         padding: "6px 10px",
-        border: "1px solid #d1d5db",
+        border: "1px solid var(--crown-border)",
         borderRadius: 6,
         fontSize: 13,
-        background: disabled ? "#f9fafb" : "#fff",
+        background: disabled ? "var(--crown-surface-2)" : "var(--crown-surface)",
       }}
     />
   );
@@ -94,10 +94,10 @@ function Select({ value, onChange, options, disabled }) {
       disabled={disabled}
       style={{
         padding: "6px 10px",
-        border: "1px solid #d1d5db",
+        border: "1px solid var(--crown-border)",
         borderRadius: 6,
         fontSize: 13,
-        background: disabled ? "#f9fafb" : "#fff",
+        background: disabled ? "var(--crown-surface-2)" : "var(--crown-surface)",
       }}
     >
       {options.map(({ value: v, label }) => (
@@ -114,7 +114,7 @@ function MoneyCentsInput({ value, onChange, disabled }) {
   const dollars = ((value ?? 0) / 100).toFixed(2);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span style={{ fontSize: 13, color: "#6b7280" }}>$</span>
+      <span style={{ fontSize: 13, color: "var(--crown-muted)" }}>$</span>
       <input
         type="number"
         value={dollars}
@@ -125,10 +125,10 @@ function MoneyCentsInput({ value, onChange, disabled }) {
         style={{
           width: 140,
           padding: "6px 10px",
-          border: "1px solid #d1d5db",
+          border: "1px solid var(--crown-border)",
           borderRadius: 6,
           fontSize: 13,
-          background: disabled ? "#f9fafb" : "#fff",
+          background: disabled ? "var(--crown-surface-2)" : "var(--crown-surface)",
         }}
       />
     </div>
@@ -385,10 +385,10 @@ function StepExtendedCare({ data, onChange, locked }) {
 function StepReview({ academicYear, policy, locked, onSave, onLock, saving, locking, error, success }) {
   return (
     <StepCard label={`Step 6 — Review & ${locked ? "Snapshot" : "Lock"}`}>
-      <p style={{ fontSize: 13, color: "#374151", marginBottom: 16 }}>
+      <p style={{ fontSize: 13, color: "var(--crown-ink)", marginBottom: 16 }}>
         Academic year: <strong>{academicYear}</strong>&nbsp;
         {locked && (
-          <span style={{ color: "#dc2626", fontWeight: 600 }}>
+          <span style={{ color: "var(--crown-danger)", fontWeight: 600 }}>
             ⚑ LOCKED — read only
           </span>
         )}
@@ -397,12 +397,12 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
       {error && (
         <div
           style={{
-            background: "#fef2f2",
-            border: "1px solid #fca5a5",
+            background: "var(--crown-danger-bg)",
+            border: "1px solid var(--crown-danger)",
             borderRadius: 6,
             padding: "10px 14px",
             fontSize: 13,
-            color: "#b91c1c",
+            color: "var(--crown-danger)",
             marginBottom: 14,
           }}
         >
@@ -412,12 +412,12 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
       {success && (
         <div
           style={{
-            background: "#f0fdf4",
-            border: "1px solid #86efac",
+            background: "var(--crown-ok-bg)",
+            border: "1px solid var(--crown-ok)",
             borderRadius: 6,
             padding: "10px 14px",
             fontSize: 13,
-            color: "#166534",
+            color: "var(--crown-ok)",
             marginBottom: 14,
           }}
         >
@@ -431,8 +431,8 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
             onClick={onSave}
             disabled={saving}
             style={{
-              background: "#2563eb",
-              color: "#fff",
+              background: "var(--crown-brand)",
+              color: "var(--crown-surface)",
               border: "none",
               borderRadius: 6,
               padding: "9px 20px",
@@ -448,8 +448,8 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
             onClick={onLock}
             disabled={locking}
             style={{
-              background: "#dc2626",
-              color: "#fff",
+              background: "var(--crown-danger)",
+              color: "var(--crown-surface)",
               border: "none",
               borderRadius: 6,
               padding: "9px 20px",
@@ -465,20 +465,20 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
       )}
 
       {locked && (
-        <div style={{ fontSize: 13, color: "#6b7280" }}>
+        <div style={{ fontSize: 13, color: "var(--crown-muted)" }}>
           This policy is permanently locked. Contact your system administrator to start a new academic year.
         </div>
       )}
 
       {policy && (
         <details style={{ marginTop: 20 }}>
-          <summary style={{ cursor: "pointer", fontSize: 12, color: "#6b7280" }}>
+          <summary style={{ cursor: "pointer", fontSize: 12, color: "var(--crown-muted)" }}>
             Full snapshot (JSON)
           </summary>
           <pre
             style={{
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
+              background: "var(--crown-surface-2)",
+              border: "1px solid var(--crown-border)",
               borderRadius: 6,
               padding: 14,
               fontSize: 11,
@@ -509,9 +509,9 @@ function StepNav({ current, onSelect }) {
             padding: "6px 14px",
             borderRadius: 20,
             border: "1px solid",
-            borderColor: idx === current ? "#2563eb" : "#d1d5db",
-            background: idx === current ? "#2563eb" : "#fff",
-            color: idx === current ? "#fff" : "#374151",
+            borderColor: idx === current ? "var(--crown-brand)" : "var(--crown-border)",
+            background: idx === current ? "var(--crown-brand)" : "var(--crown-surface)",
+            color: idx === current ? "var(--crown-surface)" : "var(--crown-ink)",
             fontSize: 12,
             fontWeight: idx === current ? 600 : 400,
             cursor: "pointer",
@@ -613,7 +613,7 @@ export default function FinanceSetupWizard() {
   if (loading) {
     return (
       <WizardShell title="Finance Setup Wizard">
-        <p style={{ color: "#6b7280", fontSize: 14 }}>Loading policy…</p>
+        <p style={{ color: "var(--crown-muted)", fontSize: 14 }}>Loading policy…</p>
       </WizardShell>
     );
   }
@@ -623,12 +623,12 @@ export default function FinanceSetupWizard() {
       {locked && (
         <div
           style={{
-            background: "#fef2f2",
-            border: "1px solid #fca5a5",
+            background: "var(--crown-danger-bg)",
+            border: "1px solid var(--crown-danger)",
             borderRadius: 6,
             padding: "10px 16px",
             fontSize: 13,
-            color: "#b91c1c",
+            color: "var(--crown-danger)",
             marginBottom: 20,
             fontWeight: 600,
           }}
@@ -675,9 +675,9 @@ export default function FinanceSetupWizard() {
           disabled={step === 0}
           style={{
             padding: "7px 18px",
-            border: "1px solid #d1d5db",
+            border: "1px solid var(--crown-border)",
             borderRadius: 6,
-            background: "#fff",
+            background: "var(--crown-surface)",
             fontSize: 13,
             cursor: step === 0 ? "default" : "pointer",
             opacity: step === 0 ? 0.4 : 1,
@@ -690,9 +690,9 @@ export default function FinanceSetupWizard() {
           disabled={step === STEPS.length - 1}
           style={{
             padding: "7px 18px",
-            border: "1px solid #d1d5db",
+            border: "1px solid var(--crown-border)",
             borderRadius: 6,
-            background: "#fff",
+            background: "var(--crown-surface)",
             fontSize: 13,
             cursor: step === STEPS.length - 1 ? "default" : "pointer",
             opacity: step === STEPS.length - 1 ? 0.4 : 1,

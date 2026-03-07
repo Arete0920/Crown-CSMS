@@ -1,4 +1,4 @@
-/**
+﻿/**
  * StaffOnboardingWizard.jsx
  *
  * Wizard #13 — Staff Onboarding
@@ -111,7 +111,7 @@ export default function StaffOnboardingWizard() {
   return (
     <CrownLayout title="Staff Onboarding" subtitle="Create a new staff member">
       {err && (
-        <p style={{ color: "var(--color-error, #f44336)", marginBottom: 16 }}>
+        <p style={{ color: "var(--crown-danger)", marginBottom: 16 }}>
           {err}
         </p>
       )}
@@ -149,7 +149,7 @@ export default function StaffOnboardingWizard() {
       {phase === "preview" && preview && (
         <Step title="Step 2: Preview">
           {preview.warnings?.length > 0 && (
-            <div style={{ background: "#fff3cd", padding: 10, borderRadius: 4, marginBottom: 12 }}>
+            <div style={{ background: "var(--crown-warn-bg)", padding: 10, borderRadius: 4, marginBottom: 12 }}>
               {preview.warnings.map((w, i) => <p key={i} style={{ margin: 0 }}>{w}</p>)}
             </div>
           )}
@@ -176,7 +176,7 @@ export default function StaffOnboardingWizard() {
 
       {phase === "done" && result && (
         <Step title="Done">
-          <p style={{ color: "var(--color-success, #388e3c)", fontWeight: 600 }}>
+          <p style={{ color: "var(--crown-ok)", fontWeight: 600 }}>
             {result.message || "Staff member created successfully."}
           </p>
           <dl style={{ maxWidth: 360 }}>

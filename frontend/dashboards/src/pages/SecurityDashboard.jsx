@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection   from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -61,26 +63,38 @@ async function fetchSecurityMetrics() {
   }
 }
 
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
 const SEV_COLOR = { high: 'red', medium: 'yellow', low: 'gray' };
 const DRILL_COLOR = { scheduled: 'yellow', planned: 'gray', completed: 'green' };
 
+/* â”€â”€ Security KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Visitors Logged",   value: "14",        trend: null,            trendUp: null,
+    definition: "Visitors signed in through the front-office visitor management system today.",
+    dataSource: "Security Module", dataHref: "/security" },
+  { label: "Access Events",     value: "847",       trend: null,            trendUp: null,
+    definition: "Total door access log events recorded today across all controlled entry points.",
+    dataSource: "Security Module", dataHref: "/security" },
+  { label: "Camera Status",     value: "All Online",trend: null,            trendUp: null,
+    definition: "Status of the campus security camera network — all feeds online and recording.",
+    dataSource: "Security Module", dataHref: "/security" },
+  { label: "Incidents MTD",     value: "1",         trend: "-1 vs last mo", trendUp: true,
+    definition: "Security incidents (unauthorized access, alarm triggers) logged this month.",
+    dataSource: "Security Module", dataHref: "/security" },
+];
 export default function SecurityDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -91,10 +105,10 @@ export default function SecurityDashboard() {
   }, []);
 
   const { loading, live, data } = state;
-  const alerts      = data.alerts           || DEMO.alerts;
-  const incidents   = data.incident_log     || DEMO.incident_log;
-  const drills      = data.drill_schedule   || DEMO.drill_schedule;
-  const openIssues  = data.open_issues      || DEMO.open_issues;
+  const alerts     = data.alerts         || DEMO.alerts;
+  const incidents  = data.incident_log   || DEMO.incident_log;
+  const drills     = data.drill_schedule || DEMO.drill_schedule;
+  const openIssues = data.open_issues    || DEMO.open_issues;
 
   return (
     <CrownLayout
@@ -102,107 +116,96 @@ export default function SecurityDashboard() {
       subtitle="Drills, incidents, access control, and camera monitoring"
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      {loading && <p style={{ color: '#6b7280', padding: 16 }}>Loading…</p>}
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      <CrownGrid>
-        <Col span={3}>
-          <CrownMetricCard label="Drills Completed (YTD)"  value={data.drills_completed_ytd    ?? DEMO.drills_completed_ytd} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Incidents (This Week)"    value={data.incidents_week          ?? DEMO.incidents_week} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Door Access Exceptions"  value={data.door_access_exceptions  ?? DEMO.door_access_exceptions} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Camera Uptime %"         value={`${data.camera_uptime_pct    ?? DEMO.camera_uptime_pct}%`} />
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}><CrownMetricCard label="Drills Completed (YTD)" value={data.drills_completed_ytd ?? DEMO.drills_completed_ytd} /></Col>
+          <Col span={3}><CrownMetricCard label="Incidents (This Week)" value={data.incidents_week ?? DEMO.incidents_week} /></Col>
+          <Col span={3}><CrownMetricCard label="Door Access Exceptions" value={data.door_access_exceptions ?? DEMO.door_access_exceptions} /></Col>
+          <Col span={3}><CrownMetricCard label="Camera Uptime %" value={`${data.camera_uptime_pct ?? DEMO.camera_uptime_pct}%`} /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Incident Log (redacted) ── */}
-        <Col span={8}>
-          <CrownCard title="Incident Log (Redacted)">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: '#f9fafb' }}>
-                  {['Date', 'Type', 'Location', 'Severity', 'Status'].map(h => (
-                    <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 12 }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {incidents.map((inc, i) => (
-                  <tr key={i} style={{ borderTop: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '6px 8px', color: '#6b7280', whiteSpace: 'nowrap' }}>{inc.date}</td>
-                    <td style={{ padding: '6px 8px', fontWeight: 500 }}>{inc.type}</td>
-                    <td style={{ padding: '6px 8px', color: '#374151' }}>{inc.location}</td>
-                    <td style={{ padding: '6px 8px' }}><Pill color={SEV_COLOR[inc.severity] || 'gray'}>{inc.severity}</Pill></td>
-                    <td style={{ padding: '6px 8px' }}><Pill color={inc.status === 'resolved' ? 'green' : 'yellow'}>{inc.status}</Pill></td>
+      <DashboardSection title="Incidents &amp; Drills">
+        <CrownGrid>
+          <Col span={8}>
+            <CrownCard title="Incident Log (Redacted)">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Date', 'Type', 'Location', 'Severity', 'Status'].map(h => (
+                      <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
-
-        {/* ── Drill Schedule ── */}
-        <Col span={4}>
-          <CrownCard title="Drill Schedule">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {drills.map((d, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #f3f4f6' }}>
-                  <div>
-                    <div style={{ fontWeight: 500, fontSize: 13 }}>{d.drill}</div>
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>{d.date}</div>
+                </thead>
+                <tbody>
+                  {incidents.map((inc, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)', whiteSpace: 'nowrap' }}>{inc.date}</td>
+                      <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{inc.type}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{inc.location}</td>
+                      <td style={{ padding: '6px 8px' }}><Pill color={SEV_COLOR[inc.severity] || 'gray'}>{inc.severity}</Pill></td>
+                      <td style={{ padding: '6px 8px' }}><Pill color={inc.status === 'resolved' ? 'green' : 'yellow'}>{inc.status}</Pill></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+          <Col span={4}>
+            <CrownCard title="Drill Schedule">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {drills.map((d, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--crown-border)' }}>
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: 13, color: 'var(--crown-ink)' }}>{d.drill}</div>
+                      <div style={{ fontSize: 11, color: 'var(--crown-muted)' }}>{d.date}</div>
+                    </div>
+                    <Pill color={DRILL_COLOR[d.status] || 'gray'}>{d.status}</Pill>
                   </div>
-                  <Pill color={DRILL_COLOR[d.status] || 'gray'}>{d.status}</Pill>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Open Issues ── */}
-        <Col span={6}>
-          <CrownCard title="Open Issues">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {openIssues.map((issue, i) => (
-                <div key={i} style={{
-                  padding: '8px 12px', borderRadius: 6,
-                  background: issue.severity === 'red' ? '#fee2e2' : issue.severity === 'yellow' ? '#fef9c3' : '#f3f4f6',
-                  border: `1px solid ${issue.severity === 'red' ? '#fca5a5' : issue.severity === 'yellow' ? '#fde047' : '#e5e7eb'}`,
-                }}>
-                  <span style={{ fontSize: 13, color: issue.severity === 'red' ? '#991b1b' : issue.severity === 'yellow' ? '#854d0e' : '#374151' }}>
-                    {issue.issue}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-
-        {/* ── Alerts ── */}
-        <Col span={6}>
-          <CrownCard title="Alerts &amp; Safety Checklist">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {alerts.map((a, i) => (
-                <div key={i} style={{
-                  padding: '8px 12px', borderRadius: 6,
-                  background: a.severity === 'red' ? '#fee2e2' : a.severity === 'yellow' ? '#fef9c3' : '#f3f4f6',
-                  border: `1px solid ${a.severity === 'red' ? '#fca5a5' : a.severity === 'yellow' ? '#fde047' : '#e5e7eb'}`,
-                }}>
-                  <span style={{ fontSize: 13, color: a.severity === 'red' ? '#991b1b' : a.severity === 'yellow' ? '#854d0e' : '#374151' }}>
-                    {a.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Issues &amp; Alerts">
+        <CrownGrid>
+          <Col span={6}>
+            <CrownCard title="Open Issues">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {openIssues.map((issue, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                    background: issue.severity === 'red' ? 'var(--crown-danger-bg)' : issue.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                    border: '1px solid var(--crown-border)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: issue.severity === 'red' ? 'var(--crown-danger)' : issue.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{issue.issue}</span>
+                  </div>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+          <Col span={6}>
+            <CrownCard title="Alerts &amp; Safety Checklist">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {alerts.map((a, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                    background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                    border: '1px solid var(--crown-border)' }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: a.severity === 'red' ? 'var(--crown-danger)' : a.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{a.label}</span>
+                  </div>
+                ))}
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

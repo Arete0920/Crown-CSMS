@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   Drawer,
   Box,
@@ -80,7 +80,7 @@ function TabContent({ tabIndex, classroom }) {
         ) : (
           <Stack spacing={1.5}>
             {(classroom.assignments || []).map((a) => (
-              <Box key={a.id} sx={{ p: 1.5, bgcolor: "#f5f5f5", borderRadius: 1 }}>
+              <Box key={a.id} sx={{ p: 1.5, bgcolor: "var(--crown-surface-2)", borderRadius: 1 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 1, mb: 0.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>
                     {a.title}
@@ -120,7 +120,7 @@ function TabContent({ tabIndex, classroom }) {
         ) : (
           <Stack spacing={1.5}>
             {(classroom.announcements || []).map((a) => (
-              <Box key={a.id} sx={{ p: 1.5, bgcolor: a.pinned ? "#fffacd" : "#f5f5f5", borderRadius: 1 }}>
+              <Box key={a.id} sx={{ p: 1.5, bgcolor: a.pinned ? "var(--crown-warn-bg)" : "var(--crown-surface-2)", borderRadius: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>
                     {a.pinned ? "📌 " : ""}{a.title}

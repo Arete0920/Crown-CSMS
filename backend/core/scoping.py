@@ -236,7 +236,7 @@ def _scope_students(user, qs: QuerySet, role: str) -> QuerySet:
         return _empty(qs)
 
     if role == "counselor":
-        # TODO: wire once counselor assignment model exists
+        # No counselor-to-student assignment model exists yet. Deny until wired.
         return _empty(qs)
 
     if role == "board":
@@ -296,18 +296,29 @@ def _scope_discipline(user, qs: QuerySet, role: str) -> QuerySet:
     """
     Row scoping for discipline incident querysets.
 
-    No discipline model defined yet. All non-privileged roles return empty.
-    TODO: wire once discipline.Incident model exists.
+    DisciplineIncident.school → core.School (UUID FK)
+    DisciplineIncident.student → core.Student (UUID FK)
+
+    Teacher path: DisciplineIncident.student → core.Student
+        Core Student has no enrollment FK — incidents are scoped to the school only
+        for teachers, not per-student-roster (teacher enrollment lives in academics.Enrollment
+        which references households.Student, a separate model from core.Student).
+        Safe default: teachers see all incidents school-wide (not per-student) for now.
+
+    Counselor path: no counselor assignment model exists yet.
     """
     if role in {"head", "director"}:
         return qs
 
     if role == "counselor":
-        # TODO: filter to assigned students once assignment model exists
+        # No counselor-to-student assignment model exists yet.
+        # When CounselorAssignment model is added, filter here by assigned student list.
         return _empty(qs)
 
     if role == "teacher":
-        # TODO: filter to incidents for teacher's students/sections
+        # No direct FK from DisciplineIncident.student (core.Student) to academics.Enrollment.student
+        # (households.Student) — they are different Student models.
+        # School-wide read is not appropriate; deny until teacher-student scoping is unified.
         return _empty(qs)
 
     if role in {"parent", "student"}:
@@ -320,13 +331,13 @@ def _scope_formation(user, qs: QuerySet, role: str) -> QuerySet:
     """
     Row scoping for Barnabas / Formation domain querysets.
 
-    No formation model defined yet.
-    TODO: wire once formation model exists.
+    No formation model defined yet. All non-privileged roles return empty until
+    the formation model is implemented and its FK relationships are confirmed.
     """
     if role in {"head", "director", "spiritual_life"}:
         return qs
 
-    # counselor / parent / student / teacher — all deny until wired
+    # counselor / parent / student / teacher — all deny until formation model exists
     return _empty(qs)
 
 
@@ -334,18 +345,18 @@ def _scope_referrals(user, qs: QuerySet, role: str) -> QuerySet:
     """
     Row scoping for Operation Andrew referral querysets.
 
-    No referral model defined yet.
-    TODO: wire once admissions.Referral model exists.
+    No referral model defined yet. All non-privileged roles return empty until
+    the admissions.Referral model is implemented with a submitter FK.
     """
     if role in {"head", "director", "admissions"}:
         return qs
 
     if role == "parent":
-        # TODO: filter to own referrals once model has submitter FK
+        # No referral model with submitter FK yet — deny until admissions.Referral is wired.
         return _empty(qs)
 
     if role == "finance":
-        # TODO: referral reward records only
+        # No referral reward model yet — deny until reward records have a FK.
         return _empty(qs)
 
     return _empty(qs)

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
+import DashboardSection   from '../components/layout/DashboardSection.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 /* ── Auth helpers ─────────────────────────────────────────────────────── */
 function apiBase() {
@@ -58,20 +60,18 @@ async function fetchMarketingMetrics() {
 }
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
-const PILL_COLORS = {
-  red:    { background: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-  yellow: { background: '#fef9c3', color: '#854d0e', border: '#fde047' },
-  green:  { background: '#dcfce7', color: '#166534', border: '#86efac' },
-  gray:   { background: '#f3f4f6', color: '#374151', border: '#d1d5db' },
-};
 function Pill({ color = 'gray', children }) {
-  const s = PILL_COLORS[color] || PILL_COLORS.gray;
+  const map = {
+    red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
+    yellow: { bg: 'var(--crown-warn-bg)',   fg: 'var(--crown-warn)'    },
+    green:  { bg: 'var(--crown-ok-bg)',     fg: 'var(--crown-ok)'      },
+    blue:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-brand)'   },
+    gray:   { bg: 'var(--crown-surface-2)', fg: 'var(--crown-muted)'   },
+  };
+  const v = map[color] || map.gray;
   return (
-    <span style={{
-      display: 'inline-block', padding: '1px 8px', fontSize: 11, fontWeight: 700,
-      borderRadius: 999, border: `1px solid ${s.border}`,
-      background: s.background, color: s.color, letterSpacing: 0.2,
-    }}>{children}</span>
+    <span style={{ display: 'inline-block', padding: '2px 9px', fontSize: 11, fontWeight: 700,
+      borderRadius: 999, background: v.bg, color: v.fg }}>{children}</span>
   );
 }
 
@@ -79,19 +79,34 @@ function FunnelStep({ label, value, isLast }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div style={{
-        flex: 1, background: '#f8fafc', border: '1px solid #e5e7eb',
+        flex: 1, background: 'var(--crown-surface-2)', border: '1px solid var(--crown-border)',
         borderRadius: 6, padding: '8px 12px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
-        <span style={{ fontSize: 12, color: '#6b7280' }}>{label}</span>
-        <span style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{value}</span>
+        <span style={{ fontSize: 12, color: 'var(--crown-muted)' }}>{label}</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--crown-ink)' }}>{value}</span>
       </div>
-      {!isLast && <span style={{ fontSize: 16, color: '#9ca3af', flexShrink: 0 }}>→</span>}
+      {!isLast && <span style={{ fontSize: 16, color: 'var(--crown-muted)', flexShrink: 0 }}>→</span>}
     </div>
   );
 }
 
 /* ── Main component ───────────────────────────────────────────────────── */
+/* â”€â”€ Marketing KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Inquiries MTD",     value: "28",    trend: "+6 vs last mo",  trendUp: true,
+    definition: "Prospective families who submitted an inquiry form this month.",
+    dataSource: "Admissions / CRM", dataHref: "/admissions" },
+  { label: "Website Visits",    value: "1,842", trend: "+14% vs last mo",trendUp: true,
+    definition: "Total unique visitors to the school website this calendar month.",
+    dataSource: "Analytics", dataHref: "/marketing" },
+  { label: "Email Open Rate",   value: "42%",   trend: "+3% vs last mo", trendUp: true,
+    definition: "Average open rate across all marketing emails sent this month.",
+    dataSource: "Communications Module", dataHref: "/communications" },
+  { label: "Social Followers",  value: "2,140", trend: "+32 this mo",    trendUp: true,
+    definition: "Total combined followers across all official school social media accounts.",
+    dataSource: "Marketing Module", dataHref: "/marketing" },
+];
 export default function MarketingDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: DEMO });
 
@@ -112,99 +127,98 @@ export default function MarketingDashboard() {
       subtitle="Enrollment funnel, campaign performance, and lead pipeline"
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
-      {loading && <p style={{ color: '#6b7280', padding: 16 }}>Loading…</p>}
+      <KpiStrip cards={ADMIN_KPI} />
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
 
-      {/* ── KPI row ── */}
-      <CrownGrid>
-        <Col span={3}>
-          <CrownMetricCard label="Inquiries YTD" value={data.inquiries_ytd ?? DEMO.inquiries_ytd} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Tours Scheduled" value={data.tours_scheduled ?? DEMO.tours_scheduled} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Applications" value={data.applications ?? DEMO.applications} />
-        </Col>
-        <Col span={3}>
-          <CrownMetricCard label="Enrolled" value={data.enrolled ?? DEMO.enrolled} />
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Overview">
+        <CrownGrid>
+          <Col span={3}><CrownMetricCard label="Inquiries YTD" value={data.inquiries_ytd ?? DEMO.inquiries_ytd} /></Col>
+          <Col span={3}><CrownMetricCard label="Tours Scheduled" value={data.tours_scheduled ?? DEMO.tours_scheduled} /></Col>
+          <Col span={3}><CrownMetricCard label="Applications" value={data.applications ?? DEMO.applications} /></Col>
+          <Col span={3}><CrownMetricCard label="Enrolled" value={data.enrolled ?? DEMO.enrolled} /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      <CrownGrid style={{ marginTop: 16 }}>
-        {/* ── Inquiry Funnel ── */}
-        <Col span={6}>
-          <CrownCard title="Enrollment Funnel">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <FunnelStep label="Inquiries"  value={data.inquiries_ytd  ?? DEMO.inquiries_ytd}  isLast={false} />
-              <FunnelStep label="Tours"      value={data.tours_scheduled ?? DEMO.tours_scheduled} isLast={false} />
-              <FunnelStep label="Applied"    value={data.applications   ?? DEMO.applications}   isLast={false} />
-              <FunnelStep label="Enrolled"   value={data.enrolled       ?? DEMO.enrolled}       isLast />
-            </div>
-          </CrownCard>
-        </Col>
-
-        {/* ── Source Mix ── */}
-        <Col span={6}>
-          <CrownCard title="Inquiry Source Mix">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {sources.map((s) => (
-                <div key={s.source}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 2 }}>
-                    <span style={{ color: '#6b7280' }}>{s.source}</span>
-                    <span><strong>{s.count}</strong> <span style={{ color: '#9ca3af' }}>({s.pct}%)</span></span>
+      <DashboardSection title="Enrollment Funnel">
+        <CrownGrid>
+          <Col span={6}>
+            <CrownCard title="Enrollment Funnel">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <FunnelStep label="Inquiries" value={data.inquiries_ytd ?? DEMO.inquiries_ytd} isLast={false} />
+                <FunnelStep label="Tours" value={data.tours_scheduled ?? DEMO.tours_scheduled} isLast={false} />
+                <FunnelStep label="Applied" value={data.applications ?? DEMO.applications} isLast={false} />
+                <FunnelStep label="Enrolled" value={data.enrolled ?? DEMO.enrolled} isLast />
+              </div>
+            </CrownCard>
+          </Col>
+          <Col span={6}>
+            <CrownCard title="Inquiry Source Mix">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {sources.map((s) => (
+                  <div key={s.source}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 2 }}>
+                      <span style={{ color: 'var(--crown-muted)' }}>{s.source}</span>
+                      <span><strong>{s.count}</strong> <span style={{ color: 'var(--crown-muted)' }}>({s.pct}%)</span></span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 4, background: 'var(--crown-surface-2)', overflow: 'hidden', border: '1px solid var(--crown-border)' }}>
+                      <div style={{ width: `${s.pct}%`, height: '100%', background: 'var(--crown-brand)', borderRadius: 4 }} />
+                    </div>
                   </div>
-                  <div style={{ height: 6, borderRadius: 4, background: '#f3f4f6', overflow: 'hidden' }}>
-                    <div style={{ width: `${s.pct}%`, height: '100%', background: '#6366f1', borderRadius: 4 }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CrownCard>
-        </Col>
-
-        {/* ── Campaigns ── */}
-        <Col span={6}>
-          <CrownCard title="Campaign Performance">
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-              <thead>
-                <tr style={{ color: '#6b7280', textAlign: 'left', borderBottom: '1px solid #f3f4f6' }}>
-                  <th style={{ padding: '4px 0' }}>Campaign</th>
-                  <th style={{ padding: '4px 8px', textAlign: 'center' }}>Leads</th>
-                  <th style={{ padding: '4px 0', textAlign: 'center' }}>Conv.</th>
-                  <th style={{ padding: '4px 0', textAlign: 'right' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {campaigns.map((c) => (
-                  <tr key={c.name} style={{ borderBottom: '1px solid #f9fafb' }}>
-                    <td style={{ padding: '6px 0', color: '#111827' }}>{c.name}</td>
-                    <td style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 700 }}>{c.leads}</td>
-                    <td style={{ padding: '6px 0', textAlign: 'center', fontWeight: 700, color: '#22c55e' }}>{c.conversions}</td>
-                    <td style={{ padding: '6px 0', textAlign: 'right' }}>
-                      <Pill color={c.status === 'active' ? 'green' : 'gray'}>{c.status}</Pill>
-                    </td>
-                  </tr>
                 ))}
-              </tbody>
-            </table>
-          </CrownCard>
-        </Col>
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
 
-        {/* ── Alerts ── */}
-        <Col span={6}>
-          <CrownCard title="Alerts &amp; Stalled Leads">
-            {alerts.length === 0
-              ? <p style={{ fontSize: 13, color: '#22c55e' }}>No stalled leads — pipeline healthy.</p>
-              : alerts.map((a, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <Pill color={a.severity}>{a.severity.toUpperCase()}</Pill>
-                    <span style={{ fontSize: 13, color: '#374151' }}>{a.label}</span>
-                  </div>
-                ))
-            }
-          </CrownCard>
-        </Col>
-      </CrownGrid>
+      <DashboardSection title="Campaigns &amp; Alerts">
+        <CrownGrid>
+          <Col span={6}>
+            <CrownCard title="Campaign Performance">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--crown-surface-2)' }}>
+                    <th style={{ padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>Campaign</th>
+                    <th style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>Leads</th>
+                    <th style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>Conv.</th>
+                    <th style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((c) => (
+                    <tr key={c.name}>
+                      <td style={{ padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' }}>{c.name}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' }}>{c.leads}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 700, color: 'var(--crown-ok)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' }}>{c.conversions}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontSize: 13, borderBottom: '1px solid var(--crown-border)' }}>
+                        <Pill color={c.status === 'active' ? 'green' : 'gray'}>{c.status}</Pill>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CrownCard>
+          </Col>
+          <Col span={6}>
+            <CrownCard title="Alerts &amp; Stalled Leads">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {alerts.length === 0
+                  ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No stalled leads — pipeline healthy.</p>
+                  : alerts.map((a, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
+                        background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',
+                        border: '1px solid var(--crown-border)' }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                          background: a.severity === 'red' ? 'var(--crown-danger)' : a.severity === 'yellow' ? 'var(--crown-warn)' : 'var(--crown-muted)' }} />
+                        <span style={{ fontSize: 13, color: 'var(--crown-ink)' }}>{a.label}</span>
+                      </div>
+                    ))
+                }
+              </div>
+            </CrownCard>
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 
 import { downloadCsv } from "../utils/downloadCsv.js";
 import { authenticatedFetch } from "../utils/authClient.js";
@@ -7,10 +7,11 @@ import CrownCard from "../components/crown/CrownCard.jsx";
 import CrownMetricCard from "../components/crown/CrownMetricCard.jsx";
 import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner.jsx";
+import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
 
 /*
-  Crown2026 – Billing Dashboard (0101 UI)
-  - Export Center for 0093–0096
+  Crown2026 � Billing Dashboard (0101 UI)
+  - Export Center for 0093�0096
   - Manual Record Payment (0102)
   - Open invoice lookup (0102)
 
@@ -26,7 +27,7 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
 // Dev-mode regression guard: catch missing API_BASE before it breaks exports
 if (import.meta.env.DEV && !API_BASE) {
-  console.warn("⚠️ BillingDashboard: API_BASE is empty. Exports will fail. Set VITE_API_BASE_URL in .env.local");
+  console.warn("?? BillingDashboard: API_BASE is empty. Exports will fail. Set VITE_API_BASE_URL in .env.local");
 }
 
 function formatMoney(x) {
@@ -36,6 +37,21 @@ function formatMoney(x) {
   return n.toFixed(2);
 }
 
+/* â”€â”€ Billing / Accounts-Receivable KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const ADMIN_KPI = [
+  { label: "Collection Rate",   value: "93.1%", trend: "+6.0% vs last yr", trendUp: true,
+    definition: "Percentage of total billed tuition and fees collected as of today.",
+    dataSource: "Billing Module", dataHref: "/billing" },
+  { label: "Outstanding AR",    value: "$42,880", trend: null,             trendUp: null,
+    definition: "Total unpaid balances across all households with open invoices.",
+    dataSource: "Billing Module", dataHref: "/billing" },
+  { label: "Invoices Overdue",  value: "23",    trend: "+3 vs last wk",   trendUp: false,
+    definition: "Invoices past their due date that have not been paid or placed on a plan.",
+    dataSource: "Billing Module", dataHref: "/billing" },
+  { label: "Payment Plans",     value: "18",    trend: null,               trendUp: null,
+    definition: "Number of households currently enrolled in an active installment payment plan.",
+    dataSource: "Billing Module", dataHref: "/billing" },
+];
 export function BillingDashboard() {
   // MVP selector: Household ID typed in (UUID).
   const [householdId, setHouseholdId] = useState("");
@@ -192,7 +208,7 @@ export function BillingDashboard() {
   }
 
   function formatApiError(status, bodyText, bodyJson) {
-    if (status === 403) return "You don’t have permission to record payments (finance role required).";
+    if (status === 403) return "You don�t have permission to record payments (finance role required).";
     if (status === 409) return "Duplicate reference: this payment reference was already recorded.";
     if (status === 400) {
       const detail =
@@ -285,7 +301,7 @@ export function BillingDashboard() {
       };
       invoiceIdForOptimistic = singleInvoiceId;
     } else {
-      // Multi-allocation: one payment → many ledger charges.
+      // Multi-allocation: one payment ? many ledger charges.
       const allocations = selectedChargeIds.map((chargeId) => {
         const dollars = (allocs && allocs[chargeId] != null ? String(allocs[chargeId]) : "").trim();
         const cents = dollars ? dollarsToCents(dollars) : 0;
@@ -373,6 +389,7 @@ export function BillingDashboard() {
 
   return (
     <CrownLayout title="Billing" subtitle="Invoices, payments, and export center">
+      <KpiStrip cards={ADMIN_KPI} />
       {/* CROWN_DASH_GRID_NORMALIZED */}
       <CrownGrid>
         <Col span={3}><CrownMetricCard label="Status" value="Healthy" hint="All systems nominal" /></Col>
@@ -414,7 +431,7 @@ export function BillingDashboard() {
       {openError ? <ErrorBanner title="Open invoices error" message={openError} /> : null}
 
       {/* Billing Ops */}
-      <div style={{ border: "1px solid #ddd", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+      <div style={{ border: "1px solid var(--crown-border)", borderRadius: 10, padding: 14, marginBottom: 16 }}>
         <h3 style={{ margin: "0 0 10px" }}>Billing Ops</h3>
 
         {/* Exports */}
@@ -475,7 +492,7 @@ export function BillingDashboard() {
         ) : (
           <table style={{ borderCollapse: "collapse", width: "100%" }}>
             <thead>
-              <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
+              <tr style={{ textAlign: "left", borderBottom: "1px solid var(--crown-border)" }}>
                 <th style={{ padding: 8 }}>Apply</th>
                 <th style={{ padding: 8 }}>Due</th>
                 <th style={{ padding: 8 }}>Invoice</th>
@@ -491,7 +508,7 @@ export function BillingDashboard() {
                 const cid = it.ledger_charge_id;
                 const checked = cid && Object.prototype.hasOwnProperty.call(allocs, cid);
                 return (
-                  <tr key={`${it.invoice_id}-${cid}`} style={{ borderBottom: "1px solid #eee" }}>
+                  <tr key={`${it.invoice_id}-${cid}`} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                     <td style={{ padding: 8 }}>
                       {cid ? (
                         <input
@@ -505,7 +522,7 @@ export function BillingDashboard() {
                     </td>
                     <td style={{ padding: 8 }}>{it.due_on}</td>
                     <td style={{ padding: 8 }}>{it.invoice_id}</td>
-                    <td style={{ padding: 8 }}>{it.charge?.description ? `${cid} — ${it.charge.description}` : cid || "-"}</td>
+                    <td style={{ padding: 8 }}>{it.charge?.description ? `${cid} � ${it.charge.description}` : cid || "-"}</td>
                     <td style={{ padding: 8 }}>{formatMoney(it.total_amount)}</td>
                     <td style={{ padding: 8 }}>{formatMoney(it.paid_amount)}</td>
                     <td style={{ padding: 8 }}>{formatMoney(it.balance)}</td>
@@ -530,7 +547,7 @@ export function BillingDashboard() {
       </div>
 
       {/* Record payment */}
-      <div style={{ border: "1px solid #ddd", borderRadius: 10, padding: 14 }}>
+      <div style={{ border: "1px solid var(--crown-border)", borderRadius: 10, padding: 14 }}>
         <h3 style={{ margin: "0 0 10px" }}>Record Payment</h3>
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
@@ -561,7 +578,7 @@ export function BillingDashboard() {
         </div>
 
         {payError ? <ErrorBanner title="Payment error" message={payError} /> : null}
-        {payOk ? <div style={{ color: "#0b6b0b", marginBottom: 8 }}>{payOk}</div> : null}
+        {payOk ? <div style={{ color: "var(--crown-ok)", marginBottom: 8 }}>{payOk}</div> : null}
 
         <button className="crown-btn crown-btn-primary" onClick={recordPayment} disabled={payBusy}>
           {payBusy ? "Posting..." : "Post Payment"}

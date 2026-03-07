@@ -72,6 +72,22 @@ class AftercareEnrollment(models.Model):
     school_id = models.IntegerField(db_index=True)
     student_id = models.IntegerField(db_index=True)
 
+    # UUID FKs — nullable for backward compat; populated by seed_demo and new writes.
+    school_fk = models.ForeignKey(
+        "core.School",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="aftercare_enrollments",
+        db_column="school_uuid_id",
+    )
+    student_fk = models.ForeignKey(
+        "households.Student",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="aftercare_enrollments",
+        db_column="student_uuid_id",
+    )
+
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
 
@@ -122,6 +138,22 @@ class AftercareAttendance(models.Model):
     """
     school_id = models.IntegerField(db_index=True)
     student_id = models.IntegerField(db_index=True)
+
+    # UUID FKs — nullable for backward compat; populated by seed_demo and new writes.
+    school_fk = models.ForeignKey(
+        "core.School",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="aftercare_attendance",
+        db_column="school_uuid_id",
+    )
+    student_fk = models.ForeignKey(
+        "households.Student",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="aftercare_attendance",
+        db_column="student_uuid_id",
+    )
     date = models.DateField(db_index=True)
 
     checkin_time = models.DateTimeField()
@@ -152,6 +184,22 @@ class AftercareIncident(models.Model):
     """
     school_id = models.IntegerField(db_index=True)
     student_id = models.IntegerField(db_index=True)
+
+    # UUID FKs — nullable for backward compat; populated by seed_demo and new writes.
+    school_fk = models.ForeignKey(
+        "core.School",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="aftercare_incidents",
+        db_column="school_uuid_id",
+    )
+    student_fk = models.ForeignKey(
+        "households.Student",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="aftercare_incidents",
+        db_column="student_uuid_id",
+    )
 
     attendance_id = models.IntegerField(null=True, blank=True)
     occurred_at = models.DateTimeField(default=timezone.now)

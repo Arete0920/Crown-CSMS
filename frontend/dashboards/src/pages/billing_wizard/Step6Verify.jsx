@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { verifyBillingSetup } from "../../api/billing_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -35,7 +35,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
 
         {result && !loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ padding: "12px 16px", background: "var(--crown-success-bg, #f0faf0)", border: "1px solid var(--crown-success-border, #b7dfb7)", borderRadius: 6, fontSize: 13, fontWeight: 600, color: "var(--crown-success, #2d7a2d)" }}>
+            <div style={{ padding: "12px 16px", background: "var(--crown-ok-bg)", border: "1px solid var(--crown-ok)", borderRadius: 6, fontSize: 13, fontWeight: 600, color: "var(--crown-ok)" }}>
               Billing setup verified. Status: {result.status}
             </div>
 
@@ -51,7 +51,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
                   </thead>
                   <tbody>
                     {plans.map((p, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+                      <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                         <td style={{ padding: "6px 14px" }}>{p.name}</td>
                         <td style={{ padding: "6px 14px", fontFamily: "monospace", fontSize: 11 }}>{p.plan_id}</td>
                       </tr>
@@ -74,7 +74,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
                   </thead>
                   <tbody>
                     {fees.map((f, fi) => (
-                      <tr key={fi} style={{ borderBottom: "1px solid var(--crown-border, #eee)" }}>
+                      <tr key={fi} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                         <td style={{ padding: "6px 14px" }}>{f.name}</td>
                         <td style={{ padding: "6px 14px" }}>{f.fee_type}</td>
                         <td style={{ padding: "6px 14px", textAlign: "right" }}>${parseFloat(f.amount).toFixed(2)}</td>
