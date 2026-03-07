@@ -10,7 +10,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.models import AcademicYear
+from core.models import AcademicYear, School
+from crown_api.tenant import resolve_tenant_school_id
 from .models import Application, Applicant, ApplicationEvent
 
 
@@ -138,14 +139,62 @@ def _decision_from_payload(payload: dict) -> str | None:
     return None
 
 
+def _resolve_school(request):
+    """
+    Resolve tenant school for admissions endpoints.
+
+    Normal path uses request.school populated by TenantHeaderRequiredMiddleware.
+    In some test/dev contexts tenant enforcement is disabled, so we fall back to
+    the shared resolver to preserve header-based contracts.
+    """
+    school = getattr(request, "school", None)
+    if school is not None:
+        return school, None
+
+    resolved = resolve_tenant_school_id(request)
+    school_id = resolved.school_id
+
+    if resolved.source == "header_invalid":
+        return None, Response(
+            {
+                "detail": "Invalid X-School-Id (must be UUID).",
+                "code": "invalid_tenant_header",
+            },
+            status=400,
+        )
+
+    if not school_id:
+        return None, Response(
+            {
+                "detail": "Missing required header: X-School-Id.",
+                "code": "missing_tenant",
+            },
+            status=400,
+        )
+
+    school = School.objects.filter(id=school_id).only("id", "name").first()
+    if school is None:
+        return None, Response(
+            {
+                "detail": "Unknown X-School-Id.",
+                "code": "invalid_tenant",
+            },
+            status=404,
+        )
+
+    request.school = school
+    request.school_id = str(school.id)
+    return school, None
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_summary(request):
     """GET /api/v1/admissions/summary/ - Pipeline KPIs for admissions director."""
     from core.permissions import user_has_permission
-    school = getattr(request, "school", None)
-    if school is None:
-        return Response({"detail": "Tenant not resolved."}, status=400)
+    school, tenant_error = _resolve_school(request)
+    if tenant_error is not None:
+        return tenant_error
     if not user_has_permission(request.user, "admissions.view", school=school):
         return Response({"detail": "Permission denied."}, status=403)
     school_id = school.pk
@@ -286,9 +335,9 @@ def admissions_summary(request):
 def admissions_drilldown(request):
     """GET /api/v1/admissions/drilldown/ - Paginated lead details."""
     from core.permissions import user_has_permission
-    school = getattr(request, "school", None)
-    if school is None:
-        return Response({"detail": "Tenant not resolved."}, status=400)
+    school, tenant_error = _resolve_school(request)
+    if tenant_error is not None:
+        return tenant_error
     if not user_has_permission(request.user, "admissions.view", school=school):
         return Response({"detail": "Permission denied."}, status=403)
     school_id = school.pk

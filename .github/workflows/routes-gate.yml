@@ -3,11 +3,6 @@
 
 on:
   pull_request:
-    paths:
-      - "frontend/dashboards/src/routes/router.jsx"
-      - "frontend/dashboards/src/pages/**"
-      - "tools/verify_routes_gate.ps1"
-      - ".github/workflows/routes-gate.yml"
   push:
     branches: [ "main" ]
     paths:

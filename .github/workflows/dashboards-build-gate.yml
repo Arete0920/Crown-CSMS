@@ -3,9 +3,6 @@
 
 on:
   pull_request:
-    paths:
-      - "frontend/dashboards/**"
-      - ".github/workflows/dashboards-build-gate.yml"
   push:
     branches: [ "main" ]
     paths:
