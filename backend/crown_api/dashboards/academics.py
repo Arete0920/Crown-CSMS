@@ -16,7 +16,7 @@ from households.models import Student
 class EnrollmentSnapshotView(APIView):
     """
     GET /api/v1/dashboards/academics/enrollment/
-    
+
     Returns:
     {
         "school_id": "<uuid>",
@@ -27,19 +27,19 @@ class EnrollmentSnapshotView(APIView):
             {"term": "2026-FALL", "count": 23}
         ]
     }
-    
+
     Tenant Isolation:
     - Requires X-School-Id header (or user.school_id)
     - Missing tenant → 400 MissingSchoolContext
     - Returns only data for the specified school
-    
+
     Note: Attendance tracking will be added in future iteration.
     This endpoint provides enrollment summary as Day 2 placeholder.
     """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        school_id = get_dashboard_school_id(request, required=True)
+        school_id = get_dashboard_school_id(request, required=True, require_header=True)
 
         # Count active students
         student_count = Student.objects.filter(school_id=school_id).count()
