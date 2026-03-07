@@ -18,7 +18,8 @@ on:
       - ".github/workflows/ui-shell-gate.yml"
 
 jobs:
-  gate:
+  ui-shell-gate:
+    name: ui-shell-gate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

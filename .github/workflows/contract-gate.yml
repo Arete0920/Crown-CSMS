@@ -4,17 +4,24 @@ on:
   pull_request:
     paths:
       - "backend/**"
+      - "frontend/dashboards/src/**"
+      - "frontend/dashboards/scripts/**"
       - "tools/verify_contract_gate.py"
+      - "tools/strip_bom.py"
       - ".github/workflows/contract-gate.yml"
   push:
     branches: [ "main" ]
     paths:
       - "backend/**"
+      - "frontend/dashboards/src/**"
+      - "frontend/dashboards/scripts/**"
       - "tools/verify_contract_gate.py"
+      - "tools/strip_bom.py"
       - ".github/workflows/contract-gate.yml"
 
 jobs:
-  gate:
+  contract-gate:
+    name: contract-gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,3 +50,42 @@ jobs:
           DATABASE_URL: sqlite:///./ci.sqlite3
         run: |
           python tools/verify_contract_gate.py
+
+  source-contracts:
+    name: source-contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install frontend deps
+        working-directory: frontend/dashboards
+        run: npm ci
+
+      - name: Use Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Contract - no UTF-8 BOM
+        run: node frontend/dashboards/scripts/contract_no_bom.js
+
+      - name: Contract - no browser storage auth reads
+        working-directory: frontend/dashboards
+        run: node scripts/contract_no_storage.js
+
+      - name: Contract - no hardcoded DEMO_MODE
+        run: python backend/scripts/contract_demo_mode.py
+
+      - name: Verify no BOM via git grep
+        run: |
+          if git grep -Pl $'\\xef\\xbb\\xbf' -- 'frontend/dashboards/src' 'backend' 2>/dev/null | grep -q .; then
+            echo "FAIL: git grep found BOM bytes"; exit 1
+          fi
+          echo "OK: git grep BOM check clean"

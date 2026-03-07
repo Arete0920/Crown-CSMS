@@ -14,7 +14,8 @@ on:
       - ".github/workflows/pytest-gate.yml"
 
 jobs:
-  gate:
+  pytest-gate:
+    name: pytest-gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -14,7 +14,8 @@ on:
       - ".github/workflows/backend-gate.yml"
 
 jobs:
-  gate:
+  backend-gate:
+    name: backend-gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

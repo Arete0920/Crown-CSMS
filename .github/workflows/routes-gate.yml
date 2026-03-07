@@ -16,7 +16,8 @@ on:
       - ".github/workflows/routes-gate.yml"
 
 jobs:
-  gate:
+  routes-gate:
+    name: routes-gate
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
