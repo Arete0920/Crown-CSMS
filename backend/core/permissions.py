@@ -1,5 +1,4 @@
-# backend/core/permissions.py
-<<<<<<< HEAD
+﻿# backend/core/permissions.py
 #
 # Crown Central Permission Engine — Layer 1 of the institutional architecture.
 #
@@ -20,6 +19,7 @@
 from functools import wraps
 
 from django.http import JsonResponse
+from rest_framework.permissions import BasePermission
 
 
 def user_has_permission(user, permission_code, school=None):
@@ -87,19 +87,16 @@ class CrownModulePermission:
 
     For write-scoped checks (list vs mutate):
         permission_classes = [CrownModulePermission("hr.view", write_code="hr.edit")]
-
     - Authenticated + school context required (middleware enforces X-School-Id).
     - GET/HEAD/OPTIONS -> read_code; POST/PUT/PATCH/DELETE -> write_code (falls
       back to read_code if write_code is not supplied).
     """
 
     def __new__(cls, read_code: str, write_code: str | None = None):
-        from rest_framework.permissions import BasePermission as _Base
-
         _read_code = read_code
         _write_code = write_code or read_code
 
-        class _CrownPerm(_Base):
+        class _CrownPerm(BasePermission):
             def has_permission(self, request, view):
                 if not request.user or not request.user.is_authenticated:
                     return False
@@ -111,12 +108,6 @@ class CrownModulePermission:
 
         _CrownPerm.__name__ = f"CrownPerm[{read_code}]"
         return _CrownPerm
-
-=======
-"""
-Centralized role-gate permissions for DRF ViewSets.
-"""
-from rest_framework.permissions import BasePermission
 
 
 class RoleRequired(BasePermission):
@@ -138,4 +129,3 @@ class RoleRequired(BasePermission):
             return True
         user_role = getattr(request.user, "role", None)
         return user_role in roles
->>>>>>> 84a7e585 (harden(core): tenant-scoped viewsets + centralized role gates + isolation proof)
