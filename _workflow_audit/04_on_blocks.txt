@@ -1,0 +1,592 @@
+============================================================
+FILE: backend-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "backend/**"
+      - "tools/verify_backend_gate.py"
+      - ".github/workflows/backend-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - "tools/verify_backend_gate.py"
+      - ".github/workflows/backend-gate.yml"
+
+============================================================
+FILE: ci.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+============================================================
+FILE: ci-meta-gate-authoring.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "tools/ci/**"
+
+============================================================
+FILE: contract-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/dashboards/src/**"
+      - "frontend/dashboards/scripts/**"
+      - "tools/verify_contract_gate.py"
+      - "tools/strip_bom.py"
+      - ".github/workflows/contract-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - "frontend/dashboards/src/**"
+      - "frontend/dashboards/scripts/**"
+      - "tools/verify_contract_gate.py"
+      - "tools/strip_bom.py"
+      - ".github/workflows/contract-gate.yml"
+
+============================================================
+FILE: crown-magus0-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/dashboards/**"
+      - "tools/**"
+      - "requirements.txt"
+      - ".github/workflows/crown-magus0-gate.yml"
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Run full audit (including pip-audit, slower checks)"
+        type: boolean
+        default: false
+
+============================================================
+FILE: dashboards-build-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "frontend/dashboards/**"
+      - ".github/workflows/dashboards-build-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "frontend/dashboards/**"
+      - ".github/workflows/dashboards-build-gate.yml"
+
+============================================================
+FILE: demo-contract-freeze.yml
+------------------------------------------------------------
+on:
+push:
+    branches:
+      - "rc/**"
+  pull_request:
+    branches:
+      - "rc/**"
+    paths:
+      - "tools/rc_endpoint_probes.json"
+      - "tools/demo_contract_t1.lock"
+      - "tools/verify_demo_contract_freeze.py"
+      - ".github/workflows/demo-contract-freeze.yml"
+
+============================================================
+FILE: demo-reset.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+    inputs:
+      school_id:
+        description: "School UUID to reseed"
+        required: true
+        type: string
+
+============================================================
+FILE: demo-reset-smoke.yml
+------------------------------------------------------------
+on:
+workflow_dispatch: {}
+
+============================================================
+FILE: demo-surface-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+============================================================
+FILE: deploy-dashboard.yml
+------------------------------------------------------------
+on:
+# Phase 1 freeze: manual trigger only during CI stabilization.
+  workflow_dispatch:
+
+============================================================
+FILE: deploy-dev.yml
+------------------------------------------------------------
+on:
+# Phase 1 freeze: manual trigger only during CI stabilization.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch/SHA/tag). Leave blank for default branch."
+        required: false
+        default: ""
+
+============================================================
+FILE: deploy-integrity-proof.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+    inputs:
+      env:
+        description: "Environment to verify (dev|prod)"
+        required: true
+        default: "prod"
+      expected_tag:
+        description: "Git tag that should match deployed build SHA"
+        required: true
+      health_url:
+        description: "Health endpoint URL (e.g., https://.../health)"
+        required: true
+      expected_sha:
+        description: "Optional explicit SHA (leave blank usually)"
+        required: false
+        default: ""
+
+============================================================
+FILE: deploy-prod.yml
+------------------------------------------------------------
+on:
+# Phase 1 freeze: manual trigger only during CI stabilization.
+  workflow_dispatch:
+
+============================================================
+FILE: deploy-prod-dispatch.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+    inputs:
+      deploy_tag:
+        description: "Git tag to deploy"
+        required: true
+        type: string
+  repository_dispatch:
+    types: [prod_deploy]
+
+============================================================
+FILE: dev-smoke.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+    inputs:
+      skip_seed:
+        description: "Skip seeding (recommended for normal smoke)"
+        required: true
+        default: "true"
+      max_attempts:
+        description: "Health check attempts"
+        required: true
+        default: "24"
+      sleep_seconds:
+        description: "Seconds between attempts"
+        required: true
+        default: "25"
+  # schedule:
+  #   # optional: runs every hour (UTC). Comment out if you don't want scheduled smoke.
+  #   - cron: "0 * * * *"
+
+============================================================
+FILE: dev-smoke-azure-dev.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+  push:
+    branches: [ main ]
+
+============================================================
+FILE: gradebookro-ui-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "frontend/dashboards/src/pages/GradebookRO.jsx"
+      - "frontend/dashboards/src/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_gradebookro_ui_gate.ps1"
+      - ".github/workflows/gradebookro-ui-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "frontend/dashboards/src/pages/GradebookRO.jsx"
+      - "frontend/dashboards/src/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_gradebookro_ui_gate.ps1"
+      - ".github/workflows/gradebookro-ui-gate.yml"
+
+============================================================
+FILE: lockdown-golden-path-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+============================================================
+FILE: migration-lock-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "backend/**"
+      - "tools/verify_migration_lock_gate.py"
+      - ".github/workflows/migration-lock-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - "tools/verify_migration_lock_gate.py"
+      - ".github/workflows/migration-lock-gate.yml"
+
+============================================================
+FILE: msgraph-smoke.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+  push:
+    branches: [ "stabilization-20260116-spine" ]
+  pull_request:
+    branches: [ "stabilization-20260116-spine" ]
+
+============================================================
+FILE: ops-reset-dev.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+    inputs:
+      school_id:
+        description: School UUID to reseed
+        required: true
+        type: string
+
+============================================================
+FILE: phase1-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+============================================================
+FILE: phase3-demo-proof-pack.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+============================================================
+FILE: phase3-runtime-proof.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+============================================================
+FILE: phase4-gradebook-demo-proof.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+  pull_request:
+    paths:
+      - "backend/crown_api/management/commands/seed_demo_parent_gradebook.py"
+      - "backend/crown_api/management/commands/proof_phase4_gradebook_demo.py"
+      - "backend/**/gradebook/**"
+      - ".github/workflows/phase4-gradebook-demo-proof.yml"
+
+============================================================
+FILE: prod-health-watch.yml
+------------------------------------------------------------
+on:
+workflow_dispatch: {}
+
+============================================================
+FILE: prod-integrity-proof.yml
+------------------------------------------------------------
+on:
+schedule:
+    - cron: "15 6 * * *"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag label (optional; overrides JSON if provided)"
+        required: false
+        type: string
+      expected_sha:
+        description: "Expected deployed BUILD SHA (optional; overrides JSON if provided)"
+        required: false
+        type: string
+      health_url:
+        description: "Health endpoint URL (optional; overrides JSON if provided)"
+        required: false
+        type: string
+
+============================================================
+FILE: proof-ceremony.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+      - 'stabilize/**'
+  push:
+    branches:
+      - 'release/**'
+      - 'stabilize/**'
+
+============================================================
+FILE: proof-ceremony-after-prod.yml
+------------------------------------------------------------
+on:
+workflow_run:
+    workflows:
+      - "Production Deploy"
+      - "Production Deploy (Dispatch v2)"
+    types: [completed]
+
+============================================================
+FILE: proof-ceremony-prod.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to prove (e.g. phase7b-deploy-contract-2026-02-23)"
+        required: true
+        type: string
+      api_base:
+        description: "Backend base URL"
+        required: true
+        type: string
+        default: "https://crown-api-prod.azurewebsites.net"
+      dash_base:
+        description: "Frontend base URL for /build.json check (leave blank to skip)"
+        required: false
+        type: string
+        default: ""
+
+============================================================
+FILE: proof-gradebook.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+
+============================================================
+FILE: pytest-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "backend/**"
+      - "tools/verify_pytest_gate.py"
+      - ".github/workflows/pytest-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - "tools/verify_pytest_gate.py"
+      - ".github/workflows/pytest-gate.yml"
+
+============================================================
+FILE: rc-build-sha-proof.yml
+------------------------------------------------------------
+on:
+push:
+    branches:
+      - "rc/**"
+  workflow_dispatch:
+
+============================================================
+FILE: rc-gate.yml
+------------------------------------------------------------
+on:
+push:
+    branches:
+      - "rc/**"
+  pull_request:
+    branches:
+      - "rc/**"
+
+============================================================
+FILE: rc-promotion-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [ "main" ]
+
+============================================================
+FILE: rc-runbook.yml
+------------------------------------------------------------
+on:
+push:
+    branches:
+      - "rc/**"
+  pull_request:
+    branches:
+      - "rc/**"
+    paths:
+      - "tools/verify_rc_runbook.ps1"
+      - "tools/verify_*gate*.py"
+      - "tools/rc_endpoint_probes.json"
+      - ".github/workflows/rc-runbook.yml"
+      - "backend/**"
+
+============================================================
+FILE: rc-tier1-deployed-smoke.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+    inputs:
+      rc_base_url:
+        description: "Override RC_BASE_URL (leave blank to use secret)"
+        required: false
+        default: ""
+  push:
+    branches:
+      - "rc/**"
+  pull_request:
+    branches:
+      - "rc/**"
+    paths:
+      - "tools/rc_deployed_smoke.py"
+      - "tools/rc_endpoint_probes.json"
+      - "tools/demo_contract_t1.lock"
+      - ".github/workflows/rc-tier1-deployed-smoke.yml"
+
+============================================================
+FILE: routes-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "frontend/dashboards/src/routes/router.jsx"
+      - "frontend/dashboards/src/pages/**"
+      - "tools/verify_routes_gate.ps1"
+      - ".github/workflows/routes-gate.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "frontend/dashboards/src/routes/router.jsx"
+      - "frontend/dashboards/src/pages/**"
+      - "tools/verify_routes_gate.ps1"
+      - ".github/workflows/routes-gate.yml"
+
+============================================================
+FILE: secret-scan.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+============================================================
+FILE: spine-audit.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+
+============================================================
+FILE: stabilization-20260116-spine_crown-api-dev.yml
+------------------------------------------------------------
+on:
+workflow_dispatch: {}
+
+============================================================
+FILE: system-health.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+  push:
+    branches:
+      - main
+
+============================================================
+FILE: tests.yml
+------------------------------------------------------------
+on:
+pull_request:
+  push:
+    branches:
+      - main
+      - spine/**
+
+============================================================
+FILE: ui-proof-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+============================================================
+FILE: ui-proof-gates.yml
+------------------------------------------------------------
+on:
+workflow_dispatch:
+
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/ui-proof-gates.yml"
+      - "frontend/dashboards/tests/ui/student-dashboard-v2.spec.ts"
+      - "frontend/dashboards/tests/ui/parent-dashboard-v1.spec.ts"
+      - "frontend/dashboards/tests/ui/executive-dashboard-v1.spec.ts"
+      - "frontend/dashboards/src/pages/StudentDashboard.jsx"
+      - "frontend/dashboards/src/pages/ParentDashboard.jsx"
+      - "frontend/dashboards/src/pages/AdminDashboard.jsx"
+      - "backend/student360/**"
+      - "backend/parent360/**"
+      - "backend/executive360/**"
+
+============================================================
+FILE: ui-shell-gate.yml
+------------------------------------------------------------
+on:
+pull_request:
+    paths:
+      - "frontend/dashboards/src/pages/**"
+      - "frontend/dashboards/src/components/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_ui_shell_gate.ps1"
+      - ".github/workflows/ui-shell-gate.yml"
+  push:
+    branches: [ main ]
+    paths:
+      - "frontend/dashboards/src/pages/**"
+      - "frontend/dashboards/src/components/crown/**"
+      - "frontend/dashboards/src/styles/**"
+      - "tools/verify_ui_shell_gate.ps1"
+      - ".github/workflows/ui-shell-gate.yml"
+

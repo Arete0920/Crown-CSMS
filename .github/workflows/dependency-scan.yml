@@ -53,8 +53,12 @@ jobs:
         working-directory: backend
         run: |
           if [ -f requirements.txt ]; then
-            pip-audit -r requirements.txt --output json --output-file pip-audit-results.json || true
-            cat pip-audit-results.json
+            pip-audit -r requirements.txt -f json -o pip-audit-results.json || true
+            if [ -f pip-audit-results.json ]; then
+              cat pip-audit-results.json
+            else
+              echo "[]"
+            fi
           else
             echo "No requirements.txt found — skipping pip-audit"
           fi

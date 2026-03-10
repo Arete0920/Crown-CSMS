@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<deployment>
+  <id>67dc41f1af069693301c7e71622bd8a24c3b5c1d1771784440246</id>
+  <author>tcmegahan</author>
+  <deployer>GitHub</deployer>
+  <authorEmail />
+  <message>{"type":"Deployment","sha":"67dc41f1af069693301c7e71622bd8a24c3b5c1d","repoName":"tcmegahan/Crown2026","actor":"tcmegahan","slotName":"production"}</message>
+  <progress />
+  <status>Success</status>
+  <statusText />
+  <lastSuccessEndTime>2026-02-22T18:21:56.0525578Z</lastSuccessEndTime>
+  <receivedTime>2026-02-22T18:21:56.0525578Z</receivedTime>
+  <startTime>2026-02-22T18:21:56.0525578Z</startTime>
+  <endTime>2026-02-22T18:21:56.0525578Z</endTime>
+  <complete>True</complete>
+  <is_temp>False</is_temp>
+  <is_readonly>True</is_readonly>
+  <containerId>9a2d21152c30</containerId>
+  <buildSummary />
+</deployment>

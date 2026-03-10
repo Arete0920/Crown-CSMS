@@ -1,0 +1,6 @@
+<step title="Incoming Request" date="2026-01-25T01:09:10.848" instance="a49e0f" url="/api/deployments/4b83531c161944f56aa99ced6d086d670556e4591769303275161" method="PUT" type="request" pid="771,1,10" Host="crown-api-prod.scm.azurewebsites.net" User-Agent="GITHUBACTIONS_DeployWebAppToAzure_7bb4796363582c259842757a825de8c5ac312edf1fc952158bcaff84c53e4648" Authorization="Bea..." Content-Type="application/json; charset=utf-8" Content-Length="308" X-ARR-LOG-ID="e1cf4603-cc83-44b1-8e62-abd52b97fc6b" CLIENT-IP="20.168.119.21:37930" X-SITE-DEPLOYMENT-ID="crown-api-prod" WAS-DEFAULT-HOSTNAME="crown-api-prod.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments/4b83531c161944f56aa99ced6d086d670556e4591769303275161" X-Client-IP="20.168.119.21" X-Client-Port="37930" >
+  <step title="DeploymentService.Deploy(id)" date="2026-01-25T01:09:16.948" >
+    <step title="DeploymentService.Create(id)" date="2026-01-25T01:09:16.989" /><!-- duration: 2178ms -->
+  </step><!-- duration: 2258ms -->
+  <step title="Outgoing response" date="2026-01-25T01:09:19.749" type="response" statusCode="200" statusText="OK" /><!-- duration: 91ms -->
+</step><!-- duration: 9011ms -->

@@ -2,10 +2,6 @@ name: pytest-gate
 
 on:
   pull_request:
-    paths:
-      - "backend/**"
-      - "tools/verify_pytest_gate.py"
-      - ".github/workflows/pytest-gate.yml"
   push:
     branches: [ "main" ]
     paths:
