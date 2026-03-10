@@ -10,7 +10,6 @@ import { GradebookRO } from '../pages/GradebookRO.jsx';
 import { TranscriptRO } from '../pages/TranscriptRO.jsx';
 import { CategoryWeightsEditor } from '../pages/CategoryWeightsEditor.jsx';
 import { AdmissionsPipelineList } from '../pages/AdmissionsPipelineList.jsx';
-import AdmissionsDashboard from '../pages/AdmissionsDashboard.jsx';
 import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
 import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
 import OpsCommandCenter from '../components/OpsCommandCenter.jsx';
@@ -40,7 +39,6 @@ import FinanceDashboard from '../pages/FinanceDashboard.jsx';
 import ITDashboard from '../pages/ITDashboard.jsx';
 import MarketingDashboard from '../pages/MarketingDashboard.jsx';
 import SpiritualLifeDashboard from '../pages/SpiritualLifeDashboard.jsx';
-import MasterControlDashboard from '../pages/MasterControlDashboard.jsx';
 import OfficeDashboard from '../pages/OfficeDashboard.jsx';
 import HealthDashboard from '../pages/HealthDashboard.jsx';
 import CounselingDashboard from '../pages/CounselingDashboard.jsx';
@@ -130,7 +128,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admissions',
-    element: <AdmissionsDashboard />,
+    element: <AdmissionsPipelineList />,
   },
   {
     path: '/admissions/pipeline',
@@ -209,7 +207,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/master-control',
-    element: <MasterControlDashboard />,
+    element: <AdminDashboard />,
   },
   {
     path: '/office',
