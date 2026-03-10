@@ -21,8 +21,10 @@ export default function useDashboardData(dashboardKey, options = {}) {
     };
 
   const [data, setData] = useState(config?.fallbackData ?? null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(Boolean(config));
+  const [error, setError] = useState(
+    config ? null : new Error(`No dashboard data config found for "${dashboardKey}".`)
+  );
+  const [loading, setLoading] = useState(Boolean(config) && (options.enabled ?? true));
   const [source, setSource] = useState(config?.fallbackData ? 'fallback' : 'none');
   const [lastLoadedAt, setLastLoadedAt] = useState(null);
 
@@ -35,14 +37,7 @@ export default function useDashboardData(dashboardKey, options = {}) {
   );
 
   useEffect(() => {
-    if (!effectiveOptions.enabled) {
-      setLoading(false);
-      return;
-    }
-
-    if (!config) {
-      setLoading(false);
-      setError(new Error(`No dashboard data config found for "${dashboardKey}".`));
+    if (!effectiveOptions.enabled || !config) {
       return;
     }
 
@@ -104,7 +99,7 @@ export default function useDashboardData(dashboardKey, options = {}) {
   return {
     data,
     error,
-    loading,
+    loading: effectiveOptions.enabled ? loading : false,
     source,
     lastLoadedAt,
     certification,

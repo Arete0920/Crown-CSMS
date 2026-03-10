@@ -1,4 +1,3 @@
-import React from 'react';
 import { Alert, Chip, Stack, Typography } from '@mui/material';
 import { getCertificationStatusColor } from '../../../config/dashboardCertificationRegistry';
 
