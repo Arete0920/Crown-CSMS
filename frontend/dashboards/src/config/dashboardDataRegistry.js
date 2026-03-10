@@ -1,54 +1,3 @@
-function percent(value, digits = 1) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return '—';
-  }
-
-  return `${Number(value).toFixed(digits)}%`;
-}
-
-function integer(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return '—';
-  }
-
-  return Intl.NumberFormat('en-US').format(Number(value));
-}
-
-function stringValue(value) {
-  if (value === null || value === undefined || value === '') {
-    return '—';
-  }
-
-  return String(value);
-}
-
-function normalizeAlertLevel(value) {
-  const normalized = String(value || '').toLowerCase();
-
-  if (normalized === 'critical' || normalized === 'high') return 'High';
-  if (normalized === 'medium' || normalized === 'warning') return 'Medium';
-  return 'Low';
-}
-
-function normalizeAlerts(items, fallbackSecondary) {
-  if (!Array.isArray(items)) return [];
-
-  return items.map((item, index) => ({
-    title: item?.title || item?.label || `Alert ${index + 1}`,
-    level: normalizeAlertLevel(item?.level || item?.severity),
-    secondary: item?.secondary || item?.message || fallbackSecondary,
-  }));
-}
-
-function normalizeQueue(items) {
-  if (!Array.isArray(items)) return [];
-
-  return items.map((item, index) => {
-    if (typeof item === 'string') return item;
-    return item?.title || item?.label || `Queue item ${index + 1}`;
-  });
-}
-
 function identityTransform(response) {
   return response;
 }
@@ -68,67 +17,11 @@ function dashboardSummaryPath(slug) {
   return `/api/v1/dashboards/${slug}/summary`;
 }
 
-function transformAttendance(response) {
-  return {
-    metrics: [
-      {
-        label: 'Present Rate Today',
-        value: percent(response?.metrics?.present_rate_today ?? response?.present_rate_today),
-      },
-      {
-        label: 'Absent Students',
-        value: integer(response?.metrics?.absent_students ?? response?.absent_students),
-      },
-      {
-        label: 'Late Check-Ins',
-        value: integer(response?.metrics?.late_checkins ?? response?.late_checkins),
-      },
-      {
-        label: 'Missing Homerooms',
-        value: integer(response?.metrics?.missing_homerooms ?? response?.missing_homerooms),
-      },
-    ],
-    alerts: normalizeAlerts(
-      response?.alerts,
-      'Attendance follow-up required.'
-    ),
-    queue: normalizeQueue(response?.queue || response?.tasks),
-  };
-}
-
-function transformReleaseReliability(response) {
-  return {
-    metrics: [
-      {
-        label: 'Deployments This Month',
-        value: integer(response?.metrics?.deployments_this_month ?? response?.deployments_this_month),
-      },
-      {
-        label: 'Open Production Incidents',
-        value: integer(response?.metrics?.open_production_incidents ?? response?.open_production_incidents),
-      },
-      {
-        label: 'Failed Checks in Last 24h',
-        value: integer(response?.metrics?.failed_checks_24h ?? response?.failed_checks_24h),
-      },
-      {
-        label: 'Release Readiness',
-        value: stringValue(response?.metrics?.release_readiness ?? response?.release_readiness),
-      },
-    ],
-    alerts: normalizeAlerts(
-      response?.alerts,
-      'Platform engineering follow-up required.'
-    ),
-    queue: normalizeQueue(response?.queue || response?.tasks),
-  };
-}
-
 export const DASHBOARD_DATA_REGISTRY = {
   // Tier 1
   attendance: createDataConfig(dashboardSummaryPath('attendance'), {
-    transform: transformAttendance,
     fallbackData: {
+      dashboard_key: 'attendance',
       metrics: [
         { label: 'Present Rate Today', value: '96.1%' },
         { label: 'Absent Students', value: '14' },
@@ -158,6 +51,10 @@ export const DASHBOARD_DATA_REGISTRY = {
         'Confirm late-check-in corrections from front office',
         'Publish attendance exception summary',
       ],
+      meta: {
+        served_from: 'sample',
+        certification_candidate: 'hybrid',
+      },
     },
   }),
   billing: createDataConfig(dashboardSummaryPath('billing')),
@@ -209,8 +106,8 @@ export const DASHBOARD_DATA_REGISTRY = {
   'compliance-audit': createDataConfig(dashboardSummaryPath('compliance-audit')),
   'revenue-operations': createDataConfig(dashboardSummaryPath('revenue-operations')),
   'release-reliability': createDataConfig(dashboardSummaryPath('release-reliability'), {
-    transform: transformReleaseReliability,
     fallbackData: {
+      dashboard_key: 'release-reliability',
       metrics: [
         { label: 'Deployments This Month', value: '9' },
         { label: 'Open Production Incidents', value: '2' },
@@ -240,6 +137,10 @@ export const DASHBOARD_DATA_REGISTRY = {
         'Close open production incident postmortem tasks',
         'Publish release readiness summary',
       ],
+      meta: {
+        served_from: 'sample',
+        certification_candidate: 'hybrid',
+      },
     },
   }),
 

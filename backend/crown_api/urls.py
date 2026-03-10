@@ -26,45 +26,46 @@ urlpatterns = [
     path("api/integrity/", integrity, name="api_integrity"),
     path("api/system/health/", system_health, name="system_health"),
     path("health/version/", health_version, name="health_version"),
-    
+
     # Gate 1C: WhoAmI proof endpoint (requires auth)
     path("api/system/whoami/", whoami, name="system_whoami"),
-    
+
     # Version endpoint (public, no auth required)
     path("api/v1/version/", version, name="version"),
-    
+
     # Ops summary (public read-only, for demo proof)
     path("api/ops/summary/", ops_summary, name="ops_summary"),
-    
+
     # Ops alerts (public read-only, for demo proof)
     path("api/ops/alerts/", ops_alerts, name="ops_alerts"),
-    
+
     # RBAC proof endpoint
     path("api/system/rbac/finance-proof/", finance_guardrail_proof, name="finance_guardrail_proof"),
-    
+
     # Audit log endpoint
     path("api/system/audit/recent/", recent_audit_events, name="recent_audit_events"),
-    
+
     # JWT Auth endpoints
     path("api/auth/login/", login, name="auth_login"),
     path("api/auth/refresh/", refresh, name="auth_refresh"),
     path("api/auth/me/", me, name="auth_me"),
-    
+
     # Demo-only dev token endpoint (fail-closed)
     path("api/dev/token/", dev_token, name="dev_token"),
-    
+
     # Canonical API
+    path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
     path("api/v1/", include("crown_api.api_v1_urls")),
-    
+
     # Back-compat alias: /api/* behaves like /api/v1/*
     path("api/", include("crown_api.api_v1_urls")),
-    
+
     # Curriculum (read-only, demo-safe)
     path("api/curriculum/", include("curriculum.urls")),
-    
+
     # Classroom (read-only, demo-safe)
     path("api/classroom/", include("classroom.urls")),
-    
+
     # Student 360 overview (per-student dashboard data)
     path("api/student360/", include("student360.api.urls")),
 
@@ -85,7 +86,7 @@ urlpatterns = [
 
     # Integrations (webhooks, etc.)
     path("api/integrations/", include("integrations.urls")),
-    
+
     # Microsoft SSO (session-based auth)
     path("auth/", include("msauth.urls")),
 
@@ -95,7 +96,7 @@ urlpatterns = [
 
     # Authentication URLs (login, logout, password reset, etc.)
     path("accounts/", include("django.contrib.auth.urls")),
-    
+
     # Director routing - persona-specific URLs all use same view
     path("director/", director_router, name="director_router"),
     path("director/aid/", director_dashboard_page, {'persona': 'aid'}, name="director_aid"),
