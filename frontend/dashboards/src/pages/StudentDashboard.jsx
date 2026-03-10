@@ -39,10 +39,10 @@ export default function StudentDashboard() {
 
           <Col span={6}>
             <KpiCardGrid>
-              <KpiCard title="Assignments Due" value="5" trend="2 due today" icon="ASN" tone="warn" />
-              <KpiCard title="Attendance" value="97%" trend="Strong this month" icon="ATT" tone="good" />
-              <KpiCard title="Average Grade" value="89%" trend="+2 this week" icon="GRD" tone="good" />
-              <KpiCard title="Messages" value="2" trend="Unread notices" icon="MSG" tone="warn" />
+              <KpiCard title="GPA" value="3.5" trend="Strong this term" icon="GR" tone="good" />
+              <KpiCard title="Current Average" value="91.2%" trend="+2 this week" icon="AVG" tone="good" />
+              <KpiCard title="Missing Work" value="1" trend="Needs submission" icon="MSW" tone="warn" />
+              <KpiCard title="Balance Due" value="$250" trend="Current student account" icon="BIL" tone="warn" />
             </KpiCardGrid>
           </Col>
 
@@ -50,15 +50,15 @@ export default function StudentDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      <DashboardSection title="Student Health and Progress">
+      <DashboardSection title="Student Progress">
         <CrownGrid>
           <Col span={4}>
             <ProgressGoalCard
-              title="Assignment Completion"
-              current={86}
-              goal={100}
-              percentLabel="86%"
-              detail="Current assignment completion this grading period"
+              title="Service Hours"
+              current={12}
+              goal={20}
+              percentLabel="60%"
+              detail="Approved hours logged this term"
               colorClass="var(--crown-brand)"
             />
           </Col>
@@ -85,7 +85,7 @@ export default function StudentDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      <DashboardSection title="Student Trends">
+      <DashboardSection title="Upcoming Assignments">
         <CrownGrid>
           <Col span={6}>
             <TrendChartCard
@@ -131,6 +131,12 @@ export default function StudentDashboard() {
           <Col span={4}><StudentScheduleCard /></Col>
           <Col span={4}><StudentMessagesCard /></Col>
           <Col span={4}><StudentShortcutsCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Quick Links">
+        <CrownGrid>
+          <Col span={12}><a href="/gradebook">Open Gradebook</a></Col>
         </CrownGrid>
       </DashboardSection>
     </CrownLayout>
