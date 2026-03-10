@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import useDashboardData from '../hooks/useDashboardData';
 import DataStatusBanner from '../components/dashboard/shared/DataStatusBanner';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent, Grid, Typography, Stack } from '@mui/material';
 
 export default function MetricSummaryGrid({ metrics = [] }) {

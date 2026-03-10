@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent, CircularProgress, Stack, Typography } from '@mui/material';
 
 export default function DashboardLoadingState({ title = 'Loading dashboard data...' }) {

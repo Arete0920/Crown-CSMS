@@ -140,7 +140,7 @@ export async function dashboardFetch(path, options = {}) {
   }
 
   try {
-    const response = await fetch(buildUrl(path, query), {
+    const response = await globalThis.fetch(buildUrl(path, query), {
       method,
       headers: mergedHeaders,
       body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,

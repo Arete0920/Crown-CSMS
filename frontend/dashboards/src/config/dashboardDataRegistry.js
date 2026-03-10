@@ -14,18 +14,6 @@ function integer(value) {
   return Intl.NumberFormat('en-US').format(Number(value));
 }
 
-function currency(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return '—';
-  }
-
-  return Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(Number(value));
-}
-
 function stringValue(value) {
   if (value === null || value === undefined || value === '') {
     return '—';
