@@ -10,6 +10,7 @@ import { GradebookRO } from '../pages/GradebookRO.jsx';
 import { TranscriptRO } from '../pages/TranscriptRO.jsx';
 import { CategoryWeightsEditor } from '../pages/CategoryWeightsEditor.jsx';
 import { AdmissionsPipelineList } from '../pages/AdmissionsPipelineList.jsx';
+import AdmissionsDashboard from '../pages/AdmissionsDashboard.jsx';
 import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
 import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
 import OpsCommandCenter from '../components/OpsCommandCenter.jsx';
@@ -39,6 +40,7 @@ import FinanceDashboard from '../pages/FinanceDashboard.jsx';
 import ITDashboard from '../pages/ITDashboard.jsx';
 import MarketingDashboard from '../pages/MarketingDashboard.jsx';
 import SpiritualLifeDashboard from '../pages/SpiritualLifeDashboard.jsx';
+import MasterControlDashboard from '../pages/MasterControlDashboard.jsx';
 import OfficeDashboard from '../pages/OfficeDashboard.jsx';
 import HealthDashboard from '../pages/HealthDashboard.jsx';
 import CounselingDashboard from '../pages/CounselingDashboard.jsx';
@@ -62,6 +64,8 @@ import BoardExecutiveDashboard from '../pages/BoardExecutiveDashboard.jsx';
 import AftercareRosterPage from '../pages/AftercareRosterPage.jsx';
 import AftercareSetupWizard from '../pages/wizards/AftercareSetupWizard.jsx';
 import FinanceSetupWizard from '../pages/wizards/FinanceSetupWizard.jsx';
+import NotAuthorized from '../pages/NotAuthorized.jsx';
+import { dashboardRoutes } from './dashboardRoutes';
 import { wizardRoutes } from './wizards.js';
 import WizardHub from '../pages/WizardHub.jsx';
 
@@ -80,21 +84,10 @@ export const router = createBrowserRouter([
     element: <TeacherAttendancePage />,
   },
   {
-    path: '/parent/attendance',
-    element: <ParentAttendancePage />,
+    path: '/not-authorized',
+    element: <NotAuthorized />,
   },
-  {
-    path: '/',
-    element: <RoleHomeRedirect />,
-  },
-  {
-    path: '/billing',
-    element: <BillingDashboard />,
-  },
-  {
-    path: '/financial-aid',
-    element: <FinancialAidDashboard />,
-  },
+  ...dashboardRoutes,
   {
     path: '/academics',
     element: <AcademicsDashboard />,
@@ -133,6 +126,10 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admissions',
+    element: <AdmissionsDashboard />,
+  },
+  {
+    path: '/admissions/pipeline',
     element: <AdmissionsPipelineList />,
   },
   // Wizard Hub — lists all registered wizards from /api/v1/wizards/
@@ -149,6 +146,10 @@ export const router = createBrowserRouter([
   {
     path: '/communications',
     element: <CommunicationsThreadsList />,
+  },
+  {
+    path: '/service-hours',
+    element: <ServiceHoursPage />,
   },
   {
     path: '/ops',
@@ -201,6 +202,10 @@ export const router = createBrowserRouter([
   {
     path: '/spiritual-life',
     element: <SpiritualLifeDashboard />,
+  },
+  {
+    path: '/master-control',
+    element: <MasterControlDashboard />,
   },
   {
     path: '/office',
