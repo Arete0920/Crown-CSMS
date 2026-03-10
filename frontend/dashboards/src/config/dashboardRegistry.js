@@ -51,6 +51,7 @@ import IntegrationsAutomationDashboard from '../pages/IntegrationsAutomationDash
 import ComplianceAuditDashboard from '../pages/ComplianceAuditDashboard';
 import RevenueOperationsDashboard from '../pages/RevenueOperationsDashboard';
 import ReleaseReliabilityDashboard from '../pages/ReleaseReliabilityDashboard';
+import DashboardCertificationCenter from '../pages/DashboardCertificationCenter';
 
 const SUPER_ADMIN = ['super_admin'];
 const MASTER_CONTROL = ['master_control', ...SUPER_ADMIN];
@@ -85,6 +86,7 @@ const INTEGRATIONS_TEAM = ['crown_integrations', ...IT_TEAM];
 const COMPLIANCE_TEAM = ['crown_compliance', ...MASTER_CONTROL];
 const REVENUE_OPS_TEAM = ['crown_revenue_ops', ...MASTER_CONTROL];
 const RELEASE_TEAM = ['crown_platform_ops', ...MASTER_CONTROL];
+const PLATFORM_CERT_TEAM = [...new Set([...RELEASE_TEAM, ...COMPLIANCE_TEAM, ...MASTER_CONTROL])];
 
 function createDashboard({
   key,
@@ -471,6 +473,15 @@ export const DASHBOARD_REGISTRY = [
     section: 'Platform Operations',
     allowedRoles: RELEASE_TEAM,
     component: ReleaseReliabilityDashboard,
+  }),
+  createDashboard({
+    key: 'dashboard-certification-center',
+    label: 'Dashboard Certification Center',
+    path: '/dashboard-certification-center',
+    tier: 7,
+    section: 'Platform Operations',
+    allowedRoles: PLATFORM_CERT_TEAM,
+    component: DashboardCertificationCenter,
   }),
 ];
 
