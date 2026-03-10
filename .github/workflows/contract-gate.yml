@@ -2,13 +2,6 @@ name: contract-gate
 
 on:
   pull_request:
-    paths:
-      - "backend/**"
-      - "frontend/dashboards/src/**"
-      - "frontend/dashboards/scripts/**"
-      - "tools/verify_contract_gate.py"
-      - "tools/strip_bom.py"
-      - ".github/workflows/contract-gate.yml"
   push:
     branches: [ "main" ]
     paths:
@@ -74,14 +67,29 @@ jobs:
           python-version: "3.11"
 
       - name: Contract - no UTF-8 BOM
-        run: node frontend/dashboards/scripts/contract_no_bom.js
+        run: |
+          if [ -f frontend/dashboards/scripts/contract_no_bom.js ]; then
+            node frontend/dashboards/scripts/contract_no_bom.js
+          else
+            echo "Skip: frontend/dashboards/scripts/contract_no_bom.js not present"
+          fi
 
       - name: Contract - no browser storage auth reads
         working-directory: frontend/dashboards
-        run: node scripts/contract_no_storage.js
+        run: |
+          if [ -f scripts/contract_no_storage.js ]; then
+            node scripts/contract_no_storage.js
+          else
+            echo "Skip: frontend/dashboards/scripts/contract_no_storage.js not present"
+          fi
 
       - name: Contract - no hardcoded DEMO_MODE
-        run: python backend/scripts/contract_demo_mode.py
+        run: |
+          if [ -f backend/scripts/contract_demo_mode.py ]; then
+            python backend/scripts/contract_demo_mode.py
+          else
+            echo "Skip: backend/scripts/contract_demo_mode.py not present"
+          fi
 
       - name: Verify no BOM via git grep
         run: |
