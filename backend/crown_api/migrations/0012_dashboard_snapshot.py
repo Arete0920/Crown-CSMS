@@ -28,6 +28,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name='dashboardsnapshot',
-            index=models.Index(fields=['school_id', 'dashboard_key'], name='dashboard_s_school__f79a6d_idx'),
+            index=models.Index(fields=['school_id', 'dashboard_key'], name='dashboard_s_school__f05431_idx'),
         ),
     ]

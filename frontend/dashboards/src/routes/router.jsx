@@ -84,6 +84,10 @@ export const router = createBrowserRouter([
     element: <TeacherAttendancePage />,
   },
   {
+    path: '/parent/attendance',
+    element: <ParentAttendancePage />,
+  },
+  {
     path: '/not-authorized',
     element: <NotAuthorized />,
   },
