@@ -69,6 +69,10 @@ import WizardHub from '../pages/WizardHub.jsx';
 
 export const router = createBrowserRouter([
   {
+    path: '/',
+    element: <RoleHomeRedirect />,
+  },
+  {
     path: '/login',
     element: <LoginPage />,
   },

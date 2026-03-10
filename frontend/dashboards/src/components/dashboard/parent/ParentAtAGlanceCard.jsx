@@ -5,7 +5,7 @@ export default function ParentAtAGlanceCard() {
     ['Children Enrolled', '3'],
     ['Assignments Due', '7'],
     ['Messages', '2'],
-    ['Upcoming Events', '4'],
+    ['Next Events', '4'],
   ];
 
   return (
