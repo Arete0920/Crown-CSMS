@@ -15,7 +15,7 @@ export const DASHBOARD_CERTIFICATION_STATUS = {
 
 export const DASHBOARD_CERTIFICATION_REGISTRY = {
   // Tier 1
-  attendance: createCertification('hybrid', 'Attendance Operations', 'Live-bound reference page.'),
+  attendance: createCertification('hybrid', 'Attendance Operations', 'Snapshot-backed reference page (sample fallback).'),
   billing: createCertification('scaffold', 'Finance Team'),
   'financial-aid': createCertification('scaffold', 'Finance Team'),
   registrar: createCertification('scaffold', 'Registrar Team'),
@@ -64,7 +64,7 @@ export const DASHBOARD_CERTIFICATION_REGISTRY = {
   'integrations-automation': createCertification('scaffold', 'Integrations Team'),
   'compliance-audit': createCertification('scaffold', 'Compliance Team'),
   'revenue-operations': createCertification('scaffold', 'Revenue Operations'),
-  'release-reliability': createCertification('hybrid', 'Platform Engineering', 'Live-bound reference page.'),
+  'release-reliability': createCertification('hybrid', 'Platform Engineering', 'Snapshot-backed reference page (sample fallback).'),
 
   // Phase 9 control page
   'dashboard-certification-center': createCertification('live', 'Platform Engineering', 'Derived from internal registries.'),
