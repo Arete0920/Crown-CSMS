@@ -22,8 +22,8 @@ import ParentReportsCard from '../components/dashboard/parent/ParentReportsCard.
 export default function ParentDashboard() {
   return (
     <CrownLayout
-      title="Family Dashboard"
-      subtitle="Your children, assignments, attendance, tuition, messages, and upcoming events"
+      title="Parent Dashboard"
+      subtitle="Your children, assignments, attendance, tuition, messages, and family events"
     >
       <DashboardSection title="Daily Mission and Family Snapshot">
         <CrownGrid>
@@ -39,10 +39,10 @@ export default function ParentDashboard() {
 
           <Col span={6}>
             <KpiCardGrid>
-              <KpiCard title="Assignments Due" value="7" trend="Across all children" icon="ASN" tone="warn" />
-              <KpiCard title="Attendance This Week" value="96%" trend="Healthy overall" icon="ATT" tone="good" />
-              <KpiCard title="Tuition Balance" value="$620" trend="Current balance" icon="BIL" tone="default" />
-              <KpiCard title="Unread Messages" value="2" trend="School communications" icon="MSG" tone="warn" />
+              <KpiCard title="Household Balance" value="$620" trend="Current balance" icon="BIL" tone="default" />
+              <KpiCard title="Children" value="2" trend="In active classes" icon="FAM" tone="good" />
+              <KpiCard title="Missing Assignments" value="7" trend="Across all children" icon="ASN" tone="warn" />
+              <KpiCard title="Upcoming" value="5" trend="Events and due dates" icon="CAL" tone="good" />
             </KpiCardGrid>
           </Col>
 
@@ -79,7 +79,7 @@ export default function ParentDashboard() {
               title="Student Wellness"
               percent={89}
               subtitle="Family overview"
-              detail="Attendance and participation are healthy overall. One student has a few missing assignments."
+              detail="Attendance and participation are healthy overall. One student needs assignment follow-up."
             />
           </Col>
         </CrownGrid>
@@ -131,6 +131,13 @@ export default function ParentDashboard() {
           <Col span={4}><ParentCalendarCard /></Col>
           <Col span={4}><ParentMessagesCard /></Col>
           <Col span={4}><ParentReportsCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Quick Links">
+        <CrownGrid>
+          <Col span={6}><a href="/academics/parent-snapshot">Academics Snapshot</a></Col>
+          <Col span={6}><a href="/finance/invoices">Finance Invoices</a></Col>
         </CrownGrid>
       </DashboardSection>
     </CrownLayout>

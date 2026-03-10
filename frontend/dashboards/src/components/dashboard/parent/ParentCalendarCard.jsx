@@ -9,7 +9,7 @@ export default function ParentCalendarCard() {
 
   return (
     <CalendarCard
-      title="Upcoming Events"
+      title="Next Events"
       dateLabel="This Week"
       events={rows}
       actionLabel="Open"

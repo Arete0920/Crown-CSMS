@@ -92,7 +92,7 @@ export default function AdminDashboard() {
 
   return (
     <CrownLayout
-      title="Administrator Dashboard"
+      title="Administration"
       subtitle="Faith, leadership, and school operations command center"
     >
       <ErrorBanner title="Dashboard unavailable" message={metricsError} />
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
           <Col span={6}>
             <KpiCardGrid>
               <KpiCard
-                title="Enrollment"
+                title="Enrolled"
                 value={enrollmentValue}
                 trend="+4% vs last year"
                 icon="ENR"
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
               />
 
               <KpiCard
-                title="Attendance"
+                title="Attendance Flags"
                 value={attendanceValue}
                 trend="Stable this week"
                 icon="ATT"
@@ -138,36 +138,36 @@ export default function AdminDashboard() {
               />
 
               <FlipMetricCard
-                title="Retention Rate"
-                value="92%"
-                trend="+2% from last year"
-                definition="Percentage of students who returned compared to prior-year enrolled students, excluding graduates."
+                title="Discipline"
+                value="2"
+                trend="Incidents this week"
+                definition="Weekly discipline incident count requiring administrative follow-up."
                 sources={[
-                  'Student Records',
-                  'Enrollment Status',
-                  'Year-End Roster',
+                  'Discipline Log',
+                  'Behavior Referrals',
+                  'Dean Notes',
                 ]}
                 links={[
-                  'View Retention Report',
-                  'Open Student Records',
-                  'Export Data',
+                  'Open Discipline Dashboard',
+                  'View Incident List',
+                  'Export Weekly Summary',
                 ]}
               />
 
               <FlipMetricCard
-                title="Tuition Revenue"
-                value="$3.1M"
-                trend="+6% YTD"
-                definition="Total tuition billed and collected for the current term after posted adjustments and recorded aid awards."
+                title="Messages Pending"
+                value="8"
+                trend="Awaiting response"
+                definition="Messages requiring action from school leadership queues."
                 sources={[
-                  'Billing Ledger',
-                  'Payments',
-                  'Financial Aid Awards',
+                  'Communications Inbox',
+                  'Family Support Queue',
+                  'Operations Notifications',
                 ]}
                 links={[
-                  'Open Finance Dashboard',
-                  'View Ledger',
-                  'Download Summary',
+                  'Open Communications',
+                  'View Priority Threads',
+                  'Export Queue',
                 ]}
               />
             </KpiCardGrid>
@@ -179,11 +179,11 @@ export default function AdminDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      <DashboardSection title="Goals and Health Indicators">
+      <DashboardSection title="Executive Insights">
         <CrownGrid>
           <Col span={4}>
             <ProgressGoalCard
-              title="Enrollment Goal"
+              title="Receivables"
               current={412}
               goal={450}
               percentLabel="91%"
@@ -194,7 +194,7 @@ export default function AdminDashboard() {
 
           <Col span={4}>
             <ProgressGoalCard
-              title="Service Hours Goal"
+              title="Aid Allocated"
               current={2340}
               goal={3000}
               percentLabel="78%"
@@ -205,16 +205,16 @@ export default function AdminDashboard() {
 
           <Col span={4}>
             <HealthRingCard
-              title="School Health Index"
+              title="Academic Risk"
               percent={88}
               subtitle="Composite score"
-              detail="Attendance, retention, finance, and mission indicators remain strong, with some caution in grades 9-10."
+              detail="Overdue Work remains concentrated in grades 9-10 and needs intervention."
             />
           </Col>
         </CrownGrid>
       </DashboardSection>
 
-      <DashboardSection title="Analysis">
+      <DashboardSection title="Enrollment Funnel">
         <CrownGrid>
           <Col span={6}>
             <TrendChartCard

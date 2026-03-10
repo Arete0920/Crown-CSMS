@@ -2,7 +2,7 @@ import PrioritiesPanel from '../PrioritiesPanel.jsx';
 
 export default function ParentPrioritiesPanel() {
   const priorities = [
-    'Review 7 upcoming assignments',
+    'Review 7 pending assignments',
     'Read 2 school messages',
     'Submit one event permission form',
     'Review current tuition balance',
