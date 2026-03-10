@@ -14,7 +14,7 @@ class DashboardSnapshot(models.Model):
         db_table = 'dashboard_snapshots'
         unique_together = ('school_id', 'dashboard_key')
         indexes = [
-            models.Index(fields=['school_id', 'dashboard_key']),
+            models.Index(fields=['school_id', 'dashboard_key'], name='dashboard_s_school__f05431_idx'),
         ]
         ordering = ['school_id', 'dashboard_key']
 
