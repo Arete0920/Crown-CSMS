@@ -1,0 +1,67 @@
+[
+    {
+        "number":  537,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#537 ([WIP] Fix production backend health returning 503 due to DB credential failure)"
+    },
+    {
+        "number":  539,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#539 ([WIP] Fix completion of dashboard protected endpoint proof)"
+    },
+    {
+        "number":  540,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#540 ([WIP] Verify production deploy run result and health after completion)"
+    },
+    {
+        "number":  532,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#532 ([WIP] Fix admissions protected endpoint proof validation)"
+    },
+    {
+        "number":  535,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#535 ([WIP] Fix issues in final live runtime proof)"
+    },
+    {
+        "number":  536,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#536 ([WIP] Complete HR employee lifecycle and PD hub)"
+    },
+    {
+        "number":  541,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#541 ([WIP] Verify admissions protected endpoint authentication)"
+    },
+    {
+        "number":  545,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#545 ([WIP] Fix missing AZURE_SWA_TOKEN in frontend production deploy)"
+    },
+    {
+        "number":  548,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#548 ([WIP] Fix incomplete proof for dashboard protected endpoint)"
+    },
+    {
+        "number":  549,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#549 ([WIP] Add authoritative ledger core for Gate 1 with audit trail)"
+    },
+    {
+        "number":  542,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#542 ([WIP] Fix finance protected endpoint proof issue)"
+    },
+    {
+        "number":  543,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#543 ([WIP] Fix verification of dashboard protected endpoint)"
+    },
+    {
+        "number":  544,
+        "status":  "error",
+        "detail":  "G£ô Closed pull request tcmegahan/Crown2026#544 ([WIP] Remove AdmissionsApplication from authorization scoping)"
+    }
+]
