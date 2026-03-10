@@ -2,6 +2,7 @@ import { useState } from "react";
 import { List, ListItemButton, ListItemText, Collapse, Typography, Box } from "@mui/material";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import { getDashboardNavSections } from './dashboardNavConfig';
 
 /**
  * Collapsible sidebar section with a labelled group header.
@@ -77,30 +78,67 @@ function NavItem({ label, href }) {
  * sidebar or used independently in a new layout composition.
  */
 export default function CrownSidebar() {
+  const dashboardNavSections = getDashboardNavSections();
+
   return (
     <List dense disablePadding>
       <Section title="Academics">
-        <NavItem label="Gradebook"  href="/gradebook" />
-        <NavItem label="Courses"    href="/courses" />
-        <NavItem label="Attendance" href="/attendance" />
-      </Section>
-
-      <Section title="Finance">
-        <NavItem label="Billing"       href="/billing" />
-        <NavItem label="Financial Aid" href="/aid" />
-        <NavItem label="Invoices"      href="/invoices" />
+        <NavItem label="Gradebook Workspace"  href="/gradebook" />
+        <NavItem label="Classrooms" href="/classrooms" />
+        <NavItem label="Attendance Workspace" href="/teacher/attendance" />
       </Section>
 
       <Section title="Board">
-        <NavItem label="Metrics"     href="/board/metrics" />
-        <NavItem label="Integrity"   href="/integrity" />
+        <NavItem label="Board Dashboard" href="/board" />
+        <NavItem label="Integrity" href="/integrity" />
+      </Section>
+
+      <Section title="Teacher">
+        <NavItem label="Teacher Dashboard" href="/teacher" />
+        <NavItem label="Gradebook" href="/gradebook" />
+        <NavItem label="Attendance" href="/teacher/attendance" />
+      </Section>
+
+      <Section title="Family">
+        <NavItem label="Family Dashboard" href="/parent" />
+        <NavItem label="Grades" href="/academics/parent-snapshot" />
+        <NavItem label="Tuition" href="/finance/invoices" />
+      </Section>
+
+      <Section title="Student">
+        <NavItem label="Student Dashboard" href="/student" />
+        <NavItem label="Assignments" href="/academics/student-work" />
+        <NavItem label="Grades" href="/gradebook" />
+      </Section>
+
+      <Section title="Student Life">
+        <NavItem label="Student Life Dashboard" href="/spiritual-life" />
+        <NavItem label="Chapel" href="/spiritual-life" />
+        <NavItem label="Service Hours" href="/service-hours" />
+        <NavItem label="Care Notes" href="/spiritual-life" />
+      </Section>
+
+      <Section title="Master Control">
+        <NavItem label="Master Control Dashboard" href="/master-control" />
+        <NavItem label="Schools" href="/master-control" />
+        <NavItem label="Support" href="/communications" />
+        <NavItem label="Executive Reports" href="/master-control" />
       </Section>
 
       <Section title="Operations">
-        <NavItem label="Admissions"  href="/admissions" />
-        <NavItem label="Registrar"   href="/registrar" />
-        <NavItem label="Scheduling"  href="/scheduling" />
+        <NavItem label="Inquiries" href="/admissions/pipeline" />
+        <NavItem label="Applicants" href="/admissions/pipeline" />
+        <NavItem label="Decisions" href="/admissions/pipeline" />
+        <NavItem label="Scheduling Workspace"  href="/classrooms" />
       </Section>
+
+      {dashboardNavSections.map((section) => (
+        <Section key={section.label} title={section.label}>
+          {section.children.map((item) => (
+            <NavItem key={item.key} label={item.label} href={item.href} />
+          ))}
+        </Section>
+      ))}
     </List>
   );
 }
