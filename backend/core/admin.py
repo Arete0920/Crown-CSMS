@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
+import logging
 from .models import (
     School,
     AcademicYear,
@@ -15,6 +16,9 @@ from .models import (
     RolePermission,
 )
 from .models import LedgerEntry, StudentTuition, TuitionPlan
+
+
+logger = logging.getLogger(__name__)
 
 
 @admin.register(School)
@@ -105,6 +109,6 @@ for model in (LedgerEntry, TuitionPlan, StudentTuition):
     try:
         admin.site.unregister(model)
     except NotRegistered:
-        pass
+        logger.debug("Model not registered in admin: %s", model.__name__)
 
 

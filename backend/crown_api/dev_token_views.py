@@ -4,12 +4,16 @@ Demo-only dev token endpoint (fail-closed).
 Provides deterministic JWT tokens for local development without password typing.
 Hard guards: CROWN_DEMO_MODE=true, localhost only, X-Demo-Key header required.
 """
+import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from rest_framework_simplejwt.tokens import RefreshToken
+
+
+logger = logging.getLogger(__name__)
 
 
 def _demo_fail(msg="Not Found", status=404):
@@ -29,14 +33,14 @@ def _is_local_request(request) -> bool:
 def dev_token(request):
     """
     POST /api/dev/token/
-    
+
     Returns deterministic JWT for demo user (fail-closed outside demo mode).
-    
+
     Guards:
     - CROWN_DEMO_MODE=true required
     - Must be localhost request
     - X-Demo-Key header must match CROWN_DEMO_KEY
-    
+
     Returns:
     {
         "access": "JWT token",
@@ -46,8 +50,7 @@ def dev_token(request):
     """
     # 1) Must be demo mode
     demo_mode = getattr(settings, "CROWN_DEMO_MODE", False)
-    import sys
-    print(f"DEBUG: CROWN_DEMO_MODE={demo_mode} (type={type(demo_mode).__name__})", file=sys.stderr)
+    logger.debug("CROWN_DEMO_MODE=%s (type=%s)", demo_mode, type(demo_mode).__name__)
     if not demo_mode:
         return _demo_fail("Demo mode not enabled")
 

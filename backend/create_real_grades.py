@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Create test grades and fetch real payload"""
 import os
+import logging
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
@@ -11,8 +12,18 @@ from gradebook.models import GradeEntry
 from decimal import Decimal
 from django.db.models import Count
 import json
+from core.models import School
 
-school_id = "b45b8c5a-6708-4597-aad9-a226627b2962"
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+
+school_id = os.getenv("DEMO_SCHOOL_ID")
+if not school_id:
+    school = School.objects.order_by("id").first()
+    if not school:
+        raise SystemExit("No School found. Set DEMO_SCHOOL_ID or seed a school first.")
+    school_id = str(school.id)
 
 # Get section with enrollments
 section = Section.objects.filter(school_id=school_id).annotate(ecount=Count('enrollments')).filter(ecount__gt=0).first()
@@ -35,7 +46,7 @@ if section:
                 }
             )
     
-    print(f"✓ Created grades for section {section.id}")
-    print(f"School ID: {school_id}")
+    logger.info("Created grades for section %s", section.id)
+    logger.info("School ID: %s", school_id)
 else:
-    print("ERROR: No section found")
+    logger.info("ERROR: No section found")

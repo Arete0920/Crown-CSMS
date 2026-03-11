@@ -3,6 +3,13 @@ Sample timeline JSON response for review.
 This is what director_timeline() endpoint currently returns.
 """
 
+import json
+import logging
+
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+
 SAMPLE_TIMELINE_RESPONSE = {
     "meta": {
         "school_id": "0c0d109f-3752-496b-906b-3b45e16a91fd",
@@ -30,7 +37,7 @@ SAMPLE_TIMELINE_RESPONSE = {
             "amount_cents": 95000,
             "summary": "Aid award posted for Jane Doe (Doe Family).",
         },
-        
+
         # AID_CONTACT events (noisy — might want to suppress some)
         {
             "ts": "2026-01-03T12:00:00Z",
@@ -56,7 +63,7 @@ SAMPLE_TIMELINE_RESPONSE = {
             "entity_id": "e5f6a7b8-c9d0-4567-ef12-345678901234",
             "summary": "CONTACT: contacted Garcia Family about financial aid application.",
         },
-        
+
         # LEDGER_ENTRY events (very noisy — many routine GL entries)
         {
             "ts": "2026-01-03T10:22:08Z",
@@ -103,7 +110,7 @@ SAMPLE_TIMELINE_RESPONSE = {
             "amount_cents": 125000,
             "summary": "Ledger entry AID_POSTING for Rodriguez.",
         },
-        
+
         # More routine ledger noise
         {
             "ts": "2026-01-03T09:30:05Z",
@@ -164,7 +171,7 @@ SAMPLE_TIGHTENED = {
             "amount_cents": 95000,
             "summary": "$950 aid posted for Jane Doe",  # Same pattern
         },
-        
+
         # High-value ledger entries (payments, significant charges)
         {
             "ts": "2026-01-03T10:08:12Z",
@@ -184,18 +191,17 @@ SAMPLE_TIGHTENED = {
             "amount_cents": 125000,
             "summary": "$1,250 aid posted to ledger for Rodriguez",  # Echo of above, but GL side
         },
-        
+
         # Only include CONTACT events if recent or flagged urgent
         # (omitted routine ones for demo)
-        
+
         # Suppress: zero-amount entries, routine GL entries, etc.
     ]
 }
 
-print(__doc__)
-print("\n\nSAMPLE TIMELINE (current):")
-import json
-print(json.dumps(SAMPLE_TIMELINE_RESPONSE, indent=2))
+logger.info(__doc__)
+logger.info("\n\nSAMPLE TIMELINE (current):")
+logger.info(json.dumps(SAMPLE_TIMELINE_RESPONSE, indent=2))
 
-print("\n\nSAMPLE TIGHTENED (proposal):")
-print(json.dumps(SAMPLE_TIGHTENED, indent=2))
+logger.info("\n\nSAMPLE TIGHTENED (proposal):")
+logger.info(json.dumps(SAMPLE_TIGHTENED, indent=2))
