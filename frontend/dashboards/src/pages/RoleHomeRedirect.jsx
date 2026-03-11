@@ -89,8 +89,8 @@ const ROLE_ROUTE_MAP = new Map([
   ['it_director',       '/it'],
   ['it',                '/it'],
   // Financial Aid
-  ['aid_director',      '/financial-aid'],
-  ['financial_aid',     '/financial-aid'],
+  ['aid_director',      '/financial-aid-dashboard'],
+  ['financial_aid',     '/financial-aid-dashboard'],
   // Marketing
   ['marketing',         '/marketing'],
   // Advancement / Fundraising

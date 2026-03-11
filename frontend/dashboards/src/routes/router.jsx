@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter } from 'react-router-dom';
+﻿import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 // No-op touch to ensure required route/dashboard gate contexts run on this PR.
 
@@ -92,6 +92,19 @@ export const router = createBrowserRouter([
   {
     path: '/not-authorized',
     element: <NotAuthorized />,
+  },
+  // Legacy aliases used across cards/redirects until all links converge on canonical paths.
+  {
+    path: '/billing',
+    element: <Navigate to="/billing-dashboard" replace />,
+  },
+  {
+    path: '/financial-aid',
+    element: <Navigate to="/financial-aid-dashboard" replace />,
+  },
+  {
+    path: '/attendance',
+    element: <Navigate to="/teacher/attendance" replace />,
   },
   ...dashboardRoutes,
   {
