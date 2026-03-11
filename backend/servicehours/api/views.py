@@ -17,7 +17,7 @@ def _get_school_from_request(request):
     if not school_id:
         return None
     try:
-        return School.objects.get(id=school_id)
+        return School.objects.get(pk=school_id)
     except School.DoesNotExist:
         return None
 
@@ -51,7 +51,7 @@ class ServiceEntriesListCreate(APIView):
             return Response({"detail":"Missing student"}, status=400)
 
         try:
-            student = Student.objects.get(id=payload["student"], school=school)
+            student = Student.objects.get(pk=payload["student"], school=school)
         except Student.DoesNotExist:
             return Response({"detail":"Student not found in school"}, status=404)
 
@@ -78,7 +78,7 @@ class ServiceStudentSummary(APIView):
             return Response({"detail":"Missing or invalid school context"}, status=400)
 
         try:
-            Student.objects.get(id=student_id, school=school)
+            Student.objects.get(pk=student_id, school=school)
         except Student.DoesNotExist:
             return Response({"detail":"Student not found"}, status=404)
 
@@ -114,7 +114,7 @@ class ServiceApproveReject(APIView):
             return Response({"detail":"Missing or invalid school context"}, status=400)
 
         try:
-            entry = ServiceEntry.objects.get(id=entry_id, school=school)
+            entry = ServiceEntry.objects.get(pk=entry_id, school=school)
         except ServiceEntry.DoesNotExist:
             return Response({"detail":"Not found"}, status=404)
 

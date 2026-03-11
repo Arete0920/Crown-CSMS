@@ -127,7 +127,7 @@ def _assert_student_in_scope_or_404(request, school_id, student_id) -> None:
     roles = _role_codes(user, school_id)
 
     if _is_staffish(user, roles):
-        if not Student.objects.filter(id=student_id, school_id=school_id).exists():
+        if not Student.objects.filter(pk=student_id, school_id=school_id).exists():
             raise Http404()
         return
 

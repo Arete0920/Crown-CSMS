@@ -88,13 +88,13 @@ def obligations(request):
 
     from core.models import School as SchoolModel
     try:
-        school_obj = SchoolModel.objects.get(id=school)
+        school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
         return Response({"detail": "School not found."}, status=404)
 
     from core.models import UserAccount
     try:
-        payer = UserAccount.objects.get(id=request.data["payer_user_id"])
+        payer = UserAccount.objects.get(pk=request.data["payer_user_id"])
     except (UserAccount.DoesNotExist, ValueError, TypeError):
         return Response({"detail": "payer_user not found."}, status=404)
 
@@ -149,11 +149,11 @@ def invoice_create_from_obligations(request):
 
     from core.models import School as SchoolModel, UserAccount
     try:
-        school_obj = SchoolModel.objects.get(id=school)
+        school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
         return Response({"detail": "School not found."}, status=404)
     try:
-        payer = UserAccount.objects.get(id=payer_user_id)
+        payer = UserAccount.objects.get(pk=payer_user_id)
     except (UserAccount.DoesNotExist, ValueError, TypeError):
         return Response({"detail": "payer_user not found."}, status=404)
 
@@ -254,7 +254,7 @@ def payment_intent_create(request):
 
     from core.models import School as SchoolModel
     try:
-        school_obj = SchoolModel.objects.get(id=school)
+        school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
         return Response({"detail": "School not found."}, status=404)
 
@@ -297,7 +297,7 @@ def payment_settle(request, payment_id: int):
     school = get_request_school_id(request, required=True)
 
     try:
-        payment = FinancePayment.objects.get(id=payment_id, school_id=school)
+        payment = FinancePayment.objects.get(pk=payment_id, school_id=school)
     except (FinancePayment.DoesNotExist, ValueError):
         return Response({"detail": "Payment not found."}, status=404)
 
@@ -333,7 +333,7 @@ def refund_create(request, payment_id: int):
     school = get_request_school_id(request, required=True)
 
     try:
-        payment = FinancePayment.objects.get(id=payment_id, school_id=school)
+        payment = FinancePayment.objects.get(pk=payment_id, school_id=school)
     except (FinancePayment.DoesNotExist, ValueError):
         return Response({"detail": "Payment not found."}, status=404)
 
@@ -382,7 +382,7 @@ def donation_create(request):
 
     from core.models import School as SchoolModel
     try:
-        school_obj = SchoolModel.objects.get(id=school)
+        school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
         return Response({"detail": "School not found."}, status=404)
 

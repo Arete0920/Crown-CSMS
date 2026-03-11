@@ -56,7 +56,7 @@ def post_charge_to_journal(sender, instance: Charge, created, **kwargs):
     if _already_posted("charge", instance.id):
         return
 
-    school = School.objects.filter(id=instance.school_id).first()
+    school = School.objects.filter(pk=instance.school_id).first()
     if not school:
         raise ValidationError("Charge.school_id does not map to a School.")
 
@@ -86,7 +86,7 @@ def post_payment_to_journal(sender, instance: Payment, created, **kwargs):
     if _already_posted("payment", instance.id):
         return
 
-    school = School.objects.filter(id=instance.school_id).first()
+    school = School.objects.filter(pk=instance.school_id).first()
     if not school:
         raise ValidationError("Payment.school_id does not map to a School.")
 

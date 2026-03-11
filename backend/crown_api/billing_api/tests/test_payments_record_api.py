@@ -105,7 +105,7 @@ def test_record_payment_creates_payment_allocation_and_audit(finance_user, finan
     payment_id = resp.data.get("payment_id")
     assert payment_id
 
-    p = Payment.objects.get(id=payment_id)
+    p = Payment.objects.get(pk=payment_id)
     assert p.school_id == school_id
     assert p.account_id == acct.id
     assert str(p.reference) == "R-ABC-001"

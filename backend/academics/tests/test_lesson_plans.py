@@ -500,7 +500,7 @@ class TestLessonResourceCRUD:
         c = _client_auth(user, school)
         r = c.delete(f"/api/academics/lesson-resources/{res.id}/")
         assert r.status_code == 204
-        assert not LessonResource.objects.filter(id=res.id).exists()
+        assert not LessonResource.objects.filter(pk=res.id).exists()
 
     def test_cross_school_resource_returns_404(self):
         school_a = _mk_school()

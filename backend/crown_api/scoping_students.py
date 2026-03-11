@@ -25,7 +25,7 @@ def get_core_student_or_404_for_request(*, request, student_id):
     access = resolve_household_access(request)
     
     # Start from the target core student
-    student = CoreStudent.objects.filter(id=student_id).first()
+    student = CoreStudent.objects.filter(pk=student_id).first()
     if not student:
         raise Http404()
     

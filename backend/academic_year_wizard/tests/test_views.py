@@ -160,7 +160,7 @@ class AcademicYearCreateTest(TestCase):
         client = _authed_client()
         r = client.post(BASE_URL, **_headers(school.id))
         self.assertTrue(
-            AcademicYearWizardSession.objects.filter(id=r.data["session_id"]).exists()
+            AcademicYearWizardSession.objects.filter(pk=r.data["session_id"]).exists()
         )
 
 
@@ -173,7 +173,7 @@ class AcademicYearConfigureTest(TestCase):
         school = _make_school()
         client = _authed_client()
         sid, _ = _advance_to_configured(client, school.id)
-        session = AcademicYearWizardSession.objects.get(id=sid)
+        session = AcademicYearWizardSession.objects.get(pk=sid)
         self.assertEqual(session.status, AcademicYearWizardSession.STATUS_CONFIGURED)
         self.assertEqual(session.year_name, "2027-2028")
 
@@ -237,7 +237,7 @@ class AcademicYearTermsTest(TestCase):
         school = _make_school()
         client = _authed_client()
         sid, _ = _advance_to_terms_set(client, school.id)
-        session = AcademicYearWizardSession.objects.get(id=sid)
+        session = AcademicYearWizardSession.objects.get(pk=sid)
         self.assertEqual(session.status, AcademicYearWizardSession.STATUS_TERMS_SET)
         self.assertEqual(len(session.terms_config), len(GOOD_TERMS))
 
@@ -481,7 +481,7 @@ class AcademicYearTermUniqueConstraintTest(TestCase):
         sid, year_name = _advance_to_committed(client, school.id)
 
         # Manually reset session to terms_set so we can commit again
-        session = AcademicYearWizardSession.objects.get(id=sid)
+        session = AcademicYearWizardSession.objects.get(pk=sid)
         session.status = AcademicYearWizardSession.STATUS_TERMS_SET
         session.save()
 

@@ -16,7 +16,7 @@ class Command(BaseCommand):
         parser.add_argument("--count", type=int, default=60)
 
     def handle(self, *args, **opts):
-        school = School.objects.get(id=opts["school_id"])
+        school = School.objects.get(pk=opts["school_id"])
         students = list(Student.objects.filter(school=school)[:200])
         if not students:
             self.stdout.write(self.style.ERROR("No students found for school. Seed students first."))

@@ -25,9 +25,9 @@ from .services import build_account_statement
 def _get_account_for_scope(*, sid, account_id: str | None, household_id: str | None):
     acct = None
     if account_id:
-        acct = LedgerAccount.objects.get(id=_parse_uuid(account_id, "account_id"), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=_parse_uuid(account_id, "account_id"), school_id=sid)
     if household_id:
-        hh = Household.objects.get(id=_parse_uuid(household_id, "household_id"), school_id=sid)
+        hh = Household.objects.get(pk=_parse_uuid(household_id, "household_id"), school_id=sid)
         acct2, _ = LedgerAccount.objects.get_or_create(school_id=sid, household=hh)
         if acct is not None and acct.id != acct2.id:
             raise ValueError("account_id does not match household_id")
@@ -131,7 +131,7 @@ def ensure_account(request: HttpRequest):
 
     # no-leak: ensure household is in-scope
     try:
-        hh = Household.objects.get(id=UUID(str(household_id)), school_id=sid)
+        hh = Household.objects.get(pk=UUID(str(household_id)), school_id=sid)
     except Household.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -151,7 +151,7 @@ def account_detail(request: HttpRequest, account_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(account_id), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -188,7 +188,7 @@ def create_charge(request: HttpRequest):
         return _json_error("amount is required", status=400)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(str(account_id)), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(str(account_id)), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -257,10 +257,10 @@ def record_payment(request: HttpRequest):
         acct: LedgerAccount | None = None
 
         if account_id:
-            acct = LedgerAccount.objects.get(id=_parse_uuid(account_id, "account_id"), school_id=sid)
+            acct = LedgerAccount.objects.get(pk=_parse_uuid(account_id, "account_id"), school_id=sid)
 
         if household_id:
-            hh = Household.objects.get(id=_parse_uuid(household_id, "household_id"), school_id=sid)
+            hh = Household.objects.get(pk=_parse_uuid(household_id, "household_id"), school_id=sid)
             acct2, _ = LedgerAccount.objects.get_or_create(school_id=sid, household=hh)
             if acct is not None and acct.id != acct2.id:
                 return _json_error("account_id does not match household_id", status=400)
@@ -312,7 +312,7 @@ def record_payment(request: HttpRequest):
         created_allocations = []
         for charge_id, a_amt in requested_by_charge.items():
             try:
-                ch = Charge.objects.get(id=charge_id, school_id=sid, account=acct)
+                ch = Charge.objects.get(pk=charge_id, school_id=sid, account=acct)
             except Charge.DoesNotExist:
                 return _json_error("charge not found", status=404)
 
@@ -396,7 +396,7 @@ def ledger_account_balance(request: HttpRequest, account_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(account_id), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -412,7 +412,7 @@ def charge_balance(request: HttpRequest, charge_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        ch = Charge.objects.get(id=UUID(charge_id), school_id=sid)
+        ch = Charge.objects.get(pk=UUID(charge_id), school_id=sid)
     except Charge.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -428,7 +428,7 @@ def ledger_account_statement(request: HttpRequest, account_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(account_id), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 

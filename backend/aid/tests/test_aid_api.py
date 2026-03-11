@@ -227,7 +227,7 @@ class TestAdminRecommendAward(TestCase):
         self.assertIn("award", data)
         self.assertIn("explanation", data)
         # Verify award was persisted
-        self.assertTrue(AidAward.objects.filter(id=data["award"]["id"]).exists())
+        self.assertTrue(AidAward.objects.filter(pk=data["award"]["id"]).exists())
 
     def test_created_award_stores_engine_outputs(self):
         r = _json_post(self.client, self.url, {

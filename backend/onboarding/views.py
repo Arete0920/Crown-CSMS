@@ -12,7 +12,7 @@ onboarding/views.py
 
 All endpoints require authentication (SessionAuthentication or JWT).
 All endpoints are tenant-scoped via X-School-Id → get_request_school_id().
-Tenant isolation: every ImportSession lookup uses ImportSession.objects.get(id=…, school_id=…).
+Tenant isolation: every ImportSession lookup uses ImportSession.objects.get(pk=…, school_id=…).
 """
 import csv
 import io

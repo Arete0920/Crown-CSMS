@@ -39,7 +39,7 @@ class Command(BaseCommand):
         school_id = opts["school_id"]
         count = opts["count"]
 
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
         students = list(Student.objects.filter(school=school)[:120])
         if not students:
             self.stdout.write(self.style.ERROR("No students found for school. Seed students first."))

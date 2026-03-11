@@ -14,7 +14,7 @@ def _get_school_from_request(request):
     if not school_id:
         return None
     try:
-        return School.objects.get(id=school_id)
+        return School.objects.get(pk=school_id)
     except School.DoesNotExist:
         return None
 

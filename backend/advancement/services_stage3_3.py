@@ -90,7 +90,7 @@ def best_available(
 
     # Get all seats for the event
     try:
-        event = Event.objects.get(id=event_id, school_id=school_id)
+        event = Event.objects.get(pk=event_id, school_id=school_id)
         event_seating = EventSeating.objects.get(school_id=school_id, event=event)
     except (Event.DoesNotExist, EventSeating.DoesNotExist):
         return []

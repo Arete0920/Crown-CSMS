@@ -155,7 +155,7 @@ class StaffOnboardingCreateTest(TestCase):
         r = _authed_client().post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         self.assertTrue(
-            StaffOnboardingWizardSession.objects.filter(id=sid).exists()
+            StaffOnboardingWizardSession.objects.filter(pk=sid).exists()
         )
 
 
@@ -168,7 +168,7 @@ class StaffOnboardingConfigureTest(TestCase):
         school = _make_school()
         client = _authed_client()
         sid, email = _advance_to_configured(client, school.id)
-        session = StaffOnboardingWizardSession.objects.get(id=sid)
+        session = StaffOnboardingWizardSession.objects.get(pk=sid)
         self.assertEqual(session.status, StaffOnboardingWizardSession.STATUS_CONFIGURED)
         self.assertEqual(session.email, email)
 

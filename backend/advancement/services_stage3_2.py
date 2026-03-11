@@ -86,7 +86,7 @@ def create_seat_checkout_session(
     provider = get_checkout_provider()
 
     try:
-        event = Event.objects.get(id=event_id, school_id=school_id)
+        event = Event.objects.get(pk=event_id, school_id=school_id)
         description = f"Seats – {event.name}"
     except Event.DoesNotExist:
         description = "Seat tickets"
@@ -162,7 +162,7 @@ def fulfill_paid_order(*, order_id: uuid.UUID) -> PendingSeatOrder:
         seat_ids = [uuid.UUID(s) for s in order.seat_ids]
 
         try:
-            event = Event.objects.get(id=event_id, school_id=school_id)
+            event = Event.objects.get(pk=event_id, school_id=school_id)
         except Event.DoesNotExist:
             order.status = "failed"
             order.touch()

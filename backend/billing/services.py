@@ -161,7 +161,7 @@ def create_tuition_billing_run(
 
     plan: InstallmentPlan | None = None
     if installment_plan_id:
-        plan = InstallmentPlan.objects.get(id=installment_plan_id, school_id=school_id)
+        plan = InstallmentPlan.objects.get(pk=installment_plan_id, school_id=school_id)
 
     for household_id, st_list in by_household.items():
         household_total = amount_per_student * Decimal(str(len(st_list)))

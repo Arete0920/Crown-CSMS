@@ -15,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument("--school-id", type=str, required=True, help="UUID of the school.")
 
     def handle(self, *args, **opts):
-        school = School.objects.get(id=opts["school_id"])
+        school = School.objects.get(pk=opts["school_id"])
 
         basketball, _ = Sport.objects.get_or_create(
             school=school, name="Basketball", gender="Boys"

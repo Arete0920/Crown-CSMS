@@ -40,7 +40,7 @@ class Command(BaseCommand):
         parser.add_argument("--messages-per", type=int, default=4)
 
     def handle(self, *args, **opts):
-        school = School.objects.get(id=opts["school_id"])
+        school = School.objects.get(pk=opts["school_id"])
         User = get_user_model()
         users = list(User.objects.all()[:50])
         if not users:
