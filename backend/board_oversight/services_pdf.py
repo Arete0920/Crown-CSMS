@@ -53,9 +53,7 @@ def generate_board_packet(school_id=None) -> BytesIO | None:
     # ── Applications ───────────────────────────────────────────────────────
     try:
         from applications.models import Application
-        app_qs = Application.objects.all()
-        if school_id:
-            app_qs = app_qs.filter(school_id=school_id)
+        app_qs = Application.objects.filter(school_id=school_id) if school_id else Application.objects.order_by("id")
         applications = app_qs.count()
     except Exception:
         applications = 0
@@ -63,9 +61,7 @@ def generate_board_packet(school_id=None) -> BytesIO | None:
     # ── Discipline incidents ────────────────────────────────────────────────
     try:
         from discipline.models import DisciplineIncident
-        di_qs = DisciplineIncident.objects.all()
-        if school_id:
-            di_qs = di_qs.filter(school_id=school_id)
+        di_qs = DisciplineIncident.objects.filter(school_id=school_id) if school_id else DisciplineIncident.objects.order_by("id")
         incidents = di_qs.count()
     except Exception:
         incidents = 0
@@ -73,9 +69,7 @@ def generate_board_packet(school_id=None) -> BytesIO | None:
     # ── Strategic Initiatives ─────────────────────────────────────────────
     try:
         from board_oversight.models_governance import StrategicInitiative
-        si_qs = StrategicInitiative.objects.all()
-        if school_id:
-            si_qs = si_qs.filter(school_id=school_id)
+        si_qs = StrategicInitiative.objects.filter(school_id=school_id) if school_id else StrategicInitiative.objects.order_by("id")
         total_si = si_qs.count()
         complete_si = si_qs.filter(status="complete").count()
     except Exception:

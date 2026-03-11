@@ -45,7 +45,7 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         school = School.objects.get(pk=opts["school_id"])
         User = get_user_model()
-        users = list(User.objects.all()[:50])
+        users = list(User.objects.order_by("id")[:50])
         if not users:
             self.stdout.write(self.style.ERROR("No users found. Ensure CI user / demo users exist."))
             return

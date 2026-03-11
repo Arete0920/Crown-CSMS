@@ -41,7 +41,7 @@ def run() -> None:
 
   from crown_api.models import Household, Invoice, Payment
 
-  households = list(Household.objects.all().order_by("household_name"))
+  households = list(Household.objects.order_by("household_name"))
   if not households:
     raise SystemExit("No households found. Run scripts/seed_households.py first.")
 
