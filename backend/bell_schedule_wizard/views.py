@@ -1,4 +1,5 @@
 from datetime import time
+import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -21,6 +22,7 @@ from .models import (
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -396,7 +398,7 @@ def commit_session(request, session_id):
             payload={"schedule_id": str(schedule.id), "name": schedule.name},
         )
     except Exception:
-        pass
+        logger.exception("commit_session: bell schedule audit event failed")
 
     result = {
         "schedule_id":      str(schedule.id),

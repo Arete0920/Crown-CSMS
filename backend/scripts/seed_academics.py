@@ -13,6 +13,10 @@ Note: This seed expects students from seed_households.py (HCA-0001+).
 
 import os
 from datetime import timedelta
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def _refuse_if_azure() -> None:
@@ -118,11 +122,11 @@ def run() -> None:
             },
         )
 
-    print("Seeded academics:")
-    print(f"- Courses: {Course.objects.count()}")
-    print(f"- Course enrollments: {CourseEnrollment.objects.count()}")
-    print(f"- Attendance records: {AttendanceRecord.objects.count()}")
-    print(f"- Grade records: {GradeRecord.objects.count()}")
+    logger.info("Seeded academics:")
+    logger.info("- Courses: %s", Course.objects.count())
+    logger.info("- Course enrollments: %s", CourseEnrollment.objects.count())
+    logger.info("- Attendance records: %s", AttendanceRecord.objects.count())
+    logger.info("- Grade records: %s", GradeRecord.objects.count())
 
 
 if __name__ == "__main__":

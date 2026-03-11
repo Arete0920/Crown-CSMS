@@ -12,7 +12,11 @@ Note: This seed will create households/students if missing.
 """
 
 import os
+import logging
 from datetime import datetime, timedelta, timezone
+
+
+logger = logging.getLogger(__name__)
 
 
 def _refuse_if_azure() -> None:
@@ -174,9 +178,9 @@ def run() -> None:
             thread.last_message_at = last_sent
             thread.save(update_fields=["last_message_at", "updated_at"])
 
-    print("Seeded communications:")
-    print(f"- Threads: {MessageThread.objects.count()}")
-    print(f"- Messages: {Message.objects.count()}")
+    logger.info("Seeded communications:")
+    logger.info("- Threads: %s", MessageThread.objects.count())
+    logger.info("- Messages: %s", Message.objects.count())
 
 
 if __name__ == "__main__":

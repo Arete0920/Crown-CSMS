@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 from decimal import Decimal
 
@@ -11,6 +12,9 @@ from rest_framework import permissions
 from rest_framework.views import APIView
 
 from core.models import School
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_school(request):
@@ -62,7 +66,7 @@ class ExecutiveSelfOverview(APIView):
             )["total"]
             payload["receivables_cents"] = int(total_amount * 100)
         except Exception:
-            pass
+            logger.exception("ExecutiveSelfOverview: receivables aggregation failed")
 
         # ── Aid allocated: sum AidAward.awarded_cents for this school ──────
         try:
@@ -73,7 +77,7 @@ class ExecutiveSelfOverview(APIView):
             )["total"]
             payload["aid_allocated_cents"] = int(total_aid)
         except Exception:
-            pass
+            logger.exception("ExecutiveSelfOverview: aid aggregation failed")
 
         # ── Academic at-risk: distinct students with any graded entry < 75% ─
         try:
@@ -92,7 +96,7 @@ class ExecutiveSelfOverview(APIView):
             )
             payload["at_risk_count"] = at_risk_count
         except Exception:
-            pass
+            logger.exception("ExecutiveSelfOverview: at-risk query failed")
 
         # ── Assignment counts ────────────────────────────────────────────────
         try:
@@ -114,7 +118,7 @@ class ExecutiveSelfOverview(APIView):
                 due_date__lte=week_end,
             ).count()
         except Exception:
-            pass
+            logger.exception("ExecutiveSelfOverview: assignment metrics query failed")
 
         # ── Build alerts ─────────────────────────────────────────────────────
         alerts = []
