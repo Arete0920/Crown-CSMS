@@ -83,8 +83,10 @@ export default function CrownSidebar() {
   return (
     <List dense disablePadding>
       <Section title="Academics">
-        <NavItem label="Gradebook Workspace"  href="/gradebook" />
+        <NavItem label="Gradebook Dashboard" href="/gradebook-dashboard" />
+        <NavItem label="Gradebook Workspace" href="/gradebook" />
         <NavItem label="Classrooms" href="/classrooms" />
+        <NavItem label="Attendance Dashboard" href="/attendance-dashboard" />
         <NavItem label="Attendance Workspace" href="/teacher/attendance" />
       </Section>
 
@@ -95,8 +97,8 @@ export default function CrownSidebar() {
 
       <Section title="Teacher">
         <NavItem label="Teacher Dashboard" href="/teacher" />
-        <NavItem label="Gradebook" href="/gradebook" />
-        <NavItem label="Attendance" href="/teacher/attendance" />
+        <NavItem label="Gradebook Dashboard" href="/gradebook-dashboard" />
+        <NavItem label="Attendance Dashboard" href="/attendance-dashboard" />
       </Section>
 
       <Section title="Family">
@@ -121,15 +123,16 @@ export default function CrownSidebar() {
       <Section title="Master Control">
         <NavItem label="Master Control Dashboard" href="/master-control" />
         <NavItem label="Schools" href="/master-control" />
-        <NavItem label="Support" href="/communications" />
+        <NavItem label="Communications Dashboard" href="/communications-dashboard" />
+        <NavItem label="Comms Workspace" href="/communications" />
         <NavItem label="Executive Reports" href="/master-control" />
       </Section>
 
       <Section title="Operations">
-        <NavItem label="Inquiries" href="/admissions/pipeline" />
-        <NavItem label="Applicants" href="/admissions/pipeline" />
-        <NavItem label="Decisions" href="/admissions/pipeline" />
-        <NavItem label="Scheduling Workspace"  href="/classrooms" />
+        <NavItem label="Admissions Dashboard" href="/admissions-dashboard" />
+        <NavItem label="Admissions Pipeline" href="/admissions/pipeline" />
+        <NavItem label="Scheduling Dashboard" href="/scheduling-dashboard" />
+        <NavItem label="Roster Workspace" href="/aftercare/roster" />
       </Section>
 
       {dashboardNavSections.map((section) => (

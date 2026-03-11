@@ -17,11 +17,11 @@ export function HomeDashboard() {
           <CrownCard title="Navigation" right={<span className="crown-pill">Crown Dashboard</span>}>
             <nav style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
               {[
-                ['/billing',       'Billing'],
-                ['/financial-aid', 'Financial Aid'],
+                ['/billing-dashboard',       'Billing'],
+                ['/financial-aid-dashboard', 'Financial Aid'],
                 ['/academics',     'Academics'],
                 ['/classrooms',    'Classrooms'],
-                ['/gradebook',     'Gradebook (Read-Only)'],
+                ['/gradebook-dashboard',     'Gradebook (Read-Only)'],
                 ['/transcript',    'Transcript (Read-Only)'],
               ].map(([href, label]) => (
                 <a
