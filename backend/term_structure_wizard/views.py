@@ -32,6 +32,7 @@ Invariants enforced here:
 """
 
 from datetime import date, timedelta
+import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -58,6 +59,7 @@ from .models import (
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -440,8 +442,8 @@ def commit_session(request, session_id):
                 "periods":           len(periods),
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("term_structure.commit audit log skipped: %s", exc)
 
     result = {
         "term_structure_id":  str(ts.id),
