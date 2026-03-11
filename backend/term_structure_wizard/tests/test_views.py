@@ -112,7 +112,7 @@ def _set_periods(client, school_id, session_id, periods=None):
 def _advance_to_configured(client, school_id, ay=None):
     """Advance to 'configured' state. Returns (session_id, ay)."""
     if ay is None:
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
         ay = _make_year(school)
     sess = _create_session(client, school_id)
     _configure_session(client, school_id, sess["session_id"], ay.id)
@@ -192,7 +192,7 @@ class TermStructureCreateTest(TestCase):
         r = self.client.post(BASE_URL, **_headers(self.school.id))
         sid = r.data["session_id"]
         self.assertTrue(
-            TermStructureWizardSession.objects.filter(id=sid, school=self.school).exists()
+            TermStructureWizardSession.objects.filter(pk=sid, school=self.school).exists()
         )
 
 

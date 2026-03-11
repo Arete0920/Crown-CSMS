@@ -14,7 +14,7 @@ def _mk_resources(*pairs):
 
 @transaction.atomic
 def seed_curriculum_demo(*, school_id: str) -> dict:
-    school = School.objects.get(id=school_id)
+    school = School.objects.get(pk=school_id)
 
     # Idempotent: clear existing curriculum for this school
     CurriculumCourse.objects.filter(school=school).delete()

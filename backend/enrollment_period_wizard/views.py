@@ -148,7 +148,7 @@ def configure_session(request, session_id):
         return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
     # Resolve AcademicYear — must belong to request school
-    ay = AcademicYear.objects.filter(id=ay_id, school_id=school_id).first()
+    ay = AcademicYear.objects.filter(pk=ay_id, school_id=school_id).first()
     if ay is None:
         return Response(
             {"error": "academic_year_id not found for this school"},

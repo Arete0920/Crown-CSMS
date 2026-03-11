@@ -236,7 +236,7 @@ def commit_session(request, session_id):
         for aw in awards_config:
             try:
                 app_id = _uuid.UUID(aw["application_id"])
-                app = FinancialAidApplication.objects.get(id=app_id, school_id=school_id)
+                app = FinancialAidApplication.objects.get(pk=app_id, school_id=school_id)
             except (ValueError, FinancialAidApplication.DoesNotExist):
                 errors.append(f"Application {aw['application_id']} not found")
                 continue

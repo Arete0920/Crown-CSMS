@@ -205,7 +205,7 @@ def oneroster_export_bundle(request):
     school_id = get_request_school_id(request)
 
     try:
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
     except School.DoesNotExist:
         raise ValidationError({"detail": "School not found."})
 

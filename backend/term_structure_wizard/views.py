@@ -15,7 +15,7 @@ Endpoints:
 
 Invariants enforced here:
   - Tenant: every lookup filtered on school_id from X-School-Id header
-  - AY ownership: AcademicYear.objects.filter(id=..., school_id=...)
+  - AY ownership: AcademicYear.objects.filter(pk=..., school_id=...)
   - Period coverage: periods[0].start_date == ay.start_date,
                      periods[-1].end_date == ay.end_date,
                      consecutive periods[i].end_date + 1 day == periods[i+1].start_date

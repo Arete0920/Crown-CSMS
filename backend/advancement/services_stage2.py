@@ -193,7 +193,7 @@ def create_sponsorship_checkout(
     """
     Create a pending SponsorshipAgreement and open a provider checkout session.
     """
-    package = SponsorshipPackage.objects.get(id=package_id, school_id=school_id)
+    package = SponsorshipPackage.objects.get(pk=package_id, school_id=school_id)
 
     provider = get_provider()
     currency = getattr(settings, "ADVANCEMENT_CURRENCY", "usd")

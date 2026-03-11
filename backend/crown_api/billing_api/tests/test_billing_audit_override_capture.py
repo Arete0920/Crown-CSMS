@@ -83,7 +83,7 @@ def test_billing_audit_includes_school_override_id_on_record_payment(staff_finan
     payment_id = resp.data.get("payment_id")
     assert payment_id
 
-    p = Payment.objects.get(id=payment_id)
+    p = Payment.objects.get(pk=payment_id)
     assert p.school_id == override_school.id
     assert p.account_id == acct.id
 

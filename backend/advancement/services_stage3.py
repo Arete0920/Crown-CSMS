@@ -153,7 +153,7 @@ def hold_seats(
     holds_out = []
     for seat_id in seat_ids:
         try:
-            seat = Seat.objects.get(id=seat_id, school_id=school_id)
+            seat = Seat.objects.get(pk=seat_id, school_id=school_id)
         except Seat.DoesNotExist:
             return {"ok": False, "message": f"Seat {seat_id} not found"}
 
@@ -194,8 +194,8 @@ def assign_seat_to_ticket(
     Raises ValueError if seat is already assigned to a different ticket.
     Raises Ticket.DoesNotExist / Seat.DoesNotExist if not found for school.
     """
-    ticket = Ticket.objects.get(id=ticket_id, school_id=school_id)
-    seat = Seat.objects.get(id=seat_id, school_id=school_id)
+    ticket = Ticket.objects.get(pk=ticket_id, school_id=school_id)
+    seat = Seat.objects.get(pk=seat_id, school_id=school_id)
 
     if TicketSeat.objects.filter(school_id=school_id, seat=seat).exists():
         raise ValueError(f"Seat {seat_id} is already assigned to a ticket.")

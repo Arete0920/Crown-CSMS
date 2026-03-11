@@ -23,7 +23,7 @@ def test_ensure_ci_user_creates_school_deterministically():
     test_school_id = UUID('a5351136-98fe-4d48-add0-fa8f62d9ceff')
     
     # Ensure school doesn't exist
-    School.objects.filter(id=test_school_id).delete()
+    School.objects.filter(pk=test_school_id).delete()
     
     client = APIClient()
     
@@ -46,7 +46,7 @@ def test_ensure_ci_user_creates_school_deterministically():
     assert 'access' in data
     
     # School should now exist with canonical defaults
-    school = School.objects.get(id=test_school_id)
+    school = School.objects.get(pk=test_school_id)
     assert school.name == 'Crown Demo School'
     assert school.timezone == 'America/New_York'
     assert school.is_active is True
@@ -62,7 +62,7 @@ def test_ensure_ci_user_idempotent_with_existing_school():
     test_school_id = UUID('a5351136-98fe-4d48-add0-fa8f62d9ceff')
     
     # Pre-create school
-    School.objects.filter(id=test_school_id).delete()
+    School.objects.filter(pk=test_school_id).delete()
     School.objects.create(
         id=test_school_id,
         name='Crown Demo School',
@@ -97,7 +97,7 @@ def test_ensure_ci_user_idempotent_with_existing_school():
     assert response2.status_code == 200
     
     # No duplicates
-    assert School.objects.filter(id=test_school_id).count() == 1
+    assert School.objects.filter(pk=test_school_id).count() == 1
 
 
 # ---------------------------------------------------------------------------

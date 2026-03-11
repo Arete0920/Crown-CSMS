@@ -79,7 +79,7 @@ def test_billing_run_creates_multiple_invoices_with_plan():
         installment_plan_id=plan.id,
     )
 
-    run = BillingRun.objects.get(id=result.billing_run_id)
+    run = BillingRun.objects.get(pk=result.billing_run_id)
     invoices = Invoice.objects.filter(school_id=school.id, billing_run=run, household=hh).order_by("due_on")
     assert invoices.count() == 3
 
@@ -90,7 +90,7 @@ def test_billing_run_creates_multiple_invoices_with_plan():
         assert inv.due_on is not None
         assert inv.ledger_charge_id is not None
         # Charge exists and matches invoice
-        ch = Charge.objects.get(id=inv.ledger_charge_id)
+        ch = Charge.objects.get(pk=inv.ledger_charge_id)
         assert Decimal(str(ch.amount)) == Decimal(str(inv.total_amount))
         # Lines sum to invoice total
         line_sum = sum([Decimal(str(l.amount)) for l in inv.lines.all()])

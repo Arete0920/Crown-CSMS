@@ -111,7 +111,7 @@ class Command(BaseCommand):
         per_section = int(opts["per_section"])
 
         # Validate school exists (helps catch wrong IDs fast)
-        if not School.objects.filter(id=school_id).exists():
+        if not School.objects.filter(pk=school_id).exists():
             raise SystemExit(f"School not found: {school_id}")
 
         if wipe:

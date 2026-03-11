@@ -166,7 +166,7 @@ def billing_runs(request: HttpRequest):
     except ValueError as e:
         return _json_error(str(e), status=400)
 
-    run = BillingRun.objects.get(id=result.billing_run_id, school_id=sid)
+    run = BillingRun.objects.get(pk=result.billing_run_id, school_id=sid)
     return _envelope(
         {
             "billing_run": _run_to_dict(run),
@@ -186,7 +186,7 @@ def billing_run_detail(request: HttpRequest, billing_run_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        run = BillingRun.objects.get(id=UUID(billing_run_id), school_id=sid)
+        run = BillingRun.objects.get(pk=UUID(billing_run_id), school_id=sid)
     except BillingRun.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -248,7 +248,7 @@ def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        run = BillingRun.objects.get(id=UUID(billing_run_id), school_id=sid)
+        run = BillingRun.objects.get(pk=UUID(billing_run_id), school_id=sid)
     except BillingRun.DoesNotExist:
         return _json_error("Not found", status=404)
 

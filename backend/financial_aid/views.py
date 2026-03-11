@@ -15,7 +15,7 @@ class FinancialAidSummaryView(APIView):
     def get(self, request):
         # Canonical scoping: missing header -> 400, wrong-tenant non-staff -> 404.
         school_id = get_request_school_id(request, required=True)
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
         if not user_has_permission(request.user, "financial_aid.view", school=school):
             return Response({"detail": "Permission denied."}, status=403)
         academic_year = request.query_params.get("academic_year")
@@ -104,7 +104,7 @@ class FinancialAidDrilldownView(APIView):
     def get(self, request):
         # Canonical scoping: missing header -> 400, wrong-tenant non-staff -> 404.
         school_id = get_request_school_id(request, required=True)
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
         if not user_has_permission(request.user, "financial_aid.view", school=school):
             return Response({"detail": "Permission denied."}, status=403)
         # Rationale is sensitive — only visible to holders of financial_aid.view_rationale

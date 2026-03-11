@@ -151,7 +151,7 @@ class FeeScheduleCreateTest(TestCase):
     def test_create_persists_session(self):
         school = _make_school()
         r = _authed_client().post(BASE_URL, **_headers(school.id))
-        self.assertTrue(FeeScheduleWizardSession.objects.filter(id=r.data["session_id"]).exists())
+        self.assertTrue(FeeScheduleWizardSession.objects.filter(pk=r.data["session_id"]).exists())
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +163,7 @@ class FeeScheduleConfigureTest(TestCase):
         school = _make_school()
         client = _authed_client()
         sid, name = _advance_to_configured(client, school.id)
-        session = FeeScheduleWizardSession.objects.get(id=sid)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
         self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_CONFIGURED)
         self.assertEqual(session.schedule_name, name)
 
@@ -214,7 +214,7 @@ class FeeScheduleLinesTest(TestCase):
         school = _make_school()
         client = _authed_client()
         sid, _ = _advance_to_lines_set(client, school.id)
-        session = FeeScheduleWizardSession.objects.get(id=sid)
+        session = FeeScheduleWizardSession.objects.get(pk=sid)
         self.assertEqual(session.status, FeeScheduleWizardSession.STATUS_LINES_SET)
         self.assertEqual(len(session.lines_config), 2)
 

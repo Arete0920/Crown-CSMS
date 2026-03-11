@@ -21,7 +21,7 @@ def _get_school(request):
     if not sid:
         return None
     try:
-        return School.objects.get(id=sid)
+        return School.objects.get(pk=sid)
     except School.DoesNotExist:
         return None
 

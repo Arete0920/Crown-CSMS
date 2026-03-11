@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from decimal import Decimal
 from uuid import UUID
@@ -40,7 +40,7 @@ def apply_financial_aid_to_billing_run(*, school_id, billing_run_id: UUID) -> di
     Calling this function twice with the same arguments is safe: awards
     already disbursed to this billing run are silently skipped.
     """
-    run = BillingRun.objects.get(id=billing_run_id, school_id=school_id)
+    run = BillingRun.objects.get(pk=billing_run_id, school_id=school_id)
     invoices = (
         Invoice.objects.filter(school_id=school_id, billing_run=run)
         .order_by("created_at")

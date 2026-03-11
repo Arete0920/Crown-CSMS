@@ -15,7 +15,7 @@ def _get_school_from_header_or_403(request) -> School:
     if not school_id:
         raise PermissionDenied("Missing X-School-Id header.")
     try:
-        return School.objects.get(id=school_id)
+        return School.objects.get(pk=school_id)
     except School.DoesNotExist:
         raise PermissionDenied("Invalid school context.")
 

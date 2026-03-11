@@ -57,7 +57,7 @@ class Command(BaseCommand):
         wipe = bool(opts.get("wipe", False))
 
         # Validate school exists
-        if not School.objects.filter(id=school_id).exists():
+        if not School.objects.filter(pk=school_id).exists():
             raise SystemExit(f"School not found: {school_id}")
 
         if wipe and not dry_run:

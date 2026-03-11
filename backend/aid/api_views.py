@@ -319,7 +319,7 @@ def admin_recommend_award(request):
         return Response({"detail": "gross_tuition_cents must be > 0"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        app = AidApplication.objects.get(id=application_id, school_id=school_id)
+        app = AidApplication.objects.get(pk=application_id, school_id=school_id)
     except (AidApplication.DoesNotExist, ValueError, TypeError):
         return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -373,7 +373,7 @@ def admin_approve_award(request, award_id):
     reason = request.data.get("reason", "")
 
     try:
-        award = AidAward.objects.get(id=award_id, school_id=school_id)
+        award = AidAward.objects.get(pk=award_id, school_id=school_id)
     except AidAward.DoesNotExist:
         return Response({"detail": "Award not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -418,7 +418,7 @@ def family_aid_status(request):
     # Application is tied to the family, not the student — look up via student.family
     from core.models import Student  # local import to avoid circular at module level
     try:
-        student = Student.objects.get(id=student_id, school_id=school_id)
+        student = Student.objects.get(pk=student_id, school_id=school_id)
     except Student.DoesNotExist:
         return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
 

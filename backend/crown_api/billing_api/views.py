@@ -52,7 +52,7 @@ class OpenInvoicesView(APIView):
             return Response({"detail": "Missing school context"}, status=403)
 
         # no-leak: ensure household exists in-scope
-        if not Household.objects.filter(id=household_id, school_id=school_id).exists():
+        if not Household.objects.filter(pk=household_id, school_id=school_id).exists():
             return Response({"detail": "Not found"}, status=404)
 
         invoices = (
@@ -142,12 +142,12 @@ class PaymentsCreateView(APIView):
             return Response({"detail": "amount must be > 0"}, status=400)
 
         try:
-            hh = Household.objects.get(id=household_id, school_id=school_id)
+            hh = Household.objects.get(pk=household_id, school_id=school_id)
         except Household.DoesNotExist:
             return Response({"detail": "Not found"}, status=404)
 
         try:
-            acct = LedgerAccount.objects.get(id=account_id, school_id=school_id)
+            acct = LedgerAccount.objects.get(pk=account_id, school_id=school_id)
         except LedgerAccount.DoesNotExist:
             return Response({"detail": "account_id not found"}, status=400)
 
@@ -330,7 +330,7 @@ class PaymentsRecordView(APIView):
                 return Response({"detail": "household_id is required when allocations are provided"}, status=400)
 
             # no-leak: ensure household exists in-scope
-            if not Household.objects.filter(id=household_id, school_id=school_id).exists():
+            if not Household.objects.filter(pk=household_id, school_id=school_id).exists():
                 return Response({"detail": "household not found"}, status=404)
 
             acct = LedgerAccount.objects.filter(school_id=school_id, household_id=household_id).first()

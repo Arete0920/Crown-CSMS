@@ -29,7 +29,7 @@ def _get_school(request) -> School:
     automatically — callers do not need null checks.
     """
     sid = get_request_school_id(request, required=True)
-    return School.objects.get(id=sid)
+    return School.objects.get(pk=sid)
 
 class DisciplineIncidentsListCreate(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -66,7 +66,7 @@ class DisciplineIncidentsListCreate(APIView):
 
         from core.models import Student
         try:
-            student = Student.objects.get(id=payload["student"], school=school)
+            student = Student.objects.get(pk=payload["student"], school=school)
         except Student.DoesNotExist:
             return Response({"detail": "Student not found in school"}, status=404)
 
@@ -98,7 +98,7 @@ class DisciplineIncidentDetail(APIView):
         school = _get_school(request)
 
         try:
-            inc = DisciplineIncident.objects.get(id=incident_id, school=school)
+            inc = DisciplineIncident.objects.get(pk=incident_id, school=school)
         except DisciplineIncident.DoesNotExist:
             return Response({"detail": "Not found"}, status=404)
 
@@ -111,7 +111,7 @@ class DisciplineIncidentActions(APIView):
         school = _get_school(request)
 
         try:
-            inc = DisciplineIncident.objects.get(id=incident_id, school=school)
+            inc = DisciplineIncident.objects.get(pk=incident_id, school=school)
         except DisciplineIncident.DoesNotExist:
             return Response({"detail": "Not found"}, status=404)
 
@@ -129,7 +129,7 @@ class DisciplineIncidentActions(APIView):
             from django.contrib.auth import get_user_model
             User = get_user_model()
             try:
-                u = User.objects.get(id=assigned_to)
+                u = User.objects.get(pk=assigned_to)
             except User.DoesNotExist:
                 return Response({"detail":"assigned_to user not found"}, status=404)
             inc.assigned_to = u

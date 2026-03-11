@@ -97,7 +97,7 @@ def applications(request: HttpRequest):
     # no-leak: ensure the household belongs to this school
     try:
         household_uuid = UUID(str(household_id))
-        Household.objects.get(id=household_uuid, school_id=sid)
+        Household.objects.get(pk=household_uuid, school_id=sid)
     except Household.DoesNotExist:
         return _json_error("Not found", status=404)
     except Exception:
@@ -127,7 +127,7 @@ def application_detail(request: HttpRequest, application_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        app = Application.objects.get(id=UUID(application_id), school_id=sid)
+        app = Application.objects.get(pk=UUID(application_id), school_id=sid)
     except Application.DoesNotExist:
         # no-leak: behave as not found
         return _json_error("Not found", status=404)
@@ -151,7 +151,7 @@ def application_submit(request: HttpRequest, application_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        app = Application.objects.get(id=UUID(application_id), school_id=sid)
+        app = Application.objects.get(pk=UUID(application_id), school_id=sid)
     except Application.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -185,7 +185,7 @@ def applicants(request: HttpRequest):
 
     # ensure the application is in-scope (no-leak)
     try:
-        app = Application.objects.get(id=UUID(str(application_id)), school_id=sid)
+        app = Application.objects.get(pk=UUID(str(application_id)), school_id=sid)
     except Application.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -225,7 +225,7 @@ def application_decision(request: HttpRequest, application_id: str):
     fee = payload.get("enrollment_fee")
 
     try:
-        app = Application.objects.get(id=UUID(application_id), school_id=sid)
+        app = Application.objects.get(pk=UUID(application_id), school_id=sid)
     except Application.DoesNotExist:
         return _json_error("Not found", status=404)
 

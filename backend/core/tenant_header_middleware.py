@@ -90,7 +90,7 @@ class TenantHeaderRequiredMiddleware:
                 )
 
             # Validate the school actually exists in this database
-            school = School.objects.filter(id=school_id).only("id", "name").first()
+            school = School.objects.filter(pk=school_id).only("id", "name").first()
             if school is None:
                 return JsonResponse(
                     {
