@@ -13,5 +13,8 @@ Start-Sleep -Seconds 2
 "Latest runs:" | Write-Host
 gh run list --repo $repo --limit 5 | Out-Host
 
-"Open the latest run in browser:" | Write-Host
-gh run view --repo $repo --web
+"Latest run URL:" | Write-Host
+$latestUrl = (gh run list --repo $repo --limit 1 --json url --jq '.[0].url').Trim()
+if ($latestUrl) {
+  Write-Host $latestUrl
+}
