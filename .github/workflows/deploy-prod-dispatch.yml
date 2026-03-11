@@ -18,6 +18,7 @@ permissions:
   contents: read
   actions: read
   security-events: write
+  id-token: write
 
 env:
   REGISTRY: crownregistry.azurecr.io
@@ -33,7 +34,7 @@ jobs:
     outputs:
       deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
       deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -47,9 +48,11 @@ jobs:
           ./tools/require_tag_input.ps1 -Tag "${{ env.DEPLOY_TAG }}"
 
       - name: Azure Login
-        uses: azure/login@v1
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Determine deploy SHA
         id: vars
@@ -85,15 +88,19 @@ jobs:
       - name: Verify AcrPull Identity (Guardrail)
         run: |
           echo "Verifying Managed Identity has AcrPull on registry..."
-          PRINCIPAL_ID=$(az webapp identity show -g crown-rg -n crown2026-api-dev --query principalId -o tsv)
+          PRINCIPAL_ID=$(az webapp identity show -g ${{ env.RESOURCE_GROUP }} -n ${{ env.WEBAPP_NAME }} --query principalId -o tsv)
           ACR_ID=$(az acr show -n crownregistry --query id -o tsv)
+          if [ -z "$PRINCIPAL_ID" ]; then
+            echo "ERROR: App Service has no managed identity assigned"
+            exit 1
+          fi
           if ! az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID | grep -q AcrPull; then
             echo "ERROR: Managed Identity does not have AcrPull role on ACR"
             echo "Principal: $PRINCIPAL_ID"
             echo "ACR: $ACR_ID"
             exit 1
           fi
-          echo "✓ AcrPull verified"
+          echo "✓ AcrPull verified for ${{ env.WEBAPP_NAME }} ($PRINCIPAL_ID)"
 
       - name: Bake BUILD_SHA into artifact
         run: |
@@ -184,24 +191,61 @@ jobs:
           app-name: ${{ env.WEBAPP_NAME }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
 
-      - name: Run database migrations
+      - name: Build allowed appsettings JSON
+        shell: pwsh
         run: |
-          az webapp config appsettings set \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.WEBAPP_NAME }} \
-            --settings RUN_MIGRATIONS=true BUILD_SHA=${{ env.DEPLOY_SHA }} PROD_DEPLOY_TAG=${{ env.DEPLOY_TAG }} \
-            --output none \
+          $settings = @{
+            "BUILD_SHA"       = "${{ env.DEPLOY_SHA }}"
+            "PROD_DEPLOY_TAG" = "${{ env.DEPLOY_TAG }}"
+            "RUN_MIGRATIONS"  = "true"
+            "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
+            "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
+          }
+          $settings | ConvertTo-Json -Depth 5 | Out-File -Encoding utf8 appsettings.prod.json
+          Get-Content appsettings.prod.json
+
+      - name: Appsettings allowlist gate
+        shell: pwsh
+        run: |
+          $allowed = @(
+            "BUILD_SHA",
+            "PROD_DEPLOY_TAG",
+            "RUN_MIGRATIONS",
+            "DEPLOY_RUN_ID",
+            "DEPLOY_WORKFLOW"
+          )
+          ./tools/appsettings_allowlist_gate.ps1 -AppSettingsJsonPath "appsettings.prod.json" -AllowedKeys $allowed
+
+      - name: Apply appsettings (allowlisted only)
+        shell: pwsh
+        run: |
+          az webapp config appsettings set `
+            --resource-group ${{ env.RESOURCE_GROUP }} `
+            --name ${{ env.WEBAPP_NAME }} `
+            --settings '@appsettings.prod.json' `
+            --output none `
             --only-show-errors
-          az webapp restart \
-            --resource-group ${{ env.RESOURCE_GROUP }} \
-            --name ${{ env.WEBAPP_NAME }} \
+          az webapp restart `
+            --resource-group ${{ env.RESOURCE_GROUP }} `
+            --name ${{ env.WEBAPP_NAME }} `
             --only-show-errors
+
+      - name: "Guard: verify BUILD_SHA app setting matches deployed SHA"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $expected = "${{ env.DEPLOY_SHA }}"
+          Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
+          .\tools\verify_prod_build_sha.ps1 `
+            -ExpectedSha $expected `
+            -AppName "${{ env.WEBAPP_NAME }}" `
+            -ResourceGroup "${{ env.RESOURCE_GROUP }}"
 
       - name: Health check
         run: |
           sleep 30
           for i in {1..30}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health/)
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health)
             if [ "$response" == "200" ]; then
               echo "✅ Health check passed"
               exit 0
@@ -218,23 +262,105 @@ jobs:
           WANT_SHA: ${{ env.DEPLOY_SHA }}
         run: |
           set -euo pipefail
-          URL="https://crown-api-prod.azurewebsites.net/health/"
-          echo "Checking $URL"
-          BODY="$(curl -fsS "$URL")"
-          echo "$BODY" > health.json
+          URL="https://crown-api-prod.azurewebsites.net/health"
+          echo "Polling $URL for build_sha match (up to 5 min)..."
+          for attempt in $(seq 1 20); do
+            BODY="$(curl -fsS --max-time 10 "$URL" 2>/dev/null || true)"
+            if [ -n "$BODY" ]; then
+              GOT="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)"
+              if [ -n "$GOT" ]; then
+                if [ "$GOT" = "$WANT_SHA" ] || [ "${GOT:0:8}" = "${WANT_SHA:0:8}" ] || [ "${WANT_SHA:0:7}" = "${GOT:0:7}" ]; then
+                  echo "✅ build_sha verified: got=$GOT want=$WANT_SHA"
+                  exit 0
+                else
+                  echo "Attempt $attempt: MISMATCH got=$GOT want=$WANT_SHA"
+                fi
+              else
+                echo "Attempt $attempt: build_sha missing in response"
+              fi
+            else
+              echo "Attempt $attempt: health probe returned empty (app still starting)"
+            fi
+            sleep 15
+          done
+          echo "❌ build_sha did not match after 20 attempts (300s)"
+          exit 1
+
+      - name: Verify release identity end-to-end
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          HEALTH_URL="https://crown-api-prod.azurewebsites.net/health"
+          APP_NAME="crown-api-prod"
+          RESOURCE_GROUP="crown-rg"
+
+          echo "Expected SHA: $EXPECTED_SHA"
+
+          AZURE_IMAGE=$(az webapp config container show \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$APP_NAME" \
+            --query "[?name=='DOCKER_CUSTOM_IMAGE_NAME'].value | [0]" -o tsv)
+
+          if [ -z "$AZURE_IMAGE" ]; then
+            AZURE_IMAGE=$(az webapp config container show \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$APP_NAME" \
+              --query linuxFxVersion -o tsv)
+          fi
+
+          echo "Azure configured image: $AZURE_IMAGE"
+
+          AZURE_SHA=$(echo "$AZURE_IMAGE" | sed -E 's/^DOCKER\|.*:([0-9a-f]{40})$/\1/')
+          if [ -z "$AZURE_SHA" ]; then
+            echo "Could not extract Azure SHA from configured image."
+            exit 1
+          fi
+
+          RESPONSE=""
+          for i in {1..30}; do
+            if RESPONSE=$(curl -fsSL "$HEALTH_URL"); then
+              break
+            fi
+            echo "Waiting for production health..."
+            sleep 10
+          done
+
+          if [ -z "$RESPONSE" ]; then
+            echo "No response from /health."
+            exit 1
+          fi
+
+          echo "$RESPONSE"
+
+          export RESPONSE_JSON="$RESPONSE"
+          export AZURE_SHA
+
           python - <<'PY'
-          import json, os, sys
-          want = os.environ["WANT_SHA"]
-          with open("health.json","r",encoding="utf-8") as f:
-            d = json.load(f)
-          got = d.get("build_sha","")
-          if not got:
-            raise SystemExit("Missing build_sha in /health")
-          # accept full sha or short sha match
-          if got == want or got.startswith(want[:8]):
-            print("OK build_sha:", got)
-            sys.exit(0)
-          raise SystemExit(f"build_sha mismatch: got={got} want={want}")
+          import json, os
+
+          data = json.loads(os.environ["RESPONSE_JSON"])
+          expected = os.environ["EXPECTED_SHA"]
+          azure_sha = os.environ["AZURE_SHA"]
+
+          if data.get("ok") is not True:
+              raise SystemExit("Health check failed: ok != true")
+
+          if data.get("env") != "prod":
+              raise SystemExit(f"Health check failed: env != prod (got {data.get('env')})")
+
+          live_sha = data.get("build_sha")
+          if not live_sha:
+              raise SystemExit("Health check missing build_sha")
+
+          if expected != azure_sha or azure_sha != live_sha:
+              raise SystemExit(
+                  f"Release identity mismatch: expected={expected} azure={azure_sha} live={live_sha}"
+              )
+
+          print("Release identity verified: workflow SHA, Azure SHA, and live SHA all match.")
           PY
 
       - name: Notify deployment
