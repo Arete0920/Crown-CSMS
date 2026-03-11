@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import random
 import uuid
 from dataclasses import dataclass
@@ -11,6 +12,9 @@ from django.db.models import Count
 from core.models import School
 from academics.models import Section
 from gradebook.models import GradeEntry
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -69,7 +73,7 @@ def _student_ids_for_section(section: Section) -> list[uuid.UUID]:
             if qs.model and hasattr(qs.model, "student"):
                 return list(qs.values_list("student__id", flat=True))
         except Exception:
-            pass
+            logger.exception("seed_gradebook_demo: failed reading section enrollments")
 
     # Fallback: existing grade entries
     return list(

@@ -13,6 +13,10 @@ Student linking is handled by seed_demo_school (core.Student) and admissions bri
 """
 
 import os
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def _refuse_if_azure() -> None:
@@ -151,9 +155,9 @@ def run() -> None:
     # This section intentionally removed - Student/StudentProfile now use
     # core.models.Student with family-based relationships.
 
-    print("Seeded households:")
-    print(f"- {h1.household_name}")
-    print(f"- {h2.household_name}")
+    logger.info("Seeded households:")
+    logger.info("- %s", h1.household_name)
+    logger.info("- %s", h2.household_name)
 
 
 if __name__ == "__main__":

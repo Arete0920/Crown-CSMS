@@ -14,7 +14,11 @@ Usage (PowerShell):
 """
 
 import os
+import logging
 from datetime import date
+
+
+logger = logging.getLogger(__name__)
 
 
 def _refuse_if_azure() -> None:
@@ -84,9 +88,9 @@ def run() -> None:
     if changed:
         app2.save(update_fields=["household", "sis_student", "updated_at"])
 
-    print("Seeded admissions applications:")
-    print(f"- {app1.id} (household only)")
-    print(f"- {app2.id} (household + student)")
+    logger.info("Seeded admissions applications:")
+    logger.info("- %s (household only)", app1.id)
+    logger.info("- %s (household + student)", app2.id)
 
 
 if __name__ == "__main__":

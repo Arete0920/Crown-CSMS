@@ -11,8 +11,12 @@ Usage (PowerShell):
 
 import os
 import sys
+import logging
 from datetime import date
 from pathlib import Path
+
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 if str(BASE_DIR) not in sys.path:
@@ -227,13 +231,13 @@ def run() -> None:
                 student=student,
             )
 
-    print("Seeded academics (read-only):")
-    print(f"- AcademicYear: {AcademicYear.objects.filter(school=school).count()}")
-    print(f"- Terms: {Term.objects.filter(school_id=school.id).count()}")
-    print(f"- Courses: {Course.objects.filter(school_id=school.id).count()}")
-    print(f"- Sections: {Section.objects.filter(school_id=school.id).count()}")
-    print(f"- Enrollments: {Enrollment.objects.filter(school_id=school.id).count()}")
-    print(f"- TeacherAssignments: {TeacherAssignment.objects.filter(school_id=school.id).count()}")
+    logger.info("Seeded academics (read-only):")
+    logger.info("- AcademicYear: %s", AcademicYear.objects.filter(school=school).count())
+    logger.info("- Terms: %s", Term.objects.filter(school_id=school.id).count())
+    logger.info("- Courses: %s", Course.objects.filter(school_id=school.id).count())
+    logger.info("- Sections: %s", Section.objects.filter(school_id=school.id).count())
+    logger.info("- Enrollments: %s", Enrollment.objects.filter(school_id=school.id).count())
+    logger.info("- TeacherAssignments: %s", TeacherAssignment.objects.filter(school_id=school.id).count())
 
 
 if __name__ == "__main__":

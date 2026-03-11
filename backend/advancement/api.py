@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+import logging
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -55,6 +56,9 @@ from .services_stage3 import (
     assign_seat_to_ticket,
     log_impressions,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _require_school(request):
@@ -1200,7 +1204,7 @@ def _create_receipt_and_queue_email(*, order, totals: dict | None, provider_paym
             seat = Seat.objects.get(pk=_uuid.UUID(str(seat_id_str)), school_id=order.school_id)
             seat_labels.append(f"{seat.section}-{seat.row}-{seat.number}")
         except Exception:
-            pass
+            logger.exception("_create_receipt_and_queue_email: failed to resolve seat label")
 
     # Event name
     event_name = str(order.event_id)
@@ -1208,7 +1212,7 @@ def _create_receipt_and_queue_email(*, order, totals: dict | None, provider_paym
         evt = Event.objects.get(pk=order.event_id, school_id=order.school_id)
         event_name = evt.name
     except Exception:
-        pass
+        logger.exception("_create_receipt_and_queue_email: failed to resolve event name")
 
     pdf = make_receipt_pdf_bytes(
         school_name="School",           # school name not denormalised on order; use simple default
@@ -1324,7 +1328,7 @@ def stripe_webhook(request):
                         provider_payment_intent_id=str(session_data.get("payment_intent") or ""),
                     )
                 except Exception:
-                    pass  # receipt creation is best-effort; fulfillment already succeeded
+                    logger.exception("stripe_webhook: receipt creation failed after order fulfillment")
 
             except Exception as exc:
                 return HttpResponse(f"Fulfillment error: {exc}", status=500)

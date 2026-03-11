@@ -23,6 +23,7 @@ Invariants enforced here:
   - Idempotent commit: get_or_create scale + update_or_create bands/weights
   - Audit: grade_scale.commit event, non-fatal on failure
 """
+import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -49,6 +50,7 @@ from .models import (
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 VALID_SCALE_TYPES = {"LETTER", "PERCENT"}
 VALID_ROUNDING    = {"NEAREST", "FLOOR", "CEIL"}
@@ -500,7 +502,7 @@ def commit_session(request, session_id):
             },
         )
     except Exception:
-        pass
+        logger.exception("commit_session: grade scale audit log create failed")
 
     result = {
         "scale_id":        str(scale.id),

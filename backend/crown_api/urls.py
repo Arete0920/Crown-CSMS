@@ -1,6 +1,7 @@
 ﻿"""
 URL configuration for crown_api project.
 """
+import logging
 from django.urls import include, path
 from django.views.generic import RedirectView
 from crown_api.wizard_registry import get_wizard_urlpatterns  # single source of truth
@@ -15,6 +16,9 @@ from crown_api.audit_views import recent_audit_events
 from crown_api.auth_views import login, refresh, me
 from crown_api.dev_token_views import dev_token
 from crown_api.system_views import whoami
+
+
+logger = logging.getLogger(__name__)
 
 urlpatterns = [
     path("", RedirectView.as_view(url="director/", permanent=False)),
@@ -110,4 +114,4 @@ try:
     from django.contrib.admin import site
     urlpatterns.append(path("admin/", site.urls))
 except Exception:
-    pass
+    logger.exception("crown_api.urls: failed to register admin URL")
