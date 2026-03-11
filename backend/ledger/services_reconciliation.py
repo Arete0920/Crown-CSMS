@@ -71,7 +71,7 @@ def build_monthly_summary(*, school_id=None) -> dict:
 
     revenue: Decimal = qs.aggregate(t=Sum("amount"))["t"] or Decimal("0.00")
 
-    cb_qs = Chargeback.objects.all()
+    cb_qs = Chargeback.objects.order_by("id")
     if school_id:
         cb_qs = cb_qs.filter(school_id=school_id)
 

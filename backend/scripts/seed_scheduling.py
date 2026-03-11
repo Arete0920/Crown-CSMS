@@ -76,7 +76,7 @@ def run() -> None:
         defaults={"teacher": None, "room": "202", "meeting_days": "TR", "meeting_time": "13:00", "name_override": ""},
     )
 
-    students = list(Student.objects.all().order_by("last_name", "first_name"))
+    students = list(Student.objects.order_by("last_name", "first_name"))
     if not students:
         raise SystemExit("No students found. Run seed_demo_school or seed_heritage_realism_pack first.")
 

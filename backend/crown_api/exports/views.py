@@ -260,7 +260,7 @@ class _BaseModelCSVExportView(APIView):
     order_by: list[str] = ["id"]
 
     def get_queryset(self, model):
-        qs = model.objects.all()
+        qs = model.objects.order_by("id")
 
         sid = get_request_school_id(self.request)
         if _model_has_field(model, "school_id"):
@@ -616,7 +616,7 @@ class StatementsCSVExportView(APIView):
             return resp
 
         inv_fields = _field_names(InvoiceModel)
-        qs = InvoiceModel.objects.all()
+        qs = InvoiceModel.objects.order_by("id")
 
         # Tenant safety: apply school scoping if possible.
         sid = get_request_school_id(request)
@@ -672,7 +672,7 @@ class StatementsCSVExportView(APIView):
 
         paid_by_charge: dict[str, Decimal] = {}
         if AllocationModel and alloc_amount_field and alloc_charge_link:
-            alloc_qs = AllocationModel.objects.all()
+            alloc_qs = AllocationModel.objects.order_by("id")
 
             # Apply school scoping to allocations if possible.
             if "school_id" in alloc_fields and sid:
@@ -839,7 +839,7 @@ class StatementLinesCSVExportView(APIView):
             _log_export_access(request, "statement-lines.csv", "")
 
         # Build base invoice queryset for scope + optional filters
-        inv_qs = InvoiceModel.objects.all()
+        inv_qs = InvoiceModel.objects.order_by("id")
         if "school_id" in inv_fields and school_id:
             inv_qs = inv_qs.filter(school_id=school_id)
 
@@ -953,7 +953,7 @@ class StatementLinesCSVExportView(APIView):
                 pay_status_field = _pick_first(pay_fields, ["status"])
                 pay_received_on_field = _pick_first(pay_fields, ["received_on", "posted_on", "created_at"])
 
-                alloc_ids_qs = AllocationModel.objects.all()
+                alloc_ids_qs = AllocationModel.objects.order_by("id")
                 if "school_id" in alloc_fields and school_id:
                     alloc_ids_qs = alloc_ids_qs.filter(school_id=school_id)
                 if as_of and "applied_on" in alloc_fields:
@@ -1029,7 +1029,7 @@ class StatementLinesCSVExportView(APIView):
                 alloc_payment_link = _pick_first(alloc_fields, ["payment_id"])
 
                 if alloc_amount_field and alloc_charge_link:
-                    alloc_qs = AllocationModel.objects.all()
+                    alloc_qs = AllocationModel.objects.order_by("id")
 
                     alloc_qs = alloc_qs.filter(**{f"{alloc_charge_link}__in": list(charge_ids_for_map)})
 
@@ -1228,7 +1228,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
         sid = get_request_school_id(request)
         _log_export_access(request, "year-end/tuition-paid.csv", sid)
 
-        qs = PaymentModel.objects.all()
+        qs = PaymentModel.objects.order_by("id")
 
         if "school_id" in pay_fields:
             if not sid:
@@ -1278,7 +1278,7 @@ class YearEndTuitionPaidCSVExportView(APIView):
             alloc_charge_fk = _pick_first(alloc_fields, ["charge", "ledger_charge"])
 
             if AllocationModel and ChargeModel and alloc_amount_field and alloc_payment_group_field and alloc_charge_fk:
-                alloc_qs = AllocationModel.objects.all()
+                alloc_qs = AllocationModel.objects.order_by("id")
 
                 if "school_id" in alloc_fields and sid:
                     alloc_qs = alloc_qs.filter(school_id=sid)
@@ -1416,7 +1416,7 @@ class PaymentsQuickBooksCSVExportView(APIView):
         sid = get_request_school_id(request)
         _log_export_access(request, "accounting/payments-qb.csv", sid)
 
-        qs = PaymentModel.objects.all()
+        qs = PaymentModel.objects.order_by("id")
 
         if "school_id" in pay_fields:
             if not sid:

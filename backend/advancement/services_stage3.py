@@ -226,7 +226,7 @@ def log_impressions(
     Raises SponsorshipDeliverable.DoesNotExist if not found for this school.
     """
     deliverable = SponsorshipDeliverable.objects.get(
-        id=deliverable_id, school_id=school_id
+        pk=deliverable_id, school_id=school_id
     )
     return SponsorImpression.objects.create(
         school_id=school_id,

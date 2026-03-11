@@ -31,7 +31,7 @@ def terms_list(request):
 
     access = resolve_household_access(request)
 
-    qs = Term.objects.all()
+    qs = Term.objects.order_by("-start_date", "code")
     if not access.is_staff:
         qs = qs.filter(active=True)
 
@@ -47,7 +47,7 @@ def term_sections(request, term_id):
 
     access = resolve_household_access(request)
 
-    term_qs = Term.objects.all()
+    term_qs = Term.objects.order_by("-start_date", "code")
     if not access.is_staff:
         term_qs = term_qs.filter(active=True)
 

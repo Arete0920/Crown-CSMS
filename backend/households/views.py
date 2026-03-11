@@ -28,7 +28,7 @@ class ScopedReadOnlyModelViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class HouseholdViewSet(ScopedReadOnlyModelViewSet):
-	queryset = Household.objects.all().order_by("name")
+	queryset = Household.objects.order_by("name")
 	serializer_class = HouseholdSerializer
 
 	def get_queryset(self):

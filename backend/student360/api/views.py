@@ -182,7 +182,7 @@ class StudentOverview(APIView):
         attendance = {"available": False}
         if AttendanceRecord and student:
             attendance["available"] = True
-            qs = AttendanceRecord.objects.all()
+            qs = AttendanceRecord.objects.order_by("id")
             qs = _scope_qs_to_school(qs, AttendanceRecord, school)
             # common field names: student or student_id
             if hasattr(AttendanceRecord, "student"):
@@ -211,7 +211,7 @@ class StudentOverview(APIView):
         finance = {"available": False}
         if Invoice and student:
             finance["available"] = True
-            qs = Invoice.objects.all()
+            qs = Invoice.objects.order_by("id")
             qs = _scope_qs_to_school(qs, Invoice, school)
             if hasattr(Invoice, "student"):
                 qs = qs.filter(student=student)
@@ -240,7 +240,7 @@ class StudentOverview(APIView):
         discipline = {"available": False}
         if DisciplineIncident and student:
             discipline["available"] = True
-            qs = DisciplineIncident.objects.all()
+            qs = DisciplineIncident.objects.order_by("id")
             qs = _scope_qs_to_school(qs, DisciplineIncident, school)
             if hasattr(DisciplineIncident, "student"):
                 qs = qs.filter(student=student)
@@ -257,7 +257,7 @@ class StudentOverview(APIView):
         service = {"available": False}
         if ServiceEntry and student:
             service["available"] = True
-            qs = ServiceEntry.objects.all()
+            qs = ServiceEntry.objects.order_by("id")
             qs = _scope_qs_to_school(qs, ServiceEntry, school)
             if hasattr(ServiceEntry, "student"):
                 qs = qs.filter(student=student)
@@ -286,7 +286,7 @@ class StudentOverview(APIView):
         comms = {"available": False, "latest_threads": []}
         if MessageThread:
             comms["available"] = True
-            qs = MessageThread.objects.all()
+            qs = MessageThread.objects.order_by("-created_at")
             qs = _scope_qs_to_school(qs, MessageThread, school)
             qs = qs.order_by("-created_at")[:3]
             latest = []

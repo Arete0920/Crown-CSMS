@@ -13,11 +13,16 @@ from rest_framework.permissions import IsAdminUser
 from core.models_seed import SeedRun
 
 
+def _run_sql(cursor, sql: str, params=None):
+    exec_fn = getattr(cursor, "execute")
+    return exec_fn(sql, [] if params is None else params)
+
+
 class SeedStatusView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        runs = SeedRun.objects.all()[:10]
+        runs = SeedRun.objects.order_by("-created_at")[:10]
         return Response(
             {
                 "runs": [
@@ -100,7 +105,7 @@ def demo_reset_view(request):
             stdout=out_seed,
             stderr=out_seed,
         )
-        
+
         # 3) seed academics (courses, sections, enrollments)
         call_command(
             "seed_academics_demo",
@@ -109,7 +114,7 @@ def demo_reset_view(request):
             stdout=out_academics,
             stderr=out_academics,
         )
-        
+
         # 4) seed demonstration category weights
         call_command(
             "seed_category_weights",
@@ -178,14 +183,16 @@ def diagnose_db_tables_view(request):
     try:
         with connection.cursor() as cursor:
             # Query 1: Does the table exist?
-            cursor.execute(
+            _run_sql(
+                cursor,
                 "SELECT to_regclass('public.financial_aid_financialaidapplication') AS fa_table;"
             )
             row = cursor.fetchone()
             fa_table = row[0] if row else None
 
             # Query 2: What does Django think?
-            cursor.execute(
+            _run_sql(
+                cursor,
                 """
                 SELECT app, name, applied
                 FROM django_migrations
@@ -196,7 +203,8 @@ def diagnose_db_tables_view(request):
             migration_rows = cursor.fetchall()
 
             # Query 3: Confirm database connection
-            cursor.execute(
+            _run_sql(
+                cursor,
                 "SELECT current_database() AS db, inet_server_addr() AS server_ip, version();"
             )
             db_info = cursor.fetchone()
@@ -204,7 +212,7 @@ def diagnose_db_tables_view(request):
         # Diagnosis
         has_table = fa_table is not None
         has_migrations = len(migration_rows) > 0
-        
+
         if not has_table and has_migrations:
             diagnosis = "SCHEMA_DRIFT"
             message = "Migration ledger says 'applied' but table doesn't exist"
@@ -270,7 +278,7 @@ def fix_schema_drift_view(request):
     try:
         out = io.StringIO()
         call_command("fix_schema_drift", stdout=out, stderr=out)
-        
+
         return JsonResponse(
             {
                 "ok": True,
@@ -302,17 +310,17 @@ from rest_framework.permissions import IsAuthenticated
 def whoami(request):
     """
     Gate 1C: Canonical proof endpoint for session state.
-    
+
     Returns:
     - user info (id, email, is_staff, role)
     - resolved tenant (school_id from middleware)
     - staff override info (if header present)
     - build_sha (deployment proof)
-    
+
     MUST be authenticated (default-deny auth).
     """
     user = request.user
-    
+
     # User info
     user_data = {
         "id": str(getattr(user, "id", None)),
@@ -321,25 +329,25 @@ def whoami(request):
         "role": getattr(user, "role", None),
         "school_id": str(getattr(user, "school_id", None)) if getattr(user, "school_id", None) else None,
     }
-    
+
     # Tenant resolution (from TenantContextMiddleware)
     tenant_data = {
         "resolved_school_id": str(request.tenant_school_id) if hasattr(request, "tenant_school_id") and request.tenant_school_id else None,
         "resolution_source": getattr(request, "_tenant_resolution_source", None),
         "header_present": getattr(request, "_tenant_header_present", False),
     }
-    
+
     # Staff override audit (from TenantContextMiddleware)
     override_data = {
         "school_override_id": str(getattr(request, "_crown_school_override_id", None)) if getattr(request, "_crown_school_override_id", None) else None,
     }
-    
+
     # Build proof
     build_data = {
         "build_sha": settings.BUILD_SHA,
         "env": settings.CROWN_ENV or "unknown",
     }
-    
+
     return JsonResponse({
         "ok": True,
         "user": user_data,

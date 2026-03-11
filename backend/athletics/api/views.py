@@ -46,7 +46,7 @@ class SportViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
     permission_classes = [IsAthleticDirector]
 
     def get_queryset(self):
-        return self.filter_school(Sport.objects.all()).order_by("name", "gender")
+        return self.filter_school(Sport.objects.order_by("name", "gender")).order_by("name", "gender")
 
     def perform_create(self, serializer):
         serializer.save(school_id=self.get_school_id())
@@ -57,7 +57,7 @@ class SeasonViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
     permission_classes = [IsAthleticDirector]
 
     def get_queryset(self):
-        return self.filter_school(Season.objects.all()).order_by("-start_date")
+        return self.filter_school(Season.objects.order_by("-start_date")).order_by("-start_date")
 
     def perform_create(self, serializer):
         serializer.save(school_id=self.get_school_id())
@@ -82,7 +82,7 @@ class FacilityViewSet(viewsets.ModelViewSet, SchoolScopedQuerysetMixin):
     permission_classes = [IsAthleticDirector]
 
     def get_queryset(self):
-        return self.filter_school(Facility.objects.all()).order_by("name")
+        return self.filter_school(Facility.objects.order_by("name")).order_by("name")
 
     def perform_create(self, serializer):
         serializer.save(school_id=self.get_school_id())

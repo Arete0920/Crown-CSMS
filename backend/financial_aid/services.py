@@ -63,7 +63,7 @@ def apply_financial_aid_to_billing_run(*, school_id, billing_run_id: UUID) -> di
 
         try:
             charge = Charge.objects.get(
-                id=inv.ledger_charge_id,
+                pk=inv.ledger_charge_id,
                 school_id=school_id,
                 account=acct,
             )

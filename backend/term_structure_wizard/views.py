@@ -383,7 +383,7 @@ def commit_session(request, session_id):
                 status=status.HTTP_400_BAD_REQUEST,
             )
     except ImportError:
-        pass  # grade_scale_wizard not installed — lock skipped
+        logger.debug("grade_scale_wizard not installed; term code lock skipped")
 
     ts_created     = False
     periods_created = periods_updated = 0

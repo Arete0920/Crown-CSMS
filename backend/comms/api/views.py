@@ -32,7 +32,7 @@ def _get_school_from_request(request):
 def _thread_qs_for_school(school):
     # Some projects store school as FK, some as UUID field.
     # We try both patterns safely.
-    qs = MessageThread.objects.all()
+    qs = MessageThread.objects.order_by("-created_at")
     if hasattr(MessageThread, "school"):
         return qs.filter(school=school)
     if hasattr(MessageThread, "school_id"):

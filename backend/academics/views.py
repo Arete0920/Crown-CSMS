@@ -148,7 +148,7 @@ def _assert_student_in_scope_or_404(request, school_id, student_id) -> None:
         if not household_ids:
             raise Http404()
         if not Student.objects.filter(
-            id=student_id, school_id=school_id, household_id__in=household_ids
+            pk=student_id, school_id=school_id, household_id__in=household_ids
         ).exists():
             raise Http404()
         return
@@ -319,10 +319,10 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
     def roster(self, request, pk=None):
         """
         GET /api/v1/academics/sections/{pk}/roster/
-        
+
         Returns section metadata + teacher + enrolled students.
         Students ordered deterministically: last_name, first_name, student_id.
-        
+
         Response shape:
         {
           "section_id": "...",
@@ -462,9 +462,9 @@ def section_assessments(request, section_id):
 def section_roster(request, section_id):
     """
     GET /api/v1/academics/sections/<section_id>/roster/
-    
+
     Returns section metadata + teacher + enrolled students (deterministic order).
-    
+
     Tenant-scoped and role-filtered via _sections_for_access.
     Students ordered by: last_name, first_name, student_id (stable).
     """
@@ -535,7 +535,7 @@ def section_roster(request, section_id):
 
 class CurriculumSourceViewSet(PaginatedReadOnlyViewSet):
     serializer_class = CurriculumSourceSerializer
-    queryset = CurriculumSource.objects.all()
+    queryset = CurriculumSource.objects.order_by("name")
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
@@ -549,12 +549,12 @@ class UnitViewSet(PaginatedReadOnlyViewSet):
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
         qs = self.queryset.filter(school_id=school_id)
-        
+
         # Filter by course if provided
         course_id = self.request.query_params.get("course_id")
         if course_id:
             qs = qs.filter(course_id=course_id)
-        
+
         return qs.order_by("course__code", "sequence_order")
 
 
@@ -565,12 +565,12 @@ class LessonViewSet(PaginatedReadOnlyViewSet):
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
         qs = self.queryset.filter(school_id=school_id)
-        
+
         # Filter by unit if provided
         unit_id = self.request.query_params.get("unit_id")
         if unit_id:
             qs = qs.filter(unit_id=unit_id)
-        
+
         return qs.order_by("lesson_date", "title")
 
 
@@ -581,12 +581,12 @@ class PublisherObjectiveViewSet(PaginatedReadOnlyViewSet):
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
         qs = self.queryset.filter(school_id=school_id)
-        
+
         # Filter by lesson if provided
         lesson_id = self.request.query_params.get("lesson_id")
         if lesson_id:
             qs = qs.filter(lesson_id=lesson_id)
-        
+
         return qs.order_by("objective_code")
 
 
@@ -611,17 +611,17 @@ class SubmissionViewSet(TenantScopedViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()  # school scoping handled by base class
-        
+
         # Filter by assignment if provided
         assignment_id = self.request.query_params.get("assignment_id")
         if assignment_id:
             qs = qs.filter(assignment_id=assignment_id)
-        
+
         # Filter by student if provided
         student_id = self.request.query_params.get("student_id")
         if student_id:
             qs = qs.filter(enrollment__student_id=student_id)
-        
+
         return qs.order_by("-submitted_at")
 
 
@@ -635,12 +635,12 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
         qs = self.queryset.filter(school_id=school_id)
-        
+
         # Filter by submission if provided
         submission_id = self.request.query_params.get("submission_id")
         if submission_id:
             qs = qs.filter(submission_id=submission_id)
-        
+
         return qs.order_by("-graded_at")
 
     @action(detail=False, methods=["post"], url_path="grade")
@@ -652,7 +652,7 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
         """
         from .services import upsert_grade_for_submission
         from decimal import Decimal
-        
+
         ser = GradeCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
 
@@ -664,7 +664,7 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
             Submission.objects.select_related("assignment"),
             id=submission_id
         )
-        
+
         # Verify school_id matches
         school_id = get_request_school_id(request)
         if submission.school_id != school_id:
@@ -694,17 +694,17 @@ class MasteryRecordViewSet(PaginatedReadOnlyViewSet):
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
         qs = self.queryset.filter(school_id=school_id)
-        
+
         # Filter by student if provided
         student_id = self.request.query_params.get("student_id")
         if student_id:
             qs = qs.filter(student_id=student_id)
-        
+
         # Filter by objective if provided
         objective_id = self.request.query_params.get("objective_id")
         if objective_id:
             qs = qs.filter(objective_id=objective_id)
-        
+
         return qs.order_by("-last_demonstrated_at")
 
 
@@ -717,10 +717,10 @@ class TranscriptEntryViewSet(PaginatedReadOnlyViewSet):
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
         qs = self.queryset.filter(school_id=school_id)
-        
+
         # Filter by student if provided
         student_id = self.request.query_params.get("student_id")
         if student_id:
             qs = qs.filter(student_id=student_id)
-        
+
         return qs.order_by("term__ordering", "course__code")

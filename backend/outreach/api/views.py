@@ -54,7 +54,7 @@ class TenantViewSetMixin:
 # PartnerOrganization
 # ---------------------------------------------------------------------------
 class PartnerOrganizationViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
-    queryset = PartnerOrganization.objects.all().order_by("name")
+    queryset = PartnerOrganization.objects.order_by("name")
     serializer_class = PartnerOrganizationSerializer
     permission_classes = [IsStaffOnly]
 
@@ -64,7 +64,7 @@ class PartnerOrganizationViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 # ---------------------------------------------------------------------------
 class OpportunityViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     queryset = (
-        Opportunity.objects.select_related("partner").all().order_by("-start_at", "title")
+        Opportunity.objects.select_related("partner").order_by("-start_at", "title")
     )
     serializer_class = OpportunitySerializer
     permission_classes = [IsStaffOnly]
@@ -74,7 +74,7 @@ class OpportunityViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 # ReflectionPrompt
 # ---------------------------------------------------------------------------
 class ReflectionPromptViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
-    queryset = ReflectionPrompt.objects.all().order_by("title")
+    queryset = ReflectionPrompt.objects.order_by("title")
     serializer_class = ReflectionPromptSerializer
     permission_classes = [IsStaffOnly]
 
@@ -83,7 +83,7 @@ class ReflectionPromptViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 # ServiceGoal
 # ---------------------------------------------------------------------------
 class ServiceGoalViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
-    queryset = ServiceGoal.objects.all().order_by("-school_year", "grade", "program_tag")
+    queryset = ServiceGoal.objects.order_by("-school_year", "grade", "program_tag")
     serializer_class = ServiceGoalSerializer
     permission_classes = [IsStaffOnly]
 
@@ -92,7 +92,7 @@ class ServiceGoalViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 # Badge
 # ---------------------------------------------------------------------------
 class BadgeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
-    queryset = Badge.objects.all().order_by("threshold_hours", "name")
+    queryset = Badge.objects.order_by("threshold_hours", "name")
     serializer_class = BadgeSerializer
     permission_classes = [IsStaffOnly]
 
@@ -102,7 +102,7 @@ class BadgeViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 # ---------------------------------------------------------------------------
 class BadgeAwardViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     queryset = (
-        BadgeAward.objects.select_related("badge", "student").all().order_by("-awarded_at")
+        BadgeAward.objects.select_related("badge", "student").order_by("-awarded_at")
     )
     serializer_class = BadgeAwardSerializer
     permission_classes = [IsStaffOnly]
@@ -114,7 +114,6 @@ class BadgeAwardViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
 class ServiceLogViewSet(TenantViewSetMixin, viewsets.ModelViewSet):
     queryset = (
         ServiceLog.objects.select_related("student", "opportunity", "partner")
-        .all()
         .order_by("-service_date", "-created_at")
     )
     serializer_class = ServiceLogSerializer
