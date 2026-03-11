@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 import json
+import logging
 from datetime import timedelta
 from pathlib import Path
 from corsheaders.defaults import default_headers
@@ -430,7 +431,7 @@ if _env_is_prod():
                 release=BUILD_SHA,
             )
         except ImportError:
-            pass  # sentry-sdk not installed in this environment
+            logging.getLogger(__name__).debug("sentry-sdk not installed; skipping Sentry init")
 
 # ---------------------------------------------------------------------------
 # Structured logging — crown.audit + request log
@@ -523,7 +524,7 @@ try:
         },
     }
 except ImportError:
-    pass  # Celery not installed; beat schedule omitted
+    logging.getLogger(__name__).debug("Celery not installed; beat schedule omitted")
 
 # ---------------------------------------------------------------------------
 # CORS: explicit allowed list enforced (no allow-all in prod)

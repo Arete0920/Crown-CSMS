@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import logging
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crown_api.settings')
@@ -8,39 +9,43 @@ django.setup()
 from applications.models import Application, Applicant
 from django.db.models import Count
 
-print("=== APPLICATION COUNTS ===")
-print(f"Total Applications: {Application.objects.count()}")
-print(f"Total Applicants: {Applicant.objects.count()}")
 
-print("\n=== APPLICATION STATUS DISTRIBUTION ===")
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+
+logger.info("=== APPLICATION COUNTS ===")
+logger.info("Total Applications: %s", Application.objects.count())
+logger.info("Total Applicants: %s", Applicant.objects.count())
+
+logger.info("\n=== APPLICATION STATUS DISTRIBUTION ===")
 statuses = Application.objects.values('status').annotate(n=Count('id')).order_by('-n')
 for r in statuses:
-    print(f"  {r['status']}: {r['n']}")
+    logger.info("  %s: %s", r['status'], r['n'])
 
-print("\n=== APPLICANT SAMPLE ===")
+logger.info("\n=== APPLICANT SAMPLE ===")
 a = Applicant.objects.first()
 if a:
-    print(f"ID: {a.id}")
-    print(f"School ID: {a.school_id}")
-    print(f"Application ID: {a.application_id}")
-    print(f"Student: {a.student}")
-    print(f"Name: {a.first_name} {a.last_name}")
-    print(f"Grade: {a.grade_applying_for}")
-    print(f"Created: {a.created_at}")
-    print(f"Updated: {a.updated_at}")
+    logger.info("ID: %s", a.id)
+    logger.info("School ID: %s", a.school_id)
+    logger.info("Application ID: %s", a.application_id)
+    logger.info("Student: %s", a.student)
+    logger.info("Name: %s %s", a.first_name, a.last_name)
+    logger.info("Grade: %s", a.grade_applying_for)
+    logger.info("Created: %s", a.created_at)
+    logger.info("Updated: %s", a.updated_at)
 else:
-    print("No applicants found")
+    logger.info("No applicants found")
 
-print("\n=== APPLICATION SAMPLE ===")
+logger.info("\n=== APPLICATION SAMPLE ===")
 app = Application.objects.first()
 if app:
-    print(f"ID: {app.id}")
-    print(f"School ID: {app.school_id}")
-    print(f"Household: {app.household}")
-    print(f"Status: {app.status}")
-    print(f"Submitted at: {app.submitted_at}")
-    print(f"Decided at: {app.decided_at}")
-    print(f"Created: {app.created_at}")
-    print(f"Updated: {app.updated_at}")
+    logger.info("ID: %s", app.id)
+    logger.info("School ID: %s", app.school_id)
+    logger.info("Household: %s", app.household)
+    logger.info("Status: %s", app.status)
+    logger.info("Submitted at: %s", app.submitted_at)
+    logger.info("Decided at: %s", app.decided_at)
+    logger.info("Created: %s", app.created_at)
+    logger.info("Updated: %s", app.updated_at)
 else:
-    print("No applications found")
+    logger.info("No applications found")
