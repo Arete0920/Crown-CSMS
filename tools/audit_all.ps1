@@ -71,7 +71,8 @@ if (-not $Fast) {
 if (-not $NoUI) {
   Step "Frontend: dependency + env hygiene" {
     if (Test-Path "tools/audit_frontend.ps1") {
-      Cmd "pwsh -File tools/audit_frontend.ps1 2>&1 | Tee-Object -FilePath $reportPath -Append"
+      $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell" }
+      Cmd "$psExe -File tools/audit_frontend.ps1 2>&1 | Tee-Object -FilePath $reportPath -Append"
     } else {
       Write-Host "tools/audit_frontend.ps1 not found; skipping"
     }

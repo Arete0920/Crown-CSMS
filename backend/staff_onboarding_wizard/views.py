@@ -15,6 +15,8 @@ All endpoints:
   - Enforce school isolation: session lookups include school_id
 """
 
+import logging
+
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -32,6 +34,7 @@ from .models import StaffOnboardingWizardSession
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 # Single source of truth — mirrors core.Staff.ROLE_CHOICES exactly.
 VALID_ROLES = {c[0] for c in Staff.ROLE_CHOICES}
@@ -211,8 +214,8 @@ def commit_session(request, session_id):
                 "session_id": str(session.id),
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("staff_onboarding.commit audit log skipped: %s", exc)
 
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 

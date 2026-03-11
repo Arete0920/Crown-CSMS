@@ -26,7 +26,7 @@ def process_import(session_id: int) -> dict:
     from onboarding.models import ImportSession
     from onboarding.models_tasks import OnboardingTask  # noqa: F401 (ensure app is loaded)
 
-    job = ImportSession.objects.get(id=session_id)
+    job = ImportSession.objects.get(pk=session_id)
     job.status = "processing"
     job.save(update_fields=["status"])
 

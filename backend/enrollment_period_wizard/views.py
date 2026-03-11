@@ -18,6 +18,7 @@ Commit:
   - DB constraints ensure uniqueness even under concurrency
 """
 import datetime
+import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -41,6 +42,7 @@ from .models import (
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -326,8 +328,8 @@ def commit_session(request, session_id):
             object_id=str(ep.pk),
             metadata={"academic_year_id": str(ay.pk), "school_id": str(school.pk)},
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("enrollment_period.commit audit log skipped: %s", exc)
 
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 

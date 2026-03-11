@@ -1,4 +1,5 @@
 import uuid as _uuid
+import logging
 
 from django.db import transaction, IntegrityError
 from django.shortcuts import get_object_or_404
@@ -18,6 +19,7 @@ _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
 
 VALID_ACTIONS = {"add", "remove"}
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -237,8 +239,13 @@ def commit_session(request, session_id):
                     )
                     if created:
                         enrolled += 1
-                except IntegrityError:
-                    pass  # student UUID does not exist — skip
+                except IntegrityError as exc:
+                    logger.warning(
+                        "Skipping enrollment add for section %s student %s: %s",
+                        section.id,
+                        student_id,
+                        exc,
+                    )
             elif action == "remove":
                 deleted, _ = Enrollment.objects.filter(
                     section=section, student_id=student_id
