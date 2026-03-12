@@ -1,4 +1,4 @@
-﻿name: routes-gate
+name: routes-gate
 # No-op change to trigger required check context on backend-only PRs.
 
 on:
@@ -16,7 +16,7 @@ jobs:
     name: routes-gate
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run Routes Gate (PowerShell)
         shell: pwsh
         run: |

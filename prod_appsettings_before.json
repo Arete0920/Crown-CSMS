@@ -162,7 +162,7 @@
   {
     "name": "DATABASE_URL",
     "slotSetting": false,
-    "value": "postgresql://crownapp:Cr3Bj8Je2qrzX8ZVnqis9dx%25AF4bFCh!aB@crown-db-prod.postgres.database.azure.com:5432/crown_db?sslmode=require"
+    "value": "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?sslmode=require"
   },
   {
     "name": "DEV_OPS_SECRET",
