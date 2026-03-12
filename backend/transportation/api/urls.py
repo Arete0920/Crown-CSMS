@@ -14,6 +14,7 @@ from transportation.api.views import (
 )
 
 router = DefaultRouter()
+router.include_format_suffixes = False
 router.register(r"vehicles", VehicleViewSet, basename="vehicles")
 router.register(r"drivers", DriverViewSet, basename="drivers")
 router.register(r"routes", RouteViewSet, basename="routes")

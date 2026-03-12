@@ -17,6 +17,7 @@ from athletics.api.views import (
 )
 
 router = DefaultRouter()
+router.include_format_suffixes = False
 router.register(r"sports", SportViewSet, basename="ath_sports")
 router.register(r"seasons", SeasonViewSet, basename="ath_seasons")
 router.register(r"teams", TeamViewSet, basename="ath_teams")

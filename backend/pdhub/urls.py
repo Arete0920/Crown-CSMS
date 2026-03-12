@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .api import PDResourceViewSet, PDSessionViewSet, pd_metrics
 
 router = DefaultRouter()
+router.include_format_suffixes = False
 router.register(r"resources", PDResourceViewSet, basename="pd-resources")
 router.register(r"sessions", PDSessionViewSet, basename="pd-sessions")
 

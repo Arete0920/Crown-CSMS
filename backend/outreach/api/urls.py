@@ -12,6 +12,7 @@ from outreach.api.views import (
 )
 
 router = DefaultRouter()
+router.include_format_suffixes = False
 router.register(r"partners", PartnerOrganizationViewSet, basename="outreach-partners")
 router.register(r"opportunities", OpportunityViewSet, basename="outreach-opportunities")
 router.register(r"service-logs", ServiceLogViewSet, basename="outreach-service-logs")
