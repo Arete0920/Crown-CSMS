@@ -137,7 +137,7 @@ class FinanceObligation(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(amount_cents__gte=0),
+                condition=models.Q(amount_cents__gte=0),
                 name="finance_obligation_amount_cents_nonneg"
             ),
         ]
@@ -230,7 +230,7 @@ class FinancePayment(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(amount_cents__gte=0),
+                condition=models.Q(amount_cents__gte=0),
                 name="finance_payment_amount_cents_nonneg"
             ),
         ]
@@ -256,7 +256,7 @@ class FinanceAllocation(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(amount_cents__gt=0),
+                condition=models.Q(amount_cents__gt=0),
                 name="finance_allocation_amount_positive"
             ),
         ]
@@ -288,7 +288,7 @@ class FinanceRefund(models.Model):
         ]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(amount_cents__gt=0),
+                condition=models.Q(amount_cents__gt=0),
                 name="finance_refund_amount_positive"
             ),
         ]
