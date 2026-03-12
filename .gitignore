@@ -110,3 +110,6 @@ prod_logs_latest/
 app_logs.zip
 webapp_logs.zip
 *.log
+.env*.local
+**/.env*.local
+!*.example

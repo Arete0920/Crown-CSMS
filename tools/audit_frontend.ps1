@@ -48,7 +48,7 @@ Step "No hard-coded API base URLs in source" {
   }
   if ($hits) {
     Write-Host "Hard-coded API refs detected:" -ForegroundColor Yellow
-    $hits | Select-Object Path,LineNumber,Line | Format-Table -AutoSize
+    $hits | Select-Object Path, LineNumber, Line | Format-Table -AutoSize
     throw "Hard-coded API refs found. Ensure API base URL comes from environment variables (VITE_API_BASE or REACT_APP_API_URL)."
   }
 }
@@ -68,14 +68,14 @@ Step "package.json has required scripts" {
 
 Step "No .env files committed (secrets hygiene)" {
   $envFiles = @(".env", ".env.local", ".env.production", ".env.staging") |
-    ForEach-Object { Join-Path $fe $_ } |
-    Where-Object { Test-Path $_ }
+  ForEach-Object { Join-Path $fe $_ } |
+  Where-Object { Test-Path $_ }
   if ($envFiles) {
-    # Verify they are .gitignored — fail if tracked by git
+    # Verify they are .gitignored - fail if tracked by git
     foreach ($ef in $envFiles) {
       $tracked = git ls-files --error-unmatch $ef 2>$null
       if ($LASTEXITCODE -eq 0) {
-        throw "Committed .env file detected: $ef — remove from git tracking and add to .gitignore"
+        throw "Committed .env file detected: $ef - remove from git tracking and add to .gitignore"
       }
     }
     Write-Host "  .env file(s) exist but are not tracked by git (OK)" -ForegroundColor DarkGray
@@ -86,7 +86,8 @@ Step "npm install (ci)" {
   Push-Location $fe
   try {
     npm ci --silent
-  } finally {
+  }
+  finally {
     Pop-Location
   }
 }
@@ -95,7 +96,8 @@ Step "Frontend build" {
   Push-Location $fe
   try {
     npm run build --silent
-  } finally {
+  }
+  finally {
     Pop-Location
   }
 }
