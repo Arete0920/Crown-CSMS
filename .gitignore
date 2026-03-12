@@ -43,6 +43,7 @@ local.secrets.sh
 
 # Audit runner output (attach to PRs/tags manually)
 artifacts/
+audit-logs/
 
 # Editor/OS
 .vscode/
