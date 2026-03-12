@@ -73,7 +73,7 @@ const DASHBOARD_ALIAS_TO_ROUTE = {
   '/master-control-dashboard': '/master-control',
   '/registrar-dashboard': '/registrar',
   '/safety-security-dashboard': '/safety',
-  '/scheduling-dashboard': '/wizards',
+  '/scheduling-dashboard': '/scheduling-dashboard',
   '/school-admin-dashboard': '/admin',
   '/school-board-dashboard': '/board',
   '/student-care-dashboard': '/student-services',
