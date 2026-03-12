@@ -89,7 +89,7 @@ function NavItem({ label, href }) {
 }
 
 /**
- * CrownSidebar — collapsible grouped navigation.
+ * CrownSidebar - collapsible grouped navigation.
  *
  * Standalone MUI component; can be embedded alongside the existing CrownLayout
  * sidebar or used independently in a new layout composition.
@@ -98,26 +98,27 @@ export default function CrownSidebar() {
   return (
     <List dense disablePadding sx={{ pt: 0.2 }}>
       <Section title="Academics">
-        <NavItem label="Gradebook"  href="/gradebook" />
-        <NavItem label="Courses"    href="/courses" />
+        <NavItem label="Gradebook" href="/gradebook" />
+        <NavItem label="Courses" href="/courses" />
         <NavItem label="Attendance" href="/attendance" />
       </Section>
 
       <Section title="Finance">
-        <NavItem label="Billing"       href="/billing" />
+        <NavItem label="Billing" href="/billing" />
         <NavItem label="Financial Aid" href="/aid" />
-        <NavItem label="Invoices"      href="/invoices" />
+        <NavItem label="Invoices" href="/invoices" />
       </Section>
-  return (
-    <List dense disablePadding sx={{ pt: 0.2 }}>
-      {dashboardNavSections.map((section) => (
-        <Section key={section.label} title={section.label}>
-          {section.children.map((item) => (
-            <NavItem key={`${section.label}:${item.key}:${item.href}`} label={item.label} href={item.href} />
-          ))}
-        </Section>
-      ))}
+
+      <Section title="Board">
+        <NavItem label="Metrics" href="/board/metrics" />
+        <NavItem label="Integrity" href="/integrity" />
+      </Section>
+
+      <Section title="Operations">
+        <NavItem label="Admissions" href="/admissions" />
+        <NavItem label="Registrar" href="/registrar" />
+        <NavItem label="Scheduling" href="/scheduling" />
+      </Section>
     </List>
   );
 }
->>>>>>> bd338e3b (style(nav): polish sidebar spacing states and visual grouping)
