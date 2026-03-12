@@ -30,7 +30,7 @@ section = Section.objects.filter(school_id=school_id).annotate(ecount=Count('enr
 
 if section:
     enrollments = section.enrollments.all()[:3]
-    
+
     # Create grades for each enrolled student
     for enrollment in enrollments:
         for idx, (assg_name, points) in enumerate([("Quiz 1", Decimal("100.00")), ("Homework 1", Decimal("50.00"))]):
@@ -45,7 +45,7 @@ if section:
                     "points_possible": points
                 }
             )
-    
+
     logger.info("Created grades for section %s", section.id)
     logger.info("School ID: %s", school_id)
 else:

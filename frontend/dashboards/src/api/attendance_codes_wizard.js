@@ -1,11 +1,11 @@
-/**
+﻿/**
  * api/attendance_codes_wizard.js
  *
  * Follows the section_assign_wizard.js pattern exactly.
  */
 import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 const PREFIX = `${API_BASE}/api/v1/attendance-codes-wizard/sessions`;
 
 function headers(extra = {}) {
@@ -85,3 +85,4 @@ export async function verifyAttendanceCodesSession(sessionId) {
   const res = await fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
+

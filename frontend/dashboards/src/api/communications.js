@@ -1,6 +1,6 @@
-import { getToken, getSchoolId } from "../lib/api";
+﻿import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 /**
  * Fetch message threads list
@@ -69,3 +69,4 @@ export const getThreadDetail = async (threadId) => {
 
   return await response.json();
 };
+

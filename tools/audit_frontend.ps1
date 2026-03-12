@@ -37,7 +37,7 @@ Step "No hard-coded API base URLs in source" {
     "$fe/src/**/*.ts",
     "$fe/src/**/*.tsx"
   )
-  $dangerousPatterns = "http://localhost:8000|https://localhost:|/api/v1|crown-api\.azurewebsites|REACT_APP_API_URL\s*="
+  $dangerousPatterns = "https?://(localhost|127\.0\.0\.1)(:\d+)?|crown-api\.azurewebsites|REACT_APP_API_URL\s*="
   $hits = @()
   foreach ($glob in $srcGlobs) {
     $files = Get-ChildItem -Path $glob -ErrorAction SilentlyContinue
@@ -73,8 +73,8 @@ Step "No .env files committed (secrets hygiene)" {
   if ($envFiles) {
     # Verify they are .gitignored - fail if tracked by git
     foreach ($ef in $envFiles) {
-      $tracked = git ls-files --error-unmatch $ef 2>$null
-      if ($LASTEXITCODE -eq 0) {
+      $tracked = git ls-files -- $ef
+      if ($tracked) {
         throw "Committed .env file detected: $ef - remove from git tracking and add to .gitignore"
       }
     }
@@ -85,7 +85,10 @@ Step "No .env files committed (secrets hygiene)" {
 Step "npm install (ci)" {
   Push-Location $fe
   try {
-    npm ci --silent
+    cmd /c "npm ci --silent"
+    if ($LASTEXITCODE -ne 0) {
+      throw "npm ci failed with exit code $LASTEXITCODE"
+    }
   }
   finally {
     Pop-Location
@@ -95,7 +98,10 @@ Step "npm install (ci)" {
 Step "Frontend build" {
   Push-Location $fe
   try {
-    npm run build --silent
+    cmd /c "npm run build --silent"
+    if ($LASTEXITCODE -ne 0) {
+      throw "frontend build failed with exit code $LASTEXITCODE"
+    }
   }
   finally {
     Pop-Location

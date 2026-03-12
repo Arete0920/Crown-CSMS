@@ -1,0 +1,2680 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260311193416
+Username: TCLAPTOP\JMega
+RunAs User: TCLAPTOP\JMega
+Configuration Name: 
+Machine: TCLAPTOP (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\JMega\AppData\Local\Programs\Microsoft VS Code\ce099c1ed2\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 15312
+PSVersion: 5.1.26100.7920
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7920
+BuildVersion: 10.0.26100.7920
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193416.txt
+LOGFILE_PATH::C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193416.txt
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Run-Step '1A. REPO LOCATION' { Write-Output "CMD: Get-Location"; Get-Location }; Run-Step '1B. BRANCH / STATUS / UPSTREAM / RECENT COMMITS' { Write-Output "CMD: git rev-parse --abbrev-ref HEAD"; git rev-parse --abbrev-ref HEAD; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git status --short --branch"; git status --short --branch; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git diff --cached --name-only"; git diff --cached --name-only; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git branch -vv"; git branch -vv; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git rev-list --left-right --count '@{u}...HEAD'"; git rev-list --left-right --count '@{u}...HEAD'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git log --oneline -5"; git log --oneline -5; Write-Output "EXIT: $LASTEXITCODE" }; Run-Step '1C. RECHECK LOCAL AHEAD / BEHIND AND LOCAL-ONLY COMMITS' { Write-Output "CMD: git log --oneline '@{u}..HEAD'"; git log --oneline '@{u}..HEAD'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git log --oneline 'HEAD..@{u}'"; git log --oneline 'HEAD..@{u}'; Write-Output "EXIT: $LASTEXITCODE" }; Run-Step '1D. DIRTY TREE DETAIL (UNSTAGED + STAGED RECHECK)' { Write-Output "CMD: git status --short"; git status --short; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git diff --name-only"; git diff --name-only; Write-Output "EXIT: $LASTEXITCODE"; Write-Output ''; Write-Output "CMD: git diff --cached --name-only"; git diff --cached --name-only; Write-Output "EXIT: $LASTEXITCODE" }
+
+============================================================
+1A. REPO LOCATION
+============================================================
+CMD: Get-Location
+
+
+
+
+
+Path
+----
+C:\Users\JMega\OneDrive\Desktop\...
+
+============================================================
+1B. BRANCH / STATUS / UPSTREAM / RECENT COMMITS
+============================================================
+CMD: git rev-parse --abbrev-ref HEAD
+EXIT: 0
+
+CMD: git status --short --branch
+EXIT: 0
+
+CMD: git diff --cached --name-only
+EXIT: 0
+
+CMD: git branch -vv
+EXIT: 0
+
+CMD: git rev-list --left-right --count '@{u}...HEAD'
+
+EXIT: 0
+
+CMD: git log --oneline -5
+
+EXIT: 0
+
+============================================================
+1C. RECHECK LOCAL AHEAD / BEHIND AND LOCAL-ONLY COMMITS
+============================================================
+CMD: git log --oneline '@{u}..HEAD'
+
+EXIT: 0
+
+CMD: git log --oneline 'HEAD..@{u}'
+
+EXIT: 0
+
+============================================================
+1D. DIRTY TREE DETAIL (UNSTAGED + STAGED RECHECK)
+============================================================
+CMD: git status --short
+
+EXIT: 0
+
+CMD: git diff --name-only
+
+EXIT: 0
+
+CMD: git diff --cached --name-only
+
+EXIT: 0
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Run-Step '1A. REPO LOCATION' { Write-Output "CMD: Get-Location"; Get-Location }
+
+============================================================
+1A. REPO LOCATION
+============================================================
+CMD: Get-Location
+
+Path
+----
+C:\Users\JMega\OneDrive\Desktop\...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-Location
+
+Path
+----
+C:\Users\JMega\OneDrive\Desktop\...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$RepoRoot='C:\Users\JMega\OneDrive\Desktop\Crown2026'; Set-Location $RepoRoot; $Stamp=Get-Date -Format 'yyyyMMdd-HHmmss'; $LogDir=Join-Path $RepoRoot 'audit-logs'; if(-not(Test-Path $LogDir)){New-Item -ItemType Directory -Path $LogDir -Force | Out-Null}; $LogFile=Join-Path $LogDir "full-readonly-audit-$Stamp.txt"; Start-Transcript -Path $LogFile -Force; Write-Output "LOGFILE_PATH::$LogFile"; Write-Output '1A REPO LOCATION'; Get-Location; Write-Output '1B BRANCH'; git rev-parse --abbrev-ref HEAD; git status --short --branch; git diff --cached --name-only; git branch -vv; git rev-list --left-right --count "@{u}...HEAD"; git log --oneline -5; Write-Output '1C AHEAD BEHIND'; git log --oneline "@{u}..HEAD"; git log --oneline "HEAD..@{u}"; Write-Output '1D DIRTY'; git status --short; git diff --name-only; git diff --cached --name-only; Stop-Transcript
+Transcript started, output file is C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt
+LOGFILE_PATH::C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt
+1A REPO LOCATION
+
+
+
+
+
+
+
+Path
+----
+C:\Users\JMega\OneDrive\Desktop\...
+1B BRANCH
+1C AHEAD BEHIND
+
+
+1D DIRTY
+
+
+
+Transcript stopped, output file is C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-ChildItem audit-logs | Sort-Object LastWriteTime -Descending | Select-Object -First 3 Name,LastWriteTime,Length
+
+Name
+----
+full-readonly-audit-20260311-193...
+full-readonly-audit-20260311-193...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>pwd
+
+Path
+----
+C:\Users\JMega\OneDrive\Desktop\...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-ChildItem .\audit-logs -Name
+full-readonly-audit-20260311-193416.txt
+full-readonly-audit-20260311-193503.txt
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$RepoRoot='C:\Users\JMega\OneDrive\Desktop\Crown2026'; Set-Location $RepoRoot; $KnownLocalSecurityCommit='a49b9fc1'; $LogFile='C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt'; Start-Transcript -Path $LogFile -Append -Force; Write-Output '2A CRITICAL FILE EXISTENCE CHECK'; $Files=@('.gitignore','frontend/dashboards/.env.local','frontend/dashboards/.env.local.example','prod_appsettings_before.json'); foreach($File in $Files){ [pscustomobject]@{ File=$File; Exists=Test-Path $File } } | Format-Table -AutoSize; Write-Output '2B ROOT .GITIGNORE REQUIRED RULES PRIMARY'; if(Test-Path '.gitignore'){ $GitIgnore=Get-Content '.gitignore'; foreach($Rule in @('.env*.local','**/.env*.local','!*.example')){ [pscustomobject]@{Rule=$Rule;Count=($GitIgnore|Where-Object{$_ -eq $Rule}).Count} } | Format-Table -AutoSize } else { Write-Output '.gitignore missing' }; Write-Output '2C ROOT .GITIGNORE REQUIRED RULES SECONDARY'; if(Test-Path '.gitignore'){ Select-String -Path '.gitignore' -Pattern '^\.env\*\.local$','^\*\*/\.env\*\.local$','^!\*\.example$' } else { Write-Output '.gitignore missing' }; Write-Output '2D .ENV.LOCAL TRACKING PRIMARY'; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT: $LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; Write-Output '2E .ENV.LOCAL TRACKING SECONDARY'; git status --short --ignored -- 'frontend/dashboards/.env.local'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '2F .ENV.LOCAL.EXAMPLE STATUS PRIMARY'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT: $LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'; Write-Output '2G .ENV.LOCAL.EXAMPLE STATUS SECONDARY'; git show 'HEAD:frontend/dashboards/.env.local.example'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '2H .ENV.LOCAL.EXAMPLE VALUE SAFETY'; if(Test-Path 'frontend/dashboards/.env.local.example'){ $NonBlankValues=Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }; if($NonBlankValues){ Write-Output 'WARNING: Nonblank values detected in .env.local.example'; $NonBlankValues } else { Write-Output 'PASS: No nonblank values detected in .env.local.example' } } else { Write-Output '.env.local.example missing' }; Write-Output '2I PROD APP SETTINGS SNAPSHOT FILE CHECK'; git ls-files --error-unmatch 'prod_appsettings_before.json'; Write-Output "EXIT: $LASTEXITCODE"; Test-Path 'prod_appsettings_before.json'; if(Test-Path 'prod_appsettings_before.json'){ Select-String -Path 'prod_appsettings_before.json' -Pattern 'REDACTED|<REDACTED|redacted' }; Write-Output '3A VERIFY KNOWN LOCAL SECURITY COMMIT EXISTS'; git cat-file -t $KnownLocalSecurityCommit; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '3B VERIFY KNOWN LOCAL SECURITY COMMIT CONTENT'; git show --stat --name-status $KnownLocalSecurityCommit; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '3C RECHECK ONLY THREE EXPECTED FILES IN KNOWN COMMIT'; git show $KnownLocalSecurityCommit -- '.gitignore' 'frontend/dashboards/.env.local' 'frontend/dashboards/.env.local.example'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '4A CANONICAL PROTECTED ENDPOINTS DOC CHECK'; $DocPath='docs/engineering/CANONICAL_PROTECTED_ENDPOINTS.md'; if(Test-Path $DocPath){ Select-String -Path $DocPath -Pattern 'health|integrity|whoami|build' } else { Write-Output "$DocPath not found" }; Stop-Transcript; Write-Output "APPENDED_LOG::$LogFile"
+At line:1 char:533
++ ... { [pscustomobject]@{ File=$File; Exists=Test-Path $File } } | Format- ...
++                                                                 ~
+An empty pipe element is not allowed.
+
+At line:1 char:832
++ ... Rule;Count=($GitIgnore|Where-Object{$_ -eq $Rule}).Count} } | Format- ...
++                                                                 ~
+An empty pipe element is not allowed.
+At line:1 char:533
++ ... { [pscustomobject]@{
+File=$File; Exists=Test-Path $File
+} } | Format- ...
++
+                               ~
+An empty pipe element is not
+allowed.
+
+At line:1 char:832
++ ... Rule;Count=($GitIgnore|Where-
+Object{$_ -eq $Rule}).Count} } |
+Format- ...
++
+                               ~
+An empty pipe element is not
+allowed.
+    + CategoryInfo          : Pars
+   erError: (:) [], ParentContain
+  sErrorRecordException
+    + FullyQualifiedErrorId : Empt
+   yPipeElement
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$RepoRoot='C:\Users\JMega\OneDrive\Desktop\Crown2026'; Set-Location $RepoRoot; $KnownLocalSecurityCommit='a49b9fc1'; $LogFile='C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt'; Start-Transcript -Path $LogFile -Append -Force; Write-Output '2A CRITICAL FILE EXISTENCE CHECK'; $Files=@('.gitignore','frontend/dashboards/.env.local','frontend/dashboards/.env.local.example','prod_appsettings_before.json'); $Files | ForEach-Object { [pscustomobject]@{ File=$_; Exists=Test-Path $_ } }; Write-Output '2B ROOT .GITIGNORE REQUIRED RULES PRIMARY'; if(Test-Path '.gitignore'){ $GitIgnore=Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { [pscustomobject]@{Rule=$_;Count=($GitIgnore|Where-Object{$_ -eq $PSItem}).Count} } } else { Write-Output '.gitignore missing' }; Write-Output '2C ROOT .GITIGNORE REQUIRED RULES SECONDARY'; if(Test-Path '.gitignore'){ Select-String -Path '.gitignore' -Pattern '^\.env\*\.local$','^\*\*/\.env\*\.local$','^!\*\.example$' } else { Write-Output '.gitignore missing' }; Write-Output '2D .ENV.LOCAL TRACKING PRIMARY'; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT: $LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; Write-Output '2E .ENV.LOCAL TRACKING SECONDARY'; git status --short --ignored -- 'frontend/dashboards/.env.local'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '2F .ENV.LOCAL.EXAMPLE STATUS PRIMARY'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT: $LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'; Write-Output '2G .ENV.LOCAL.EXAMPLE STATUS SECONDARY'; git show 'HEAD:frontend/dashboards/.env.local.example'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '2H .ENV.LOCAL.EXAMPLE VALUE SAFETY'; if(Test-Path 'frontend/dashboards/.env.local.example'){ $NonBlankValues=Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }; if($NonBlankValues){ Write-Output 'WARNING: Nonblank values detected in .env.local.example'; $NonBlankValues } else { Write-Output 'PASS: No nonblank values detected in .env.local.example' } } else { Write-Output '.env.local.example missing' }; Write-Output '2I PROD APP SETTINGS SNAPSHOT FILE CHECK'; git ls-files --error-unmatch 'prod_appsettings_before.json'; Write-Output "EXIT: $LASTEXITCODE"; Test-Path 'prod_appsettings_before.json'; if(Test-Path 'prod_appsettings_before.json'){ Select-String -Path 'prod_appsettings_before.json' -Pattern 'REDACTED|<REDACTED|redacted' }; Write-Output '3A VERIFY KNOWN LOCAL SECURITY COMMIT EXISTS'; git cat-file -t $KnownLocalSecurityCommit; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '3B VERIFY KNOWN LOCAL SECURITY COMMIT CONTENT'; git show --stat --name-status $KnownLocalSecurityCommit; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '3C RECHECK ONLY THREE EXPECTED FILES IN KNOWN COMMIT'; git show $KnownLocalSecurityCommit -- '.gitignore' 'frontend/dashboards/.env.local' 'frontend/dashboards/.env.local.example'; Write-Output "EXIT: $LASTEXITCODE"; Write-Output '4A CANONICAL PROTECTED ENDPOINTS DOC CHECK'; $DocPath='docs/engineering/CANONICAL_PROTECTED_ENDPOINTS.md'; if(Test-Path $DocPath){ Select-String -Path $DocPath -Pattern 'health|integrity|whoami|build' } else { Write-Output "$DocPath not found" }; Stop-Transcript; Write-Output "APPENDED_LOG::$LogFile"
+Transcript started, output file is C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt
+2A CRITICAL FILE EXISTENCE CHECK
+
+
+
+
+
+
+File
+----
+.gitignore
+frontend/dashboards/.env.local
+frontend/dashboards/.env.local.e...
+prod_appsettings_before.json
+2B ROOT .GITIGNORE REQUIRED RULES PRIMARY
+
+
+
+2C ROOT .GITIGNORE REQUIRED RULES SECONDARY
+2D .ENV.LOCAL TRACKING PRIMARY
+EXIT: 0
+True
+2E .ENV.LOCAL TRACKING SECONDARY
+EXIT: 0
+2F .ENV.LOCAL.EXAMPLE STATUS PRIMARY
+EXIT: 1
+False
+2G .ENV.LOCAL.EXAMPLE STATUS SECONDARY
+EXIT: 128
+2H .ENV.LOCAL.EXAMPLE VALUE SAFETY
+.env.local.example missing
+2I PROD APP SETTINGS SNAPSHOT FILE CHECK
+EXIT: 0
+True
+
+
+
+
+
+3A VERIFY KNOWN LOCAL SECURITY COMMIT EXISTS
+
+EXIT: 0
+3B VERIFY KNOWN LOCAL SECURITY COMMIT CONTENT
+
+EXIT: 0
+3C RECHECK ONLY THREE EXPECTED FILES IN KNOWN COMMIT
+
+EXIT: 0
+4A CANONICAL PROTECTED ENDPOINTS DOC CHECK
+
+
+
+Transcript stopped, output file is C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt
+APPENDED_LOG::C:\Users\JMega\OneDrive\Desktop\Crown2026\audit-logs\full-readonly-audit-20260311-193503.txt
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git rev-parse --abbrev-ref HEAD; git status --short --branch; git diff --cached --name-only; git rev-list --left-right --count "@{u}...HEAD"; git log --oneline -5
+
+
+
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>if (Test-Path '.gitignore') { Write-Output 'HAS_GITIGNORE'; Select-String -Path '.gitignore' -Pattern '^\.env\*\.local$','^\*\*/\.env\*\.local$','^!\*\.example$' } else { Write-Output 'MISSING_GITIGNORE' }; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "ENV_LOCAL_TRACK_EXIT=$LASTEXITCODE"; git status --short --ignored -- 'frontend/dashboards/.env.local'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "ENV_EXAMPLE_TRACK_EXIT=$LASTEXITCODE"; if (Test-Path 'frontend/dashboards/.env.local.example') { Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' } | ForEach-Object { "NONBLANK_ENV_EXAMPLE::$_" } }
+HAS_GITIGNORE
+
+ENV_LOCAL_TRACK_EXIT=0
+
+
+ENV_EXAMPLE_TRACK_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git cat-file -t a49b9fc1; Write-Output "COMMIT_TYPE_EXIT=$LASTEXITCODE"; git show --stat --name-status a49b9fc1
+
+COMMIT_TYPE_EXIT=0
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>if (Test-Path '.gitignore') { Write-Output 'HAS_GITIGNORE'; Select-String -Path '.gitignore' -Pattern '^\.env\*\.local$','^\*\*/\.env\*\.local$','^!\*\.example$' } else { Write-Output 'MISSING_GITIGNORE' }
+HAS_GITIGNORE
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$g = Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $rule=$_; $count = ($g | Where-Object { $_ -eq $rule }).Count; Write-Output ("RULE {0} COUNT {1}" -f $rule,$count) }
+RULE .env*.local COUNT 0
+RULE **/.env*.local COUNT 0
+RULE !*.example COUNT 0
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>rg -n "env.*local|example" .gitignore
+rg : The term 'rg' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the 
+spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:1
++ rg -n "env.*local|example" .gitignore
++ ~~
+    + CategoryInfo          : ObjectNotFound: (rg:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+rg : The term 'rg' is not
+recognized as the name of a
+cmdlet, function, script file, or
+operable program. Check the
+spelling of the name, or if a path
+was included, verify that the path
+is correct and try again.
+At line:1 char:1
++ rg -n "env.*local|example"
+.gitignore
++ ~~
+    + CategoryInfo          : Obje
+   ctNotFound: (rg:String) [], Co
+  mmandNotFoundException
+    + FullyQualifiedErrorId : Comm
+   andNotFoundException
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Select-String -Path '.gitignore' -Pattern 'env.*local|example'
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "ENV_LOCAL_TRACK_EXIT=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; git status --short --ignored -- 'frontend/dashboards/.env.local'
+
+ENV_LOCAL_TRACK_EXIT=0
+True
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "ENV_EXAMPLE_TRACK_EXIT=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'; git show 'HEAD:frontend/dashboards/.env.local.example'
+
+ENV_EXAMPLE_TRACK_EXIT=1
+False
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'prod_appsettings_before.json'; Write-Output "PROD_APPSETTINGS_TRACK_EXIT=$LASTEXITCODE"; Test-Path 'prod_appsettings_before.json'; if (Test-Path 'prod_appsettings_before.json') { Select-String -Path 'prod_appsettings_before.json' -Pattern 'REDACTED|<REDACTED|redacted' }
+
+PROD_APPSETTINGS_TRACK_EXIT=0
+True
+
+prod_appsettings_before.json:135:
+  "value": "<redacted>"
+prod_appsettings_before.json:140:
+  "value": "<redacted>"
+prod_appsettings_before.json:150:
+  "value": "<redacted>"
+prod_appsettings_before.json:165:
+  "value": "postgresql://<redacted>
+:<redacted>@<redacted>:5432/<redact
+ed>?sslmode=require"
+prod_appsettings_before.json:170:
+  "value": "<redacted>"
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git cat-file -t a49b9fc1; Write-Output "COMMIT_TYPE_EXIT=$LASTEXITCODE"; git show --stat --name-status a49b9fc1
+
+COMMIT_TYPE_EXIT=0
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git show a49b9fc1 -- '.gitignore' 'frontend/dashboards/.env.local' 'frontend/dashboards/.env.local.example'
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh auth status; Write-Output "GH_AUTH_EXIT=$LASTEXITCODE"; gh pr view 546 --repo tcmegahan/Crown2026 --json number,title,state,isDraft,mergeStateStatus,updatedAt,url,headRefName,baseRefName; Write-Output "PR546_EXIT=$LASTEXITCODE"; gh pr view 557 --repo tcmegahan/Crown2026 --json number,title,state,isDraft,mergeStateStatus,updatedAt,url,headRefName,baseRefName; Write-Output "PR557_EXIT=$LASTEXITCODE"; gh issue view 510 --repo tcmegahan/Crown2026 --json number,title,state,updatedAt,url; Write-Output "ISSUE510_EXIT=$LASTEXITCODE"
+
+GH_AUTH_EXIT=0
+
+PR546_EXIT=0
+
+PR557_EXIT=0
+
+ISSUE510_EXIT=0
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$c546 = gh api "repos/tcmegahan/Crown2026/issues/546/comments?per_page=100" | ConvertFrom-Json; Write-Output ("PR546_TOTAL_COMMENTS={0}" -f $c546.Count); $m546 = $c546 | Where-Object { $_.body -match 'Keeping this PR open as a recovery satellite' }; if ($m546) { Write-Output 'PR546_COMMENT_CHECK=PASS'; $m546 | Select-Object created_at,html_url } else { Write-Output 'PR546_COMMENT_CHECK=FAIL' }; $c557 = gh api "repos/tcmegahan/Crown2026/issues/557/comments?per_page=100" | ConvertFrom-Json; Write-Output ("PR557_TOTAL_COMMENTS={0}" -f $c557.Count); $m557 = $c557 | Where-Object { $_.body -match 'Keeping this PR open as a recovery satellite' }; if ($m557) { Write-Output 'PR557_COMMENT_CHECK=PASS'; $m557 | Select-Object created_at,html_url } else { Write-Output 'PR557_COMMENT_CHECK=FAIL' }; $c510 = gh api "repos/tcmegahan/Crown2026/issues/510/comments?per_page=100" | ConvertFrom-Json; Write-Output ("ISSUE510_TOTAL_COMMENTS={0}" -f $c510.Count); $m510 = $c510 | Where-Object { $_.body -match 'Confirmed by audit: this issue remains open in substance' }; if ($m510) { Write-Output 'ISSUE510_COMMENT_CHECK=PASS'; $m510 | Select-Object created_at,html_url } else { Write-Output 'ISSUE510_COMMENT_CHECK=FAIL' }; gh pr list --repo tcmegahan/Crown2026 --state merged --limit 20
+PR546_TOTAL_COMMENTS=1
+PR546_COMMENT_CHECK=PASS
+
+created_at           html_url
+----------           --------
+2026-03-11T22:38:54Z https://git...
+PR557_TOTAL_COMMENTS=1
+PR557_COMMENT_CHECK=PASS
+2026-03-11T22:38:55Z https://git...
+ISSUE510_TOTAL_COMMENTS=3
+ISSUE510_COMMENT_CHECK=PASS
+2026-03-11T22:38:56Z https://git...
+
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$c546 = gh api "repos/tcmegahan/Crown2026/issues/546/comments?per_page=100" | ConvertFrom-Json; Write-Output ("PR546_TOTAL_COMMENTS={0}" -f $c546.Count); if ($c546 | Where-Object { $_.body -match 'Keeping this PR open as a recovery satellite' }) { Write-Output 'PR546_COMMENT_CHECK=PASS' } else { Write-Output 'PR546_COMMENT_CHECK=FAIL' }
+PR546_TOTAL_COMMENTS=1
+PR546_COMMENT_CHECK=PASS
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh api repos/tcmegahan/Crown2026/issues/546/comments?per_page=5
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh api repos/tcmegahan/Crown2026/issues/557/comments?per_page=5
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh api repos/tcmegahan/Crown2026/issues/510/comments?per_page=10
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh pr list --repo tcmegahan/Crown2026 --state merged --limit 20
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-ChildItem artifacts/audit | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
+C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-193751.txt
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-193751.txt' -Tail 120
+Audit started: 2026-03-11T19:37:51.8380989-04:00
+  M   b a c k e n d / a d v a n c e m e n t / a p i . p y 
+ 
+   M   b a c k e n d / b e l l _ s c h e d u l e _ w i z a r d / v i e w s . p y 
+ 
+   M   b a c k e n d / c h e c k _ u s e r _ s c h o o l . p y 
+ 
+   M   b a c k e n d / c r e a t e _ r e a l _ g r a d e s . p y 
+ 
+   M   b a c k e n d / c r o w n _ a p i / o p s _ v i e w s . p y 
+ 
+   M   b a c k e n d / e x e c u t i v e 3 6 0 / a p i / v i e w s . p y 
+ 
+   M   b a c k e n d / f i n a n c i a l _ a i d / m a n a g e m e n t / c o m m a n d s / s e e d _ p h a s e 4 b _ s c e n a r i o . p y 
+ 
+   M   b a c k e n d / g r a d e _ s c a l e _ w i z a r d / v i e w s . p y 
+ 
+   M   b a c k e n d / g r a d e b o o k / m a n a g e m e n t / c o m m a n d s / s e e d _ g r a d e b o o k _ d e m o . p y 
+ 
+   M   b a c k e n d / s c r i p t s / s e e d _ a c a d e m i c s _ r e a d o n l y . p y 
+ 
+   M   t o o l s / a u d i t _ a l l . p s 1 
+ 
+ ? ?   a u d i t - l o g s / 
+ 
+ 1 5 5 b f e 0 8 3 8 b f 1 3 7 0 d e a 2 9 3 8 7 5 e b d 7 4 5 f 9 3 4 6 e 1 e 6 
+ 
+ P y t h o n   3 . 1 4 . 0 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ C r o w n 2 0 2 6   B a c k e n d   I n t e g r i t y   S c a n 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ R e p o :                             C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 
+ 
+ B a c k e n d :                       C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d 
+ 
+ F i l e s   s c a n n e d :           1 0 2 3 
+ 
+ T e n a n t   h e l p e r s :         T e n a n t H e a d e r R e q u i r e d M i d d l e w a r e ,   g e t _ r e q u e s t _ s c h o o l _ i d ,   r e q u i r e _ s c h o o l _ i d ,   t e n a n t _ h e a d e r _ m i d d l e w a r e 
+ 
+ H A R D   f i n d i n g s :           0 
+ 
+ S O F T   f i n d i n g s :           0 
+ 
+ 
+ 
+ R E S U L T :   P A S S   �� �   N o   H A R D   i n t e g r i t y   f i n d i n g s . 
+ 
+ S y s t e m   c h e c k   i d e n t i f i e d   n o   i s s u e s   ( 0   s i l e n c e d ) . 
+ 
+ N o   c h a n g e s   d e t e c t e d 
+ 
+ 
+ 
+ = = =   P Y T E S T   D J A N G O   D I A G N O S T I C S   ( E A R L Y )   = = = 
+ 
+ D J A N G O _ S E T T I N G S _ M O D U L E   e n v :   c r o w n _ a p i . s e t t i n g s 
+ 
+ s e t t i n g s   m o d u l e :   c r o w n _ a p i . s e t t i n g s 
+ 
+ I N S T A L L E D _ A P P S   h a s   c o r e ? :   T r u e 
+ 
+ M I G R A T I O N _ M O D U L E S :   { } 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' c o r e ' ] :   N o n e 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' f i n a n c e ' ] :   N o n e 
+ 
+ c o r e . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ _ _ i n i t _ _ . p y 
+ 
+ c o r e . m i g r a t i o n s . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ m i g r a t i o n s \ _ _ i n i t _ _ . p y 
+ 
+ = = =   E N D   D I A G N O S T I C S   = = = 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Start-Sleep -Seconds 20; Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-193751.txt' -Tail 120
+Audit started: 2026-03-11T19:37:51.8380989-04:00
+  M   b a c k e n d / a d v a n c e m e n t / a p i . p y 
+ 
+   M   b a c k e n d / b e l l _ s c h e d u l e _ w i z a r d / v i e w s . p y 
+ 
+   M   b a c k e n d / c h e c k _ u s e r _ s c h o o l . p y 
+ 
+   M   b a c k e n d / c r e a t e _ r e a l _ g r a d e s . p y 
+ 
+   M   b a c k e n d / c r o w n _ a p i / o p s _ v i e w s . p y 
+ 
+   M   b a c k e n d / e x e c u t i v e 3 6 0 / a p i / v i e w s . p y 
+ 
+   M   b a c k e n d / f i n a n c i a l _ a i d / m a n a g e m e n t / c o m m a n d s / s e e d _ p h a s e 4 b _ s c e n a r i o . p y 
+ 
+   M   b a c k e n d / g r a d e _ s c a l e _ w i z a r d / v i e w s . p y 
+ 
+   M   b a c k e n d / g r a d e b o o k / m a n a g e m e n t / c o m m a n d s / s e e d _ g r a d e b o o k _ d e m o . p y 
+ 
+   M   b a c k e n d / s c r i p t s / s e e d _ a c a d e m i c s _ r e a d o n l y . p y 
+ 
+   M   t o o l s / a u d i t _ a l l . p s 1 
+ 
+ ? ?   a u d i t - l o g s / 
+ 
+ 1 5 5 b f e 0 8 3 8 b f 1 3 7 0 d e a 2 9 3 8 7 5 e b d 7 4 5 f 9 3 4 6 e 1 e 6 
+ 
+ P y t h o n   3 . 1 4 . 0 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ C r o w n 2 0 2 6   B a c k e n d   I n t e g r i t y   S c a n 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ R e p o :                             C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 
+ 
+ B a c k e n d :                       C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d 
+ 
+ F i l e s   s c a n n e d :           1 0 2 3 
+ 
+ T e n a n t   h e l p e r s :         T e n a n t H e a d e r R e q u i r e d M i d d l e w a r e ,   g e t _ r e q u e s t _ s c h o o l _ i d ,   r e q u i r e _ s c h o o l _ i d ,   t e n a n t _ h e a d e r _ m i d d l e w a r e 
+ 
+ H A R D   f i n d i n g s :           0 
+ 
+ S O F T   f i n d i n g s :           0 
+ 
+ 
+ 
+ R E S U L T :   P A S S   �� �   N o   H A R D   i n t e g r i t y   f i n d i n g s . 
+ 
+ S y s t e m   c h e c k   i d e n t i f i e d   n o   i s s u e s   ( 0   s i l e n c e d ) . 
+ 
+ N o   c h a n g e s   d e t e c t e d 
+ 
+ 
+ 
+ = = =   P Y T E S T   D J A N G O   D I A G N O S T I C S   ( E A R L Y )   = = = 
+ 
+ D J A N G O _ S E T T I N G S _ M O D U L E   e n v :   c r o w n _ a p i . s e t t i n g s 
+ 
+ s e t t i n g s   m o d u l e :   c r o w n _ a p i . s e t t i n g s 
+ 
+ I N S T A L L E D _ A P P S   h a s   c o r e ? :   T r u e 
+ 
+ M I G R A T I O N _ M O D U L E S :   { } 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' c o r e ' ] :   N o n e 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' f i n a n c e ' ] :   N o n e 
+ 
+ c o r e . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ _ _ i n i t _ _ . p y 
+ 
+ c o r e . m i g r a t i o n s . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ m i g r a t i o n s \ _ _ i n i t _ _ . p y 
+ 
+ = = =   E N D   D I A G N O S T I C S   = = = 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-Process -Name python -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Sort-Object StartTime -Descending | Select-Object -First 5
+
+   Id ProcessName StartTime
+   -- ----------- ---------
+20596 python      3/11/2026 7:37...
+18424 python      3/11/2026 7:37...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$deadline=(Get-Date).AddMinutes(8); do { $procs=Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object { $_.StartTime -gt (Get-Date).AddMinutes(-15) }; if(-not $procs){ break }; Start-Sleep -Seconds 15 } while((Get-Date) -lt $deadline); Get-Process -Name python -ErrorAction SilentlyContinue | Select-Object Id,StartTime | Sort-Object StartTime -Descending | Select-Object -First 5; Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-193751.txt' -Tail 160
+ 
+ T e n a n t   h e l p e r s :         T e n a n t H e a d e r R e q u i r e d M i d d l e w a r e ,   g e t _ r e q u e s t _ s c h o o l _ i d ,   r e q u i r e _ s c h o o l _ i d ,   t e n a n t _ h e a d e r _ m i d d l e w a r e 
+ 
+ H A R D   f i n d i n g s :           0 
+ 
+ S O F T   f i n d i n g s :           0 
+ 
+ 
+ 
+ R E S U L T :   P A S S   �� �   N o   H A R D   i n t e g r i t y   f i n d i n g s . 
+ 
+ S y s t e m   c h e c k   i d e n t i f i e d   n o   i s s u e s   ( 0   s i l e n c e d ) . 
+ 
+ N o   c h a n g e s   d e t e c t e d 
+ 
+ 
+ 
+ = = =   P Y T E S T   D J A N G O   D I A G N O S T I C S   ( E A R L Y )   = = = 
+ 
+ D J A N G O _ S E T T I N G S _ M O D U L E   e n v :   c r o w n _ a p i . s e t t i n g s 
+ 
+ s e t t i n g s   m o d u l e :   c r o w n _ a p i . s e t t i n g s 
+ 
+ I N S T A L L E D _ A P P S   h a s   c o r e ? :   T r u e 
+ 
+ M I G R A T I O N _ M O D U L E S :   { } 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' c o r e ' ] :   N o n e 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' f i n a n c e ' ] :   N o n e 
+ 
+ c o r e . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ _ _ i n i t _ _ . p y 
+ 
+ c o r e . m i g r a t i o n s . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ m i g r a t i o n s \ _ _ i n i t _ _ . p y 
+ 
+ = = =   E N D   D I A G N O S T I C S   = = = 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   8 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .     [ 1 0 0 % ] 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =   w a r n i n g s   s u m m a r y   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 1 3 9 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 1 3 9 :   R e m o v e d I n D j a n g o 6 0 W a r n i n g :   C h e c k C o n s t r a i n t . c h e c k   i s   d e p r e c a t e d   i n   f a v o r   o f   ` . c o n d i t i o n ` . 
+ 
+         m o d e l s . C h e c k C o n s t r a i n t ( 
+ 
+ 
+ 
+ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 2 3 2 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 2 3 2 :   R e m o v e d I n D j a n g o 6 0 W a r n i n g :   C h e c k C o n s t r a i n t . c h e c k   i s   d e p r e c a t e d   i n   f a v o r   o f   ` . c o n d i t i o n ` . 
+ 
+         m o d e l s . C h e c k C o n s t r a i n t ( 
+ 
+ 
+ 
+ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 2 5 8 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 2 5 8 :   R e m o v e d I n D j a n g o 6 0 W a r n i n g :   C h e c k C o n s t r a i n t . c h e c k   i s   d e p r e c a t e d   i n   f a v o r   o f   ` . c o n d i t i o n ` . 
+ 
+         m o d e l s . C h e c k C o n s t r a i n t ( 
+ 
+ 
+ 
+ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 2 9 0 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ f i n a n c e \ m o d e l s . p y : 2 9 0 :   R e m o v e d I n D j a n g o 6 0 W a r n i n g :   C h e c k C o n s t r a i n t . c h e c k   i s   d e p r e c a t e d   i n   f a v o r   o f   ` . c o n d i t i o n ` . 
+ 
+         m o d e l s . C h e c k C o n s t r a i n t ( 
+ 
+ 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ . v e n v \ L i b \ s i t e - p a c k a g e s \ r e s t _ f r a m e w o r k \ u r l p a t t e r n s . p y : 1 0 8 :   R e m o v e d I n D j a n g o 6 0 W a r n i n g :   C o n v e r t e r   ' d r f _ f o r m a t _ s u f f i x '   i s   a l r e a d y   r e g i s t e r e d .   S u p p o r t   f o r   o v e r r i d i n g   r e g i s t e r e d   c o n v e r t e r s   i s   d e p r e c a t e d   a n d   w i l l   b e   r e m o v e d   i n   D j a n g o   6 . 0 . 
+ 
+         r e g i s t e r _ c o n v e r t e r ( s u f f i x _ c o n v e r t e r ,   c o n v e r t e r _ n a m e ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 7 3 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 9 5 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 1 1 9 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 1 4 4 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 1 6 9 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 2 3 6 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         b o u n d a r y   =   " C R O W N _ O N E R O S T E R _ "   +   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y % m % d % H % M % S " ) 
+ 
+ 
+ 
+ - -   D o c s :   h t t p s : / / d o c s . p y t e s t . o r g / e n / s t a b l e / h o w - t o / c a p t u r e - w a r n i n g s . h t m l 
+ 
+ 3 5 9   p a s s e d ,   1 5 8 6   d e s e l e c t e d ,   1 9   w a r n i n g s   i n   3 0 8 . 4 6 s   ( 0 : 0 5 : 0 8 ) 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-193751.txt' -Tail 80
+ 
+ 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+ b a c k e n d / a c a d e m i c _ y e a r _ w i z a r d / t e s t s / t e s t _ v i e w s . p y : : A c a d e m i c Y e a r T e n a n t T e s t : : t e s t _ m i s s i n g _ s c h o o l _ h e a d e r _ r e t u r n s _ 4 0 0 _ o r _ 4 0 3 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ . v e n v \ L i b \ s i t e - p a c k a g e s \ r e s t _ f r a m e w o r k \ u r l p a t t e r n s . p y : 1 0 8 :   R e m o v e d I n D j a n g o 6 0 W a r n i n g :   C o n v e r t e r   ' d r f _ f o r m a t _ s u f f i x '   i s   a l r e a d y   r e g i s t e r e d .   S u p p o r t   f o r   o v e r r i d i n g   r e g i s t e r e d   c o n v e r t e r s   i s   d e p r e c a t e d   a n d   w i l l   b e   r e m o v e d   i n   D j a n g o   6 . 0 . 
+ 
+         r e g i s t e r _ c o n v e r t e r ( s u f f i x _ c o n v e r t e r ,   c o n v e r t e r _ n a m e ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 7 3 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 9 5 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 1 1 9 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 1 4 4 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 1 6 9 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         n o w   =   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y - % m - % d T % H : % M : % S Z " ) 
+ 
+ 
+ 
+ b a c k e n d / i n t e g r a t i o n s / t e s t s / t e s t _ o n e r o s t e r . p y : : T e s t O n e R o s t e r T e n a n t I s o l a t i o n : : t e s t _ e x p o r t _ o n l y _ i n c l u d e s _ o w n _ s c h o o l _ c o u r s e s 
+ 
+     C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ i n t e g r a t i o n s \ o n e r o s t e r . p y : 2 3 6 :   D e p r e c a t i o n W a r n i n g :   d a t e t i m e . d a t e t i m e . u t c n o w ( )   i s   d e p r e c a t e d   a n d   s c h e d u l e d   f o r   r e m o v a l   i n   a   f u t u r e   v e r s i o n .   U s e   t i m e z o n e - a w a r e   o b j e c t s   t o   r e p r e s e n t   d a t e t i m e s   i n   U T C :   d a t e t i m e . d a t e t i m e . n o w ( d a t e t i m e . U T C ) . 
+ 
+         b o u n d a r y   =   " C R O W N _ O N E R O S T E R _ "   +   d a t e t i m e . u t c n o w ( ) . s t r f t i m e ( " % Y % m % d % H % M % S " ) 
+ 
+ 
+ 
+ - -   D o c s :   h t t p s : / / d o c s . p y t e s t . o r g / e n / s t a b l e / h o w - t o / c a p t u r e - w a r n i n g s . h t m l 
+ 
+ 3 5 9   p a s s e d ,   1 5 8 6   d e s e l e c t e d ,   1 9   w a r n i n g s   i n   3 0 8 . 4 6 s   ( 0 : 0 5 : 0 8 ) 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>powershell -File tools/audit_frontend.ps1
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh pr list --repo tcmegahan/Crown2026 --state merged --limit 20 --json number,title,mergedAt,url
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git rev-parse --abbrev-ref HEAD; git status --short --branch; git rev-list --left-right --count "@{u}...HEAD"
+
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$g=Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $r=$_; $c=($g|Where-Object{$_ -eq $r}).Count; Write-Output ("RULE {0} COUNT {1}" -f $r,$c) }; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "ENV_LOCAL_TRACK_EXIT=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "ENV_EXAMPLE_TRACK_EXIT=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'
+RULE .env*.local COUNT 0
+RULE **/.env*.local COUNT 0
+RULE !*.example COUNT 0
+
+ENV_LOCAL_TRACK_EXIT=0
+True
+
+ENV_EXAMPLE_TRACK_EXIT=1
+False
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git cat-file -t a49b9fc1; Write-Output "COMMIT_TYPE_EXIT=$LASTEXITCODE"; gh pr view 546 --repo tcmegahan/Crown2026 --json number,state,isDraft,mergeStateStatus,updatedAt,url; gh pr view 557 --repo tcmegahan/Crown2026 --json number,state,isDraft,mergeStateStatus,updatedAt,url; gh issue view 510 --repo tcmegahan/Crown2026 --json number,state,updatedAt,url
+
+COMMIT_TYPE_EXIT=0
+
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git cat-file -t a49b9fc1; Write-Output "COMMIT_TYPE_EXIT=$LASTEXITCODE"; gh pr view 546 --repo tcmegahan/Crown2026 --json number,state,isDraft,mergeStateStatus,updatedAt,url; gh pr view 557 --repo tcmegahan/Crown2026 --json number,state,isDraft,mergeStateStatus,updatedAt,url; gh issue view 510 --repo tcmegahan/Crown2026 --json number,state,updatedAt,url
+
+COMMIT_TYPE_EXIT=0
+
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$c546 = gh api repos/tcmegahan/Crown2026/issues/546/comments?per_page=100 | ConvertFrom-Json; if($c546 | Where-Object { $_.body -match 'Keeping this PR open as a recovery satellite' }){ 'PR546_COMMENT=PASS' } else { 'PR546_COMMENT=FAIL' }; $c557 = gh api repos/tcmegahan/Crown2026/issues/557/comments?per_page=100 | ConvertFrom-Json; if($c557 | Where-Object { $_.body -match 'Keeping this PR open as a recovery satellite' }){ 'PR557_COMMENT=PASS' } else { 'PR557_COMMENT=FAIL' }; $c510 = gh api repos/tcmegahan/Crown2026/issues/510/comments?per_page=100 | ConvertFrom-Json; if($c510 | Where-Object { $_.body -match 'Confirmed by audit: this issue remains open in substance' }){ 'ISSUE510_COMMENT=PASS' } else { 'ISSUE510_COMMENT=FAIL' }; gh pr list --repo tcmegahan/Crown2026 --state merged --limit 20 --json number,mergedAt | ConvertFrom-Json | Select-Object -First 5 | ForEach-Object { "MERGED_PR #$($_.number) at $($_.mergedAt)" }
+PR546_COMMENT=PASS
+PR557_COMMENT=PASS
+ISSUE510_COMMENT=PASS
+MERGED_PR #556 555 508 507 506 504 502 501 500 499 498 497 496 494 493 492 491 490 489 488 at 2026-03-10T01:16:14Z 2026-03-10T00:58:42Z 2026-03-07T08:43:18Z 2026-03-07T08:20:03Z 2026-03-07T08:31:11Z 2026-03-07T00:48:58Z 2026-03-07T00:57:05Z 2026-03-02T01:26:31Z 2026-03-02T01:08:11Z 2026-03-02T00:41:23Z 2026-03-01T23:32:47Z 2026-03-01T23:18:32Z 2026-03-07T00:57:08Z 2026-03-07T00:57:12Z 2026-03-07T00:57:16Z 2026-03-07T00:57:19Z 2026-02-28T18:59:44Z 2026-02-28T17:51:55Z 2026-02-28T17:45:10Z 2026-02-28T17:40:22Z
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git status --short --branch -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example; Write-Output '---'; if (Test-Path '.gitignore') { Get-Content '.gitignore' | Select-String -Pattern '^\.env\*\.local$','^\*\*/\.env\*\.local$','^!\*\.example$' } else { Write-Output '.gitignore missing' }; Write-Output '---'; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "ENV_LOCAL_TRACK_EXIT=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; Write-Output '---'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "ENV_EXAMPLE_TRACK_EXIT=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'
+
+---
+---
+
+ENV_LOCAL_TRACK_EXIT=0
+True
+---
+
+ENV_EXAMPLE_TRACK_EXIT=1
+False
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git log --oneline -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example; Write-Output '---'; git diff -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example; Write-Output '---'; git show a49b9fc1 -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+
+---
+
+---
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>powershell -File tools/audit_frontend.ps1
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git branch --contains a49b9fc1; git merge-base --is-ancestor a49b9fc1 HEAD; Write-Output "IS_ANCESTOR_EXIT=$LASTEXITCODE"; git log --oneline a49b9fc1..HEAD -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+
+
+IS_ANCESTOR_EXIT=1
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git show --name-status --oneline HEAD -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example; Write-Output '---'; git ls-tree -r --name-only HEAD | Select-String -Pattern '^frontend/dashboards/.env.local$|^frontend/dashboards/.env.local.example$'
+
+---
+
+frontend/dashboards/.env.local
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>powershell -File tools/audit_frontend.ps1
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git branch --contains a49b9fc1; Write-Output '---'; git log --oneline a49b9fc1..HEAD -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+
+---
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== CURRENT BRANCH / STATUS ==='
+=== CURRENT BRANCH / STATUS ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git rev-parse --abbrev-ref HEAD
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git status --short --branch
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== FILE EXISTENCE ==='
+=== FILE EXISTENCE ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>@(
+  '.gitignore',
+  'frontend/dashboards/.env.local',
+  'frontend/dashboards/.env.local.example'
+) | ForEach-Object {
+  [pscustomobject]@{
+    File   = $_
+    Exists = Test-Path $_
+  }
+}
+
+File
+----
+.gitignore
+frontend/dashboards/.env.local
+frontend/dashboards/.env.local.e...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== CURRENT .GITIGNORE RELEVANT LINES ==='
+=== CURRENT .GITIGNORE RELEVANT LINES ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>if (Test-Path '.gitignore') {
+  Select-String -Path '.gitignore' -Pattern 'env.*local|example'
+}
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== REQUIRED RULE COUNTS ==='
+=== REQUIRED RULE COUNTS ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>if (Test-Path '.gitignore') {
+  $g = Get-Content '.gitignore'
+  @('.env*.local','**/.env*.local','!*.example') | ForEach-Object {
+    $rule = $_
+    $count = ($g | Where-Object { $_ -eq $rule }).Count
+    Write-Output ("RULE: {0}  COUNT: {1}" -f $rule, $count)
+  }
+}
+RULE: .env*.local  COUNT: 0
+RULE: **/.env*.local  COUNT: 0
+RULE: !*.example  COUNT: 0
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== TRACKING STATUS: .env.local ==='
+=== TRACKING STATUS: .env.local ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local'
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output "EXIT_CODE_ENV_LOCAL=$LASTEXITCODE"
+EXIT_CODE_ENV_LOCAL=0
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Test-Path 'frontend/dashboards/.env.local'
+True
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git status --short --ignored -- 'frontend/dashboards/.env.local'
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== TRACKING STATUS: .env.local.example ==='
+=== TRACKING STATUS: .env.local.example ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output "EXIT_CODE_ENV_EXAMPLE=$LASTEXITCODE"
+EXIT_CODE_ENV_EXAMPLE=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Test-Path 'frontend/dashboards/.env.local.example'
+False
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git status --short --ignored -- 'frontend/dashboards/.env.local.example'
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== HISTORY OF THE THREE FILES ==='
+=== HISTORY OF THE THREE FILES ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git log --oneline -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== CURRENT WORKING TREE DIFF FOR THE THREE FILES ==='
+=== CURRENT WORKING TREE DIFF FOR THE THREE FILES ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git diff -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== SECURITY COMMIT a49b9fc1 CONTENT ==='
+=== SECURITY COMMIT a49b9fc1 CONTENT ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git show --stat --name-status a49b9fc1
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git show a49b9fc1 -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== CURRENT BRANCH / STATUS ==='; git rev-parse --abbrev-ref HEAD; git status --short --branch; Write-Output ''; Write-Output '=== FILE EXISTENCE ==='; @('.gitignore','frontend/dashboards/.env.local','frontend/dashboards/.env.local.example') | ForEach-Object { [pscustomobject]@{ File=$_; Exists=Test-Path $_ } }; Write-Output ''; Write-Output '=== CURRENT .GITIGNORE RELEVANT LINES ==='; if (Test-Path '.gitignore') { Select-String -Path '.gitignore' -Pattern 'env.*local|example' }; Write-Output ''; Write-Output '=== REQUIRED RULE COUNTS ==='; if (Test-Path '.gitignore') { $g = Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $rule=$_; $count=($g | Where-Object { $_ -eq $rule }).Count; Write-Output ("RULE: {0}  COUNT: {1}" -f $rule, $count) } }
+=== CURRENT BRANCH / STATUS ===
+
+
+
+=== FILE EXISTENCE ===
+
+File
+----
+.gitignore
+frontend/dashboards/.env.local
+frontend/dashboards/.env.local.e...
+
+=== CURRENT .GITIGNORE RELEVANT LINES ===
+
+=== REQUIRED RULE COUNTS ===
+RULE: .env*.local  COUNT: 0
+RULE: **/.env*.local  COUNT: 0
+RULE: !*.example  COUNT: 0
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== TRACKING STATUS: .env.local ==='; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_CODE_ENV_LOCAL=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; git status --short --ignored -- 'frontend/dashboards/.env.local'; Write-Output ''; Write-Output '=== TRACKING STATUS: .env.local.example ==='; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_CODE_ENV_EXAMPLE=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'; git status --short --ignored -- 'frontend/dashboards/.env.local.example'; Write-Output ''; Write-Output '=== HISTORY OF THE THREE FILES ==='; git log --oneline -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+=== TRACKING STATUS: .env.local ===
+
+EXIT_CODE_ENV_LOCAL=0
+True
+
+
+=== TRACKING STATUS: .env.local.example ===
+
+EXIT_CODE_ENV_EXAMPLE=1
+False
+
+
+=== HISTORY OF THE THREE FILES ===
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_CODE_ENV_LOCAL=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; git status --short --ignored -- 'frontend/dashboards/.env.local'
+
+EXIT_CODE_ENV_LOCAL=0
+True
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_CODE_ENV_EXAMPLE=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'; git status --short --ignored -- 'frontend/dashboards/.env.local.example'
+
+EXIT_CODE_ENV_EXAMPLE=1
+False
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git log --oneline -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== CURRENT WORKING TREE DIFF FOR THE THREE FILES ==='; git diff -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example; Write-Output ''; Write-Output '=== SECURITY COMMIT a49b9fc1 CONTENT ==='; git show --stat --name-status a49b9fc1; Write-Output ''; git show a49b9fc1 -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example
+=== CURRENT WORKING TREE DIFF FOR THE THREE FILES ===
+
+
+=== SECURITY COMMIT a49b9fc1 CONTENT ===
+
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1; if ($LASTEXITCODE -ne 0) { Write-Output ''; Write-Output '=== FIRST 120 LINES: tools/audit_frontend.ps1 ==='; Get-Content 'tools/audit_frontend.ps1' -First 120 }
+
+
+=== FIRST 120 LINES: tools/audit_frontend.ps1 ===
+# tools/audit_frontend.ps1
+# Crown2026 Frontend Hygiene Audit
+# Checks for hard-coded API URLs, missing env config, and verifies build works.
+#
+# Usage (standalone):
+#   pwsh -File tools/audit_frontend.ps1
+#
+# Called automatically by audit_all.ps1 unless -NoUI is passed.
+
+$ErrorActionPreference = "Stop"
+
+function Step($name, [scriptblock]$fn) {
+  Write-Host ""
+  Write-Host "=== $name ===" -ForegroundColor Cyan
+  & $fn
+  Write-Host "OK: $name" -ForegroundColor Green
+}
+
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $repoRoot
+
+$fe = "frontend/dashboards"
+if (-not (Test-Path $fe)) {
+  Write-Host "frontend/dashboards not found; skipping frontend audit" -ForegroundColor Yellow
+  exit 0
+}
+
+Step "Node / npm version" {
+  node --version
+  npm --version
+}
+
+Step "No hard-coded API base URLs in source" {
+  $srcGlobs = @(
+    "$fe/src/**/*.js",
+    "$fe/src/**/*.jsx",
+    "$fe/src/**/*.ts",
+    "$fe/src/**/*.tsx"
+  )
+  $dangerousPatterns = "http://localhost:8000|https://localhost:|/api/v1|crown-api\.azurewebsites|REACT_APP_API_URL\s*="
+  $hits = @()
+  foreach ($glob in $srcGlobs) {
+    $files = Get-ChildItem -Path $glob -ErrorAction SilentlyContinue
+    if ($files) {
+      $found = Select-String -Path $files -Pattern $dangerousPatterns -ErrorAction SilentlyContinue
+      if ($found) { $hits += $found }
+    }
+  }
+  if ($hits) {
+    Write-Host "Hard-coded API refs detected:" -ForegroundColor Yellow
+    $hits | Select-Object Path,LineNumber,Line | Format-Table -AutoSize
+    throw "Hard-coded API refs found. Ensure API base URL comes from environment variables (VITE_API_BASE or REACT_APP_API_URL)."
+  }
+}
+
+Step "package.json has required scripts" {
+  $pkg = Get-Content "$fe/package.json" -Raw | ConvertFrom-Json
+  $scripts = $pkg.scripts.PSObject.Properties.Name
+  $required = @("build", "dev", "test")
+  $missing = $required | Where-Object { $_ -notin $scripts }
+  if ($missing) {
+    Write-Host "WARN: Missing scripts in package.json: $($missing -join ', ')" -ForegroundColor Yellow
+  }
+  if ("build" -notin $scripts) {
+    throw "package.json is missing required 'build' script."
+  }
+}
+
+Step "No .env files committed (secrets hygiene)" {
+  $envFiles = @(".env", ".env.local", ".env.production", ".env.staging") |
+    ForEach-Object { Join-Path $fe $_ } |
+    Where-Object { Test-Path $_ }
+  if ($envFiles) {
+    # Verify they are .gitignored â€” fail if tracked by git
+    foreach ($ef in $envFiles) {
+      $tracked = git ls-files --error-unmatch $ef 2>$null
+      if ($LASTEXITCODE -eq 0) {
+        throw "Committed .env file detected: $ef â€” remove from git tracking and add to .gitignore"
+      }
+    }
+    Write-Host "  .env file(s) exist but are not tracked by git (OK)" -ForegroundColor DarkGray
+  }
+}
+
+Step "npm install (ci)" {
+  Push-Location $fe
+  try {
+    npm ci --silent
+  } finally {
+    Pop-Location
+  }
+}
+
+Step "Frontend build" {
+  Push-Location $fe
+  try {
+    npm run build --silent
+  } finally {
+    Pop-Location
+  }
+}
+
+Write-Host ""
+Write-Host "Frontend audit complete." -ForegroundColor Green
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>@('.gitignore','frontend/dashboards/.env.local','frontend/dashboards/.env.local.example') | ForEach-Object { "FILE=$_; EXISTS=$(Test-Path $_)" }
+FILE=.gitignore; EXISTS=True
+FILE=frontend/dashboards/.env.local; EXISTS=True
+FILE=frontend/dashboards/.env.local.example; EXISTS=False
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh issue view 510 --repo tcmegahan/Crown2026 --json number,title,state,updatedAt,url; gh pr view 546 --repo tcmegahan/Crown2026 --json number,state,isDraft,mergeStateStatus,url; gh pr view 557 --repo tcmegahan/Crown2026 --json number,state,isDraft,mergeStateStatus,url
+
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git rm --cached -- 'frontend/dashboards/.env.local'
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $g=Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $r=$_; $c=($g|Where-Object{$_ -eq $r}).Count; Write-Output ("RULE: {0} COUNT: {1}" -f $r,$c)}; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_ENV_LOCAL=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_ENV_EXAMPLE=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'
+RULE: .env*.local COUNT: 1
+RULE: **/.env*.local COUNT: 1
+RULE: !*.example COUNT: 1
+
+EXIT_ENV_LOCAL=1
+True
+
+EXIT_ENV_EXAMPLE=1
+True
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git status --short -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example tools/audit_frontend.ps1
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git add .gitignore tools/audit_frontend.ps1 frontend/dashboards/.env.local.example
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_ENV_LOCAL=$LASTEXITCODE"; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_ENV_EXAMPLE=$LASTEXITCODE"; git status --short -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example tools/audit_frontend.ps1
+
+EXIT_ENV_LOCAL=1
+
+EXIT_ENV_EXAMPLE=0
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$log='C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-195241.txt'; $deadline=(Get-Date).AddMinutes(10); do { Start-Sleep -Seconds 20; $tail=Get-Content $log -Tail 40; $tail | Select-Object -Last 8; if ($tail -join "`n" -match 'AUDIT RESULT:|FAILED:|FRONTEND_CHECKS_SKIPPED') { break } } while((Get-Date) -lt $deadline); Write-Output '--- FINAL TAIL ---'; Get-Content $log -Tail 120
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   8 0 % ] 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   8 0 % ] 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   8 0 % ] 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   8 0 % ] 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+--- FINAL TAIL ---
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ . . . 
+ 
+ 
+ 
+ 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$log='C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-195241.txt'; Select-String -Path $log -Pattern 'AUDIT RESULT|FAILED:|Frontend audit complete|Hard-coded API refs found|ERROR:' -Context 0,2
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git status --short -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example tools/audit_frontend.ps1
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git diff -- tools/audit_frontend.ps1; Write-Output '---STAGED---'; git diff --cached -- tools/audit_frontend.ps1
+
+---STAGED---
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git diff --numstat -- tools/audit_frontend.ps1; git diff --cached --numstat -- tools/audit_frontend.ps1
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== STAGED FILES ==='
+=== STAGED FILES ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git diff --cached --name-only
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== SECURITY FILE TRUTH ==='
+=== SECURITY FILE TRUTH ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>$g = Get-Content '.gitignore'
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>@('.env*.local','**/.env*.local','!*.example') | ForEach-Object {
+  $r = $_
+  $c = ($g | Where-Object { $_ -eq $r }).Count
+  Write-Output ("RULE: {0} COUNT: {1}" -f $r, $c)
+}
+RULE: .env*.local COUNT: 1
+RULE: **/.env*.local COUNT: 1
+RULE: !*.example COUNT: 1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local'
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output "EXIT_ENV_LOCAL=$LASTEXITCODE"
+EXIT_ENV_LOCAL=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Test-Path 'frontend/dashboards/.env.local'
+True
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output "EXIT_ENV_EXAMPLE=$LASTEXITCODE"
+EXIT_ENV_EXAMPLE=0
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Test-Path 'frontend/dashboards/.env.local.example'
+True
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== NONBLANK VALUES IN TEMPLATE ==='
+=== NONBLANK VALUES IN TEMPLATE ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-Content 'frontend/dashboards/.env.local.example' |
+  Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output ''
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output '=== FRONTEND AUDIT RECHECK ==='
+=== FRONTEND AUDIT RECHECK ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>powershell -File tools/audit_frontend.ps1
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== STAGED FILES ==='; git diff --cached --name-only
+=== STAGED FILES ===
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== SECURITY FILE TRUTH ==='; $g = Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $r = $_; $c = ($g | Where-Object { $_ -eq $r }).Count; Write-Output ("RULE: {0} COUNT: {1}" -f $r, $c) }; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_ENV_LOCAL=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_ENV_EXAMPLE=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'
+=== SECURITY FILE TRUTH ===
+RULE: .env*.local COUNT: 1
+RULE: **/.env*.local COUNT: 1
+RULE: !*.example COUNT: 1
+
+EXIT_ENV_LOCAL=1
+True
+
+EXIT_ENV_EXAMPLE=0
+True
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== NONBLANK VALUES IN TEMPLATE ==='; Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }; Write-Output ''; Write-Output '=== FRONTEND AUDIT RECHECK ==='; powershell -File tools/audit_frontend.ps1; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+=== NONBLANK VALUES IN TEMPLATE ===
+
+=== FRONTEND AUDIT RECHECK ===
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== NONBLANK VALUES IN TEMPLATE ==='; Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }
+=== NONBLANK VALUES IN TEMPLATE ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== FRONTEND AUDIT RECHECK ==='; powershell -File tools/audit_frontend.ps1; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+=== FRONTEND AUDIT RECHECK ===
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+powershell : Hard-coded API refs found. Ensure 
+At line:1 char:59
++ ... Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; Write ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Hard-coded API refs found. Ensure :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+API base URL comes from
+environment variables
+(VITE_API_BASE or
+REACT_APP_API_URL).
+At C:\Users\JMega\OneDrive\Desktop\
+Crown2026\tools\audit_frontend.ps1:
+52 char:5
++     throw "Hard-coded API refs
+found. Ensure API base URL comes
+from  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : Oper
+   ationStopped: (Hard-coded API
+  ...T_APP_API_URL).:String) [],
+  RuntimeException
+    + FullyQualifiedErrorId : Hard
+   -coded API refs found. Ensure
+  API base URL comes from enviro
+ nment variables (VITE_API_BASE
+ or REACT_APP_API_URL).
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Get-ChildItem artifacts/audit | Sort-Object LastWriteTime -Descending | Select-Object -First 1 FullName,LastWriteTime
+
+FullName
+--------
+C:\Users\JMega\OneDrive\Desktop\...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $latest = Get-ChildItem artifacts/audit | Sort-Object LastWriteTime -Descending | Select-Object -First 1; Write-Output $latest.FullName; Write-Output $latest.LastWriteTime
+C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-200522.txt
+
+Wednesday, March 11, 2026 8:07:31
+PM
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-200522.txt' -Tail 120
+Audit started: 2026-03-11T20:05:22.4176229-04:00
+M     . g i t i g n o r e 
+ 
+   M   b a c k e n d / a d v a n c e m e n t / a p i . p y 
+ 
+   M   b a c k e n d / b e l l _ s c h e d u l e _ w i z a r d / v i e w s . p y 
+ 
+   M   b a c k e n d / c h e c k _ u s e r _ s c h o o l . p y 
+ 
+   M   b a c k e n d / c r e a t e _ r e a l _ g r a d e s . p y 
+ 
+   M   b a c k e n d / c r o w n _ a p i / o p s _ v i e w s . p y 
+ 
+   M   b a c k e n d / e x e c u t i v e 3 6 0 / a p i / v i e w s . p y 
+ 
+   M   b a c k e n d / f i n a n c i a l _ a i d / m a n a g e m e n t / c o m m a n d s / s e e d _ p h a s e 4 b _ s c e n a r i o . p y 
+ 
+   M   b a c k e n d / g r a d e _ s c a l e _ w i z a r d / v i e w s . p y 
+ 
+   M   b a c k e n d / g r a d e b o o k / m a n a g e m e n t / c o m m a n d s / s e e d _ g r a d e b o o k _ d e m o . p y 
+ 
+   M   b a c k e n d / s c r i p t s / s e e d _ a c a d e m i c s _ r e a d o n l y . p y 
+ 
+ R M   f r o n t e n d / d a s h b o a r d s / . e n v . l o c a l   - >   f r o n t e n d / d a s h b o a r d s / . e n v . l o c a l . e x a m p l e 
+ 
+   M   t o o l s / a u d i t _ a l l . p s 1 
+ 
+ M M   t o o l s / a u d i t _ f r o n t e n d . p s 1 
+ 
+ ? ?   a u d i t - l o g s / 
+ 
+ 1 5 5 b f e 0 8 3 8 b f 1 3 7 0 d e a 2 9 3 8 7 5 e b d 7 4 5 f 9 3 4 6 e 1 e 6 
+ 
+ P y t h o n   3 . 1 4 . 0 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ C r o w n 2 0 2 6   B a c k e n d   I n t e g r i t y   S c a n 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ R e p o :                             C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 
+ 
+ B a c k e n d :                       C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d 
+ 
+ F i l e s   s c a n n e d :           1 0 2 3 
+ 
+ T e n a n t   h e l p e r s :         T e n a n t H e a d e r R e q u i r e d M i d d l e w a r e ,   g e t _ r e q u e s t _ s c h o o l _ i d ,   r e q u i r e _ s c h o o l _ i d ,   t e n a n t _ h e a d e r _ m i d d l e w a r e 
+ 
+ H A R D   f i n d i n g s :           0 
+ 
+ S O F T   f i n d i n g s :           0 
+ 
+ 
+ 
+ R E S U L T :   P A S S   �� �   N o   H A R D   i n t e g r i t y   f i n d i n g s . 
+ 
+ S y s t e m   c h e c k   i d e n t i f i e d   n o   i s s u e s   ( 0   s i l e n c e d ) . 
+ 
+ N o   c h a n g e s   d e t e c t e d 
+ 
+ 
+ 
+ = = =   P Y T E S T   D J A N G O   D I A G N O S T I C S   ( E A R L Y )   = = = 
+ 
+ D J A N G O _ S E T T I N G S _ M O D U L E   e n v :   c r o w n _ a p i . s e t t i n g s 
+ 
+ s e t t i n g s   m o d u l e :   c r o w n _ a p i . s e t t i n g s 
+ 
+ I N S T A L L E D _ A P P S   h a s   c o r e ? :   T r u e 
+ 
+ M I G R A T I O N _ M O D U L E S :   { } 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' c o r e ' ] :   N o n e 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' f i n a n c e ' ] :   N o n e 
+ 
+ c o r e . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ _ _ i n i t _ _ . p y 
+ 
+ c o r e . m i g r a t i o n s . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ m i g r a t i o n s \ _ _ i n i t _ _ . p y 
+ 
+ = = =   E N D   D I A G N O S T I C S   = = = 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git add .gitignore frontend/dashboards/.env.local.example tools/audit_frontend.ps1; git status --short -- .gitignore frontend/dashboards/.env.local frontend/dashboards/.env.local.example tools/audit_frontend.ps1
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $g = Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $r=$_; $c=($g|Where-Object{$_ -eq $r}).Count; Write-Output ("RULE {0} COUNT {1}" -f $r,$c)}; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_ENV_LOCAL=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_ENV_EXAMPLE=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'
+RULE .env*.local COUNT 1
+RULE **/.env*.local COUNT 1
+RULE !*.example COUNT 1
+
+EXIT_ENV_LOCAL=1
+True
+
+EXIT_ENV_EXAMPLE=0
+True
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }; powershell -File tools/audit_frontend.ps1 *> $null; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+powershell : Hard-coded API refs found. Ensure 
+At line:1 char:168
++ ... =\s*\S+' }; powershell -File tools/audit_frontend.ps1 *> $null; Write ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Hard-coded API refs found. Ensure :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+API base URL comes from
+environment variables
+(VITE_API_BASE or
+REACT_APP_API_URL).
+At C:\Users\JMega\OneDrive\Desktop\
+Crown2026\tools\audit_frontend.ps1:
+52 char:5
++     throw "Hard-coded API refs
+found. Ensure API base URL comes
+from  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : Oper
+   ationStopped: (Hard-coded API
+  ...T_APP_API_URL).:String) [],
+  RuntimeException
+    + FullyQualifiedErrorId : Hard
+   -coded API refs found. Ensure
+  API base URL comes from enviro
+ nment variables (VITE_API_BASE
+ or REACT_APP_API_URL).
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git diff --cached --name-only
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; git commit -m "fix(security): restore env hygiene and frontend audit parser"; git push origin feature/dashboards-phase8-9-hardening
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $fe='frontend/dashboards'; $files=Get-ChildItem "$fe/src" -Recurse -Include *.js,*.jsx,*.ts,*.tsx -File; $pattern='http://localhost:8000|https://localhost:|/api/v1|crown-api\.azurewebsites|REACT_APP_API_URL\s*='; Select-String -Path $files.FullName -Pattern $pattern | Select-Object -First 20 Path,LineNumber,Line
+
+Path
+----
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+C:\Users\JMega\OneDrive\Desktop\...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $fe='frontend/dashboards'; $files=Get-ChildItem "$fe/src" -Recurse -Include *.js,*.jsx,*.ts,*.tsx -File; $pattern='http://localhost:8000|https://localhost:|/api/v1|crown-api\.azurewebsites|REACT_APP_API_URL\s*='; Select-String -Path $files.FullName -Pattern $pattern | Select-Object -First 15 | ForEach-Object { $rel = Resolve-Path -Relative $_.Path; $line = ($_.Line -replace '\s+',' ').Trim(); Write-Output ("{0}:{1} :: {2}" -f $rel,$_.LineNumber,$line) }
+.\frontend\dashboards\src\api\academics.js:3 :: * Connects to /api/v1/academics/* endpoints
+.\frontend\dashboards\src\api\academics.js:23 :: return _fetchJson(`${API_BASE}/api/v1/academics/years/?${params}`);
+.\frontend\dashboards\src\api\academics.js:29 :: return _fetchJson(`${API_BASE}/api/v1/academics/terms/?${params}`);
+.\frontend\dashboards\src\api\academics.js:37 :: return _fetchJson(`${API_BASE}/api/v1/academics/courses/?${params}`);
+.\frontend\dashboards\src\api\academics.js:47 :: return _fetchJson(`${API_BASE}/api/v1/academics/sections/?${params}`);
+.\frontend\dashboards\src\api\academics.js:51 :: return _fetchJson(`${API_BASE}/api/v1/academics/parents/me/students/`);
+.\frontend\dashboards\src\api\academics.js:55 :: return _fetchJson(`${API_BASE}/api/v1/academics/students/${studentId}/sections/`);
+.\frontend\dashboards\src\api\academics.js:60 :: return _fetchJson(`${API_BASE}/api/v1/students/?${params}`);
+.\frontend\dashboards\src\api\academics.js:64 :: return _fetchJson(`${API_BASE}/api/v1/academics/transcript/${studentId}/`);
+.\frontend\dashboards\src\api\academics.js:69 :: return _fetchJson(`${API_BASE}/api/v1/academics/sections/${encodeURIComponent(sectionId)}/roster/`);
+.\frontend\dashboards\src\api\academics.js:86 :: const url = `${API_BASE}/api/v1/academics/assignments/${encodeURIComponent(assignmentId)}/`;
+.\frontend\dashboards\src\api\academics.js:111 :: const url = `${API_BASE}/api/v1/academics/categories/${encodeURIComponent(categoryId)}/`;
+.\frontend\dashboards\src\api\academics.js:132 :: return _fetchJson(`${API_BASE}/api/v1/academics/sections/${encodeURIComponent(sectionId)}/assignments/`);
+.\frontend\dashboards\src\api\academics.js:150 :: return _fetchJson(`${API_BASE}/api/v1/graduation/audit/${encodeURIComponent(studentId)}/`);
+.\frontend\dashboards\src\api\academicsWeights.js:3 :: * Connects to /api/v1/academics/sections/{id}/categories/* endpoints
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== STAGED FILES ==='; git diff --cached --name-only; Write-Output ''; Write-Output '=== .GITIGNORE RULE COUNTS ==='; $g = Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $r=$_; $c=($g | Where-Object { $_ -eq $r }).Count; Write-Output ("RULE: {0} COUNT: {1}" -f $r,$c) }; Write-Output ''; Write-Output '=== TRACKING: .env.local ==='; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_ENV_LOCAL=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local'; Write-Output ''; Write-Output '=== TRACKING: .env.local.example ==='; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_ENV_EXAMPLE=$LASTEXITCODE"; Test-Path 'frontend/dashboards/.env.local.example'; Write-Output ''; Write-Output '=== NONBLANK VALUES IN .env.local.example ==='; Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }
+=== STAGED FILES ===
+
+
+=== .GITIGNORE RULE COUNTS ===
+RULE: .env*.local COUNT: 1
+RULE: **/.env*.local COUNT: 1
+RULE: !*.example COUNT: 1
+
+=== TRACKING: .env.local ===
+
+EXIT_ENV_LOCAL=1
+True
+
+=== TRACKING: .env.local.example ===
+
+EXIT_ENV_EXAMPLE=0
+True
+
+=== NONBLANK VALUES IN .env.local.example ===
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+powershell : Hard-coded API refs found. Ensure 
+At line:1 char:59
++ ... Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; Write ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Hard-coded API refs found. Ensure :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+API base URL comes from
+environment variables
+(VITE_API_BASE or
+REACT_APP_API_URL).
+At C:\Users\JMega\OneDrive\Desktop\
+Crown2026\tools\audit_frontend.ps1:
+52 char:5
++     throw "Hard-coded API refs
+found. Ensure API base URL comes
+from  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : Oper
+   ationStopped: (Hard-coded API
+  ...T_APP_API_URL).:String) [],
+  RuntimeException
+    + FullyQualifiedErrorId : Hard
+   -coded API refs found. Ensure
+  API base URL comes from enviro
+ nment variables (VITE_API_BASE
+ or REACT_APP_API_URL).
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+powershell : Hard-coded API refs found. Ensure 
+At line:1 char:59
++ ... Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; "FRON ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Hard-coded API refs found. Ensure :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+API base URL comes from
+environment variables
+(VITE_API_BASE or
+REACT_APP_API_URL).
+At C:\Users\JMega\OneDrive\Desktop\
+Crown2026\tools\audit_frontend.ps1:
+52 char:5
++     throw "Hard-coded API refs
+found. Ensure API base URL comes
+from  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : Oper
+   ationStopped: (Hard-coded API
+  ...T_APP_API_URL).:String) [],
+  RuntimeException
+    + FullyQualifiedErrorId : Hard
+   -coded API refs found. Ensure
+  API base URL comes from enviro
+ nment variables (VITE_API_BASE
+ or REACT_APP_API_URL).
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Write-Output '=== STAGED FILES ==='; git diff --cached --name-only; Write-Output ''; Write-Output '=== .GITIGNORE RULE COUNTS ==='; $g=Get-Content '.gitignore'; @('.env*.local','**/.env*.local','!*.example') | ForEach-Object { $r=$_; $c=($g | Where-Object { $_ -eq $r }).Count; Write-Output ("RULE: {0} COUNT: {1}" -f $r,$c) }; Write-Output ''; Write-Output '=== LS-FILES CHECKS ==='; git ls-files --error-unmatch 'frontend/dashboards/.env.local'; Write-Output "EXIT_ENV_LOCAL=$LASTEXITCODE"; git ls-files --error-unmatch 'frontend/dashboards/.env.local.example'; Write-Output "EXIT_ENV_EXAMPLE=$LASTEXITCODE"; Write-Output ''; Write-Output '=== NONBLANK TEMPLATE VALUES ==='; Get-Content 'frontend/dashboards/.env.local.example' | Where-Object { $_ -match '^\s*[^#=\s][^=]*=\s*\S+' }; Write-Output ''; Write-Output '=== FRONTEND AUDIT RESULT ==='; powershell -File tools/audit_frontend.ps1 *> $null; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+=== STAGED FILES ===
+
+
+=== .GITIGNORE RULE COUNTS ===
+RULE: .env*.local COUNT: 1
+RULE: **/.env*.local COUNT: 1
+RULE: !*.example COUNT: 1
+
+=== LS-FILES CHECKS ===
+
+EXIT_ENV_LOCAL=1
+
+EXIT_ENV_EXAMPLE=0
+
+=== NONBLANK TEMPLATE VALUES ===
+
+=== FRONTEND AUDIT RESULT ===
+powershell : Hard-coded API refs found. Ensure 
+At line:1 char:908
++ ... ESULT ==='; powershell -File tools/audit_frontend.ps1 *> $null; Write ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Hard-coded API refs found. Ensure :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+API base URL comes from
+environment variables
+(VITE_API_BASE or
+REACT_APP_API_URL).
+At C:\Users\JMega\OneDrive\Desktop\
+Crown2026\tools\audit_frontend.ps1:
+52 char:5
++     throw "Hard-coded API refs
+found. Ensure API base URL comes
+from  ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : Oper
+   ationStopped: (Hard-coded API
+  ...T_APP_API_URL).:String) [],
+  RuntimeException
+    + FullyQualifiedErrorId : Hard
+   -coded API refs found. Ensure
+  API base URL comes from enviro
+ nment variables (VITE_API_BASE
+ or REACT_APP_API_URL).
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $log='C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-201125.txt'; $deadline=(Get-Date).AddMinutes(12); do { Start-Sleep -Seconds 20; $txt = Get-Content $log -Raw -ErrorAction SilentlyContinue; if ($txt -match 'AUDIT RESULT:|FAILED:|OK: Frontend: dependency \+ env hygiene') { break } } while((Get-Date) -lt $deadline); Write-Output '=== LATEST AUDIT FILE ==='; Get-Item $log | Select-Object FullName,LastWriteTime; Write-Output '=== RESULT LINES ==='; Select-String -Path $log -Pattern 'AUDIT RESULT:|FAILED:|OK: Frontend: dependency \+ env hygiene|Front-end|Hard-coded API refs found|FRONTEND_AUDIT_EXIT' -Context 0,2; Write-Output '=== TAIL 140 ==='; Get-Content $log -Tail 140
+PS>TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>gh issue view 510 --repo tcmegahan/Crown2026 --json number,state,updatedAt,url
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $fe='frontend/dashboards'; $files=Get-ChildItem "$fe/src" -Recurse -Include *.js,*.jsx,*.ts,*.tsx -File; $pattern='https?://(localhost|127\.0\.0\.1)(:\d+)?|crown-api\.azurewebsites|REACT_APP_API_URL\s*='; Select-String -Path $files.FullName -Pattern $pattern | Select-Object Path,LineNumber,Line | ForEach-Object { $line=($_.Line -replace '\s+',' ').Trim(); Write-Output ("{0}:{1}::{2}" -f $_.Path,$_.LineNumber,$line) }
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\admissions.js:3::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\attendance_codes_wizard.js:8::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\attendance_rules_wizard.js:7::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\bell_schedule_wizard.js:7::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\billing_wizard.js:11::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\comms_wizard.js:11::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\communications.js:3::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\enrollment_conversion_wizard.js:7::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\finance.js:3::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\financial_aid_wizard.js:11::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\gradebook_setup_wizard.js:7::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\grade_weights_wizard.js:8::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\guardian_household_wizard.js:8::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\invoice_run_wizard.js:7::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\onboarding.js:13::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\reenrollment.js:13::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\scheduling_wizard.js:11::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\section_assign_wizard.js:11::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\section_staffing_wizard.js:8::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\student_import_wizard.js:11::const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\components\AutoLoginGate.jsx:15::const apiBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\components\DevJwtPanel.jsx:18::return import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $fe='frontend/dashboards'; $files=Get-ChildItem "$fe/src" -Recurse -Include *.js,*.jsx,*.ts,*.tsx -File; $pattern='https?://(localhost|127\.0\.0\.1)(:\d+)?|crown-api\.azurewebsites|REACT_APP_API_URL\s*='; Select-String -Path $files.FullName -Pattern $pattern | Select-Object -First 30 | ForEach-Object { "{0}:{1}:{2}" -f $_.Path,$_.LineNumber,(($_.Line -replace '\s+',' ').Trim()) }
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\admissions.js:3:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\attendance_codes_wizard.js:8:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\attendance_rules_wizard.js:7:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\bell_schedule_wizard.js:7:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\billing_wizard.js:11:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\comms_wizard.js:11:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\communications.js:3:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\enrollment_conversion_wizard.js:7:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\finance.js:3:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\financial_aid_wizard.js:11:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\gradebook_setup_wizard.js:7:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\grade_weights_wizard.js:8:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\guardian_household_wizard.js:8:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\invoice_run_wizard.js:7:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\onboarding.js:13:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\reenrollment.js:13:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\scheduling_wizard.js:11:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\section_assign_wizard.js:11:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\section_staffing_wizard.js:8:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\api\student_import_wizard.js:11:const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\components\AutoLoginGate.jsx:15:const apiBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards\src\components\DevJwtPanel.jsx:18:return import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $files = Get-ChildItem 'frontend/dashboards/src' -Recurse -Include *.js,*.jsx,*.ts,*.tsx -File; foreach($f in $files){ $content = Get-Content $f.FullName -Raw; $updated = $content -replace '\s*\|\|\s*"http://localhost:8000"',' || ""' -replace '\s*\|\|\s*"http://127\.0\.0\.1:8000"',' || ""'; if($updated -ne $content){ Set-Content -Path $f.FullName -Value $updated -Encoding utf8 } }; Write-Output 'LOCALHOST_FALLBACK_REWRITE_DONE'
+LOCALHOST_FALLBACK_REWRITE_DONE
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+
+FRONTEND_AUDIT_EXIT=1
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+
+FRONTEND_AUDIT_EXIT=0
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Start-Sleep -Seconds 50; Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-202834.txt' -Tail 140
+Audit started: 2026-03-11T20:28:34.1673124-04:00
+A M   a u d i t - l o g s / f u l l - r e a d o n l y - a u d i t - 2 0 2 6 0 3 1 1 - 1 9 3 4 1 6 . t x t 
+ 
+ A     a u d i t - l o g s / f u l l - r e a d o n l y - a u d i t - 2 0 2 6 0 3 1 1 - 1 9 3 5 0 3 . t x t 
+ 
+ M     b a c k e n d / a d v a n c e m e n t / a p i . p y 
+ 
+ M     b a c k e n d / b e l l _ s c h e d u l e _ w i z a r d / v i e w s . p y 
+ 
+ M     b a c k e n d / c h e c k _ u s e r _ s c h o o l . p y 
+ 
+ M     b a c k e n d / c r e a t e _ r e a l _ g r a d e s . p y 
+ 
+ M     b a c k e n d / c r o w n _ a p i / o p s _ v i e w s . p y 
+ 
+ M     b a c k e n d / e x e c u t i v e 3 6 0 / a p i / v i e w s . p y 
+ 
+ M     b a c k e n d / f i n a n c i a l _ a i d / m a n a g e m e n t / c o m m a n d s / s e e d _ p h a s e 4 b _ s c e n a r i o . p y 
+ 
+ M     b a c k e n d / g r a d e _ s c a l e _ w i z a r d / v i e w s . p y 
+ 
+ M     b a c k e n d / g r a d e b o o k / m a n a g e m e n t / c o m m a n d s / s e e d _ g r a d e b o o k _ d e m o . p y 
+ 
+ M     b a c k e n d / s c r i p t s / s e e d _ a c a d e m i c s _ r e a d o n l y . p y 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a d m i s s i o n s . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a t t e n d a n c e _ c o d e s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a t t e n d a n c e _ r u l e s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / b e l l _ s c h e d u l e _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / b i l l i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / c o m m s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / c o m m u n i c a t i o n s . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / e n r o l l m e n t _ c o n v e r s i o n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / f i n a n c e . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / f i n a n c i a l _ a i d _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g r a d e _ w e i g h t s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g r a d e b o o k _ s e t u p _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g u a r d i a n _ h o u s e h o l d _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / i n v o i c e _ r u n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / o n b o a r d i n g . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / r e e n r o l l m e n t . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s c h e d u l i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s e c t i o n _ a s s i g n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s e c t i o n _ s t a f f i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s t u d e n t _ i m p o r t _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / c o m p o n e n t s / A u t o L o g i n G a t e . j s x 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / c o m p o n e n t s / D e v J w t P a n e l . j s x 
+ 
+ M     t o o l s / a u d i t _ a l l . p s 1 
+ 
+   M   t o o l s / a u d i t _ f r o n t e n d . p s 1 
+ 
+ 5 e 1 0 e 7 e c d 2 7 f d 5 2 c 7 5 0 9 2 d 9 6 0 0 6 2 c c d 5 b 1 7 8 f 6 1 c 
+ 
+ P y t h o n   3 . 1 4 . 0 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ C r o w n 2 0 2 6   B a c k e n d   I n t e g r i t y   S c a n 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ R e p o :                             C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 
+ 
+ B a c k e n d :                       C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d 
+ 
+ F i l e s   s c a n n e d :           1 0 2 3 
+ 
+ T e n a n t   h e l p e r s :         T e n a n t H e a d e r R e q u i r e d M i d d l e w a r e ,   g e t _ r e q u e s t _ s c h o o l _ i d ,   r e q u i r e _ s c h o o l _ i d ,   t e n a n t _ h e a d e r _ m i d d l e w a r e 
+ 
+ H A R D   f i n d i n g s :           0 
+ 
+ S O F T   f i n d i n g s :           0 
+ 
+ 
+ 
+ R E S U L T :   P A S S   �� �   N o   H A R D   i n t e g r i t y   f i n d i n g s . 
+ 
+ S y s t e m   c h e c k   i d e n t i f i e d   n o   i s s u e s   ( 0   s i l e n c e d ) . 
+ 
+ N o   c h a n g e s   d e t e c t e d 
+ 
+ 
+ 
+ = = =   P Y T E S T   D J A N G O   D I A G N O S T I C S   ( E A R L Y )   = = = 
+ 
+ D J A N G O _ S E T T I N G S _ M O D U L E   e n v :   c r o w n _ a p i . s e t t i n g s 
+ 
+ s e t t i n g s   m o d u l e :   c r o w n _ a p i . s e t t i n g s 
+ 
+ I N S T A L L E D _ A P P S   h a s   c o r e ? :   T r u e 
+ 
+ M I G R A T I O N _ M O D U L E S :   { } 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' c o r e ' ] :   N o n e 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' f i n a n c e ' ] :   N o n e 
+ 
+ c o r e . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ _ _ i n i t _ _ . p y 
+ 
+ c o r e . m i g r a t i o n s . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ m i g r a t i o n s \ _ _ i n i t _ _ . p y 
+ 
+ = = =   E N D   D I A G N O S T I C S   = = = 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Start-Sleep -Seconds 90; Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-202834.txt' -Tail 220
+Audit started: 2026-03-11T20:28:34.1673124-04:00
+A M   a u d i t - l o g s / f u l l - r e a d o n l y - a u d i t - 2 0 2 6 0 3 1 1 - 1 9 3 4 1 6 . t x t 
+ 
+ A     a u d i t - l o g s / f u l l - r e a d o n l y - a u d i t - 2 0 2 6 0 3 1 1 - 1 9 3 5 0 3 . t x t 
+ 
+ M     b a c k e n d / a d v a n c e m e n t / a p i . p y 
+ 
+ M     b a c k e n d / b e l l _ s c h e d u l e _ w i z a r d / v i e w s . p y 
+ 
+ M     b a c k e n d / c h e c k _ u s e r _ s c h o o l . p y 
+ 
+ M     b a c k e n d / c r e a t e _ r e a l _ g r a d e s . p y 
+ 
+ M     b a c k e n d / c r o w n _ a p i / o p s _ v i e w s . p y 
+ 
+ M     b a c k e n d / e x e c u t i v e 3 6 0 / a p i / v i e w s . p y 
+ 
+ M     b a c k e n d / f i n a n c i a l _ a i d / m a n a g e m e n t / c o m m a n d s / s e e d _ p h a s e 4 b _ s c e n a r i o . p y 
+ 
+ M     b a c k e n d / g r a d e _ s c a l e _ w i z a r d / v i e w s . p y 
+ 
+ M     b a c k e n d / g r a d e b o o k / m a n a g e m e n t / c o m m a n d s / s e e d _ g r a d e b o o k _ d e m o . p y 
+ 
+ M     b a c k e n d / s c r i p t s / s e e d _ a c a d e m i c s _ r e a d o n l y . p y 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a d m i s s i o n s . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a t t e n d a n c e _ c o d e s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a t t e n d a n c e _ r u l e s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / b e l l _ s c h e d u l e _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / b i l l i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / c o m m s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / c o m m u n i c a t i o n s . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / e n r o l l m e n t _ c o n v e r s i o n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / f i n a n c e . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / f i n a n c i a l _ a i d _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g r a d e _ w e i g h t s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g r a d e b o o k _ s e t u p _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g u a r d i a n _ h o u s e h o l d _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / i n v o i c e _ r u n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / o n b o a r d i n g . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / r e e n r o l l m e n t . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s c h e d u l i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s e c t i o n _ a s s i g n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s e c t i o n _ s t a f f i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s t u d e n t _ i m p o r t _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / c o m p o n e n t s / A u t o L o g i n G a t e . j s x 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / c o m p o n e n t s / D e v J w t P a n e l . j s x 
+ 
+ M     t o o l s / a u d i t _ a l l . p s 1 
+ 
+   M   t o o l s / a u d i t _ f r o n t e n d . p s 1 
+ 
+ 5 e 1 0 e 7 e c d 2 7 f d 5 2 c 7 5 0 9 2 d 9 6 0 0 6 2 c c d 5 b 1 7 8 f 6 1 c 
+ 
+ P y t h o n   3 . 1 4 . 0 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ C r o w n 2 0 2 6   B a c k e n d   I n t e g r i t y   S c a n 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ R e p o :                             C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 
+ 
+ B a c k e n d :                       C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d 
+ 
+ F i l e s   s c a n n e d :           1 0 2 3 
+ 
+ T e n a n t   h e l p e r s :         T e n a n t H e a d e r R e q u i r e d M i d d l e w a r e ,   g e t _ r e q u e s t _ s c h o o l _ i d ,   r e q u i r e _ s c h o o l _ i d ,   t e n a n t _ h e a d e r _ m i d d l e w a r e 
+ 
+ H A R D   f i n d i n g s :           0 
+ 
+ S O F T   f i n d i n g s :           0 
+ 
+ 
+ 
+ R E S U L T :   P A S S   �� �   N o   H A R D   i n t e g r i t y   f i n d i n g s . 
+ 
+ S y s t e m   c h e c k   i d e n t i f i e d   n o   i s s u e s   ( 0   s i l e n c e d ) . 
+ 
+ N o   c h a n g e s   d e t e c t e d 
+ 
+ 
+ 
+ = = =   P Y T E S T   D J A N G O   D I A G N O S T I C S   ( E A R L Y )   = = = 
+ 
+ D J A N G O _ S E T T I N G S _ M O D U L E   e n v :   c r o w n _ a p i . s e t t i n g s 
+ 
+ s e t t i n g s   m o d u l e :   c r o w n _ a p i . s e t t i n g s 
+ 
+ I N S T A L L E D _ A P P S   h a s   c o r e ? :   T r u e 
+ 
+ M I G R A T I O N _ M O D U L E S :   { } 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' c o r e ' ] :   N o n e 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' f i n a n c e ' ] :   N o n e 
+ 
+ c o r e . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ _ _ i n i t _ _ . p y 
+ 
+ c o r e . m i g r a t i o n s . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ m i g r a t i o n s \ _ _ i n i t _ _ . p y 
+ 
+ = = =   E N D   D I A G N O S T I C S   = = = 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   8 0 % ] 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Start-Sleep -Seconds 50; Get-Content 'C:\Users\JMega\OneDrive\Desktop\Crown2026\artifacts\audit\audit-20260311-202834.txt' -Tail 260
+Audit started: 2026-03-11T20:28:34.1673124-04:00
+A M   a u d i t - l o g s / f u l l - r e a d o n l y - a u d i t - 2 0 2 6 0 3 1 1 - 1 9 3 4 1 6 . t x t 
+ 
+ A     a u d i t - l o g s / f u l l - r e a d o n l y - a u d i t - 2 0 2 6 0 3 1 1 - 1 9 3 5 0 3 . t x t 
+ 
+ M     b a c k e n d / a d v a n c e m e n t / a p i . p y 
+ 
+ M     b a c k e n d / b e l l _ s c h e d u l e _ w i z a r d / v i e w s . p y 
+ 
+ M     b a c k e n d / c h e c k _ u s e r _ s c h o o l . p y 
+ 
+ M     b a c k e n d / c r e a t e _ r e a l _ g r a d e s . p y 
+ 
+ M     b a c k e n d / c r o w n _ a p i / o p s _ v i e w s . p y 
+ 
+ M     b a c k e n d / e x e c u t i v e 3 6 0 / a p i / v i e w s . p y 
+ 
+ M     b a c k e n d / f i n a n c i a l _ a i d / m a n a g e m e n t / c o m m a n d s / s e e d _ p h a s e 4 b _ s c e n a r i o . p y 
+ 
+ M     b a c k e n d / g r a d e _ s c a l e _ w i z a r d / v i e w s . p y 
+ 
+ M     b a c k e n d / g r a d e b o o k / m a n a g e m e n t / c o m m a n d s / s e e d _ g r a d e b o o k _ d e m o . p y 
+ 
+ M     b a c k e n d / s c r i p t s / s e e d _ a c a d e m i c s _ r e a d o n l y . p y 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a d m i s s i o n s . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a t t e n d a n c e _ c o d e s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / a t t e n d a n c e _ r u l e s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / b e l l _ s c h e d u l e _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / b i l l i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / c o m m s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / c o m m u n i c a t i o n s . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / e n r o l l m e n t _ c o n v e r s i o n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / f i n a n c e . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / f i n a n c i a l _ a i d _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g r a d e _ w e i g h t s _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g r a d e b o o k _ s e t u p _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / g u a r d i a n _ h o u s e h o l d _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / i n v o i c e _ r u n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / o n b o a r d i n g . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / r e e n r o l l m e n t . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s c h e d u l i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s e c t i o n _ a s s i g n _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s e c t i o n _ s t a f f i n g _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / a p i / s t u d e n t _ i m p o r t _ w i z a r d . j s 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / c o m p o n e n t s / A u t o L o g i n G a t e . j s x 
+ 
+   M   f r o n t e n d / d a s h b o a r d s / s r c / c o m p o n e n t s / D e v J w t P a n e l . j s x 
+ 
+ M     t o o l s / a u d i t _ a l l . p s 1 
+ 
+   M   t o o l s / a u d i t _ f r o n t e n d . p s 1 
+ 
+ 5 e 1 0 e 7 e c d 2 7 f d 5 2 c 7 5 0 9 2 d 9 6 0 0 6 2 c c d 5 b 1 7 8 f 6 1 c 
+ 
+ P y t h o n   3 . 1 4 . 0 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ C r o w n 2 0 2 6   B a c k e n d   I n t e g r i t y   S c a n 
+ 
+ = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+ 
+ R e p o :                             C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 
+ 
+ B a c k e n d :                       C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d 
+ 
+ F i l e s   s c a n n e d :           1 0 2 3 
+ 
+ T e n a n t   h e l p e r s :         T e n a n t H e a d e r R e q u i r e d M i d d l e w a r e ,   g e t _ r e q u e s t _ s c h o o l _ i d ,   r e q u i r e _ s c h o o l _ i d ,   t e n a n t _ h e a d e r _ m i d d l e w a r e 
+ 
+ H A R D   f i n d i n g s :           0 
+ 
+ S O F T   f i n d i n g s :           0 
+ 
+ 
+ 
+ R E S U L T :   P A S S   �� �   N o   H A R D   i n t e g r i t y   f i n d i n g s . 
+ 
+ S y s t e m   c h e c k   i d e n t i f i e d   n o   i s s u e s   ( 0   s i l e n c e d ) . 
+ 
+ N o   c h a n g e s   d e t e c t e d 
+ 
+ 
+ 
+ = = =   P Y T E S T   D J A N G O   D I A G N O S T I C S   ( E A R L Y )   = = = 
+ 
+ D J A N G O _ S E T T I N G S _ M O D U L E   e n v :   c r o w n _ a p i . s e t t i n g s 
+ 
+ s e t t i n g s   m o d u l e :   c r o w n _ a p i . s e t t i n g s 
+ 
+ I N S T A L L E D _ A P P S   h a s   c o r e ? :   T r u e 
+ 
+ M I G R A T I O N _ M O D U L E S :   { } 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' c o r e ' ] :   N o n e 
+ 
+ M I G R A T I O N _ M O D U L E S [ ' f i n a n c e ' ] :   N o n e 
+ 
+ c o r e . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ _ _ i n i t _ _ . p y 
+ 
+ c o r e . m i g r a t i o n s . _ _ f i l e _ _ :   C : \ U s e r s \ J M e g a \ O n e D r i v e \ D e s k t o p \ C r o w n 2 0 2 6 \ b a c k e n d \ c o r e \ m i g r a t i o n s \ _ _ i n i t _ _ . p y 
+ 
+ = = =   E N D   D I A G N O S T I C S   = = = 
+ 
+ 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   2 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   4 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   6 0 % ] 
+ 
+ . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   [   8 0 % ] 
+ 
+ 
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Get-Process -Name python -ErrorAction SilentlyContinue | Select-Object Id,StartTime,CPU | Sort-Object StartTime -Descending | Select-Object -First 10
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; Get-ChildItem artifacts/audit | Sort-Object LastWriteTime -Descending | Select-Object -First 5 Name,LastWriteTime,Length
+
+Name                      LastWrite
+                          Time
+----                      ---------
+audit-20260311-202834.txt 3/11/2...
+audit-20260311-201401.txt 3/11/2...
+audit-20260311-201125.txt 3/11/2...
+audit-20260311-200522.txt 3/11/2...
+audit-20260311-195241.txt 3/11/2...
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; $f='artifacts/audit/audit-20260311-202834.txt'; Select-String -Path $f -Pattern 'AUDIT RESULT|FAILED:|OK: Frontend: dependency \+ env hygiene|Frontend audit complete|Hard-coded API refs found|FRONTEND_AUDIT_EXIT|Terminal process|exit code' -SimpleMatch
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_all.ps1 -Fast
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; Write-Output "FRONTEND_AUDIT_EXIT=$LASTEXITCODE"
+powershell : [33m
+At line:1 char:59
++ ... Crown2026'; powershell -File tools/audit_frontend.ps1 *> $null; Write ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: 
+https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+FRONTEND_AUDIT_EXIT=0
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_all.ps1 -Fast
+
+]633;D;1]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>Set-Location 'C:\Users\JMega\OneDrive\Desktop\Crown2026'; powershell -File tools/audit_all.ps1 -Fast
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git status --short
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git diff --name-only --cached; echo '---'; git diff --name-only
+
+---
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git restore --staged backend/advancement/api.py backend/bell_schedule_wizard/views.py backend/check_user_school.py backend/create_real_grades.py backend/crown_api/ops_views.py backend/executive360/api/views.py backend/financial_aid/management/commands/seed_phase4b_scenario.py backend/grade_scale_wizard/views.py backend/gradebook/management/commands/seed_gradebook_demo.py backend/scripts/seed_academics_readonly.py audit-logs/full-readonly-audit-20260311-193416.txt audit-logs/full-readonly-audit-20260311-193503.txt; git status --short
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+]633;D]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git add tools/audit_all.ps1 tools/audit_frontend.ps1 frontend/dashboards/src/api/*.js frontend/dashboards/src/components/AutoLoginGate.jsx frontend/dashboards/src/components/DevJwtPanel.jsx; git status --short
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git add tools/audit_all.ps1 tools/audit_frontend.ps1 frontend/dashboards/src/api frontend/dashboards/src/components/AutoLoginGate.jsx frontend/dashboards/src/components/DevJwtPanel.jsx; git diff --name-only --cached
+
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git status --short --branch
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git diff --name-only --cached
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B
+PS>git diff --name-only
+
+]633;D;0]633;A]633;P;Cwd=C:\x5cUsers\x5cJMega\x5cOneDrive\x5cDesktop\x5cCrown2026PS C:\Users\JMega\OneDrive\Desktop\Crown2026> ]633;B

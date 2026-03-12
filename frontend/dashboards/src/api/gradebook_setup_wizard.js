@@ -1,10 +1,10 @@
-/**
+﻿/**
  * api/gradebook_setup_wizard.js
- * Gradebook Setup Wizard — API layer
+ * Gradebook Setup Wizard â€” API layer
  */
 import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 const SESSIONS = `${API_BASE}/api/v1/gradebook-setup-wizard/sessions/`;
 
 function headers(extra = {}) {
@@ -74,3 +74,4 @@ export async function verifyGradebookSetupSession(sessionId) {
   const res = await fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
+

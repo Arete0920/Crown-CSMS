@@ -15,7 +15,7 @@ export default function DevJwtPanel() {
   const isDev = import.meta.env.DEV;
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === "1";
   const apiBase = useMemo(() => {
-    return import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+    return import.meta.env.VITE_API_BASE_URL || "";
   }, []);
   const demoKey = useMemo(() => {
     return import.meta.env.VITE_DEMO_KEY || "";
@@ -132,3 +132,4 @@ export default function DevJwtPanel() {
     </div>
   );
 }
+
