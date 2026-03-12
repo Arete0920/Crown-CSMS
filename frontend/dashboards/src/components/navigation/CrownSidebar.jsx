@@ -82,63 +82,10 @@ export default function CrownSidebar() {
 
   return (
     <List dense disablePadding>
-      <Section title="Academics">
-        <NavItem label="Gradebook Dashboard" href="/gradebook-dashboard" />
-        <NavItem label="Gradebook Workspace" href="/gradebook" />
-        <NavItem label="Classrooms" href="/classrooms" />
-        <NavItem label="Attendance Dashboard" href="/attendance-dashboard" />
-        <NavItem label="Attendance Workspace" href="/teacher/attendance" />
-      </Section>
-
-      <Section title="Board">
-        <NavItem label="Board Dashboard" href="/board" />
-        <NavItem label="Integrity" href="/integrity" />
-      </Section>
-
-      <Section title="Teacher">
-        <NavItem label="Teacher Dashboard" href="/teacher" />
-        <NavItem label="Gradebook Dashboard" href="/gradebook-dashboard" />
-        <NavItem label="Attendance Dashboard" href="/attendance-dashboard" />
-      </Section>
-
-      <Section title="Family">
-        <NavItem label="Family Dashboard" href="/parent" />
-        <NavItem label="Grades" href="/academics/parent-snapshot" />
-        <NavItem label="Tuition" href="/finance/invoices" />
-      </Section>
-
-      <Section title="Student">
-        <NavItem label="Student Dashboard" href="/student" />
-        <NavItem label="Assignments" href="/academics/student-work" />
-        <NavItem label="Grades" href="/gradebook" />
-      </Section>
-
-      <Section title="Student Life">
-        <NavItem label="Student Life Dashboard" href="/spiritual-life" />
-        <NavItem label="Chapel" href="/spiritual-life" />
-        <NavItem label="Service Hours" href="/service-hours" />
-        <NavItem label="Care Notes" href="/spiritual-life" />
-      </Section>
-
-      <Section title="Master Control">
-        <NavItem label="Master Control Dashboard" href="/master-control" />
-        <NavItem label="Schools" href="/master-control" />
-        <NavItem label="Communications Dashboard" href="/communications-dashboard" />
-        <NavItem label="Comms Workspace" href="/communications" />
-        <NavItem label="Executive Reports" href="/master-control" />
-      </Section>
-
-      <Section title="Operations">
-        <NavItem label="Admissions Dashboard" href="/admissions-dashboard" />
-        <NavItem label="Admissions Pipeline" href="/admissions/pipeline" />
-        <NavItem label="Scheduling Dashboard" href="/scheduling-dashboard" />
-        <NavItem label="Roster Workspace" href="/aftercare/roster" />
-      </Section>
-
       {dashboardNavSections.map((section) => (
         <Section key={section.label} title={section.label}>
           {section.children.map((item) => (
-            <NavItem key={item.key} label={item.label} href={item.href} />
+            <NavItem key={`${section.label}:${item.key}:${item.href}`} label={item.label} href={item.href} />
           ))}
         </Section>
       ))}
