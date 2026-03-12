@@ -10,7 +10,7 @@ jobs:
   verify-immutable-tags:
     runs-on: [self-hosted, linux, x64, crown-runner]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0  # Need full history to verify tags
           fetch-tags: true
@@ -80,7 +80,7 @@ jobs:
     needs: verify-immutable-tags
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Guard against forbidden frontend imports
         run: |
