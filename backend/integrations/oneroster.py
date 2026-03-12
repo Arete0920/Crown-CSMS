@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import csv
 from io import StringIO
-from datetime import datetime
+from datetime import UTC, datetime
 
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
@@ -70,7 +70,7 @@ def _build_orgs(school: School) -> tuple[str, str]:
         "phone", "isoCountryCode",
         "parentSourcedId",
     ]
-    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = [[
         _safe(school.id),          # sourcedId
         "active",                   # status
@@ -92,7 +92,7 @@ def _build_academic_sessions(school_id, terms) -> tuple[str, str]:
         "title", "type", "startDate", "endDate",
         "schoolYear", "parentSourcedId",
     ]
-    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = []
     for t in terms:
         rows.append([
@@ -116,7 +116,7 @@ def _build_courses(school_id, courses) -> tuple[str, str]:
         "courseCode", "grades",
         "orgSourcedId", "subjects",
     ]
-    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = []
     for c in courses:
         rows.append([
@@ -141,7 +141,7 @@ def _build_classes(school_id, sections) -> tuple[str, str]:
         "classType",
         "termSourcedIds", "orgSourcedId",
     ]
-    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = []
     for s in sections:
         rows.append([
@@ -166,7 +166,7 @@ def _build_enrollments(school_id, enrollments) -> tuple[str, str]:
         "userSourcedId", "role",
         "primary", "beginDate", "endDate",
     ]
-    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = []
     for e in enrollments:
         rows.append([
@@ -233,7 +233,7 @@ def oneroster_export_bundle(request):
     ]
 
     # Wrap in multipart/mixed (simple deterministic format; clients can split on boundary)
-    boundary = "CROWN_ONEROSTER_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    boundary = "CROWN_ONEROSTER_" + datetime.now(UTC).strftime("%Y%m%d%H%M%S")
     resp = HttpResponse(content_type=f"multipart/mixed; boundary={boundary}")
     resp["Content-Disposition"] = 'attachment; filename="oneroster_export.zip"'
 
