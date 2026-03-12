@@ -1,4 +1,4 @@
-/**
+﻿/**
  * api/financial_aid_wizard.js
  *
  * Follows the api/billing_wizard.js pattern exactly:
@@ -8,7 +8,7 @@
  */
 import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 function headers(extra = {}) {
   return {
@@ -97,3 +97,4 @@ export async function verifyAidSetup(sessionId) {
   });
   return checkResponse(res, url);
 }
+

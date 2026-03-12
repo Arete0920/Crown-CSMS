@@ -1,6 +1,6 @@
-import { getToken, getSchoolId } from "../lib/api";
+﻿import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 /**
  * Fetch admissions applications list (staff-only)
@@ -38,7 +38,7 @@ export const getAdmissionsApplications = async () => {
 };
 
 /**
- * Enroll an accepted applicant. Moves status ACCEPTED → ENROLLED.
+ * Enroll an accepted applicant. Moves status ACCEPTED â†’ ENROLLED.
  * @param {number} applicationId - AdmissionsApplication PK
  * @returns {Promise<{ok, student_id, name, message}>}
  */
@@ -71,3 +71,4 @@ export const enrollApplicant = async (applicationId) => {
 
   return data;
 };
+

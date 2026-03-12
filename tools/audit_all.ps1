@@ -21,7 +21,16 @@ function Step($name, [scriptblock]$fn) {
 
 function Cmd($cmd) {
   Write-Host ">> $cmd" -ForegroundColor DarkGray
-  Invoke-Expression $cmd
+  $previousErrorPreference = $ErrorActionPreference
+  try {
+    # Native commands in this shell can emit stderr as error records even on success.
+    # Use exit code as the source of truth for gate pass/fail.
+    $ErrorActionPreference = "Continue"
+    Invoke-Expression $cmd
+  }
+  finally {
+    $ErrorActionPreference = $previousErrorPreference
+  }
   if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) {
     throw "Command failed (exit $LASTEXITCODE): $cmd"
   }
@@ -62,7 +71,8 @@ if (-not $Fast) {
   Step "Backend: full unit tests" {
     Cmd ".venv\Scripts\python.exe -m pytest -q 2>&1 | Tee-Object -FilePath $reportPath -Append"
   }
-} else {
+}
+else {
   Step "Backend: unit tests (fast subset - tenant + ledger + admissions)" {
     Cmd ".venv\Scripts\python.exe -m pytest -q -k 'tenant or ledger or admissions or isolation' 2>&1 | Tee-Object -FilePath $reportPath -Append"
   }
@@ -73,7 +83,8 @@ if (-not $NoUI) {
     if (Test-Path "tools/audit_frontend.ps1") {
       $psExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) { "pwsh" } else { "powershell" }
       Cmd "$psExe -File tools/audit_frontend.ps1 2>&1 | Tee-Object -FilePath $reportPath -Append"
-    } else {
+    }
+    else {
       Write-Host "tools/audit_frontend.ps1 not found; skipping"
     }
   }
@@ -84,7 +95,8 @@ if (-not $NoUI) {
         Push-Location "frontend/dashboards"
         Cmd "npm test --silent 2>&1 | Tee-Object -FilePath $reportPath -Append"
         Pop-Location
-      } else {
+      }
+      else {
         Write-Host "frontend/dashboards not found; skipping"
       }
     }
