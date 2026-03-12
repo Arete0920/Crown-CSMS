@@ -4,6 +4,15 @@ import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 
 export function HomeDashboard() {
+  const navLinks = [
+    ['/billing', 'Billing'],
+    ['/financial-aid', 'Financial Aid'],
+    ['/academics', 'Academics'],
+    ['/classrooms', 'Classrooms'],
+    ['/gradebook', 'Gradebook (Read-Only)'],
+    ['/transcript', 'Transcript (Read-Only)'],
+  ];
+
   return (
     <CrownLayout title="Crown" subtitle="School management platform">
       {/* CROWN_DASH_GRID_NORMALIZED */}
@@ -15,20 +24,24 @@ export function HomeDashboard() {
 
         <Col span={12}>
           <CrownCard title="Navigation" right={<span className="crown-pill">Crown Dashboard</span>}>
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320 }}>
-              {[
-                ['/billing',       'Billing'],
-                ['/financial-aid', 'Financial Aid'],
-                ['/academics',     'Academics'],
-                ['/classrooms',    'Classrooms'],
-                ['/gradebook',     'Gradebook (Read-Only)'],
-                ['/transcript',    'Transcript (Read-Only)'],
-              ].map(([href, label]) => (
+            <div style={{ marginBottom: 12, color: 'var(--crown-muted)', fontSize: 13 }}>
+              Start from a core workspace. All destinations below are canonical live routes.
+            </div>
+
+            <nav
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 10,
+                maxWidth: 760,
+              }}
+            >
+              {navLinks.map(([href, label]) => (
                 <a
                   key={href}
                   href={href}
                   className="crown-btn"
-                  style={{ justifyContent: 'flex-start' }}
+                  style={{ justifyContent: 'space-between', minHeight: 44 }}
                 >
                   {label} &rarr;
                 </a>
