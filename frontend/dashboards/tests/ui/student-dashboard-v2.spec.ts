@@ -57,10 +57,10 @@ test("Student Dashboard v2 renders KPI cards and Upcoming Assignments section", 
   ).toBeVisible();
 
   // KPI labels
-  await expect(page.locator("text=GPA")).toBeVisible();
-  await expect(page.locator("text=Current Average")).toBeVisible();
-  await expect(page.locator("text=Missing Work")).toBeVisible();
-  await expect(page.locator("text=Balance Due")).toBeVisible();
+  await expect(page.getByText(/My GPA|GPA \(est\.\)/).first()).toBeVisible();
+  await expect(page.getByText(/^Current Average$/).first()).toBeVisible();
+  await expect(page.getByText(/^Missing Work$/).first()).toBeVisible();
+  await expect(page.getByText(/^Balance Due$/).first()).toBeVisible();
 
   // Assignments section header
   await expect(page.locator("text=Upcoming Assignments").first()).toBeVisible();  // card title + empty-state both contain "upcoming assignments"
@@ -69,5 +69,5 @@ test("Student Dashboard v2 renders KPI cards and Upcoming Assignments section", 
   await expect(page.locator("text=Service Hours")).toBeVisible();
 
   // Quick links still present
-  await expect(page.locator("a[href='/gradebook']")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Gradebook", exact: true })).toBeVisible();
 });

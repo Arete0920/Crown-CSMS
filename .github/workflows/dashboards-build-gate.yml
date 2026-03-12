@@ -1,4 +1,4 @@
-﻿name: dashboards-build-gate
+name: dashboards-build-gate
 # No-op change to trigger required check context on backend-only PRs.
 
 on:
@@ -17,7 +17,7 @@ jobs:
       run:
         working-directory: frontend/dashboards
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Use Node 20
         uses: actions/setup-node@v4
@@ -29,27 +29,27 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Stage 1 regression guard – no silent catch handlers
+      - name: Stage 1 regression guard - no silent catch handlers
         working-directory: .
         run: |
           FOUND=0
           OPTS="--include=*.jsx --include=*.js --include=*.ts --include=*.tsx"
 
-          # Family 1: empty body — .catch(() => {}) or .catch(() =>)
+          # Family 1: empty body - .catch(() => {}) or .catch(() =>)
           if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*\{?\s*\}?\s*\)' frontend/dashboards/src/; then
-            echo "ERROR: Family 1 – empty catch body detected."
+            echo "ERROR: Family 1 - empty catch body detected."
             FOUND=1
           fi
 
-          # Family 2: null-setter — .catch(() => setSomething(null))
+          # Family 2: null-setter - .catch(() => setSomething(null))
           if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*set\w+\s*\(\s*null\s*\)\s*\)' frontend/dashboards/src/; then
-            echo "ERROR: Family 2 – null-setting catch handler detected."
+            echo "ERROR: Family 2 - null-setting catch handler detected."
             FOUND=1
           fi
 
-          # Family 3: explicit undefined — .catch(() => undefined)
+          # Family 3: explicit undefined - .catch(() => undefined)
           if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*undefined\s*\)' frontend/dashboards/src/; then
-            echo "ERROR: Family 3 – undefined-returning catch handler detected."
+            echo "ERROR: Family 3 - undefined-returning catch handler detected."
             FOUND=1
           fi
 
