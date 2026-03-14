@@ -46,20 +46,20 @@ import CourseCatalogWizard from '../pages/CourseCatalogWizard.jsx';
 import RoomSetupWizard from '../pages/RoomSetupWizard.jsx';
 import PromotionWizard from '../pages/PromotionWizard.jsx';
 
-export const WIZARD_REGISTRY = [
+export const WIZARD_ROUTE_DEFINITIONS = [
   {
     path: '/onboarding',
     component: AdmissionsIntakeWizard,
     name: 'Student Onboarding',
     apiPrefix: '/api/v1/onboarding/imports/',
-    roles: ['admin', 'registrar', 'admissions'],
+    roles: ['super_admin', 'school_admin', 'admissions_manager'],
   },
   {
     path: '/reenrollment',
     component: ReenrollmentWizard,
     name: 'Re-enrollment',
     apiPrefix: '/api/v1/reenrollment/sessions/',
-    roles: ['admin', 'registrar', 'finance'],
+    roles: ['super_admin', 'school_admin', 'registrar'],
   },
   {
     path: '/billing-setup',
@@ -73,7 +73,7 @@ export const WIZARD_REGISTRY = [
     component: FinancialAidWizard,
     name: 'Financial Aid Setup',
     apiPrefix: '/api/v1/aid-wizard/sessions/',
-    roles: ['admin', 'finance'],
+    roles: ['super_admin', 'school_admin', 'finance_admin'],
   },
   {
     path: '/scheduling-setup',
@@ -122,7 +122,7 @@ export const WIZARD_REGISTRY = [
     component: EnrollmentConversionWizard,
     name: 'Enrollment Conversion',
     apiPrefix: '/api/v1/enrollment-conversion-wizard/sessions/',
-    roles: ['admin', 'registrar', 'admissions'],
+    roles: ['super_admin', 'school_admin', 'admissions_manager', 'registrar'],
   },
   {
     path: '/invoice-run',
@@ -157,7 +157,7 @@ export const WIZARD_REGISTRY = [
     component: EnrollmentPeriodWizard,
     name: 'Enrollment Period Setup',
     apiPrefix: '/api/v1/enrollment-period-wizard/sessions/',
-    roles: ['admin', 'director'],
+    roles: ['super_admin', 'school_admin', 'registrar'],
   },
   {
     path: '/grade-scale-setup',
@@ -211,6 +211,9 @@ export const WIZARD_REGISTRY = [
   },
 ];
 
+// Backward compatibility for existing imports in tests/components.
+export const WIZARD_REGISTRY = WIZARD_ROUTE_DEFINITIONS;
+
 /**
  * Slugs imported from wizard-manifest.js (React-free) — safe for Playwright tests.
  * Re-exported here for consumers within the app.
@@ -240,8 +243,10 @@ function buildWizardElement(Component, roles = []) {
  *   ]);
  */
 export function wizardRoutes() {
-  return WIZARD_REGISTRY.map(({ path, component, roles }) => ({
+  return WIZARD_ROUTE_DEFINITIONS.map(({ path, component, roles }) => ({
     path,
     element: buildWizardElement(component, roles),
   }));
 }
+
+export default wizardRoutes;
