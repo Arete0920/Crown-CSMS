@@ -14,6 +14,10 @@ from datetime import date, timedelta
 from django.test import TestCase
 
 from core.models import School, UserAccount
+from households.models import Guardian as HouseholdGuardian, Household
+from ledger.models import Allocation as LedgerAllocation
+from ledger.models import Charge as LedgerCharge
+from ledger.models import LedgerAccount, Payment as LedgerPayment
 from finance.models import (
     FinanceAllocation,
     FinanceInvoice,
@@ -71,6 +75,26 @@ def _payment(school, payer, *, amount_cents=10_000):
         status=PaymentStatus.PENDING,
         processor=Processor.MANUAL,
     )
+
+
+def _link_payer_to_household(school, payer):
+    existing = HouseholdGuardian.objects.filter(
+        school_id=school.id,
+        email__iexact=payer.email,
+    ).select_related("household").first()
+    if existing:
+        hh = existing.household
+    else:
+        hh = Household.objects.create(school_id=school.id, name=f"HH-{payer.username}")
+        HouseholdGuardian.objects.create(
+            school_id=school.id,
+            household=hh,
+            first_name="Test",
+            last_name="Guardian",
+            email=payer.email,
+            is_primary=True,
+        )
+    LedgerAccount.objects.get_or_create(school_id=school.id, household=hh)
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +179,7 @@ class TestSettlePaymentAndAllocate(TestCase):
     def setUp(self):
         self.school = _school("Pay School")
         self.payer = _user("pay_user")
+        _link_payer_to_household(self.school, self.payer)
 
     def test_settles_payment_and_creates_allocations(self):
         ob = _obligation(self.school, self.payer, amount_cents=10_000)
@@ -173,6 +198,14 @@ class TestSettlePaymentAndAllocate(TestCase):
         self.assertEqual(len(allocs), 1)
         self.assertEqual(allocs[0].amount_cents, 10_000)
         self.assertEqual(allocs[0].obligation_id, ob.id)
+
+        ledger_payment = LedgerPayment.objects.get(reference=f"finance_payment:{result.id}")
+        self.assertEqual(ledger_payment.school_id, self.school.id)
+        self.assertEqual(str(ledger_payment.amount), "100.00")
+        self.assertTrue(
+            LedgerAllocation.objects.filter(payment=ledger_payment).exists(),
+            "Expected ledger allocation row for settled finance payment",
+        )
 
     def test_settle_is_idempotent_on_already_settled(self):
         """Calling settle again on a SETTLED payment returns it unchanged."""
@@ -228,6 +261,7 @@ class TestInitiateRefund(TestCase):
         self.school = _school("Refund School")
         self.payer = _user("refund_user")
         self.admin = _user("refund_admin", is_staff=True)
+        _link_payer_to_household(self.school, self.payer)
 
     def _settled_payment(self, amount_cents=10_000):
         ob = _obligation(self.school, self.payer, amount_cents=amount_cents)
@@ -249,6 +283,13 @@ class TestInitiateRefund(TestCase):
         self.assertIsInstance(refund, FinanceRefund)
         self.assertEqual(refund.amount_cents, 5_000)
         self.assertEqual(refund.status, PaymentStatus.PENDING)
+        self.assertTrue(
+            LedgerCharge.objects.filter(
+                school_id=self.school.id,
+                description=f"finance_refund:{refund.id}",
+            ).exists(),
+            "Expected ledger refund charge to be created",
+        )
 
     def test_full_refund_allowed(self):
         pay = self._settled_payment(8_000)

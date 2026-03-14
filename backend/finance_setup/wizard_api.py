@@ -81,9 +81,9 @@ def wizard_configure(request):
             academic_year=academic_year,
             payload=ser.validated_data,
         )
-    except PolicyLockedError as exc:
+    except PolicyLockedError:
         logger.warning("configure blocked — locked: school=%s year=%s", school_id, academic_year)
-        return JsonResponse({"error": str(exc)}, status=409)
+        return JsonResponse({"error": "Policy is locked for this academic year."}, status=409)
 
     snapshot = get_policy_snapshot(school_id=school_id, academic_year=academic_year)
     data = FinancePolicySnapshotSerializer(snapshot).data
@@ -115,8 +115,9 @@ def wizard_lock(request):
             academic_year=academic_year,
             locked_by=locked_by,
         )
-    except ValueError as exc:
-        return JsonResponse({"error": str(exc)}, status=404)
+    except ValueError:
+        logger.warning("wizard_lock failed — missing finance policy snapshot: school=%s year=%s", school_id, academic_year)
+        return JsonResponse({"error": "Finance policy snapshot not found for this academic year."}, status=404)
 
     return JsonResponse(
         {

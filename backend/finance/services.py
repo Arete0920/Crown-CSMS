@@ -11,6 +11,7 @@ Rules:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Iterable
 
 from django.db import transaction
@@ -27,28 +28,17 @@ from finance.models import (
     MoneyStatus,
     PaymentStatus,
 )
+from households.models import Guardian as HouseholdGuardian
+from ledger.models import Allocation as LedgerAllocation
+from ledger.models import Charge as LedgerCharge
+from ledger.models import LedgerAccount
+from ledger.models import Payment as LedgerPayment
 
 
 # ---------------------------------------------------------------------------
 # Ledger bridge
-# These return a result dataclass so callers know posting was attempted.
-#
-# BLOCKED: wiring requires a UserAccount → LedgerAccount path.
-# LedgerAccount (ledger app) is keyed per-household (households.Household UUID PK).
-# FinanceObligation.payer_user → UserAccount has no direct household FK.
-# The resolution path (Guardian.email == user.email → Household → LedgerAccount)
-# is not atomically safe without a UserAccount.household OneToOne or explicit join.
-#
-# Until that link is added (or a household_id is stored on UserAccount or
-# FinanceObligation), these functions return a safe no-op result to avoid
-# creating orphaned or incorrectly attributed LedgerAccount entries.
-#
-# When ready to wire:
-#   1. Ensure payer_user.email → Guardian → Household → LedgerAccount path is stable.
-#   2. Replace each stub body with:
-#        from ledger.models import LedgerAccount, Charge, Payment, Allocation
-#        account = LedgerAccount.objects.get(household__guardians__email=obligation.payer_user.email, school_id=...)
-#        Charge.objects.create(school_id=..., account=account, description=..., amount=obligation.amount_cents / 100)
+# These functions perform real postings into the ledger app models.
+# Mapping rule: UserAccount.email -> households.Guardian.email (single household).
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -57,14 +47,50 @@ class LedgerPostResult:
     reference: str = ""
 
 
+def _money_from_cents(cents: int) -> Decimal:
+    return (Decimal(int(cents)) / Decimal("100")).quantize(Decimal("0.01"))
+
+
+def _resolve_ledger_account_for_user(*, school_id, user) -> LedgerAccount | None:
+    email = (getattr(user, "email", "") or "").strip()
+    if not email:
+        return None
+
+    household_ids = list(
+        HouseholdGuardian.objects
+        .filter(school_id=school_id, email__iexact=email)
+        .values_list("household_id", flat=True)
+        .distinct()
+    )
+    if len(household_ids) != 1:
+        return None
+
+    acct, _ = LedgerAccount.objects.get_or_create(
+        school_id=school_id,
+        household_id=household_ids[0],
+    )
+    return acct
+
+
 def ledger_post_obligation(obligation: FinanceObligation) -> LedgerPostResult:
     """
     Post A/R debit + Tuition/Fee revenue credit for a new obligation.
-
-    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
-    Returns safe no-op until that path is established.
     """
-    return LedgerPostResult(ok=True, reference=f"obligation:{obligation.id}")
+    account = _resolve_ledger_account_for_user(
+        school_id=obligation.school_id,
+        user=obligation.payer_user,
+    )
+    if account is None:
+        return LedgerPostResult(ok=False, reference=f"unmapped_payer:{obligation.payer_user_id}")
+
+    amount = _money_from_cents(obligation.amount_cents)
+    charge, _ = LedgerCharge.objects.get_or_create(
+        school_id=obligation.school_id,
+        account=account,
+        description=f"finance_obligation:{obligation.id}",
+        defaults={"amount": amount},
+    )
+    return LedgerPostResult(ok=True, reference=f"charge:{charge.id}")
 
 
 def ledger_post_payment_settled(
@@ -73,21 +99,64 @@ def ledger_post_payment_settled(
 ) -> LedgerPostResult:
     """
     Post Cash debit + A/R credit for each allocation on settlement.
-
-    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
-    Returns safe no-op until that path is established.
     """
-    return LedgerPostResult(ok=True, reference=f"payment:{payment.id}")
+    account = _resolve_ledger_account_for_user(
+        school_id=payment.school_id,
+        user=payment.payer_user,
+    )
+    if account is None:
+        return LedgerPostResult(ok=False, reference=f"unmapped_payer:{payment.payer_user_id}")
+
+    ledger_payment, _ = LedgerPayment.objects.get_or_create(
+        school_id=payment.school_id,
+        account=account,
+        source="FINANCE_SETTLED",
+        reference=f"finance_payment:{payment.id}",
+        defaults={"amount": _money_from_cents(payment.amount_cents)},
+    )
+
+    for alloc in allocations:
+        post_result = ledger_post_obligation(alloc.obligation)
+        if not post_result.ok:
+            return post_result
+
+        charge_id = str(post_result.reference).split("charge:", 1)[-1]
+        charge = LedgerCharge.objects.filter(
+            school_id=payment.school_id,
+            id=charge_id,
+            account=account,
+        ).first()
+        if charge is None:
+            return LedgerPostResult(ok=False, reference=f"missing_charge_for_obligation:{alloc.obligation_id}")
+
+        LedgerAllocation.objects.get_or_create(
+            school_id=payment.school_id,
+            payment=ledger_payment,
+            charge=charge,
+            defaults={"amount": _money_from_cents(alloc.amount_cents)},
+        )
+
+    return LedgerPostResult(ok=True, reference=f"payment:{ledger_payment.id}")
 
 
 def ledger_post_refund(refund: FinanceRefund) -> LedgerPostResult:
     """
     Post reversal pair: Cash credit + A/R debit (or Refund expense).
-
-    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
-    Returns safe no-op until that path is established.
     """
-    return LedgerPostResult(ok=True, reference=f"refund:{refund.id}")
+    account = _resolve_ledger_account_for_user(
+        school_id=refund.school_id,
+        user=refund.payment.payer_user,
+    )
+    if account is None:
+        return LedgerPostResult(ok=False, reference=f"unmapped_payer:{refund.payment.payer_user_id}")
+
+    charge, _ = LedgerCharge.objects.get_or_create(
+        school_id=refund.school_id,
+        account=account,
+        description=f"finance_refund:{refund.id}",
+        defaults={"amount": _money_from_cents(refund.amount_cents)},
+    )
+    return LedgerPostResult(ok=True, reference=f"refund_charge:{charge.id}")
 
 
 def ledger_post_donation(
@@ -96,11 +165,22 @@ def ledger_post_donation(
 ) -> LedgerPostResult:
     """
     Post Cash debit + Donation revenue credit.
-
-    BLOCKED: requires UserAccount → LedgerAccount path (see module comment above).
-    Returns safe no-op until that path is established.
     """
-    return LedgerPostResult(ok=True, reference=f"donation:{donation.id}")
+    account = _resolve_ledger_account_for_user(
+        school_id=donation.school_id,
+        user=donation.donor_user,
+    )
+    if account is None:
+        return LedgerPostResult(ok=False, reference=f"unmapped_donor:{donation.donor_user_id}")
+
+    ledger_payment, _ = LedgerPayment.objects.get_or_create(
+        school_id=donation.school_id,
+        account=account,
+        source="DONATION",
+        reference=f"finance_donation:{donation.id}",
+        defaults={"amount": _money_from_cents(donation.amount_cents)},
+    )
+    return LedgerPostResult(ok=True, reference=f"donation_payment:{ledger_payment.id}")
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +264,9 @@ def settle_payment_and_allocate(
     payment.received_at = payment.received_at or timezone.now()
     payment.save(update_fields=["status", "settled_at", "received_at"])
 
-    ledger_post_payment_settled(payment, allocations)
+    post_result = ledger_post_payment_settled(payment, allocations)
+    if not post_result.ok:
+        raise ValueError(f"Ledger posting failed: {post_result.reference}")
     return payment
 
 
@@ -228,5 +310,7 @@ def initiate_refund(
         status=PaymentStatus.PENDING,
         created_by=created_by,
     )
-    ledger_post_refund(refund)
+    post_result = ledger_post_refund(refund)
+    if not post_result.ok:
+        raise ValueError(f"Ledger refund posting failed: {post_result.reference}")
     return refund

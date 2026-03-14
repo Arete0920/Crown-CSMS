@@ -17,6 +17,7 @@ Tenant isolation: every ImportSession lookup uses ImportSession.objects.get(pk=â
 import csv
 import io
 import itertools
+import logging
 import re
 
 from django.db import transaction
@@ -30,6 +31,9 @@ from rest_framework.authentication import SessionAuthentication
 from households.models import Household, Guardian, Student
 from households.scoping import get_request_school_id
 from .models import ImportSession
+
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -435,10 +439,11 @@ def commit_session(request, session_id):
                             if g_created:
                                 guardians_imported += 1
 
-                except Exception as exc:
+                except Exception:
+                    logger.exception("commit_session: failed household import row", extra={"household_external_id": hid})
                     exceptions.append({
                         "household_external_id": hid,
-                        "error": str(exc),
+                        "error": "Failed to import household row.",
                     })
 
         commit_result = {

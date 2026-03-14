@@ -40,6 +40,7 @@ urlpatterns = [
     path("", include("crown_api.exports.urls")),
     # Financial Aid endpoints
     path("financial-aid/", include("financial_aid.urls")),
+    path("payments/", include("payments.api_urls")),
     # Sprint expansion modules — must come BEFORE crown_api.api_urls to avoid shadowing.
     # crown_api.api_urls registers legacy hardcoded metric stubs for these paths;
     # placing real includes first ensures Django first-match resolves to real views.

@@ -46,6 +46,24 @@ test("Executive Dashboard renders admin KPI cards and Executive Insights section
     })
   );
 
+  await page.route("**/api/v1/nav/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        groups: [
+          {
+            title: "Leadership",
+            items: [
+              { label: "Home", href: "/" },
+              { label: "Dashboard", href: "/dashboard" },
+            ],
+          },
+        ],
+      }),
+    })
+  );
+
   await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
 
   // Page title from CrownLayout

@@ -13,11 +13,18 @@ each value later without changing the response shape.
 """
 
 import datetime
+from decimal import Decimal
 
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+from django.db.models import Sum
 
+from billing.models import Invoice
+from billing.reconciliation import compute_invoice_balance_due
 from core.permissions import require_permission
+from households.scoping import get_request_school_id
+from ledger.models import Payment
 
 
 def _today() -> str:
@@ -105,55 +112,44 @@ def board_metrics(request):
 @require_http_methods(["GET"])
 @require_permission("finance.view")
 def finance_metrics(request):
-    """
-    Finance dashboard – business office view.
+    school_id = get_request_school_id(request, required=True)
 
-    AR aging, collections, financial aid, and operational counters.
-    """
-    return JsonResponse({
-        # Top KPI tiles
-        "ar_outstanding":       237_000,
-        "collected_this_month": 184_500,
-        "aid_awarded":          312_500,
-        "payment_failures":     3,
+    invoices = Invoice.objects.filter(school_id=school_id).order_by("-id")
 
-        # AR aging buckets
-        "ar_aging": [
-            {"bucket": "0\u201330 days",  "amount": 98_400, "count": 42},
-            {"bucket": "31\u201360 days", "amount": 71_200, "count": 28},
-            {"bucket": "61\u201390 days", "amount": 19_200, "count": 9},
-            {"bucket": "90+ days",        "amount": 48_200, "count": 17},
-        ],
+    total_outstanding = Decimal("0.00")
+    open_invoices = 0
+    total_invoiced = Decimal("0.00")
 
-        # Collections breakdown
-        "collections": {
-            "paid_this_week":   23_400,
-            "paid_this_month":  184_500,
-            "outstanding":      237_000,
-            "payment_methods": {
-                "ach":   112_000,
-                "card":   54_500,
-                "check":  18_000,
-            },
-        },
+    for inv in invoices:
+        total_amount = Decimal(str(getattr(inv, "total_amount", Decimal("0.00"))))
+        total_invoiced += total_amount
+        balance_due = compute_invoice_balance_due(inv)
+        total_outstanding += balance_due
+        if balance_due > 0:
+            open_invoices += 1
 
-        # Financial aid
-        "financial_aid": {
-            "awarded":           312_500,
-            "budget":            380_000,
-            "pending_decisions": 8,
-            "avg_award":         3_906,
-        },
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-        # Operational counters
-        "operational": {
-            "payment_failures": 3,
-            "refunds":          1,
-            "chargebacks":      0,
-        },
+    collected_month = (
+        Payment.objects.filter(school_id=school_id, created_at__gte=month_start)
+        .aggregate(total=Sum("amount"))
+        .get("total")
+        or Decimal("0.00")
+    )
 
-        "snapshot_date": _today(),
-    })
+    payment_failures = Payment.objects.filter(school_id=school_id, source="FAILED").count()
+
+    return JsonResponse(
+        {
+            "open_invoices": open_invoices,
+            "ar_outstanding": str(total_outstanding),
+            "total_invoiced": str(total_invoiced),
+            "collected_month": str(collected_month),
+            "payment_failures": payment_failures,
+            "snapshot_date": _today(),
+        }
+    )
 
 
 @require_http_methods(["GET"])

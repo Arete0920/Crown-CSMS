@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 from django.conf import settings
 from django.core.management import call_command
 from django.db import connection
@@ -11,6 +12,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
 
 from core.models_seed import SeedRun
+
+
+logger = logging.getLogger(__name__)
 
 
 def _run_sql(cursor, sql: str, params=None):
@@ -136,13 +140,13 @@ def demo_reset_view(request):
             stderr=out_gradebook,
         )
 
-    except Exception as e:
+    except Exception:
+        logger.exception("demo_reset_view failed")
         # Return JSON error instead of Django HTML 500 page
         return JsonResponse(
             {
                 "ok": False,
-                "error_type": e.__class__.__name__,
-                "error": str(e),
+                "error": "Demo reset failed.",
                 "migrate_tail": out_migrate.getvalue()[-2000:],
                 "seed_tail": out_seed.getvalue()[-2000:],
                 "academics_tail": out_academics.getvalue()[-2000:],
@@ -250,12 +254,12 @@ def diagnose_db_tables_view(request):
             status=200,
         )
 
-    except Exception as e:
+    except Exception:
+        logger.exception("diagnose_db_tables_view failed")
         return JsonResponse(
             {
                 "ok": False,
-                "error_type": e.__class__.__name__,
-                "error": str(e),
+                "error": "Unable to diagnose database tables.",
             },
             status=500,
         )
@@ -288,12 +292,12 @@ def fix_schema_drift_view(request):
             status=200,
         )
 
-    except Exception as e:
+    except Exception:
+        logger.exception("fix_schema_drift_view failed")
         return JsonResponse(
             {
                 "ok": False,
-                "error_type": e.__class__.__name__,
-                "error": str(e),
+                "error": "Schema drift fix failed.",
             },
             status=500,
         )

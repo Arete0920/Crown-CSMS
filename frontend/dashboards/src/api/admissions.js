@@ -72,3 +72,64 @@ export const enrollApplicant = async (applicationId) => {
   return data;
 };
 
+function buildQuery(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const qs = query.toString();
+  return qs ? `?${qs}` : "";
+}
+
+async function fetchAdmissionsEndpoint(path, params = {}) {
+  const token = getToken();
+  const schoolId = getSchoolId();
+
+  if (!token || !schoolId) {
+    throw new Error("Missing authentication credentials");
+  }
+
+  const url = `${API_BASE}${path}${buildQuery(params)}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-School-Id": schoolId,
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    const err = new Error(`Admissions API error: ${response.status}`);
+    err.status = response.status;
+    err.body = body;
+    err.url = url;
+    throw err;
+  }
+
+  return response.json();
+}
+
+export function fetchAdmissionsSummary(params = {}) {
+  return fetchAdmissionsEndpoint("/api/v1/admissions/summary/", params);
+}
+
+export function fetchAdmissionsDrilldown(params = {}) {
+  return fetchAdmissionsEndpoint("/api/v1/admissions/drilldown/", params);
+}
+
+export function fetchAdmissionsPriorityQueue(params = {}) {
+  return fetchAdmissionsEndpoint("/api/admissions/priority-queue/", params);
+}
+
+export function fetchAdmissionsMetrics(params = {}) {
+  return fetchAdmissionsEndpoint("/api/admissions/metrics/", params);
+}
+
+export function fetchAdmissionsTimeline(params = {}) {
+  return fetchAdmissionsEndpoint("/api/admissions/timeline/", params);
+}
+

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from decimal import Decimal
 from uuid import UUID
 
@@ -11,11 +12,19 @@ from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db.models import Sum
+from django.utils import timezone
 
 from households.scoping import get_request_school_id
 from .models import BillingRun, Invoice, InvoiceLine, InstallmentPlan
+from .reconciliation import compute_invoice_balance_due
 from .services import create_tuition_billing_run
+from crown_api.billing_api.permissions import has_finance_runtime_role
 from ledger.services import billing_run_summary
+from ledger.models import Allocation, Charge
+
+
+logger = logging.getLogger(__name__)
 
 
 def _plan_to_dict(p: InstallmentPlan):
@@ -113,6 +122,18 @@ def _parse_json(request: HttpRequest):
         return None
 
 
+def _aging_bucket(days_past_due: int) -> str:
+    if days_past_due <= 0:
+        return "current"
+    if days_past_due <= 30:
+        return "0-30"
+    if days_past_due <= 60:
+        return "31-60"
+    if days_past_due <= 90:
+        return "61-90"
+    return "90+"
+
+
 def _run_to_dict(r: BillingRun):
     return {
         "id": str(r.id),
@@ -163,8 +184,9 @@ def billing_runs(request: HttpRequest):
             description=str(description),
             installment_plan_id=(UUID(str(installment_plan_id)) if installment_plan_id else None),
         )
-    except ValueError as e:
-        return _json_error(str(e), status=400)
+    except ValueError:
+        logger.warning("billing_runs: invalid billing run payload", extra={"school_id": str(sid)})
+        return _json_error("Unable to create billing run with the provided inputs.", status=400)
 
     run = BillingRun.objects.get(pk=result.billing_run_id, school_id=sid)
     return _envelope(
@@ -260,15 +282,17 @@ def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
 @permission_classes([IsAuthenticated])
 def invoices(request):
     """
-    Flat list of invoices for the current school context.
-    Includes household name and normalized fields for UI consumption.
+    School-wide invoice list.
+    This is intentionally finance/admin-only until the family-scoped account
+    page is built.
     """
-    sid = get_request_school_id(request)
-    if not sid:
+    if not has_finance_runtime_role(request.user):
         return Response(
-            {"detail": "school_id could not be derived for request"},
-            status=403
+            {"detail": "You do not have permission to view school-wide invoices."},
+            status=403,
         )
+
+    sid = get_request_school_id(request, required=True)
 
     qs = (
         Invoice.objects
@@ -277,19 +301,71 @@ def invoices(request):
         .order_by("-created_at")
     )
 
+    invoice_rows = list(qs[:2000])  # safety cap for demo; adjust later
+    charge_ids = [
+        inv.ledger_charge_id
+        for inv in invoice_rows
+        if getattr(inv, "ledger_charge_id", None)
+    ]
+
+    paid_by_charge = {}
+    voided_charge_ids = set()
+
+    if charge_ids:
+        paid_rows = (
+            Allocation.objects
+            .filter(school_id=sid, charge_id__in=charge_ids)
+            .values("charge_id")
+            .annotate(paid=Sum("amount"))
+        )
+        paid_by_charge = {row["charge_id"]: Decimal(str(row["paid"] or "0.00")) for row in paid_rows}
+
+        voided_charge_ids = set(
+            Charge.objects
+            .filter(school_id=sid, id__in=charge_ids, is_void=True)
+            .values_list("id", flat=True)
+        )
+
     data = []
-    for inv in qs[:2000]:  # safety cap for demo; adjust later
+    today = timezone.localdate()
+    for inv in invoice_rows:
+        total_amount = Decimal(str(inv.total_amount or "0.00"))
+        paid_amount = paid_by_charge.get(inv.ledger_charge_id, Decimal("0.00"))
+        balance_due = compute_invoice_balance_due(inv)
+        if inv.ledger_charge_id in voided_charge_ids:
+            balance_due = Decimal("0.00")
+        if balance_due < Decimal("0.00"):
+            balance_due = Decimal("0.00")
+
+        credit_amount = paid_amount - total_amount
+        if credit_amount < Decimal("0.00"):
+            credit_amount = Decimal("0.00")
+
+        due_on = inv.due_on
+        days_past_due = 0
+        if due_on and balance_due > Decimal("0.00"):
+            days_past_due = max((today - due_on).days, 0)
+
+        bucket = _aging_bucket(days_past_due)
+        is_delinquent = days_past_due > 0
+
         data.append(
             {
                 "id": str(inv.id),
                 "household_id": str(inv.household_id) if inv.household_id else None,
                 "household_name": inv.household.name if inv.household_id else None,
-                "total_amount": str(inv.total_amount),
-                "due_on": inv.due_on.isoformat() if inv.due_on else None,
+                "total_amount": str(total_amount),
+                "due_on": due_on.isoformat() if due_on else None,
                 "created_at": inv.created_at.isoformat() if inv.created_at else None,
                 "updated_at": inv.updated_at.isoformat() if inv.updated_at else None,
-                "balance_due": str(inv.total_amount),
+                "balance_due": str(balance_due),
+                "paid_amount": str(paid_amount),
+                "credit_amount": str(credit_amount),
+                "days_past_due": days_past_due,
+                "aging_bucket": bucket,
+                "is_delinquent": is_delinquent,
+                "is_reversed": inv.ledger_charge_id in voided_charge_ids,
             }
         )
 
-    return Response(data)
+    return Response({"results": data})
