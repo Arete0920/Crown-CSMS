@@ -3,6 +3,8 @@ import { List, ListItemButton, ListItemText, Collapse, Typography, Box } from "@
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import { getDashboardNavSections } from './dashboardNavConfig';
+import { getCurrentUserRoles } from '../../auth/roleAdapter';
+import { filterVisibleNav } from '../../auth/roleAccess';
 
 /**
  * Collapsible sidebar section with a labelled group header.
@@ -97,10 +99,12 @@ function NavItem({ label, href }) {
  */
 export default function CrownSidebar() {
   const dashboardNavSections = getDashboardNavSections();
+  const userRoles = getCurrentUserRoles();
+  const visibleNavItems = filterVisibleNav(dashboardNavSections, userRoles);
 
   return (
     <List dense disablePadding sx={{ pt: 0.2 }}>
-      {dashboardNavSections.map((section) => (
+      {visibleNavItems.map((section) => (
         <Section key={section.label} title={section.label}>
           {section.children.map((item) => (
             <NavItem key={`${section.label}:${item.key}:${item.href}`} label={item.label} href={item.href} />

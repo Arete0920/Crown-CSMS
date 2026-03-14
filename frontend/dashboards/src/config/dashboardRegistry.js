@@ -1,4 +1,5 @@
 import { validateDashboardRegistry } from './validateDashboardRegistry';
+import { normalizeRoles as normalizeEffectiveRoles } from '../auth/roleAccess';
 
 // Tier 1
 import AttendanceDashboard from '../pages/AttendanceDashboard';
@@ -485,14 +486,11 @@ export const DASHBOARD_REGISTRY = [
   }),
 ];
 
-export function normalizeRoles(input) {
-  if (!Array.isArray(input)) return [];
-  return [...new Set(input.filter(Boolean).map((role) => String(role).trim()))];
-}
+export const normalizeRoles = normalizeEffectiveRoles;
 
 export function hasRouteAccess(userRoles, allowedRoles) {
-  const normalizedUserRoles = normalizeRoles(userRoles);
-  const normalizedAllowedRoles = normalizeRoles(allowedRoles);
+  const normalizedUserRoles = normalizeEffectiveRoles(userRoles);
+  const normalizedAllowedRoles = normalizeEffectiveRoles(allowedRoles);
 
   if (normalizedUserRoles.includes('super_admin')) {
     return true;

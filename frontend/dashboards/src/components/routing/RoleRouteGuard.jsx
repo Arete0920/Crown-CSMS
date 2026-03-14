@@ -1,13 +1,14 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { hasRouteAccess } from '../../config/dashboardRegistry';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
+import { hasAnyRole } from '../../auth/roleAccess';
 
 export default function RoleRouteGuard({ allowedRoles, children }) {
   const location = useLocation();
   const userRoles = getCurrentUserRoles();
+  const allowed = hasAnyRole(userRoles, allowedRoles);
 
-  if (hasRouteAccess(userRoles, allowedRoles)) {
+  if (allowed) {
     return children;
   }
 
