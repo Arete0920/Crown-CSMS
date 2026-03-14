@@ -73,7 +73,7 @@ test("Parent Dashboard renders household KPI row and Children card", async ({
   await expect(page.locator("text=Household Balance")).toBeVisible();
   await expect(page.locator("text=Children").first()).toBeVisible();  // KPI label + CrownCard title both say "Children"
   await expect(page.locator("text=Missing Assignments")).toBeVisible();
-  await expect(page.locator("text=Upcoming")).toBeVisible();
+  await expect(page.getByText(/^Upcoming$/).first()).toBeVisible();
 
   // Children card section exists
   await expect(page.locator("text=Children").first()).toBeVisible();

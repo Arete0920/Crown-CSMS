@@ -81,8 +81,7 @@ test("Student Dashboard v2 renders KPI cards and Upcoming Assignments section", 
   await expect(page.getByText(/^Balance Due$/).first()).toBeVisible();
 
   // Assignments section header
-  await expect(page.locator("text=Upcoming Assignments").first()).toBeVisible();
-  // card title + empty-state both contain "upcoming assignments"
+  await expect(page.locator("text=Upcoming Assignments").first()).toBeVisible();  // card title + empty-state both contain "upcoming assignments"
 
   // Service Hours card
   await expect(page.locator("text=Service Hours")).toBeVisible();
