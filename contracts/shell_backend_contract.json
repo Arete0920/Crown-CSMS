@@ -1,0 +1,204 @@
+{
+    "contractName":  "shell-backend-contract",
+    "contractVersion":  1,
+    "scope":  "wizard_registry_parity",
+    "wizardCount":  28,
+    "wizards":  [
+                    {
+                        "slug":  "onboarding",
+                        "title":  "Student Onboarding",
+                        "frontendPath":  "/onboarding",
+                        "backendUrlPrefix":  "api/v1/onboarding/imports/",
+                        "backendModule":  "onboarding.urls"
+                    },
+                    {
+                        "slug":  "attendance-rules-wizard",
+                        "title":  "Attendance Rules",
+                        "frontendPath":  "/attendance-rules-setup",
+                        "backendUrlPrefix":  "api/v1/attendance-rules-wizard/sessions/",
+                        "backendModule":  "attendance_rules_wizard.urls"
+                    },
+                    {
+                        "slug":  "attendance-codes-wizard",
+                        "title":  "Attendance Codes Setup",
+                        "frontendPath":  "/wizards",
+                        "backendUrlPrefix":  "api/v1/attendance-codes-wizard/sessions/",
+                        "backendModule":  "attendance_codes_wizard.urls"
+                    },
+                    {
+                        "slug":  "bell-schedule-wizard",
+                        "title":  "Bell Schedule",
+                        "frontendPath":  "/bell-schedule-setup",
+                        "backendUrlPrefix":  "api/v1/bell-schedule-wizard/sessions/",
+                        "backendModule":  "bell_schedule_wizard.urls"
+                    },
+                    {
+                        "slug":  "term-structure-wizard",
+                        "title":  "Term Structure Setup",
+                        "frontendPath":  "/term-structure-setup",
+                        "backendUrlPrefix":  "api/v1/term-structure-wizard/sessions/",
+                        "backendModule":  "term_structure_wizard.urls"
+                    },
+                    {
+                        "slug":  "grade-weights-wizard",
+                        "title":  "Grade Weights \u0026 Categories",
+                        "frontendPath":  "/wizards",
+                        "backendUrlPrefix":  "api/v1/grade-weights-wizard/sessions/",
+                        "backendModule":  "grade_weights_wizard.urls"
+                    },
+                    {
+                        "slug":  "gradebook-setup-wizard",
+                        "title":  "Gradebook Setup",
+                        "frontendPath":  "/gradebook-setup",
+                        "backendUrlPrefix":  "api/v1/gradebook-setup-wizard/sessions/",
+                        "backendModule":  "gradebook_setup_wizard.urls"
+                    },
+                    {
+                        "slug":  "guardian-household-wizard",
+                        "title":  "Guardian \u0026 Household Setup",
+                        "frontendPath":  "/wizards",
+                        "backendUrlPrefix":  "api/v1/guardian-household-wizard/sessions/",
+                        "backendModule":  "guardian_household_wizard.urls"
+                    },
+                    {
+                        "slug":  "enrollment-conversion-wizard",
+                        "title":  "Enrollment Conversion",
+                        "frontendPath":  "/enrollment-conversion",
+                        "backendUrlPrefix":  "api/v1/enrollment-conversion-wizard/sessions/",
+                        "backendModule":  "enrollment_conversion_wizard.urls"
+                    },
+                    {
+                        "slug":  "enrollment-period-wizard",
+                        "title":  "Enrollment Period Setup",
+                        "frontendPath":  "/enrollment-period-setup",
+                        "backendUrlPrefix":  "api/v1/enrollment-period-wizard/sessions/",
+                        "backendModule":  "enrollment_period_wizard.urls"
+                    },
+                    {
+                        "slug":  "grade-scale-wizard",
+                        "title":  "Grade Scale Setup",
+                        "frontendPath":  "/grade-scale-setup",
+                        "backendUrlPrefix":  "api/v1/grade-scale-wizard/sessions/",
+                        "backendModule":  "grade_scale_wizard.urls"
+                    },
+                    {
+                        "slug":  "student-import-wizard",
+                        "title":  "Student Import",
+                        "frontendPath":  "/wizards",
+                        "backendUrlPrefix":  "api/v1/student-import-wizard/sessions/",
+                        "backendModule":  "student_import_wizard.urls"
+                    },
+                    {
+                        "slug":  "section-scheduler-wizard",
+                        "title":  "Section Scheduler Seed",
+                        "frontendPath":  "/section-scheduler-setup",
+                        "backendUrlPrefix":  "api/v1/section-scheduler-wizard/sessions/",
+                        "backendModule":  "section_scheduler_wizard.urls"
+                    },
+                    {
+                        "slug":  "staff-onboarding-wizard",
+                        "title":  "Staff Onboarding",
+                        "frontendPath":  "/staff-onboarding",
+                        "backendUrlPrefix":  "api/v1/staff-onboarding-wizard/sessions/",
+                        "backendModule":  "staff_onboarding_wizard.urls"
+                    },
+                    {
+                        "slug":  "invoice-run-wizard",
+                        "title":  "Invoice Run",
+                        "frontendPath":  "/invoice-run",
+                        "backendUrlPrefix":  "api/v1/invoice-run-wizard/sessions/",
+                        "backendModule":  "invoice_run_wizard.urls"
+                    },
+                    {
+                        "slug":  "fee-schedule-wizard",
+                        "title":  "Fee Schedule Setup",
+                        "frontendPath":  "/fee-schedule-setup",
+                        "backendUrlPrefix":  "api/v1/fee-schedule-wizard/sessions/",
+                        "backendModule":  "fee_schedule_wizard.urls"
+                    },
+                    {
+                        "slug":  "section-staffing-wizard",
+                        "title":  "Section Staffing",
+                        "frontendPath":  "/wizards",
+                        "backendUrlPrefix":  "api/v1/section-staffing-wizard/sessions/",
+                        "backendModule":  "section_staffing_wizard.urls"
+                    },
+                    {
+                        "slug":  "room-setup-wizard",
+                        "title":  "Rooms Setup",
+                        "frontendPath":  "/room-setup",
+                        "backendUrlPrefix":  "api/v1/room-setup-wizard/sessions/",
+                        "backendModule":  "room_setup_wizard.urls"
+                    },
+                    {
+                        "slug":  "aid-wizard",
+                        "title":  "Financial Aid Setup",
+                        "frontendPath":  "/aid-setup",
+                        "backendUrlPrefix":  "api/v1/aid-wizard/sessions/",
+                        "backendModule":  "financial_aid_wizard.urls"
+                    },
+                    {
+                        "slug":  "promotion-wizard",
+                        "title":  "Promotion Map Setup",
+                        "frontendPath":  "/promotion-setup",
+                        "backendUrlPrefix":  "api/v1/promotion-wizard/sessions/",
+                        "backendModule":  "promotion_wizard.urls"
+                    },
+                    {
+                        "slug":  "reenrollment",
+                        "title":  "Re-enrollment",
+                        "frontendPath":  "/reenrollment",
+                        "backendUrlPrefix":  "api/v1/reenrollment/sessions/",
+                        "backendModule":  "reenrollment.urls"
+                    },
+                    {
+                        "slug":  "scheduling-wizard",
+                        "title":  "Scheduling Setup",
+                        "frontendPath":  "/scheduling-setup",
+                        "backendUrlPrefix":  "api/v1/scheduling-wizard/sessions/",
+                        "backendModule":  "scheduling_wizard.urls"
+                    },
+                    {
+                        "slug":  "staff-setup-wizard",
+                        "title":  "Staff \u0026 Roles Setup",
+                        "frontendPath":  "/staff-setup",
+                        "backendUrlPrefix":  "api/v1/staff-setup-wizard/sessions/",
+                        "backendModule":  "staff_setup_wizard.urls"
+                    },
+                    {
+                        "slug":  "billing-wizard",
+                        "title":  "Billing Setup",
+                        "frontendPath":  "/billing-setup",
+                        "backendUrlPrefix":  "api/v1/billing-wizard/sessions/",
+                        "backendModule":  "billing_wizard.urls"
+                    },
+                    {
+                        "slug":  "comms-wizard",
+                        "title":  "Communications Campaign",
+                        "frontendPath":  "/comms-setup",
+                        "backendUrlPrefix":  "api/v1/comms-wizard/sessions/",
+                        "backendModule":  "comms_wizard.urls"
+                    },
+                    {
+                        "slug":  "section-assign-wizard",
+                        "title":  "Section Assignments",
+                        "frontendPath":  "/section-assign-setup",
+                        "backendUrlPrefix":  "api/v1/section-assign-wizard/sessions/",
+                        "backendModule":  "section_assign_wizard.urls"
+                    },
+                    {
+                        "slug":  "course-catalog-wizard",
+                        "title":  "Course Catalog Setup",
+                        "frontendPath":  "/course-catalog-setup",
+                        "backendUrlPrefix":  "api/v1/course-catalog-wizard/sessions/",
+                        "backendModule":  "course_catalog_wizard.urls"
+                    },
+                    {
+                        "slug":  "academic-year-wizard",
+                        "title":  "Academic Year Rollover",
+                        "frontendPath":  "/academic-year-rollover",
+                        "backendUrlPrefix":  "api/v1/academic-year-wizard/sessions/",
+                        "backendModule":  "academic_year_wizard.urls"
+                    }
+                ]
+}
