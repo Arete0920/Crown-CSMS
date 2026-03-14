@@ -1,4 +1,4 @@
-﻿name: Tests
+name: Tests
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Runner env probe
         shell: bash
