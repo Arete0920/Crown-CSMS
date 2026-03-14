@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 import { getInvoices } from "../api/finance";
@@ -10,6 +10,7 @@ export default function FinanceInvoicesList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [colSort, setColSort] = useState({ key: "due_on", dir: "desc" });
+  const [showDelinquentOnly, setShowDelinquentOnly] = useState(false);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
@@ -19,14 +20,21 @@ export default function FinanceInvoicesList() {
       try {
         setLoading(true);
         const invoices = await getInvoices();
-        
-        // Normalize: already comes in correct shape from API
         const normalized = invoices.map((inv) => ({
           id: inv.id,
+          household_id: inv.household_id || null,
           household_name: inv.household_name || "(No household)",
           total_amount: parseFloat(inv.total_amount) || 0,
+          paid_amount: parseFloat(inv.paid_amount) || 0,
           balance_due: parseFloat(inv.balance_due) || 0,
+          credit_amount: parseFloat(inv.credit_amount) || 0,
           due_on: inv.due_on || null,
+          days_past_due: Number.isFinite(inv.days_past_due)
+            ? inv.days_past_due
+            : 0,
+          aging_bucket: inv.aging_bucket || "current",
+          is_delinquent: !!inv.is_delinquent,
+          is_reversed: !!inv.is_reversed,
           created_at: inv.created_at,
           updated_at: inv.updated_at,
         }));
@@ -53,44 +61,67 @@ export default function FinanceInvoicesList() {
     };
   }, []);
 
-  // Sorting
+  const visibleRows = useMemo(() => {
+    if (!showDelinquentOnly) return data;
+    return data.filter((row) => row.is_delinquent);
+  }, [data, showDelinquentOnly]);
+
+  const summary = useMemo(() => {
+    const delinquentRows = data.filter((row) => row.is_delinquent);
+    return {
+      delinquentCount: delinquentRows.length,
+      delinquentBalance: delinquentRows.reduce(
+        (sum, row) => sum + row.balance_due,
+        0,
+      ),
+      credits: data.reduce((sum, row) => sum + row.credit_amount, 0),
+      reversedCount: data.filter((row) => row.is_reversed).length,
+    };
+  }, [data]);
+
   const sortedRows = useMemo(() => {
-    if (!data.length) return [];
+    if (!visibleRows.length) return [];
 
     const { key, dir } = colSort;
-    const sorted = [...data];
+    const sorted = [...visibleRows];
 
     sorted.sort((a, b) => {
       let aVal = a[key];
       let bVal = b[key];
 
-      // Dates
       if (key === "due_on" || key === "created_at") {
         aVal = aVal ? new Date(aVal).getTime() : 0;
         bVal = bVal ? new Date(bVal).getTime() : 0;
       }
 
-      // Numbers
-      if (key === "total_amount" || key === "balance_due") {
+      if (
+        [
+          "total_amount",
+          "paid_amount",
+          "balance_due",
+          "credit_amount",
+          "days_past_due",
+        ].includes(key)
+      ) {
         aVal = typeof aVal === "number" ? aVal : 0;
         bVal = typeof bVal === "number" ? bVal : 0;
       }
 
-      // Strings
       if (key === "household_name") {
         aVal = String(aVal || "").toLowerCase();
         bVal = String(bVal || "").toLowerCase();
-        return dir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        return dir === "asc"
+          ? aVal.localeCompare(bVal)
+          : bVal.localeCompare(aVal);
       }
 
-      // Numeric or date comparison
       if (aVal < bVal) return dir === "asc" ? -1 : 1;
       if (aVal > bVal) return dir === "asc" ? 1 : -1;
       return 0;
     });
 
     return sorted;
-  }, [data, colSort]);
+  }, [visibleRows, colSort]);
 
   function handleSort(key) {
     setColSort((prev) => ({
@@ -102,14 +133,30 @@ export default function FinanceInvoicesList() {
   function handleExport() {
     if (!sortedRows.length) return;
 
-    const headers = ["Payer", "Total Amount", "Balance Due", "Due Date", "Created"];
+    const headers = [
+      "Payer",
+      "Total Amount",
+      "Paid",
+      "Balance Due",
+      "Credit",
+      "Days Past Due",
+      "Aging Bucket",
+      "Reversed",
+      "Due Date",
+      "Created",
+    ];
     const rows = [headers];
 
     sortedRows.forEach((inv) => {
       rows.push([
         csvEscape(inv.household_name),
         String(inv.total_amount.toFixed(2)),
+        String(inv.paid_amount.toFixed(2)),
         String(inv.balance_due.toFixed(2)),
+        String(inv.credit_amount.toFixed(2)),
+        String(inv.days_past_due),
+        inv.aging_bucket,
+        inv.is_reversed ? "yes" : "no",
         inv.due_on || "",
         inv.created_at || "",
       ]);
@@ -122,8 +169,7 @@ export default function FinanceInvoicesList() {
   function formatDate(isoString) {
     if (!isoString) return "";
     try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString();
+      return new Date(isoString).toLocaleDateString();
     } catch {
       return "";
     }
@@ -133,7 +179,7 @@ export default function FinanceInvoicesList() {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-    }).format(num);
+    }).format(num || 0);
   }
 
   if (loading) {
@@ -164,18 +210,58 @@ export default function FinanceInvoicesList() {
 
   return (
     <CrownLayout title="Finance" subtitle="Invoice history and exports">
-
-      {/* Export bar */}
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          className="crown-btn"
-          onClick={handleExport}
-        >
+      <div
+        style={{
+          marginBottom: "1rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <button className="crown-btn" onClick={handleExport}>
           Export CSV
         </button>
+        <button
+          className="crown-btn"
+          onClick={() => setShowDelinquentOnly((v) => !v)}
+          style={{
+            background: showDelinquentOnly
+              ? "var(--crown-danger-bg)"
+              : undefined,
+            color: showDelinquentOnly ? "var(--crown-danger)" : undefined,
+          }}
+        >
+          {showDelinquentOnly ? "Showing Delinquent" : "Show Delinquent Only"}
+        </button>
+        <div
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            gap: "0.75rem",
+            fontSize: "0.8rem",
+            color: "var(--crown-muted)",
+          }}
+        >
+          <span>
+            Delinquent:{" "}
+            <strong style={{ color: "var(--crown-danger)" }}>
+              {summary.delinquentCount}
+            </strong>
+          </span>
+          <span>
+            Past Due:{" "}
+            <strong>{formatCurrency(summary.delinquentBalance)}</strong>
+          </span>
+          <span>
+            Credits: <strong>{formatCurrency(summary.credits)}</strong>
+          </span>
+          <span>
+            Reversals: <strong>{summary.reversedCount}</strong>
+          </span>
+        </div>
       </div>
 
-      {/* Table */}
       <div style={{ overflowX: "auto" }}>
         <table
           style={{
@@ -201,7 +287,8 @@ export default function FinanceInvoicesList() {
                 }}
               >
                 Payer{" "}
-                {colSort.key === "household_name" && (colSort.dir === "asc" ? "↑" : "↓")}
+                {colSort.key === "household_name" &&
+                  (colSort.dir === "asc" ? "↑" : "↓")}
               </th>
               <th
                 onClick={() => handleSort("total_amount")}
@@ -218,7 +305,26 @@ export default function FinanceInvoicesList() {
                 }}
               >
                 Total{" "}
-                {colSort.key === "total_amount" && (colSort.dir === "asc" ? "↑" : "↓")}
+                {colSort.key === "total_amount" &&
+                  (colSort.dir === "asc" ? "↑" : "↓")}
+              </th>
+              <th
+                onClick={() => handleSort("paid_amount")}
+                style={{
+                  textAlign: "right",
+                  padding: "0.75rem",
+                  borderBottom: "1px solid var(--crown-border)",
+                  cursor: "pointer",
+                  userSelect: "none",
+                  position: "sticky",
+                  top: 0,
+                  background: "var(--crown-surface-2)",
+                  zIndex: 10,
+                }}
+              >
+                Paid{" "}
+                {colSort.key === "paid_amount" &&
+                  (colSort.dir === "asc" ? "↑" : "↓")}
               </th>
               <th
                 onClick={() => handleSort("balance_due")}
@@ -235,7 +341,26 @@ export default function FinanceInvoicesList() {
                 }}
               >
                 Balance Due{" "}
-                {colSort.key === "balance_due" && (colSort.dir === "asc" ? "↑" : "↓")}
+                {colSort.key === "balance_due" &&
+                  (colSort.dir === "asc" ? "↑" : "↓")}
+              </th>
+              <th
+                onClick={() => handleSort("days_past_due")}
+                style={{
+                  textAlign: "right",
+                  padding: "0.75rem",
+                  borderBottom: "1px solid var(--crown-border)",
+                  cursor: "pointer",
+                  userSelect: "none",
+                  position: "sticky",
+                  top: 0,
+                  background: "var(--crown-surface-2)",
+                  zIndex: 10,
+                }}
+              >
+                Days Past Due{" "}
+                {colSort.key === "days_past_due" &&
+                  (colSort.dir === "asc" ? "↑" : "↓")}
               </th>
               <th
                 onClick={() => handleSort("due_on")}
@@ -252,7 +377,8 @@ export default function FinanceInvoicesList() {
                 }}
               >
                 Due Date{" "}
-                {colSort.key === "due_on" && (colSort.dir === "asc" ? "↑" : "↓")}
+                {colSort.key === "due_on" &&
+                  (colSort.dir === "asc" ? "↑" : "↓")}
               </th>
               <th
                 onClick={() => handleSort("created_at")}
@@ -269,7 +395,8 @@ export default function FinanceInvoicesList() {
                 }}
               >
                 Created{" "}
-                {colSort.key === "created_at" && (colSort.dir === "asc" ? "↑" : "↓")}
+                {colSort.key === "created_at" &&
+                  (colSort.dir === "asc" ? "↑" : "↓")}
               </th>
             </tr>
           </thead>
@@ -294,47 +421,130 @@ export default function FinanceInvoicesList() {
                   {formatCurrency(inv.total_amount)}
                 </td>
                 <td style={{ padding: "0.75rem", textAlign: "right" }}>
+                  {formatCurrency(inv.paid_amount)}
+                </td>
+                <td style={{ padding: "0.75rem", textAlign: "right" }}>
                   {formatCurrency(inv.balance_due)}
+                </td>
+                <td
+                  style={{
+                    padding: "0.75rem",
+                    textAlign: "right",
+                    color: inv.is_delinquent
+                      ? "var(--crown-danger)"
+                      : undefined,
+                  }}
+                >
+                  {inv.days_past_due > 0 ? inv.days_past_due : "-"}
                 </td>
                 <td style={{ padding: "0.75rem" }}>
                   {inv.due_on ? formatDate(inv.due_on) : "(No due date)"}
+                  {inv.is_reversed && (
+                    <span
+                      style={{
+                        marginLeft: "0.5rem",
+                        fontSize: "0.75rem",
+                        color: "var(--crown-muted)",
+                      }}
+                    >
+                      (reversed)
+                    </span>
+                  )}
                 </td>
-                <td style={{ padding: "0.75rem" }}>{formatDate(inv.created_at)}</td>
+                <td style={{ padding: "0.75rem" }}>
+                  {formatDate(inv.created_at)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Drawer */}
       {selected && (
         <Drawer onClose={() => setSelected(null)} width={460}>
           <div style={{ padding: "1.5rem" }}>
-            <h2 style={{ marginTop: 0, marginBottom: "1.5rem", fontSize: "1.25rem" }}>
+            <h2
+              style={{
+                marginTop: 0,
+                marginBottom: "1.5rem",
+                fontSize: "1.25rem",
+              }}
+            >
               Invoice Details
             </h2>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
-                Payer
+              <h3
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--crown-muted)",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                Family
               </h3>
               <div>{selected.household_name}</div>
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
+              <h3
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--crown-muted)",
+                  marginBottom: "0.5rem",
+                }}
+              >
                 Amounts
               </h3>
               <div>
                 <strong>Total:</strong> {formatCurrency(selected.total_amount)}
               </div>
               <div>
-                <strong>Balance Due:</strong> {formatCurrency(selected.balance_due)}
+                <strong>Paid:</strong> {formatCurrency(selected.paid_amount)}
+              </div>
+              <div>
+                <strong>Balance Due:</strong>{" "}
+                {formatCurrency(selected.balance_due)}
+              </div>
+              <div>
+                <strong>Credits:</strong>{" "}
+                {formatCurrency(selected.credit_amount)}
               </div>
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
+              <h3
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--crown-muted)",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                Delinquency & Reversal
+              </h3>
+              <div>
+                <strong>Delinquent:</strong>{" "}
+                {selected.is_delinquent ? "Yes" : "No"}
+              </div>
+              <div>
+                <strong>Days Past Due:</strong> {selected.days_past_due}
+              </div>
+              <div>
+                <strong>Aging Bucket:</strong> {selected.aging_bucket}
+              </div>
+              <div>
+                <strong>Reversed:</strong> {selected.is_reversed ? "Yes" : "No"}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <h3
+                style={{
+                  fontSize: "0.875rem",
+                  color: "var(--crown-muted)",
+                  marginBottom: "0.5rem",
+                }}
+              >
                 Dates
               </h3>
               <div>
@@ -350,12 +560,24 @@ export default function FinanceInvoicesList() {
             </div>
 
             <details style={{ fontSize: "0.875rem" }}>
-              <summary style={{ cursor: "pointer", color: "var(--crown-muted)" }}>
+              <summary
+                style={{ cursor: "pointer", color: "var(--crown-muted)" }}
+              >
                 Identifiers
               </summary>
-              <div style={{ marginTop: "0.5rem", fontFamily: "monospace", fontSize: "0.75rem" }}>
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  fontFamily: "monospace",
+                  fontSize: "0.75rem",
+                }}
+              >
                 <div>
                   <strong>Invoice ID:</strong> {selected.id}
+                </div>
+                <div>
+                  <strong>Household ID:</strong>{" "}
+                  {selected.household_id || "(none)"}
                 </div>
               </div>
             </details>

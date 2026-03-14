@@ -24,3 +24,22 @@ class IsFinanceRole(BasePermission):
             return False
 
         return bool(user_groups & ALLOWED_GROUPS)
+
+
+FINANCE_RUNTIME_ROLE_IDS = {"super_admin", "school_admin", "finance_admin"}
+
+
+def has_finance_runtime_role(user) -> bool:
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+
+    if getattr(user, "is_superuser", False):
+        return True
+
+    group_names = {g.name.lower() for g in user.groups.all()}
+    return bool(group_names & FINANCE_RUNTIME_ROLE_IDS)
+
+
+class IsFinanceRuntimeUser(BasePermission):
+    def has_permission(self, request, view):
+        return has_finance_runtime_role(request.user)

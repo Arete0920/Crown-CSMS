@@ -1,38 +1,36 @@
-﻿import { getToken, getSchoolId } from "../lib/api";
+﻿import { apiFetch } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-
-/**
- * Fetch invoices list (staff-only)
- * @returns {Promise<Array>} - array of invoice objects
- */
-export const getInvoices = async () => {
-  const token = getToken();
-  const schoolId = getSchoolId();
-
-  if (!token || !schoolId) {
-    throw new Error("Missing authentication credentials");
-  }
-
-  const url = `${API_BASE}/api/billing/invoices/`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+function buildQuery(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
   });
+  const qs = query.toString();
+  return qs ? `?${qs}` : "";
+}
 
-  if (!response.ok) {
-    const body = await response.text();
-    const err = new Error(`Finance API error: ${response.status}`);
-    err.status = response.status;
-    err.body = body;
-    throw err;
-  }
+function toRows(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  return payload.results || payload.items || payload.rows || [];
+}
 
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
-};
+export function fetchFinanceMetrics(params = {}) {
+  return apiFetch(`/api/v1/finance/metrics/${buildQuery(params)}`);
+}
+
+export function fetchFinanceSummary(params = {}) {
+  return apiFetch(`/api/v1/dashboards/finance/summary/${buildQuery(params)}`);
+}
+
+export function fetchInvoices(params = {}) {
+  return apiFetch(`/api/billing/invoices/${buildQuery(params)}`);
+}
+
+export async function getInvoices(params = {}) {
+  const data = await fetchInvoices(params);
+  return toRows(data);
+}
 

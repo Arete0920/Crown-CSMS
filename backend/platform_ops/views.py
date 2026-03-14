@@ -12,6 +12,7 @@ Routes (registered in platform_ops/urls.py):
 from __future__ import annotations
 
 import uuid
+import logging
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -20,6 +21,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
+
+
+logger = logging.getLogger(__name__)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -92,10 +96,9 @@ def platform_create_school(request: Request) -> Response:
                 actor_user_id=actor_uuid,
                 request=request._request,
             )
-        except Exception as exc:
-            import logging  # noqa: PLC0415
-            logging.getLogger(__name__).exception("platform_create_school failed")
-            return Response({"error": str(exc)}, status=500)
+        except Exception:
+            logger.exception("platform_create_school failed")
+            return Response({"error": "Unable to create school at this time."}, status=500)
     else:
         job = existing
 

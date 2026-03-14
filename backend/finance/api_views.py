@@ -11,6 +11,8 @@ Ledger posting: explicit via services.py — no signals, no side-effects in view
 """
 from __future__ import annotations
 
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -45,6 +47,9 @@ from finance.services import (
     ledger_post_donation,
     settle_payment_and_allocate,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _is_staff(request) -> bool:
@@ -309,8 +314,9 @@ def payment_settle(request, payment_id: int):
         )
     except FinanceObligation.DoesNotExist:
         return Response({"detail": "Obligation not found for this school."}, status=404)
-    except Exception as exc:
-        return Response({"detail": str(exc)}, status=400)
+    except Exception:
+        logger.exception("payment_settle: unexpected error while settling payment", extra={"payment_id": payment_id})
+        return Response({"detail": "Unable to settle payment at this time."}, status=400)
 
     return Response(PaymentSerializer(payment).data, status=200)
 
@@ -353,8 +359,8 @@ def refund_create(request, payment_id: int):
             created_by=request.user,
             idempotency_key=request.data.get("idempotency_key", ""),
         )
-    except OverRefundError as exc:
-        return Response({"detail": str(exc)}, status=409)
+    except OverRefundError:
+        return Response({"detail": "Refund amount exceeds the remaining refundable balance."}, status=409)
 
     return Response(RefundSerializer(refund).data, status=201)
 

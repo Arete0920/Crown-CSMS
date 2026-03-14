@@ -37,6 +37,8 @@ class TenantHeaderRequiredMiddleware:
         "/api/auth",
         "/api/v1/auth",
         "/api/dev/token",   # dev token endpoint returns school_id — no tenant context needed
+        "/api/payments/webhooks/",
+        "/api/v1/payments/webhooks/",
         "/api/schema",
         "/api/docs",
     )
