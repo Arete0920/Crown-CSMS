@@ -21,12 +21,9 @@ def user_can_access_household_finance(user, household_id) -> bool:
 
     # Pattern 2: one-to-many relation like user.households
     households_rel = getattr(user, "households", None)
-    if households_rel is not None:
-        try:
-            if households_rel.filter(id=household_id).exists():
-                return True
-        except Exception:
-            pass
+    filter_method = getattr(households_rel, "filter", None)
+    if callable(filter_method) and filter_method(id=household_id).exists():
+        return True
 
     # Pattern 3: profile-based relation
     profile = getattr(user, "profile", None)

@@ -88,7 +88,14 @@ try {
 # 06 Backend URLs
 $urlsOut = Join-Path $pack "06_BACKEND_URLS.txt"
 try {
-  & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-File $urlsOut -Encoding UTF8
+  $urlCmdOutput = & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-String
+  if ($urlCmdOutput -match "Unknown command:\s*'show_urls'" -or $urlCmdOutput -match "django-extensions") {
+    Write-File $urlsOut "show_urls unavailable: django-extensions is not installed in the active venv."
+  } elseif ([string]::IsNullOrWhiteSpace($urlCmdOutput)) {
+    Write-File $urlsOut "show_urls produced no output."
+  } else {
+    Write-File $urlsOut $urlCmdOutput
+  }
 } catch {
   Write-File $urlsOut "backend/manage.py show_urls failed (django-extensions may not be installed)."
 }
