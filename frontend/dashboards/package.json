@@ -24,7 +24,8 @@
     "ui:proof:nav-perms": "npx playwright test tests/ui/nav-permissions.spec.ts --reporter=line",
     "ui:proof:student-v2": "npx playwright test tests/ui/student-dashboard-v2.spec.ts --reporter=line",
     "ui:proof:parent-v1": "npx playwright test tests/ui/parent-dashboard-v1.spec.ts --reporter=line",
-    "ui:proof:executive": "npx playwright test tests/ui/executive-dashboard-v1.spec.ts --reporter=line"
+    "ui:proof:executive": "npx playwright test tests/ui/executive-dashboard-v1.spec.ts --reporter=line",
+    "check:module-readiness": "vitest run src/config/moduleReadiness.test.js"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.28.1",

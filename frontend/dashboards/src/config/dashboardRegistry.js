@@ -54,6 +54,20 @@ import RevenueOperationsDashboard from '../pages/RevenueOperationsDashboard';
 import ReleaseReliabilityDashboard from '../pages/ReleaseReliabilityDashboard';
 import DashboardCertificationCenter from '../pages/DashboardCertificationCenter';
 
+const readyReadiness = () => ({
+  shellReady: true,
+  uxReady: true,
+  accessReady: true,
+  dataReady: true,
+});
+
+const placeholderReadiness = () => ({
+  shellReady: true,
+  uxReady: false,
+  accessReady: true,
+  dataReady: false,
+});
+
 const SUPER_ADMIN = ['super_admin'];
 const MASTER_CONTROL = ['master_control', ...SUPER_ADMIN];
 const SCHOOL_ADMIN = ['school_admin', ...MASTER_CONTROL];
@@ -96,16 +110,33 @@ function createDashboard({
   tier,
   section,
   allowedRoles,
+  roles,
   component,
+  releaseState,
+  fallbackPath,
+  moduleKey,
+  moduleType,
+  owner,
+  readiness,
 }) {
+  const effectiveReleaseState = releaseState || 'ready';
+  const effectiveReadiness = readiness || (effectiveReleaseState === 'ready' ? readyReadiness() : placeholderReadiness());
+
   return {
     key,
     label,
     path,
     tier,
     section,
-    allowedRoles,
+    allowedRoles: allowedRoles || roles || [],
+    roles: roles || allowedRoles || [],
     component,
+    moduleKey: moduleKey || key,
+    moduleType: moduleType || 'dashboard',
+    owner: owner || 'dashboardRegistry',
+    releaseState: effectiveReleaseState,
+    fallbackPath,
+    readiness: effectiveReadiness,
   };
 }
 
