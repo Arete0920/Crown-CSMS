@@ -126,3 +126,5 @@ export function getDashboardNavSections() {
 
   return normalizeAndDedupeSections([...visibleStaticSections, ...dynamicSections]);
 }
+
+export default STATIC_NAV_SECTIONS;
