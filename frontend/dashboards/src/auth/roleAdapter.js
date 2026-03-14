@@ -1,3 +1,5 @@
+import { getUserRoles, normalizeRoles } from "./roleAccess";
+
 function parseStorageValue(raw) {
   if (!raw) return null;
 
@@ -28,21 +30,35 @@ export function getCurrentUserRoles() {
     return [];
   }
 
-  const windowRoles = normalizeRoleArray(window.__CROWN_USER_ROLES__);
+  const windowRoles = getUserRoles(window.__CROWN_USER_ROLES__);
   if (windowRoles.length > 0) {
-    return [...new Set(windowRoles)];
+    return windowRoles;
   }
 
   const directRoles = parseStorageValue(localStorage.getItem('crown_user_roles'));
-  const directNormalized = normalizeRoleArray(directRoles);
+  const directNormalized = getUserRoles(directRoles);
   if (directNormalized.length > 0) {
-    return [...new Set(directNormalized)];
+    return directNormalized;
   }
 
   const currentUser = parseStorageValue(localStorage.getItem('crown_current_user'));
-  if (currentUser && Array.isArray(currentUser.roles)) {
-    return [...new Set(normalizeRoleArray(currentUser.roles))];
+  const currentUserRoles = getUserRoles(currentUser);
+  if (currentUserRoles.length > 0) {
+    return currentUserRoles;
   }
 
   return [];
+}
+
+export function getEffectiveRoles(authPayload) {
+  return getUserRoles(authPayload);
+}
+
+export function getPrimaryRole(authPayload) {
+  const roles = getEffectiveRoles(authPayload);
+  return roles[0] || null;
+}
+
+export function normalizeAllowedRoles(roles) {
+  return normalizeRoles(roles);
 }

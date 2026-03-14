@@ -1,5 +1,6 @@
 import { getAccessibleDashboardSections } from '../../config/dashboardRegistry';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
+import { filterVisibleNav } from '../../auth/roleAccess';
 
 const STATIC_NAV_SECTIONS = [
   {
@@ -111,6 +112,7 @@ function normalizeAndDedupeSections(sections) {
 
 export function getDashboardNavSections() {
   const userRoles = getCurrentUserRoles();
+  const visibleStaticSections = filterVisibleNav(STATIC_NAV_SECTIONS, userRoles);
 
   const dynamicSections = getAccessibleDashboardSections(userRoles).map((section) => ({
     label: section.sectionLabel,
@@ -122,5 +124,5 @@ export function getDashboardNavSections() {
     })),
   }));
 
-  return normalizeAndDedupeSections([...STATIC_NAV_SECTIONS, ...dynamicSections]);
+  return normalizeAndDedupeSections([...visibleStaticSections, ...dynamicSections]);
 }
