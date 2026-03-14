@@ -19,6 +19,7 @@
 
 import { createElement } from 'react';
 import RoleRouteGuard from '../components/routing/RoleRouteGuard.jsx';
+import ReleaseStateRoute from '../components/routing/ReleaseStateRoute.jsx';
 import { WIZARD_SLUGS } from './wizard-manifest.js';
 
 import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
@@ -46,7 +47,21 @@ import CourseCatalogWizard from '../pages/CourseCatalogWizard.jsx';
 import RoomSetupWizard from '../pages/RoomSetupWizard.jsx';
 import PromotionWizard from '../pages/PromotionWizard.jsx';
 
-export const WIZARD_ROUTE_DEFINITIONS = [
+const readyReadiness = () => ({
+  shellReady: true,
+  uxReady: true,
+  accessReady: true,
+  dataReady: true,
+});
+
+const placeholderReadiness = () => ({
+  shellReady: true,
+  uxReady: false,
+  accessReady: true,
+  dataReady: false,
+});
+
+const RAW_WIZARD_ROUTE_DEFINITIONS = [
   {
     path: '/onboarding',
     component: AdmissionsIntakeWizard,
@@ -211,6 +226,22 @@ export const WIZARD_ROUTE_DEFINITIONS = [
   },
 ];
 
+function normalizeWizardRoute(route) {
+  const releaseState = route.releaseState || 'ready';
+  const readiness = route.readiness || (releaseState === 'ready' ? readyReadiness() : placeholderReadiness());
+
+  return {
+    ...route,
+    moduleKey: route.moduleKey || route.path.replace(/^\//, '') || route.name,
+    moduleType: route.moduleType || 'wizard',
+    owner: route.owner || 'wizardRoutes',
+    releaseState,
+    readiness,
+  };
+}
+
+export const WIZARD_ROUTE_DEFINITIONS = RAW_WIZARD_ROUTE_DEFINITIONS.map(normalizeWizardRoute);
+
 // Backward compatibility for existing imports in tests/components.
 export const WIZARD_REGISTRY = WIZARD_ROUTE_DEFINITIONS;
 
@@ -220,14 +251,15 @@ export const WIZARD_REGISTRY = WIZARD_ROUTE_DEFINITIONS;
  */
 export { WIZARD_SLUGS };
 
-function buildWizardElement(Component, roles = []) {
-  const element = createElement(Component);
+function buildWizardElement(route) {
+  const element = createElement(route.component);
+  const wrappedElement = createElement(ReleaseStateRoute, { route }, element);
 
-  if (Array.isArray(roles) && roles.length > 0) {
-    return createElement(RoleRouteGuard, { allowedRoles: roles }, element);
+  if (Array.isArray(route.roles) && route.roles.length > 0) {
+    return createElement(RoleRouteGuard, { allowedRoles: route.roles || [] }, wrappedElement);
   }
 
-  return element;
+  return wrappedElement;
 }
 
 /**
@@ -243,9 +275,9 @@ function buildWizardElement(Component, roles = []) {
  *   ]);
  */
 export function wizardRoutes() {
-  return WIZARD_ROUTE_DEFINITIONS.map(({ path, component, roles }) => ({
-    path,
-    element: buildWizardElement(component, roles),
+  return WIZARD_ROUTE_DEFINITIONS.map((route) => ({
+    path: route.path,
+    element: buildWizardElement(route),
   }));
 }
 
