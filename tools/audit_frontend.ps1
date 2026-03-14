@@ -19,6 +19,14 @@ function Step($name, [scriptblock]$fn) {
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $repoRoot
 
+# Prefer globally installed Node, but support a portable fallback on locked-down Windows hosts.
+$portableNodeHome = "C:\Temp\node-portable\node-v24.14.0-win-x64"
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+  if (Test-Path (Join-Path $portableNodeHome "node.exe")) {
+    $env:PATH = "$portableNodeHome;$env:PATH"
+  }
+}
+
 $fe = "frontend/dashboards"
 if (-not (Test-Path $fe)) {
   Write-Host "frontend/dashboards not found; skipping frontend audit" -ForegroundColor Yellow
@@ -26,6 +34,12 @@ if (-not (Test-Path $fe)) {
 }
 
 Step "Node / npm version" {
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw "Node.js not found on PATH. Install Node LTS or provide portable Node at $portableNodeHome"
+  }
+  if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    throw "npm not found on PATH. Ensure Node.js installation includes npm."
+  }
   node --version
   npm --version
 }

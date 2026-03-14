@@ -49,7 +49,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Admin-Ops-Secret: $OPS_SECRET" \
             -H "X-School-Id: $SMOKE_SCHOOL_ID")
-          
+
           token=$(echo "$resp" | jq -r '.access')
           if [ -z "$token" ] || [ "$token" = "null" ]; then
             echo "WARN ensure-ci-user did not return a token — Azure DEV may not be seeded with school $SMOKE_SCHOOL_ID"
@@ -57,7 +57,7 @@ jobs:
             echo "SKIPPING Check 3 (auth invoices)."
             exit 0
           fi
-          
+
           echo "token=$token" >> $GITHUB_OUTPUT
           echo "TOKEN=$token" >> $GITHUB_ENV
           echo "OK CI user ensured + JWT acquired"
