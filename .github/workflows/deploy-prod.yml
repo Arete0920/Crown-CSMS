@@ -70,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ github.ref_name }}"
-          SHA="${{ env.DEPLOY_SHA }}"
+          SHA="${{ steps.vars.outputs.deploy_sha }}"
           if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
             echo "ERROR: DEPLOY_SHA is not a full commit SHA (got: '$SHA')"
             exit 1
@@ -107,8 +107,8 @@ jobs:
 
       - name: Bake BUILD_SHA into artifact
         run: |
-          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA_SHORT }}\"" > backend/crown_api/build_info.py
-          echo "✓ Generated build_info.py with SHA: ${{ env.DEPLOY_SHA_SHORT }}"
+          echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha_short }}\"" > backend/crown_api/build_info.py
+          echo "✓ Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -116,19 +116,19 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Pull image for Trivy local scan
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
       - name: Run security scan (Trivy)
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
 
@@ -192,13 +192,13 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.WEBAPP_NAME }}
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
       - name: Build allowed appsettings JSON
         shell: pwsh
         run: |
           $settings = @{
-            "BUILD_SHA"       = "${{ env.DEPLOY_SHA }}"
+            "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
             "PROD_DEPLOY_TAG" = "${{ github.ref_name }}"
             "RUN_MIGRATIONS"  = "true"
             "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
@@ -237,7 +237,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $expected = "${{ env.DEPLOY_SHA }}"
+          $expected = "${{ steps.vars.outputs.deploy_sha }}"
           Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
           .\tools\verify_prod_build_sha.ps1 `
             -ExpectedSha $expected `
@@ -262,7 +262,7 @@ jobs:
       - name: Verify deployed build_sha via /health
         shell: bash
         env:
-          WANT_SHA: ${{ env.DEPLOY_SHA }}
+          WANT_SHA: ${{ steps.vars.outputs.deploy_sha }}
         run: |
           set -euo pipefail
           URL="https://crown-api-prod.azurewebsites.net/health"
@@ -432,7 +432,7 @@ jobs:
     if: always()
 
     env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_URL: ${{ secrets['SLACK_WEBHOOK_URL'] }}
 
     steps:
       - name: Send Slack notification
