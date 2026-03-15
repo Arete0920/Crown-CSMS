@@ -64,11 +64,6 @@ import AftercareSetupWizard from "../pages/wizards/AftercareSetupWizard.jsx";
 import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
 import NotAuthorized from "../pages/NotAuthorized.jsx";
 import RoleRouteGuard from "../components/routing/RoleRouteGuard.jsx";
-import AdmissionsIntakeWizard from "../pages/AdmissionsIntakeWizard.jsx";
-import ReenrollmentWizard from "../pages/ReenrollmentWizard.jsx";
-import FinancialAidWizard from "../pages/FinancialAidWizard.jsx";
-import EnrollmentConversionWizard from "../pages/EnrollmentConversionWizard.jsx";
-import EnrollmentPeriodWizard from "../pages/EnrollmentPeriodWizard.jsx";
 import { dashboardRoutes } from "./dashboardRoutes";
 import { wizardRoutes } from "./wizards.js";
 import WizardHub from "../pages/WizardHub.jsx";
@@ -185,73 +180,8 @@ export const router = createBrowserRouter([
     path: "/wizards",
     element: <WizardHub />,
   },
-  // Guarded admissions/enrollment wizard routes
-  {
-    path: "/onboarding",
-    element: (
-      <RoleRouteGuard
-        allowedRoles={["super_admin", "school_admin", "admissions_manager"]}
-      >
-        <AdmissionsIntakeWizard />
-      </RoleRouteGuard>
-    ),
-  },
-  {
-    path: "/reenrollment",
-    element: (
-      <RoleRouteGuard
-        allowedRoles={["super_admin", "school_admin", "registrar"]}
-      >
-        <ReenrollmentWizard />
-      </RoleRouteGuard>
-    ),
-  },
-  {
-    path: "/aid-setup",
-    element: (
-      <RoleRouteGuard
-        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
-      >
-        <FinancialAidWizard />
-      </RoleRouteGuard>
-    ),
-  },
-  {
-    path: "/enrollment-conversion",
-    element: (
-      <RoleRouteGuard
-        allowedRoles={[
-          "super_admin",
-          "school_admin",
-          "admissions_manager",
-          "registrar",
-        ]}
-      >
-        <EnrollmentConversionWizard />
-      </RoleRouteGuard>
-    ),
-  },
-  {
-    path: "/enrollment-period-setup",
-    element: (
-      <RoleRouteGuard
-        allowedRoles={["super_admin", "school_admin", "registrar"]}
-      >
-        <EnrollmentPeriodWizard />
-      </RoleRouteGuard>
-    ),
-  },
-  // Keep all other setup wizards from the registry
-  ...wizardRoutes().filter(
-    (route) =>
-      ![
-        "/onboarding",
-        "/reenrollment",
-        "/aid-setup",
-        "/enrollment-conversion",
-        "/enrollment-period-setup",
-      ].includes(route.path),
-  ),
+  // Wizard routes are owned by routes/wizards.js.
+  ...wizardRoutes(),
   {
     path: "/finance/invoices",
     element: (

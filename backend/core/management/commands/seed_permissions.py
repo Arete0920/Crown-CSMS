@@ -176,6 +176,35 @@ ROLE_PERMISSIONS: dict = {
     "parent":          ["parent.view"],
     "student":         ["student.view"],
     "board":           ["board.view"],
+
+    # Frontend role aliases (dashboard/route guard vocabulary)
+    "school_admin":    [
+        "admin.view", "board.view",
+        "finance.view", "billing.view",
+        "admissions.view", "financial_aid.view",
+        "academics.view", "teacher.view",
+        "registrar.view", "academic_support.view", "library.view",
+        "extended_care.view", "pd.view", "communications.view",
+        "health.view", "counseling.view", "food.view",
+        "athletics.view", "fine_arts.view", "spiritual_life.view", "student_services.view",
+        "office.view", "it.view", "facilities.view", "transportation.view",
+        "security.view", "integrity.view", "metrics.view", "director.actions",
+        "marketing.view", "advancement.view", "advancement.edit",
+        "pd.edit", "hr.view", "hr.edit", "safety.view", "safety.edit",
+        "classroom.view",
+    ],
+    "finance_admin": ["finance.view", "finance.edit", "billing.view", "integrity.view"],
+    "admissions_manager": ["admissions.view", "admissions.edit", "academics.view", "registrar.view"],
+    "advancement_officer": ["advancement.view", "advancement.edit"],
+    "hr_manager": ["hr.view", "hr.edit"],
+    "facilities_manager": ["facilities.view"],
+    "safety_manager": ["safety.view", "safety.edit"],
+    "security_officer": ["security.view"],
+    "transportation_manager": ["transportation.view"],
+    "food_service_manager": ["food.view"],
+    "athletics_director": ["athletics.view"],
+    "it_support": ["it.view", "integrity.view"],
+    "board_member": ["board.view"],
 }
 
 

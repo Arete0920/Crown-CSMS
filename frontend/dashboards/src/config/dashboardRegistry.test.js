@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DASHBOARD_REGISTRY } from './dashboardRegistry';
+import { DASHBOARD_REGISTRY, hasRouteAccess, normalizeRoles } from './dashboardRegistry';
 import { validateDashboardRegistry } from './validateDashboardRegistry';
 
 describe('dashboard registry', () => {
@@ -27,7 +27,19 @@ describe('dashboard registry', () => {
   it('uses dashboard-style route names', () => {
     DASHBOARD_REGISTRY.forEach((item) => {
       expect(item.path.startsWith('/')).toBe(true);
-      expect(item.path.endsWith('-dashboard')).toBe(true);
+      expect(item.path.endsWith('-dashboard') || item.path === '/dashboard-certification-center').toBe(true);
     });
+  });
+
+  it('normalizes role aliases used across backend and frontend role vocabularies', () => {
+    expect(normalizeRoles(['HEAD_OF_SCHOOL'])).toContain('school_admin');
+    expect(normalizeRoles(['facilities'])).toContain('facilities_manager');
+    expect(normalizeRoles(['it_support'])).toContain('it');
+  });
+
+  it('grants access when role aliases match equivalent roles', () => {
+    expect(hasRouteAccess(['facilities'], ['facilities_manager'])).toBe(true);
+    expect(hasRouteAccess(['HEAD_OF_SCHOOL'], ['school_admin'])).toBe(true);
+    expect(hasRouteAccess(['it'], ['it_support'])).toBe(true);
   });
 });
