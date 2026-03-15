@@ -1,4 +1,4 @@
-"""Canonical shell/backend wizard contract parity tests."""
+"""Canonical shell/backend contract parity tests."""
 
 from __future__ import annotations
 
@@ -13,28 +13,23 @@ BACKEND_ROOT = REPO_ROOT / "backend"
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from crown_api.shell_backend_contract import get_backend_wizard_contract_rows
+from crown_api.shell_backend_contract import get_shell_backend_contract
 
 
 CONTRACT_PATH = REPO_ROOT / "contracts" / "shell_backend_contract.json"
 
 
-def _load_canonical_backend_rows() -> list[dict]:
+def _load_canonical_contract() -> dict:
     with CONTRACT_PATH.open("r", encoding="utf-8") as handle:
-        payload = json.load(handle)
+        return json.load(handle)
 
-    rows = []
-    for row in payload.get("wizards", []):
-        rows.append(
-            {
-                "slug": row.get("slug"),
-                "title": row.get("title"),
-                "backendUrlPrefix": row.get("backendUrlPrefix"),
-                "backendModule": row.get("backendModule"),
-            }
-        )
-    rows.sort(key=lambda item: item["slug"])
-    return rows
+
+def _normalize(contract: dict) -> dict:
+    return {
+        "version": contract.get("version"),
+        "dashboardModules": list(contract.get("dashboardModules") or []),
+        "wizards": sorted(list(contract.get("wizards") or []), key=lambda row: str(row.get("moduleKey") or "")),
+    }
 
 
 class TestShellBackendContractParity(unittest.TestCase):
@@ -42,11 +37,15 @@ class TestShellBackendContractParity(unittest.TestCase):
         self.assertTrue(CONTRACT_PATH.exists(), f"Missing canonical contract: {CONTRACT_PATH}")
 
     def test_backend_rows_match_canonical_contract(self):
-        self.assertEqual(_load_canonical_backend_rows(), get_backend_wizard_contract_rows())
+        self.assertEqual(_normalize(_load_canonical_contract()), _normalize(get_shell_backend_contract()))
 
-    def test_backend_slugs_unique(self):
-        slugs = [row["slug"] for row in get_backend_wizard_contract_rows()]
-        self.assertEqual(len(slugs), len(set(slugs)), f"Duplicate backend wizard slugs found: {slugs}")
+    def test_backend_module_keys_unique(self):
+        module_keys = [row.get("moduleKey") for row in get_shell_backend_contract().get("wizards", [])]
+        self.assertEqual(
+            len(module_keys),
+            len(set(module_keys)),
+            f"Duplicate backend wizard module keys found: {module_keys}",
+        )
 
 
 if __name__ == "__main__":
