@@ -31,11 +31,11 @@ jobs:
             -d '{}' | tee /tmp/reset.json
 
           python - << 'PY'
-import json
-d=json.load(open("/tmp/reset.json","r"))
-assert d.get("ok") is True, d
-print("PASS: demo reset completed")
-PY
+          import json
+          d = json.load(open("/tmp/reset.json", "r"))
+          assert d.get("ok") is True, d
+          print("PASS: demo reset completed")
+          PY
 
       - name: Verify admissions diversity
         env:
@@ -55,11 +55,11 @@ PY
             -H "X-School-Id: $SCHOOL_ID")
 
           echo "$OUT" | python - << 'PY'
-import sys, json
-d=json.load(sys.stdin)
-by=d["pipeline"]["by_stage"]
-nonzero=[k for k,v in by.items() if isinstance(v,int) and v>0]
-print(f"Non-zero stages: {len(nonzero)}")
-assert len(nonzero) >= 3, f"Only {len(nonzero)} stages populated, need >=3"
-print("PASS: admissions diversified")
-PY
+          import sys, json
+          d = json.load(sys.stdin)
+          by = d["pipeline"]["by_stage"]
+          nonzero = [k for k, v in by.items() if isinstance(v, int) and v > 0]
+          print(f"Non-zero stages: {len(nonzero)}")
+          assert len(nonzero) >= 3, f"Only {len(nonzero)} stages populated, need >=3"
+          print("PASS: admissions diversified")
+          PY

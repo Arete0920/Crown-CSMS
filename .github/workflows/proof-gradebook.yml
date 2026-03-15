@@ -151,11 +151,11 @@ jobs:
             -d '{}')
 
           ACCESS=$(python3 - <<'PY'
-import json, sys
-d = json.loads(sys.stdin.read())
-print(d.get("access") or d.get("access_token") or "")
-PY
-<<<"$TOKEN_JSON")
+          import json, sys
+          d = json.loads(sys.stdin.read())
+          print(d.get("access") or d.get("access_token") or "")
+          PY
+          <<<"$TOKEN_JSON")
 
           if [[ -z "$ACCESS" ]]; then
             echo "ERROR: Could not acquire demo access token. Response:"
