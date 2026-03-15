@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -12,7 +13,16 @@ BACKEND_ROOT = REPO_ROOT / "backend"
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from crown_api.shell_backend_contract import get_shell_backend_contract  # noqa: E402
+
+def _load_backend_contract_module():
+    module_path = BACKEND_ROOT / "crown_api" / "shell_backend_contract.py"
+    spec = importlib.util.spec_from_file_location("shell_backend_contract", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load backend contract module from {module_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _load_canonical_contract() -> dict:
@@ -32,7 +42,8 @@ def _normalize(contract: dict) -> dict:
 
 def main() -> int:
     canonical = _normalize(_load_canonical_contract())
-    backend = _normalize(get_shell_backend_contract())
+    backend_module = _load_backend_contract_module()
+    backend = _normalize(backend_module.get_shell_backend_contract())
 
     if canonical != backend:
         print("FAIL: backend contract parity mismatch detected.")

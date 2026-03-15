@@ -44,6 +44,10 @@ jobs:
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
           if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
 
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
       - name: Print seeded proof
         id: seeded_print
         working-directory: backend
