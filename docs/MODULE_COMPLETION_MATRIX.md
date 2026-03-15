@@ -1,7 +1,10 @@
 # Module Completion Matrix — Crown2026
 
-**Generated:** 2026-02-24  
-**HEAD SHA:** d671749e94a605bb116da76b9f687dc33f143841  
+> Canonical notice (2026-03-15): For current-cycle completion governance, use docs/certification/MODULE_ACCEPTANCE_MATRIX_14.md and docs/certification/COMPLETION_CONTRACT.md.
+> This file is historical baseline evidence and is not the primary definition of done.
+
+**Generated:** 2026-02-24
+**HEAD SHA:** d671749e94a605bb116da76b9f687dc33f143841
 **Certification baseline:** `prod-deploy-certify-2026-02-24`
 
 This matrix documents the production-readiness state of all 14 Crown2026 SIS
@@ -49,8 +52,8 @@ presence as of the certification date above.
 | 🔶 Partial | 0/14 | 8/14 | 5/14 |
 | ❌ Not built | 0/14 | 0/14 | 1/14 |
 
-> **All 14 module APIs are production-present.**  
-> Test coverage is complete (≥2 test files) for 6 modules; partial but non-zero for all 14.  
+> **All 14 module APIs are production-present.**
+> Test coverage is complete (≥2 test files) for 6 modules; partial but non-zero for all 14.
 > UI presence: 8 modules have dedicated pages/dashboards; 5 have partial or read-only UI.
 
 ---
