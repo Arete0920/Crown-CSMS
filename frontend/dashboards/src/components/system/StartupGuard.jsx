@@ -3,6 +3,11 @@ import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import { getBuildInfo } from '../../utils/buildInfo';
 
 export default function StartupGuard({ children }) {
+  const enforceStartupGuard = import.meta.env.VITE_ENFORCE_STARTUP_GUARD === '1';
+  if (!enforceStartupGuard) {
+    return children;
+  }
+
   const build = getBuildInfo();
 
   const missing = [];

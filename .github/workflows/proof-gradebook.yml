@@ -141,14 +141,20 @@ jobs:
       - name: Gradebook API readiness
         shell: bash
         env:
-          CROWN_DEMO_KEY: ${{ env.CROWN_DEMO_KEY }}
+          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
         run: |
           set -euo pipefail
           echo "Acquiring demo JWT for readiness probe..."
-          TOKEN_JSON=$(curl -fsS -X POST "http://127.0.0.1:8000/api/dev/token/" \
+          TOKEN_HTTP=$(curl -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/v1/auth/token/" \
             -H "Content-Type: application/json" \
-            -H "X-Demo-Key: ${CROWN_DEMO_KEY}" \
-            -d '{}')
+            -d "{\"username\":\"head@crown-demo.local\",\"password\":\"${CROWN_DEMO_PASSWORD}\"}")
+          TOKEN_JSON=$(cat /tmp/token_ready.json || true)
+
+          if [[ "$TOKEN_HTTP" -lt 200 || "$TOKEN_HTTP" -ge 300 ]]; then
+            echo "ERROR: demo token endpoint failed (HTTP ${TOKEN_HTTP})."
+            echo "$TOKEN_JSON"
+            exit 1
+          fi
 
           ACCESS=$(python3 - <<'PY'
           import json, sys

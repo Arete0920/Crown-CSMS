@@ -22,7 +22,7 @@ import StudentShortcutsCard from '../components/dashboard/student/StudentShortcu
 export default function StudentDashboard() {
   return (
     <CrownLayout
-      title="Student Dashboard"
+      title="Student Portal"
       subtitle="Assignments, grades, attendance, schedule, and daily student progress"
     >
       <h1 className="text-2xl font-semibold tracking-tight">Student Dashboard</h1>
