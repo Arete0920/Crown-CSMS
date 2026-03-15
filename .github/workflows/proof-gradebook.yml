@@ -31,6 +31,7 @@ jobs:
       # Demo mode configuration (for single-button dev token login)
       CROWN_DEMO_MODE: "true"
       CROWN_DEMO_KEY: "CrownDemoKey!2026"
+      CROWN_DEMO_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
       VITE_DEMO_KEY: "CrownDemoKey!2026"
 
     steps:
@@ -79,6 +80,7 @@ jobs:
           python manage.py seed_academics_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
           python manage.py seed_gradebook_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
           python manage.py seed_demo_parent_gradebook
+          python manage.py reset_demo_passwords
 
       - name: Start Django dev server
         working-directory: backend
@@ -140,18 +142,16 @@ jobs:
 
       - name: Gradebook API readiness
         shell: bash
-        env:
-          CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
         run: |
           set -euo pipefail
           echo "Acquiring demo JWT for readiness probe..."
           TOKEN_HTTP=""
           TOKEN_JSON=""
           for i in {1..5}; do
-            TOKEN_HTTP=$(curl -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/v1/auth/token/" \
-              -H "Content-Type: application/json" \
+            TOKEN_HTTP=$(curl -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/dev/token/" \
               -H "Accept: application/json" \
-              -d "{\"username\":\"head@crown-demo.local\",\"password\":\"${CROWN_DEMO_PASSWORD}\"}" || true)
+              -H "X-Demo-Key: ${CROWN_DEMO_KEY}" \
+              -d '{}' || true)
             TOKEN_JSON=$(cat /tmp/token_ready.json || true)
 
             if [[ "$TOKEN_HTTP" =~ ^2[0-9][0-9]$ ]] && [[ -n "$TOKEN_JSON" ]]; then
@@ -234,11 +234,18 @@ jobs:
         env:
           CROWN_UI_URL: "http://localhost:3000"
           API_BASE_URL: "http://localhost:8000"
+          CROWN_TEST_USER: "head@crown-demo.local"
+          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run api:proof:gradebook
 
       # Run UI proof (Flow A) + screenshots
       - name: Run UI proof
         working-directory: frontend/dashboards
+        env:
+          CROWN_TEST_USER: "head@crown-demo.local"
+          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run ui:proof:gradebook
 
       - name: Upload UI proof screenshots

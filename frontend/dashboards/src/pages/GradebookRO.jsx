@@ -182,7 +182,6 @@ export function GradebookRO() {
         }
       })
       .catch((err) => {
-        console.error(err);
         if (alive) setSectionError(err?.message || "Failed to load gradebook sections.");
       })
       .finally(() => {
@@ -254,7 +253,6 @@ export function GradebookRO() {
       .catch((err) => {
         // if aborted, ignore
         if (err?.name === "AbortError") return;
-        console.error(err);
         const msg =
           (err && err.message) ? err.message :
           (typeof err === "string") ? err :
@@ -353,7 +351,6 @@ export function GradebookRO() {
       setRows(normalizedRows);
       lastFetchedSectionRef.current = selectedSectionId;
     } catch (err) {
-      console.error(err);
       setEditMsg(`Failed to refresh: ${err.message}`);
     } finally {
       setLoadingGrades(false);
