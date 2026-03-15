@@ -166,7 +166,16 @@ jobs:
               else:
                   print(f"ERROR: cannot parse JSON. Raw: {raw!r}", file=sys.stderr)
                   sys.exit(1)
-          token = d.get("access") or d.get("access_token") or ""
+          nested = d.get("data") if isinstance(d.get("data"), dict) else {}
+          token = (
+            d.get("access")
+            or d.get("access_token")
+            or d.get("token")
+            or nested.get("access")
+            or nested.get("access_token")
+            or nested.get("token")
+            or ""
+          )
           print(token)
           PY
           <<<"$TOKEN_JSON")

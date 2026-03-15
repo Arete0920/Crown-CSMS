@@ -15,6 +15,8 @@ export function HomeDashboard() {
 
   return (
     <CrownLayout title="Crown" subtitle="School management platform">
+      <h1 className="text-2xl font-semibold tracking-tight">Crown Dashboard</h1>
+
       {/* CROWN_DASH_GRID_NORMALIZED */}
       <CrownGrid>
         <Col span={3}><CrownMetricCard label="Status" value="Healthy" hint="All systems nominal" /></Col>

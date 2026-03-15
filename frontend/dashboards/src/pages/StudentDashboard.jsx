@@ -25,6 +25,8 @@ export default function StudentDashboard() {
       title="Student Dashboard"
       subtitle="Assignments, grades, attendance, schedule, and daily student progress"
     >
+      <h1 className="text-2xl font-semibold tracking-tight">Student Dashboard</h1>
+
       <DashboardSection title="Daily Mission and Student Snapshot">
         <CrownGrid>
           <Col span={6}><DailyDevotion /></Col>

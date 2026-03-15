@@ -25,6 +25,8 @@ export default function ParentDashboard() {
       title="Parent Dashboard"
       subtitle="Your children, assignments, attendance, tuition, messages, and family events"
     >
+      <h1 className="text-2xl font-semibold tracking-tight">Parent Dashboard</h1>
+
       <DashboardSection title="Daily Mission and Family Snapshot">
         <CrownGrid>
           <Col span={6}><DailyDevotion /></Col>
