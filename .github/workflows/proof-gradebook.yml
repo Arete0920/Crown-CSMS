@@ -78,7 +78,7 @@ jobs:
           python manage.py seed_demo_school --force --students 25
           python manage.py seed_academics_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
           python manage.py seed_gradebook_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
-          python manage.py seed_demo_parent_gradebook --school-id b45b8c5a-6708-4597-aad9-a226627b2962
+          python manage.py seed_demo_parent_gradebook
 
       - name: Start Django dev server
         working-directory: backend
