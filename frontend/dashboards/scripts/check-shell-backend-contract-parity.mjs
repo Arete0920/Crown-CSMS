@@ -22,8 +22,8 @@ const canonical = JSON.parse(fs.readFileSync(CONTRACT_PATH, "utf8"));
 const wizards = Array.isArray(canonical.wizards) ? canonical.wizards : [];
 const dashboardModules = Array.isArray(canonical.dashboardModules) ? canonical.dashboardModules : [];
 
-if (canonical.version !== 3) {
-  fail(`Expected canonical contract version 3, found ${canonical.version}`);
+if (canonical.version !== 5) {
+  fail(`Expected canonical contract version 5, found ${canonical.version}`);
 }
 
 if (wizards.length === 0) {
@@ -44,6 +44,14 @@ const requiredWizardFields = [
   "requiresSeededSuccess",
   "seededSuccessProbeMethod",
   "acceptableSeededSuccessStatusCodes",
+  "requiresWriteProof",
+  "writeProbeMethod",
+  "acceptableWriteStatusCodes",
+  "expectedWriteJsonTopLevelKinds",
+  "requiresLifecycleReadBackProof",
+  "readBackProbeMethod",
+  "acceptableReadBackStatusCodes",
+  "expectedReadBackJsonTopLevelKinds",
   "expectedJsonTopLevelKinds",
 ];
 
