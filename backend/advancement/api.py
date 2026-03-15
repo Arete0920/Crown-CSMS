@@ -250,7 +250,8 @@ def purchase_ticket(request):
             purchaser_email=ser.validated_data["purchaser_email"],
         )
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        logger.exception("Ticket purchase failed")
+        return Response({"detail": "Request failed."}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(TicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
 
@@ -279,7 +280,8 @@ def purchase_store_item(request):
             quantity=ser.validated_data["quantity"],
         )
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        logger.exception("Store purchase failed")
+        return Response({"detail": "Request failed."}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(AdvancementTransactionSerializer(txn).data, status=status.HTTP_201_CREATED)
 
@@ -458,7 +460,8 @@ def gift_mark_paid(request, gift_id):
     except Gift.DoesNotExist:
         return Response({"detail": "Gift not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        logger.exception("Gift payment confirmation failed")
+        return Response({"detail": "Request failed."}, status=status.HTTP_400_BAD_REQUEST)
     return Response(GiftSerializer(gift).data)
 
 
@@ -503,7 +506,8 @@ def pledge_cancel(request, pledge_id):
     except Pledge.DoesNotExist:
         return Response({"detail": "Pledge not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        logger.exception("Pledge cancel failed")
+        return Response({"detail": "Request failed."}, status=status.HTTP_400_BAD_REQUEST)
     return Response(PledgeSerializer(pledge).data)
 
 
@@ -550,7 +554,8 @@ def sponsorship_mark_paid(request, agreement_id):
     except SponsorshipAgreement.DoesNotExist:
         return Response({"detail": "Agreement not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        logger.exception("Sponsorship payment confirmation failed")
+        return Response({"detail": "Request failed."}, status=status.HTTP_400_BAD_REQUEST)
     return Response(SponsorshipAgreementSerializer(agreement).data)
 
 
@@ -836,7 +841,8 @@ def moves_transition(request):
     except Prospect.DoesNotExist:
         return Response({"detail": "Prospect not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        logger.exception("Move stage transition failed")
+        return Response({"detail": "Request failed."}, status=status.HTTP_400_BAD_REQUEST)
 
     audit_event(
         "advancement.moves.transition",
@@ -894,8 +900,9 @@ def seating_hold(request):
             email=d["email"],
             hold_minutes=d.get("hold_minutes", 10),
         )
-    except (Event.DoesNotExist, Seat.DoesNotExist) as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+    except (Event.DoesNotExist, Seat.DoesNotExist):
+        logger.exception("Seat hold lookup failed")
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if not result.get("ok"):
         return Response(result, status=status.HTTP_409_CONFLICT)
@@ -924,7 +931,8 @@ def seating_assign(request):
     except (Ticket.DoesNotExist, Seat.DoesNotExist):
         return Response({"detail": "Ticket or Seat not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValueError as exc:
-        return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+        logger.exception("Seat assignment failed")
+        return Response({"detail": "Request failed."}, status=status.HTTP_409_CONFLICT)
 
     return Response(TicketSeatSerializer(ts).data, status=status.HTTP_201_CREATED)
 
@@ -1515,7 +1523,8 @@ def apple_wallet_pass(request, ticket_id):
     except ImportError:
         return _JR({"ok": False, "message": "requests package required for Apple Wallet proxy."}, status=501)
     except Exception as exc:
-        return _JR({"ok": False, "message": str(exc)}, status=502)
+        logger.exception("Apple Wallet pass proxy failed")
+        return _JR({"ok": False, "message": "Request failed."}, status=502)
 
 
 @api_view(["GET"])
