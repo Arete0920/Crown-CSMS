@@ -2,7 +2,7 @@
 
 Status date: 2026-03-15
 Current branch: fix/track11-12-write-and-lifecycle-proof
-Current head sha: 0d275d6a
+Current head sha: 34ca98d3
 Current RC artifact: missing at frontend/dashboards/dist/release-candidate.json
 
 ## Bucket definitions
@@ -18,7 +18,7 @@ Current RC artifact: missing at frontend/dashboards/dist/release-candidate.json
 |---|---|---|---|---|---|---|
 | B1-001 | 1 | Proof job | TBD | PR 577 check gradebook-proof failed: https://github.com/tcmegahan/Crown2026/actions/runs/23114407819/job/67137361803 | gradebook-proof green for current head sha in PR checks | Open |
 | B1-002 | 1 | Proof job | TBD | PR 577 check Proof Smoke (Playwright) failed: https://github.com/tcmegahan/Crown2026/actions/runs/23114407828/job/67137361817 | Proof Smoke green for current head sha in PR checks | Open |
-| B1-003 | 1 | Security or quality gate | TBD | PR 577 aggregate CodeQL check failed: https://github.com/tcmegahan/Crown2026/runs/67137417508 | CodeQL aggregate check green for current head sha in PR checks | Open |
+| B1-003 | 1 | Security or quality gate | TBD | PR 577 CodeQL check failed: https://github.com/tcmegahan/Crown2026/runs/67144725660 with 10 new alerts (2 high, 8 medium); open PR code-scanning alerts currently 33 | CodeQL aggregate check green for current head sha in PR checks and no blocker-level alerts attributed to this PR | Open |
 | B2-001 | 2 | Acceptance governance | TBD | Module matrix has many Incomplete or Unproven entries in MODULE_ACCEPTANCE_MATRIX_14.md | every module has owner + full acceptance fields + signoff evidence | Open |
 | B2-002 | 2 | Route contract | TBD | No single locked route contract file designated as canonical for proof and role landings | one locked route contract is published and referenced by tests and workflows | Open |
 | B2-003 | 2 | UI contract | TBD | No single locked heading and visible-surface contract designated for proof gates | one locked UI surface contract is published and referenced by proof tests | Open |
