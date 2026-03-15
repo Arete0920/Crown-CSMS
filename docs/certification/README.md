@@ -3,7 +3,7 @@
 Status date: 2026-03-15
 
 Current branch: fix/track11-12-write-and-lifecycle-proof
-Current head sha: c9991a48cb093e58f3ddb6ff761e53d30124b6ee
+Current head sha: 0d275d6a
 
 This folder is the single governance source of truth for completion.
 If a claim is not represented here with evidence, it is not considered complete.
