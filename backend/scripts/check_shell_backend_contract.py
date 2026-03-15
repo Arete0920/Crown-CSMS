@@ -1,4 +1,4 @@
-"""Fail when backend wizard declarations drift from contracts/shell_backend_contract.json."""
+"""Fail when backend shell contract declaration drifts from canonical contract."""
 
 from __future__ import annotations
 
@@ -12,56 +12,37 @@ BACKEND_ROOT = REPO_ROOT / "backend"
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from crown_api.shell_backend_contract import get_backend_wizard_contract_rows  # noqa: E402
+from crown_api.shell_backend_contract import get_shell_backend_contract  # noqa: E402
 
 
-def _canonical_backend_rows() -> list[dict]:
+def _load_canonical_contract() -> dict:
     contract_path = REPO_ROOT / "contracts" / "shell_backend_contract.json"
     with contract_path.open("r", encoding="utf-8") as handle:
-        payload = json.load(handle)
+        return json.load(handle)
 
-    rows = []
-    for row in payload.get("wizards", []):
-        rows.append(
-            {
-                "slug": row.get("slug"),
-                "title": row.get("title"),
-                "backendUrlPrefix": row.get("backendUrlPrefix"),
-                "backendModule": row.get("backendModule"),
-            }
-        )
-    rows.sort(key=lambda item: item["slug"])
-    return rows
+
+def _normalize(contract: dict) -> dict:
+    normalized = {
+        "version": contract.get("version"),
+        "dashboardModules": list(contract.get("dashboardModules") or []),
+        "wizards": sorted(list(contract.get("wizards") or []), key=lambda row: str(row.get("moduleKey") or "")),
+    }
+    return normalized
 
 
 def main() -> int:
-    canonical_rows = _canonical_backend_rows()
-    backend_rows = get_backend_wizard_contract_rows()
+    canonical = _normalize(_load_canonical_contract())
+    backend = _normalize(get_shell_backend_contract())
 
-    if canonical_rows != backend_rows:
+    if canonical != backend:
         print("FAIL: backend contract parity mismatch detected.")
-
-        canonical_by_slug = {row["slug"]: row for row in canonical_rows}
-        backend_by_slug = {row["slug"]: row for row in backend_rows}
-
-        missing_in_contract = sorted(set(backend_by_slug) - set(canonical_by_slug))
-        missing_in_backend = sorted(set(canonical_by_slug) - set(backend_by_slug))
-        mismatched = [
-            slug
-            for slug in sorted(set(canonical_by_slug) & set(backend_by_slug))
-            if canonical_by_slug[slug] != backend_by_slug[slug]
-        ]
-
-        if missing_in_contract:
-            print(f"Canonical contract missing backend slugs: {', '.join(missing_in_contract)}")
-        if missing_in_backend:
-            print(f"Backend registry missing canonical slugs: {', '.join(missing_in_backend)}")
-        if mismatched:
-            print(f"Rows with field mismatches: {', '.join(mismatched)}")
-
+        print("=== Canonical (normalized) ===")
+        print(json.dumps(canonical, indent=2, sort_keys=True))
+        print("=== Backend (normalized) ===")
+        print(json.dumps(backend, indent=2, sort_keys=True))
         return 1
 
-    print(f"PASS: backend contract parity verified ({len(backend_rows)} wizard entries).")
+    print(f"PASS: backend contract parity verified ({len(backend['wizards'])} wizard entries).")
     return 0
 
 

@@ -1,29 +1,92 @@
-"""Shell/backend wizard contract declarations derived from wizard_registry."""
+from copy import deepcopy
 
-from __future__ import annotations
+SHELL_BACKEND_CONTRACT = {
+    "version": 3,
+    "wizards": [
+        {
+            "moduleKey": "admissions-onboarding",
+            "path": "/onboarding",
+            "apiPrefix": "/api/v1/onboarding/imports/",
+            "requiresAuth": True,
+            "requiresSchoolHeader": True,
+            "schoolHeaderName": "X-School-Id",
+            "probeSchoolId": "1",
+            "acceptableUnauthenticatedStatusCodes": [401, 403],
+            "acceptableMissingSchoolHeaderStatusCodes": [400, 403],
+            "acceptableAuthenticatedStatusCodes": [200, 403, 405],
+            "requiresSeededSuccess": True,
+            "seededSuccessProbeMethod": "POST",
+            "acceptableSeededSuccessStatusCodes": [201],
+            "expectedJsonTopLevelKinds": ["array", "object"],
+        },
+        {
+            "moduleKey": "reenrollment",
+            "path": "/reenrollment",
+            "apiPrefix": "/api/v1/reenrollment/sessions/",
+            "requiresAuth": True,
+            "requiresSchoolHeader": True,
+            "schoolHeaderName": "X-School-Id",
+            "probeSchoolId": "1",
+            "acceptableUnauthenticatedStatusCodes": [401, 403],
+            "acceptableMissingSchoolHeaderStatusCodes": [400, 403],
+            "acceptableAuthenticatedStatusCodes": [200, 403, 405],
+            "requiresSeededSuccess": True,
+            "seededSuccessProbeMethod": "POST",
+            "acceptableSeededSuccessStatusCodes": [201],
+            "expectedJsonTopLevelKinds": ["array", "object"],
+        },
+        {
+            "moduleKey": "financial-aid-setup",
+            "path": "/aid-setup",
+            "apiPrefix": "/api/v1/aid-wizard/sessions/",
+            "requiresAuth": True,
+            "requiresSchoolHeader": True,
+            "schoolHeaderName": "X-School-Id",
+            "probeSchoolId": "1",
+            "acceptableUnauthenticatedStatusCodes": [401, 403],
+            "acceptableMissingSchoolHeaderStatusCodes": [400, 403],
+            "acceptableAuthenticatedStatusCodes": [200, 403, 405],
+            "requiresSeededSuccess": True,
+            "seededSuccessProbeMethod": "POST",
+            "acceptableSeededSuccessStatusCodes": [201],
+            "expectedJsonTopLevelKinds": ["array", "object"],
+        },
+        {
+            "moduleKey": "enrollment-conversion",
+            "path": "/enrollment-conversion",
+            "apiPrefix": "/api/v1/enrollment-conversion-wizard/sessions/",
+            "requiresAuth": True,
+            "requiresSchoolHeader": True,
+            "schoolHeaderName": "X-School-Id",
+            "probeSchoolId": "1",
+            "acceptableUnauthenticatedStatusCodes": [401, 403],
+            "acceptableMissingSchoolHeaderStatusCodes": [400, 403],
+            "acceptableAuthenticatedStatusCodes": [200, 403, 405],
+            "requiresSeededSuccess": True,
+            "seededSuccessProbeMethod": "POST",
+            "acceptableSeededSuccessStatusCodes": [201],
+            "expectedJsonTopLevelKinds": ["array", "object"],
+        },
+        {
+            "moduleKey": "enrollment-period-setup",
+            "path": "/enrollment-period-setup",
+            "apiPrefix": "/api/v1/enrollment-period-wizard/sessions/",
+            "requiresAuth": True,
+            "requiresSchoolHeader": True,
+            "schoolHeaderName": "X-School-Id",
+            "probeSchoolId": "1",
+            "acceptableUnauthenticatedStatusCodes": [401, 403],
+            "acceptableMissingSchoolHeaderStatusCodes": [400, 403],
+            "acceptableAuthenticatedStatusCodes": [200, 403, 405],
+            "requiresSeededSuccess": True,
+            "seededSuccessProbeMethod": "POST",
+            "acceptableSeededSuccessStatusCodes": [201],
+            "expectedJsonTopLevelKinds": ["array", "object"],
+        },
+    ],
+    "dashboardModules": [],
+}
 
-from typing import TypedDict
 
-from crown_api.wizard_registry import WIZARDS
-
-
-class WizardContractRow(TypedDict):
-    slug: str
-    title: str
-    backendUrlPrefix: str
-    backendModule: str
-
-
-def get_backend_wizard_contract_rows() -> list[WizardContractRow]:
-    rows: list[WizardContractRow] = []
-    for wizard in WIZARDS:
-        rows.append(
-            {
-                "slug": wizard["url_prefix"].split("/")[2],
-                "title": wizard["name"],
-                "backendUrlPrefix": wizard["url_prefix"],
-                "backendModule": wizard["urls_module"],
-            }
-        )
-    rows.sort(key=lambda row: row["slug"])
-    return rows
+def get_shell_backend_contract():
+    return deepcopy(SHELL_BACKEND_CONTRACT)

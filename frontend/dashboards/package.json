@@ -31,6 +31,8 @@
     "ci:shell": "npm run check:shell-certification && npm run build",
     "build:shell-backend-contract": "node scripts/build-shell-backend-contract.mjs",
     "check:shell-backend-contract-parity": "node scripts/check-shell-backend-contract-parity.mjs",
+    "print:shell-backend-contract": "node scripts/print-shell-backend-contract.mjs",
+    "check:shell-backend-contract": "node scripts/check-shell-backend-contract-parity.mjs",
     "debug:shell-backend-contract": "node scripts/print-shell-backend-contract.mjs",
     "ci:shell-backend-contract-parity": "npm run check:shell-backend-contract-parity"
   },
