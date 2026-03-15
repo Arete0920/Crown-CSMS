@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import CrownLayout from "../components/crown/CrownLayout.jsx";
-import CrownCard from "../components/crown/CrownCard.jsx";
 import {
   Alert,
   Box,
