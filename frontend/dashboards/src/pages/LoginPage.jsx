@@ -10,9 +10,9 @@ const DEMO_PASS   = "Crown2026!";
 /* ─── Roles ──────────────────────────────────────────────── */
 const ROLES = [
   { label: "Head of School",      desc: "School-wide oversight & executive KPIs",   route: "/admin",         color: "#0F2C4C" },
-  { label: "Financial Aid",       desc: "Aid awards, applications & packaging",      route: "/financial-aid", color: "#1C4E80" },
+  { label: "Financial Aid",       desc: "Aid awards, applications & packaging",      route: "/financial-aid-dashboard", color: "#1C4E80" },
   { label: "Finance Director",    desc: "AR, billing, aging & collections",          route: "/finance",       color: "#1A6FA8" },
-  { label: "Admissions Director", desc: "Pipeline, enrollment & yield analytics",   route: "/admissions",    color: "#2E7D62" },
+  { label: "Admissions Director", desc: "Pipeline, enrollment & yield analytics",   route: "/admissions-dashboard",    color: "#2E7D62" },
   { label: "Teacher",             desc: "Gradebook, attendance & curriculum",        route: "/teacher",       color: "#7A5C14" },
   { label: "Parent",              desc: "Student progress, grades & messages",       route: "/parent",        color: "#3D5A80" },
   { label: "Student",             desc: "Assignments, schedule & academics",         route: "/student",       color: "#1B6B4A" },
@@ -446,6 +446,7 @@ export default function LoginPage() {
         <div className="lp-panel">
           <div className="lp-form">
 
+            <h1 className="lp-welcome">Login</h1>
             <h2 className="lp-welcome">Welcome back</h2>
             <p className="lp-prompt">Select your role to access your dashboard</p>
 

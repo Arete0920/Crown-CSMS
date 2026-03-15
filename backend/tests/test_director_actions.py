@@ -256,7 +256,7 @@ def test_post_director_actions():
                 from core.models import LedgerEntry
 
                 try:
-                    LedgerEntry.objects.filter(id=ledger_entry_id).delete()
+                    LedgerEntry.objects.filter(pk=ledger_entry_id).delete()
                 except ProtectedError:
                     pass
 

@@ -562,7 +562,7 @@ def test_category_update_and_delete(transactional_db):
         headers={"X-School-Id": str(school.id)},
     )
     assert resp.status_code == 204
-    assert not AssignmentCategory.objects.filter(id=cat.id).exists()
+    assert not AssignmentCategory.objects.filter(pk=cat.id).exists()
 
 
 def test_assignment_update_and_delete(transactional_db):
@@ -610,4 +610,4 @@ def test_assignment_update_and_delete(transactional_db):
         headers={"X-School-Id": str(school.id)},
     )
     assert resp.status_code == 204
-    assert not Assignment.objects.filter(id=asg.id).exists()
+    assert not Assignment.objects.filter(pk=asg.id).exists()

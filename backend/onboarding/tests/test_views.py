@@ -120,7 +120,7 @@ class TestCreateSession:
         assert "import_id" in data
         assert data["mode"] == "students_guardians"
         assert data["status"] == "pending"
-        assert ImportSession.objects.filter(id=data["import_id"], school=school_a).exists()
+        assert ImportSession.objects.filter(pk=data["import_id"], school=school_a).exists()
 
     def test_invalid_mode_falls_back_to_default(self, client_a):
         res = client_a.post(BASE, {"mode": "invented_mode"}, format="json")
@@ -200,7 +200,7 @@ class TestUpload:
 
     def test_reupload_resets_downstream_state(self, client_a, school_a):
         sid = self._new_session_id(client_a)
-        session = ImportSession.objects.get(id=sid)
+        session = ImportSession.objects.get(pk=sid)
         session.validate_result = {"errors": [], "warnings": []}
         session.commit_result = {"students_imported": 1}
         session.save()

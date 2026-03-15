@@ -1,0 +1,116 @@
+name: Backend Shell Write And Lifecycle Proof
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "contracts/shell_backend_contract.json"
+      - "backend/**"
+      - ".github/workflows/backend-shell-write-and-lifecycle-proof.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "contracts/shell_backend_contract.json"
+      - "backend/**"
+      - ".github/workflows/backend-shell-write-and-lifecycle-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-shell-write-and-lifecycle-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  write-proof:
+    name: write-proof
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
+
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
+      - name: Print write proof
+        id: write_print
+        working-directory: backend
+        run: python manage.py print_shell_backend_write_proof
+
+      - name: Run write proof test
+        id: write_test
+        working-directory: backend
+        run: python manage.py test tests.test_shell_backend_write_contract
+
+      - name: Publish write job summary
+        if: always()
+        run: |
+          {
+            echo "## Backend Shell Write Proof"
+            echo ""
+            echo "| Check | Outcome |"
+            echo "|---|---|"
+            echo "| Write proof print command | ${{ steps.write_print.outcome }} |"
+            echo "| Write proof test | ${{ steps.write_test.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  lifecycle-proof:
+    name: lifecycle-proof
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
+
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
+      - name: Print lifecycle proof
+        id: lifecycle_print
+        working-directory: backend
+        run: python manage.py print_shell_backend_lifecycle_proof
+
+      - name: Run lifecycle proof test
+        id: lifecycle_test
+        working-directory: backend
+        run: python manage.py test tests.test_shell_backend_lifecycle_contract
+
+      - name: Publish lifecycle job summary
+        if: always()
+        run: |
+          {
+            echo "## Backend Shell Lifecycle Proof"
+            echo ""
+            echo "| Check | Outcome |"
+            echo "|---|---|"
+            echo "| Lifecycle proof print command | ${{ steps.lifecycle_print.outcome }} |"
+            echo "| Lifecycle proof test | ${{ steps.lifecycle_test.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"

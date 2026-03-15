@@ -7,6 +7,7 @@ from .models_scheduling_core import Term, Section, SectionEnrollment
 from .models_comms_core import MessageThread, Message
 from .audit_models import AuditEvent  # noqa: F401
 from .auth_models import CrownUser  # noqa: F401
+from .dashboards.models import DashboardSnapshot
 
 __all__ = [
     "Person",
@@ -28,4 +29,5 @@ __all__ = [
     "Message",
     "AuditEvent",
     "CrownUser",
+    "DashboardSnapshot",
 ]

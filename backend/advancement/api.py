@@ -1,4 +1,5 @@
-﻿from rest_framework import viewsets, status
+from rest_framework import viewsets, status
+import logging
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -55,6 +56,9 @@ from .services_stage3 import (
     assign_seat_to_ticket,
     log_impressions,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _require_school(request):
@@ -413,7 +417,7 @@ class SponsorshipAgreementViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 # ---------------------------------------------------------------------------
-# Stage 2: functional views — gift checkout + payment confirmation
+# Stage 2: functional views � gift checkout + payment confirmation
 # ---------------------------------------------------------------------------
 
 @api_view(["POST"])
@@ -446,7 +450,7 @@ def gift_checkout(request):
 def gift_mark_paid(request, gift_id):
     """
     POST /advancement/gift/<gift_id>/mark-paid/
-    Confirms payment — transitions Gift pending → paid, records AdvancementTransaction.
+    Confirms payment � transitions Gift pending ? paid, records AdvancementTransaction.
     """
     school = _require_school(request)
     try:
@@ -459,7 +463,7 @@ def gift_mark_paid(request, gift_id):
 
 
 # ---------------------------------------------------------------------------
-# Stage 2: functional views — pledge create + cancel
+# Stage 2: functional views � pledge create + cancel
 # ---------------------------------------------------------------------------
 
 @api_view(["POST"])
@@ -504,7 +508,7 @@ def pledge_cancel(request, pledge_id):
 
 
 # ---------------------------------------------------------------------------
-# Stage 2: functional views — sponsorship checkout + payment confirmation
+# Stage 2: functional views � sponsorship checkout + payment confirmation
 # ---------------------------------------------------------------------------
 
 @api_view(["POST"])
@@ -538,7 +542,7 @@ def sponsorship_checkout(request):
 def sponsorship_mark_paid(request, agreement_id):
     """
     POST /advancement/sponsorship/<agreement_id>/mark-paid/
-    Transitions SponsorshipAgreement pending → active.
+    Transitions SponsorshipAgreement pending ? active.
     """
     school = _require_school(request)
     try:
@@ -560,7 +564,7 @@ def qr_checkin(request):
     """
     POST /advancement/qr-checkin/
     Body: { qr_code: str }
-    Creates a TicketScan audit record — result is "accepted" | "duplicate" | "invalid".
+    Creates a TicketScan audit record � result is "accepted" | "duplicate" | "invalid".
     Always returns 200 with the scan record (never 404 on invalid QR).
     """
     school = _require_school(request)
@@ -952,13 +956,13 @@ def sponsorship_log_impressions(request):
     return Response({"ok": True, "impression_id": str(imp.id)}, status=status.HTTP_201_CREATED)
 
 # ===========================================================================
-# Stage 3.1 – Live seat availability + strict holds + purchase of held seats
+# Stage 3.1 � Live seat availability + strict holds + purchase of held seats
 # ===========================================================================
 
 @api_view(["GET"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def seating_availability(request):
-    """GET ?event_id=<uuid> → live availability grid for buyer seat picker."""
+    """GET ?event_id=<uuid> ? live availability grid for buyer seat picker."""
     school = _require_school(request)
     event_id_str = request.query_params.get("event_id", "")
     if not event_id_str:
@@ -981,7 +985,7 @@ def seating_availability(request):
 def seating_hold_strict(request):
     """
     POST { event_id, seat_ids: [uuid], email, hold_minutes? }
-    → hold a set of seats for the given email.
+    ? hold a set of seats for the given email.
     """
     school = _require_school(request)
     data = request.data
@@ -1018,7 +1022,7 @@ def seating_hold_strict(request):
 def seating_purchase_held(request):
     """
     POST { event_id, email, purchaser_name, seat_ids: [uuid] }
-    → convert active SeatHolds → Ticket + TicketSeat rows.
+    ? convert active SeatHolds ? Ticket + TicketSeat rows.
     """
     school = _require_school(request)
     data = request.data
@@ -1048,7 +1052,7 @@ def seating_purchase_held(request):
 
 
 # ===========================================================================
-# Stage 3.2 – Stripe Checkout + webhook + order status polling
+# Stage 3.2 � Stripe Checkout + webhook + order status polling
 # ===========================================================================
 
 @api_view(["POST"])
@@ -1056,7 +1060,7 @@ def seating_purchase_held(request):
 def seating_checkout(request):
     """
     POST { event_id, purchaser_name, purchaser_email, seat_ids, amount_cents, currency? }
-    → create Stripe Checkout session for held seats.
+    ? create Stripe Checkout session for held seats.
     """
     school = _require_school(request)
     data = request.data
@@ -1118,10 +1122,10 @@ def _ticket_ids_for_order(order) -> list[str]:
 @api_view(["GET"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def order_status(request, order_id):
-    """GET /orders/<uuid>/status/ → poll order fulfillment status."""
+    """GET /orders/<uuid>/status/ ? poll order fulfillment status."""
     from .models_stage3_2 import PendingSeatOrder
     try:
-        order = PendingSeatOrder.objects.get(id=order_id, school_id=school.id)
+        order = PendingSeatOrder.objects.get(pk=order_id, school_id=school.id)
     except PendingSeatOrder.DoesNotExist:
         return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
     return Response({
@@ -1139,7 +1143,7 @@ def order_status(request, order_id):
 
 def _create_receipt_and_queue_email(*, order, totals: dict | None, provider_payment_intent_id: str) -> None:
     """
-    Internal helper – called from stripe_webhook after successful fulfillment.
+    Internal helper � called from stripe_webhook after successful fulfillment.
 
     Creates a Receipt row and queues an EmailOutbox receipt email with a PDF
     attachment.  Sponsor logos are embedded as names only (server-side PDF; the
@@ -1197,18 +1201,18 @@ def _create_receipt_and_queue_email(*, order, totals: dict | None, provider_paym
     for seat_id_str in (order.seat_ids or []):
         try:
             import uuid as _uuid
-            seat = Seat.objects.get(id=_uuid.UUID(str(seat_id_str)), school_id=order.school_id)
+            seat = Seat.objects.get(pk=_uuid.UUID(str(seat_id_str)), school_id=order.school_id)
             seat_labels.append(f"{seat.section}-{seat.row}-{seat.number}")
         except Exception:
-            pass
+            logger.exception("_create_receipt_and_queue_email: failed to resolve seat label")
 
     # Event name
     event_name = str(order.event_id)
     try:
-        evt = Event.objects.get(id=order.event_id, school_id=order.school_id)
+        evt = Event.objects.get(pk=order.event_id, school_id=order.school_id)
         event_name = evt.name
     except Exception:
-        pass
+        logger.exception("_create_receipt_and_queue_email: failed to resolve event name")
 
     pdf = make_receipt_pdf_bytes(
         school_name="School",           # school name not denormalised on order; use simple default
@@ -1227,7 +1231,7 @@ def _create_receipt_and_queue_email(*, order, totals: dict | None, provider_paym
         school_id=order.school_id,
         kind="receipt_email",
         to_email=order.purchaser_email,
-        subject=f"Your receipt – {event_name}",
+        subject=f"Your receipt � {event_name}",
         body_text=(
             f"Thank you for your purchase, {order.purchaser_name}.\n"
             f"Receipt #{receipt.receipt_number} is attached.\n"
@@ -1254,8 +1258,8 @@ from django.http import HttpResponse
 @csrf_exempt
 def stripe_webhook(request):
     """
-    POST (no auth, raw body) – receive Stripe webhook events.
-    Handles: checkout.session.completed → fulfill_paid_order()
+    POST (no auth, raw body) � receive Stripe webhook events.
+    Handles: checkout.session.completed ? fulfill_paid_order()
     """
     if request.method != "POST":
         return HttpResponse(status=405)
@@ -1299,7 +1303,7 @@ def stripe_webhook(request):
                 order_id = _uuid.UUID(order_id_str)
                 school_id = _uuid.UUID(school_id_str) if school_id_str else None
 
-                # ── Fetch Stripe line items for accurate donation accounting ──
+                # -- Fetch Stripe line items for accurate donation accounting --
                 # Stripe documents retrieving line items separately post-session
                 # to capture optional items the buyer may have selected. :contentReference[oaicite:0]{index=0}
                 totals = None
@@ -1316,7 +1320,7 @@ def stripe_webhook(request):
                 order = fulfill_paid_order(order_id=order_id)
                 mark_event_processed(provider=provider_name, event_id=event_id, school_id=school_id)
 
-                # ── Receipt + email outbox ──────────────────────────────────
+                # -- Receipt + email outbox ----------------------------------
                 try:
                     _create_receipt_and_queue_email(
                         order=order,
@@ -1324,7 +1328,7 @@ def stripe_webhook(request):
                         provider_payment_intent_id=str(session_data.get("payment_intent") or ""),
                     )
                 except Exception:
-                    pass  # receipt creation is best-effort; fulfillment already succeeded
+                    logger.exception("stripe_webhook: receipt creation failed after order fulfillment")
 
             except Exception as exc:
                 return HttpResponse(f"Fulfillment error: {exc}", status=500)
@@ -1337,15 +1341,15 @@ def stripe_webhook(request):
 
 
 # ===========================================================================
-# Stage 3.3 – Section pricing + best-available checkout
+# Stage 3.3 � Section pricing + best-available checkout
 # ===========================================================================
 
 @api_view(["GET", "POST"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def event_section_prices(request, event_id):
     """
-    GET  → list section prices for an event.
-    POST { section, price_cents } → upsert a section price (requires advancement.edit).
+    GET  ? list section prices for an event.
+    POST { section, price_cents } ? upsert a section price (requires advancement.edit).
     """
     school = _require_school(request)
     from .models_stage3_3 import EventSectionPrice
@@ -1357,7 +1361,7 @@ def event_section_prices(request, event_id):
         )
         return Response({"event_id": str(event_id), "prices": prices})
 
-    # POST – require write permission
+    # POST � require write permission
     require_permission(request, "advancement.edit")
     data = request.data
     section = data.get("section", "").strip()
@@ -1386,7 +1390,7 @@ def event_section_prices(request, event_id):
 def seating_best_available_checkout(request):
     """
     POST { event_id, purchaser_name, purchaser_email, count, preferred_sections? }
-    → select best available seats + create Stripe Checkout session.
+    ? select best available seats + create Stripe Checkout session.
     """
     school = _require_school(request)
     data = request.data
@@ -1421,7 +1425,7 @@ def seating_best_available_checkout(request):
 
 
 # ===========================================================================
-# Stage 3.4 – Receipts, Sponsor placements, Apple Wallet, Google Wallet
+# Stage 3.4 � Receipts, Sponsor placements, Apple Wallet, Google Wallet
 # ===========================================================================
 
 @api_view(["GET"])
@@ -1429,7 +1433,7 @@ def seating_best_available_checkout(request):
 def event_sponsors(request, event_id):
     """
     GET /events/<uuid:event_id>/sponsors/
-    → list active sponsor placements for a given event (for pre-checkout UI tile display).
+    ? list active sponsor placements for a given event (for pre-checkout UI tile display).
     """
     school = _require_school(request)
     import uuid as _uuid
@@ -1463,7 +1467,7 @@ def event_sponsors(request, event_id):
 def apple_wallet_pass(request, ticket_id):
     """
     GET /wallet/apple/tickets/<uuid:ticket_id>.pkpass
-    → proxy to the Apple pass microservice and stream the .pkpass file.
+    ? proxy to the Apple pass microservice and stream the .pkpass file.
     Returns 501 if APPLE_PASS_SERVICE_URL / cert settings are not configured.
     """
     from django.conf import settings as _s
@@ -1480,13 +1484,13 @@ def apple_wallet_pass(request, ticket_id):
 
     try:
         import uuid as _uuid
-        t = Ticket.objects.get(id=_uuid.UUID(str(ticket_id)), school_id=school.id)
+        t = Ticket.objects.get(pk=_uuid.UUID(str(ticket_id)), school_id=school.id)
     except Exception:
         return Response({"detail": "Ticket not found."}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         ts = TicketSeat.objects.get(ticket_id=t.id, school_id=school.id)
-        seat = Seat.objects.get(id=ts.seat_id, school_id=school.id)
+        seat = Seat.objects.get(pk=ts.seat_id, school_id=school.id)
         seat_label = f"{seat.section}-{seat.row}-{seat.number}"
     except Exception:
         seat_label = "See ticket"
@@ -1519,7 +1523,7 @@ def apple_wallet_pass(request, ticket_id):
 def google_wallet_link(request, ticket_id):
     """
     GET /wallet/google/tickets/<uuid:ticket_id>/link/
-    → returns { ok, save_url } containing a signed JWT "Add to Google Wallet" link.
+    ? returns { ok, save_url } containing a signed JWT "Add to Google Wallet" link.
     Returns 501 if GOOGLE_WALLET_ISSUER_ID / service-account JSON not configured.
     """
     from django.conf import settings as _s
@@ -1536,13 +1540,13 @@ def google_wallet_link(request, ticket_id):
 
     try:
         import uuid as _uuid
-        t = Ticket.objects.get(id=_uuid.UUID(str(ticket_id)), school_id=school.id)
+        t = Ticket.objects.get(pk=_uuid.UUID(str(ticket_id)), school_id=school.id)
     except Exception:
         return Response({"detail": "Ticket not found."}, status=status.HTTP_404_NOT_FOUND)
 
     try:
         ts = TicketSeat.objects.get(ticket_id=t.id, school_id=school.id)
-        seat = Seat.objects.get(id=ts.seat_id, school_id=school.id)
+        seat = Seat.objects.get(pk=ts.seat_id, school_id=school.id)
         seat_label = f"{seat.section}-{seat.row}-{seat.number}"
     except Exception:
         seat_label = "See ticket"
@@ -1567,5 +1571,8 @@ def google_wallet_link(request, ticket_id):
         from .google_wallet import make_google_wallet_save_url
         save_url = make_google_wallet_save_url(ticket_object_payload=ticket_object_payload)
         return Response({"ok": True, "save_url": save_url}, status=status.HTTP_200_OK)
-    except Exception as exc:
-        return Response({"ok": False, "message": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+    except Exception:
+        return Response(
+            {"ok": False, "message": "Unable to generate Google Wallet save URL."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )

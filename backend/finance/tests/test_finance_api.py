@@ -23,6 +23,8 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from core.models import School, UserAccount
+from households.models import Guardian as HouseholdGuardian, Household
+from ledger.models import LedgerAccount
 from finance.models import (
     FinanceAllocation,
     FinanceInvoice,
@@ -53,7 +55,28 @@ def _user(username, *, is_staff=False):
     )
 
 
+def _link_payer_to_household(school, payer):
+    existing = HouseholdGuardian.objects.filter(
+        school_id=school.id,
+        email__iexact=payer.email,
+    ).select_related("household").first()
+    if existing:
+        hh = existing.household
+    else:
+        hh = Household.objects.create(school_id=school.id, name=f"HH-{payer.username}")
+        HouseholdGuardian.objects.create(
+            school_id=school.id,
+            household=hh,
+            first_name="Test",
+            last_name="Guardian",
+            email=payer.email,
+            is_primary=True,
+        )
+    LedgerAccount.objects.get_or_create(school_id=school.id, household=hh)
+
+
 def _obligation(school, payer, *, amount_cents=10_000, days=30):
+    _link_payer_to_household(school, payer)
     return FinanceObligation.objects.create(
         school=school,
         payer_user=payer,
@@ -66,6 +89,7 @@ def _obligation(school, payer, *, amount_cents=10_000, days=30):
 
 
 def _payment(school, payer, *, amount_cents=10_000, processor=Processor.MANUAL):
+    _link_payer_to_household(school, payer)
     return FinancePayment.objects.create(
         school=school,
         payer_user=payer,

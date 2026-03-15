@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 def director_dashboard_page(request, persona=None):
     """
     Serve the Director Dashboard HTML page with persona-based context.
-    
+
     Supports both:
     - /director/  Auto-detect persona from user's role
     - /director/admissions/  Explicit persona from URL
@@ -16,7 +16,7 @@ def director_dashboard_page(request, persona=None):
     # Use URL persona if provided, otherwise detect from user
     if not persona:
         persona = get_director_persona(request.user)
-    
+
     filter_config = get_director_filter_config(persona)
 
     # Look up real school + academic year from DB so the template doesn't use
@@ -56,7 +56,7 @@ def director_dashboard_page(request, persona=None):
             'actions': '/api/director/actions/',
         }
     }
-    
+
     return render(request, "director_dashboard.html", context)
 
 
@@ -103,7 +103,7 @@ def _get_active_persona(request) -> str | None:
             if obj:
                 return str(obj).strip().lower()
         except AttributeError:
-            pass
+            logger.debug("persona lookup attribute missing: %s", attr_path)
 
     # 3) Group fallback (if you use Django groups)
     try:

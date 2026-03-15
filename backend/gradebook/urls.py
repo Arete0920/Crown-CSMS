@@ -17,6 +17,7 @@ from .views_parent import student_grades_summary
 
 
 router = SimpleRouter()
+router.include_format_suffixes = False
 router.register(r"gradebook/sections", GradebookSectionViewSet, basename="gradebook-sections")
 
 urlpatterns = [

@@ -64,7 +64,7 @@ def ensure_ci_user(request):
     DEV-only: Idempotently ensure CI smoke user exists and return JWT.
     Reads credentials from Azure App Service settings (CI_SMOKE_*).
     Guarded by X-Admin-Ops-Secret header.
-    
+
     Returns JWT for immediate use in smoke tests.
     """
     if not _dev_ops_enabled():
@@ -108,7 +108,7 @@ def ensure_ci_user(request):
 
     # Idempotent password reset (matches Azure setting)
     user.set_password(password)
-    
+
     # Bind tenant context
     if hasattr(user, "school_id"):
         user.school_id = school_id
@@ -225,38 +225,38 @@ def ops_summary(request):
         from students.models import Student
         students = _safe_count(Student)
     except Exception:
-        pass
+        logger.exception("ops_summary: failed to load students count")
 
     try:
         from households.models import Household
         households = _safe_count(Household)
     except Exception:
-        pass
+        logger.exception("ops_summary: failed to load households count")
 
     try:
         from admissions.models import AdmissionsApplication
         admissions_apps = _safe_count(AdmissionsApplication)
     except Exception:
-        pass
+        logger.exception("ops_summary: failed to load admissions count")
 
     try:
         from billing.models import Invoice
         invoices = _safe_count(Invoice)
     except Exception:
-        pass
+        logger.exception("ops_summary: failed to load invoices count")
 
     try:
         from gradebook.models import GradeEntry
         grade_entries = _safe_count(GradeEntry)
     except Exception:
-        pass
+        logger.exception("ops_summary: failed to load gradebook count")
 
     try:
         from comms.models import Thread, Message
         comm_threads = _safe_count(Thread)
         comm_messages = _safe_count(Message)
     except Exception:
-        pass
+        logger.exception("ops_summary: failed to load comms counts")
 
     payload = {
         "ok": True,
@@ -299,7 +299,7 @@ def ops_alerts(request):
     alerts = []
     deps = {"admissions": False, "finance": False, "gradebook": False}
     errors = []
-    
+
     # Strict mode: if any import fails + strict=1, return 500
     strict = request.GET.get("strict") == "1"
 

@@ -49,7 +49,7 @@ class SchoolScopedViewSet(viewsets.ModelViewSet):
     def _school(self):
         from core.models import School
         sid = self.get_school_id()
-        return School.objects.get(id=sid)
+        return School.objects.get(pk=sid)
 
 
 class LocationViewSet(SchoolScopedViewSet):
@@ -110,7 +110,7 @@ class WorkOrderViewSet(SchoolScopedViewSet):
     def transition(self, request, pk=None):
         school_id = self.get_school_id()
         try:
-            wo = WorkOrder.objects.get(id=pk, school_id=school_id)
+            wo = WorkOrder.objects.get(pk=pk, school_id=school_id)
         except WorkOrder.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
         new_status = request.data.get("status", "")

@@ -1,27 +1,14 @@
-﻿"""Canonical dashboard API URLs."""
 from django.urls import path
-from crown_api.dashboards.views import (
-    DashboardAlertsView,
-    DashboardDrilldownView,
-    DashboardMeView,
-    DashboardSummaryView,
-)
-from crown_api.dashboards.admissions import AdmissionsFunnelView
-from crown_api.dashboards.finance import FinanceSummaryView
-from crown_api.dashboards.academics import EnrollmentSnapshotView
+
+from .academics import EnrollmentSnapshotView
+from .admissions import AdmissionsFunnelDashboard
+from .finance import FinanceSummaryDashboard
+from .views import DashboardSummaryView
+
 
 urlpatterns = [
-    # Legacy contract endpoints
-    path("dashboards/me/", DashboardMeView.as_view(), name="dashboards-me"),
-    path("dashboards/summary/", DashboardSummaryView.as_view(), name="dashboards-summary"),
-    path("dashboards/drilldown/", DashboardDrilldownView.as_view(), name="dashboards-drilldown"),
-    path("dashboards/alerts/", DashboardAlertsView.as_view(), name="dashboards-alerts"),
-
-    # Tenant isolation dashboard endpoints
-    path("dashboards/admissions/funnel/", AdmissionsFunnelView.as_view(), name="dashboards-admissions-funnel"),
-    path("dashboards/finance/summary/", FinanceSummaryView.as_view(), name="dashboards-finance-summary"),
-    path("dashboards/academics/enrollment/", EnrollmentSnapshotView.as_view(), name="dashboards-academics-enrollment"),
-
-    # Existing canonical day-2 endpoint
-    path("dashboard/me/", DashboardMeView.as_view(), name="dashboard-me"),
+    path("admissions/funnel/", AdmissionsFunnelDashboard.as_view(), name="dashboard-admissions-funnel"),
+    path("finance/summary/", FinanceSummaryDashboard.as_view(), name="dashboard-finance-summary"),
+    path("academics/enrollment/", EnrollmentSnapshotView.as_view(), name="dashboard-academics-enrollment"),
+    path('<slug:dashboard_key>/summary', DashboardSummaryView.as_view(), name='dashboard-summary'),
 ]

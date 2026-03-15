@@ -874,7 +874,7 @@ class TestPastoralNotes:
             HTTP_X_SCHOOL_ID=str(school.id),
         )
         assert resp.status_code == 204
-        assert not PastoralNote.objects.filter(id=note.id).exists()
+        assert not PastoralNote.objects.filter(pk=note.id).exists()
 
     def test_missing_required_fields_returns_400(self):
         school = _mk_school()

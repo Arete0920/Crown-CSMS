@@ -1,228 +1,147 @@
-﻿import { useEffect, useState } from 'react';
-import { authenticatedFetch } from '../utils/authClient.js';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
-import ErrorBanner from '../components/ui/ErrorBanner.jsx';
-import CrownCard from '../components/crown/CrownCard.jsx';
-import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
-const API_BASE = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
+import DailyDevotion from '../components/dashboard/DailyDevotion.jsx';
+import SpecialDays from '../components/dashboard/SpecialDays.jsx';
+import KpiCard from '../components/dashboard/KpiCard.jsx';
+import KpiCardGrid from '../components/dashboard/KpiCardGrid.jsx';
+import ProgressGoalCard from '../components/dashboard/ProgressGoalCard.jsx';
+import HealthRingCard from '../components/dashboard/HealthRingCard.jsx';
+import TrendChartCard from '../components/dashboard/TrendChartCard.jsx';
 
-async function fetchParentOverview() {
-  const res = await authenticatedFetch(`${API_BASE}/api/parent360/me/overview/`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+import ParentAtAGlanceCard from '../components/dashboard/parent/ParentAtAGlanceCard.jsx';
+import ParentPrioritiesPanel from '../components/dashboard/parent/ParentPrioritiesPanel.jsx';
+import ParentAlertsPanel from '../components/dashboard/parent/ParentAlertsPanel.jsx';
+import ParentActivityFeedCard from '../components/dashboard/parent/ParentActivityFeedCard.jsx';
+import ParentChildrenSnapshotCard from '../components/dashboard/parent/ParentChildrenSnapshotCard.jsx';
+import ParentCalendarCard from '../components/dashboard/parent/ParentCalendarCard.jsx';
+import ParentMessagesCard from '../components/dashboard/parent/ParentMessagesCard.jsx';
+import ParentReportsCard from '../components/dashboard/parent/ParentReportsCard.jsx';
 
-function fmtDollars(cents) {
-  if (cents === null || cents === undefined) return '—';
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function fmtPct(n) {
-  if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(1)}%`;
-}
-
-function AlertBanner({ alerts }) {
-  if (!alerts?.length) return null;
-  return (
-    <div style={{ marginBottom: 10 }}>
-      {alerts.map((a, i) => (
-        <div
-          key={i}
-          style={{
-            background: 'var(--crown-warn-bg)',
-            border: '1px solid var(--crown-warn)',
-            borderRadius: 6,
-            padding: '7px 12px',
-            marginBottom: 5,
-            fontSize: '0.85rem',
-          }}
-        >
-          ⚠ {a.message}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ChildCard({ child }) {
-  const avg = child.current_average !== null ? fmtPct(child.current_average) : '—';
-  const gpa = child.gpa !== null ? String(child.gpa) : '—';
-  const balance = child.financial?.available ? fmtDollars(child.financial.balance_cents) : '—';
-  const svc = child.service_hours?.available
-    ? `${Number(child.service_hours.completed).toFixed(1)} / ${child.service_hours.required} hrs`
-    : '—';
-
-  return (
-    <div
-      style={{
-        border: '1px solid var(--crown-border)',
-        borderRadius: 10,
-        padding: '14px 16px',
-        marginBottom: 12,
-        background: 'var(--crown-surface)',
-      }}
-    >
-      <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 8 }}>
-        {child.first_name} {child.last_name}
-        {child.grade_level ? (
-          <span style={{ fontWeight: 400, color: 'var(--crown-muted)', marginLeft: 8, fontSize: '0.85rem' }}>
-            Grade {child.grade_level}
-          </span>
-        ) : null}
-      </div>
-
-      <AlertBanner alerts={child.alerts} />
-
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-        {[
-          { label: 'Average', value: avg },
-          { label: 'GPA (est.)', value: gpa },
-          { label: 'Missing', value: String(child.missing_assignments) },
-          { label: 'Balance', value: balance },
-          { label: 'Service Hrs', value: svc },
-        ].map(({ label, value }) => (
-          <div
-            key={label}
-            style={{
-              background: 'var(--crown-surface-2)',
-              border: '1px solid var(--crown-border)',
-              borderRadius: 6,
-              padding: '6px 12px',
-              minWidth: 90,
-            }}
-          >
-            <div style={{ fontSize: '0.7rem', color: 'var(--crown-muted)', textTransform: 'uppercase' }}>{label}</div>
-            <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{value}</div>
-          </div>
-        ))}
-      </div>
-
-      {child.upcoming_assignments?.length > 0 && (
-        <div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--crown-muted)', marginBottom: 4 }}>Upcoming</div>
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.85rem' }}>
-            {child.upcoming_assignments.map((a, i) => {
-              const due = a.due_date ? new Date(a.due_date).toLocaleDateString() : '—';
-              return (
-                <li key={i} style={{ marginBottom: 2 }}>
-                  {a.name} <span style={{ color: 'var(--crown-muted)' }}>· due {due}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* â”€â”€ Parent KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const ADMIN_KPI = [
-  { label: "My Children",       value: "2",    trend: null,              trendUp: null,
-    definition: "Number of enrolled students linked to your parent or guardian account.",
-    dataSource: "Enrollment Module", dataHref: "/student" },
-  { label: "Upcoming Events",   value: "4",    trend: null,              trendUp: null,
-    definition: "School events in the next 14 days relevant to your family.",
-    dataSource: "Calendar Module", dataHref: "/calendar" },
-  { label: "Unread Messages",   value: "3",    trend: null,              trendUp: null,
-    definition: "Unread messages from teachers, administrators, or the school office.",
-    dataSource: "Communications Module", dataHref: "/communications" },
-  { label: "Balance Due",       value: "$450", trend: null,              trendUp: null,
-    definition: "Total outstanding tuition or fee balance on your household account.",
-    dataSource: "Billing Module", dataHref: "/billing" },
-];
 export default function ParentDashboard() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchParentOverview()
-      .then(setData)
-      .catch((err) => {
-        setError(`Dashboard unavailable — API error: ${err.message}`);
-      });
-  }, []);
-
-  const hh = data?.household || {};
-  const children = data?.children || [];
-  const balance = hh.balance_cents !== undefined ? fmtDollars(hh.balance_cents) : '—';
-  const childCount = data?.children_count ?? (data ? children.length : null);
-  const missingTotal = data?.missing_assignments_total ?? 0;
-  const upcomingTotal = data?.upcoming_assignments_total ?? 0;
-
-  // Aggregate any child alerts for the top banner
-  const allAlerts = children.flatMap((c) => c.alerts || []);
-
   return (
     <CrownLayout
-      title="Parent Dashboard"
-      subtitle={hh.name ? `${hh.name} · Family overview` : 'Family academics, finance, and alerts'}
+      title="Parent Portal"
+      subtitle="Your children, assignments, attendance, tuition, messages, and family events"
     >
-      <KpiStrip cards={ADMIN_KPI} />
-      <ErrorBanner title="Dashboard unavailable" message={error} />
+      <h1 className="text-2xl font-semibold tracking-tight">Parent Dashboard</h1>
 
-      {!data && !error && (
-        <div style={{ opacity: 0.6, padding: 24 }}>Loading dashboard…</div>
-      )}
+      <DashboardSection title="Daily Mission and Family Snapshot">
+        <CrownGrid>
+          <Col span={6}><DailyDevotion /></Col>
+          <Col span={3}><SpecialDays /></Col>
+          <Col span={3}><ParentAtAGlanceCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      {data && (
-        <>
-          {allAlerts.length > 0 && <AlertBanner alerts={allAlerts} />}
+      <DashboardSection title="Family Action">
+        <CrownGrid>
+          <Col span={3}><ParentPrioritiesPanel /></Col>
 
-          <CrownGrid>
-            <Col span={3}>
-              <CrownMetricCard label="Household Balance" value={balance} hint="Open invoices" />
-            </Col>
-            <Col span={3}>
-              <CrownMetricCard
-                label="Children"
-                value={childCount !== null ? String(childCount) : '—'}
-                hint="Active students"
-              />
-            </Col>
-            <Col span={3}>
-              <CrownMetricCard
-                label="Missing Assignments"
-                value={String(missingTotal)}
-                hint="Across all children"
-              />
-            </Col>
-            <Col span={3}>
-              <CrownMetricCard
-                label="Upcoming"
-                value={String(upcomingTotal)}
-                hint="Due in 7 days"
-              />
-            </Col>
+          <Col span={6}>
+            <KpiCardGrid>
+              <KpiCard title="Household Balance" value="$620" trend="Current balance" icon="BIL" tone="default" />
+              <KpiCard title="Children" value="2" trend="In active classes" icon="FAM" tone="good" />
+              <KpiCard title="Missing Assignments" value="7" trend="Across all children" icon="ASN" tone="warn" />
+              <KpiCard title="Upcoming" value="5" trend="Events and due dates" icon="CAL" tone="good" />
+            </KpiCardGrid>
+          </Col>
 
-            <Col span={12}>
-              <CrownCard title="Children">
-                {children.length === 0 ? (
-                  <div style={{ opacity: 0.65 }}>No active children linked to this household.</div>
-                ) : (
-                  children.map((child) => <ChildCard key={child.id} child={child} />)
-                )}
-              </CrownCard>
-            </Col>
+          <Col span={3}><ParentAlertsPanel /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-            <Col span={12}>
-              <CrownCard title="Quick Links">
-                <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <a className="crown-btn" href="/academics/parent-snapshot">Parent Snapshot</a>
-                  <a className="crown-btn" href="/parent/attendance">Attendance</a>
-                  <a className="crown-btn" href="/finance/invoices">Invoices</a>
-                  <a className="crown-btn" href="/communications">Messages</a>
-                </nav>
-              </CrownCard>
-            </Col>
-          </CrownGrid>
-        </>
-      )}
+      <DashboardSection title="Family Health">
+        <CrownGrid>
+          <Col span={4}>
+            <ProgressGoalCard
+              title="Tuition Progress"
+              current={9380}
+              goal={10000}
+              percentLabel="94%"
+              detail="$9,380 of $10,000 paid"
+              colorClass="var(--crown-brand)"
+            />
+          </Col>
+
+          <Col span={4}>
+            <ProgressGoalCard
+              title="Assignment Completion"
+              current={86}
+              goal={100}
+              percentLabel="86%"
+              detail="Current work completion across children"
+              colorClass="#059669"
+            />
+          </Col>
+
+          <Col span={4}>
+            <HealthRingCard
+              title="Student Wellness"
+              percent={89}
+              subtitle="Family overview"
+              detail="Attendance and participation are healthy overall. One student needs assignment follow-up."
+            />
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Family Trends">
+        <CrownGrid>
+          <Col span={6}>
+            <TrendChartCard
+              title="Grades Trend"
+              subtitle="Recent grade movement"
+              labels={['Week 1', 'Week 2', 'Week 3', 'Week 4']}
+              datasets={[
+                {
+                  label: 'Average Grade',
+                  data: [87, 89, 88, 90],
+                  borderColor: '#004687',
+                },
+              ]}
+            />
+          </Col>
+
+          <Col span={6}>
+            <TrendChartCard
+              title="Attendance Trend"
+              subtitle="Recent family attendance pattern"
+              labels={['Week 1', 'Week 2', 'Week 3', 'Week 4']}
+              datasets={[
+                {
+                  label: 'Attendance %',
+                  data: [96, 95, 97, 96],
+                  borderColor: '#004687',
+                },
+              ]}
+            />
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Recent Family Detail">
+        <CrownGrid>
+          <Col span={4}><ParentActivityFeedCard /></Col>
+          <Col span={8}><ParentChildrenSnapshotCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Events, Messages, and Reports">
+        <CrownGrid>
+          <Col span={4}><ParentCalendarCard /></Col>
+          <Col span={4}><ParentMessagesCard /></Col>
+          <Col span={4}><ParentReportsCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Quick Links">
+        <CrownGrid>
+          <Col span={6}><a href="/academics/parent-snapshot">Academics Snapshot</a></Col>
+          <Col span={6}><a href="/finance/invoices">Finance Invoices</a></Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }

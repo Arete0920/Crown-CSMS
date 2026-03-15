@@ -56,7 +56,7 @@ def configure(request, session_id):
     if not term_code:
         return Response({"error": "term_code required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    ay = AcademicYear.objects.filter(id=ay_id, school__id=school_id).first()
+    ay = AcademicYear.objects.filter(pk=ay_id, school_id=school_id).first()
     if not ay:
         return Response({"error": "AcademicYear not found"}, status=status.HTTP_404_NOT_FOUND)
 

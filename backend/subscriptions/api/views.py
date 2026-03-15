@@ -65,7 +65,7 @@ def me_entitlements(request) -> Response:
         return Response({"error": "No active subscription found for this school."}, status=404)
 
     # Build full entitlement map from plan + overrides + usage counters
-    features = Feature.objects.all()
+    features = Feature.objects.order_by("key")
     entitlements: dict[str, dict] = {}
     for feature in features:
         try:
@@ -111,7 +111,7 @@ def plan_list(request) -> Response:
 @permission_classes([IsAuthenticated])
 def feature_list(request) -> Response:
     """List all registered feature keys."""
-    features = Feature.objects.all()
+    features = Feature.objects.order_by("key")
     serializer = FeatureSerializer(features, many=True)
     return Response(serializer.data)
 

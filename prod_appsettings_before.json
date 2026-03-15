@@ -132,12 +132,12 @@
   {
     "name": "SECRET_KEY",
     "slotSetting": false,
-    "value": "crown-0lCQAcX5d76n-Jv5t7VfTMMMdC9G0vn4IdkqbZXjXOSTvDlxwXGIokX-lr0IjPSXoPmtbZOvkODrFBeelinlFQ"
+    "value": "<redacted>"
   },
   {
     "name": "DB_PASSWORD",
     "slotSetting": false,
-    "value": "Cr3Bj8Je2qrzX8ZVnqis9dx%AF4bFCh!aB"
+    "value": "<redacted>"
   },
   {
     "name": "CI_SMOKE_USERNAME",
@@ -147,7 +147,7 @@
   {
     "name": "CI_SMOKE_PASSWORD",
     "slotSetting": false,
-    "value": "PlaywrightDemo1!"
+    "value": "<redacted>"
   },
   {
     "name": "CI_SMOKE_SCHOOL_ID",
@@ -162,11 +162,11 @@
   {
     "name": "DATABASE_URL",
     "slotSetting": false,
-    "value": "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?sslmode=require"
+    "value": "postgresql://<redacted>:<redacted>@<redacted>:5432/<redacted>?sslmode=require"
   },
   {
     "name": "DEV_OPS_SECRET",
     "slotSetting": false,
-    "value": "TempOpsSeed2026"
+    "value": "<redacted>"
   }
 ]

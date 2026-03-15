@@ -15,6 +15,7 @@ from facops.api.views import (
 )
 
 router = DefaultRouter()
+router.include_format_suffixes = False
 router.register(r"facilities/locations", LocationViewSet, basename="facilities-locations")
 router.register(r"facilities/assets", AssetViewSet, basename="facilities-assets")
 router.register(r"facilities/work-orders", WorkOrderViewSet, basename="facilities-work-orders")

@@ -42,7 +42,7 @@ def _require_staff(request):
 @permission_classes([IsAuthenticated])
 def enroll_applicant(request):
     school_id = get_request_school_id(request, required=True)  # 400 if missing, 404 if wrong tenant
-    school = School.objects.get(id=school_id)
+    school = School.objects.get(pk=school_id)
 
     denied = _require_staff(request)
     if denied is not None:

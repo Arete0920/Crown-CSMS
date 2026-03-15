@@ -39,6 +39,7 @@ jobs:
           echo "OK Unauth invoices returned $code (403=auth enforced, 404=not yet deployed)"
 
       - name: Ensure CI user and get JWT (optional — requires Azure DEV seed)
+        id: ensure_ci_user
         continue-on-error: true
         env:
           OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
@@ -48,7 +49,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Admin-Ops-Secret: $OPS_SECRET" \
             -H "X-School-Id: $SMOKE_SCHOOL_ID")
-          
+
           token=$(echo "$resp" | jq -r '.access')
           if [ -z "$token" ] || [ "$token" = "null" ]; then
             echo "WARN ensure-ci-user did not return a token — Azure DEV may not be seeded with school $SMOKE_SCHOOL_ID"
@@ -56,12 +57,13 @@ jobs:
             echo "SKIPPING Check 3 (auth invoices)."
             exit 0
           fi
-          
+
+          echo "token=$token" >> $GITHUB_OUTPUT
           echo "TOKEN=$token" >> $GITHUB_ENV
           echo "OK CI user ensured + JWT acquired"
 
       - name: Check 3 - Auth invoices returns 200 (optional — skipped if no JWT)
-        if: env.TOKEN != ''
+        if: steps.ensure_ci_user.outputs.token != ''
         continue-on-error: true
         run: |
           set -e

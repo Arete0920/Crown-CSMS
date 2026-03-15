@@ -58,7 +58,7 @@ class Command(BaseCommand):
             self.stderr.write(self.style.ERROR(f"Invalid UUID: {school_id_str}"))
             return
 
-        school = School.objects.filter(id=school_uuid).first()
+        school = School.objects.filter(pk=school_uuid).first()
         if not school:
             self.stderr.write(self.style.ERROR(f"School {school_uuid} not found"))
             return

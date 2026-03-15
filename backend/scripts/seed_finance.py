@@ -13,7 +13,11 @@ Note: This seed expects households from scripts/seed_households.py.
 
 import os
 import re
+import logging
 from datetime import date
+
+
+logger = logging.getLogger(__name__)
 
 
 def _refuse_if_azure() -> None:
@@ -37,7 +41,7 @@ def run() -> None:
 
   from crown_api.models import Household, Invoice, Payment
 
-  households = list(Household.objects.all().order_by("household_name"))
+  households = list(Household.objects.order_by("household_name"))
   if not households:
     raise SystemExit("No households found. Run scripts/seed_households.py first.")
 
@@ -74,9 +78,9 @@ def run() -> None:
       },
     )
 
-  print("Seeded finance:")
-  print(f"- Invoices: {Invoice.objects.count()}")
-  print(f"- Payments: {Payment.objects.count()}")
+  logger.info("Seeded finance:")
+  logger.info("- Invoices: %s", Invoice.objects.count())
+  logger.info("- Payments: %s", Payment.objects.count())
 
 
 if __name__ == "__main__":

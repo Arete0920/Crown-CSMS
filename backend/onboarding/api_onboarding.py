@@ -29,7 +29,7 @@ def onboarding_progress(request, school_id):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
     try:
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
     except School.DoesNotExist:
         return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -59,7 +59,7 @@ def mark_task_complete(request, school_id, task_id):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
     try:
-        task = OnboardingTask.objects.get(id=task_id, school_id=school_id)
+        task = OnboardingTask.objects.get(pk=task_id, school_id=school_id)
     except OnboardingTask.DoesNotExist:
         return Response({"detail": "Task not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -79,7 +79,7 @@ def activation_gate(request, school_id):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
     try:
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
     except School.DoesNotExist:
         return Response({"detail": "School not found."}, status=status.HTTP_404_NOT_FOUND)
 

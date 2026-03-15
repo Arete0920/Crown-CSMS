@@ -19,6 +19,14 @@ function Step($name, [scriptblock]$fn) {
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $repoRoot
 
+# Prefer globally installed Node, but support a portable fallback on locked-down Windows hosts.
+$portableNodeHome = "C:\Temp\node-portable\node-v24.14.0-win-x64"
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+  if (Test-Path (Join-Path $portableNodeHome "node.exe")) {
+    $env:PATH = "$portableNodeHome;$env:PATH"
+  }
+}
+
 $fe = "frontend/dashboards"
 if (-not (Test-Path $fe)) {
   Write-Host "frontend/dashboards not found; skipping frontend audit" -ForegroundColor Yellow
@@ -26,6 +34,12 @@ if (-not (Test-Path $fe)) {
 }
 
 Step "Node / npm version" {
+  if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw "Node.js not found on PATH. Install Node LTS or provide portable Node at $portableNodeHome"
+  }
+  if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    throw "npm not found on PATH. Ensure Node.js installation includes npm."
+  }
   node --version
   npm --version
 }
@@ -37,7 +51,7 @@ Step "No hard-coded API base URLs in source" {
     "$fe/src/**/*.ts",
     "$fe/src/**/*.tsx"
   )
-  $dangerousPatterns = "http://localhost:8000|https://localhost:|/api/v1|crown-api\.azurewebsites|REACT_APP_API_URL\s*="
+  $dangerousPatterns = "https?://(localhost|127\.0\.0\.1)(:\d+)?|crown-api\.azurewebsites|REACT_APP_API_URL\s*="
   $hits = @()
   foreach ($glob in $srcGlobs) {
     $files = Get-ChildItem -Path $glob -ErrorAction SilentlyContinue
@@ -48,7 +62,7 @@ Step "No hard-coded API base URLs in source" {
   }
   if ($hits) {
     Write-Host "Hard-coded API refs detected:" -ForegroundColor Yellow
-    $hits | Select-Object Path,LineNumber,Line | Format-Table -AutoSize
+    $hits | Select-Object Path, LineNumber, Line | Format-Table -AutoSize
     throw "Hard-coded API refs found. Ensure API base URL comes from environment variables (VITE_API_BASE or REACT_APP_API_URL)."
   }
 }
@@ -68,14 +82,14 @@ Step "package.json has required scripts" {
 
 Step "No .env files committed (secrets hygiene)" {
   $envFiles = @(".env", ".env.local", ".env.production", ".env.staging") |
-    ForEach-Object { Join-Path $fe $_ } |
-    Where-Object { Test-Path $_ }
+  ForEach-Object { Join-Path $fe $_ } |
+  Where-Object { Test-Path $_ }
   if ($envFiles) {
-    # Verify they are .gitignored — fail if tracked by git
+    # Verify they are .gitignored - fail if tracked by git
     foreach ($ef in $envFiles) {
-      $tracked = git ls-files --error-unmatch $ef 2>$null
-      if ($LASTEXITCODE -eq 0) {
-        throw "Committed .env file detected: $ef — remove from git tracking and add to .gitignore"
+      $tracked = git ls-files -- $ef
+      if ($tracked) {
+        throw "Committed .env file detected: $ef - remove from git tracking and add to .gitignore"
       }
     }
     Write-Host "  .env file(s) exist but are not tracked by git (OK)" -ForegroundColor DarkGray
@@ -85,8 +99,12 @@ Step "No .env files committed (secrets hygiene)" {
 Step "npm install (ci)" {
   Push-Location $fe
   try {
-    npm ci --silent
-  } finally {
+    cmd /c "npm ci --silent"
+    if ($LASTEXITCODE -ne 0) {
+      throw "npm ci failed with exit code $LASTEXITCODE"
+    }
+  }
+  finally {
     Pop-Location
   }
 }
@@ -94,8 +112,12 @@ Step "npm install (ci)" {
 Step "Frontend build" {
   Push-Location $fe
   try {
-    npm run build --silent
-  } finally {
+    cmd /c "npm run build --silent"
+    if ($LASTEXITCODE -ne 0) {
+      throw "frontend build failed with exit code $LASTEXITCODE"
+    }
+  }
+  finally {
     Pop-Location
   }
 }

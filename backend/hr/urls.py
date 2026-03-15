@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .api import EmployeeViewSet, hr_metrics
 
 router = DefaultRouter()
+router.include_format_suffixes = False
 router.register(r"employees", EmployeeViewSet, basename="hr-employees")
 
 urlpatterns = [

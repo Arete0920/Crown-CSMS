@@ -24,5 +24,9 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      // Keep warning signal meaningful while avoiding noisy false alarms for this bundle profile.
+      chunkSizeWarningLimit: 2000,
+    },
   };
 });

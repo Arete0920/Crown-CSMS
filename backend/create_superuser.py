@@ -1,4 +1,9 @@
 from django.contrib.auth import get_user_model
+import logging
+
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -21,11 +26,11 @@ try:
     if school is not None and hasattr(user, "school_id"):
         user.school = school
         user.save(update_fields=["school"])
-        print(f"  School: {school.id} ({school.name})")
+        logger.info("  School: %s (%s)", school.id, school.name)
 except Exception:
     # If core.School isn't available in this deployment, skip silently.
-    pass
+    logger.debug("create_superuser: School model unavailable or user school assignment failed")
 
-print(f"✓ Superuser created: {user.username}")
-print(f"  Username: admin")
-print(f"  Password: Crown2026!")
+logger.info("Superuser created: %s", user.username)
+logger.info("  Username: admin")
+logger.info("  Password: Crown2026!")

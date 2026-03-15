@@ -77,7 +77,7 @@ def refresh(request):
     except Exception:
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 
-    user = CrownUser.objects.filter(id=user_uuid, is_active=True).first()
+    user = CrownUser.objects.filter(pk=user_uuid, is_active=True).first()
     if not user:
         return JsonResponse({"ok": False, "error": "invalid_refresh"}, status=401)
 

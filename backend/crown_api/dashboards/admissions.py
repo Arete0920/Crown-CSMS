@@ -20,7 +20,7 @@ class AdmissionsFunnelDashboard(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        school_id = get_dashboard_school_id(request, required=True, require_header=True)
+        school_id = get_dashboard_school_id(request, required=True)
 
         now = timezone.now()
         start = now - timedelta(days=30)

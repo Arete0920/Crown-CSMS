@@ -16,13 +16,14 @@ Endpoints:
 
 Invariants enforced here:
   - Tenant: every lookup filtered on school_id from X-School-Id header
-  - AY ownership: AcademicYear.objects.filter(id=..., school_id=...)
+  - AY ownership: AcademicYear.objects.filter(pk=..., school_id=...)
   - Band coverage: [0, 100] with no gaps/overlaps; consecutive max[i]+1 == min[i+1]
   - Weight sum: Σ weight_bp == 10 000
   - Single active: select_for_update + bulk flip to False before get_or_create
   - Idempotent commit: get_or_create scale + update_or_create bands/weights
   - Audit: grade_scale.commit event, non-fatal on failure
 """
+import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -49,6 +50,7 @@ from .models import (
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 VALID_SCALE_TYPES = {"LETTER", "PERCENT"}
 VALID_ROUNDING    = {"NEAREST", "FLOOR", "CEIL"}
@@ -288,7 +290,7 @@ def configure_session(request, session_id):
     if errors:
         return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-    ay = AcademicYear.objects.filter(id=ay_id, school_id=school_id).first()
+    ay = AcademicYear.objects.filter(pk=ay_id, school_id=school_id).first()
     if ay is None:
         return Response(
             {"error": "academic_year_id not found for this school"},
@@ -500,7 +502,7 @@ def commit_session(request, session_id):
             },
         )
     except Exception:
-        pass
+        logger.exception("commit_session: grade scale audit log create failed")
 
     result = {
         "scale_id":        str(scale.id),

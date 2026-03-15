@@ -27,8 +27,8 @@ def test_bootstrap_creates_school_when_id_provided():
     test_school_id = UUID('a5351136-98fe-4d48-add0-fa8f62d9ceff')
     
     # Ensure school doesn't exist
-    School.objects.filter(id=test_school_id).delete()
-    assert not School.objects.filter(id=test_school_id).exists()
+    School.objects.filter(pk=test_school_id).delete()
+    assert not School.objects.filter(pk=test_school_id).exists()
     
     # Run bootstrap with explicit school_id
     call_command(
@@ -39,7 +39,7 @@ def test_bootstrap_creates_school_when_id_provided():
     )
     
     # School should now exist
-    school = School.objects.get(id=test_school_id)
+    school = School.objects.get(pk=test_school_id)
     assert school.name == 'Crown Demo School'
     assert school.timezone == 'America/New_York'
     assert school.is_active is True
@@ -55,7 +55,7 @@ def test_bootstrap_idempotent_with_existing_school():
     test_school_id = UUID('a5351136-98fe-4d48-add0-fa8f62d9ceff')
     
     # First run: creates school
-    School.objects.filter(id=test_school_id).delete()
+    School.objects.filter(pk=test_school_id).delete()
     call_command(
         'golden_path_bootstrap',
         '--force',
@@ -72,4 +72,4 @@ def test_bootstrap_idempotent_with_existing_school():
     )
     
     # School still exists, no duplicates
-    assert School.objects.filter(id=test_school_id).count() == 1
+    assert School.objects.filter(pk=test_school_id).count() == 1

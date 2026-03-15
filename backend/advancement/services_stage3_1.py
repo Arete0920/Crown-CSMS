@@ -78,7 +78,7 @@ def build_availability_grid(*, school_id: uuid.UUID, event_id: uuid.UUID) -> dic
 
     # Fetch EventSeating to get the seating map
     try:
-        event = Event.objects.get(id=event_id, school_id=school_id)
+        event = Event.objects.get(pk=event_id, school_id=school_id)
     except Event.DoesNotExist:
         return {}
 

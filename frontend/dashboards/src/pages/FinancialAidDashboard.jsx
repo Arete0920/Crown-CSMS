@@ -6,6 +6,8 @@ import CrownMetricCard from "../components/crown/CrownMetricCard.jsx";
 import { CrownGrid, Col } from "../components/crown/CrownGrid.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
+import PageState from "../components/states/PageState.jsx";
+import WidgetState from "../components/states/WidgetState.jsx";
 
 /*
   Crown2026 � Financial Aid Dashboard
@@ -112,29 +114,55 @@ export function FinancialAidDashboard() {
       {/* CROWN_DASH_GRID_NORMALIZED */}
       {/* API contract: { academic_year, applications: { total, by_status }, awards: { total, total_amount, avg_amount, by_bucket } } */}
       <CrownGrid>
-        <Col span={3}><CrownMetricCard label="Applications" value={summaryLoading ? "�" : String(summary?.applications?.total ?? "�")} hint="Total submitted" /></Col>
-        <Col span={3}><CrownMetricCard label="Awards" value={summaryLoading ? "�" : String(summary?.awards?.total ?? "�")} hint="Active grants" /></Col>
-        <Col span={3}><CrownMetricCard label="Awarded" value={summaryLoading ? "�" : (summary?.awards?.total_amount != null ? `$${Number(summary.awards.total_amount).toLocaleString()}` : "�")} hint="Total $ disbursed" /></Col>
-        <Col span={3}><CrownMetricCard label="Avg Award" value={summaryLoading ? "�" : (summary?.awards?.avg_amount != null ? `$${Number(summary.awards.avg_amount).toLocaleString()}` : "�")} hint="Per household" /></Col>
+        <Col span={3}>
+          <WidgetState title="Applications" loading={summaryLoading}>
+            <CrownMetricCard label="Applications" value={String(summary?.applications?.total ?? 0)} hint="Total submitted" />
+          </WidgetState>
+        </Col>
+        <Col span={3}>
+          <WidgetState title="Awards" loading={summaryLoading}>
+            <CrownMetricCard label="Awards" value={String(summary?.awards?.total ?? 0)} hint="Active grants" />
+          </WidgetState>
+        </Col>
+        <Col span={3}>
+          <WidgetState title="Awarded" loading={summaryLoading}>
+            <CrownMetricCard
+              label="Awarded"
+              value={summary?.awards?.total_amount != null ? `$${Number(summary.awards.total_amount).toLocaleString()}` : "$0"}
+              hint="Total $ disbursed"
+            />
+          </WidgetState>
+        </Col>
+        <Col span={3}>
+          <WidgetState title="Avg Award" loading={summaryLoading}>
+            <CrownMetricCard
+              label="Avg Award"
+              value={summary?.awards?.avg_amount != null ? `$${Number(summary.awards.avg_amount).toLocaleString()}` : "$0"}
+              hint="Per household"
+            />
+          </WidgetState>
+        </Col>
 
         <Col span={12}>
           <CrownCard title="Financial Aid" right={<span className="crown-pill">Crown Dashboard</span>}>
 
-      {summaryError && (
-        <>
-          <ErrorBanner title="Financial aid unavailable" message={summaryError} />
-          <button onClick={loadSummary} style={{ marginBottom: 16, padding: "4px 8px" }}>Retry</button>
-        </>
-      )}
+      <PageState
+        loading={summaryLoading}
+        error={summaryError}
+        empty={isEmpty}
+        emptyTitle="No financial aid data yet"
+        emptyMessage="Aid metrics appear once applications and recommendations are created."
+        onRetry={loadSummary}
+      >
+        {summaryError && (
+          <>
+            <ErrorBanner title="Financial aid unavailable" message={summaryError} />
+            <button onClick={loadSummary} style={{ marginBottom: 16, padding: "4px 8px" }}>Retry</button>
+          </>
+        )}
 
-      {summaryLoading ? (
-        <p>Loading summary...</p>
-      ) : isEmpty ? (
-        <div style={{ padding: 32, textAlign: "center", color: "var(--crown-muted)" }}>
-          <p>No financial aid data available for the selected academic year.</p>
-        </div>
-      ) : summary ? (
-        <>
+        {summary ? (
+          <>
           <div style={{ marginBottom: 24 }}>
             <label>
               Academic Year:
@@ -197,20 +225,21 @@ export function FinancialAidDashboard() {
               </div>
             ))}
           </div>
-        </>
-      ) : null}
+          </>
+        ) : null}
 
-      {drawerOpen && (
-        <DrilldownDrawer
-          drilldown={drilldown}
-          loading={drilldownLoading}
-          error={drilldownError}
-          onClose={() => setDrawerOpen(false)}
-          onRetry={loadDrilldown}
-          onLoadMore={handleLoadMore}
-          hasMore={drilldown && offset + drilldown.rows.length < drilldown.count}
-        />
-      )}
+        {drawerOpen && (
+          <DrilldownDrawer
+            drilldown={drilldown}
+            loading={drilldownLoading}
+            error={drilldownError}
+            onClose={() => setDrawerOpen(false)}
+            onRetry={loadDrilldown}
+            onLoadMore={handleLoadMore}
+            hasMore={drilldown && offset + drilldown.rows.length < drilldown.count}
+          />
+        )}
+      </PageState>
           </CrownCard>
         </Col>
       </CrownGrid>

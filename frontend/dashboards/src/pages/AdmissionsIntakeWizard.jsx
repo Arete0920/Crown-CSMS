@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
+import { useWizardDraft } from "../hooks/useWizardDraft";
 import Step1ChooseMode from "./onboarding/Step1ChooseMode.jsx";
 import Step2Upload from "./onboarding/Step2Upload.jsx";
 import Step3Validate from "./onboarding/Step3Validate.jsx";
@@ -26,28 +27,12 @@ const STEP_LABELS = [
   "Verify",
 ];
 
-const STORAGE_KEY = "crown_onboarding_wizard_ctx_v1";
-
-function loadContext() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { mode: "students_guardians" };
-  } catch {
-    return { mode: "students_guardians" };
-  }
-}
-
-function saveContext(ctx) {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ctx));
-  } catch { /* ignore */ }
-}
-
 export default function AdmissionsIntakeWizard() {
-  const [initialContext] = useState(() => loadContext());
+  const [initialContext] = useState(() => ({ mode: "students_guardians" }));
+  const { value, saveDraft, loaded } = useWizardDraft("admissions-intake", initialContext);
 
-  function wrappedSetContext(ctx) {
-    saveContext(typeof ctx === "function" ? ctx(loadContext()) : ctx);
+  if (!loaded) {
+    return null;
   }
 
   return (
@@ -57,9 +42,8 @@ export default function AdmissionsIntakeWizard() {
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
-          initialContext={initialContext}
-          // CrownWizard owns setContext; we intercept via wrappedSetContext for persistence
-          // Note: because CrownWizard has its own useState, persistence is handled inside steps
+          initialContext={value}
+          onContextChange={saveDraft}
         />
       </div>
     </CrownLayout>

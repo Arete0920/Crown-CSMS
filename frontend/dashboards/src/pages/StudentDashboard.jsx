@@ -1,182 +1,146 @@
-﻿import { useEffect, useState } from 'react';
-import { authenticatedFetch } from '../utils/authClient.js';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
-import ErrorBanner from '../components/ui/ErrorBanner.jsx';
-import CrownCard from '../components/crown/CrownCard.jsx';
-import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
-const API_BASE = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
+import DailyDevotion from '../components/dashboard/DailyDevotion.jsx';
+import SpecialDays from '../components/dashboard/SpecialDays.jsx';
+import KpiCard from '../components/dashboard/KpiCard.jsx';
+import KpiCardGrid from '../components/dashboard/KpiCardGrid.jsx';
+import ProgressGoalCard from '../components/dashboard/ProgressGoalCard.jsx';
+import HealthRingCard from '../components/dashboard/HealthRingCard.jsx';
+import TrendChartCard from '../components/dashboard/TrendChartCard.jsx';
 
-async function fetchSelf() {
-  const res = await authenticatedFetch(`${API_BASE}/api/student360/me/overview/`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+import StudentAtAGlanceCard from '../components/dashboard/student/StudentAtAGlanceCard.jsx';
+import StudentPrioritiesPanel from '../components/dashboard/student/StudentPrioritiesPanel.jsx';
+import StudentAlertsPanel from '../components/dashboard/student/StudentAlertsPanel.jsx';
+import StudentActivityFeedCard from '../components/dashboard/student/StudentActivityFeedCard.jsx';
+import StudentCourseSnapshotCard from '../components/dashboard/student/StudentCourseSnapshotCard.jsx';
+import StudentScheduleCard from '../components/dashboard/student/StudentScheduleCard.jsx';
+import StudentMessagesCard from '../components/dashboard/student/StudentMessagesCard.jsx';
+import StudentShortcutsCard from '../components/dashboard/student/StudentShortcutsCard.jsx';
 
-function fmt(n, fallback = '—') {
-  if (n === null || n === undefined) return fallback;
-  return String(n);
-}
-
-function fmtPct(n) {
-  if (n === null || n === undefined) return '—';
-  return `${Number(n).toFixed(1)}%`;
-}
-
-function fmtDollars(cents) {
-  if (cents === null || cents === undefined) return '—';
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function AlertBanner({ alerts }) {
-  if (!alerts?.length) return null;
-  return (
-    <div style={{ marginBottom: 12 }}>
-      {alerts.map((a, i) => (
-        <div
-          key={i}
-          style={{
-            background: a.severity === 'warning' ? 'var(--crown-warn-bg)' : 'var(--crown-danger-bg)',
-            border: `1px solid ${a.severity === 'warning' ? 'var(--crown-warn)' : 'var(--crown-danger)'}`,
-            borderRadius: 6,
-            padding: '8px 12px',
-            marginBottom: 6,
-            fontSize: '0.875rem',
-          }}
-        >
-          ⚠ {a.message}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AssignmentRow({ a }) {
-  const due = a.due_date ? new Date(a.due_date).toLocaleDateString() : '—';
-  return (
-    <tr>
-      <td style={{ padding: '6px 8px' }}>{a.name}</td>
-      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{due}</td>
-      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{fmt(a.points_possible)}</td>
-    </tr>
-  );
-}
-
-/* â”€â”€ Student KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const ADMIN_KPI = [
-  { label: "My GPA",            value: "3.4",  trend: "+0.2 this term",  trendUp: true,
-    definition: "Your weighted grade point average across all current courses this term.",
-    dataSource: "Gradebook", dataHref: "/gradebook" },
-  { label: "Attendance Rate",   value: "97.1%",trend: null,               trendUp: null,
-    definition: "Percentage of scheduled class days you have been marked present this term.",
-    dataSource: "Attendance Module", dataHref: "/attendance" },
-  { label: "Missing Work",      value: "1",    trend: null,               trendUp: null,
-    definition: "Assignments that are past due with no submission recorded.",
-    dataSource: "Gradebook", dataHref: "/gradebook" },
-  { label: "Next Due Date",     value: "Tomorrow", trend: null,           trendUp: null,
-    definition: "Your nearest upcoming assignment deadline across all courses.",
-    dataSource: "Gradebook", dataHref: "/gradebook" },
-];
 export default function StudentDashboard() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetchSelf()
-      .then(setData)
-      .catch((err) => {
-        setError(`Dashboard unavailable — API error: ${err.message}`);
-      });
-  }, []);
-
-  const v2 = data?.dashboard_v2 || {};
-  const student = data?.student || {};
-  const alerts = v2.alerts || [];
-  const upcoming = v2.upcoming_assignments || [];
-
-  const gpa = fmt(v2.gpa !== undefined ? v2.gpa : null);
-  const avg = v2.current_average !== null && v2.current_average !== undefined
-    ? fmtPct(v2.current_average)
-    : '—';
-  const missing = fmt(v2.missing_assignments, '0');
-  const serviceHrs = v2.service_hours?.approved_hours !== undefined
-    ? `${Number(v2.service_hours.approved_hours).toFixed(1)} hrs`
-    : '—';
-  const balance = v2.financial?.balance_cents !== undefined
-    ? fmtDollars(v2.financial.balance_cents)
-    : '—';
-
   return (
     <CrownLayout
-      title={student.name ? `${student.name} — Dashboard` : 'Student Dashboard'}
-      subtitle={`Grade ${student.grade || '—'} · Today's snapshot`}
+      title="Student Portal"
+      subtitle="Assignments, grades, attendance, schedule, and daily student progress"
     >
-      <KpiStrip cards={ADMIN_KPI} />
-      <ErrorBanner title="Dashboard unavailable" message={error} />
+      <h1 className="text-2xl font-semibold tracking-tight">Student Dashboard</h1>
 
-      {!data && !error && (
-        <div style={{ opacity: 0.6, padding: 24 }}>Loading dashboard…</div>
-      )}
+      <DashboardSection title="Daily Mission and Student Snapshot">
+        <CrownGrid>
+          <Col span={6}><DailyDevotion /></Col>
+          <Col span={3}><SpecialDays /></Col>
+          <Col span={3}><StudentAtAGlanceCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-      {data && (
-        <>
-          <AlertBanner alerts={alerts} />
+      <DashboardSection title="Student Action">
+        <CrownGrid>
+          <Col span={3}><StudentPrioritiesPanel /></Col>
 
-          <CrownGrid>
-            <Col span={3}><CrownMetricCard label="GPA (est.)" value={gpa} hint="4.0 scale proxy" /></Col>
-            <Col span={3}><CrownMetricCard label="Current Average" value={avg} hint="Weighted grade avg" /></Col>
-            <Col span={3}><CrownMetricCard label="Missing Work" value={missing} hint="Unsubmitted past-due" /></Col>
-            <Col span={3}><CrownMetricCard label="Balance Due" value={balance} hint="Open invoices" /></Col>
+          <Col span={6}>
+            <KpiCardGrid>
+              <KpiCard title="My GPA" value="3.5" trend="Strong this term" icon="GR" tone="good" />
+              <KpiCard title="Current Average" value="91.2%" trend="+2 this week" icon="AVG" tone="good" />
+              <KpiCard title="Missing Work" value="1" trend="Needs submission" icon="MSW" tone="warn" />
+              <KpiCard title="Balance Due" value="$250" trend="Current student account" icon="BIL" tone="warn" />
+            </KpiCardGrid>
+          </Col>
 
-            <Col span={8}>
-              <CrownCard title="Upcoming Assignments">
-                {upcoming.length === 0 ? (
-                  <div style={{ opacity: 0.65 }}>No upcoming assignments in the next 7 days.</div>
-                ) : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--crown-border)', textAlign: 'left', color: 'var(--crown-muted)' }}>
-                        <th style={{ padding: '4px 8px' }}>Assignment</th>
-                        <th style={{ padding: '4px 8px' }}>Due</th>
-                        <th style={{ padding: '4px 8px' }}>Points</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {upcoming.map((a, i) => <AssignmentRow key={i} a={a} />)}
-                    </tbody>
-                  </table>
-                )}
-              </CrownCard>
-            </Col>
+          <Col span={3}><StudentAlertsPanel /></Col>
+        </CrownGrid>
+      </DashboardSection>
 
-            <Col span={4}>
-              <CrownCard title="Service Hours">
-                <p style={{ fontSize: '1.5rem', fontWeight: 700, margin: '4px 0' }}>{serviceHrs}</p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--crown-muted)', margin: 0 }}>
-                  {v2.service_hours?.pending_hours !== undefined
-                    ? `${Number(v2.service_hours.pending_hours).toFixed(1)} hrs pending`
-                    : 'Approved hours'}
-                </p>
-              </CrownCard>
-            </Col>
+      <DashboardSection title="Student Progress">
+        <CrownGrid>
+          <Col span={4}>
+            <ProgressGoalCard
+              title="Service Hours"
+              current={12}
+              goal={20}
+              percentLabel="60%"
+              detail="Approved hours logged this term"
+              colorClass="var(--crown-brand)"
+            />
+          </Col>
 
-            <Col span={12}>
-              <CrownCard title="Quick Links">
-                <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <a className="crown-btn" href="/gradebook">Gradebook</a>
-                  <a className="crown-btn" href="/transcript">Transcript</a>
-                  <a className="crown-btn" href="/academics/student-work">Student Work</a>
-                  <a className="crown-btn" href="/communications">Messages</a>
-                </nav>
-              </CrownCard>
-            </Col>
-          </CrownGrid>
-        </>
-      )}
+          <Col span={4}>
+            <ProgressGoalCard
+              title="Attendance Progress"
+              current={97}
+              goal={100}
+              percentLabel="97%"
+              detail="Attendance rate for the current term"
+              colorClass="#059669"
+            />
+          </Col>
+
+          <Col span={4}>
+            <HealthRingCard
+              title="Student Progress Index"
+              percent={88}
+              subtitle="Overall student status"
+              detail="Grades and attendance are healthy overall. A few missing assignments need attention."
+            />
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Upcoming Assignments">
+        <CrownGrid>
+          <Col span={6}>
+            <TrendChartCard
+              title="Assignment Completion Trend"
+              subtitle="Recent completion pattern"
+              labels={['Week 1', 'Week 2', 'Week 3', 'Week 4']}
+              datasets={[
+                {
+                  label: 'Completion %',
+                  data: [82, 86, 84, 88],
+                  borderColor: '#004687',
+                },
+              ]}
+            />
+          </Col>
+
+          <Col span={6}>
+            <TrendChartCard
+              title="Grade Trend"
+              subtitle="Average grade movement"
+              labels={['Week 1', 'Week 2', 'Week 3', 'Week 4']}
+              datasets={[
+                {
+                  label: 'Average Grade',
+                  data: [86, 87, 88, 89],
+                  borderColor: '#004687',
+                },
+              ]}
+            />
+          </Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Recent Academic Detail">
+        <CrownGrid>
+          <Col span={4}><StudentActivityFeedCard /></Col>
+          <Col span={8}><StudentCourseSnapshotCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Schedule, Messages, and Shortcuts">
+        <CrownGrid>
+          <Col span={4}><StudentScheduleCard /></Col>
+          <Col span={4}><StudentMessagesCard /></Col>
+          <Col span={4}><StudentShortcutsCard /></Col>
+        </CrownGrid>
+      </DashboardSection>
+
+      <DashboardSection title="Quick Links">
+        <CrownGrid>
+          <Col span={12}><a href="/gradebook">Open Gradebook</a></Col>
+        </CrownGrid>
+      </DashboardSection>
     </CrownLayout>
   );
 }
-

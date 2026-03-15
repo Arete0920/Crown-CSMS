@@ -1,0 +1,75 @@
+name: Shell Backend Contract Parity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "contracts/shell_backend_contract.json"
+      - "frontend/dashboards/src/routes/wizard-manifest.js"
+      - "frontend/dashboards/scripts/build-shell-backend-contract.mjs"
+      - "frontend/dashboards/scripts/check-shell-backend-contract-parity.mjs"
+      - "backend/crown_api/wizard_registry.py"
+      - "backend/crown_api/shell_backend_contract.py"
+      - "backend/scripts/check_shell_backend_contract.py"
+      - "backend/tests/test_shell_backend_contract_parity.py"
+      - ".github/workflows/shell-backend-contract-parity.yml"
+  push:
+    branches: [main]
+    paths:
+      - "contracts/shell_backend_contract.json"
+      - "frontend/dashboards/src/routes/wizard-manifest.js"
+      - "frontend/dashboards/scripts/build-shell-backend-contract.mjs"
+      - "frontend/dashboards/scripts/check-shell-backend-contract-parity.mjs"
+      - "backend/crown_api/wizard_registry.py"
+      - "backend/crown_api/shell_backend_contract.py"
+      - "backend/scripts/check_shell_backend_contract.py"
+      - "backend/tests/test_shell_backend_contract_parity.py"
+      - ".github/workflows/shell-backend-contract-parity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shell-backend-contract-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    name: Contract parity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install frontend deps
+        run: npm ci
+        working-directory: frontend/dashboards
+
+      - name: Validate frontend against canonical contract
+        run: npm run check:shell-backend-contract-parity
+        working-directory: frontend/dashboards
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate backend against canonical contract
+        run: python backend/scripts/check_shell_backend_contract.py
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "## Shell/Backend Contract Parity";
+            echo "| Layer | Status |";
+            echo "|---|---|";
+            echo "| Frontend manifest parity | enforced |";
+            echo "| Backend registry parity | enforced |";
+          } >> "$GITHUB_STEP_SUMMARY"

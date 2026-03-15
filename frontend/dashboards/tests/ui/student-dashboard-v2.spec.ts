@@ -49,6 +49,24 @@ test("Student Dashboard v2 renders KPI cards and Upcoming Assignments section", 
     })
   );
 
+  await page.route("**/api/v1/nav/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        groups: [
+          {
+            title: "Academics",
+            items: [
+              { label: "Home", href: "/" },
+              { label: "Gradebook", href: "/gradebook" },
+            ],
+          },
+        ],
+      }),
+    })
+  );
+
   await page.goto(`${BASE}/student`, { waitUntil: "domcontentloaded" });
 
   // Title exists

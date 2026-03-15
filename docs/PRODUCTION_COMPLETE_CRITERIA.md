@@ -1,5 +1,7 @@
 # Crown2026 — Production Complete Criteria
 
+> Canonical notice (2026-03-15): For active certification, use docs/certification/PRODUCTION_CERTIFICATION_CHECKLIST.md together with docs/certification/BLOCKER_LEDGER.md.
+> This file remains a historical certification record for the 2026-02-24 baseline.
 > **Purpose:** A single-page authority for what "production complete" means. Each criterion maps to evidence. This is the owner/investor handoff checklist.
 
 **Frozen baseline:** `prod-proof-baseline-2026-02-24` → `d917c9865348fe2835fe5ee0e1da06eb85710f87`

@@ -12,11 +12,12 @@ onboarding/views.py
 
 All endpoints require authentication (SessionAuthentication or JWT).
 All endpoints are tenant-scoped via X-School-Id → get_request_school_id().
-Tenant isolation: every ImportSession lookup uses ImportSession.objects.get(id=…, school_id=…).
+Tenant isolation: every ImportSession lookup uses ImportSession.objects.get(pk=…, school_id=…).
 """
 import csv
 import io
 import itertools
+import logging
 import re
 
 from django.db import transaction
@@ -30,6 +31,9 @@ from rest_framework.authentication import SessionAuthentication
 from households.models import Household, Guardian, Student
 from households.scoping import get_request_school_id
 from .models import ImportSession
+
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -144,8 +148,8 @@ def _parse_csv(raw_csv: str, required_headers: set):
             errors.extend(row_errors)
             rows.append({k: (v or "").strip() for k, v in row.items()})
 
-    except Exception as exc:
-        errors.append({"row": None, "field": None, "message": f"CSV parse error: {exc}"})
+    except Exception:
+        errors.append({"row": None, "field": None, "message": "CSV parse error."})
 
     students = {r["student_external_id"] for r in rows if r.get("student_external_id")}
     guardians = {r["guardian_external_id"] for r in rows if r.get("guardian_external_id")}
@@ -435,10 +439,11 @@ def commit_session(request, session_id):
                             if g_created:
                                 guardians_imported += 1
 
-                except Exception as exc:
+                except Exception:
+                    logger.exception("commit_session: failed household import row", extra={"household_external_id": hid})
                     exceptions.append({
                         "household_external_id": hid,
-                        "error": str(exc),
+                        "error": "Failed to import household row.",
                     })
 
         commit_result = {

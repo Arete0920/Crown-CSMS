@@ -29,7 +29,7 @@ class Command(BaseCommand):
         school_id = os.getenv("CROWN_DEMO_SCHOOL_ID")
         school = None
         if school_id:
-            school = School.objects.filter(id=school_id).first()
+            school = School.objects.filter(pk=school_id).first()
         if school is None:
             school = School.objects.order_by("name").first()
 

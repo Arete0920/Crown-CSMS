@@ -131,7 +131,7 @@ class TestCreateSession(TestCase):
 
     def test_create_persists_in_db(self):
         r = self.client.post(BASE_URL, **_headers(self.school.id))
-        self.assertTrue(BillingWizardSession.objects.filter(id=r.data["session_id"]).exists())
+        self.assertTrue(BillingWizardSession.objects.filter(pk=r.data["session_id"]).exists())
 
 
 # ---------------------------------------------------------------------------
