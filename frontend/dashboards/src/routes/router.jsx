@@ -91,11 +91,11 @@ const FINANCE_ALLOWED_ROLES = ["super_admin", "school_admin", "finance_admin"];
 
 export const router = createBrowserRouter([
   {
-    path: PATHS.HOME,
+    path: '/',
     element: <RoleHomeRedirect />,
   },
   {
-    path: PATHS.LOGIN,
+    path: '/login',
     element: <LoginPage />,
   },
   {
@@ -190,7 +190,7 @@ export const router = createBrowserRouter([
     element: <TeacherDashboard />,
   },
   {
-    path: PATHS.PARENT,
+    path: '/parent',
     element: <ParentDashboard />,
   },
   {
@@ -202,7 +202,7 @@ export const router = createBrowserRouter([
     element: <ClassroomsDashboard />,
   },
   {
-    path: PATHS.GRADEBOOK,
+    path: '/gradebook',
     element: (
       <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
         <GradebookRO />
@@ -285,7 +285,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: PATHS.ADMIN,
+    path: '/admin',
     element: <AdminDashboard />,
   },
   {

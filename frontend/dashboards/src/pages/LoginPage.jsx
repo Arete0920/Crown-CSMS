@@ -446,6 +446,7 @@ export default function LoginPage() {
         <div className="lp-panel">
           <div className="lp-form">
 
+            <h1 className="lp-welcome">Login</h1>
             <h2 className="lp-welcome">Welcome back</h2>
             <p className="lp-prompt">Select your role to access your dashboard</p>
 

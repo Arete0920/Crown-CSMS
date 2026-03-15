@@ -22,7 +22,7 @@ export default function AttendanceDashboard() {
   return (
     <Stack spacing={3}>
       <div>
-        <Typography variant="h4" fontWeight={700}>
+        <Typography component="h1" variant="h4" fontWeight={700}>
           Attendance Dashboard
         </Typography>
         <Typography variant="body1" color="text.secondary">
