@@ -174,32 +174,7 @@ jobs:
             exit 1
           fi
 
-              ACCESS=$(TOKEN_JSON_ENV="$TOKEN_JSON" python3 -c "import json, os, sys
-        raw = (os.environ.get('TOKEN_JSON_ENV') or '').strip()
-        if not raw:
-          print('ERROR: empty response from token endpoint', file=sys.stderr)
-          sys.exit(1)
-        try:
-          d = json.loads(raw)
-        except json.JSONDecodeError:
-          start = raw.find('{')
-          end = raw.rfind('}')
-          if start != -1 and end != -1 and end >= start:
-            d = json.loads(raw[start:end + 1])
-          else:
-            print(f'ERROR: cannot parse JSON. Raw: {raw!r}', file=sys.stderr)
-            sys.exit(1)
-        nested = d.get('data') if isinstance(d.get('data'), dict) else {}
-        token = (
-          d.get('access')
-          or d.get('access_token')
-          or d.get('token')
-          or nested.get('access')
-          or nested.get('access_token')
-          or nested.get('token')
-          or ''
-        )
-        print(token)")
+          ACCESS=$(TOKEN_JSON_ENV="$TOKEN_JSON" python3 -c "import json, os; d = json.loads((os.environ.get('TOKEN_JSON_ENV') or '').strip()); nested = d.get('data') if isinstance(d.get('data'), dict) else {}; print(d.get('access') or d.get('access_token') or d.get('token') or nested.get('access') or nested.get('access_token') or nested.get('token') or '')")
 
           if [[ -z "$ACCESS" ]]; then
             echo "ERROR: Could not acquire demo access token. Response:" >&2
