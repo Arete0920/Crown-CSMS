@@ -1,7 +1,7 @@
 # Crown2026 14-Module Acceptance Matrix
 
 Status date: 2026-03-15
-Head sha for this snapshot: 0d275d6a
+Head sha for this snapshot: 34ca98d3
 
 Status legend:
 - Complete: all required acceptance fields have current-cycle evidence and signoff
