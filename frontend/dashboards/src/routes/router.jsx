@@ -237,11 +237,11 @@ export const router = createBrowserRouter([
     element: <AcademicsParentSnapshot />,
   },
   {
-    path: PATHS.STUDENT_DETAIL,
+    path: '/students/:id',
     element: <Student360Page />,
   },
   {
-    path: PATHS.PARENT_STUDENT_DETAIL,
+    path: '/parent/students/:id',
     element: <ParentStudent360Page />,
   },
   {
