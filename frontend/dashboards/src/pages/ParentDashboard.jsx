@@ -22,7 +22,7 @@ import ParentReportsCard from '../components/dashboard/parent/ParentReportsCard.
 export default function ParentDashboard() {
   return (
     <CrownLayout
-      title="Parent Dashboard"
+      title="Parent Portal"
       subtitle="Your children, assignments, attendance, tuition, messages, and family events"
     >
       <h1 className="text-2xl font-semibold tracking-tight">Parent Dashboard</h1>

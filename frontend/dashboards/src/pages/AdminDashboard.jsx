@@ -92,9 +92,10 @@ export default function AdminDashboard() {
 
   return (
     <CrownLayout
-      title="Administration"
+      title="Executive Portal"
       subtitle="Faith, leadership, and school operations command center"
     >
+      <h2 className="text-sm font-medium uppercase tracking-wide">Administration</h2>
       <h1 className="text-2xl font-semibold tracking-tight">Executive Dashboard</h1>
 
       <ErrorBanner title="Dashboard unavailable" message={metricsError} />

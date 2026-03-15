@@ -14,6 +14,6 @@ export const ROLE_GROUPS = {
   ADMIN_ONLY: ['super_admin', 'school_admin', 'head_of_school'],
   ADMIN_REGISTRAR: ['super_admin', 'school_admin', 'head_of_school', 'registrar'],
   ADMIN_FINANCE: ['super_admin', 'school_admin', 'head_of_school', 'finance_admin', 'finance'],
-  ACADEMIC_TEAM: ['super_admin', 'school_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar'],
+  ACADEMIC_TEAM: ['super_admin', 'school_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'admin'],
   FAMILY_VIEW: ['parent', 'student'],
 };
