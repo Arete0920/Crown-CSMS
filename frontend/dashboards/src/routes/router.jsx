@@ -31,6 +31,7 @@ import StudentDashboard from "../pages/StudentDashboard.jsx";
 import RoleHomeRedirect from "../pages/RoleHomeRedirect.jsx";
 import TeacherAttendancePage from "../pages/TeacherAttendancePage.jsx";
 import ParentAttendancePage from "../pages/ParentAttendancePage.jsx";
+import AttendanceDashboard from "../pages/AttendanceDashboard.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
@@ -152,7 +153,7 @@ export const router = createBrowserRouter([
   // Keep these as literal strings in router.jsx for static gate checks.
   {
     path: '/teacher/attendance',
-    element: <Navigate to="/attendance-dashboard" replace />,
+    element: <AttendanceDashboard />,
   },
   {
     path: '/teacher/gradebook',
@@ -166,11 +167,15 @@ export const router = createBrowserRouter([
     path: '/teacher/scheduling',
     element: <Navigate to="/scheduling-dashboard" replace />,
   },
+  {
+    path: '/teacher',
+    element: <AttendanceDashboard />,
+  },
   // Contract-preserving parent alias routes.
   // Keep these as literal strings in router.jsx for static gate checks.
   {
     path: '/parent/attendance',
-    element: <Navigate to="/attendance-dashboard" replace />,
+    element: <AttendanceDashboard />,
   },
   {
     path: '/parent/communications',

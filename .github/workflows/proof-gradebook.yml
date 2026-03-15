@@ -145,14 +145,32 @@ jobs:
         run: |
           set -euo pipefail
           echo "Acquiring demo JWT for readiness probe..."
-          TOKEN_HTTP=$(curl -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/v1/auth/token/" \
-            -H "Content-Type: application/json" \
-            -d "{\"username\":\"head@crown-demo.local\",\"password\":\"${CROWN_DEMO_PASSWORD}\"}")
-          TOKEN_JSON=$(cat /tmp/token_ready.json || true)
+          TOKEN_HTTP=""
+          TOKEN_JSON=""
+          for i in {1..5}; do
+            TOKEN_HTTP=$(curl -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/v1/auth/token/" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d "{\"username\":\"head@crown-demo.local\",\"password\":\"${CROWN_DEMO_PASSWORD}\"}" || true)
+            TOKEN_JSON=$(cat /tmp/token_ready.json || true)
 
-          if [[ "$TOKEN_HTTP" -lt 200 || "$TOKEN_HTTP" -ge 300 ]]; then
-            echo "ERROR: demo token endpoint failed (HTTP ${TOKEN_HTTP})."
-            echo "$TOKEN_JSON"
+            if [[ "$TOKEN_HTTP" =~ ^2[0-9][0-9]$ ]] && [[ -n "$TOKEN_JSON" ]]; then
+              break
+            fi
+
+            echo "Attempt ${i}: token endpoint HTTP=${TOKEN_HTTP:-<none>} body_len=${#TOKEN_JSON}. Retrying in 2s..."
+            sleep 2
+          done
+
+          if [[ ! "$TOKEN_HTTP" =~ ^2[0-9][0-9]$ ]]; then
+            echo "ERROR: demo token endpoint failed (HTTP ${TOKEN_HTTP:-<none>})." >&2
+            echo "$TOKEN_JSON" >&2
+            exit 1
+          fi
+
+          if [[ -z "$TOKEN_JSON" ]]; then
+            echo "ERROR: empty response from token endpoint" >&2
+            echo "ERROR: token_url=http://127.0.0.1:8000/api/v1/auth/token/" >&2
             exit 1
           fi
 
@@ -187,8 +205,8 @@ jobs:
           <<<"$TOKEN_JSON")
 
           if [[ -z "$ACCESS" ]]; then
-            echo "ERROR: Could not acquire demo access token. Response:"
-            echo "$TOKEN_JSON"
+            echo "ERROR: Could not acquire demo access token. Response:" >&2
+            echo "$TOKEN_JSON" >&2
             exit 1
           fi
           echo "Token acquired. Probing gradebook sections endpoint..."
