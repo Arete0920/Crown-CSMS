@@ -1,423 +1,235 @@
-﻿import { useEffect, useState, useMemo } from "react";
-import { getThreads, getThreadDetail } from "../api/communications";
-import { csvEscape, downloadTextFile } from "../lib/export/csv";
-import Drawer from "../components/Drawer";
-import CrownLayout from "../components/crown/CrownLayout.jsx";
-import ErrorBanner from "../components/ui/ErrorBanner.jsx";
+﻿import { useMemo, useState } from 'react';
+import { Box, Button, Stack, Typography } from '@mui/material';
+import CrownLayout from '../components/crown/CrownLayout.jsx';
+import CrownDataTable from '../components/data/CrownDataTable.jsx';
+import Drawer from '../components/Drawer';
+import { getThreads, getThreadDetail } from '../api/communications';
+import { csvEscape, downloadTextFile } from '../lib/export/csv';
+import { useAsyncPageData } from '../hooks/useAsyncPageData';
+import { usePersistentTableState } from '../hooks/usePersistentTableState';
+
+function formatDateTime(value) {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return '—';
+  }
+}
 
 export default function CommunicationsThreadsList() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [colSort, setColSort] = useState({ key: "last_message_at", dir: "desc" });
   const [selected, setSelected] = useState(null);
-  const [threadDetail, setThreadDetail] = useState(null);
-  const [loadingThread, setLoadingThread] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
+  const {
+    search,
+    setSearch,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
+  } = usePersistentTableState('communications-threads-table', {
+    search: '',
+    filters: { threadType: '' },
+    page: 0,
+    rowsPerPage: 10,
+  });
 
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const threads = await getThreads();
-        
-        // Normalize: already comes in correct shape from API
-        const normalized = threads.map((thread) => ({
-          id: thread.thread_id,
-          household_name: thread.household_name || "(No household)",
-          student_name: thread.student_first_name && thread.student_last_name
-            ? `${thread.student_first_name} ${thread.student_last_name}`
-            : null,
-          subject: thread.subject || "(No subject)",
-          thread_type: thread.thread_type || "GENERAL",
-          last_message_at: thread.last_message_at || null,
-        }));
-
-        if (mounted) {
-          setData(normalized);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("Failed to fetch threads:", err);
-        if (mounted) {
-          setError(err.message || "Failed to load threads");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchData();
-    return () => {
-      mounted = false;
-    };
+  const { loading, error, data, reload } = useAsyncPageData(async () => {
+    const threads = await getThreads();
+    return (threads || []).map((thread) => ({
+      id: thread.thread_id,
+      household_name: thread.household_name || '(No household)',
+      student_name:
+        thread.student_first_name && thread.student_last_name
+          ? `${thread.student_first_name} ${thread.student_last_name}`
+          : '',
+      subject: thread.subject || '(No subject)',
+      thread_type: thread.thread_type || 'GENERAL',
+      last_message_at: thread.last_message_at || null,
+    }));
   }, []);
 
-  // Load thread detail when selected
-  useEffect(() => {
-    if (!selected) {
-      setThreadDetail(null);
-      return;
-    }
+  const {
+    loading: loadingThread,
+    error: threadError,
+    data: threadDetail,
+  } = useAsyncPageData(
+    async () => {
+      if (!selected?.id) return null;
+      return getThreadDetail(selected.id);
+    },
+    [selected?.id],
+  );
 
-    let mounted = true;
+  const rows = useMemo(() => {
+    const source = Array.isArray(data) ? data : [];
 
-    async function fetchThread() {
-      try {
-        setLoadingThread(true);
-        const detail = await getThreadDetail(selected.id);
-        if (mounted) {
-          setThreadDetail(detail);
-        }
-      } catch (err) {
-        console.error("Failed to fetch thread detail:", err);
-        if (mounted) {
-          setThreadDetail({ messages: [], error: err.message });
-        }
-      } finally {
-        if (mounted) {
-          setLoadingThread(false);
-        }
-      }
-    }
-
-    fetchThread();
-    return () => {
-      mounted = false;
-    };
-  }, [selected]);
-
-  // Sorting
-  const sortedRows = useMemo(() => {
-    if (!data.length) return [];
-
-    const { key, dir } = colSort;
-    const sorted = [...data];
-
-    sorted.sort((a, b) => {
-      let aVal = a[key];
-      let bVal = b[key];
-
-      // Dates
-      if (key === "last_message_at") {
-        aVal = aVal ? new Date(aVal).getTime() : 0;
-        bVal = bVal ? new Date(bVal).getTime() : 0;
-      }
-
-      // Strings
-      if (typeof aVal === "string") {
-        aVal = aVal.toLowerCase();
-        bVal = String(bVal || "").toLowerCase();
-        return dir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-
-      // Numeric or date comparison
-      if (aVal < bVal) return dir === "asc" ? -1 : 1;
-      if (aVal > bVal) return dir === "asc" ? 1 : -1;
-      return 0;
+    return source.filter((row) => {
+      const searchBlob = `${row.household_name} ${row.student_name} ${row.subject}`.toLowerCase();
+      const matchesSearch = !search || searchBlob.includes(search.toLowerCase());
+      const matchesType = !filters.threadType || row.thread_type === filters.threadType;
+      return matchesSearch && matchesType;
     });
+  }, [data, search, filters.threadType]);
 
-    return sorted;
-  }, [data, colSort]);
+  const columns = [
+    { key: 'household_name', label: 'Household', sortable: true },
+    {
+      key: 'student_name',
+      label: 'Student',
+      sortable: true,
+      render: (row) => row.student_name || '(None)',
+    },
+    { key: 'subject', label: 'Subject', sortable: true },
+    { key: 'thread_type', label: 'Type', sortable: true },
+    {
+      key: 'last_message_at',
+      label: 'Last Message',
+      sortable: true,
+      render: (row) => formatDateTime(row.last_message_at),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (row) => (
+        <Button size="small" onClick={() => setSelected(row)}>
+          Open
+        </Button>
+      ),
+    },
+  ];
 
-  function handleSort(key) {
-    setColSort((prev) => ({
-      key,
-      dir: prev.key === key && prev.dir === "asc" ? "desc" : "asc",
-    }));
-  }
+  const uniqueTypes = useMemo(() => {
+    const source = Array.isArray(data) ? data : [];
+    return Array.from(new Set(source.map((item) => item.thread_type).filter(Boolean))).sort();
+  }, [data]);
 
-  function handleExport() {
-    if (!sortedRows.length) return;
+  const filterControls = (
+    <Stack direction="row" spacing={1}>
+      <Button
+        size="small"
+        variant={filters.threadType === '' ? 'contained' : 'outlined'}
+        onClick={() => setFilter('threadType', '')}
+      >
+        All
+      </Button>
+      {uniqueTypes.slice(0, 3).map((threadType) => (
+        <Button
+          key={threadType}
+          size="small"
+          variant={filters.threadType === threadType ? 'contained' : 'outlined'}
+          onClick={() => setFilter('threadType', threadType)}
+        >
+          {threadType}
+        </Button>
+      ))}
+    </Stack>
+  );
 
-    const headers = ["Household", "Student", "Subject", "Type", "Last Message"];
-    const rows = [headers];
+  const actions = (
+    <Stack direction="row" spacing={1}>
+      <Button
+        variant="outlined"
+        onClick={() => {
+          const header = ['Household', 'Student', 'Subject', 'Type', 'Last Message'];
+          const lines = [header.map(csvEscape).join(',')];
 
-    sortedRows.forEach((thread) => {
-      rows.push([
-        csvEscape(thread.household_name),
-        csvEscape(thread.student_name || ""),
-        csvEscape(thread.subject),
-        csvEscape(thread.thread_type),
-        thread.last_message_at || "",
-      ]);
-    });
+          for (const row of rows) {
+            lines.push(
+              [
+                row.household_name,
+                row.student_name,
+                row.subject,
+                row.thread_type,
+                row.last_message_at || '',
+              ]
+                .map(csvEscape)
+                .join(','),
+            );
+          }
 
-    const csvContent = rows.map((r) => r.join(",")).join("\n");
-    downloadTextFile(csvContent, "threads.csv");
-  }
-
-  function formatDate(isoString) {
-    if (!isoString) return "";
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleString();
-    } catch {
-      return "";
-    }
-  }
-
-  if (loading) {
-    return (
-      <CrownLayout title="Communications — Threads">
-        <p>Loading...</p>
-      </CrownLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <CrownLayout title="Communications — Threads">
-        <ErrorBanner title="Failed to load threads" message={error} />
-      </CrownLayout>
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <CrownLayout title="Communications — Threads">
-        <div style={{ marginTop: "1rem", color: "var(--crown-muted)" }}>
-          No message threads yet
-        </div>
-      </CrownLayout>
-    );
-  }
+          downloadTextFile('communications_threads.csv', lines.join('\n'));
+        }}
+      >
+        Export CSV
+      </Button>
+      <Button variant="outlined" onClick={clearFilters}>
+        Clear Filters
+      </Button>
+      <Button variant="outlined" onClick={reload}>
+        Reload
+      </Button>
+    </Stack>
+  );
 
   return (
     <CrownLayout title="Communications — Threads" subtitle="Director inbox">
-      {/* Export bar */}
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <button
-          className="crown-btn crown-btn-primary"
-          onClick={handleExport}
-        >
-          Export CSV
-        </button>
-      </div>
+      <CrownDataTable
+        title="Threads"
+        subtitle="Standardized thread list"
+        rows={rows}
+        columns={columns}
+        loading={loading}
+        error={error}
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={filterControls}
+        actions={actions}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={setRowsPerPage}
+        initialSortKey="last_message_at"
+        initialSortDirection="desc"
+        emptyTitle="No message threads"
+        emptyMessage="Thread activity will appear here once communications are created."
+      />
 
-      {/* Table */}
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            fontSize: "0.875rem",
-          }}
-        >
-          <thead>
-            <tr style={{ background: "var(--crown-surface-2)" }}>
-              <th
-                onClick={() => handleSort("household_name")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Household{" "}
-                {colSort.key === "household_name" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("student_name")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Student{" "}
-                {colSort.key === "student_name" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("subject")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Subject{" "}
-                {colSort.key === "subject" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("thread_type")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Type{" "}
-                {colSort.key === "thread_type" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("last_message_at")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Last Message{" "}
-                {colSort.key === "last_message_at" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedRows.map((thread) => (
-              <tr
-                key={thread.id}
-                onClick={() => setSelected(thread)}
-                style={{
-                  cursor: "pointer",
-                  borderBottom: "1px solid var(--crown-border)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "var(--crown-surface-2)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "var(--crown-surface)";
-                }}
-              >
-                <td style={{ padding: "0.75rem" }}>{thread.household_name}</td>
-                <td style={{ padding: "0.75rem" }}>
-                  {thread.student_name || "(None)"}
-                </td>
-                <td style={{ padding: "0.75rem" }}>{thread.subject}</td>
-                <td style={{ padding: "0.75rem" }}>{thread.thread_type}</td>
-                <td style={{ padding: "0.75rem" }}>
-                  {thread.last_message_at ? formatDate(thread.last_message_at) : "(Never)"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {selected ? (
+        <Drawer onClose={() => setSelected(null)} width={560}>
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+              Thread Detail
+            </Typography>
 
-      {/* Drawer */}
-      {selected && (
-        <Drawer onClose={() => setSelected(null)} width={520}>
-          <div style={{ padding: "1.5rem" }}>
-            <h2 style={{ marginTop: 0, marginBottom: "1.5rem", fontSize: "1.25rem" }}>
-              Thread: {selected.subject}
-            </h2>
+            <Stack spacing={1} sx={{ mb: 2 }}>
+              <Typography variant="body2"><strong>Subject:</strong> {selected.subject}</Typography>
+              <Typography variant="body2"><strong>Household:</strong> {selected.household_name}</Typography>
+              <Typography variant="body2"><strong>Student:</strong> {selected.student_name || '(None)'}</Typography>
+              <Typography variant="body2"><strong>Type:</strong> {selected.thread_type}</Typography>
+            </Stack>
 
-            <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
-                Thread Info
-              </h3>
-              <div>
-                <strong>Household:</strong> {selected.household_name}
-              </div>
-              {selected.student_name && (
-                <div>
-                  <strong>Student:</strong> {selected.student_name}
-                </div>
-              )}
-              <div>
-                <strong>Type:</strong> {selected.thread_type}
-              </div>
-              <div>
-                <strong>Last Message:</strong>{" "}
-                {selected.last_message_at ? formatDate(selected.last_message_at) : "(Never)"}
-              </div>
-            </div>
-
-            {loadingThread && (
-              <div style={{ color: "var(--crown-muted)" }}>Loading messages...</div>
+            {loadingThread ? (
+              <Typography variant="body2">Loading messages...</Typography>
+            ) : threadError ? (
+              <Typography variant="body2" color="error.main">
+                {threadError?.message || 'Unable to load thread detail.'}
+              </Typography>
+            ) : (
+              <Stack spacing={1.25}>
+                {(threadDetail?.messages || []).slice(-10).map((message, index) => (
+                  <Box key={message.id || index} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'grey.100' }}>
+                    <Typography variant="body2" fontWeight={600}>
+                      {message.author_name || message.author || 'Sender'}
+                    </Typography>
+                    <Typography variant="body2">{message.body || message.message || '(No content)'}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDateTime(message.created_at || message.sent_at)}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
             )}
 
-            {!loadingThread && threadDetail && threadDetail.error && (
-              <ErrorBanner title="Failed to load messages" message={threadDetail.error} />
-            )}
-
-            {!loadingThread && threadDetail && threadDetail.messages && (
-              <div>
-                <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
-                  Messages ({threadDetail.messages.length})
-                </h3>
-                <div
-                  style={{
-                    maxHeight: "400px",
-                    overflowY: "auto",
-                    border: "1px solid var(--crown-border)",
-                    borderRadius: "4px",
-                  }}
-                >
-                  {threadDetail.messages.length === 0 && (
-                    <div style={{ padding: "1rem", color: "var(--crown-muted)" }}>
-                      No messages in this thread
-                    </div>
-                  )}
-                  {threadDetail.messages.map((msg, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: "1rem",
-                        borderBottom: idx < threadDetail.messages.length - 1 ? "1px solid var(--crown-border)" : "none",
-                      }}
-                    >
-                      <div style={{ fontSize: "0.75rem", color: "var(--crown-muted)", marginBottom: "0.25rem" }}>
-                        {msg.sender_person
-                          ? `${msg.sender_person.first_name} ${msg.sender_person.last_name}`
-                          : "(Unknown sender)"}{" "}
-                        · {formatDate(msg.sent_at)}
-                      </div>
-                      <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                        {msg.body}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <details style={{ fontSize: "0.875rem", marginTop: "1.5rem" }}>
-              <summary style={{ cursor: "pointer", color: "var(--crown-muted)" }}>
-                Identifiers
-              </summary>
-              <div style={{ marginTop: "0.5rem", fontFamily: "monospace", fontSize: "0.75rem" }}>
-                <div>
-                  <strong>Thread ID:</strong> {selected.id}
-                </div>
-              </div>
-            </details>
-          </div>
+            <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setSelected(null)}>
+              Close
+            </Button>
+          </Box>
         </Drawer>
-      )}
+      ) : null}
     </CrownLayout>
   );
 }

@@ -1,52 +1,55 @@
 import { getAccessibleDashboardSections } from '../../config/dashboardRegistry';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { filterVisibleNav } from '../../auth/roleAccess';
+import { PATHS } from '../../routes/paths';
+import { ROLE_GROUPS } from '../../routes/routeGroups';
+import { APP_PERMISSIONS } from '../../auth/permissions';
 
 const STATIC_NAV_SECTIONS = [
   {
     label: 'Academics',
     children: [
-      { key: 'gradebook-workspace', label: 'Gradebook', href: '/gradebook', tier: 0 },
-      { key: 'classrooms', label: 'Classrooms', href: '/classrooms', tier: 0 },
-      { key: 'attendance-workspace', label: 'Attendance', href: '/attendance', tier: 0 },
+      { key: 'gradebook-workspace', label: 'Gradebook', href: PATHS.GRADEBOOK, tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
+      { key: 'classrooms', label: 'Classrooms', href: '/classrooms', tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
+      { key: 'attendance-workspace', label: 'Attendance', href: PATHS.ATTENDANCE, tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
     ],
   },
   {
     label: 'Board',
     children: [
-      { key: 'board', label: 'Board', href: '/board', tier: 0 },
-      { key: 'integrity', label: 'Integrity', href: '/integrity', tier: 0 },
+      { key: 'board', label: 'Board', href: '/board', tier: 0, roles: ROLE_GROUPS.ADMIN_ONLY },
+      { key: 'integrity', label: 'Integrity', href: PATHS.REPORTING, tier: 0, roles: ROLE_GROUPS.ADMIN_ONLY, permissions: [APP_PERMISSIONS.REPORTING_VIEW] },
     ],
   },
   {
     label: 'Family',
     children: [
-      { key: 'parent', label: 'Family', href: '/parent', tier: 0 },
-      { key: 'parent-grades', label: 'Grades', href: '/academics/parent-snapshot', tier: 0 },
-      { key: 'family-tuition', label: 'Tuition', href: '/finance/invoices', tier: 0 },
+      { key: 'parent', label: 'Family', href: '/parent', tier: 0, roles: ROLE_GROUPS.FAMILY_VIEW },
+      { key: 'parent-grades', label: 'Grades', href: '/academics/parent-snapshot', tier: 0, roles: ROLE_GROUPS.FAMILY_VIEW },
+      { key: 'family-tuition', label: 'Tuition', href: '/finance/invoices', tier: 0, roles: ROLE_GROUPS.FAMILY_VIEW },
     ],
   },
   {
     label: 'Student',
     children: [
-      { key: 'student', label: 'Student', href: '/student', tier: 0 },
-      { key: 'student-work', label: 'Assignments', href: '/academics/student-work', tier: 0 },
-      { key: 'student-grades', label: 'Grades', href: '/gradebook', tier: 0 },
+      { key: 'student', label: 'Student', href: '/student', tier: 0, roles: ROLE_GROUPS.FAMILY_VIEW },
+      { key: 'student-work', label: 'Assignments', href: '/academics/student-work', tier: 0, roles: ROLE_GROUPS.FAMILY_VIEW },
+      { key: 'student-grades', label: 'Grades', href: PATHS.GRADEBOOK, tier: 0, roles: ROLE_GROUPS.FAMILY_VIEW },
     ],
   },
   {
     label: 'Operations',
     children: [
-      { key: 'admissions', label: 'Admissions', href: '/admissions', tier: 0 },
-      { key: 'admissions-pipeline', label: 'Admissions Pipeline', href: '/admissions/pipeline', tier: 0 },
+      { key: 'admissions', label: 'Admissions', href: PATHS.ADMISSIONS, tier: 0, roles: ROLE_GROUPS.ADMIN_REGISTRAR, permissions: [APP_PERMISSIONS.ADMISSIONS_VIEW] },
+      { key: 'admissions-pipeline', label: 'Admissions Pipeline', href: PATHS.ADMISSIONS_PIPELINE, tier: 0, roles: ROLE_GROUPS.ADMIN_REGISTRAR },
       { key: 'aftercare-roster', label: 'Roster Workspace', href: '/aftercare/roster', tier: 0 },
-      { key: 'wizards', label: 'Wizard Hub', href: '/wizards', tier: 0 },
+      { key: 'wizards', label: 'Wizard Hub', href: PATHS.WIZARDS, tier: 0, roles: ROLE_GROUPS.ADMIN_REGISTRAR },
     ],
   },
   {
     label: 'Communications',
     children: [
-      { key: 'communications', label: 'Communications', href: '/communications', tier: 0 },
+      { key: 'communications', label: 'Communications', href: PATHS.COMMUNICATIONS, tier: 0, roles: ROLE_GROUPS.ALL_AUTHENTICATED, permissions: [APP_PERMISSIONS.COMMUNICATIONS_VIEW] },
       { key: 'communications-director', label: 'Communications Director', href: '/communications-director', tier: 0 },
     ],
   },
@@ -54,19 +57,19 @@ const STATIC_NAV_SECTIONS = [
 
 const DASHBOARD_ALIAS_TO_ROUTE = {
   '/activities-dashboard': '/athletics',
-  '/admissions-dashboard': '/admissions',
+  [PATHS.ADMISSIONS_DASHBOARD]: PATHS.ADMISSIONS,
   '/advancement-dashboard': '/advancement',
   '/athletics-director-dashboard': '/athletics',
-  '/attendance-dashboard': '/attendance',
-  '/billing-dashboard': '/billing',
+  [PATHS.ATTENDANCE_DASHBOARD]: PATHS.ATTENDANCE,
+  [PATHS.BILLING_DASHBOARD]: PATHS.BILLING,
   '/chaplain-dashboard': '/spiritual-life',
-  '/communications-dashboard': '/communications',
+  [PATHS.COMMUNICATIONS_DASHBOARD]: PATHS.COMMUNICATIONS,
   '/extended-care-dashboard': '/extended-care',
   '/facilities-dashboard': '/facilities',
-  '/financial-aid-dashboard': '/financial-aid',
+  [PATHS.FINANCIAL_AID_DASHBOARD]: PATHS.FINANCIAL_AID,
   '/fine-arts-dashboard': '/fine-arts',
   '/food-service-dashboard': '/food',
-  '/gradebook-dashboard': '/gradebook',
+  [PATHS.GRADEBOOK_DASHBOARD]: PATHS.GRADEBOOK,
   '/health-office-dashboard': '/health',
   '/hr-dashboard': '/hr',
   '/it-support-dashboard': '/it',
