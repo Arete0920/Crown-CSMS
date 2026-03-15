@@ -33,6 +33,12 @@ export function useCurrentUserRole() {
       const parsed = readStoredUser();
 
       if (!parsed) {
+        // Fallback: read the simpler role key used by demo/test session seeding.
+        const simpleRole =
+          sessionStorage.getItem('crown.role') ||
+          localStorage.getItem('crown.role') ||
+          localStorage.getItem('crown.demo.role');
+        if (simpleRole) return simpleRole.trim().toLowerCase();
         return 'guest';
       }
 
