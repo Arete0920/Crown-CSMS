@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
+from core.permissions import user_has_permission
 from .tenant import school_id_from_request
 from .models import (
     AftercareEnrollment,
@@ -21,9 +22,27 @@ from .serializers import (
 from .services import ensure_config, checkin_student, checkout_student, record_incident
 
 
-# CANON_RBAC_TODO: replace stub with real RBAC check
 def require_role(request, allowed_roles: set) -> bool:
-    return True
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+
+    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        return True
+
+    school = getattr(request, "school", None)
+    normalized = {str(r).lower() for r in allowed_roles}
+
+    if "board" in normalized and user_has_permission(user, "board.view", school=school):
+        return True
+
+    if normalized.intersection({"admin", "aftercare_staff"}):
+        if user_has_permission(user, "aftercare.edit", school=school):
+            return True
+        if user_has_permission(user, "aftercare.view", school=school):
+            return True
+
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -207,9 +226,10 @@ def incidents(request):
 def parent_view(request, student_id: int):
     """
     Parent-facing read-only summary: enrollment + attendance history (last 30).
-    CANON_RBAC_TODO: verify the requesting user is a guardian of this student.
     """
     school_id = school_id_from_request(request, required=True)
+    if not require_role(request, {"admin", "aftercare_staff", "board"}):
+        return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
     enr = AftercareEnrollment.objects.filter(
         school_id=school_id, student_id=student_id, is_active=True
     ).first()

@@ -2,15 +2,23 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
+from core.permissions import user_has_permission
 from .tenant import school_id_from_request
 from .models import AftercareProgramConfig
 from .serializers import AftercareProgramConfigSerializer
 from .services import ensure_config
 
 
-# CANON_RBAC_TODO: replace with your real admin check
 def require_admin(request) -> bool:
-    return True
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    school = getattr(request, "school", None)
+    return (
+        getattr(user, "is_superuser", False)
+        or getattr(user, "is_staff", False)
+        or user_has_permission(user, "aftercare.edit", school=school)
+    )
 
 
 @api_view(["GET", "POST"])

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+import logging
 from decimal import Decimal
 from uuid import UUID
 
@@ -14,6 +15,9 @@ from households.scoping import get_request_school_id
 from .models import Application, Applicant, ApplicationEvent, ApplicationStatus
 from .services import submit_application
 from .services import decide_application
+
+
+logger = logging.getLogger(__name__)
 
 
 def _json_error(message: str, status: int = 400) -> JsonResponse:
@@ -158,7 +162,8 @@ def application_submit(request: HttpRequest, application_id: str):
     try:
         result = submit_application(app)
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        logger.exception("Application submit failed")
+        return _json_error("Request failed.", status=400)
 
     return _envelope(_app_to_dict(result.application), status=200)
 
@@ -243,7 +248,8 @@ def application_decision(request: HttpRequest, application_id: str):
             enrollment_fee_amount=fee_amt,
         )
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        logger.exception("Application decision failed")
+        return _json_error("Request failed.", status=400)
 
     return _envelope(
         {
