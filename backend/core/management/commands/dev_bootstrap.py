@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import os
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from core.models import School
 
 
 DEFAULT_ADMIN_USERNAME = "admin"
-DEFAULT_ADMIN_PASSWORD = "Crown2026!"
+ADMIN_PASSWORD_FROM_ENV = os.getenv("CROWN_DEFAULT_ADMIN_PASSWORD")
 PRIMARY_SCHOOL_NAME = "Crown Demo Christian Academy"
 SECONDARY_SCHOOL_NAME = "Smoke Secondary School"
 
@@ -22,7 +23,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--admin-username", default=DEFAULT_ADMIN_USERNAME)
-        parser.add_argument("--admin-password", default=DEFAULT_ADMIN_PASSWORD)
+        parser.add_argument("--admin-password", default=None)
         parser.add_argument("--primary-school", default=PRIMARY_SCHOOL_NAME)
         parser.add_argument("--secondary-school", default=SECONDARY_SCHOOL_NAME)
         parser.add_argument(
@@ -33,7 +34,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         admin_username = str(options["admin_username"]).strip() or DEFAULT_ADMIN_USERNAME
-        admin_password = str(options["admin_password"]) or DEFAULT_ADMIN_PASSWORD
+        admin_password = (
+            str(options["admin_password"]).strip()
+            if options["admin_password"] is not None
+            else (ADMIN_PASSWORD_FROM_ENV or "")
+        )
+        if not admin_password:
+            raise CommandError("CROWN_DEFAULT_ADMIN_PASSWORD is required")
         primary_school_name = str(options["primary_school"]).strip() or PRIMARY_SCHOOL_NAME
         secondary_school_name = str(options["secondary_school"]).strip() or SECONDARY_SCHOOL_NAME
         ensure_secondary = not bool(options["no_secondary"])
