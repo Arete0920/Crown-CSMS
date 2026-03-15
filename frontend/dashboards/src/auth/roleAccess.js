@@ -131,7 +131,27 @@ export function hasAllRoles(userLike, requiredRoles = []) {
 
 export function isAccessAllowed(userLike, accessConfig = {}) {
   const allowedRoles = accessConfig.roles || accessConfig.allowedRoles || [];
-  return hasAnyRole(userLike, allowedRoles);
+  const requiredPermissions = accessConfig.permissions || [];
+
+  const roleAllowed = hasAnyRole(userLike, allowedRoles);
+
+  if (!Array.isArray(requiredPermissions) || requiredPermissions.length === 0) {
+    return roleAllowed;
+  }
+
+  const permissionSet = Array.isArray(userLike?.permissions)
+    ? new Set(userLike.permissions.map((value) => String(value).trim()))
+    : null;
+
+  if (!permissionSet) {
+    return roleAllowed;
+  }
+
+  if (permissionSet.has('*')) {
+    return true;
+  }
+
+  return requiredPermissions.some((permission) => permissionSet.has(permission));
 }
 
 export function filterVisibleNav(items = [], userLike) {
@@ -143,7 +163,7 @@ export function filterVisibleNav(items = [], userLike) {
     const hasDirectAccess = isAccessAllowed(userLike, item);
     const hasVisibleChildren = children.length > 0;
     const hasExplicitAccessRule =
-      Array.isArray(item.roles) || Array.isArray(item.allowedRoles);
+      Array.isArray(item.roles) || Array.isArray(item.allowedRoles) || Array.isArray(item.permissions);
 
     if (hasDirectAccess || hasVisibleChildren || !hasExplicitAccessRule) {
       acc.push({

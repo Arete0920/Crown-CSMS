@@ -20,6 +20,8 @@ import {
   Typography,
 } from "@mui/material";
 import useAdmissionsDashboardData from "../hooks/useAdmissionsDashboardData";
+import PageState from "../components/states/PageState.jsx";
+import WidgetState from "../components/states/WidgetState.jsx";
 
 function formatMaybeDate(value) {
   if (!value) return "-";
@@ -138,21 +140,24 @@ export default function AdmissionsDashboard() {
           </Stack>
         </Stack>
 
-        {error ? <Alert severity="error">{error}</Alert> : null}
-
-        {loading ? (
-          <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
-            <CircularProgress />
-          </Box>
-        ) : (
+        <PageState
+          loading={loading}
+          error={error}
+          empty={!loading && !error && Number(summary?.total || 0) === 0}
+          emptyTitle="No admissions data yet"
+          emptyMessage="Admissions metrics will appear when applications are created."
+          onRetry={reload}
+        >
           <>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6} md={3}>
-                <SummaryCard
-                  title="Total Applications"
-                  value={summary.total}
-                  clickable={false}
-                />
+                <WidgetState title="Total Applications">
+                  <SummaryCard
+                    title="Total Applications"
+                    value={summary.total}
+                    clickable={false}
+                  />
+                </WidgetState>
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <SummaryCard
@@ -303,7 +308,7 @@ export default function AdmissionsDashboard() {
               </Grid>
             </Grid>
           </>
-        )}
+        </PageState>
       </Stack>
 
       <Drawer anchor="right" open={drawerOpen} onClose={closeDrilldown}>
