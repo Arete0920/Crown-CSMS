@@ -44,6 +44,10 @@ jobs:
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
           if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
 
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
+
       - name: Print write proof
         id: write_print
         working-directory: backend
@@ -84,6 +88,10 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
           if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
+
+      - name: Run migrations
+        working-directory: backend
+        run: python manage.py migrate --noinput
 
       - name: Print lifecycle proof
         id: lifecycle_print
