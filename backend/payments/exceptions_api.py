@@ -69,9 +69,9 @@ def payment_exception_retry(request, exception_id: int):
 
     try:
         process_gateway_event_safely(event)
-    except Exception as exc:
+    except Exception:
         item.status = PaymentExceptionStatus.OPEN
-        item.last_error = str(exc)
+        item.last_error = "Retry failed due to an internal processing error."
         item.save(update_fields=["status", "last_error", "updated_at"])
         logger.exception("payment_exception_retry: retry processing failed", extra={"exception_id": exception_id})
         return Response({"ok": False, "error": "Retry failed due to an internal processing error."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -101,7 +101,7 @@ def disburse_to_billing_run(request, billing_run_id: str):
             billing_run_id=UUID(billing_run_id),
         )
     except Exception:
-        log.exception("disburse_to_billing_run: unexpected error", extra={"billing_run_id": billing_run_id})
+        log.exception("disburse_to_billing_run: unexpected error")
         return _json_error("Unable to process disbursement for this billing run.", status=400)
 
     return _envelope(result, status=200)

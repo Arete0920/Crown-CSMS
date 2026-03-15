@@ -15,6 +15,7 @@ build/
 frontend/dashboards/node_modules/
 frontend/dashboards/dist/
 frontend/dashboards/test-results/
+frontend/dashboards/playwright-report/
 
 # Demo proof/log artifacts
 BOOTPASS_*.log

@@ -1571,5 +1571,8 @@ def google_wallet_link(request, ticket_id):
         from .google_wallet import make_google_wallet_save_url
         save_url = make_google_wallet_save_url(ticket_object_payload=ticket_object_payload)
         return Response({"ok": True, "save_url": save_url}, status=status.HTTP_200_OK)
-    except Exception as exc:
-        return Response({"ok": False, "message": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+    except Exception:
+        return Response(
+            {"ok": False, "message": "Unable to generate Google Wallet save URL."},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )

@@ -198,7 +198,7 @@ def platform_provisioning_status(request: Request, job_id: uuid.UUID) -> Respons
             "school_name": job.school.name,
             "state": job.state,
             "progress": job.progress,
-            "error": job.error or None,
+            "error": "Provisioning failed. Check server logs." if job.error else None,
             "started_at": job.started_at.isoformat() if job.started_at else None,
             "finished_at": job.finished_at.isoformat() if job.finished_at else None,
             "created_at": job.created_at.isoformat(),

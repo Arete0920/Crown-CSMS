@@ -1,4 +1,5 @@
 import csv
+from html import escape
 from io import StringIO
 
 from django.http import HttpResponse
@@ -75,15 +76,20 @@ def payment_receipt_html(request, payment_id):
     if household_id and not user_can_access_household_finance(request.user, household_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
+    receipt_id = escape(str(payment.id))
+    amount = escape(str(getattr(payment, "amount", "")))
+    source = escape(str(getattr(payment, "source", "")))
+    reference = escape(str(getattr(payment, "reference", "")))
+
     html = f"""
     <html>
-      <head><title>Payment Receipt #{payment.id}</title></head>
+      <head><title>Payment Receipt #{receipt_id}</title></head>
       <body style=\"font-family: Arial, sans-serif; padding: 24px;\">
         <h1>Payment Receipt</h1>
-        <p><strong>Receipt ID:</strong> {payment.id}</p>
-        <p><strong>Amount:</strong> {getattr(payment, 'amount', '')}</p>
-        <p><strong>Source:</strong> {getattr(payment, 'source', '')}</p>
-        <p><strong>Reference:</strong> {getattr(payment, 'reference', '')}</p>
+        <p><strong>Receipt ID:</strong> {receipt_id}</p>
+        <p><strong>Amount:</strong> {amount}</p>
+        <p><strong>Source:</strong> {source}</p>
+        <p><strong>Reference:</strong> {reference}</p>
       </body>
     </html>
     """.strip()

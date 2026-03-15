@@ -248,7 +248,7 @@ def record_payment(request: HttpRequest):
     try:
         amt = _parse_decimal(amount, "amount")
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     if amt <= Decimal("0"):
         return _json_error("amount must be > 0", status=400)
@@ -273,7 +273,7 @@ def record_payment(request: HttpRequest):
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     allocs_in = payload.get("allocations") or []
     allow_partial = bool(payload.get("allow_partial"))
@@ -291,7 +291,7 @@ def record_payment(request: HttpRequest):
                 raise ValueError("allocation.amount must be > 0")
             requested_by_charge[cid] = requested_by_charge.get(cid, Decimal("0")) + a_amt
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     total_requested = sum(requested_by_charge.values(), Decimal("0"))
     if requested_by_charge:
@@ -375,7 +375,7 @@ def payment_allocate(request: HttpRequest, payment_id: str):
     try:
         result = allocate_payment_fifo(school_id=sid, payment=p)
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     return _envelope(
         {
@@ -462,7 +462,7 @@ def open_charges(request: HttpRequest):
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     charges = Charge.objects.filter(school_id=sid, account=acct, is_void=False).order_by("created_at", "id")
 
@@ -525,7 +525,7 @@ def open_invoices(request: HttpRequest):
         try:
             qs = qs.filter(household_id=_parse_uuid(household_id, "household_id"))
         except ValueError as e:
-            return _json_error(str(e), status=400)
+            return _json_error("Invalid request payload", status=400)
 
     invoices = list(qs.order_by("due_on", "id"))
     charge_ids = [inv.ledger_charge_id for inv in invoices if inv.ledger_charge_id]
@@ -708,3 +708,4 @@ def void_payment(request: HttpRequest, payment_id: str):
         p.save(update_fields=["is_void"])
 
     return _envelope({"id": str(p.id), "school_id": str(sid), "is_void": True}, status=200)
+
