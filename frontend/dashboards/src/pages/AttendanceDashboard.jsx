@@ -6,6 +6,7 @@ import DashboardErrorState from '../components/dashboard/shared/DashboardErrorSt
 import MetricSummaryGrid from '../components/dashboard/shared/MetricSummaryGrid';
 import AlertListCard from '../components/dashboard/shared/AlertListCard';
 import TextListCard from '../components/dashboard/shared/TextListCard';
+import PageState from '../components/states/PageState.jsx';
 
 export default function AttendanceDashboard() {
   const {
@@ -37,23 +38,31 @@ export default function AttendanceDashboard() {
         error={error}
       />
 
-      {loading ? <DashboardLoadingState title="Loading attendance metrics..." /> : null}
-      {!loading && error && source === 'none' ? <DashboardErrorState error={error} /> : null}
+      <PageState
+        loading={loading}
+        error={source === 'none' ? error : null}
+        empty={!loading && !error && (!data || (data.metrics || []).length === 0)}
+        emptyTitle="No attendance metrics yet"
+        emptyMessage="Attendance metrics appear after your first attendance sync."
+      >
+        {loading ? <DashboardLoadingState title="Loading attendance metrics..." /> : null}
+        {!loading && error && source === 'none' ? <DashboardErrorState error={error} /> : null}
 
-      {!loading && data ? (
-        <>
-          <MetricSummaryGrid metrics={data.metrics || []} />
+        {!loading && data ? (
+          <>
+            <MetricSummaryGrid metrics={data.metrics || []} />
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={7}>
-              <AlertListCard title="Attendance Alerts" items={data.alerts || []} />
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={7}>
+                <AlertListCard title="Attendance Alerts" items={data.alerts || []} />
+              </Grid>
+              <Grid item xs={12} md={5}>
+                <TextListCard title="Attendance Queue" items={data.queue || []} />
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={5}>
-              <TextListCard title="Attendance Queue" items={data.queue || []} />
-            </Grid>
-          </Grid>
-        </>
-      ) : null}
+          </>
+        ) : null}
+      </PageState>
     </Stack>
   );
 }

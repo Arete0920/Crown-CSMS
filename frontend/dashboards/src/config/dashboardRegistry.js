@@ -1,5 +1,6 @@
 import { validateDashboardRegistry } from './validateDashboardRegistry';
 import { normalizeRoles as normalizeEffectiveRoles } from '../auth/roleAccess';
+import { PATHS } from '../routes/paths';
 
 // Tier 1
 import AttendanceDashboard from '../pages/AttendanceDashboard';
@@ -125,6 +126,7 @@ function createDashboard({
   return {
     key,
     label,
+    title: label,
     path,
     tier,
     section,
@@ -155,7 +157,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'attendance',
     label: 'Attendance',
-    path: '/attendance-dashboard',
+    path: PATHS.ATTENDANCE_DASHBOARD,
     tier: 1,
     section: 'Core Operations',
     allowedRoles: ATTENDANCE_TEAM,
@@ -164,7 +166,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'billing',
     label: 'Billing',
-    path: '/billing-dashboard',
+    path: PATHS.BILLING_DASHBOARD,
     tier: 1,
     section: 'Core Operations',
     allowedRoles: FINANCE_TEAM,
@@ -173,7 +175,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'financial-aid',
     label: 'Financial Aid',
-    path: '/financial-aid-dashboard',
+    path: PATHS.FINANCIAL_AID_DASHBOARD,
     tier: 1,
     section: 'Core Operations',
     allowedRoles: FINANCE_TEAM,
@@ -182,7 +184,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'registrar',
     label: 'Registrar',
-    path: '/registrar-dashboard',
+    path: PATHS.REGISTRAR_DASHBOARD,
     tier: 1,
     section: 'Core Operations',
     allowedRoles: REGISTRAR_TEAM,
@@ -193,7 +195,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'scheduling',
     label: 'Scheduling',
-    path: '/scheduling-dashboard',
+    path: PATHS.SCHEDULING_DASHBOARD,
     tier: 2,
     section: 'Academic & Student Operations',
     allowedRoles: REGISTRAR_TEAM,
@@ -202,7 +204,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'gradebook',
     label: 'Gradebook',
-    path: '/gradebook-dashboard',
+    path: PATHS.GRADEBOOK_DASHBOARD,
     tier: 2,
     section: 'Academic & Student Operations',
     allowedRoles: ACADEMIC_TEAM,
@@ -211,7 +213,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'student-care',
     label: 'Student Care',
-    path: '/student-care-dashboard',
+    path: PATHS.STUDENT_CARE_DASHBOARD,
     tier: 2,
     section: 'Academic & Student Operations',
     allowedRoles: ACADEMIC_TEAM,
@@ -220,7 +222,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'activities-athletics',
     label: 'Activities & Athletics',
-    path: '/activities-dashboard',
+    path: PATHS.ACTIVITIES_DASHBOARD,
     tier: 2,
     section: 'Academic & Student Operations',
     allowedRoles: ATHLETICS_TEAM,
@@ -229,7 +231,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'communications',
     label: 'Communications',
-    path: '/communications-dashboard',
+    path: PATHS.COMMUNICATIONS_DASHBOARD,
     tier: 2,
     section: 'Academic & Student Operations',
     allowedRoles: SCHOOL_ADMIN,
@@ -240,7 +242,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'school-administrator',
     label: 'School Administrator',
-    path: '/school-admin-dashboard',
+    path: PATHS.SCHOOL_ADMIN_DASHBOARD,
     tier: 3,
     section: 'Leadership & Growth',
     allowedRoles: SCHOOL_ADMIN,
@@ -249,7 +251,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'school-board',
     label: 'School Board',
-    path: '/school-board-dashboard',
+    path: PATHS.SCHOOL_BOARD_DASHBOARD,
     tier: 3,
     section: 'Leadership & Growth',
     allowedRoles: BOARD_MEMBER,
@@ -258,7 +260,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'master-control',
     label: 'Master Control',
-    path: '/master-control-dashboard',
+    path: PATHS.MASTER_CONTROL_DASHBOARD,
     tier: 3,
     section: 'Leadership & Growth',
     allowedRoles: MASTER_CONTROL,
@@ -267,7 +269,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'admissions',
     label: 'Admissions',
-    path: '/admissions-dashboard',
+    path: PATHS.ADMISSIONS_DASHBOARD,
     tier: 3,
     section: 'Leadership & Growth',
     allowedRoles: ADMISSIONS_TEAM,
@@ -276,7 +278,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'advancement',
     label: 'Advancement',
-    path: '/advancement-dashboard',
+    path: PATHS.ADVANCEMENT_DASHBOARD,
     tier: 3,
     section: 'Leadership & Growth',
     allowedRoles: ADVANCEMENT_TEAM,
@@ -287,7 +289,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'hr',
     label: 'HR',
-    path: '/hr-dashboard',
+    path: PATHS.HR_DASHBOARD,
     tier: 4,
     section: 'Specialist Operations',
     allowedRoles: HR_TEAM,
@@ -296,7 +298,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'facilities',
     label: 'Facilities',
-    path: '/facilities-dashboard',
+    path: PATHS.FACILITIES_DASHBOARD,
     tier: 4,
     section: 'Specialist Operations',
     allowedRoles: FACILITIES_TEAM,
@@ -305,7 +307,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'health-office',
     label: 'Health Office',
-    path: '/health-office-dashboard',
+    path: PATHS.HEALTH_OFFICE_DASHBOARD,
     tier: 4,
     section: 'Specialist Operations',
     allowedRoles: HEALTH_TEAM,
@@ -314,7 +316,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'transportation',
     label: 'Transportation',
-    path: '/transportation-dashboard',
+    path: PATHS.TRANSPORTATION_DASHBOARD,
     tier: 4,
     section: 'Specialist Operations',
     allowedRoles: TRANSPORT_TEAM,
@@ -323,7 +325,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'food-service',
     label: 'Food Service',
-    path: '/food-service-dashboard',
+    path: PATHS.FOOD_SERVICE_DASHBOARD,
     tier: 4,
     section: 'Specialist Operations',
     allowedRoles: FOOD_TEAM,
@@ -332,7 +334,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'it-support',
     label: 'IT Support',
-    path: '/it-support-dashboard',
+    path: PATHS.IT_SUPPORT_DASHBOARD,
     tier: 4,
     section: 'Specialist Operations',
     allowedRoles: IT_TEAM,
@@ -343,7 +345,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'fine-arts',
     label: 'Fine Arts',
-    path: '/fine-arts-dashboard',
+    path: PATHS.FINE_ARTS_DASHBOARD,
     tier: 5,
     section: 'Enrichment & Support',
     allowedRoles: FINE_ARTS_TEAM,
@@ -352,7 +354,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'athletics-director',
     label: 'Athletics Director',
-    path: '/athletics-director-dashboard',
+    path: PATHS.ATHLETICS_DIRECTOR_DASHBOARD,
     tier: 5,
     section: 'Enrichment & Support',
     allowedRoles: ATHLETICS_TEAM,
@@ -361,7 +363,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'library-media',
     label: 'Library / Media',
-    path: '/library-media-dashboard',
+    path: PATHS.LIBRARY_MEDIA_DASHBOARD,
     tier: 5,
     section: 'Enrichment & Support',
     allowedRoles: LIBRARY_TEAM,
@@ -370,7 +372,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'extended-care',
     label: 'Extended Care',
-    path: '/extended-care-dashboard',
+    path: PATHS.EXTENDED_CARE_DASHBOARD,
     tier: 5,
     section: 'Enrichment & Support',
     allowedRoles: EXTENDED_CARE_TEAM,
@@ -379,7 +381,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'safety-security',
     label: 'Safety / Security',
-    path: '/safety-security-dashboard',
+    path: PATHS.SAFETY_SECURITY_DASHBOARD,
     tier: 5,
     section: 'Enrichment & Support',
     allowedRoles: SAFETY_TEAM,
@@ -388,7 +390,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'curriculum-pd',
     label: 'Curriculum / PD Hub',
-    path: '/curriculum-pd-dashboard',
+    path: PATHS.CURRICULUM_PD_DASHBOARD,
     tier: 5,
     section: 'Enrichment & Support',
     allowedRoles: CURRICULUM_TEAM,
@@ -399,7 +401,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'chaplain-spiritual-life',
     label: 'Chaplain / Spiritual Life',
-    path: '/chaplain-dashboard',
+    path: PATHS.CHAPLAIN_DASHBOARD,
     tier: 6,
     section: 'Mission & Network',
     allowedRoles: CHAPLAIN_TEAM,
@@ -408,7 +410,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'advancement-operations',
     label: 'Advancement Operations',
-    path: '/advancement-operations-dashboard',
+    path: PATHS.ADVANCEMENT_OPERATIONS_DASHBOARD,
     tier: 6,
     section: 'Mission & Network',
     allowedRoles: ADVANCEMENT_TEAM,
@@ -417,7 +419,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'volunteer-management',
     label: 'Volunteer Management',
-    path: '/volunteer-management-dashboard',
+    path: PATHS.VOLUNTEER_MANAGEMENT_DASHBOARD,
     tier: 6,
     section: 'Mission & Network',
     allowedRoles: VOLUNTEER_TEAM,
@@ -426,7 +428,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'portrait-service',
     label: 'Portrait / Service Hours',
-    path: '/portrait-service-dashboard',
+    path: PATHS.PORTRAIT_SERVICE_DASHBOARD,
     tier: 6,
     section: 'Mission & Network',
     allowedRoles: PORTRAIT_TEAM,
@@ -435,7 +437,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'alumni-relations',
     label: 'Alumni Relations',
-    path: '/alumni-relations-dashboard',
+    path: PATHS.ALUMNI_RELATIONS_DASHBOARD,
     tier: 6,
     section: 'Mission & Network',
     allowedRoles: ALUMNI_TEAM,
@@ -444,7 +446,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'network-benchmarking',
     label: 'Network Benchmarking',
-    path: '/network-benchmarking-dashboard',
+    path: PATHS.NETWORK_BENCHMARKING_DASHBOARD,
     tier: 6,
     section: 'Mission & Network',
     allowedRoles: MASTER_CONTROL,
@@ -455,7 +457,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'implementation-success',
     label: 'Implementation Success',
-    path: '/implementation-success-dashboard',
+    path: PATHS.IMPLEMENTATION_SUCCESS_DASHBOARD,
     tier: 7,
     section: 'Platform Operations',
     allowedRoles: IMPLEMENTATION_TEAM,
@@ -464,7 +466,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'data-migration',
     label: 'Data Migration',
-    path: '/data-migration-dashboard',
+    path: PATHS.DATA_MIGRATION_DASHBOARD,
     tier: 7,
     section: 'Platform Operations',
     allowedRoles: DATA_OPS_TEAM,
@@ -473,7 +475,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'integrations-automation',
     label: 'Integrations / Automation',
-    path: '/integrations-automation-dashboard',
+    path: PATHS.INTEGRATIONS_AUTOMATION_DASHBOARD,
     tier: 7,
     section: 'Platform Operations',
     allowedRoles: INTEGRATIONS_TEAM,
@@ -482,7 +484,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'compliance-audit',
     label: 'Compliance / Audit',
-    path: '/compliance-audit-dashboard',
+    path: PATHS.COMPLIANCE_AUDIT_DASHBOARD,
     tier: 7,
     section: 'Platform Operations',
     allowedRoles: COMPLIANCE_TEAM,
@@ -491,7 +493,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'revenue-operations',
     label: 'Revenue Operations',
-    path: '/revenue-operations-dashboard',
+    path: PATHS.REVENUE_OPERATIONS_DASHBOARD,
     tier: 7,
     section: 'Platform Operations',
     allowedRoles: REVENUE_OPS_TEAM,
@@ -500,7 +502,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'release-reliability',
     label: 'Release Reliability',
-    path: '/release-reliability-dashboard',
+    path: PATHS.RELEASE_RELIABILITY_DASHBOARD,
     tier: 7,
     section: 'Platform Operations',
     allowedRoles: RELEASE_TEAM,
@@ -509,7 +511,7 @@ export const DASHBOARD_REGISTRY = [
   createDashboard({
     key: 'dashboard-certification-center',
     label: 'Dashboard Certification Center',
-    path: '/dashboard-certification-center',
+    path: PATHS.DASHBOARD_CERTIFICATION_CENTER,
     tier: 7,
     section: 'Platform Operations',
     allowedRoles: PLATFORM_CERT_TEAM,
@@ -556,3 +558,5 @@ export function getDefaultDashboardPath(userRoles) {
 if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
   validateDashboardRegistry(DASHBOARD_REGISTRY);
 }
+
+export default DASHBOARD_REGISTRY;

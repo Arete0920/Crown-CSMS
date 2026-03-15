@@ -1,4 +1,5 @@
-﻿import { apiFetch } from "../lib/api";
+﻿import { apiGet, apiGetList } from './request';
+import { buildApiPath } from '../utils/apiContracts';
 
 function buildQuery(params = {}) {
   const query = new URLSearchParams();
@@ -18,19 +19,25 @@ function toRows(payload) {
 }
 
 export function fetchFinanceMetrics(params = {}) {
-  return apiFetch(`/api/v1/finance/metrics/${buildQuery(params)}`);
+  return apiGet(`/api/v1/finance/metrics/${buildQuery(params)}`);
 }
 
 export function fetchFinanceSummary(params = {}) {
-  return apiFetch(`/api/v1/dashboards/finance/summary/${buildQuery(params)}`);
+  return apiGet(`/api/v1/dashboards/finance/summary/${buildQuery(params)}`);
 }
 
 export function fetchInvoices(params = {}) {
-  return apiFetch(`/api/billing/invoices/${buildQuery(params)}`);
+  const path = buildApiPath('finance.invoices.list');
+  return apiGet(`${path}${buildQuery(params)}`);
 }
 
 export async function getInvoices(params = {}) {
-  const data = await fetchInvoices(params);
+  const path = buildApiPath('finance.invoices.list');
+  if (Object.keys(params).length === 0) {
+    return apiGetList(path);
+  }
+
+  const data = await apiGet(`${path}${buildQuery(params)}`);
   return toRows(data);
 }
 
