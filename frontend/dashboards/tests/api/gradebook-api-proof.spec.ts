@@ -130,7 +130,7 @@ test("Gradebook Proof: Roster + Grades + Assignments with 200s + auth headers", 
   console.log(`\n[Headers Proof]`);
   console.log(`  Each request was sent with:`);
   console.log(`    - Authorization: Bearer [token]`);
-  console.log(`    - X-School-Id: ${SCHOOL_ID}`);
+  console.log(`    - X-School-Id: ${schoolId}`);
   console.log(`  All 200 responses prove headers were accepted by backend. ✅`);
 
   console.log(`\n✅ PASS: All three endpoints returned 200 with required auth headers.`);
