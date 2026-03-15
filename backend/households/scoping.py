@@ -65,7 +65,7 @@ def get_request_school_id(request, required: bool = True) -> Optional[UUID]:
     # 404: Valid UUID but school does not exist
     try:
         from core.models import School
-        if not School.objects.filter(id=res.school_id).exists():
+        if not School.objects.filter(pk=res.school_id).exists():
             raise NotFound({"detail": "Tenant not found"})
     except NotFound:
         raise

@@ -42,7 +42,7 @@ def _get_school(request) -> School:
     - Staff users → pass-through
     """
     sid = get_request_school_id(request, required=True)
-    return School.objects.get(id=sid)
+    return School.objects.get(pk=sid)
 
 
 def _is_pastoral_staff(user) -> bool:

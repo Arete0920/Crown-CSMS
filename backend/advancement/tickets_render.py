@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
 import uuid
+
+logger = logging.getLogger(__name__)
 
 
 def make_ticket_pdf_bytes(*, ticket, seat) -> bytes:
@@ -82,7 +85,7 @@ def make_ticket_pdf_bytes(*, ticket, seat) -> bytes:
         if hasattr(ticket, "event") and hasattr(ticket.event, "date"):
             event_date = str(ticket.event.date or "")
     except Exception:
-        pass
+        logger.debug("ticket event metadata fallback used", exc_info=True)
 
     # Extract seat info
     section = getattr(seat, "section", "") or "General"

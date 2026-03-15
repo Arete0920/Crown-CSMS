@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from datetime import date, time as dtime
 
 from django.contrib.auth import get_user_model
@@ -177,7 +177,7 @@ class BellScheduleCreateTest(TestCase):
         school = _make_school()
         c = _authed_client()
         r = c.post(BASE_URL, **_headers(school.id))
-        self.assertTrue(BellScheduleWizardSession.objects.filter(id=r.data["session_id"]).exists())
+        self.assertTrue(BellScheduleWizardSession.objects.filter(pk=r.data["session_id"]).exists())
 
 
 # ---------------------------------------------------------------------------
@@ -418,7 +418,7 @@ class BellScheduleCommitTest(TestCase):
         r = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
         self.assertIn("schedule_id", r.data)
-        self.assertTrue(BellSchedule.objects.filter(id=r.data["schedule_id"]).exists())
+        self.assertTrue(BellSchedule.objects.filter(pk=r.data["schedule_id"]).exists())
 
     def test_commit_creates_day_templates(self):
         school = _make_school()
@@ -427,7 +427,7 @@ class BellScheduleCommitTest(TestCase):
         sid = _advance_to_blocks_set(c, school, ay, templates=GOOD_AB_TEMPLATES, mode="DAY_TEMPLATES")
         r = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
-        sched = BellSchedule.objects.get(id=r.data["schedule_id"])
+        sched = BellSchedule.objects.get(pk=r.data["schedule_id"])
         self.assertEqual(DayTemplate.objects.filter(schedule=sched).count(), 2)
 
     def test_commit_creates_period_blocks(self):
@@ -436,7 +436,7 @@ class BellScheduleCommitTest(TestCase):
         c = _authed_client()
         sid = _advance_to_blocks_set(c, school, ay)
         r = c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
-        sched = BellSchedule.objects.get(id=r.data["schedule_id"])
+        sched = BellSchedule.objects.get(pk=r.data["schedule_id"])
         tpl = DayTemplate.objects.get(schedule=sched, template_code="DEFAULT")
         self.assertEqual(PeriodBlock.objects.filter(template=tpl).count(), 3)
 
@@ -472,13 +472,13 @@ class BellScheduleCommitTest(TestCase):
         # First commit: 3 blocks
         sid = _advance_to_blocks_set(c, school, ay)
         c.post(f"{BASE_URL}{sid}/commit/", format="json", **_headers(school.id))
-        # Second commit: same name, 1 block — blocks replaced
+        # Second commit: same name, 1 block � blocks replaced
         sid2 = _advance_to_blocks_set(c, school, ay, templates=[{
             "template_code": "DEFAULT",
             "blocks": [{"code": "P1", "label": "P1 Updated", "start_time": "08:00", "end_time": "09:00"}],
         }])
         r2 = c.post(f"{BASE_URL}{sid2}/commit/", format="json", **_headers(school.id))
-        sched = BellSchedule.objects.get(id=r2.data["schedule_id"])
+        sched = BellSchedule.objects.get(pk=r2.data["schedule_id"])
         tpl = DayTemplate.objects.get(schedule=sched, template_code="DEFAULT")
         self.assertEqual(PeriodBlock.objects.filter(template=tpl).count(), 1)
 
@@ -518,8 +518,8 @@ class BellScheduleSingleActiveTest(TestCase):
         ay = _make_ay(school)
         c = _authed_client()
         sid = _advance_to_committed(c, school, ay)
-        sess = BellScheduleWizardSession.objects.get(id=sid)
-        sched = BellSchedule.objects.get(id=sess.commit_result["schedule_id"])
+        sess = BellScheduleWizardSession.objects.get(pk=sid)
+        sched = BellSchedule.objects.get(pk=sess.commit_result["schedule_id"])
         self.assertTrue(sched.is_active)
 
     def test_second_commit_flips_first_inactive(self):
@@ -528,7 +528,7 @@ class BellScheduleSingleActiveTest(TestCase):
         c = _authed_client()
         # First commit: Standard (3 blocks)
         sid1 = _advance_to_committed(c, school, ay, name="Standard")
-        sess1 = BellScheduleWizardSession.objects.get(id=sid1)
+        sess1 = BellScheduleWizardSession.objects.get(pk=sid1)
         sched1_id = sess1.commit_result["schedule_id"]
         # Second commit: different name -> new schedule object
         sid2 = _advance_to_committed(c, school, ay, templates=[{
@@ -536,7 +536,7 @@ class BellScheduleSingleActiveTest(TestCase):
             "blocks": [{"code": "P1", "label": "P1", "start_time": "08:00", "end_time": "09:00"}],
         }], name="Chapel Day")
         # First schedule now inactive
-        sched1 = BellSchedule.objects.get(id=sched1_id)
+        sched1 = BellSchedule.objects.get(pk=sched1_id)
         self.assertFalse(sched1.is_active)
 
 

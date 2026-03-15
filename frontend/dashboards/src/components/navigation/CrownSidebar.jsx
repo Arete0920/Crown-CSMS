@@ -2,6 +2,10 @@ import { useState } from "react";
 import { List, ListItemButton, ListItemText, Collapse, Typography, Box } from "@mui/material";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
+import { getDashboardNavSections } from './dashboardNavConfig';
+import { getCurrentUserRoles } from '../../auth/roleAdapter';
+import { filterVisibleNav } from '../../auth/roleAccess';
+import { usePermissions } from '../../hooks/usePermissions';
 
 /**
  * Collapsible sidebar section with a labelled group header.
@@ -88,37 +92,51 @@ function NavItem({ label, href }) {
   );
 }
 
+const normalizeRole = (role) => String(role || 'guest').trim().toLowerCase();
+
+const canSeeItem = (itemRoles, currentRole) => {
+  if (!Array.isArray(itemRoles) || itemRoles.length === 0) return true;
+  return itemRoles.map(normalizeRole).includes(normalizeRole(currentRole));
+};
+
 /**
- * CrownSidebar - collapsible grouped navigation.
+ * CrownSidebar — collapsible grouped navigation.
  *
  * Standalone MUI component; can be embedded alongside the existing CrownLayout
  * sidebar or used independently in a new layout composition.
  */
 export default function CrownSidebar() {
+  const { permissions } = usePermissions();
+  const dashboardNavSections = getDashboardNavSections();
+  const userRoles = getCurrentUserRoles();
+  const currentUserRole = userRoles[0] || 'guest';
+  const visibleNavItems = filterVisibleNav(dashboardNavSections, { roles: userRoles, permissions })
+    .map((section) => ({
+      ...section,
+      children: (section.children || []).filter((item) => {
+        const roleVisible = canSeeItem(item.roles, currentUserRole);
+        if (!Array.isArray(item.permissions) || item.permissions.length === 0) {
+          return roleVisible;
+        }
+
+        if (permissions.includes('*')) {
+          return true;
+        }
+
+        return roleVisible && item.permissions.some((permission) => permissions.includes(permission));
+      }),
+    }))
+    .filter((section) => (section.children || []).length > 0);
+
   return (
     <List dense disablePadding sx={{ pt: 0.2 }}>
-      <Section title="Academics">
-        <NavItem label="Gradebook" href="/gradebook" />
-        <NavItem label="Courses" href="/courses" />
-        <NavItem label="Attendance" href="/attendance" />
-      </Section>
-
-      <Section title="Finance">
-        <NavItem label="Billing" href="/billing" />
-        <NavItem label="Financial Aid" href="/aid" />
-        <NavItem label="Invoices" href="/invoices" />
-      </Section>
-
-      <Section title="Board">
-        <NavItem label="Metrics" href="/board/metrics" />
-        <NavItem label="Integrity" href="/integrity" />
-      </Section>
-
-      <Section title="Operations">
-        <NavItem label="Admissions" href="/admissions" />
-        <NavItem label="Registrar" href="/registrar" />
-        <NavItem label="Scheduling" href="/scheduling" />
-      </Section>
+      {visibleNavItems.map((section) => (
+        <Section key={section.label} title={section.label}>
+          {section.children.map((item) => (
+            <NavItem key={`${section.label}:${item.key}:${item.href}`} label={item.label} href={item.href} />
+          ))}
+        </Section>
+      ))}
     </List>
   );
 }

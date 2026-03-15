@@ -24,7 +24,7 @@ class Command(BaseCommand):
         
         # Resolve school
         if school_id:
-            school = School.objects.filter(id=school_id).first()
+            school = School.objects.filter(pk=school_id).first()
             if not school:
                 raise RuntimeError(f"School {school_id} not found")
         else:

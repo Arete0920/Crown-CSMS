@@ -15,7 +15,7 @@ Endpoints:
 
 Invariants enforced here:
   - Tenant: every lookup filtered on school_id from X-School-Id header
-  - AY ownership: AcademicYear.objects.filter(id=..., school_id=...)
+  - AY ownership: AcademicYear.objects.filter(pk=..., school_id=...)
   - Period coverage: periods[0].start_date == ay.start_date,
                      periods[-1].end_date == ay.end_date,
                      consecutive periods[i].end_date + 1 day == periods[i+1].start_date
@@ -32,6 +32,7 @@ Invariants enforced here:
 """
 
 from datetime import date, timedelta
+import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -58,6 +59,7 @@ from .models import (
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -381,7 +383,7 @@ def commit_session(request, session_id):
                 status=status.HTTP_400_BAD_REQUEST,
             )
     except ImportError:
-        pass  # grade_scale_wizard not installed — lock skipped
+        logger.debug("grade_scale_wizard not installed; term code lock skipped")
 
     ts_created     = False
     periods_created = periods_updated = 0
@@ -440,8 +442,8 @@ def commit_session(request, session_id):
                 "periods":           len(periods),
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("term_structure.commit audit log skipped: %s", exc)
 
     result = {
         "term_structure_id":  str(ts.id),

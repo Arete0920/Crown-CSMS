@@ -18,7 +18,7 @@ def households_list(request):
 
     access = resolve_household_access(request)
 
-    qs = Household.objects.all()
+    qs = Household.objects.order_by("household_name")
     if not access.is_staff:
         qs = qs.filter(id__in=access.household_ids)
 

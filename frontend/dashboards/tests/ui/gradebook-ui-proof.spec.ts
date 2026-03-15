@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 const TEST_USER = process.env.CROWN_TEST_USER ?? "teacher";
 const TEST_PASS = process.env.CROWN_TEST_PASS ?? "Crown2026!";
 const TEST_SCHOOL_ID = process.env.CROWN_TEST_SCHOOL_ID ?? "19801b59-8c05-4c84-9312-5d792e4e839d";
+const TEST_ROLE = process.env.CROWN_TEST_ROLE ?? "admin";
 const TEST_API_BASE = process.env.CROWN_TEST_API_BASE ?? "http://127.0.0.1:8000";
 const TEST_UI_BASE = process.env.CROWN_TEST_UI_BASE ?? "http://localhost:3000";
 
@@ -18,16 +19,19 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
   // Step 2: Inject JWT + school ID into sessionStorage + localStorage before page load
   // (Ensures authenticatedFetch() can read tenant header for X-School-Id enforcement)
   await page.addInitScript(
-    ({ token, schoolId }) => {
+    ({ token, schoolId, role }) => {
       // Session storage (primary)
       sessionStorage.setItem("crown.jwt.access", token);
       sessionStorage.setItem("crown.school.id", schoolId);
+      sessionStorage.setItem("crown.role", role);
 
       // Local storage (backup fallback for authClient.js)
       localStorage.setItem("crown.jwt.access", token);
       localStorage.setItem("crown.school.id", schoolId);
+      localStorage.setItem("crown.role", role);
+      localStorage.setItem("crown.demo.role", role);
     },
-    { token, schoolId: TEST_SCHOOL_ID }
+    { token, schoolId: TEST_SCHOOL_ID, role: TEST_ROLE }
   );
 
   // Step 3: Track API calls and log errors
@@ -58,10 +62,11 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
   });
 
   // Step 4: Navigate directly to gradebook (token is already injected)
-  await page.goto(`${TEST_UI_BASE}/gradebook`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${TEST_UI_BASE}/gradebook`, { waitUntil: "networkidle" });
+  await expect(page).toHaveURL(/\/gradebook$/);
 
-  // Step 4.5: Wait for page to auto-select first section and load grades (with extra time)
-  await page.waitForTimeout(2000);
+  // Step 4.5: Wait for page to auto-select first section and load grades
+  await page.waitForTimeout(2500);
 
   // Early diagnostic: check if any API errors occurred before checking elements
   if (apiErrors.length > 0) {

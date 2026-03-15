@@ -1,4 +1,4 @@
-/**
+﻿/**
  * api/onboarding.js
  *
  * Follows the api/admissions.js pattern exactly:
@@ -10,7 +10,7 @@
  */
 import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 function headers(extra = {}) {
   return {
@@ -30,7 +30,7 @@ async function checkResponse(res, url) {
     err.url = url;
     throw err;
   }
-  // 204 No Content or empty body — return null instead of throwing a JSON parse error
+  // 204 No Content or empty body â€” return null instead of throwing a JSON parse error
   const ct = res.headers.get("content-type") || "";
   if (res.status === 204 || !ct.includes("application/json")) return null;
   return res.json();
@@ -52,7 +52,7 @@ export async function uploadImportFile(importId, file) {
   const url = `${API_BASE}/api/v1/onboarding/imports/${importId}/upload/`;
   const form = new FormData();
   form.append("file", file);
-  // Do NOT set Content-Type — browser sets multipart/form-data + boundary
+  // Do NOT set Content-Type â€” browser sets multipart/form-data + boundary
   const res = await fetch(url, {
     method: "POST",
     headers: headers(),   // no Content-Type override
@@ -102,3 +102,4 @@ export async function verifyImport(importId) {
   });
   return checkResponse(res, url);
 }
+

@@ -5,6 +5,8 @@ Each director persona gets isolated APIs that return ONLY their data.
 Contract must be identical across all director personas.
 """
 
+import logging
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -25,6 +27,9 @@ from core.models import AcademicYear, LedgerEntry
 from households.scoping import MissingSchoolContext, get_request_school_id
 
 
+logger = logging.getLogger(__name__)
+
+
 def days_waiting(dt):
     """Calculate days since timestamp"""
     if not dt:
@@ -39,7 +44,7 @@ def days_waiting(dt):
 def aid_priority_queue(request):
     """
     Priority queue for Aid Director - returns ONLY aid-related items.
-    
+
     Contract: All director priority-queue APIs must return:
     {
         "rows": [{"type", "score", "id", "summary", "timestamp", ...}],
@@ -49,22 +54,22 @@ def aid_priority_queue(request):
     # Get context (in production, from session/auth)
     school_id = request.query_params.get('school_id')
     year_id = request.query_params.get('year_id')
-    
+
     if not school_id or not year_id:
         return Response(
             {"detail": "school_id and year_id are required"},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     # Query aid applications
     needs_info_apps = (
         AidApplication.objects
-        .filter(school_id=school_id, academic_year_id=year_id, 
+        .filter(school_id=school_id, academic_year_id=year_id,
                 status=AidApplication.STATUS_NEEDS_INFO)
         .select_related("family")
         .order_by("-submitted_at")[:20]
     )
-    
+
     under_review_apps = (
         AidApplication.objects
         .filter(school_id=school_id, academic_year_id=year_id,
@@ -72,7 +77,7 @@ def aid_priority_queue(request):
         .select_related("family")
         .order_by("-submitted_at")[:20]
     )
-    
+
     accepted_awards = (
         AidAward.objects
         .filter(school_id=school_id, academic_year_id=year_id,
@@ -81,10 +86,10 @@ def aid_priority_queue(request):
         .select_related("student", "student__family")
         .order_by("-decided_at", "-created_at")[:20]
     )
-    
+
     # Build scored rows
     rows = []
-    
+
     for app in needs_info_apps:
         score = 100 + (days_waiting(app.submitted_at) * 3)
         rows.append({
@@ -95,7 +100,7 @@ def aid_priority_queue(request):
             "timestamp": app.submitted_at.isoformat() if app.submitted_at else None,
             "summary": "Application needs info (missing documents).",
         })
-    
+
     for app in under_review_apps:
         score = 60 + (days_waiting(app.submitted_at) * 2)
         rows.append({
@@ -106,7 +111,7 @@ def aid_priority_queue(request):
             "timestamp": app.submitted_at.isoformat() if app.submitted_at else None,
             "summary": "Application under review.",
         })
-    
+
     for award in accepted_awards:
         award_dollars = (award.awarded_cents or 0) / 100
         score = 90 + min(40, int(award_dollars // 500))
@@ -120,10 +125,10 @@ def aid_priority_queue(request):
             "summary": "Accepted award not posted to ledger.",
             "awarded_cents": award.awarded_cents,
         })
-    
+
     # Sort by score descending
     rows.sort(key=lambda x: x["score"], reverse=True)
-    
+
     return Response({
         "rows": rows,
         "meta": {
@@ -138,7 +143,7 @@ def aid_priority_queue(request):
 def aid_metrics(request):
     """
     Metrics for Aid Director - returns ONLY aid metrics.
-    
+
     Contract: All director metrics APIs must return:
     {
         "metrics": {"key": value, ...},
@@ -147,39 +152,39 @@ def aid_metrics(request):
     """
     school_id = request.query_params.get('school_id')
     year_id = request.query_params.get('year_id')
-    
+
     if not school_id or not year_id:
         return Response(
             {"detail": "school_id and year_id are required"},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     # Count applications by status
     total_applications = AidApplication.objects.filter(
         school_id=school_id, academic_year_id=year_id
     ).count()
-    
+
     needs_info_count = AidApplication.objects.filter(
         school_id=school_id, academic_year_id=year_id,
         status=AidApplication.STATUS_NEEDS_INFO
     ).count()
-    
+
     under_review_count = AidApplication.objects.filter(
         school_id=school_id, academic_year_id=year_id,
         status=AidApplication.STATUS_UNDER_REVIEW
     ).count()
-    
+
     accepted_count = AidApplication.objects.filter(
         school_id=school_id, academic_year_id=year_id,
         status=AidApplication.STATUS_APPROVED
     ).count()
-    
+
     # Sum total awarded
     total_awarded = AidAward.objects.filter(
         school_id=school_id, academic_year_id=year_id,
         decision_status=AidAward.DECISION_ACCEPTED
     ).aggregate(total=Sum('awarded_cents'))['total'] or 0
-    
+
     return Response({
         "metrics": {
             "applications_count": total_applications,
@@ -199,7 +204,7 @@ def aid_metrics(request):
 def aid_timeline(request):
     """
     Timeline for Aid Director - returns ONLY aid events.
-    
+
     Contract: All director timeline APIs must return:
     {
         "events": [{"timestamp", "type", "actor", "summary", "id"}],
@@ -208,13 +213,13 @@ def aid_timeline(request):
     """
     school_id = request.query_params.get('school_id')
     year_id = request.query_params.get('year_id')
-    
+
     if not school_id or not year_id:
         return Response(
             {"detail": "school_id and year_id are required"},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     # Get recent aid applications
     recent_apps = (
         AidApplication.objects
@@ -222,7 +227,7 @@ def aid_timeline(request):
         .select_related("family")
         .order_by("-submitted_at")[:50]
     )
-    
+
     events = []
     for app in recent_apps:
         events.append({
@@ -232,10 +237,10 @@ def aid_timeline(request):
             "summary": f"Application submitted by {getattr(app.family, 'family_name', 'Unknown')} family",
             "id": str(app.id),
         })
-    
+
     # Sort by timestamp descending
     events.sort(key=lambda x: x["timestamp"], reverse=True)
-    
+
     return Response({
         "events": events[:50],  # Limit to 50
         "meta": {
@@ -319,7 +324,7 @@ def admin_recommend_award(request):
         return Response({"detail": "gross_tuition_cents must be > 0"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        app = AidApplication.objects.get(id=application_id, school_id=school_id)
+        app = AidApplication.objects.get(pk=application_id, school_id=school_id)
     except (AidApplication.DoesNotExist, ValueError, TypeError):
         return Response({"detail": "AidApplication not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -373,7 +378,7 @@ def admin_approve_award(request, award_id):
     reason = request.data.get("reason", "")
 
     try:
-        award = AidAward.objects.get(id=award_id, school_id=school_id)
+        award = AidAward.objects.get(pk=award_id, school_id=school_id)
     except AidAward.DoesNotExist:
         return Response({"detail": "Award not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -383,8 +388,9 @@ def admin_approve_award(request, award_id):
             actor_user=request.user if request.user.is_authenticated else None,
             reason=reason,
         )
-    except AidBudgetError as exc:
-        return Response({"error": str(exc)}, status=status.HTTP_409_CONFLICT)
+    except AidBudgetError:
+        logger.warning("admin_approve_award: budget conflict while approving award", extra={"award_id": award_id})
+        return Response({"error": "Unable to approve award due to budget constraints."}, status=status.HTTP_409_CONFLICT)
     except AidBudgetTracker.DoesNotExist:
         return Response(
             {"error": "No budget tracker found for this bucket. Create one before approving."},
@@ -418,7 +424,7 @@ def family_aid_status(request):
     # Application is tied to the family, not the student — look up via student.family
     from core.models import Student  # local import to avoid circular at module level
     try:
-        student = Student.objects.get(id=student_id, school_id=school_id)
+        student = Student.objects.get(pk=student_id, school_id=school_id)
     except Student.DoesNotExist:
         return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
 

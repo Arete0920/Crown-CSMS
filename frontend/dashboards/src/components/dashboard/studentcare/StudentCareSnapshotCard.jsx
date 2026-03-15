@@ -1,0 +1,37 @@
+import React from 'react';
+import { Card, CardContent, Typography, Stack, Divider } from '@mui/material';
+
+const metrics = [
+  { label: 'Open Care Cases', value: '14' },
+  { label: 'Behavior Referrals This Week', value: '9' },
+  { label: 'Follow-up Meetings Due', value: '6' },
+  { label: 'Attendance-linked Interventions', value: '5' },
+];
+
+export default function StudentCareSnapshotCard() {
+  return (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Student Care Snapshot
+        </Typography>
+
+        <Stack spacing={1.5}>
+          {metrics.map((item, idx) => (
+            <React.Fragment key={item.label}>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="body2" color="text.secondary">
+                  {item.label}
+                </Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {item.value}
+                </Typography>
+              </Stack>
+              {idx < metrics.length - 1 && <Divider />}
+            </React.Fragment>
+          ))}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}

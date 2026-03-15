@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
+import { useWizardDraft } from "../hooks/useWizardDraft";
 import Step1Config from "./reenrollment/Step1Config.jsx";
 import Step2Candidates from "./reenrollment/Step2Candidates.jsx";
 import Step3Select from "./reenrollment/Step3Select.jsx";
@@ -26,30 +27,13 @@ const STEP_LABELS = [
   "Verify",
 ];
 
-const STORAGE_KEY = "crown_reenrollment_wizard_ctx_v1";
-
-function loadContext() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveContext(ctx) {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ctx));
-  } catch { /* ignore */ }
-}
-
 export default function ReenrollmentWizard() {
-  const [initialContext] = useState(() => loadContext());
+  const [initialContext] = useState(() => ({}));
+  const { value, saveDraft, loaded } = useWizardDraft("reenrollment", initialContext);
 
-  function wrappedSetContext(ctx) {
-    saveContext(typeof ctx === "function" ? ctx(loadContext()) : ctx);
+  if (!loaded) {
+    return null;
   }
-  void wrappedSetContext; // referenced for side-effect safety; CrownWizard owns setContext
 
   return (
     <CrownLayout title="Re-enrollment" subtitle="Re-enroll active students and generate enrollment-fee invoices">
@@ -57,7 +41,8 @@ export default function ReenrollmentWizard() {
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
-          initialContext={initialContext}
+          initialContext={value}
+          onContextChange={saveDraft}
         />
       </div>
     </CrownLayout>

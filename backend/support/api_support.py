@@ -67,7 +67,7 @@ def tickets(request):
 def resolve_ticket(request, ticket_id):
     school_id = get_request_school_id(request)
     try:
-        ticket = SupportTicket.objects.get(id=ticket_id, school_id=school_id)
+        ticket = SupportTicket.objects.get(pk=ticket_id, school_id=school_id)
     except SupportTicket.DoesNotExist:
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 

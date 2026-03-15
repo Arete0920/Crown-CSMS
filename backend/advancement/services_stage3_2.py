@@ -11,6 +11,7 @@ Flow:
 """
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any
 
@@ -23,6 +24,8 @@ from advancement.models_stage3 import Seat, SeatHold, TicketSeat
 from advancement.models_stage3_2 import PendingSeatOrder, ProcessedWebhookEvent
 from advancement.payments.service import get_checkout_provider
 from advancement.services import create_ticket_purchase
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +86,7 @@ def create_seat_checkout_session(
     provider = get_checkout_provider()
 
     try:
-        event = Event.objects.get(id=event_id, school_id=school_id)
+        event = Event.objects.get(pk=event_id, school_id=school_id)
         description = f"Seats – {event.name}"
     except Event.DoesNotExist:
         description = "Seat tickets"
@@ -159,7 +162,7 @@ def fulfill_paid_order(*, order_id: uuid.UUID) -> PendingSeatOrder:
         seat_ids = [uuid.UUID(s) for s in order.seat_ids]
 
         try:
-            event = Event.objects.get(id=event_id, school_id=school_id)
+            event = Event.objects.get(pk=event_id, school_id=school_id)
         except Event.DoesNotExist:
             order.status = "failed"
             order.touch()
@@ -230,7 +233,7 @@ def _queue_ticket_email(*, order: PendingSeatOrder, ticket_ids: list) -> None:
                     "mime_type": "application/pdf",
                 })
             except Exception:
-                pass  # best-effort; don't block order fulfillment
+                logger.warning("ticket attachment generation skipped for ticket %s", ticket_id, exc_info=True)
 
         EmailOutbox.objects.create(
             school_id=order.school_id,
@@ -250,4 +253,4 @@ def _queue_ticket_email(*, order: PendingSeatOrder, ticket_ids: list) -> None:
             attachments_json=attachments,
         )
     except Exception:
-        pass  # non-fatal: ticket delivery will be retried by send_outbox command
+        logger.warning("ticket delivery outbox enqueue failed for order %s", order.id, exc_info=True)

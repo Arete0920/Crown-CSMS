@@ -61,6 +61,7 @@ class AdmissionsLinksApiTests(TestCase):
 
     def test_staff_can_list_and_detail(self):
         self.client.force_authenticate(user=self.staff_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.id))
 
         resp = self.client.get("/api/admissions/applications/")
         self.assertEqual(resp.status_code, 200)
@@ -79,5 +80,6 @@ class AdmissionsLinksApiTests(TestCase):
 
     def test_nonstaff_gets_403(self):
         self.client.force_authenticate(user=self.nonstaff_user)
+        self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.id))
         resp = self.client.get("/api/admissions/applications/")
         self.assertEqual(resp.status_code, 403)

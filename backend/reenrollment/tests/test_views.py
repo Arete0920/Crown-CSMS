@@ -169,7 +169,7 @@ class TestCreateSession:
         data = res.json()
         assert "session_id" in data
         assert data["status"] == ReenrollmentSession.STATUS_DRAFT
-        assert ReenrollmentSession.objects.filter(id=data["session_id"]).exists()
+        assert ReenrollmentSession.objects.filter(pk=data["session_id"]).exists()
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +209,7 @@ class TestConfigure:
         client_a.post(f"{BASE}{sid}/configure/",
                       {"target_year_label": "2026-2027", "enrollment_fee": "100"}, format="json")
         # Set some exclusions
-        session = ReenrollmentSession.objects.get(id=sid)
+        session = ReenrollmentSession.objects.get(pk=sid)
         session.excluded_ids = ["fake-uuid"]
         session.save()
         # Re-configure — should reset excluded_ids
@@ -337,7 +337,7 @@ class TestCommit:
         # Exclude everyone
         all_ids = [str(s.id) for s in students]
         # Also query to get all snapshot IDs
-        session = ReenrollmentSession.objects.get(id=sid)
+        session = ReenrollmentSession.objects.get(pk=sid)
         all_snapshot_ids = [c["id"] for c in session.candidates_snapshot]
         client_a.post(f"{BASE}{sid}/select/", {"excluded_ids": all_snapshot_ids}, format="json")
         res = client_a.post(f"{BASE}{sid}/commit/", {"confirm": True}, format="json")
@@ -357,7 +357,7 @@ class TestCommit:
         assert data["invoices_created"] == 1
         assert data["total_amount"] == "600.00"
         # Verify DB records
-        run = BillingRun.objects.get(id=data["billing_run_id"])
+        run = BillingRun.objects.get(pk=data["billing_run_id"])
         assert run.term == "2026-2027"
         assert run.run_type == "ENROLLMENT_FEE"
         assert Invoice.objects.filter(billing_run=run).count() == 1

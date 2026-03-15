@@ -15,6 +15,7 @@ build/
 frontend/dashboards/node_modules/
 frontend/dashboards/dist/
 frontend/dashboards/test-results/
+frontend/dashboards/playwright-report/
 
 # Demo proof/log artifacts
 BOOTPASS_*.log
@@ -43,6 +44,7 @@ local.secrets.sh
 
 # Audit runner output (attach to PRs/tags manually)
 artifacts/
+audit-logs/
 
 # Editor/OS
 .vscode/
@@ -87,3 +89,29 @@ PYTEST_PROOF_*.txt
 
 # CI-generated build artifact (written by CI before npm build, not a source file)
 frontend/dashboards/public/build.json
+
+# Ops war-room and Azure evidence artifacts
+_warroom/
+_azure_evidence/
+_azure_evidence.zip
+release_proof/
+release_proof.zip
+ops_logs/
+
+# war-room and local diagnostics
+_warroom/
+_azure_evidence/
+
+# local generated archives
+*.zip
+
+# transient logs and dumps
+prod_logs/
+prod_logs_now/
+prod_logs_latest/
+app_logs.zip
+webapp_logs.zip
+*.log
+.env*.local
+**/.env*.local
+!*.example

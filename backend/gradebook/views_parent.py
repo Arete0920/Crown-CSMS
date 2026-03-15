@@ -24,7 +24,7 @@ def student_grades_summary(request, student_id):
     
     # Verify student exists and is in scope
     try:
-        student = Student.objects.get(id=student_id, school_id=school_id)
+        student = Student.objects.get(pk=student_id, school_id=school_id)
     except Student.DoesNotExist:
         return Response({"detail": "Student not found"}, status=404)
     

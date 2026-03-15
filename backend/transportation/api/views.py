@@ -51,7 +51,7 @@ class VehicleViewSet(SchoolScopedViewSet):
     serializer_class = VehicleSerializer
 
     def get_queryset(self):
-        return _school_qs(Vehicle.objects.all(), self.get_school_id()).order_by("name")
+        return _school_qs(Vehicle.objects.order_by("name"), self.get_school_id()).order_by("name")
 
     def perform_destroy(self, instance):
         """Soft-delete instead of hard delete."""
@@ -63,7 +63,7 @@ class DriverViewSet(SchoolScopedViewSet):
     serializer_class = DriverSerializer
 
     def get_queryset(self):
-        return _school_qs(Driver.objects.all(), self.get_school_id()).order_by("full_name")
+        return _school_qs(Driver.objects.order_by("full_name"), self.get_school_id()).order_by("full_name")
 
     def perform_destroy(self, instance):
         instance.is_deleted = True
@@ -76,7 +76,7 @@ class RouteViewSet(SchoolScopedViewSet):
     def get_queryset(self):
         return (
             _school_qs(
-                Route.objects.select_related("default_vehicle", "default_driver").all(),
+                Route.objects.select_related("default_vehicle", "default_driver"),
                 self.get_school_id(),
             )
             .prefetch_related("stops")
@@ -87,7 +87,7 @@ class RouteViewSet(SchoolScopedViewSet):
     def stops(self, request, pk=None):
         school_id = self.get_school_id()
         try:
-            route = _school_qs(Route.objects.all(), school_id).get(pk=pk)
+            route = _school_qs(Route.objects.order_by("id"), school_id).get(pk=pk)
         except Route.DoesNotExist:
             return Response({"detail": "Not found."}, status=404)
         stops = _school_qs(Stop.objects.filter(route=route), school_id).order_by("order", "id")
@@ -118,7 +118,7 @@ class StudentRiderViewSet(SchoolScopedViewSet):
 
     def get_queryset(self):
         school_id = self.get_school_id()
-        qs = _school_qs(StudentRider.objects.all(), school_id)
+        qs = _school_qs(StudentRider.objects.order_by("student_id"), school_id)
         school_year = self.request.query_params.get("school_year")
         if school_year:
             qs = qs.filter(school_year=school_year)
@@ -138,7 +138,7 @@ class AssignmentViewSet(SchoolScopedViewSet):
     def get_queryset(self):
         return (
             _school_qs(
-                Assignment.objects.select_related("route", "driver", "vehicle").all(),
+                Assignment.objects.select_related("route", "driver", "vehicle"),
                 self.get_school_id(),
             )
             .order_by("-start_date")
@@ -151,7 +151,7 @@ class RideEventViewSet(SchoolScopedViewSet):
     def get_queryset(self):
         school_id = self.get_school_id()
         qs = _school_qs(
-            RideEvent.objects.select_related("route").all(),
+            RideEvent.objects.select_related("route"),
             school_id,
         )
         service_date = self.request.query_params.get("date")
@@ -176,7 +176,7 @@ class DispatchViewSet(viewsets.ViewSet):
             )
 
         try:
-            route = _school_qs(Route.objects.all(), school_id).get(pk=route_id)
+            route = _school_qs(Route.objects.order_by("id"), school_id).get(pk=route_id)
         except Route.DoesNotExist:
             return Response({"detail": "Route not found."}, status=404)
 
@@ -184,7 +184,7 @@ class DispatchViewSet(viewsets.ViewSet):
 
         # Build rider list: AM routes use pickup_stop, PM/MID use dropoff_stop
         school_year = request.query_params.get("school_year", "")
-        riders_qs = _school_qs(StudentRider.objects.all(), school_id)
+        riders_qs = _school_qs(StudentRider.objects.order_by("student_id"), school_id)
         if school_year:
             riders_qs = riders_qs.filter(school_year=school_year)
         if route.direction == "AM":

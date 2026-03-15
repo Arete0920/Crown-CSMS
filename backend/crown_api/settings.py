@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 import json
+import logging
 from datetime import timedelta
 from pathlib import Path
 from corsheaders.defaults import default_headers
@@ -122,6 +123,11 @@ DJANGO_ENV = os.getenv("DJANGO_ENV", "")
 CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", "")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "")
 DEV_OPS_SECRET = os.getenv("DEV_OPS_SECRET", "")
+
+COMPUWERX_BASE_URL = os.getenv("COMPUWERX_BASE_URL", "https://sandbox.compuwerx.example")
+COMPUWERX_API_KEY = os.getenv("COMPUWERX_API_KEY", "")
+COMPUWERX_WEBHOOK_SECRET = os.getenv("COMPUWERX_WEBHOOK_SECRET", "")
+COMPUWERX_TIMEOUT_SECONDS = int(os.getenv("COMPUWERX_TIMEOUT_SECONDS", "30"))
 
 # Build SHA for deployment determinism proof (Gate 1C)
 BUILD_SHA = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"
@@ -430,7 +436,7 @@ if _env_is_prod():
                 release=BUILD_SHA,
             )
         except ImportError:
-            pass  # sentry-sdk not installed in this environment
+            logging.getLogger(__name__).debug("sentry-sdk not installed; skipping Sentry init")
 
 # ---------------------------------------------------------------------------
 # Structured logging — crown.audit + request log
@@ -523,7 +529,7 @@ try:
         },
     }
 except ImportError:
-    pass  # Celery not installed; beat schedule omitted
+    logging.getLogger(__name__).debug("Celery not installed; beat schedule omitted")
 
 # ---------------------------------------------------------------------------
 # CORS: explicit allowed list enforced (no allow-all in prod)

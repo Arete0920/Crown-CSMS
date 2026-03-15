@@ -50,7 +50,7 @@ def get_dashboard_school_id(request, *, required: bool = True) -> uuid.UUID | No
     try:
         from core.models import School
 
-        if not School.objects.filter(id=sid).exists():
+        if not School.objects.filter(pk=sid).exists():
             raise NotFound({"detail": "School not found"})
     except NotFound:
         raise

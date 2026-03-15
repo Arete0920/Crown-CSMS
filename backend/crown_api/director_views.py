@@ -71,7 +71,7 @@ def user_has_director_role(user):
 
 def resolve_academic_year(school_id, academic_year_id=None):
     if academic_year_id:
-        return AcademicYear.objects.filter(id=academic_year_id, school_id=school_id).first()
+        return AcademicYear.objects.filter(pk=academic_year_id, school_id=school_id).first()
     return AcademicYear.objects.filter(school_id=school_id, is_current=True).order_by("-start_date").first()
 
 
@@ -771,7 +771,7 @@ def director_actions(request):
                 
                 for award_id in ids:
                     try:
-                        award = AidAward.objects.get(id=award_id, school_id=school_id)
+                        award = AidAward.objects.get(pk=award_id, school_id=school_id)
 
                         if year_id and str(award.academic_year_id) != str(year_id):
                             errors.append({
@@ -829,7 +829,7 @@ def director_actions(request):
             if year_id:
                 from core.models import AcademicYear
                 try:
-                    academic_year = AcademicYear.objects.get(id=year_id, school_id=school_id)
+                    academic_year = AcademicYear.objects.get(pk=year_id, school_id=school_id)
                 except AcademicYear.DoesNotExist:
                     academic_year = None
             

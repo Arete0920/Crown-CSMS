@@ -37,6 +37,8 @@ class TenantHeaderRequiredMiddleware:
         "/api/auth",
         "/api/v1/auth",
         "/api/dev/token",   # dev token endpoint returns school_id — no tenant context needed
+        "/api/payments/webhooks/",
+        "/api/v1/payments/webhooks/",
         "/api/schema",
         "/api/docs",
     )
@@ -90,7 +92,7 @@ class TenantHeaderRequiredMiddleware:
                 )
 
             # Validate the school actually exists in this database
-            school = School.objects.filter(id=school_id).only("id", "name").first()
+            school = School.objects.filter(pk=school_id).only("id", "name").first()
             if school is None:
                 return JsonResponse(
                     {

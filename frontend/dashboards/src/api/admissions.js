@@ -1,73 +1,59 @@
-import { getToken, getSchoolId } from "../lib/api";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+﻿import { apiGet, apiGetList, apiPost } from './request';
+import { buildApiPath } from '../utils/apiContracts';
 
 /**
  * Fetch admissions applications list (staff-only)
  * @returns {Promise<Array>} - array of application objects
  */
 export const getAdmissionsApplications = async () => {
-  const token = getToken();
-  const schoolId = getSchoolId();
-
-  if (!token || !schoolId) {
-    throw new Error("Missing authentication credentials");
-  }
-
-  const url = `${API_BASE}/api/admissions/applications/`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    const err = new Error(`Admissions API error: ${response.status}`);
-    err.status = response.status;
-    err.body = body;
-    err.url = url;
-    throw err;
-  }
-
-  const data = await response.json();
-  return Array.isArray(data) ? data : [];
+  return apiGetList(buildApiPath('admissions.applications.list'));
 };
 
 /**
- * Enroll an accepted applicant. Moves status ACCEPTED → ENROLLED.
+ * Enroll an accepted applicant. Moves status ACCEPTED â†’ ENROLLED.
  * @param {number} applicationId - AdmissionsApplication PK
  * @returns {Promise<{ok, student_id, name, message}>}
  */
 export const enrollApplicant = async (applicationId) => {
-  const token = getToken();
-  const schoolId = getSchoolId();
-
-  if (!token || !schoolId) {
-    throw new Error("Missing authentication credentials");
-  }
-
-  const url = `${API_BASE}/api/admissions/enroll/`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ application_id: applicationId }),
+  const path = buildApiPath('admissions.applications.enroll', {
+    applicationId,
   });
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    const err = new Error(data.detail || `Enroll error: ${response.status}`);
-    err.status = response.status;
-    throw err;
-  }
-
-  return data;
+  return apiPost(path, { application_id: applicationId });
 };
+
+function buildQuery(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const qs = query.toString();
+  return qs ? `?${qs}` : "";
+}
+
+async function fetchAdmissionsEndpoint(path, params = {}) {
+  return apiGet(`${path}${buildQuery(params)}`);
+}
+
+export function fetchAdmissionsSummary(params = {}) {
+  return fetchAdmissionsEndpoint("/api/v1/admissions/summary/", params);
+}
+
+export function fetchAdmissionsDrilldown(params = {}) {
+  return fetchAdmissionsEndpoint("/api/v1/admissions/drilldown/", params);
+}
+
+export function fetchAdmissionsPriorityQueue(params = {}) {
+  return fetchAdmissionsEndpoint("/api/admissions/priority-queue/", params);
+}
+
+export function fetchAdmissionsMetrics(params = {}) {
+  return fetchAdmissionsEndpoint("/api/admissions/metrics/", params);
+}
+
+export function fetchAdmissionsTimeline(params = {}) {
+  return fetchAdmissionsEndpoint("/api/admissions/timeline/", params);
+}
+

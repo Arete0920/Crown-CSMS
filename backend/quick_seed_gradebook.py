@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Quick gradebook seed - create minimal section + enrollments + grades"""
 import os
+import logging
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
@@ -10,9 +11,19 @@ from django.contrib.auth import get_user_model
 from academics.models import Section, Enrollment, Course
 from gradebook.models import GradeEntry
 from decimal import Decimal
+from core.models import School
+
+
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
-school_id = "7d965a83-e714-413d-86ba-776c4176b50f"
+school_id = os.getenv("DEMO_SCHOOL_ID")
+if not school_id:
+    school = School.objects.order_by("id").first()
+    if not school:
+        raise SystemExit("No School found. Set DEMO_SCHOOL_ID or seed a school first.")
+    school_id = str(school.id)
 
 # Create courses
 course1, _ = Course.objects.get_or_create(
@@ -94,8 +105,8 @@ for student in students:
             }
         )
 
-print(f"✓ Created 2 sections")
-print(f"✓ Enrolled 3 students in {course1.name}")
-print(f"✓ Created {len(assignments)} assignments with grades")
-print(f"\nSection 1 ID: {section1.id}")
-print(f"Section 2 ID: {section2.id}")
+logger.info("Created 2 sections")
+logger.info("Enrolled 3 students in %s", course1.name)
+logger.info("Created %s assignments with grades", len(assignments))
+logger.info("\nSection 1 ID: %s", section1.id)
+logger.info("Section 2 ID: %s", section2.id)

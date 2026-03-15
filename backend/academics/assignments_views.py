@@ -53,12 +53,12 @@ def _can_write(user, school_id) -> bool:
 def _validate_category_weights(section_id, school_id, exclude_category_id=None):
     """
     Validate that active category weights sum to 0 or 100.
-    
+
     Args:
         section_id: UUID of section
         school_id: UUID of school
         exclude_category_id: Optional UUID to exclude from sum (for updates)
-    
+
     Raises:
         ValidationError if sum is not 0 or 100
     """
@@ -69,9 +69,9 @@ def _validate_category_weights(section_id, school_id, exclude_category_id=None):
     )
     if exclude_category_id:
         qs = qs.exclude(id=exclude_category_id)
-    
+
     total = qs.aggregate(total=Sum("weight_percent"))["total"] or Decimal("0")
-    
+
     if total not in (Decimal("0"), Decimal("100")):
         raise ValidationError(
             f"Active category weights must sum to 0 (unconfigured) or 100 (configured). Current sum: {total}"
@@ -89,13 +89,13 @@ def category_list_create(request, section_id):
     """
     school_id = get_request_school_id(request)
     section = get_object_or_404(Section, id=section_id, school_id=school_id)
-    
+
     if request.method == "GET":
         categories = AssignmentCategory.objects.filter(
             section_id=section_id,
             school_id=school_id
         ).order_by("sort_order", "name")
-        
+
         data = [
             {
                 "id": str(cat.id),
@@ -109,26 +109,26 @@ def category_list_create(request, section_id):
             for cat in categories
         ]
         return Response({"categories": data})
-    
+
     # POST
     if not _can_write(request.user, school_id):
         raise PermissionDenied("Only ADMIN or DIRECTOR can create categories")
-    
+
     name = request.data.get("name", "").strip()
     if not name:
         raise ValidationError("name is required")
-    
+
     try:
         weight_percent = Decimal(str(request.data.get("weight_percent", "0")))
     except (ValueError, TypeError):
         raise ValidationError("weight_percent must be a valid number")
-    
+
     if weight_percent < 0 or weight_percent > 100:
         raise ValidationError("weight_percent must be between 0 and 100")
-    
+
     sort_order = request.data.get("sort_order", 0)
     is_active = request.data.get("is_active", True)
-    
+
     with transaction.atomic():
         category = AssignmentCategory.objects.create(
             school_id=school_id,
@@ -138,10 +138,10 @@ def category_list_create(request, section_id):
             sort_order=sort_order,
             is_active=is_active,
         )
-        
+
         # Validate weights after creation
         _validate_category_weights(section_id, school_id)
-    
+
     return Response(
         {
             "id": str(category.id),
@@ -164,20 +164,20 @@ def category_update_delete(request, category_id):
     DELETE: Delete a category (requires write permissions)
     """
     school_id = get_request_school_id(request)
-    
+
     if not _can_write(request.user, school_id):
         raise PermissionDenied("Only ADMIN or DIRECTOR can modify categories")
-    
+
     category = get_object_or_404(AssignmentCategory, id=category_id, school_id=school_id)
-    
+
     if request.method == "DELETE":
         # Check if category has assignments
         if category.assignments.exists():
             raise ValidationError("Cannot delete category with existing assignments")
-        
+
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
     # PATCH
     with transaction.atomic():
         if "name" in request.data:
@@ -185,29 +185,29 @@ def category_update_delete(request, category_id):
             if not name:
                 raise ValidationError("name cannot be empty")
             category.name = name
-        
+
         if "weight_percent" in request.data:
             try:
                 weight_percent = Decimal(str(request.data["weight_percent"]))
             except (ValueError, TypeError):
                 raise ValidationError("weight_percent must be a valid number")
-            
+
             if weight_percent < 0 or weight_percent > 100:
                 raise ValidationError("weight_percent must be between 0 and 100")
-            
+
             category.weight_percent = weight_percent
-        
+
         if "sort_order" in request.data:
             category.sort_order = request.data["sort_order"]
-        
+
         if "is_active" in request.data:
             category.is_active = request.data["is_active"]
-        
+
         category.save()
-        
+
         # Validate weights after update
         _validate_category_weights(category.section_id, school_id)
-    
+
     return Response(
         {
             "id": str(category.id),
@@ -226,66 +226,66 @@ def category_update_delete(request, category_id):
 def category_batch_weights(request, section_id):
     """
     PUT: Batch update category weights for a section.
-    
+
     Body: List of {"id": "<uuid>", "weight_percent": "40.00", "is_active": true}
-    
+
     Validates all changes before applying atomically:
     - All IDs exist and belong to section
     - No duplicate IDs
     - weight_percent is valid decimal 0-100
     - Active weights sum to exactly 0 or 100
-    
+
     Returns: Updated categories list in deterministic order
     """
     school_id = get_request_school_id(request)
-    
+
     if not _can_write(request.user, school_id):
         raise PermissionDenied("Only ADMIN or DIRECTOR can modify category weights")
-    
+
     section = get_object_or_404(Section, id=section_id, school_id=school_id)
-    
+
     # Validate request body
     updates = request.data
     if not isinstance(updates, list) or not updates:
         raise ValidationError("Request body must be a non-empty list")
-    
+
     # Parse and validate all updates before applying
     validated_updates = []
     seen_ids = set()
-    
+
     for item in updates:
         if not isinstance(item, dict):
             raise ValidationError("Each item must be an object with id, weight_percent, and is_active")
-        
+
         # Validate ID
         cat_id = item.get("id")
         if not cat_id:
             raise ValidationError("Each item must have an 'id' field")
-        
+
         if cat_id in seen_ids:
             raise ValidationError(f"Duplicate category ID: {cat_id}")
         seen_ids.add(cat_id)
-        
+
         # Validate weight_percent
         try:
             weight_percent = Decimal(str(item.get("weight_percent", "0")))
         except (ValueError, TypeError):
             raise ValidationError(f"Invalid weight_percent for category {cat_id}")
-        
+
         if weight_percent < 0 or weight_percent > 100:
             raise ValidationError(f"weight_percent must be between 0 and 100 for category {cat_id}")
-        
+
         # Validate is_active
         is_active = item.get("is_active", True)
         if not isinstance(is_active, bool):
             raise ValidationError(f"is_active must be true or false for category {cat_id}")
-        
+
         validated_updates.append({
             "id": cat_id,
             "weight_percent": weight_percent,
             "is_active": is_active,
         })
-    
+
     # Verify all IDs exist and belong to this section
     category_ids = [u["id"] for u in validated_updates]
     existing_categories = AssignmentCategory.objects.filter(
@@ -294,38 +294,38 @@ def category_batch_weights(request, section_id):
         section_id=section_id
     )
     existing_ids = set(str(c.id) for c in existing_categories)
-    
+
     missing_ids = set(category_ids) - existing_ids
     if missing_ids:
         raise ValidationError(f"Categories not found in this section: {', '.join(missing_ids)}")
-    
+
     # Validate that active weights will sum to 0 or 100
     active_weight_sum = sum(
         u["weight_percent"] for u in validated_updates if u["is_active"]
     )
-    
+
     if active_weight_sum not in (Decimal("0"), Decimal("100")):
         raise ValidationError(
             f"Active category weights must sum to 0 or 100. Provided sum: {active_weight_sum}"
         )
-    
+
     # All validations passed - apply updates atomically
         with transaction.atomic():
             for update in validated_updates:
                 AssignmentCategory.objects.filter(
-                    id=update["id"],
+                    pk=update["id"],
                     school_id=school_id,
                 ).update(
                     weight_percent=update["weight_percent"],
                     is_active=update["is_active"]
                 )
-    
+
     # Return updated categories in deterministic order
     updated_categories = AssignmentCategory.objects.filter(
         section_id=section_id,
         school_id=school_id
     ).order_by("sort_order", "name")
-    
+
     data = [
         {
             "id": str(cat.id),
@@ -338,7 +338,7 @@ def category_batch_weights(request, section_id):
         }
         for cat in updated_categories
     ]
-    
+
     return Response({"categories": data})
 
 
@@ -353,13 +353,13 @@ def assignment_list_create(request, section_id):
     """
     school_id = get_request_school_id(request)
     section = get_object_or_404(Section, id=section_id, school_id=school_id)
-    
+
     if request.method == "GET":
         assignments = Assignment.objects.filter(
             section_id=section_id,
             school_id=school_id
         ).select_related("category").order_by("category__sort_order", "due_date", "name")
-        
+
         data = [
             {
                 "id": str(asg.id),
@@ -376,38 +376,38 @@ def assignment_list_create(request, section_id):
             for asg in assignments
         ]
         return Response({"assignments": data})
-    
+
     # POST
     if not _can_write(request.user, school_id):
         raise PermissionDenied("Only ADMIN or DIRECTOR can create assignments")
-    
+
     name = request.data.get("name", "").strip()
     if not name:
         raise ValidationError("name is required")
-    
+
     category_id = request.data.get("category_id")
     if not category_id:
         raise ValidationError("category_id is required")
-    
+
     category = get_object_or_404(
         AssignmentCategory,
         id=category_id,
         section_id=section_id,
         school_id=school_id
     )
-    
+
     try:
         points_possible = Decimal(str(request.data.get("points_possible", "0")))
     except (ValueError, TypeError):
         raise ValidationError("points_possible must be a valid number")
-    
+
     if points_possible <= 0:
         raise ValidationError("points_possible must be greater than 0")
-    
+
     due_date = request.data.get("due_date")
     assigned_date = request.data.get("assigned_date")
     is_published = request.data.get("is_published", True)
-    
+
     assignment = Assignment.objects.create(
         school_id=school_id,
         section=section,
@@ -418,7 +418,7 @@ def assignment_list_create(request, section_id):
         assigned_date=assigned_date,
         is_published=is_published,
     )
-    
+
     return Response(
         {
             "id": str(assignment.id),
@@ -444,34 +444,34 @@ def assignment_update_delete(request, assignment_id):
     DELETE: Delete an assignment (requires write permissions)
     """
     school_id = get_request_school_id(request)
-    
+
     if not _can_write(request.user, school_id):
         raise PermissionDenied("Only ADMIN or DIRECTOR can modify assignments")
-    
+
     assignment = get_object_or_404(Assignment, id=assignment_id, school_id=school_id)
-    
+
     if request.method == "DELETE":
         assignment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
     # PATCH
     if "name" in request.data:
         name = request.data["name"].strip()
         if not name:
             raise ValidationError("name cannot be empty")
         assignment.name = name
-    
+
     if "points_possible" in request.data:
         try:
             points_possible = Decimal(str(request.data["points_possible"]))
         except (ValueError, TypeError):
             raise ValidationError("points_possible must be a valid number")
-        
+
         if points_possible <= 0:
             raise ValidationError("points_possible must be greater than 0")
-        
+
         assignment.points_possible = points_possible
-    
+
     if "category_id" in request.data:
         category = get_object_or_404(
             AssignmentCategory,
@@ -480,18 +480,18 @@ def assignment_update_delete(request, assignment_id):
             school_id=school_id
         )
         assignment.category = category
-    
+
     if "due_date" in request.data:
         assignment.due_date = request.data["due_date"]
-    
+
     if "assigned_date" in request.data:
         assignment.assigned_date = request.data["assigned_date"]
-    
+
     if "is_published" in request.data:
         assignment.is_published = request.data["is_published"]
-    
+
     assignment.save()
-    
+
     return Response(
         {
             "id": str(assignment.id),

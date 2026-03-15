@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import random
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
@@ -26,6 +27,8 @@ BODIES = [
     "Just a quick note: your student has shown strong improvement this week. Well done.",
 ]
 
+logger = logging.getLogger(__name__)
+
 def _set_school_fields(thread, school):
     # school FK vs school_id string
     if hasattr(thread, "school_id") and not hasattr(thread, "school"):
@@ -40,9 +43,9 @@ class Command(BaseCommand):
         parser.add_argument("--messages-per", type=int, default=4)
 
     def handle(self, *args, **opts):
-        school = School.objects.get(id=opts["school_id"])
+        school = School.objects.get(pk=opts["school_id"])
         User = get_user_model()
-        users = list(User.objects.all()[:50])
+        users = list(User.objects.order_by("id")[:50])
         if not users:
             self.stdout.write(self.style.ERROR("No users found. Ensure CI user / demo users exist."))
             return
@@ -63,7 +66,7 @@ class Command(BaseCommand):
                 try:
                     t.participants.add(*random.sample(users, k=min(2, len(users))))
                 except Exception:
-                    pass
+                    logger.exception("seed_comms_demo: failed adding participants")
 
             # messages
             k = opts["messages_per"]

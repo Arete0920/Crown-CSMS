@@ -12,6 +12,7 @@ fee_schedule_wizard/views.py
 Auth: JWT or Session. All endpoints tenant-scoped via X-School-Id.
 """
 import re
+import logging
 
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -30,6 +31,7 @@ from .models import FeeSchedule, FeeScheduleWizardSession, FeeLine
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 VALID_KINDS  = {c[0] for c in FeeLine.KIND_CHOICES}
 VALID_FREQS  = {c[0] for c in FeeLine.FREQ_CHOICES}
@@ -290,8 +292,8 @@ def commit_session(request, session_id):
                 "session_id":       str(session.id),
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("fee_schedule.commit audit log skipped: %s", exc)
 
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 

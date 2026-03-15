@@ -21,7 +21,7 @@ def recent_audit_events(request):
         limit = 25
     limit = max(1, min(limit, 100))
 
-    qs = AuditEvent.objects.all().order_by("-ts")
+    qs = AuditEvent.objects.order_by("-ts")
 
     # Tenant filter: scope to school when X-School-Id header is provided.
     # This prevents cross-tenant audit event leakage for school-scoped callers.

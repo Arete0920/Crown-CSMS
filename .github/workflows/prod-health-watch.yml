@@ -66,22 +66,26 @@ jobs:
           REASON="${{ steps.validate.outputs.reason }}"
           TS="$(date -u +'%Y-%m-%d %H:%M:%SZ')"
           BODY="$(cat health.json 2>/dev/null || echo 'no body')"
+          ISSUE_BODY=$(cat <<EOF
+          **Time (UTC):** ${TS}
+
+          **URL:** ${URL}
+
+          **HTTP:** ${HTTP}
+
+          **Reason:** ${REASON}
+
+          **Response body:**
+
+          ```
+          ${BODY}
+          ```
+          EOF
+          )
           gh issue create \
             --repo ${{ github.repository }} \
             --title "PROD HEALTH FAIL: ${TS}" \
-            --body "**Time (UTC):** ${TS}
-
-**URL:** ${URL}
-
-**HTTP:** ${HTTP}
-
-**Reason:** ${REASON}
-
-**Response body:**
-
-\`\`\`
-${BODY}
-\`\`\`" || true
+            --body "$ISSUE_BODY" || true
 
       - name: Summary
         if: always()

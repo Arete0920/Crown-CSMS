@@ -92,7 +92,7 @@ def _configure_payload(ay_id, name="2027-2028 Letter Scale", scale_type="LETTER"
 
 def _advance_to_configured(client, school_id, ay=None, **cfg_overrides):
     if ay is None:
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
         ay = _make_academic_year(school)
     r = client.post(BASE_URL, **_headers(school_id))
     sid = r.data["session_id"]
@@ -189,7 +189,7 @@ class GradeScaleCreateTest(TestCase):
         client = _authed_client()
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
-        self.assertTrue(GradeScaleWizardSession.objects.filter(id=sid).exists())
+        self.assertTrue(GradeScaleWizardSession.objects.filter(pk=sid).exists())
 
 
 # ---------------------------------------------------------------------------
@@ -508,7 +508,7 @@ class GradeScaleCommitTest(TestCase):
         sid, ay = _advance_to_committed(client, school.id)
 
         # Reset session so we can re-commit
-        session = GradeScaleWizardSession.objects.get(id=sid)
+        session = GradeScaleWizardSession.objects.get(pk=sid)
         session.status = GradeScaleWizardSession.STATUS_BANDS_SET
         session.save()
 
@@ -562,7 +562,7 @@ class GradeScaleSingleActiveTest(TestCase):
             client, school.id, ay=ay, bands=GOOD_BANDS,
         )
         # Rename via re-configure trick: update scale_config directly
-        session2 = GradeScaleWizardSession.objects.get(id=sid2)
+        session2 = GradeScaleWizardSession.objects.get(pk=sid2)
         session2.scale_config["name"] = "2027-2028 Percent Override"
         session2.save()
 

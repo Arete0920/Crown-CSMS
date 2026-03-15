@@ -1,3 +1,5 @@
+import logging
+
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
@@ -11,6 +13,9 @@ from crown_api.models_households import GUARDIAN_ROLES
 from crown_api.scoping_students import get_core_student_or_404_for_request
 from crown_api.serializers_academics import AttendanceRecordReadSerializer, GradeRecordReadSerializer
 from households.scoping import get_request_school_id
+
+
+logger = logging.getLogger(__name__)
 
 
 def _guardian_household_ids_for_user(request) -> set:
@@ -128,9 +133,10 @@ def section_attendance_submit(request, section_id):
                 date=day,
                 defaults={"status": raw_status},
             )
-        except Exception as exc:
+        except Exception:
+            logger.exception("section_attendance_submit: failed to save attendance row", extra={"student_id": sid, "section_id": str(section_id)})
             return Response(
-                {"ok": False, "error": f"could not save attendance for student_id={sid}: {exc}"},
+                {"ok": False, "error": f"could not save attendance for student_id={sid}"},
                 status=400,
             )
 

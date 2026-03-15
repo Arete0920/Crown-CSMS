@@ -1,11 +1,11 @@
-/**
+﻿/**
  * api/section_staffing_wizard.js
  *
  * Follows the section_assign_wizard.js pattern exactly.
  */
 import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 const PREFIX = `${API_BASE}/api/v1/section-staffing-wizard/sessions`;
 
 function headers(extra = {}) {
@@ -99,3 +99,4 @@ export async function verifySectionStaffingSession(sessionId) {
   const res = await fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
+

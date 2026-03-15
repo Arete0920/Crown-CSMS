@@ -16,6 +16,7 @@ Usage:
 """
 from __future__ import annotations
 
+import logging
 import uuid
 from decimal import Decimal
 
@@ -33,6 +34,7 @@ from financial_aid.services import apply_financial_aid_to_billing_run
 # Deterministic UUIDs — fixed so the command is safe to run multiple times.
 _SCHOOL_ID = uuid.UUID("aabbccdd-0001-0002-0003-000000004b00")
 _TERM = "2025-26"
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -191,4 +193,4 @@ class Command(BaseCommand):
         try:
             Household.objects.filter(school_id=sid).delete()
         except Exception:
-            pass
+            logger.exception("seed_phase4b_scenario: failed deleting households during reset")

@@ -1,106 +1,197 @@
-﻿import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 // No-op touch to ensure required route/dashboard gate contexts run on this PR.
 
-import RoleDashboardPage from '../pages/RoleDashboardPage.jsx';
-import { BillingDashboard } from '../pages/BillingDashboard.jsx';
-import { FinancialAidDashboard } from '../pages/FinancialAidDashboard.jsx';
-import { AcademicsDashboard } from '../pages/AcademicsDashboard.jsx';
-import { GradebookRO } from '../pages/GradebookRO.jsx';
-import { TranscriptRO } from '../pages/TranscriptRO.jsx';
-import { CategoryWeightsEditor } from '../pages/CategoryWeightsEditor.jsx';
-import { AdmissionsPipelineList } from '../pages/AdmissionsPipelineList.jsx';
-import FinanceInvoicesList from '../pages/FinanceInvoicesList.jsx';
-import CommunicationsThreadsList from '../pages/CommunicationsThreadsList.jsx';
-import OpsCommandCenter from '../components/OpsCommandCenter.jsx';
-import ClassroomsDashboard from '../pages/ClassroomsDashboard.jsx';
-import DisciplinePage from '../pages/DisciplinePage.jsx';
-import ServiceHoursPage from '../pages/ServiceHoursPage.jsx';
-import TeamsPreviewPage from '../pages/TeamsPreviewPage.jsx';
-import CommsInboxPage from '../pages/CommsInboxPage.jsx';
-import CommsThreadPage from '../pages/CommsThreadPage.jsx';
-import CommsComposePage from '../pages/CommsComposePage.jsx';
-import Student360Page from '../pages/Student360Page.jsx';
-import ParentStudent360Page from '../pages/ParentStudent360Page.jsx';
-import AcademicsTeacherGrading from '../pages/AcademicsTeacherGrading.jsx';
-import AcademicsStudentWork from '../pages/AcademicsStudentWork.jsx';
-import AcademicsParentSnapshot from '../pages/AcademicsParentSnapshot.jsx';
-import TeacherDashboard from '../pages/TeacherDashboard.jsx';
-import ParentDashboard from '../pages/ParentDashboard.jsx';
-import StudentDashboard from '../pages/StudentDashboard.jsx';
-import RoleHomeRedirect from '../pages/RoleHomeRedirect.jsx';
-import TeacherAttendancePage from '../pages/TeacherAttendancePage.jsx';
-import ParentAttendancePage from '../pages/ParentAttendancePage.jsx';
-import LoginPage from '../pages/LoginPage.jsx';
-import IntegrityDashboard from '../pages/IntegrityDashboard.jsx';
-import AdminDashboard from '../pages/AdminDashboard.jsx';
-import BoardDashboard from '../pages/BoardDashboard.jsx';
-import FinanceDashboard from '../pages/FinanceDashboard.jsx';
-import ITDashboard from '../pages/ITDashboard.jsx';
-import MarketingDashboard from '../pages/MarketingDashboard.jsx';
-import SpiritualLifeDashboard from '../pages/SpiritualLifeDashboard.jsx';
-import OfficeDashboard from '../pages/OfficeDashboard.jsx';
-import HealthDashboard from '../pages/HealthDashboard.jsx';
-import CounselingDashboard from '../pages/CounselingDashboard.jsx';
-import FoodDashboard from '../pages/FoodDashboard.jsx';
-import AthleticsDashboard from '../pages/AthleticsDashboard.jsx';
-import AdvancementDashboard from '../pages/AdvancementDashboard.jsx';
-import TransportationDashboard from '../pages/TransportationDashboard.jsx';
-import FacilitiesDashboard from '../pages/FacilitiesDashboard.jsx';
-import SecurityDashboard from '../pages/SecurityDashboard.jsx';
-import AcademicSupportDashboard from '../pages/AcademicSupportDashboard.jsx';
-import FineArtsDashboard from '../pages/FineArtsDashboard.jsx';
-import LibraryDashboard from '../pages/LibraryDashboard.jsx';
-import ExtendedCareDashboard from '../pages/ExtendedCareDashboard.jsx';
-import RegistrarDashboard from '../pages/RegistrarDashboard.jsx';
-import CommunicationsDirectorDashboard from '../pages/CommunicationsDirectorDashboard.jsx';
-import PDDashboard from '../pages/PDDashboard.jsx';
-import StudentServicesDashboard from '../pages/StudentServicesDashboard.jsx';
-import HumanResources from '../pages/HumanResources.jsx';
-import SafetyDashboard from '../pages/SafetyDashboard.jsx';
-import BoardExecutiveDashboard from '../pages/BoardExecutiveDashboard.jsx';
-import AftercareRosterPage from '../pages/AftercareRosterPage.jsx';
-import AftercareSetupWizard from '../pages/wizards/AftercareSetupWizard.jsx';
-import FinanceSetupWizard from '../pages/wizards/FinanceSetupWizard.jsx';
-import { wizardRoutes } from './wizards.js';
-import WizardHub from '../pages/WizardHub.jsx';
+import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
+import { BillingDashboard } from "../pages/BillingDashboard.jsx";
+import { FinancialAidDashboard } from "../pages/FinancialAidDashboard.jsx";
+import { AcademicsDashboard } from "../pages/AcademicsDashboard.jsx";
+import { GradebookRO } from "../pages/GradebookRO.jsx";
+import { TranscriptRO } from "../pages/TranscriptRO.jsx";
+import { CategoryWeightsEditor } from "../pages/CategoryWeightsEditor.jsx";
+import { AdmissionsPipelineList } from "../pages/AdmissionsPipelineList.jsx";
+import FinanceInvoicesList from "../pages/FinanceInvoicesList.jsx";
+import CommunicationsThreadsList from "../pages/CommunicationsThreadsList.jsx";
+import OpsCommandCenter from "../components/OpsCommandCenter.jsx";
+import ClassroomsDashboard from "../pages/ClassroomsDashboard.jsx";
+import DisciplinePage from "../pages/DisciplinePage.jsx";
+import ServiceHoursPage from "../pages/ServiceHoursPage.jsx";
+import TeamsPreviewPage from "../pages/TeamsPreviewPage.jsx";
+import CommsInboxPage from "../pages/CommsInboxPage.jsx";
+import CommsThreadPage from "../pages/CommsThreadPage.jsx";
+import CommsComposePage from "../pages/CommsComposePage.jsx";
+import Student360Page from "../pages/Student360Page.jsx";
+import ParentStudent360Page from "../pages/ParentStudent360Page.jsx";
+import AcademicsTeacherGrading from "../pages/AcademicsTeacherGrading.jsx";
+import AcademicsStudentWork from "../pages/AcademicsStudentWork.jsx";
+import AcademicsParentSnapshot from "../pages/AcademicsParentSnapshot.jsx";
+import TeacherDashboard from "../pages/TeacherDashboard.jsx";
+import ParentDashboard from "../pages/ParentDashboard.jsx";
+import StudentDashboard from "../pages/StudentDashboard.jsx";
+import RoleHomeRedirect from "../pages/RoleHomeRedirect.jsx";
+import TeacherAttendancePage from "../pages/TeacherAttendancePage.jsx";
+import ParentAttendancePage from "../pages/ParentAttendancePage.jsx";
+import AttendanceDashboard from "../pages/AttendanceDashboard.jsx";
+import LoginPage from "../pages/LoginPage.jsx";
+import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
+import AdminDashboard from "../pages/AdminDashboard.jsx";
+import BoardDashboard from "../pages/BoardDashboard.jsx";
+import FinanceDashboard from "../pages/FinanceDashboard.jsx";
+import ITDashboard from "../pages/ITDashboard.jsx";
+import MarketingDashboard from "../pages/MarketingDashboard.jsx";
+import SpiritualLifeDashboard from "../pages/SpiritualLifeDashboard.jsx";
+import OfficeDashboard from "../pages/OfficeDashboard.jsx";
+import HealthDashboard from "../pages/HealthDashboard.jsx";
+import CounselingDashboard from "../pages/CounselingDashboard.jsx";
+import FoodDashboard from "../pages/FoodDashboard.jsx";
+import AthleticsDashboard from "../pages/AthleticsDashboard.jsx";
+import AdvancementDashboard from "../pages/AdvancementDashboard.jsx";
+import TransportationDashboard from "../pages/TransportationDashboard.jsx";
+import FacilitiesDashboard from "../pages/FacilitiesDashboard.jsx";
+import SecurityDashboard from "../pages/SecurityDashboard.jsx";
+import AcademicSupportDashboard from "../pages/AcademicSupportDashboard.jsx";
+import FineArtsDashboard from "../pages/FineArtsDashboard.jsx";
+import LibraryDashboard from "../pages/LibraryDashboard.jsx";
+import ExtendedCareDashboard from "../pages/ExtendedCareDashboard.jsx";
+import RegistrarDashboard from "../pages/RegistrarDashboard.jsx";
+import CommunicationsDirectorDashboard from "../pages/CommunicationsDirectorDashboard.jsx";
+import PDDashboard from "../pages/PDDashboard.jsx";
+import StudentServicesDashboard from "../pages/StudentServicesDashboard.jsx";
+import HumanResources from "../pages/HumanResources.jsx";
+import SafetyDashboard from "../pages/SafetyDashboard.jsx";
+import BoardExecutiveDashboard from "../pages/BoardExecutiveDashboard.jsx";
+import AftercareRosterPage from "../pages/AftercareRosterPage.jsx";
+import AftercareSetupWizard from "../pages/wizards/AftercareSetupWizard.jsx";
+import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
+import NotAuthorized from "../pages/NotAuthorized.jsx";
+import RoleRouteGuard from "../components/routing/RoleRouteGuard.jsx";
+import RoleGuard from "./RoleGuard.jsx";
+import RequirePermission from "../components/auth/RequirePermission.jsx";
+import { APP_PERMISSIONS } from "../auth/permissions";
+import ForbiddenPage from "../pages/ForbiddenPage.jsx";
+import SystemStatusPage from "../pages/SystemStatusPage.jsx";
+import ReleaseReadinessPage from "../pages/ReleaseReadinessPage.jsx";
+import DemoReadinessPage from "../pages/DemoReadinessPage.jsx";
+import NotFoundPage from "../pages/NotFoundPage.jsx";
+import { dashboardRoutes } from "./dashboardRoutes";
+import { wizardRoutes } from "./wizards.js";
+import { PATHS } from "./paths";
+import { ROLE_GROUPS } from "./routeGroups";
+import WizardHub from "../pages/WizardHub.jsx";
+import CompuwerxTestCheckout from "../pages/CompuwerxTestCheckout.jsx";
+import FamilyAccountDetail from "../pages/FamilyAccountDetail.jsx";
+import CompuwerxDisputesDashboard from "../pages/CompuwerxDisputesDashboard.jsx";
+import CompuwerxPayoutReconciliation from "../pages/CompuwerxPayoutReconciliation.jsx";
+import SavedPaymentMethodsPage from "../pages/SavedPaymentMethodsPage.jsx";
+import FamilyStatementExportPage from "../pages/FamilyStatementExportPage.jsx";
+import CompuwerxDisputeWorkbench from "../pages/CompuwerxDisputeWorkbench.jsx";
+import PaymentExceptionsQueue from "../pages/PaymentExceptionsQueue.jsx";
+import CompuwerxBankReconciliation from "../pages/CompuwerxBankReconciliation.jsx";
+
+const FINANCE_ALLOWED_ROLES = ["super_admin", "school_admin", "finance_admin"];
 
 export const router = createBrowserRouter([
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    // Unified role dashboard — /dash/admin, /dash/teacher, /dash/parent, etc.
-    path: '/dash/:role',
-    element: <RoleDashboardPage />,
-  },
-  {
-    path: '/teacher/attendance',
-    element: <TeacherAttendancePage />,
-  },
-  {
-    path: '/parent/attendance',
-    element: <ParentAttendancePage />,
-  },
   {
     path: '/',
     element: <RoleHomeRedirect />,
   },
   {
-    path: '/billing',
-    element: <BillingDashboard />,
+    path: '/login',
+    element: <LoginPage />,
   },
   {
-    path: '/financial-aid',
-    element: <FinancialAidDashboard />,
+    // Unified role dashboard � /dash/admin, /dash/teacher, /dash/parent, etc.
+    path: PATHS.ROLE_DASHBOARD,
+    element: <RoleDashboardPage />,
   },
   {
-    path: '/academics',
-    element: <AcademicsDashboard />,
+    path: PATHS.TEACHER_ATTENDANCE,
+    element: <TeacherAttendancePage />,
+  },
+  {
+    path: PATHS.PARENT_ATTENDANCE,
+    element: <ParentAttendancePage />,
+  },
+  {
+    path: PATHS.NOT_AUTHORIZED,
+    element: <NotAuthorized />,
+  },
+  {
+    path: PATHS.FORBIDDEN,
+    element: <ForbiddenPage />,
+  },
+  // Legacy aliases used across cards/redirects until all links converge on canonical paths.
+  {
+    path: PATHS.BILLING,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.BILLING_VIEW}>
+        <BillingDashboard />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.BILLING_DASHBOARD,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        <BillingDashboard />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCIAL_AID,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.FINANCIAL_AID_VIEW}>
+        <Navigate to={PATHS.FINANCIAL_AID_DASHBOARD} replace />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.ATTENDANCE,
+    element: <Navigate to={PATHS.TEACHER_ATTENDANCE} replace />,
+  },
+  // Contract-preserving teacher alias routes.
+  // Keep these as literal strings in router.jsx for static gate checks.
+  {
+    path: '/teacher/attendance',
+    element: <AttendanceDashboard />,
+  },
+  {
+    path: '/teacher/gradebook',
+    element: <Navigate to="/gradebook" replace />,
+  },
+  {
+    path: '/teacher/communications',
+    element: <Navigate to="/communications-dashboard" replace />,
+  },
+  {
+    path: '/teacher/scheduling',
+    element: <Navigate to="/scheduling-dashboard" replace />,
   },
   {
     path: '/teacher',
+    element: <AttendanceDashboard />,
+  },
+  // Contract-preserving parent alias routes.
+  // Keep these as literal strings in router.jsx for static gate checks.
+  {
+    path: '/parent/attendance',
+    element: <AttendanceDashboard />,
+  },
+  {
+    path: '/parent/communications',
+    element: <Navigate to="/communications-dashboard" replace />,
+  },
+  {
+    path: '/parent/schedule',
+    element: <Navigate to="/scheduling-dashboard" replace />,
+  },
+  ...dashboardRoutes,
+  {
+    path: PATHS.ACADEMICS,
+    element: <AcademicsDashboard />,
+  },
+  {
+    path: PATHS.TEACHER,
     element: <TeacherDashboard />,
   },
   {
@@ -108,62 +199,78 @@ export const router = createBrowserRouter([
     element: <ParentDashboard />,
   },
   {
-    path: '/student',
+    path: PATHS.STUDENT,
     element: <StudentDashboard />,
   },
   {
-    path: '/classrooms',
+    path: PATHS.CLASSROOMS,
     element: <ClassroomsDashboard />,
   },
   {
     path: '/gradebook',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <GradebookRO />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.GRADEBOOK_SECTION,
     element: <GradebookRO />,
   },
   {
-    path: '/gradebook/:sectionId',
-    element: <GradebookRO />,
-  },
-  {
-    path: '/transcript',
+    path: PATHS.TRANSCRIPT,
     element: <TranscriptRO />,
   },
   {
-    path: '/category-weights',
+    path: PATHS.CATEGORY_WEIGHTS,
     element: <CategoryWeightsEditor />,
   },
   {
-    path: '/admissions',
+    path: PATHS.ADMISSIONS,
     element: <AdmissionsPipelineList />,
   },
-  // Wizard Hub — lists all registered wizards from /api/v1/wizards/
   {
-    path: '/wizards',
+    path: PATHS.ADMISSIONS_PIPELINE,
+    element: <AdmissionsPipelineList />,
+  },
+  // Wizard Hub � lists all registered wizards from /api/v1/wizards/
+  {
+    path: PATHS.WIZARDS,
     element: <WizardHub />,
   },
-  // All setup wizards — registered in src/routes/wizards.js
+  // Wizard routes are owned by routes/wizards.js.
   ...wizardRoutes(),
   {
-    path: '/finance/invoices',
-    element: <FinanceInvoicesList />,
+    path: PATHS.FINANCE_INVOICES,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        <FinanceInvoicesList />
+      </RoleRouteGuard>
+    ),
   },
   {
-    path: '/communications',
+    path: PATHS.COMMUNICATIONS,
     element: <CommunicationsThreadsList />,
   },
   {
-    path: '/ops',
+    path: PATHS.SERVICE_HOURS,
+    element: <ServiceHoursPage />,
+  },
+  {
+    path: PATHS.OPS,
     element: <OpsCommandCenter />,
   },
   {
-    path: '/academics/teacher-grading',
+    path: PATHS.ACADEMICS_TEACHER_GRADING,
     element: <AcademicsTeacherGrading />,
   },
   {
-    path: '/academics/student-work',
+    path: PATHS.ACADEMICS_STUDENT_WORK,
     element: <AcademicsStudentWork />,
   },
   {
-    path: '/academics/parent-snapshot',
+    path: PATHS.ACADEMICS_PARENT_SNAPSHOT,
     element: <AcademicsParentSnapshot />,
   },
   {
@@ -175,126 +282,261 @@ export const router = createBrowserRouter([
     element: <ParentStudent360Page />,
   },
   {
-    path: '/integrity',
-    element: <IntegrityDashboard />,
+    path: PATHS.REPORTING,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.REPORTING_VIEW}>
+        <IntegrityDashboard />
+      </RequirePermission>
+    ),
   },
   {
     path: '/admin',
     element: <AdminDashboard />,
   },
   {
-    path: '/board',
+    path: PATHS.BOARD,
     element: <BoardDashboard />,
   },
   {
-    path: '/finance',
-    element: <FinanceDashboard />,
+    path: PATHS.FINANCE,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        <FinanceDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
-    path: '/it',
+    path: PATHS.IT,
     element: <ITDashboard />,
   },
   {
-    path: '/marketing',
+    path: PATHS.MARKETING,
     element: <MarketingDashboard />,
   },
   {
-    path: '/spiritual-life',
+    path: PATHS.SPIRITUAL_LIFE,
     element: <SpiritualLifeDashboard />,
   },
   {
-    path: '/office',
+    path: PATHS.MASTER_CONTROL,
+    element: <AdminDashboard />,
+  },
+  {
+    path: PATHS.OFFICE,
     element: <OfficeDashboard />,
   },
   {
-    path: '/health',
+    path: PATHS.HEALTH,
     element: <HealthDashboard />,
   },
   {
-    path: '/counseling',
+    path: PATHS.COUNSELING,
     element: <CounselingDashboard />,
   },
   {
-    path: '/food',
+    path: PATHS.FOOD,
     element: <FoodDashboard />,
   },
   {
-    path: '/athletics',
+    path: PATHS.ATHLETICS,
     element: <AthleticsDashboard />,
   },
   {
-    path: '/advancement',
+    path: PATHS.SYSTEM_STATUS,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.SYSTEM_VIEW}>
+        <SystemStatusPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.RELEASE_READINESS,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.RELEASE_VIEW}>
+        <ReleaseReadinessPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.DEMO_READINESS,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.DEMO_VIEW}>
+        <DemoReadinessPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.ADVANCEMENT,
     element: <AdvancementDashboard />,
   },
   {
-    path: '/transportation',
+    path: PATHS.TRANSPORTATION,
     element: <TransportationDashboard />,
   },
   {
-    path: '/facilities',
+    path: PATHS.FACILITIES,
     element: <FacilitiesDashboard />,
   },
   {
-    path: '/security',
+    path: PATHS.SECURITY,
     element: <SecurityDashboard />,
   },
   {
-    path: '/academic-support',
+    path: PATHS.ACADEMIC_SUPPORT,
     element: <AcademicSupportDashboard />,
   },
   {
-    path: '/fine-arts',
+    path: PATHS.FINE_ARTS,
     element: <FineArtsDashboard />,
   },
   {
-    path: '/library',
+    path: PATHS.LIBRARY,
     element: <LibraryDashboard />,
   },
   {
-    path: '/extended-care',
+    path: PATHS.EXTENDED_CARE,
     element: <ExtendedCareDashboard />,
   },
   {
-    path: '/registrar',
+    path: PATHS.REGISTRAR,
     element: <RegistrarDashboard />,
   },
   {
-    path: '/communications-director',
+    path: PATHS.COMMUNICATIONS_DIRECTOR,
     element: <CommunicationsDirectorDashboard />,
   },
   {
-    path: '/pd',
+    path: PATHS.PD,
     element: <PDDashboard />,
   },
   {
-    path: '/student-services',
+    path: PATHS.STUDENT_SERVICES,
     element: <StudentServicesDashboard />,
   },
   {
-    path: '/hr',
+    path: PATHS.HR,
     element: <HumanResources />,
   },
   {
-    path: '/safety',
+    path: PATHS.SAFETY,
     element: <SafetyDashboard />,
   },
   {
-    path: '/board/executive',
+    path: PATHS.BOARD_EXECUTIVE,
     element: <BoardExecutiveDashboard />,
   },
   {
-    path: '/aftercare/roster',
+    path: PATHS.AFTERCARE_ROSTER,
     element: <AftercareRosterPage />,
   },
   {
-    path: '/wizards/aftercare-setup',
+    path: PATHS.WIZARD_AFTERCARE_SETUP,
     element: <AftercareSetupWizard />,
   },
   {
-    path: '/wizards/finance-setup',
-    element: <FinanceSetupWizard />,
+    path: PATHS.WIZARD_FINANCE_SETUP,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        <FinanceSetupWizard />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_COMPUWERX_TEST,
+    element: (
+      <RoleRouteGuard
+        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+      >
+        <CompuwerxTestCheckout />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_FAMILY_ACCOUNT,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        <FamilyAccountDetail />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_DISPUTES,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        <CompuwerxDisputesDashboard />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_PAYOUT_RECONCILIATION,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        <CompuwerxPayoutReconciliation />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_PAYMENT_METHODS,
+    element: (
+      <RoleRouteGuard
+        allowedRoles={[
+          "super_admin",
+          "school_admin",
+          "finance_admin",
+          "parent",
+        ]}
+      >
+        <SavedPaymentMethodsPage />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_EXPORTS,
+    element: (
+      <RoleRouteGuard
+        allowedRoles={[
+          "super_admin",
+          "school_admin",
+          "finance_admin",
+          "parent",
+        ]}
+      >
+        <FamilyStatementExportPage />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_DISPUTE_WORKBENCH,
+    element: (
+      <RoleRouteGuard
+        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+      >
+        <CompuwerxDisputeWorkbench />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_EXCEPTIONS,
+    element: (
+      <RoleRouteGuard
+        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+      >
+        <PaymentExceptionsQueue />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCE_BANK_RECONCILIATION,
+    element: (
+      <RoleRouteGuard
+        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+      >
+        <CompuwerxBankReconciliation />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.NOT_FOUND,
+    element: <NotFoundPage />,
   },
 ]);
-
-
-

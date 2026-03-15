@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from rest_framework import serializers
 from .models import (
     Donor,
@@ -126,7 +128,7 @@ class TicketScanSerializer(serializers.ModelSerializer):
 # ---------------------------------------------------------------------------
 
 class GiftCheckoutSerializer(serializers.Serializer):
-    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value="0.01")
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0.01"))
     donor_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     campaign_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     restricted = serializers.BooleanField(default=False)
@@ -135,7 +137,7 @@ class GiftCheckoutSerializer(serializers.Serializer):
 
 
 class PledgeCreateSerializer(serializers.Serializer):
-    total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value="0.01")
+    total_amount = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0.01"))
     start_date = serializers.DateField()
     end_date = serializers.DateField(required=False, allow_null=True, default=None)
     frequency = serializers.ChoiceField(

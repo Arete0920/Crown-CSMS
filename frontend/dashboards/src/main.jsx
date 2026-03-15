@@ -11,6 +11,9 @@ import { router } from './routes/router.jsx';
 import DevJwtPanel from './components/DevJwtPanel.jsx';
 import { AutoLoginGate } from './components/AutoLoginGate.jsx';
 import AuthProvider from './auth/AuthProvider.jsx';
+import AppErrorBoundary from './components/system/AppErrorBoundary.jsx';
+import StartupGuard from './components/system/StartupGuard.jsx';
+import TopStatusStrip from './components/system/TopStatusStrip.jsx';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -18,8 +21,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <CssBaseline enableColorScheme />
       <AuthProvider>
         <AutoLoginGate>
-          <RouterProvider router={router} />
-          <DevJwtPanel />
+          <StartupGuard>
+            <AppErrorBoundary>
+              <TopStatusStrip />
+              <RouterProvider router={router} />
+              <DevJwtPanel />
+            </AppErrorBoundary>
+          </StartupGuard>
         </AutoLoginGate>
       </AuthProvider>
     </ThemeProvider>

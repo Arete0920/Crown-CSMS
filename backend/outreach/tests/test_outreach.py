@@ -146,7 +146,7 @@ class TestPartnerOrganization:
         p = _partner(self.school)
         r = self.client.delete(f"/api/outreach/partners/{p.id}/")
         assert r.status_code == 204
-        assert not PartnerOrganization.objects.filter(id=p.id).exists()
+        assert not PartnerOrganization.objects.filter(pk=p.id).exists()
 
 
 # ---------------------------------------------------------------------------

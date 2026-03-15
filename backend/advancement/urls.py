@@ -62,6 +62,7 @@ from .api import (
 )
 
 router = DefaultRouter()
+router.include_format_suffixes = False
 router.register(r"donors", DonorViewSet, basename="advancement-donors")
 router.register(r"campaigns", CampaignViewSet, basename="advancement-campaigns")
 router.register(r"sponsorships", SponsorshipPackageViewSet, basename="advancement-sponsorships")

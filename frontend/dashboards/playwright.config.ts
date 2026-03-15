@@ -47,15 +47,17 @@ export default defineConfig({
     },
   ],
 
-  /* Auto-start the Vite dev server when running locally or in CI.
-   * CI: Playwright is the sole owner of the server lifecycle — no separate
-   * workflow step pre-starts Vite, so reuseExistingServer=false is correct.
-   * Local: reuse an existing server if one is already running on the port. */
+  /* Auto-start the Vite server when running locally or in CI.
+   * CI: build first then serve via preview (deterministic, no HMR noise).
+   *     reuseExistingServer=false ensures a clean server each run.
+   * Local: serve preview and reuse an existing server if already running. */
   webServer: {
-    command: "npm run dev -- --port 4173 --strictPort",
+    command: process.env.CI
+      ? "npm run build && npm run preview -- --port 4173 --strictPort"
+      : "npm run preview -- --port 4173 --strictPort",
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: process.env.CI ? 180_000 : 60_000,
     stdout: "ignore",
     stderr: "pipe",
   },

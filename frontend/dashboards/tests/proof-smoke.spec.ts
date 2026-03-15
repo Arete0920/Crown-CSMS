@@ -16,7 +16,10 @@
 
 import { test, expect, Page } from "@playwright/test";
 
-const BASE = process.env.VITE_DEV_BASE_URL ?? "http://localhost:3000";
+const BASE =
+  process.env.CROWN_UI_URL ??
+  process.env.VITE_DEV_BASE_URL ??
+  "http://localhost:3000";
 
 const DEMO_SCHOOL_ID =
   process.env.CROWN_DEMO_SCHOOL_ID ?? "19801b59-8c05-4c84-9312-5d792e4e839d";

@@ -31,7 +31,7 @@ class Command(BaseCommand):
         school_id = opts.get("school_id")
         school = None
         if school_id:
-            school = School.objects.filter(id=school_id).first()
+            school = School.objects.filter(pk=school_id).first()
         if not school:
             school = School.objects.first()
 

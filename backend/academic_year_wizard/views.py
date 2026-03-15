@@ -16,6 +16,7 @@ Commit semantics:
   - Term: update_or_create by (academic_year, code). Sets all fields from terms_config.
 """
 import datetime
+import logging
 import re
 
 from django.db import transaction
@@ -36,6 +37,7 @@ from .models import AcademicYearWizardSession
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
+logger = logging.getLogger(__name__)
 
 _CODE_RE = re.compile(r'^[A-Za-z0-9_-]{1,24}$')
 
@@ -313,8 +315,8 @@ def commit_session(request, session_id):
                 "session_id":        str(session.id),
             },
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("academic_year.commit audit log skipped: %s", exc)
 
     return Response({"session_id": str(session.id), "status": session.status, "result": result})
 

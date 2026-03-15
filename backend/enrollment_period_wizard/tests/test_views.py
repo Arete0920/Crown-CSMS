@@ -82,7 +82,7 @@ GOOD_CAPS = [
 
 def _advance_to_configured(client, school_id, ay=None, **date_overrides):
     if ay is None:
-        school = School.objects.get(id=school_id)
+        school = School.objects.get(pk=school_id)
         ay = _make_academic_year(school)
     r = client.post(BASE_URL, **_headers(school_id))
     sid = r.data["session_id"]
@@ -178,7 +178,7 @@ class EnrollmentPeriodCreateTest(TestCase):
         client = _authed_client()
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
-        self.assertTrue(EnrollmentPeriodWizardSession.objects.filter(id=sid).exists())
+        self.assertTrue(EnrollmentPeriodWizardSession.objects.filter(pk=sid).exists())
 
 
 # ---------------------------------------------------------------------------
@@ -412,7 +412,7 @@ class EnrollmentPeriodCommitTest(TestCase):
         sid, ay = _advance_to_committed(client, school.id)
 
         # Reset session to capacities_set so we can re-commit
-        session = EnrollmentPeriodWizardSession.objects.get(id=sid)
+        session = EnrollmentPeriodWizardSession.objects.get(pk=sid)
         session.status = EnrollmentPeriodWizardSession.STATUS_CAPACITIES_SET
         session.save()
 

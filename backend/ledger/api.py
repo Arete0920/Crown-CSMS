@@ -25,9 +25,9 @@ from .services import build_account_statement
 def _get_account_for_scope(*, sid, account_id: str | None, household_id: str | None):
     acct = None
     if account_id:
-        acct = LedgerAccount.objects.get(id=_parse_uuid(account_id, "account_id"), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=_parse_uuid(account_id, "account_id"), school_id=sid)
     if household_id:
-        hh = Household.objects.get(id=_parse_uuid(household_id, "household_id"), school_id=sid)
+        hh = Household.objects.get(pk=_parse_uuid(household_id, "household_id"), school_id=sid)
         acct2, _ = LedgerAccount.objects.get_or_create(school_id=sid, household=hh)
         if acct is not None and acct.id != acct2.id:
             raise ValueError("account_id does not match household_id")
@@ -131,7 +131,7 @@ def ensure_account(request: HttpRequest):
 
     # no-leak: ensure household is in-scope
     try:
-        hh = Household.objects.get(id=UUID(str(household_id)), school_id=sid)
+        hh = Household.objects.get(pk=UUID(str(household_id)), school_id=sid)
     except Household.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -151,7 +151,7 @@ def account_detail(request: HttpRequest, account_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(account_id), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -188,7 +188,7 @@ def create_charge(request: HttpRequest):
         return _json_error("amount is required", status=400)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(str(account_id)), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(str(account_id)), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -248,7 +248,7 @@ def record_payment(request: HttpRequest):
     try:
         amt = _parse_decimal(amount, "amount")
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     if amt <= Decimal("0"):
         return _json_error("amount must be > 0", status=400)
@@ -257,10 +257,10 @@ def record_payment(request: HttpRequest):
         acct: LedgerAccount | None = None
 
         if account_id:
-            acct = LedgerAccount.objects.get(id=_parse_uuid(account_id, "account_id"), school_id=sid)
+            acct = LedgerAccount.objects.get(pk=_parse_uuid(account_id, "account_id"), school_id=sid)
 
         if household_id:
-            hh = Household.objects.get(id=_parse_uuid(household_id, "household_id"), school_id=sid)
+            hh = Household.objects.get(pk=_parse_uuid(household_id, "household_id"), school_id=sid)
             acct2, _ = LedgerAccount.objects.get_or_create(school_id=sid, household=hh)
             if acct is not None and acct.id != acct2.id:
                 return _json_error("account_id does not match household_id", status=400)
@@ -273,7 +273,7 @@ def record_payment(request: HttpRequest):
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     allocs_in = payload.get("allocations") or []
     allow_partial = bool(payload.get("allow_partial"))
@@ -291,7 +291,7 @@ def record_payment(request: HttpRequest):
                 raise ValueError("allocation.amount must be > 0")
             requested_by_charge[cid] = requested_by_charge.get(cid, Decimal("0")) + a_amt
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     total_requested = sum(requested_by_charge.values(), Decimal("0"))
     if requested_by_charge:
@@ -312,7 +312,7 @@ def record_payment(request: HttpRequest):
         created_allocations = []
         for charge_id, a_amt in requested_by_charge.items():
             try:
-                ch = Charge.objects.get(id=charge_id, school_id=sid, account=acct)
+                ch = Charge.objects.get(pk=charge_id, school_id=sid, account=acct)
             except Charge.DoesNotExist:
                 return _json_error("charge not found", status=404)
 
@@ -375,7 +375,7 @@ def payment_allocate(request: HttpRequest, payment_id: str):
     try:
         result = allocate_payment_fifo(school_id=sid, payment=p)
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     return _envelope(
         {
@@ -396,7 +396,7 @@ def ledger_account_balance(request: HttpRequest, account_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(account_id), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -412,7 +412,7 @@ def charge_balance(request: HttpRequest, charge_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        ch = Charge.objects.get(id=UUID(charge_id), school_id=sid)
+        ch = Charge.objects.get(pk=UUID(charge_id), school_id=sid)
     except Charge.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -428,7 +428,7 @@ def ledger_account_statement(request: HttpRequest, account_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        acct = LedgerAccount.objects.get(id=UUID(account_id), school_id=sid)
+        acct = LedgerAccount.objects.get(pk=UUID(account_id), school_id=sid)
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -462,7 +462,7 @@ def open_charges(request: HttpRequest):
     except LedgerAccount.DoesNotExist:
         return _json_error("Not found", status=404)
     except ValueError as e:
-        return _json_error(str(e), status=400)
+        return _json_error("Invalid request payload", status=400)
 
     charges = Charge.objects.filter(school_id=sid, account=acct, is_void=False).order_by("created_at", "id")
 
@@ -525,7 +525,7 @@ def open_invoices(request: HttpRequest):
         try:
             qs = qs.filter(household_id=_parse_uuid(household_id, "household_id"))
         except ValueError as e:
-            return _json_error(str(e), status=400)
+            return _json_error("Invalid request payload", status=400)
 
     invoices = list(qs.order_by("due_on", "id"))
     charge_ids = [inv.ledger_charge_id for inv in invoices if inv.ledger_charge_id]
@@ -708,3 +708,4 @@ def void_payment(request: HttpRequest, payment_id: str):
         p.save(update_fields=["is_void"])
 
     return _envelope({"id": str(p.id), "school_id": str(sid), "is_void": True}, status=200)
+

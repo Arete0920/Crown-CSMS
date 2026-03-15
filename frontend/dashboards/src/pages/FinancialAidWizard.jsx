@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
+import { useWizardDraft } from "../hooks/useWizardDraft";
 import Step1Year from "./financial_aid_wizard/Step1Year.jsx";
 import Step2Buckets from "./financial_aid_wizard/Step2Buckets.jsx";
 import Step3Awards from "./financial_aid_wizard/Step3Awards.jsx";
@@ -26,30 +27,13 @@ const STEP_LABELS = [
   "Verify",
 ];
 
-const STORAGE_KEY = "crown_aid_wizard_ctx_v1";
-
-function loadContext() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveContext(ctx) {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ctx));
-  } catch { /* ignore */ }
-}
-
 export default function FinancialAidWizard() {
-  const [initialContext] = useState(() => loadContext());
+  const [initialContext] = useState(() => ({}));
+  const { value, saveDraft, loaded } = useWizardDraft("financial-aid-setup", initialContext);
 
-  function wrappedSetContext(ctx) {
-    saveContext(typeof ctx === "function" ? ctx(loadContext()) : ctx);
+  if (!loaded) {
+    return null;
   }
-  void wrappedSetContext;
 
   return (
     <CrownLayout title="Financial Aid Setup" subtitle="Configure aid year, active buckets, and create awards for the aid cycle">
@@ -57,7 +41,8 @@ export default function FinancialAidWizard() {
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
-          initialContext={initialContext}
+          initialContext={value}
+          onContextChange={saveDraft}
         />
       </div>
     </CrownLayout>

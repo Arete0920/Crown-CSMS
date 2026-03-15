@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
+import { useWizardDraft } from "../hooks/useWizardDraft";
 import Step1Mode from "./billing_wizard/Step1Mode.jsx";
 import Step2Plans from "./billing_wizard/Step2Plans.jsx";
 import Step3Fees from "./billing_wizard/Step3Fees.jsx";
@@ -26,30 +27,13 @@ const STEP_LABELS = [
   "Verify",
 ];
 
-const STORAGE_KEY = "crown_billing_wizard_ctx_v1";
-
-function loadContext() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveContext(ctx) {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ctx));
-  } catch { /* ignore */ }
-}
-
 export default function BillingWizard() {
-  const [initialContext] = useState(() => loadContext());
+  const [initialContext] = useState(() => ({}));
+  const { value, saveDraft, loaded } = useWizardDraft("billing-setup", initialContext);
 
-  function wrappedSetContext(ctx) {
-    saveContext(typeof ctx === "function" ? ctx(loadContext()) : ctx);
+  if (!loaded) {
+    return null;
   }
-  void wrappedSetContext;
 
   return (
     <CrownLayout title="Billing Setup" subtitle="Configure tuition plans, fees, and billing schedule for a term">
@@ -57,7 +41,8 @@ export default function BillingWizard() {
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
-          initialContext={initialContext}
+          initialContext={value}
+          onContextChange={saveDraft}
         />
       </div>
     </CrownLayout>

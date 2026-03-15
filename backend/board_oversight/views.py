@@ -73,7 +73,7 @@ def get_packet(request, packet_id: int):
     if err:
         return err
     try:
-        pkt = BoardPacket.objects.get(id=packet_id, school_id=school_id)
+        pkt = BoardPacket.objects.get(pk=packet_id, school_id=school_id)
     except BoardPacket.DoesNotExist:
         return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     return Response(BoardPacketSerializer(pkt).data, status=status.HTTP_200_OK)

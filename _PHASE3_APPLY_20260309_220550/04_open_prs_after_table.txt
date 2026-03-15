@@ -1,0 +1,29 @@
+
+number isDraft mergeStateSt
+               atus        
+------ ------- ------------
+   557    True BLOCKED     
+   553   False BLOCKED     
+   552   False BLOCKED     
+   551   False BLOCKED     
+   550   False UNSTABLE    
+   547    True BLOCKED     
+   546    True BLOCKED     
+   538    True BLOCKED     
+   534    True BLOCKED     
+   533    True BLOCKED     
+   531    True BLOCKED     
+   530    True BLOCKED     
+   529    True BLOCKED     
+   528    True BLOCKED     
+   527    True BLOCKED     
+   526    True BLOCKED     
+   525    True BLOCKED     
+   524    True BLOCKED     
+   523    True BLOCKED     
+   522    True BLOCKED     
+   509   False DIRTY       
+   505   False DIRTY       
+
+
+

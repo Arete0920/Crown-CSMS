@@ -91,7 +91,7 @@ def _resolve_household_for_user(user):
         if guardian and getattr(guardian, "household_id", None):
             return guardian.household
     except Exception:
-        pass
+        logger.debug("guardian email bridge unavailable", exc_info=True)
 
     return None
 
@@ -146,17 +146,17 @@ class ParentSelfOverview(APIView):
             from gradebook.models import GradeEntry
             from academics.models import Assignment
         except Exception:
-            pass
+            logger.debug("gradebook/academics optional imports unavailable", exc_info=True)
 
         try:
             from billing.models import Invoice, InvoiceLine
         except Exception:
-            pass
+            logger.debug("billing optional imports unavailable", exc_info=True)
 
         try:
             from servicehours.models import ServiceEntry
         except Exception:
-            pass
+            logger.debug("servicehours optional imports unavailable", exc_info=True)
 
         now = timezone.now().date()
         seven_days = now + timezone.timedelta(days=7)

@@ -115,7 +115,7 @@ def sections(request: HttpRequest):
         return _json_error("term is required", status=400)
 
     try:
-        course = Course.objects.get(id=UUID(str(course_id)), school_id=sid)
+        course = Course.objects.get(pk=UUID(str(course_id)), school_id=sid)
     except Course.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -152,12 +152,12 @@ def enroll(request: HttpRequest):
         return _json_error("student_id is required", status=400)
 
     try:
-        section = Section.objects.get(id=UUID(str(section_id)), school_id=sid)
+        section = Section.objects.get(pk=UUID(str(section_id)), school_id=sid)
     except Section.DoesNotExist:
         return _json_error("Not found", status=404)
 
     try:
-        student = Student.objects.get(id=UUID(str(student_id)), school_id=sid)
+        student = Student.objects.get(pk=UUID(str(student_id)), school_id=sid)
     except Student.DoesNotExist:
         return _json_error("Not found", status=404)
 
@@ -177,7 +177,7 @@ def section_roster(request: HttpRequest, section_id: str):
         return _json_error("school_id could not be derived for request", status=403)
 
     try:
-        section = Section.objects.get(id=UUID(section_id), school_id=sid)
+        section = Section.objects.get(pk=UUID(section_id), school_id=sid)
     except Section.DoesNotExist:
         return _json_error("Not found", status=404)
 

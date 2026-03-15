@@ -22,12 +22,12 @@ class Command(BaseCommand):
             raise CommandError("--count must be >= 1")
 
         try:
-            school = School.objects.get(id=school_id)
+            school = School.objects.get(pk=school_id)
         except School.DoesNotExist as exc:
             raise CommandError(f"School not found: {school_id}") from exc
 
         try:
-            year = AcademicYear.objects.get(id=year_id, school=school)
+            year = AcademicYear.objects.get(pk=year_id, school=school)
         except AcademicYear.DoesNotExist as exc:
             raise CommandError(f"Academic year not found for school: {year_id}") from exc
 

@@ -1,367 +1,212 @@
-﻿import { useEffect, useState, useMemo } from "react";
-import CrownLayout from "../components/crown/CrownLayout.jsx";
-import ErrorBanner from "../components/ui/ErrorBanner.jsx";
-import { getInvoices } from "../api/finance";
-import { csvEscape, downloadTextFile } from "../lib/export/csv";
-import Drawer from "../components/Drawer";
+﻿import { useMemo, useState } from 'react';
+import CrownLayout from '../components/crown/CrownLayout.jsx';
+import CrownDataTable from '../components/data/CrownDataTable.jsx';
+import Drawer from '../components/Drawer';
+import { getInvoices } from '../api/finance';
+import { csvEscape, downloadTextFile } from '../lib/export/csv';
+import { useAsyncPageData } from '../hooks/useAsyncPageData';
+import { usePersistentTableState } from '../hooks/usePersistentTableState';
+
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
+const LABEL = { margin: 0, fontSize: '0.875rem' };
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(Number(value || 0));
+}
 
 export default function FinanceInvoicesList() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [colSort, setColSort] = useState({ key: "due_on", dir: "desc" });
   const [selected, setSelected] = useState(null);
 
-  useEffect(() => {
-    let mounted = true;
+  const {
+    search,
+    setSearch,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
+  } = usePersistentTableState('finance-invoices-table', {
+    search: '',
+    filters: { delinquentOnly: '' },
+    page: 0,
+    rowsPerPage: 10,
+  });
 
-    async function fetchData() {
-      try {
-        setLoading(true);
-        const invoices = await getInvoices();
-        
-        // Normalize: already comes in correct shape from API
-        const normalized = invoices.map((inv) => ({
-          id: inv.id,
-          household_name: inv.household_name || "(No household)",
-          total_amount: parseFloat(inv.total_amount) || 0,
-          balance_due: parseFloat(inv.balance_due) || 0,
-          due_on: inv.due_on || null,
-          created_at: inv.created_at,
-          updated_at: inv.updated_at,
-        }));
-
-        if (mounted) {
-          setData(normalized);
-          setError(null);
-        }
-      } catch (err) {
-        console.error("Failed to fetch invoices:", err);
-        if (mounted) {
-          setError(err.message || "Failed to load invoices");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    fetchData();
-    return () => {
-      mounted = false;
-    };
+  const { loading, error, data, reload } = useAsyncPageData(async () => {
+    const invoices = await getInvoices();
+    return invoices.map((inv) => ({
+      id: inv.id,
+      household_name: inv.household_name || '(No household)',
+      total_amount: parseFloat(inv.total_amount) || 0,
+      paid_amount: parseFloat(inv.paid_amount) || 0,
+      balance_due: parseFloat(inv.balance_due) || 0,
+      credit_amount: parseFloat(inv.credit_amount) || 0,
+      due_on: inv.due_on || null,
+      days_past_due: Number.isFinite(inv.days_past_due) ? inv.days_past_due : 0,
+      aging_bucket: inv.aging_bucket || 'current',
+      is_delinquent: !!inv.is_delinquent,
+      is_reversed: !!inv.is_reversed,
+    }));
   }, []);
 
-  // Sorting
-  const sortedRows = useMemo(() => {
-    if (!data.length) return [];
+  const rows = useMemo(() => {
+    const source = Array.isArray(data) ? data : [];
 
-    const { key, dir } = colSort;
-    const sorted = [...data];
-
-    sorted.sort((a, b) => {
-      let aVal = a[key];
-      let bVal = b[key];
-
-      // Dates
-      if (key === "due_on" || key === "created_at") {
-        aVal = aVal ? new Date(aVal).getTime() : 0;
-        bVal = bVal ? new Date(bVal).getTime() : 0;
-      }
-
-      // Numbers
-      if (key === "total_amount" || key === "balance_due") {
-        aVal = typeof aVal === "number" ? aVal : 0;
-        bVal = typeof bVal === "number" ? bVal : 0;
-      }
-
-      // Strings
-      if (key === "household_name") {
-        aVal = String(aVal || "").toLowerCase();
-        bVal = String(bVal || "").toLowerCase();
-        return dir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      }
-
-      // Numeric or date comparison
-      if (aVal < bVal) return dir === "asc" ? -1 : 1;
-      if (aVal > bVal) return dir === "asc" ? 1 : -1;
-      return 0;
+    return source.filter((row) => {
+      const searchBlob = `${row.household_name} ${row.aging_bucket}`.toLowerCase();
+      const matchesSearch = !search || searchBlob.includes(search.toLowerCase());
+      const matchesDelinquent =
+        filters.delinquentOnly !== 'true' ? true : row.is_delinquent;
+      return matchesSearch && matchesDelinquent;
     });
+  }, [data, search, filters.delinquentOnly]);
 
-    return sorted;
-  }, [data, colSort]);
+  const summary = useMemo(() => {
+    const source = Array.isArray(data) ? data : [];
+    const delinquentRows = source.filter((row) => row.is_delinquent);
 
-  function handleSort(key) {
-    setColSort((prev) => ({
-      key,
-      dir: prev.key === key && prev.dir === "asc" ? "desc" : "asc",
-    }));
-  }
+    return {
+      delinquentCount: delinquentRows.length,
+      delinquentBalance: delinquentRows.reduce((sum, row) => sum + row.balance_due, 0),
+      credits: source.reduce((sum, row) => sum + row.credit_amount, 0),
+      reversedCount: source.filter((row) => row.is_reversed).length,
+    };
+  }, [data]);
 
-  function handleExport() {
-    if (!sortedRows.length) return;
+  const columns = [
+    { key: 'household_name', label: 'Payer', sortable: true },
+    {
+      key: 'total_amount',
+      label: 'Total',
+      sortable: true,
+      render: (row) => formatCurrency(row.total_amount),
+    },
+    {
+      key: 'paid_amount',
+      label: 'Paid',
+      sortable: true,
+      render: (row) => formatCurrency(row.paid_amount),
+    },
+    {
+      key: 'balance_due',
+      label: 'Balance Due',
+      sortable: true,
+      render: (row) => formatCurrency(row.balance_due),
+    },
+    { key: 'days_past_due', label: 'Days Past Due', sortable: true },
+    { key: 'aging_bucket', label: 'Aging Bucket', sortable: true },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (row) => (
+        <button type="button" style={SM} onClick={() => setSelected(row)}>Open</button>
+      ),
+    },
+  ];
 
-    const headers = ["Payer", "Total Amount", "Balance Due", "Due Date", "Created"];
-    const rows = [headers];
+  const filterControls = (
+    <div style={ROW}>
+      <button type="button" style={filters.delinquentOnly !== 'true' ? SM_ON : SM} onClick={() => setFilter('delinquentOnly', '')}>All</button>
+      <button type="button" style={filters.delinquentOnly === 'true' ? SM_ON : SM} onClick={() => setFilter('delinquentOnly', 'true')}>Delinquent Only</button>
+    </div>
+  );
 
-    sortedRows.forEach((inv) => {
-      rows.push([
-        csvEscape(inv.household_name),
-        String(inv.total_amount.toFixed(2)),
-        String(inv.balance_due.toFixed(2)),
-        inv.due_on || "",
-        inv.created_at || "",
-      ]);
-    });
-
-    const csvContent = rows.map((r) => r.join(",")).join("\n");
-    downloadTextFile(csvContent, "invoices.csv");
-  }
-
-  function formatDate(isoString) {
-    if (!isoString) return "";
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString();
-    } catch {
-      return "";
-    }
-  }
-
-  function formatCurrency(num) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(num);
-  }
-
-  if (loading) {
-    return (
-      <CrownLayout title="Finance" subtitle="Invoice history and exports">
-        <p>Loading...</p>
-      </CrownLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <CrownLayout title="Finance" subtitle="Invoice history and exports">
-        <ErrorBanner title="Failed to load invoices" message={error} />
-      </CrownLayout>
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <CrownLayout title="Finance" subtitle="Invoice history and exports">
-        <div style={{ marginTop: "1rem", color: "var(--crown-muted)" }}>
-          No invoices yet
-        </div>
-      </CrownLayout>
-    );
-  }
+  const actions = (
+    <div style={ROW}>
+      <button
+        type="button"
+        style={BTN}
+        onClick={() => {
+          const header = [
+            'Payer',
+            'Total Amount',
+            'Paid',
+            'Balance Due',
+            'Credit',
+            'Days Past Due',
+            'Aging Bucket',
+          ];
+          const lines = [header.map(csvEscape).join(',')];
+          for (const row of rows) {
+            lines.push(
+              [
+                row.household_name,
+                row.total_amount.toFixed(2),
+                row.paid_amount.toFixed(2),
+                row.balance_due.toFixed(2),
+                row.credit_amount.toFixed(2),
+                String(row.days_past_due),
+                row.aging_bucket,
+              ]
+                .map(csvEscape)
+                .join(','),
+            );
+          }
+          downloadTextFile('invoices.csv', lines.join('\n'));
+        }}
+      >Export CSV</button>
+      <button type="button" style={BTN} onClick={clearFilters}>Clear Filters</button>
+      <button type="button" style={BTN} onClick={reload}>Reload</button>
+    </div>
+  );
 
   return (
     <CrownLayout title="Finance" subtitle="Invoice history and exports">
+      <CrownDataTable
+        title="Invoices"
+        subtitle="Standardized invoice table"
+        rows={rows}
+        columns={columns}
+        loading={loading}
+        error={error}
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={filterControls}
+        actions={actions}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={setRowsPerPage}
+        initialSortKey="days_past_due"
+        initialSortDirection="desc"
+        emptyTitle="No invoices found"
+        emptyMessage="There are no invoice records matching the current filters."
+      />
 
-      {/* Export bar */}
-      <div style={{ marginBottom: "1rem" }}>
-        <button
-          className="crown-btn"
-          onClick={handleExport}
-        >
-          Export CSV
-        </button>
+      <div style={{ marginTop: '16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+          <p style={LABEL}>Delinquent: <strong>{summary.delinquentCount}</strong></p>
+          <p style={LABEL}>Past Due: <strong>{formatCurrency(summary.delinquentBalance)}</strong></p>
+          <p style={LABEL}>Credits: <strong>{formatCurrency(summary.credits)}</strong></p>
+          <p style={LABEL}>Reversals: <strong>{summary.reversedCount}</strong></p>
+        </div>
       </div>
 
-      {/* Table */}
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            fontSize: "0.875rem",
-          }}
-        >
-          <thead>
-            <tr style={{ background: "var(--crown-surface-2)" }}>
-              <th
-                onClick={() => handleSort("household_name")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Payer{" "}
-                {colSort.key === "household_name" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("total_amount")}
-                style={{
-                  textAlign: "right",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Total{" "}
-                {colSort.key === "total_amount" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("balance_due")}
-                style={{
-                  textAlign: "right",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Balance Due{" "}
-                {colSort.key === "balance_due" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("due_on")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Due Date{" "}
-                {colSort.key === "due_on" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-              <th
-                onClick={() => handleSort("created_at")}
-                style={{
-                  textAlign: "left",
-                  padding: "0.75rem",
-                  borderBottom: "1px solid var(--crown-border)",
-                  cursor: "pointer",
-                  userSelect: "none",
-                  position: "sticky",
-                  top: 0,
-                  background: "var(--crown-surface-2)",
-                  zIndex: 10,
-                }}
-              >
-                Created{" "}
-                {colSort.key === "created_at" && (colSort.dir === "asc" ? "↑" : "↓")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedRows.map((inv) => (
-              <tr
-                key={inv.id}
-                onClick={() => setSelected(inv)}
-                style={{
-                  cursor: "pointer",
-                  borderBottom: "1px solid var(--crown-border)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "var(--crown-surface-2)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "var(--crown-surface)";
-                }}
-              >
-                <td style={{ padding: "0.75rem" }}>{inv.household_name}</td>
-                <td style={{ padding: "0.75rem", textAlign: "right" }}>
-                  {formatCurrency(inv.total_amount)}
-                </td>
-                <td style={{ padding: "0.75rem", textAlign: "right" }}>
-                  {formatCurrency(inv.balance_due)}
-                </td>
-                <td style={{ padding: "0.75rem" }}>
-                  {inv.due_on ? formatDate(inv.due_on) : "(No due date)"}
-                </td>
-                <td style={{ padding: "0.75rem" }}>{formatDate(inv.created_at)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Drawer */}
-      {selected && (
-        <Drawer onClose={() => setSelected(null)} width={460}>
-          <div style={{ padding: "1.5rem" }}>
-            <h2 style={{ marginTop: 0, marginBottom: "1.5rem", fontSize: "1.25rem" }}>
-              Invoice Details
-            </h2>
-
-            <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
-                Payer
-              </h3>
-              <div>{selected.household_name}</div>
+      {selected ? (
+        <Drawer onClose={() => setSelected(null)} width={500}>
+          <div style={{ padding: '24px' }}>
+            <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Invoice Detail</h6>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <p style={LABEL}><strong>Payer:</strong> {selected.household_name}</p>
+              <p style={LABEL}><strong>Total:</strong> {formatCurrency(selected.total_amount)}</p>
+              <p style={LABEL}><strong>Paid:</strong> {formatCurrency(selected.paid_amount)}</p>
+              <p style={LABEL}><strong>Balance:</strong> {formatCurrency(selected.balance_due)}</p>
+              <p style={LABEL}><strong>Aging:</strong> {selected.aging_bucket}</p>
             </div>
-
-            <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
-                Amounts
-              </h3>
-              <div>
-                <strong>Total:</strong> {formatCurrency(selected.total_amount)}
-              </div>
-              <div>
-                <strong>Balance Due:</strong> {formatCurrency(selected.balance_due)}
-              </div>
+            <div style={{ marginTop: '16px' }}>
+              <button type="button" style={BTN} onClick={() => setSelected(null)}>Close</button>
             </div>
-
-            <div style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.875rem", color: "var(--crown-muted)", marginBottom: "0.5rem" }}>
-                Dates
-              </h3>
-              <div>
-                <strong>Due:</strong>{" "}
-                {selected.due_on ? formatDate(selected.due_on) : "(Not set)"}
-              </div>
-              <div>
-                <strong>Created:</strong> {formatDate(selected.created_at)}
-              </div>
-              <div>
-                <strong>Updated:</strong> {formatDate(selected.updated_at)}
-              </div>
-            </div>
-
-            <details style={{ fontSize: "0.875rem" }}>
-              <summary style={{ cursor: "pointer", color: "var(--crown-muted)" }}>
-                Identifiers
-              </summary>
-              <div style={{ marginTop: "0.5rem", fontFamily: "monospace", fontSize: "0.75rem" }}>
-                <div>
-                  <strong>Invoice ID:</strong> {selected.id}
-                </div>
-              </div>
-            </details>
           </div>
         </Drawer>
-      )}
+      ) : null}
     </CrownLayout>
   );
 }

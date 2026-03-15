@@ -1,487 +1,218 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
-import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { getAdmissionsApplications, enrollApplicant } from "../api/admissions";
-import { getSchoolId, getToken } from "../lib/api";
-import { csvEscape, downloadTextFile } from "../lib/export/csv";
-import Drawer from "../components/Drawer";
-import ErrorBanner from "../components/ui/ErrorBanner.jsx";import DashboardSection from '../components/layout/DashboardSection.jsx';
+﻿import { useMemo, useState } from 'react';
+import CrownLayout from '../components/crown/CrownLayout.jsx';
+import CrownDataTable from '../components/data/CrownDataTable.jsx';
+import Drawer from '../components/Drawer';
+import { getAdmissionsApplications, enrollApplicant } from '../api/admissions';
+import { csvEscape, downloadTextFile } from '../lib/export/csv';
+import { useAsyncPageData } from '../hooks/useAsyncPageData';
+import { usePersistentTableState } from '../hooks/usePersistentTableState';
+import { useApiAction } from '../hooks/useApiAction';
+
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const BTN_FILLED = { ...BTN, background: '#1976d2', color: '#fff' };
+const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
+const LABEL = { margin: 0, fontSize: '0.875rem' };
+
 const STATUS_LABELS = {
-  DRAFT: "Draft",
-  SUBMITTED: "Submitted",
-  UNDER_REVIEW: "Under review",
-  NEEDS_INFO: "Needs info",
-  ACCEPTED: "Accepted",
-  WAITLISTED: "Waitlisted",
-  DENIED: "Denied",
-  WITHDRAWN: "Withdrawn",
-  ENROLLED: "Enrolled",
+  DRAFT: 'Draft',
+  SUBMITTED: 'Submitted',
+  UNDER_REVIEW: 'Under review',
+  NEEDS_INFO: 'Needs info',
+  ACCEPTED: 'Accepted',
+  WAITLISTED: 'Waitlisted',
+  DENIED: 'Denied',
+  WITHDRAWN: 'Withdrawn',
+  ENROLLED: 'Enrolled',
 };
 
 export function AdmissionsPipelineList() {
-  const token = getToken();
-  const schoolId = getSchoolId();
-
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // sorting state
-  const [rowSort, setRowSort] = useState({ key: "applicant", dir: "asc" });
-
-  // detail drawer state
   const [selected, setSelected] = useState(null);
-
-  // enroll action state
-  const [enrolling, setEnrolling] = useState(false);
   const [enrollResult, setEnrollResult] = useState(null);
 
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
+  const {
+    search,
+    setSearch,
+    filters,
+    setFilter,
+    clearFilters,
+    page,
+    setPage,
+    rowsPerPage,
+    setRowsPerPage,
+  } = usePersistentTableState('admissions-pipeline-table', {
+    search: '',
+    filters: { status: '' },
+    page: 0,
+    rowsPerPage: 10,
+  });
 
-    getAdmissionsApplications()
-      .then((data) => {
-        if (!alive) return;
-        // Normalize once
-        const normalized = (data || []).map((app) => ({
-          id: app.id,
-          applicant_name: app.applicant_name || "",
-          student_first_name: app.student_first_name || "",
-          student_last_name: app.student_last_name || "",
-          status: app.status || "DRAFT",
-          household_name: app.household_name || "",
-          created_at: app.created_at || "",
-          updated_at: app.updated_at || "",
-        }));
-        setApplications(normalized);
-        setError(null);
-      })
-      .catch((err) => {
-        if (!alive) return;
-        console.error(err);
-        setError({ message: err.message, status: err.status });
-      })
-      .finally(() => {
-        if (!alive) return;
-        setLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
+  const { loading, error, data, reload } = useAsyncPageData(async () => {
+    const source = await getAdmissionsApplications();
+    return (source || []).map((app) => ({
+      id: app.id,
+      applicant_name: app.applicant_name || '',
+      student_first_name: app.student_first_name || '',
+      student_last_name: app.student_last_name || '',
+      status: app.status || 'DRAFT',
+      household_name: app.household_name || '',
+      created_at: app.created_at || '',
+      updated_at: app.updated_at || '',
+    }));
   }, []);
 
-  // sorted rows (client-side)
-  const sortedRows = useMemo(() => {
-    const arr = Array.isArray(applications) ? [...applications] : [];
-    const dir = rowSort.dir === "asc" ? 1 : -1;
+  const { run: runEnroll, loading: enrolling, error: enrollError } = useApiAction(
+    async (applicationId) => {
+      return enrollApplicant(applicationId);
+    },
+  );
 
-    arr.sort((a, b) => {
-      if (rowSort.key === "applicant") {
-        const na = (a.applicant_name || "").toLowerCase();
-        const nb = (b.applicant_name || "").toLowerCase();
-        if (na < nb) return -1 * dir;
-        if (na > nb) return 1 * dir;
-        return 0;
-      }
+  const rows = useMemo(() => {
+    const source = Array.isArray(data) ? data : [];
 
-      if (rowSort.key === "status") {
-        const sa = a.status || "";
-        const sb = b.status || "";
-        if (sa < sb) return -1 * dir;
-        if (sa > sb) return 1 * dir;
-        return 0;
-      }
-
-      if (rowSort.key === "created_at") {
-        const ta = new Date(a.created_at).getTime();
-        const tb = new Date(b.created_at).getTime();
-        return (ta - tb) * dir;
-      }
-
-      if (rowSort.key === "updated_at") {
-        const ta = new Date(a.updated_at).getTime();
-        const tb = new Date(b.updated_at).getTime();
-        return (ta - tb) * dir;
-      }
-
-      return 0;
+    return source.filter((row) => {
+      const searchBlob = `${row.applicant_name} ${row.student_first_name} ${row.student_last_name} ${row.household_name}`
+        .toLowerCase();
+      const matchesSearch = !search || searchBlob.includes(search.toLowerCase());
+      const matchesStatus = !filters.status || row.status === filters.status;
+      return matchesSearch && matchesStatus;
     });
+  }, [data, search, filters.status]);
 
-    return arr;
-  }, [applications, rowSort]);
+  const columns = [
+    { key: 'applicant_name', label: 'Applicant', sortable: true },
+    {
+      key: 'status',
+      label: 'Status',
+      sortable: true,
+      render: (row) => STATUS_LABELS[row.status] || row.status,
+    },
+    { key: 'household_name', label: 'Household', sortable: true },
+    {
+      key: 'created_at',
+      label: 'Submitted',
+      sortable: true,
+      render: (row) => (row.created_at ? new Date(row.created_at).toLocaleDateString() : '—'),
+    },
+    {
+      key: 'updated_at',
+      label: 'Updated',
+      sortable: true,
+      render: (row) => (row.updated_at ? new Date(row.updated_at).toLocaleDateString() : '—'),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (row) => (
+        <button type="button" style={SM} onClick={() => setSelected(row)}>Open</button>
+      ),
+    },
+  ];
 
-  // CSV export
-  const buildAdmissionsCsv = () => {
-    const header = ["Applicant", "Status", "Household", "Submitted", "Updated"];
-    const lines = [header.map(csvEscape).join(",")];
+  const filterControls = (
+    <div style={ROW}>
+      <button type="button" style={filters.status === '' ? SM_ON : SM} onClick={() => setFilter('status', '')}>All</button>
+      <button type="button" style={filters.status === 'SUBMITTED' ? SM_ON : SM} onClick={() => setFilter('status', 'SUBMITTED')}>Submitted</button>
+      <button type="button" style={filters.status === 'ACCEPTED' ? SM_ON : SM} onClick={() => setFilter('status', 'ACCEPTED')}>Accepted</button>
+    </div>
+  );
 
-    for (const app of sortedRows) {
-      const row = [
-        app.applicant_name,
-        STATUS_LABELS[app.status] || app.status,
-        app.household_name,
-        app.created_at ? new Date(app.created_at).toLocaleDateString() : "",
-        app.updated_at ? new Date(app.updated_at).toLocaleDateString() : "",
-      ];
-      lines.push(row.map(csvEscape).join(","));
-    }
+  const actions = (
+    <div style={ROW}>
+      <button type="button" style={BTN} onClick={() => {
+        const header = ['Applicant', 'Status', 'Household', 'Submitted', 'Updated'];
+        const lines = [header.map(csvEscape).join(',')];
+        for (const app of rows) {
+          lines.push(
+            [
+              app.applicant_name,
+              STATUS_LABELS[app.status] || app.status,
+              app.household_name,
+              app.created_at ? new Date(app.created_at).toLocaleDateString() : '',
+              app.updated_at ? new Date(app.updated_at).toLocaleDateString() : '',
+            ]
+              .map(csvEscape)
+              .join(','),
+          );
+        }
+        downloadTextFile('admissions_pipeline.csv', lines.join('\n'));
+      }}>Export CSV</button>
+      <button type="button" style={BTN} onClick={clearFilters}>Clear Filters</button>
+      <button type="button" style={BTN} onClick={reload}>Reload</button>
+    </div>
+  );
 
-    return lines.join("\n");
-  };
-
-  const onExportCsv = () => {
-    const csv = buildAdmissionsCsv();
-    const filename = `admissions_pipeline.csv`;
-    downloadTextFile(filename, csv);
-  };
-
-  const handleEnroll = async () => {
+  async function handleEnrollSelected() {
     if (!selected) return;
-    setEnrolling(true);
     setEnrollResult(null);
-    try {
-      const result = await enrollApplicant(selected.id);
-      setEnrollResult({ ok: true, message: result.message, studentId: result.student_id });
-      // Update status locally
-      setSelected((prev) => ({ ...prev, status: "ENROLLED" }));
-      setApplications((prev) =>
-        prev.map((a) => (a.id === selected.id ? { ...a, status: "ENROLLED" } : a))
-      );
-    } catch (err) {
-      setEnrollResult({ ok: false, message: err.message || "Enroll failed." });
-    } finally {
-      setEnrolling(false);
-    }
-  };
 
-  const isAuthed = !!token && !!schoolId;
-  const hasApplications = applications.length > 0;
+    try {
+      const result = await runEnroll(selected.id);
+      setEnrollResult({ ok: true, message: result.message || 'Applicant enrolled.' });
+      await reload();
+    } catch {
+      setEnrollResult({ ok: false, message: 'Unable to enroll applicant.' });
+    }
+  }
 
   return (
     <CrownLayout title="Admissions Pipeline" subtitle="Applicant tracking and enrollment">
+      <CrownDataTable
+        title="Applications"
+        subtitle="Pipeline view with standardized sorting and pagination"
+        rows={rows}
+        columns={columns}
+        loading={loading}
+        error={error}
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={filterControls}
+        actions={actions}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={setRowsPerPage}
+        initialSortKey="updated_at"
+        initialSortDirection="desc"
+        emptyTitle="No applications"
+        emptyMessage="Admissions applications will appear here once submitted."
+      />
 
-      {error && (
-        <ErrorBanner
-          title="Failed to load applications"
-          message={error.status ? `${error.message} [HTTP ${error.status}]` : error.message}
-        />
-      )}
+      {selected ? (
+        <Drawer onClose={() => setSelected(null)} width={520}>
+          <div style={{ padding: '24px' }}>
+            <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Application Detail</h6>
 
-      {loading && <div>Loading applications…</div>}
+            {enrollResult ? (
+              <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? '#e8f5e9' : '#ffebee', color: enrollResult.ok ? '#1b5e20' : '#b71c1c', border: `1px solid ${enrollResult.ok ? '#81c784' : '#ef9a9a'}`, marginBottom: '8px' }}>
+                {enrollResult.message}
+              </div>
+            ) : null}
 
-      {!loading && !hasApplications && (
-        <div style={{ margin: "24px 0", padding: 16, borderLeft: "4px solid var(--crown-border)", background: "var(--crown-surface-2)" }}>
-          <h3 style={{ margin: "0 0 8px 0", fontSize: "1.1rem" }}>No applications yet</h3>
-          <p>There are no applications to display.</p>
-        </div>
-      )}
+            {enrollError ? (
+              <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: '#ffebee', color: '#b71c1c', border: '1px solid #ef9a9a', marginBottom: '8px' }}>
+                {enrollError.message}
+              </div>
+            ) : null}
 
-      {!loading && hasApplications && (
-        <DashboardSection title="Applications">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: 12,
-              marginBottom: 10,
-            }}
-          >
-            <button
-              type="button"
-              className="crown-btn"
-              onClick={onExportCsv}
-            >
-              Export CSV ↓
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              <p style={LABEL}><strong>Applicant:</strong> {selected.applicant_name}</p>
+              <p style={LABEL}><strong>Status:</strong> {STATUS_LABELS[selected.status] || selected.status}</p>
+              <p style={LABEL}><strong>Household:</strong> {selected.household_name || '—'}</p>
+            </div>
+
+            <div style={ROW}>
+              <button type="button" style={BTN_FILLED} onClick={handleEnrollSelected} disabled={enrolling || selected.status === 'ENROLLED'}>
+                {enrolling ? 'Enrolling...' : 'Enroll Applicant'}
+              </button>
+              <button type="button" style={BTN} onClick={() => setSelected(null)}>Close</button>
+            </div>
           </div>
-
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ borderCollapse: "collapse", minWidth: 800 }}>
-              <thead>
-                <tr>
-                  <th
-                    style={{
-                      position: "sticky",
-                      left: 0,
-                      top: 0,
-                      background: "var(--crown-surface)",
-                      zIndex: 11,
-                      borderBottom: "1px solid var(--crown-border)",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>Applicant</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRowSort((s) => ({
-                            key: "applicant",
-                            dir: s.key === "applicant" ? (s.dir === "asc" ? "desc" : "asc") : "asc",
-                          }))
-                        }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
-                      >
-                        {rowSort.key === "applicant" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
-                      </button>
-                    </div>
-                  </th>
-
-                  <th
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      background: "var(--crown-surface)",
-                      zIndex: 10,
-                      borderBottom: "1px solid var(--crown-border)",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>Status</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRowSort((s) => ({
-                            key: "status",
-                            dir: s.key === "status" ? (s.dir === "asc" ? "desc" : "asc") : "asc",
-                          }))
-                        }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
-                      >
-                        {rowSort.key === "status" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
-                      </button>
-                    </div>
-                  </th>
-
-                  <th
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      background: "var(--crown-surface)",
-                      zIndex: 10,
-                      borderBottom: "1px solid var(--crown-border)",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Household
-                  </th>
-
-                  <th
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      background: "var(--crown-surface)",
-                      zIndex: 10,
-                      borderBottom: "1px solid var(--crown-border)",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>Submitted</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRowSort((s) => ({
-                            key: "created_at",
-                            dir: s.key === "created_at" ? (s.dir === "asc" ? "desc" : "asc") : "desc",
-                          }))
-                        }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
-                      >
-                        {rowSort.key === "created_at" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
-                      </button>
-                    </div>
-                  </th>
-
-                  <th
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      background: "var(--crown-surface)",
-                      zIndex: 10,
-                      borderBottom: "1px solid var(--crown-border)",
-                      padding: "8px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>Updated</span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setRowSort((s) => ({
-                            key: "updated_at",
-                            dir: s.key === "updated_at" ? (s.dir === "asc" ? "desc" : "asc") : "desc",
-                          }))
-                        }
-                        style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
-                      >
-                        {rowSort.key === "updated_at" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
-                      </button>
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {sortedRows.map((app) => (
-                  <tr
-                    key={app.id}
-                    onClick={() => setSelected(app)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <td
-                      style={{
-                        position: "sticky",
-                        left: 0,
-                        background: "var(--crown-surface)",
-                        zIndex: 1,
-                        borderBottom: "1px solid var(--crown-border)",
-                        padding: "8px",
-                      }}
-                    >
-                      {app.applicant_name}
-                    </td>
-
-                    <td
-                      style={{
-                        borderBottom: "1px solid var(--crown-border)",
-                        padding: "8px",
-                      }}
-                    >
-                      {STATUS_LABELS[app.status] || app.status}
-                    </td>
-
-                    <td
-                      style={{
-                        borderBottom: "1px solid var(--crown-border)",
-                        padding: "8px",
-                      }}
-                    >
-                      {app.household_name}
-                    </td>
-
-                    <td
-                      style={{
-                        borderBottom: "1px solid var(--crown-border)",
-                        padding: "8px",
-                      }}
-                    >
-                      {app.created_at ? new Date(app.created_at).toLocaleDateString() : "—"}
-                    </td>
-
-                    <td
-                      style={{
-                        borderBottom: "1px solid var(--crown-border)",
-                        padding: "8px",
-                      }}
-                    >
-                      {app.updated_at ? new Date(app.updated_at).toLocaleDateString() : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </DashboardSection>
-      )}
-
-      <Drawer
-        open={!!selected}
-        onClose={() => { setSelected(null); setEnrollResult(null); }}
-        title={selected ? selected.applicant_name : ""}
-      >
-        {selected && (
-          <div style={{ display: "grid", gap: 16 }}>
-            {/* Application */}
-            <section>
-              <h4 style={{ marginBottom: 8 }}>Application</h4>
-              <div><strong>Status:</strong> {STATUS_LABELS[selected.status] || selected.status}</div>
-              <div><strong>Household:</strong> {selected.household_name}</div>
-            </section>
-
-            {/* Enroll action */}
-            {selected.status === "ACCEPTED" && (
-              <section>
-                <h4 style={{ marginBottom: 8 }}>Enrollment</h4>
-                <button
-                  type="button"
-                  onClick={handleEnroll}
-                  disabled={enrolling}
-                  style={{
-                    padding: "8px 16px",
-                    background: enrolling ? "var(--crown-muted)" : "var(--crown-ok)",
-                    color: "var(--crown-surface)",
-                    border: "none",
-                    borderRadius: 4,
-                    cursor: enrolling ? "not-allowed" : "pointer",
-                    fontSize: 14,
-                    fontWeight: 600,
-                  }}
-                >
-                  {enrolling ? "Enrolling…" : "Enroll Student"}
-                </button>
-                {enrollResult && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      padding: "8px 12px",
-                      background: enrollResult.ok ? "var(--crown-ok-bg)" : "var(--crown-danger-bg)",
-                      border: `1px solid ${enrollResult.ok ? "var(--crown-ok)" : "var(--crown-danger)"}`,
-                      borderRadius: 4,
-                      fontSize: 13,
-                    }}
-                  >
-                    {enrollResult.message}
-                    {enrollResult.ok && enrollResult.studentId && (
-                      <div style={{ marginTop: 4, color: "var(--crown-muted)", fontSize: 12 }}>
-                        Student ID: {enrollResult.studentId}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {selected.status === "ENROLLED" && (
-              <section>
-                <div style={{ padding: "8px 12px", background: "var(--crown-ok-bg)", border: "1px solid var(--crown-ok)", borderRadius: 4, fontSize: 13 }}>
-                  Student is enrolled.
-                </div>
-              </section>
-            )}
-
-            {/* Timeline */}
-            <section>
-              <h4 style={{ marginBottom: 8 }}>Timeline</h4>
-              <div><strong>Submitted:</strong> {selected.created_at}</div>
-              <div><strong>Updated:</strong> {selected.updated_at}</div>
-            </section>
-
-            {/* Identifiers */}
-            <section style={{ fontSize: 12, color: "var(--crown-muted)" }}>
-              <details>
-                <summary style={{ cursor: "pointer" }}>Identifiers</summary>
-                <div style={{ marginTop: 6 }}>
-                  <div><strong>Application ID:</strong> {selected.id}</div>
-                </div>
-              </details>
-            </section>
-          </div>
-        )}
-      </Drawer>
+        </Drawer>
+      ) : null}
     </CrownLayout>
   );
 }
+
+export default AdmissionsPipelineList;

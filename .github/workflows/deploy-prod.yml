@@ -23,13 +23,12 @@ env:
 
 jobs:
   build-and-deploy:
-    environment: prod
     runs-on: ubuntu-latest
     environment: production
     outputs:
       deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
       deploy_sha_short: ${{ steps.vars.outputs.deploy_sha_short }}
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -71,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ github.ref_name }}"
-          SHA="${{ env.DEPLOY_SHA }}"
+          SHA="${{ steps.vars.outputs.deploy_sha }}"
           if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
             echo "ERROR: DEPLOY_SHA is not a full commit SHA (got: '$SHA')"
             exit 1
@@ -108,8 +107,8 @@ jobs:
 
       - name: Bake BUILD_SHA into artifact
         run: |
-          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA_SHORT }}\"" > backend/crown_api/build_info.py
-          echo "✓ Generated build_info.py with SHA: ${{ env.DEPLOY_SHA_SHORT }}"
+          echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha_short }}\"" > backend/crown_api/build_info.py
+          echo "✓ Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -117,19 +116,19 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Pull image for Trivy local scan
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
       - name: Run security scan (Trivy)
         uses: aquasecurity/trivy-action@0.24.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
           format: 'sarif'
           output: 'trivy-results.sarif'
 
@@ -193,13 +192,13 @@ jobs:
         uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.WEBAPP_NAME }}
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_SHA }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
       - name: Build allowed appsettings JSON
         shell: pwsh
         run: |
           $settings = @{
-            "BUILD_SHA"       = "${{ env.DEPLOY_SHA }}"
+            "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
             "PROD_DEPLOY_TAG" = "${{ github.ref_name }}"
             "RUN_MIGRATIONS"  = "true"
             "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
@@ -238,7 +237,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $expected = "${{ env.DEPLOY_SHA }}"
+          $expected = "${{ steps.vars.outputs.deploy_sha }}"
           Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
           .\tools\verify_prod_build_sha.ps1 `
             -ExpectedSha $expected `
@@ -249,7 +248,7 @@ jobs:
         run: |
           sleep 30
           for i in {1..30}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health)
             if [ "$response" == "200" ]; then
               echo "✅ Health check passed"
               exit 0
@@ -263,10 +262,10 @@ jobs:
       - name: Verify deployed build_sha via /health
         shell: bash
         env:
-          WANT_SHA: ${{ env.DEPLOY_SHA }}
+          WANT_SHA: ${{ steps.vars.outputs.deploy_sha }}
         run: |
           set -euo pipefail
-          URL="https://crown-api-prod.azurewebsites.net/api/health/"
+          URL="https://crown-api-prod.azurewebsites.net/health"
           echo "Polling $URL for build_sha match (up to 5 min)..."
           for attempt in $(seq 1 20); do
             BODY="$(curl -fsS --max-time 10 "$URL" 2>/dev/null || true)"
@@ -290,6 +289,130 @@ jobs:
           echo "❌ build_sha did not match after 20 attempts (300s)"
           exit 1
 
+      - name: Verify live production build
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          HEALTH_URL="https://crown-api-prod.azurewebsites.net/health"
+
+          echo "Checking production health endpoint..."
+
+          RESPONSE=""
+          for i in {1..30}; do
+            if RESPONSE=$(curl -fsSL "$HEALTH_URL"); then
+              break
+            fi
+            echo "Waiting for container restart..."
+            sleep 10
+          done
+
+          if [ -z "$RESPONSE" ]; then
+            echo "No response received from health endpoint."
+            exit 1
+          fi
+
+          echo "$RESPONSE"
+
+          export RESPONSE_JSON="$RESPONSE"
+          python - <<'PY'
+          import json, os
+
+          data = json.loads(os.environ["RESPONSE_JSON"])
+          expected = os.environ["EXPECTED_SHA"]
+
+          if data.get("ok") is not True:
+              raise SystemExit("Health check failed: ok != true")
+
+          if data.get("env") != "prod":
+              raise SystemExit(f"Health check failed: env != prod (got {data.get('env')})")
+
+          live_sha = data.get("build_sha")
+          if live_sha != expected:
+              raise SystemExit(f"Deploy mismatch: running={live_sha} expected={expected}")
+
+          print("Production deploy verified successfully.")
+          PY
+
+      - name: Verify release identity end-to-end
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          HEALTH_URL="https://crown-api-prod.azurewebsites.net/health"
+          APP_NAME="crown-api-prod"
+          RESOURCE_GROUP="crown-rg"
+
+          echo "Expected SHA: $EXPECTED_SHA"
+
+          AZURE_IMAGE=$(az webapp config container show \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$APP_NAME" \
+            --query "[?name=='DOCKER_CUSTOM_IMAGE_NAME'].value | [0]" -o tsv)
+
+          if [ -z "$AZURE_IMAGE" ]; then
+            AZURE_IMAGE=$(az webapp config container show \
+              --resource-group "$RESOURCE_GROUP" \
+              --name "$APP_NAME" \
+              --query linuxFxVersion -o tsv)
+          fi
+
+          echo "Azure configured image: $AZURE_IMAGE"
+
+          AZURE_SHA=$(echo "$AZURE_IMAGE" | sed -E 's/^DOCKER\|.*:([0-9a-f]{40})$/\1/')
+          if [ -z "$AZURE_SHA" ]; then
+            echo "Could not extract Azure SHA from configured image."
+            exit 1
+          fi
+
+          RESPONSE=""
+          for i in {1..30}; do
+            if RESPONSE=$(curl -fsS "$HEALTH_URL"); then
+              break
+            fi
+            echo "Waiting for production health..."
+            sleep 10
+          done
+
+          if [ -z "$RESPONSE" ]; then
+            echo "No response from /health."
+            exit 1
+          fi
+
+          echo "$RESPONSE"
+
+          export RESPONSE_JSON="$RESPONSE"
+          export AZURE_SHA
+
+          python - <<'PY'
+          import json, os
+
+          data = json.loads(os.environ["RESPONSE_JSON"])
+          expected = os.environ["EXPECTED_SHA"]
+          azure_sha = os.environ["AZURE_SHA"]
+
+          if data.get("ok") is not True:
+              raise SystemExit("Health check failed: ok != true")
+
+          if data.get("env") != "prod":
+              raise SystemExit(f"Health check failed: env != prod (got {data.get('env')})")
+
+          live_sha = data.get("build_sha")
+          if not live_sha:
+              raise SystemExit("Health check missing build_sha")
+
+          if expected != azure_sha or azure_sha != live_sha:
+              raise SystemExit(
+                  f"Release identity mismatch: expected={expected} azure={azure_sha} live={live_sha}"
+              )
+
+          print("Release identity verified: workflow SHA, Azure SHA, and live SHA all match.")
+          PY
+
       - name: Notify deployment
         if: success()
         run: |
@@ -309,7 +432,7 @@ jobs:
     if: always()
 
     env:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_URL: ${{ secrets['SLACK_WEBHOOK_URL'] }}
 
     steps:
       - name: Send Slack notification

@@ -64,7 +64,7 @@ def test_application_create_sets_school_and_is_draft():
         content_type="application/json",
     )
     assert resp.status_code == 201
-    app = Application.objects.get(id=resp.json()["data"]["id"])
+    app = Application.objects.get(pk=resp.json()["data"]["id"])
     assert app.school_id == school_a
     assert app.status == ApplicationStatus.DRAFT
 

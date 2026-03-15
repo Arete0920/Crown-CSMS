@@ -66,7 +66,7 @@ def _get_school(request):
     if not sid:
         return None
     try:
-        return School.objects.get(id=sid)
+        return School.objects.get(pk=sid)
     except School.DoesNotExist:
         return None
 
@@ -77,20 +77,20 @@ def _find_student_model():
     try:
         from students.models import Student
         candidates.append(Student)
-    except Exception:
-        pass
+    except ImportError:
+        logger.debug("students.Student unavailable", exc_info=True)
     try:
         from core.models import Student
         candidates.append(Student)
-    except Exception:
-        pass
+    except ImportError:
+        logger.debug("core.Student unavailable", exc_info=True)
     return candidates[0] if candidates else None
 
 def _get_student(student_id, school):
     Student = _find_student_model()
     if not Student:
         return None
-    qs = Student.objects.all()
+    qs = Student.objects.filter()
     # school scoping if possible
     if hasattr(Student, "school"):
         qs = qs.filter(school=school)
@@ -182,7 +182,7 @@ class StudentOverview(APIView):
         attendance = {"available": False}
         if AttendanceRecord and student:
             attendance["available"] = True
-            qs = AttendanceRecord.objects.all()
+            qs = AttendanceRecord.objects.order_by("id")
             qs = _scope_qs_to_school(qs, AttendanceRecord, school)
             # common field names: student or student_id
             if hasattr(AttendanceRecord, "student"):
@@ -211,7 +211,7 @@ class StudentOverview(APIView):
         finance = {"available": False}
         if Invoice and student:
             finance["available"] = True
-            qs = Invoice.objects.all()
+            qs = Invoice.objects.order_by("id")
             qs = _scope_qs_to_school(qs, Invoice, school)
             if hasattr(Invoice, "student"):
                 qs = qs.filter(student=student)
@@ -240,7 +240,7 @@ class StudentOverview(APIView):
         discipline = {"available": False}
         if DisciplineIncident and student:
             discipline["available"] = True
-            qs = DisciplineIncident.objects.all()
+            qs = DisciplineIncident.objects.order_by("id")
             qs = _scope_qs_to_school(qs, DisciplineIncident, school)
             if hasattr(DisciplineIncident, "student"):
                 qs = qs.filter(student=student)
@@ -257,7 +257,7 @@ class StudentOverview(APIView):
         service = {"available": False}
         if ServiceEntry and student:
             service["available"] = True
-            qs = ServiceEntry.objects.all()
+            qs = ServiceEntry.objects.order_by("id")
             qs = _scope_qs_to_school(qs, ServiceEntry, school)
             if hasattr(ServiceEntry, "student"):
                 qs = qs.filter(student=student)
@@ -286,7 +286,7 @@ class StudentOverview(APIView):
         comms = {"available": False, "latest_threads": []}
         if MessageThread:
             comms["available"] = True
-            qs = MessageThread.objects.all()
+            qs = MessageThread.objects.order_by("-created_at")
             qs = _scope_qs_to_school(qs, MessageThread, school)
             qs = qs.order_by("-created_at")[:3]
             latest = []
@@ -335,7 +335,12 @@ class StudentOverview(APIView):
             ge_assignment_ids = set(
                 ge_qs.exclude(assignment=None).values_list("assignment_id", flat=True)
             )
-            past_published = Assignment.objects.filter(is_published=True, due_date__lt=today)
+            past_filter = {"is_published": True, "due_date__lt": today}
+            if hasattr(Assignment, "school_id"):
+                past_filter["school_id"] = str(school.id)
+            elif hasattr(Assignment, "school"):
+                past_filter["school"] = school
+            past_published = Assignment.objects.filter(**past_filter)
             missing_no_entry = past_published.exclude(id__in=ge_assignment_ids).count()
             missing_blank = ge_qs.filter(
                 assignment__is_published=True,
@@ -344,10 +349,16 @@ class StudentOverview(APIView):
             dashboard_v2["missing_assignments"] = int(missing_no_entry + missing_blank)
 
             # Upcoming: next 7 days
-            upcoming = (
-                Assignment.objects.filter(is_published=True, due_date__gte=today, due_date__lte=future)
-                .order_by("due_date")[:10]
-            )
+            upcoming_filter = {
+                "is_published": True,
+                "due_date__gte": today,
+                "due_date__lte": future,
+            }
+            if hasattr(Assignment, "school_id"):
+                upcoming_filter["school_id"] = str(school.id)
+            elif hasattr(Assignment, "school"):
+                upcoming_filter["school"] = school
+            upcoming = Assignment.objects.filter(**upcoming_filter).order_by("due_date")[:10]
             dashboard_v2["upcoming_assignments"] = [
                 {
                     "id": str(a.id),
@@ -373,7 +384,7 @@ class StudentOverview(APIView):
                     "required": 30,
                 }
         except Exception:
-            pass
+            logger.debug("dashboard_v2 service hours unavailable", exc_info=True)
 
         # Finance: InvoiceLine is student-scoped (best available)
         try:
@@ -392,7 +403,7 @@ class StudentOverview(APIView):
             balance_cents = int((_safe_decimal(total_amount) * Decimal("100")).quantize(Decimal("1")))
             dashboard_v2["financial"] = {"available": True, "balance_cents": balance_cents}
         except Exception:
-            pass
+            logger.debug("dashboard_v2 finance unavailable", exc_info=True)
 
         # Alerts
         try:
@@ -441,7 +452,7 @@ class StudentSelfOverview(APIView):
         if not Student:
             return JsonResponse({"detail": "Student model unavailable"}, status=503)
 
-        qs = Student.objects.all()
+        qs = Student.objects.filter()
         qs = _scope_qs_to_school(qs, Student, school)
 
         student = None

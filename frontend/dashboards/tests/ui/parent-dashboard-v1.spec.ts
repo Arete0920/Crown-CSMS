@@ -44,6 +44,24 @@ test("Parent Dashboard renders household KPI row and Children card", async ({
     })
   );
 
+  await page.route("**/api/v1/nav/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        groups: [
+          {
+            title: "Family",
+            items: [
+              { label: "Home", href: "/" },
+              { label: "Students", href: "/students" },
+            ],
+          },
+        ],
+      }),
+    })
+  );
+
   await page.goto(`${BASE}/parent`, { waitUntil: "domcontentloaded" });
 
   // Title exists (static — always renders even if fetch fails)

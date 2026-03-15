@@ -12,7 +12,11 @@ Note: This seed expects students from scripts/seed_households.py.
 """
 
 import os
+import logging
 from datetime import date
+
+
+logger = logging.getLogger(__name__)
 
 
 def _refuse_if_azure() -> None:
@@ -72,7 +76,7 @@ def run() -> None:
         defaults={"teacher": None, "room": "202", "meeting_days": "TR", "meeting_time": "13:00", "name_override": ""},
     )
 
-    students = list(Student.objects.all().order_by("last_name", "first_name"))
+    students = list(Student.objects.order_by("last_name", "first_name"))
     if not students:
         raise SystemExit("No students found. Run seed_demo_school or seed_heritage_realism_pack first.")
 
@@ -81,10 +85,10 @@ def run() -> None:
         SectionEnrollment.objects.get_or_create(section=m1, student=student, defaults={"active": True})
         SectionEnrollment.objects.get_or_create(section=e1, student=student, defaults={"active": True})
 
-    print("Seeded scheduling:")
-    print(f"- Terms: {Term.objects.count()}")
-    print(f"- Sections: {Section.objects.count()}")
-    print(f"- Section enrollments: {SectionEnrollment.objects.count()}")
+    logger.info("Seeded scheduling:")
+    logger.info("- Terms: %s", Term.objects.count())
+    logger.info("- Sections: %s", Section.objects.count())
+    logger.info("- Section enrollments: %s", SectionEnrollment.objects.count())
 
 
 if __name__ == "__main__":

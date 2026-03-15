@@ -39,7 +39,7 @@ class EnrollmentSnapshotView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        school_id = get_dashboard_school_id(request, required=True, require_header=True)
+        school_id = get_dashboard_school_id(request, required=True)
 
         # Count active students
         student_count = Student.objects.filter(school_id=school_id).count()

@@ -16,7 +16,7 @@ function Add-File($path, $content) {
   $content | Add-Content -Path $path -Encoding UTF8
 }
 
-$ts   = Get-Date -Format "yyyyMMdd_HHmmss"
+$ts = Get-Date -Format "yyyyMMdd_HHmmss"
 $pack = Join-Path $PWD ("AUDIT_PACK_{0}" -f $ts)
 New-Item -ItemType Directory -Force -Path $pack | Out-Null
 
@@ -30,15 +30,15 @@ Safety: No secret values are printed; secret findings are metadata-only.
 "@
 
 Add-File (Join-Path $pack "00_OVERVIEW.txt") "`n--- GIT STATUS ---"
-try   { Add-File (Join-Path $pack "00_OVERVIEW.txt") (git status -sb 2>&1 | Out-String) }
+try { Add-File (Join-Path $pack "00_OVERVIEW.txt") (git status -sb 2>&1 | Out-String) }
 catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git status failed" }
 
 Add-File (Join-Path $pack "00_OVERVIEW.txt") "`n--- HEAD SHA ---"
-try   { Add-File (Join-Path $pack "00_OVERVIEW.txt") ((git rev-parse HEAD 2>&1 | Out-String).Trim()) }
+try { Add-File (Join-Path $pack "00_OVERVIEW.txt") ((git rev-parse HEAD 2>&1 | Out-String).Trim()) }
 catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git rev-parse failed" }
 
 Add-File (Join-Path $pack "00_OVERVIEW.txt") "`n--- LAST 20 COMMITS ---"
-try   { Add-File (Join-Path $pack "00_OVERVIEW.txt") (git --no-pager log --oneline -20 2>&1 | Out-String) }
+try { Add-File (Join-Path $pack "00_OVERVIEW.txt") (git --no-pager log --oneline -20 2>&1 | Out-String) }
 catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git log failed" }
 
 # 01 Tree (exclude big/generated dirs)
@@ -56,23 +56,24 @@ Get-ChildItem -Recurse -File | Where-Object {
 $wfDir = Join-Path $PWD ".github\workflows"
 if (Test-Path $wfDir) {
   Get-ChildItem $wfDir -Filter "*.yml" | Sort-Object Name |
-    ForEach-Object { $_.Name } | Out-File (Join-Path $pack "02_WORKFLOWS_INDEX.txt") -Encoding UTF8
-} else {
+  ForEach-Object { $_.Name } | Out-File (Join-Path $pack "02_WORKFLOWS_INDEX.txt") -Encoding UTF8
+}
+else {
   Write-File (Join-Path $pack "02_WORKFLOWS_INDEX.txt") "No .github/workflows directory found."
 }
 
 # 03 Workflow triggers (raw grep — name only, no secret lines)
 if (Test-Path $wfDir) {
   Select-String "$wfDir\*.yml" -Pattern '^(name:\s|on:\s)|pull_request:|push:|workflow_dispatch:|schedule:' |
-    ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" } |
-    Out-File (Join-Path $pack "03_WORKFLOWS_TRIGGERS.txt") -Encoding UTF8
+  ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" } |
+  Out-File (Join-Path $pack "03_WORKFLOWS_TRIGGERS.txt") -Encoding UTF8
 }
 
 # 04 Job-level IF (potential skip-neutral hazards)
 if (Test-Path $wfDir) {
   Select-String "$wfDir\*.yml" -Pattern '^\s{4}if:\s' |
-    ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" } |
-    Out-File (Join-Path $pack "04_JOB_LEVEL_IF.txt") -Encoding UTF8
+  ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" } |
+  Out-File (Join-Path $pack "04_JOB_LEVEL_IF.txt") -Encoding UTF8
 }
 
 # 05 Branch protection (main) via GitHub API
@@ -81,15 +82,26 @@ $env:GH_PAGER = "cat"
 try {
   $json = gh api repos/tcmegahan/Crown2026/branches/main/protection 2>&1
   Write-File $bp $json
-} catch {
+}
+catch {
   Write-File $bp "gh api branch protection failed."
 }
 
 # 06 Backend URLs
 $urlsOut = Join-Path $pack "06_BACKEND_URLS.txt"
 try {
-  & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-File $urlsOut -Encoding UTF8
-} catch {
+  $urlCmdOutput = & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-String
+  if ($urlCmdOutput -match "Unknown command:\s*'show_urls'" -or $urlCmdOutput -match "django-extensions") {
+    Write-File $urlsOut "show_urls unavailable: django-extensions is not installed in the active venv."
+  }
+  elseif ([string]::IsNullOrWhiteSpace($urlCmdOutput)) {
+    Write-File $urlsOut "show_urls produced no output."
+  }
+  else {
+    Write-File $urlsOut $urlCmdOutput
+  }
+}
+catch {
   Write-File $urlsOut "backend/manage.py show_urls failed (django-extensions may not be installed)."
 }
 
@@ -97,7 +109,8 @@ try {
 $migOut = Join-Path $pack "07_MIGRATIONS.txt"
 try {
   & ".\.venv\Scripts\python.exe" backend/manage.py showmigrations --list 2>&1 | Out-File $migOut -Encoding UTF8
-} catch {
+}
+catch {
   Write-File $migOut "showmigrations failed."
 }
 
@@ -105,7 +118,8 @@ try {
 $pyDeps = Join-Path $pack "08_PY_DEPS.txt"
 try {
   & ".\.venv\Scripts\python.exe" -m pip freeze 2>&1 | Out-File $pyDeps -Encoding UTF8
-} catch {
+}
+catch {
   Write-File $pyDeps "pip freeze failed."
 }
 
@@ -116,7 +130,7 @@ if (Test-Path $pkg) {
   Add-File $nodeDeps "--- package.json path ---"
   Add-File $nodeDeps $pkg
   Add-File $nodeDeps "`n--- lockfiles present ---"
-  @("package-lock.json","pnpm-lock.yaml","yarn.lock") | ForEach-Object {
+  @("package-lock.json", "pnpm-lock.yaml", "yarn.lock") | ForEach-Object {
     $lf = Join-Path "frontend\dashboards" $_
     if (Test-Path $lf) { Add-File $nodeDeps $lf }
   }
@@ -125,8 +139,10 @@ if (Test-Path $pkg) {
     $j = Get-Content $pkg -Raw | ConvertFrom-Json
     ($j.dependencies.PSObject.Properties.Name    | Sort-Object) | ForEach-Object { "dep:    $_" } | Add-Content $nodeDeps
     ($j.devDependencies.PSObject.Properties.Name | Sort-Object) | ForEach-Object { "devDep: $_" } | Add-Content $nodeDeps
-  } catch { Add-File $nodeDeps "Failed to parse package.json" }
-} else {
+  }
+  catch { Add-File $nodeDeps "Failed to parse package.json" }
+}
+else {
   Write-File $nodeDeps "No frontend/dashboards/package.json found."
 }
 
@@ -135,18 +151,18 @@ $secOut = Join-Path $pack "10_SECRET_SCAN_FINDINGS.txt"
 Write-File $secOut "Secret scan findings (metadata-only). No matched values are included.`n"
 
 $patterns = @(
-  @{ name="PrivateKeyHeader";       re="BEGIN (RSA|OPENSSH|EC|DSA|PRIVATE) KEY" },
-  @{ name="DjangoSecretKeyLiteral"; re="SECRET_KEY\s*=\s*['""]" },
-  @{ name="DatabaseUrl";            re="DATABASE_URL\s*=" },
-  @{ name="PasswordAssignment";     re="password\s*=\s*['""]" },
-  @{ name="ApiKeyLike";             re="api[_-]?key\s*=\s*['""]" },
-  @{ name="TokenLike";              re="(token|jwt)\s*=\s*['""]" }
+  @{ name = "PrivateKeyHeader"; re = "BEGIN (RSA|OPENSSH|EC|DSA|PRIVATE) KEY" },
+  @{ name = "DjangoSecretKeyLiteral"; re = "SECRET_KEY\s*=\s*['""]" },
+  @{ name = "DatabaseUrl"; re = "DATABASE_URL\s*=" },
+  @{ name = "PasswordAssignment"; re = "password\s*=\s*['""]" },
+  @{ name = "ApiKeyLike"; re = "api[_-]?key\s*=\s*['""]" },
+  @{ name = "TokenLike"; re = "(token|jwt)\s*=\s*['""]" }
 )
 
 $scanExclude = '[/\\](\.git|\.venv|node_modules|dist|build|coverage|AUDIT_PACK_)[/\\]'
-$textExts    = @('.py','.js','.jsx','.ts','.tsx','.json','.yml','.yaml','.env','.cfg','.ini','.toml','.txt','.md','.sh','.ps1','.conf','.html','.css')
-$allFiles    = Get-ChildItem -Recurse -File -ErrorAction SilentlyContinue |
-               Where-Object { $_.FullName -notmatch $scanExclude -and $textExts -contains $_.Extension.ToLower() }
+$textExts = @('.py', '.js', '.jsx', '.ts', '.tsx', '.json', '.yml', '.yaml', '.env', '.cfg', '.ini', '.toml', '.txt', '.md', '.sh', '.ps1', '.conf', '.html', '.css')
+$allFiles = Get-ChildItem -Recurse -File -ErrorAction SilentlyContinue |
+Where-Object { $_.FullName -notmatch $scanExclude -and $textExts -contains $_.Extension.ToLower() }
 
 foreach ($p in $patterns) {
   $hits = 0
@@ -161,7 +177,8 @@ foreach ($p in $patterns) {
           $hits++
         }
       }
-    } catch { }
+    }
+    catch { }
   }
   if ($hits -eq 0) { Add-File $secOut ("(0 hits) rule={0}" -f $p.name) }
   Add-File $secOut ""
@@ -176,15 +193,17 @@ if ($null -ne $glCmd) {
     & gitleaks detect --source . --report-format json --report-path $tmp --no-git 2>$null | Out-Null
     $red = Get-Content $tmp -Raw | & ".\.venv\Scripts\python.exe" tools/audit/redact_gitleaks.py 2>&1
     Add-File $secOut $red
-  } catch {
+  }
+  catch {
     Add-File $secOut "gitleaks installed but execution failed."
   }
-} else {
+}
+else {
   Add-File $secOut "gitleaks not installed; pattern scan above is the only coverage."
 }
 
 # 11 Tracked binaries
-$binOut  = Join-Path $pack "11_TRACKED_BINARIES.txt"
+$binOut = Join-Path $pack "11_TRACKED_BINARIES.txt"
 $tracked = git ls-files 2>$null
 if ($tracked) {
   $tracked | Where-Object {
@@ -193,13 +212,14 @@ if ($tracked) {
   if ((Get-Content $binOut -ErrorAction SilentlyContinue | Measure-Object -Line).Lines -le 1) {
     Add-File $binOut "(none found)"
   }
-} else {
+}
+else {
   Write-File $binOut "git ls-files failed or empty."
 }
 
 # 12 Untracked artifacts (porcelain — no content, paths only)
 $untrackedOut = Join-Path $pack "12_UNTRACKED_ARTIFACTS.txt"
-try   { git status --porcelain 2>&1 | Out-File $untrackedOut -Encoding UTF8 }
+try { git status --porcelain 2>&1 | Out-File $untrackedOut -Encoding UTF8 }
 catch { Write-File $untrackedOut "git status --porcelain failed." }
 
 # 13 Health probe (prod endpoint)
@@ -207,10 +227,11 @@ $healthOut = Join-Path $pack "13_HEALTH_PROBE.txt"
 $healthUrl = "https://crown-api-prod.azurewebsites.net/api/health/"
 Write-File $healthOut "Health probe: $healthUrl`n"
 try {
-  $ts2  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+  $ts2 = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
   $resp = & curl.exe -sS --max-time 10 "$healthUrl`?nocache=$ts2" 2>&1
   Add-File $healthOut $resp
-} catch {
+}
+catch {
   Add-File $healthOut "curl health probe failed."
 }
 
@@ -218,10 +239,11 @@ try {
 $integrityUrl = "https://crown-api-prod.azurewebsites.net/api/integrity/"
 Add-File $healthOut "`n--- integrity probe: $integrityUrl ---"
 try {
-  $ts3  = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+  $ts3 = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
   $resp = & curl.exe -sS --max-time 10 "$integrityUrl`?nocache=$ts3" 2>&1
   Add-File $healthOut $resp
-} catch {
+}
+catch {
   Add-File $healthOut "curl integrity probe failed."
 }
 
@@ -231,9 +253,10 @@ Write-File $deployOut "Recent deploy-prod.yml runs (metadata only).`n"
 try {
   $env:GH_PAGER = "cat"
   $runs = gh run list --repo tcmegahan/Crown2026 --workflow deploy-prod.yml --limit 20 `
-    --json databaseId,status,conclusion,headSha,createdAt,displayTitle 2>&1
+    --json databaseId, status, conclusion, headSha, createdAt, displayTitle 2>&1
   Add-File $deployOut $runs
-} catch {
+}
+catch {
   Add-File $deployOut "gh run list failed."
 }
 

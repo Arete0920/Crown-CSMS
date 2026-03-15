@@ -1,10 +1,10 @@
-/**
+﻿/**
  * api/attendance_rules_wizard.js
- * Attendance Rules Wizard — API layer
+ * Attendance Rules Wizard â€” API layer
  */
 import { getToken, getSchoolId } from "../lib/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 const SESSIONS = `${API_BASE}/api/v1/attendance-rules-wizard/sessions/`;
 
 function headers(extra = {}) {
@@ -74,3 +74,4 @@ export async function verifyAttendanceRulesSession(sessionId) {
   const res = await fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
+

@@ -24,13 +24,14 @@ jobs:
     timeout-minutes: 20
 
     env:
-      # Backend + UI both run locally; frontend points to localhost:8000
-      VITE_API_BASE_URL: "http://localhost:8000"
+      # Backend + UI both run locally; frontend uses same-origin Vite proxy to avoid browser CORS in UI proof
+      VITE_API_BASE_URL: "http://localhost:3000"
       CROWN_UI_URL: "http://localhost:3000"
       DJANGO_SETTINGS_MODULE: "crown_api.settings"
       # Demo mode configuration (for single-button dev token login)
       CROWN_DEMO_MODE: "true"
       CROWN_DEMO_KEY: "CrownDemoKey!2026"
+      CROWN_DEMO_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
       VITE_DEMO_KEY: "CrownDemoKey!2026"
 
     steps:
@@ -78,7 +79,8 @@ jobs:
           python manage.py seed_demo_school --force --students 25
           python manage.py seed_academics_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
           python manage.py seed_gradebook_demo --school-id b45b8c5a-6708-4597-aad9-a226627b2962
-          python manage.py seed_demo_parent_gradebook --school-id b45b8c5a-6708-4597-aad9-a226627b2962
+          python manage.py seed_demo_parent_gradebook
+          python manage.py reset_demo_passwords
 
       - name: Start Django dev server
         working-directory: backend
@@ -140,26 +142,43 @@ jobs:
 
       - name: Gradebook API readiness
         shell: bash
-        env:
-          CROWN_DEMO_KEY: ${{ env.CROWN_DEMO_KEY }}
         run: |
           set -euo pipefail
           echo "Acquiring demo JWT for readiness probe..."
-          TOKEN_JSON=$(curl -fsS -X POST "http://127.0.0.1:8000/api/dev/token/" \
-            -H "Content-Type: application/json" \
-            -H "X-Demo-Key: ${CROWN_DEMO_KEY}" \
-            -d '{}')
+          TOKEN_HTTP=""
+          TOKEN_JSON=""
+          for i in {1..5}; do
+            TOKEN_HTTP=$(curl -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/dev/token/" \
+              -H "Accept: application/json" \
+              -H "X-Demo-Key: ${CROWN_DEMO_KEY}" \
+              -d '{}' || true)
+            TOKEN_JSON=$(cat /tmp/token_ready.json || true)
 
-          ACCESS=$(python3 - <<'PY'
-import json, sys
-d = json.loads(sys.stdin.read())
-print(d.get("access") or d.get("access_token") or "")
-PY
-<<<"$TOKEN_JSON")
+            if [[ "$TOKEN_HTTP" =~ ^2[0-9][0-9]$ ]] && [[ -n "$TOKEN_JSON" ]]; then
+              break
+            fi
+
+            echo "Attempt ${i}: token endpoint HTTP=${TOKEN_HTTP:-<none>} body_len=${#TOKEN_JSON}. Retrying in 2s..."
+            sleep 2
+          done
+
+          if [[ ! "$TOKEN_HTTP" =~ ^2[0-9][0-9]$ ]]; then
+            echo "ERROR: demo token endpoint failed (HTTP ${TOKEN_HTTP:-<none>})." >&2
+            echo "$TOKEN_JSON" >&2
+            exit 1
+          fi
+
+          if [[ -z "$TOKEN_JSON" ]]; then
+            echo "ERROR: empty response from token endpoint" >&2
+            echo "ERROR: token_url=http://127.0.0.1:8000/api/v1/auth/token/" >&2
+            exit 1
+          fi
+
+          ACCESS=$(TOKEN_JSON_ENV="$TOKEN_JSON" python3 -c "import json, os; d = json.loads((os.environ.get('TOKEN_JSON_ENV') or '').strip()); nested = d.get('data') if isinstance(d.get('data'), dict) else {}; print(d.get('access') or d.get('access_token') or d.get('token') or nested.get('access') or nested.get('access_token') or nested.get('token') or '')")
 
           if [[ -z "$ACCESS" ]]; then
-            echo "ERROR: Could not acquire demo access token. Response:"
-            echo "$TOKEN_JSON"
+            echo "ERROR: Could not acquire demo access token. Response:" >&2
+            echo "$TOKEN_JSON" >&2
             exit 1
           fi
           echo "Token acquired. Probing gradebook sections endpoint..."
@@ -187,11 +206,18 @@ PY
         env:
           CROWN_UI_URL: "http://localhost:3000"
           API_BASE_URL: "http://localhost:8000"
+          CROWN_TEST_USER: "head@crown-demo.local"
+          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run api:proof:gradebook
 
       # Run UI proof (Flow A) + screenshots
       - name: Run UI proof
         working-directory: frontend/dashboards
+        env:
+          CROWN_TEST_USER: "head@crown-demo.local"
+          CROWN_TEST_PASS: "CI-Demo-Password-2026"
+          CROWN_TEST_SCHOOL_ID: "b45b8c5a-6708-4597-aad9-a226627b2962"
         run: npm run ui:proof:gradebook
 
       - name: Upload UI proof screenshots

@@ -14,6 +14,6 @@ def get_school_from_header(request) -> School:
     if not raw:
         raise ValidationError({"detail": "CTX_MISSING_SCHOOL_ID: X-School-Id header is required."})
     try:
-        return School.objects.get(id=raw)
+        return School.objects.get(pk=raw)
     except School.DoesNotExist:
         raise ValidationError({"detail": f"CTX_INVALID_SCHOOL_ID: no school found for X-School-Id={raw}."})
