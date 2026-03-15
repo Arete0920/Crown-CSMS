@@ -1,5 +1,4 @@
 ﻿import { useMemo, useState } from 'react';
-import { Box, Button, Stack, Typography } from '@mui/material';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownDataTable from '../components/data/CrownDataTable.jsx';
 import Drawer from '../components/Drawer';
@@ -7,6 +6,12 @@ import { getInvoices } from '../api/finance';
 import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
+
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
+const LABEL = { margin: 0, fontSize: '0.875rem' };
 
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-US', {
@@ -102,36 +107,23 @@ export default function FinanceInvoicesList() {
       key: 'actions',
       label: 'Actions',
       render: (row) => (
-        <Button size="small" onClick={() => setSelected(row)}>
-          Open
-        </Button>
+        <button type="button" style={SM} onClick={() => setSelected(row)}>Open</button>
       ),
     },
   ];
 
   const filterControls = (
-    <Stack direction="row" spacing={1}>
-      <Button
-        size="small"
-        variant={filters.delinquentOnly !== 'true' ? 'contained' : 'outlined'}
-        onClick={() => setFilter('delinquentOnly', '')}
-      >
-        All
-      </Button>
-      <Button
-        size="small"
-        variant={filters.delinquentOnly === 'true' ? 'contained' : 'outlined'}
-        onClick={() => setFilter('delinquentOnly', 'true')}
-      >
-        Delinquent Only
-      </Button>
-    </Stack>
+    <div style={ROW}>
+      <button type="button" style={filters.delinquentOnly !== 'true' ? SM_ON : SM} onClick={() => setFilter('delinquentOnly', '')}>All</button>
+      <button type="button" style={filters.delinquentOnly === 'true' ? SM_ON : SM} onClick={() => setFilter('delinquentOnly', 'true')}>Delinquent Only</button>
+    </div>
   );
 
   const actions = (
-    <Stack direction="row" spacing={1}>
-      <Button
-        variant="outlined"
+    <div style={ROW}>
+      <button
+        type="button"
+        style={BTN}
         onClick={() => {
           const header = [
             'Payer',
@@ -160,16 +152,10 @@ export default function FinanceInvoicesList() {
           }
           downloadTextFile('invoices.csv', lines.join('\n'));
         }}
-      >
-        Export CSV
-      </Button>
-      <Button variant="outlined" onClick={clearFilters}>
-        Clear Filters
-      </Button>
-      <Button variant="outlined" onClick={reload}>
-        Reload
-      </Button>
-    </Stack>
+      >Export CSV</button>
+      <button type="button" style={BTN} onClick={clearFilters}>Clear Filters</button>
+      <button type="button" style={BTN} onClick={reload}>Reload</button>
+    </div>
   );
 
   return (
@@ -195,32 +181,30 @@ export default function FinanceInvoicesList() {
         emptyMessage="There are no invoice records matching the current filters."
       />
 
-      <Box sx={{ mt: 2 }}>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-          <Typography variant="body2">Delinquent: <strong>{summary.delinquentCount}</strong></Typography>
-          <Typography variant="body2">Past Due: <strong>{formatCurrency(summary.delinquentBalance)}</strong></Typography>
-          <Typography variant="body2">Credits: <strong>{formatCurrency(summary.credits)}</strong></Typography>
-          <Typography variant="body2">Reversals: <strong>{summary.reversedCount}</strong></Typography>
-        </Stack>
-      </Box>
+      <div style={{ marginTop: '16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+          <p style={LABEL}>Delinquent: <strong>{summary.delinquentCount}</strong></p>
+          <p style={LABEL}>Past Due: <strong>{formatCurrency(summary.delinquentBalance)}</strong></p>
+          <p style={LABEL}>Credits: <strong>{formatCurrency(summary.credits)}</strong></p>
+          <p style={LABEL}>Reversals: <strong>{summary.reversedCount}</strong></p>
+        </div>
+      </div>
 
       {selected ? (
         <Drawer onClose={() => setSelected(null)} width={500}>
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-              Invoice Detail
-            </Typography>
-            <Stack spacing={1.25}>
-              <Typography variant="body2"><strong>Payer:</strong> {selected.household_name}</Typography>
-              <Typography variant="body2"><strong>Total:</strong> {formatCurrency(selected.total_amount)}</Typography>
-              <Typography variant="body2"><strong>Paid:</strong> {formatCurrency(selected.paid_amount)}</Typography>
-              <Typography variant="body2"><strong>Balance:</strong> {formatCurrency(selected.balance_due)}</Typography>
-              <Typography variant="body2"><strong>Aging:</strong> {selected.aging_bucket}</Typography>
-            </Stack>
-            <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setSelected(null)}>
-              Close
-            </Button>
-          </Box>
+          <div style={{ padding: '24px' }}>
+            <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Invoice Detail</h6>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <p style={LABEL}><strong>Payer:</strong> {selected.household_name}</p>
+              <p style={LABEL}><strong>Total:</strong> {formatCurrency(selected.total_amount)}</p>
+              <p style={LABEL}><strong>Paid:</strong> {formatCurrency(selected.paid_amount)}</p>
+              <p style={LABEL}><strong>Balance:</strong> {formatCurrency(selected.balance_due)}</p>
+              <p style={LABEL}><strong>Aging:</strong> {selected.aging_bucket}</p>
+            </div>
+            <div style={{ marginTop: '16px' }}>
+              <button type="button" style={BTN} onClick={() => setSelected(null)}>Close</button>
+            </div>
+          </div>
         </Drawer>
       ) : null}
     </CrownLayout>

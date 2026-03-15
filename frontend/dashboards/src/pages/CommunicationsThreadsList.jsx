@@ -1,5 +1,4 @@
 ﻿import { useMemo, useState } from 'react';
-import { Box, Button, Stack, Typography } from '@mui/material';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownDataTable from '../components/data/CrownDataTable.jsx';
 import Drawer from '../components/Drawer';
@@ -7,6 +6,12 @@ import { getThreads, getThreadDetail } from '../api/communications';
 import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
+
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
+const LABEL = { margin: 0, fontSize: '0.875rem' };
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -95,9 +100,7 @@ export default function CommunicationsThreadsList() {
       key: 'actions',
       label: 'Actions',
       render: (row) => (
-        <Button size="small" onClick={() => setSelected(row)}>
-          Open
-        </Button>
+        <button type="button" style={SM} onClick={() => setSelected(row)}>Open</button>
       ),
     },
   ];
@@ -108,61 +111,31 @@ export default function CommunicationsThreadsList() {
   }, [data]);
 
   const filterControls = (
-    <Stack direction="row" spacing={1}>
-      <Button
-        size="small"
-        variant={filters.threadType === '' ? 'contained' : 'outlined'}
-        onClick={() => setFilter('threadType', '')}
-      >
-        All
-      </Button>
+    <div style={ROW}>
+      <button type="button" style={filters.threadType === '' ? SM_ON : SM} onClick={() => setFilter('threadType', '')}>All</button>
       {uniqueTypes.slice(0, 3).map((threadType) => (
-        <Button
-          key={threadType}
-          size="small"
-          variant={filters.threadType === threadType ? 'contained' : 'outlined'}
-          onClick={() => setFilter('threadType', threadType)}
-        >
-          {threadType}
-        </Button>
+        <button key={threadType} type="button" style={filters.threadType === threadType ? SM_ON : SM} onClick={() => setFilter('threadType', threadType)}>{threadType}</button>
       ))}
-    </Stack>
+    </div>
   );
 
   const actions = (
-    <Stack direction="row" spacing={1}>
-      <Button
-        variant="outlined"
-        onClick={() => {
-          const header = ['Household', 'Student', 'Subject', 'Type', 'Last Message'];
-          const lines = [header.map(csvEscape).join(',')];
-
-          for (const row of rows) {
-            lines.push(
-              [
-                row.household_name,
-                row.student_name,
-                row.subject,
-                row.thread_type,
-                row.last_message_at || '',
-              ]
-                .map(csvEscape)
-                .join(','),
-            );
-          }
-
-          downloadTextFile('communications_threads.csv', lines.join('\n'));
-        }}
-      >
-        Export CSV
-      </Button>
-      <Button variant="outlined" onClick={clearFilters}>
-        Clear Filters
-      </Button>
-      <Button variant="outlined" onClick={reload}>
-        Reload
-      </Button>
-    </Stack>
+    <div style={ROW}>
+      <button type="button" style={BTN} onClick={() => {
+        const header = ['Household', 'Student', 'Subject', 'Type', 'Last Message'];
+        const lines = [header.map(csvEscape).join(',')];
+        for (const row of rows) {
+          lines.push(
+            [row.household_name, row.student_name, row.subject, row.thread_type, row.last_message_at || '']
+              .map(csvEscape)
+              .join(','),
+          );
+        }
+        downloadTextFile('communications_threads.csv', lines.join('\n'));
+      }}>Export CSV</button>
+      <button type="button" style={BTN} onClick={clearFilters}>Clear Filters</button>
+      <button type="button" style={BTN} onClick={reload}>Reload</button>
+    </div>
   );
 
   return (
@@ -190,44 +163,42 @@ export default function CommunicationsThreadsList() {
 
       {selected ? (
         <Drawer onClose={() => setSelected(null)} width={560}>
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-              Thread Detail
-            </Typography>
+          <div style={{ padding: '24px' }}>
+            <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Thread Detail</h6>
 
-            <Stack spacing={1} sx={{ mb: 2 }}>
-              <Typography variant="body2"><strong>Subject:</strong> {selected.subject}</Typography>
-              <Typography variant="body2"><strong>Household:</strong> {selected.household_name}</Typography>
-              <Typography variant="body2"><strong>Student:</strong> {selected.student_name || '(None)'}</Typography>
-              <Typography variant="body2"><strong>Type:</strong> {selected.thread_type}</Typography>
-            </Stack>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              <p style={LABEL}><strong>Subject:</strong> {selected.subject}</p>
+              <p style={LABEL}><strong>Household:</strong> {selected.household_name}</p>
+              <p style={LABEL}><strong>Student:</strong> {selected.student_name || '(None)'}</p>
+              <p style={LABEL}><strong>Type:</strong> {selected.thread_type}</p>
+            </div>
 
             {loadingThread ? (
-              <Typography variant="body2">Loading messages...</Typography>
+              <p style={LABEL}>Loading messages...</p>
             ) : threadError ? (
-              <Typography variant="body2" color="error.main">
+              <p style={{ margin: 0, fontSize: '0.875rem', color: '#d32f2f' }}>
                 {threadError?.message || 'Unable to load thread detail.'}
-              </Typography>
+              </p>
             ) : (
-              <Stack spacing={1.25}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {(threadDetail?.messages || []).slice(-10).map((message, index) => (
-                  <Box key={message.id || index} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'grey.100' }}>
-                    <Typography variant="body2" fontWeight={600}>
+                  <div key={message.id || index} style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#f5f5f5' }}>
+                    <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600 }}>
                       {message.author_name || message.author || 'Sender'}
-                    </Typography>
-                    <Typography variant="body2">{message.body || message.message || '(No content)'}</Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    </p>
+                    <p style={LABEL}>{message.body || message.message || '(No content)'}</p>
+                    <span style={{ fontSize: '0.75rem', color: '#757575' }}>
                       {formatDateTime(message.created_at || message.sent_at)}
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
                 ))}
-              </Stack>
+              </div>
             )}
 
-            <Button sx={{ mt: 2 }} variant="outlined" onClick={() => setSelected(null)}>
-              Close
-            </Button>
-          </Box>
+            <div style={{ marginTop: '16px' }}>
+              <button type="button" style={BTN} onClick={() => setSelected(null)}>Close</button>
+            </div>
+          </div>
         </Drawer>
       ) : null}
     </CrownLayout>

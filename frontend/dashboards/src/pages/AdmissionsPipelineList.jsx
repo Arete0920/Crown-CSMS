@@ -1,5 +1,4 @@
 ﻿import { useMemo, useState } from 'react';
-import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownDataTable from '../components/data/CrownDataTable.jsx';
 import Drawer from '../components/Drawer';
@@ -8,6 +7,13 @@ import { csvEscape, downloadTextFile } from '../lib/export/csv';
 import { useAsyncPageData } from '../hooks/useAsyncPageData';
 import { usePersistentTableState } from '../hooks/usePersistentTableState';
 import { useApiAction } from '../hooks/useApiAction';
+
+const SM = { fontSize: '0.75rem', padding: '3px 10px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const SM_ON = { ...SM, background: '#1976d2', color: '#fff' };
+const BTN = { fontSize: '0.875rem', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px', border: '1px solid #1976d2', background: 'transparent', color: '#1976d2' };
+const BTN_FILLED = { ...BTN, background: '#1976d2', color: '#fff' };
+const ROW = { display: 'flex', gap: '8px', alignItems: 'center' };
+const LABEL = { margin: 0, fontSize: '0.875rem' };
 
 const STATUS_LABELS = {
   DRAFT: 'Draft',
@@ -99,71 +105,42 @@ export function AdmissionsPipelineList() {
       key: 'actions',
       label: 'Actions',
       render: (row) => (
-        <Button size="small" onClick={() => setSelected(row)}>
-          Open
-        </Button>
+        <button type="button" style={SM} onClick={() => setSelected(row)}>Open</button>
       ),
     },
   ];
 
   const filterControls = (
-    <Stack direction="row" spacing={1}>
-      <Button
-        size="small"
-        variant={filters.status === '' ? 'contained' : 'outlined'}
-        onClick={() => setFilter('status', '')}
-      >
-        All
-      </Button>
-      <Button
-        size="small"
-        variant={filters.status === 'SUBMITTED' ? 'contained' : 'outlined'}
-        onClick={() => setFilter('status', 'SUBMITTED')}
-      >
-        Submitted
-      </Button>
-      <Button
-        size="small"
-        variant={filters.status === 'ACCEPTED' ? 'contained' : 'outlined'}
-        onClick={() => setFilter('status', 'ACCEPTED')}
-      >
-        Accepted
-      </Button>
-    </Stack>
+    <div style={ROW}>
+      <button type="button" style={filters.status === '' ? SM_ON : SM} onClick={() => setFilter('status', '')}>All</button>
+      <button type="button" style={filters.status === 'SUBMITTED' ? SM_ON : SM} onClick={() => setFilter('status', 'SUBMITTED')}>Submitted</button>
+      <button type="button" style={filters.status === 'ACCEPTED' ? SM_ON : SM} onClick={() => setFilter('status', 'ACCEPTED')}>Accepted</button>
+    </div>
   );
 
   const actions = (
-    <Stack direction="row" spacing={1}>
-      <Button
-        variant="outlined"
-        onClick={() => {
-          const header = ['Applicant', 'Status', 'Household', 'Submitted', 'Updated'];
-          const lines = [header.map(csvEscape).join(',')];
-          for (const app of rows) {
-            lines.push(
-              [
-                app.applicant_name,
-                STATUS_LABELS[app.status] || app.status,
-                app.household_name,
-                app.created_at ? new Date(app.created_at).toLocaleDateString() : '',
-                app.updated_at ? new Date(app.updated_at).toLocaleDateString() : '',
-              ]
-                .map(csvEscape)
-                .join(','),
-            );
-          }
-          downloadTextFile('admissions_pipeline.csv', lines.join('\n'));
-        }}
-      >
-        Export CSV
-      </Button>
-      <Button variant="outlined" onClick={clearFilters}>
-        Clear Filters
-      </Button>
-      <Button variant="outlined" onClick={reload}>
-        Reload
-      </Button>
-    </Stack>
+    <div style={ROW}>
+      <button type="button" style={BTN} onClick={() => {
+        const header = ['Applicant', 'Status', 'Household', 'Submitted', 'Updated'];
+        const lines = [header.map(csvEscape).join(',')];
+        for (const app of rows) {
+          lines.push(
+            [
+              app.applicant_name,
+              STATUS_LABELS[app.status] || app.status,
+              app.household_name,
+              app.created_at ? new Date(app.created_at).toLocaleDateString() : '',
+              app.updated_at ? new Date(app.updated_at).toLocaleDateString() : '',
+            ]
+              .map(csvEscape)
+              .join(','),
+          );
+        }
+        downloadTextFile('admissions_pipeline.csv', lines.join('\n'));
+      }}>Export CSV</button>
+      <button type="button" style={BTN} onClick={clearFilters}>Clear Filters</button>
+      <button type="button" style={BTN} onClick={reload}>Reload</button>
+    </div>
   );
 
   async function handleEnrollSelected() {
@@ -204,48 +181,34 @@ export function AdmissionsPipelineList() {
 
       {selected ? (
         <Drawer onClose={() => setSelected(null)} width={520}>
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
-              Application Detail
-            </Typography>
+          <div style={{ padding: '24px' }}>
+            <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Application Detail</h6>
 
             {enrollResult ? (
-              <Alert severity={enrollResult.ok ? 'success' : 'error'} sx={{ mb: 2 }}>
+              <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? '#e8f5e9' : '#ffebee', color: enrollResult.ok ? '#1b5e20' : '#b71c1c', border: `1px solid ${enrollResult.ok ? '#81c784' : '#ef9a9a'}`, marginBottom: '8px' }}>
                 {enrollResult.message}
-              </Alert>
+              </div>
             ) : null}
 
             {enrollError ? (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: '#ffebee', color: '#b71c1c', border: '1px solid #ef9a9a', marginBottom: '8px' }}>
                 {enrollError.message}
-              </Alert>
+              </div>
             ) : null}
 
-            <Stack spacing={1.25} sx={{ mb: 3 }}>
-              <Typography variant="body2">
-                <strong>Applicant:</strong> {selected.applicant_name}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Status:</strong> {STATUS_LABELS[selected.status] || selected.status}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Household:</strong> {selected.household_name || '—'}
-              </Typography>
-            </Stack>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              <p style={LABEL}><strong>Applicant:</strong> {selected.applicant_name}</p>
+              <p style={LABEL}><strong>Status:</strong> {STATUS_LABELS[selected.status] || selected.status}</p>
+              <p style={LABEL}><strong>Household:</strong> {selected.household_name || '—'}</p>
+            </div>
 
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                onClick={handleEnrollSelected}
-                disabled={enrolling || selected.status === 'ENROLLED'}
-              >
+            <div style={ROW}>
+              <button type="button" style={BTN_FILLED} onClick={handleEnrollSelected} disabled={enrolling || selected.status === 'ENROLLED'}>
                 {enrolling ? 'Enrolling...' : 'Enroll Applicant'}
-              </Button>
-              <Button variant="outlined" onClick={() => setSelected(null)}>
-                Close
-              </Button>
-            </Stack>
-          </Box>
+              </button>
+              <button type="button" style={BTN} onClick={() => setSelected(null)}>Close</button>
+            </div>
+          </div>
         </Drawer>
       ) : null}
     </CrownLayout>
