@@ -174,9 +174,9 @@ jobs:
             exit 1
           fi
 
-          ACCESS=$(python3 - <<'PY'
-          import json, sys
-          raw = sys.stdin.read().strip()
+            ACCESS=$(TOKEN_JSON_ENV="$TOKEN_JSON" python3 - <<'PY'
+            import json, os, sys
+            raw = (os.environ.get("TOKEN_JSON_ENV") or "").strip()
           if not raw:
               print("ERROR: empty response from token endpoint", file=sys.stderr)
               sys.exit(1)
@@ -202,7 +202,7 @@ jobs:
           )
           print(token)
           PY
-          <<<"$TOKEN_JSON")
+          )
 
           if [[ -z "$ACCESS" ]]; then
             echo "ERROR: Could not acquire demo access token. Response:" >&2
