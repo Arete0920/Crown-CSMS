@@ -24,8 +24,8 @@ jobs:
     timeout-minutes: 20
 
     env:
-      # Backend + UI both run locally; frontend points to localhost:8000
-      VITE_API_BASE_URL: "http://localhost:8000"
+      # Backend + UI both run locally; frontend uses same-origin Vite proxy to avoid browser CORS in UI proof
+      VITE_API_BASE_URL: "http://localhost:3000"
       CROWN_UI_URL: "http://localhost:3000"
       DJANGO_SETTINGS_MODULE: "crown_api.settings"
       # Demo mode configuration (for single-button dev token login)
