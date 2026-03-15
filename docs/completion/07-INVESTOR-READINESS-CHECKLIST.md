@@ -28,7 +28,7 @@ Mark each item:
 
 | Item | Status | Evidence | Notes |
 |---|---|---|---|
-| Required proof jobs green | FAIL | gradebook-proof is failing | PR 577 blocked |
+| Required proof jobs green | PASS | gradebook-proof, Proof Smoke (Playwright), dashboard-ui-gates, phase1-contract, rc-promotion-gate, demo-proof-static, demo-surface-static-gate, Audit: Secret scan, CodeQL, Analyze (javascript), and Analyze (python) were green on the merge path for PR 577 | PR 577 merged |
 | No broken demo routes known | PASS | Proof Smoke and dashboard-ui-gates are green; local suite passed | |
 | Demo token/auth path stable | PASS | .github/workflows/proof-gradebook.yml token request/parse/fail-fast contract and docs/completion/05-PROOF-CONTRACT.md | Documentation and workflow contract are aligned |
 | Role-based landing pages stable | PASS | Local test run covers redirects/landing headings and passed | |
@@ -58,8 +58,6 @@ Mark each item:
 - Investor narrative script not explicitly linked in completion docs
 
 ### Blocked
-- gradebook-proof failing on required CI check
-- CodeQL failing on required CI check
 - RC artifact missing (release-candidate.json)
 
 ### Unproven
@@ -74,8 +72,8 @@ Mark each item:
 | Claim Type | Allowed Now | Evidence | Notes |
 |---|---|---|---|
 | LOCALLY VERIFIED | Yes (partial) | Local Playwright run 11/11 passed; local /api/health responds | Limited to local environment |
-| CI VERIFIED | No | gradebook-proof + CodeQL failures | PR 577 blocked |
-| MERGE READY | No | mergeStateStatus=BLOCKED | Required checks not all green |
+| CI VERIFIED | Yes (branch/merge slice only) | PR 577 merged after required gates were green | This does not equal production proof |
+| MERGE READY | Yes | PR 577 merged at 2026-03-15T20:59:18Z | Merge is complete |
 | DEPLOYED VERIFIED | No | frontend/backend production deploy identity missing | UNPROVEN deploy truth |
 | PRODUCTION CERTIFIED | No | Production checklist currently FAIL | |
 | INVESTOR READY | No | Investor blockers active | |
@@ -85,14 +83,14 @@ Mark each item:
 ## Investor Readiness Result
 
 - Overall status: FAIL
-- Blocking items: gradebook-proof failure, CodeQL failure, RC artifact missing, deployment truth gaps
-- Conditions to present: Must be framed as in-progress technical snapshot, not production/investor-ready release
-- Notes: Local demo surface appears stable, but release certification requirements are not met.
+- Blocking items: RC artifact missing, deployment truth gaps, no current investor-grade production evidence packet
+- Conditions to present: Can be framed as merged and CI-stabilized, but not as production-certified or investor-ready
+- Notes: Local demo surface and the merge slice are stable; investor readiness still lacks release-identity and deploy-truth proof.
 
 ---
 
 ## Notes
 
-- CI evidence taken from PR 577 statusCheckRollup.
+- CI evidence taken from merged PR 577 status.
 - Local demo evidence from _local_playwright_after_fix.log.
 - Unknowns intentionally marked UNPROVEN.
