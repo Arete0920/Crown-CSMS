@@ -21,13 +21,13 @@
 - Title: gradebook-proof failing
 - Bucket: Branch blocker
 - Severity: Critical
-- Current Status: Open
-- Exact Evidence: PR 577 check gradebook-proof is COMPLETED FAILURE
+- Current Status: Closed
+- Exact Evidence: gradebook-proof is COMPLETED SUCCESS on the merged PR 577 head
 - File(s) involved: frontend/dashboards/tests/api/gradebook-api-proof.spec.ts, frontend/dashboards/tests/ui/gradebook-ui-proof.spec.ts
 - Owner: PR 577 owner
-- Exit Criteria: gradebook-proof check is COMPLETED SUCCESS on current head SHA
-- Proof Artifact: https://github.com/tcmegahan/Crown2026/actions/runs/23117229036/job/67144801513
-- Notes: Required merge check is currently red.
+- Exit Criteria: Met on merge commit 550d84b23dbfb85cdbc5a75705110d691ac8eca9
+- Proof Artifact: https://github.com/tcmegahan/Crown2026/actions/runs/23118227638/job/67147413098
+- Notes: Gradebook-proof no longer blocks merge or release-branch truth.
 
 ---
 
@@ -66,13 +66,13 @@
 - Title: CodeQL failing
 - Bucket: Branch blocker / Production blocker
 - Severity: High
-- Current Status: Open
-- Exact Evidence: CodeQL check is COMPLETED FAILURE on PR 577
+- Current Status: Closed
+- Exact Evidence: CodeQL aggregate check is COMPLETED SUCCESS on the merged PR 577 head
 - File(s) involved: .github/workflows/* (CodeQL workflow surface), repository source scanned by CodeQL
 - Owner: PR 577 owner + security reviewer
-- Exit Criteria: CodeQL overall check is COMPLETED SUCCESS
-- Proof Artifact: https://github.com/tcmegahan/Crown2026/runs/67144861882
-- Notes: Analyze jobs completed, but aggregate CodeQL check failed.
+- Exit Criteria: Met; CodeQL and Analyze (javascript/python) all succeeded
+- Proof Artifact: https://github.com/tcmegahan/Crown2026/runs/67147473952
+- Notes: API sanitization and artifact cleanup landed before merge.
 
 ---
 
@@ -127,12 +127,12 @@
 - Bucket: Branch blocker / Production blocker
 - Severity: High
 - Current Status: Open
-- Exact Evidence: frontend/dashboards/dist/release-candidate.json is missing (RC_MISSING)
+- Exact Evidence: frontend/dashboards/dist/release-candidate.json is still missing on merged main (RC_MISSING)
 - File(s) involved: frontend/dashboards/dist/release-candidate.json
 - Owner: release owner
 - Exit Criteria: RC artifact exists with build_sha/build_tag and matches certified SHA
 - Proof Artifact: RC artifact check command output
-- Notes: Cannot establish RC SHA truth while artifact is absent.
+- Notes: This is no longer a merge blocker for PR 577, but it remains a release-certification blocker.
 
 ---
 
@@ -193,6 +193,13 @@
 - Exit Criteria: Investor checklist fully populated with PASS/FAIL/UNPROVEN and linked evidence
 - Proof Artifact: docs/completion/07-INVESTOR-READINESS-CHECKLIST.md
 - Notes: This blocker remains until evidence packet is fully assembled.
+
+---
+
+## Post-merge note
+
+- PR 577 merged to main at 2026-03-15T20:59:18Z with merge commit 550d84b23dbfb85cdbc5a75705110d691ac8eca9.
+- The blocker set has narrowed from CI branch blockers to release-certification and investor-evidence blockers.
 
 ---
 
