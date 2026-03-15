@@ -2,7 +2,7 @@
 
 Status date: 2026-03-15
 Current branch: fix/track11-12-write-and-lifecycle-proof
-Current head sha: c9991a48cb093e58f3ddb6ff761e53d30124b6ee
+Current head sha: 0d275d6a
 Current RC artifact: missing at frontend/dashboards/dist/release-candidate.json
 
 ## Bucket definitions
