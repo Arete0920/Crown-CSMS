@@ -166,6 +166,20 @@ export const router = createBrowserRouter([
     path: '/teacher/scheduling',
     element: <Navigate to="/scheduling-dashboard" replace />,
   },
+  // Contract-preserving parent alias routes.
+  // Keep these as literal strings in router.jsx for static gate checks.
+  {
+    path: '/parent/attendance',
+    element: <Navigate to="/attendance-dashboard" replace />,
+  },
+  {
+    path: '/parent/communications',
+    element: <Navigate to="/communications-dashboard" replace />,
+  },
+  {
+    path: '/parent/schedule',
+    element: <Navigate to="/scheduling-dashboard" replace />,
+  },
   ...dashboardRoutes,
   {
     path: PATHS.ACADEMICS,
