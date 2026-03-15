@@ -51,6 +51,14 @@ function buildWizardContractEntry(entry) {
     requiresSeededSuccess: true,
     seededSuccessProbeMethod: "POST",
     acceptableSeededSuccessStatusCodes: [201],
+    requiresWriteProof: true,
+    writeProbeMethod: "POST",
+    acceptableWriteStatusCodes: [200, 201],
+    expectedWriteJsonTopLevelKinds: ["object"],
+    requiresLifecycleReadBackProof: true,
+    readBackProbeMethod: "GET",
+    acceptableReadBackStatusCodes: [200, 405],
+    expectedReadBackJsonTopLevelKinds: ["array", "object"],
     expectedJsonTopLevelKinds: ["array", "object"],
   };
 }
@@ -81,7 +89,7 @@ export function getFrontendDashboardContract() {
 
 export function getFrontendShellBackendContract() {
   return {
-    version: 3,
+    version: 5,
     wizards: getFrontendWizardContract(),
     dashboardModules: getFrontendDashboardContract(),
   };
