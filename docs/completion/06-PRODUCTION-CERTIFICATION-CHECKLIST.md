@@ -15,12 +15,12 @@ Mark each item:
 
 | Item | Status | Evidence | Notes |
 |---|---|---|---|
-| Certified SHA identified | PASS | HEAD=5b9e09d34333f2b57d32708ff0a4dcde621039da | Active PR head SHA captured |
+| Certified SHA identified | PASS | HEAD=550d84b23dbfb85cdbc5a75705110d691ac8eca9 | Merged main tip / PR 577 merge commit |
 | RC build tag identified | FAIL | RC artifact missing; no active tag bound to current SHA | RC tags exist historically but not tied to current artifact |
 | RC artifact build_sha matches certified SHA | FAIL | frontend/dashboards/dist/release-candidate.json is missing | Cannot verify build identity |
 | Deployed frontend SHA known | UNPROVEN | No live frontend deploy probe in snapshot | Deployment truth missing |
-| Deployed backend SHA known | PASS | /api/health reports build_sha=local-dev | Local dev identity only |
-| Deployed SHA matches certified SHA | FAIL | certified SHA != local-dev | Not production-aligned |
+| Deployed backend SHA known | UNPROVEN | No production backend SHA probe linked to merged main | Local dev observations are not production evidence |
+| Deployed SHA matches certified SHA | FAIL | No production frontend/backend deploy identity tied to 550d84b2 | Not production-aligned |
 
 ---
 
@@ -28,8 +28,8 @@ Mark each item:
 
 | Item | Status | Evidence | Notes |
 |---|---|---|---|
-| Required CI checks green | FAIL | gradebook-proof and CodeQL failing on PR 577 | Merge state BLOCKED |
-| CodeQL green or formally dispositioned | FAIL | CodeQL check COMPLETED FAILURE: https://github.com/tcmegahan/Crown2026/runs/67144861882 | No disposition attached |
+| Required CI checks green | PASS | PR 577 merged after backend-gate, contract-gate, routes-gate, pytest-gate, dashboards-build-gate, gradebook-proof, Proof Smoke, dashboard-ui-gates, phase1-contract, rc-promotion-gate, demo-proof-static, demo-surface-static-gate, Audit: Secret scan, and CodeQL-family checks were green | Merge complete |
+| CodeQL green or formally dispositioned | PASS | CodeQL COMPLETED SUCCESS on GitHub run 67147473952 | Analyze jobs also green |
 | Secret scan green | PASS | Audit: Secret scan COMPLETED SUCCESS | crown-magus0-gate |
 | Auth/security proof current | PASS | Local Playwright proof suite 11/11 passed in _local_playwright_after_fix.log | Local proof only |
 | Route/proof/token documentation contracts locked | PASS | docs/completion/04-ROUTE-CONTRACT.md, docs/completion/05-PROOF-CONTRACT.md, docs/completion/03-BLOCKER-LEDGER.md | Documentation blockers 005/006/007 are closed |
@@ -42,9 +42,9 @@ Mark each item:
 | Item | Status | Evidence | Notes |
 |---|---|---|---|
 | Frontend deployed URL known | UNPROVEN | No deployment endpoint captured in this snapshot | |
-| Backend deployed URL known | PASS | http://127.0.0.1:8000 | Local dev server endpoint |
-| Health endpoints pass | PASS | /api/health returns status ok | /api/v1/health=404 and /api/integrity=400 also observed |
-| Exact deployed build identity confirmed | FAIL | backend build_sha=local-dev, frontend unknown | Not a production certification identity |
+| Backend deployed URL known | UNPROVEN | No production backend endpoint captured in this merged-main update | |
+| Health endpoints pass | UNPROVEN | No production health/integrity probe linked to merged main | Local dev checks are not production certification evidence |
+| Exact deployed build identity confirmed | FAIL | frontend/backend production build identity remains unlinked to 550d84b2 | Not a production certification identity |
 | Rollback path documented | UNPROVEN | Not captured in this checklist snapshot | |
 | Rollback path tested | UNPROVEN | Not captured in this checklist snapshot | |
 
@@ -100,26 +100,26 @@ Mark each item:
 | Payments & Ledger | UNPROVEN | Module matrix incomplete | |
 | Financial Aid | UNPROVEN | Module matrix incomplete | |
 | Attendance | UNPROVEN | Module matrix incomplete | |
-| Gradebook | BLOCKED | gradebook-proof failing | |
+| Gradebook | PASS (CI gate) / UNPROVEN (full module certification) | gradebook-proof is green on merged PR 577 | CI blocker cleared; full module evidence packet still incomplete |
 | Scheduling / Sections / Rosters | UNPROVEN | Module matrix incomplete | |
 | Communications | UNPROVEN | Module matrix incomplete | |
 | Discipline / Student Care | UNPROVEN | Module matrix incomplete | |
 | Activities / Athletics / Events | UNPROVEN | Module matrix incomplete | |
-| Dashboards & Reporting | INCOMPLETE | core dashboard checks green but CodeQL/gradebook blockers remain | |
+| Dashboards & Reporting | INCOMPLETE | core dashboard checks are green on the merge slice, but the full module evidence packet is incomplete | |
 
 ---
 
 ## Production Certification Result
 
 - Overall status: FAIL
-- Blocking items: gradebook-proof failure, CodeQL failure, missing RC artifact, no production deploy SHA verification
+- Blocking items: missing RC artifact, no production deploy SHA verification, no current production runtime evidence packet
 - Evidence packet complete: No
-- Notes: Snapshot supports local/runtime progress but does not satisfy production certification.
+- Notes: Merge and CI branch readiness are complete, but production certification is still not satisfied.
 
 ---
 
 ## Notes
 
-- CI snapshot source: PR 577 statusCheckRollup via gh CLI.
-- Runtime source: local /api/health probe and local Playwright log.
+- CI snapshot source: merged PR 577 status and main tip 550d84b2 via gh CLI.
+- Runtime source: local Playwright log only; no production proof refresh in this update.
 - Unknowns intentionally marked UNPROVEN.

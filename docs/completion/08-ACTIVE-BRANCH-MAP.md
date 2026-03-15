@@ -10,10 +10,12 @@ This file tracks the branches that still matter to release truth.
 
 | Branch Name | Purpose | PR Number | Current HEAD SHA | Status | Merged | Superseded | Release-Relevant | Notes |
 |---|---|---|---|---|---|---|---|---|
-| main | Default integration branch | n/a | local ref diverged from origin/main | active | n/a | No | Yes | ahead 8 / behind 4 vs origin/main |
-| fix/track11-12-write-and-lifecycle-proof | Active release-proof branch | 577 | 5b9e09d34333f2b57d32708ff0a4dcde621039da | OPEN/BLOCKED | No | No | Yes | Required checks include failures (gradebook-proof, CodeQL) |
+| main | Default integration branch | n/a | 550d84b23dbfb85cdbc5a75705110d691ac8eca9 | active | n/a | No | Yes | Synced to origin/main; contains merged PR 577 work |
+| fix/track11-12-write-and-lifecycle-proof | Merged release-proof branch | 577 | 550d84b23dbfb85cdbc5a75705110d691ac8eca9 (via merge commit on main) | MERGED | Yes | Yes | Historical only | Branch achieved merge objective on 2026-03-15 |
 | copilot/fix-issues-in-active-work | Adjacent runtime fix branch | 578 | UNPROVEN | OPEN | No | No | Potentially | Could carry overlapping release-impact fixes |
 | copilot/fix-next-issues | Adjacent RBAC fix branch | 579 | UNPROVEN | OPEN | No | No | Potentially | Could affect auth/role behavior |
+| copilot/assess-efficiency-and-cleanliness | Hygiene/security branch | 580 | UNPROVEN | OPEN | No | No | Potentially | Repo hygiene and secret-hardening scope |
+| copilot/close-pull-requests-and-issues | PR/issue triage branch | 581 | UNPROVEN | OPEN / DRAFT | No | No | Potentially | Meta workflow branch |
 
 ---
 
@@ -21,15 +23,15 @@ This file tracks the branches that still matter to release truth.
 
 ### main
 - Purpose: Canonical default branch for release merges
-- Current status: Exists locally/remotely; local ref is ahead/behind origin/main
+- Current status: Synced to origin/main at 550d84b23dbfb85cdbc5a75705110d691ac8eca9
 - Release relevance: High
-- Notes: Do not declare release complete without reconciling main branch divergence policy.
+- Notes: PR 577 is now incorporated into main.
 
 ### fix/track11-12-write-and-lifecycle-proof
-- Purpose: Current active branch for proof shell backend write/lifecycle and route integrity fixes
-- Current status: PR #577 open, mergeStateStatus BLOCKED
-- Release relevance: Highest (current active PR)
-- Notes: Head SHA is 5b9e09d34333f2b57d32708ff0a4dcde621039da.
+- Purpose: Proof shell backend write/lifecycle and route integrity stabilization branch
+- Current status: PR #577 merged
+- Release relevance: Historical; no longer the canonical active branch
+- Notes: Merge commit is 550d84b23dbfb85cdbc5a75705110d691ac8eca9.
 
 ### Additional release branches
 - Branch: copilot/fix-issues-in-active-work (PR #578)
@@ -53,5 +55,5 @@ This file tracks the branches that still matter to release truth.
 ## Notes
 
 - This map prioritizes active and potentially release-impacting branches only.
-- PR #577 remains the only explicitly designated release-relevant active PR.
+- PR #577 is merged and no longer an active branch-level blocker.
 - Additional open PRs should be marked release-relevant only after triage.
