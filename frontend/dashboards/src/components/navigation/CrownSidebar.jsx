@@ -5,6 +5,7 @@ import ExpandMore from "@mui/icons-material/ExpandMore";
 import { getDashboardNavSections } from './dashboardNavConfig';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { filterVisibleNav } from '../../auth/roleAccess';
+import { usePermissions } from '../../hooks/usePermissions';
 
 /**
  * Collapsible sidebar section with a labelled group header.
@@ -91,6 +92,13 @@ function NavItem({ label, href }) {
   );
 }
 
+const normalizeRole = (role) => String(role || 'guest').trim().toLowerCase();
+
+const canSeeItem = (itemRoles, currentRole) => {
+  if (!Array.isArray(itemRoles) || itemRoles.length === 0) return true;
+  return itemRoles.map(normalizeRole).includes(normalizeRole(currentRole));
+};
+
 /**
  * CrownSidebar — collapsible grouped navigation.
  *
@@ -98,9 +106,27 @@ function NavItem({ label, href }) {
  * sidebar or used independently in a new layout composition.
  */
 export default function CrownSidebar() {
+  const { permissions } = usePermissions();
   const dashboardNavSections = getDashboardNavSections();
   const userRoles = getCurrentUserRoles();
-  const visibleNavItems = filterVisibleNav(dashboardNavSections, userRoles);
+  const currentUserRole = userRoles[0] || 'guest';
+  const visibleNavItems = filterVisibleNav(dashboardNavSections, { roles: userRoles, permissions })
+    .map((section) => ({
+      ...section,
+      children: (section.children || []).filter((item) => {
+        const roleVisible = canSeeItem(item.roles, currentUserRole);
+        if (!Array.isArray(item.permissions) || item.permissions.length === 0) {
+          return roleVisible;
+        }
+
+        if (permissions.includes('*')) {
+          return true;
+        }
+
+        return roleVisible && item.permissions.some((permission) => permissions.includes(permission));
+      }),
+    }))
+    .filter((section) => (section.children || []).length > 0);
 
   return (
     <List dense disablePadding sx={{ pt: 0.2 }}>

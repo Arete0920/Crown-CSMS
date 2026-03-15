@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:unit": "vitest run src",
+    "test:contracts": "vitest run src/tests/writeFlowContract.test.jsx src/tests/permissionContract.test.js src/tests/routeContract.test.jsx src/tests/sidebarContract.test.jsx src/tests/roleGuard.test.jsx src/tests/dashboardCardContract.test.jsx src/tests/apiContractRegistry.test.js src/tests/navigationSurfaceContract.test.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test:e2e": "playwright test",
@@ -34,7 +36,11 @@
     "print:shell-backend-contract": "node scripts/print-shell-backend-contract.mjs",
     "check:shell-backend-contract": "node scripts/check-shell-backend-contract-parity.mjs",
     "debug:shell-backend-contract": "node scripts/print-shell-backend-contract.mjs",
-    "ci:shell-backend-contract-parity": "npm run check:shell-backend-contract-parity"
+    "ci:shell-backend-contract-parity": "npm run check-shell-backend-contract-parity",
+    "release:verify": "node ../../scripts/release/verify-frontend-rc.mjs",
+    "verify:api-contracts": "node ../../scripts/release/verify-api-contracts.mjs",
+    "verify:navigation": "node ../../scripts/release/verify-navigation-surface.mjs",
+    "release:demo-proof": "node ../../scripts/release/generate-demo-proof.mjs"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.28.1",
@@ -42,6 +48,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.8",
+    "axios": "^1.12.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
@@ -50,6 +57,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@playwright/test": "^1.58.2",
+    "@testing-library/react": "^16.3.0",
     "@vitejs/plugin-react": "^5.1.4",
     "eslint": "^9.39.2",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -57,6 +65,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.0",
     "globals": "^17.3.0",
+    "jsdom": "^28.1.0",
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
     "yaml": "^2.8.2"

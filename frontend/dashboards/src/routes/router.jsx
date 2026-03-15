@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 // No-op touch to ensure required route/dashboard gate contexts run on this PR.
 
@@ -64,8 +64,18 @@ import AftercareSetupWizard from "../pages/wizards/AftercareSetupWizard.jsx";
 import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
 import NotAuthorized from "../pages/NotAuthorized.jsx";
 import RoleRouteGuard from "../components/routing/RoleRouteGuard.jsx";
+import RoleGuard from "./RoleGuard.jsx";
+import RequirePermission from "../components/auth/RequirePermission.jsx";
+import { APP_PERMISSIONS } from "../auth/permissions";
+import ForbiddenPage from "../pages/ForbiddenPage.jsx";
+import SystemStatusPage from "../pages/SystemStatusPage.jsx";
+import ReleaseReadinessPage from "../pages/ReleaseReadinessPage.jsx";
+import DemoReadinessPage from "../pages/DemoReadinessPage.jsx";
+import NotFoundPage from "../pages/NotFoundPage.jsx";
 import { dashboardRoutes } from "./dashboardRoutes";
 import { wizardRoutes } from "./wizards.js";
+import { PATHS } from "./paths";
+import { ROLE_GROUPS } from "./routeGroups";
 import WizardHub from "../pages/WizardHub.jsx";
 import CompuwerxTestCheckout from "../pages/CompuwerxTestCheckout.jsx";
 import FamilyAccountDetail from "../pages/FamilyAccountDetail.jsx";
@@ -81,33 +91,45 @@ const FINANCE_ALLOWED_ROLES = ["super_admin", "school_admin", "finance_admin"];
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: PATHS.HOME,
     element: <RoleHomeRedirect />,
   },
   {
-    path: "/login",
+    path: PATHS.LOGIN,
     element: <LoginPage />,
   },
   {
-    // Unified role dashboard — /dash/admin, /dash/teacher, /dash/parent, etc.
-    path: "/dash/:role",
+    // Unified role dashboard � /dash/admin, /dash/teacher, /dash/parent, etc.
+    path: PATHS.ROLE_DASHBOARD,
     element: <RoleDashboardPage />,
   },
   {
-    path: "/teacher/attendance",
+    path: PATHS.TEACHER_ATTENDANCE,
     element: <TeacherAttendancePage />,
   },
   {
-    path: "/parent/attendance",
+    path: PATHS.PARENT_ATTENDANCE,
     element: <ParentAttendancePage />,
   },
   {
-    path: "/not-authorized",
+    path: PATHS.NOT_AUTHORIZED,
     element: <NotAuthorized />,
+  },
+  {
+    path: PATHS.FORBIDDEN,
+    element: <ForbiddenPage />,
   },
   // Legacy aliases used across cards/redirects until all links converge on canonical paths.
   {
-    path: "/billing",
+    path: PATHS.BILLING,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.BILLING_VIEW}>
+        <BillingDashboard />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.BILLING_DASHBOARD,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <BillingDashboard />
@@ -115,75 +137,75 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/billing-dashboard",
+    path: PATHS.FINANCIAL_AID,
     element: (
-      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-        <BillingDashboard />
-      </RoleRouteGuard>
+      <RequirePermission permission={APP_PERMISSIONS.FINANCIAL_AID_VIEW}>
+        <Navigate to={PATHS.FINANCIAL_AID_DASHBOARD} replace />
+      </RequirePermission>
     ),
   },
   {
-    path: "/financial-aid",
-    element: <Navigate to="/financial-aid-dashboard" replace />,
-  },
-  {
-    path: "/attendance",
-    element: <Navigate to="/teacher/attendance" replace />,
+    path: PATHS.ATTENDANCE,
+    element: <Navigate to={PATHS.TEACHER_ATTENDANCE} replace />,
   },
   ...dashboardRoutes,
   {
-    path: "/academics",
+    path: PATHS.ACADEMICS,
     element: <AcademicsDashboard />,
   },
   {
-    path: "/teacher",
+    path: PATHS.TEACHER,
     element: <TeacherDashboard />,
   },
   {
-    path: "/parent",
+    path: PATHS.PARENT,
     element: <ParentDashboard />,
   },
   {
-    path: "/student",
+    path: PATHS.STUDENT,
     element: <StudentDashboard />,
   },
   {
-    path: "/classrooms",
+    path: PATHS.CLASSROOMS,
     element: <ClassroomsDashboard />,
   },
   {
-    path: "/gradebook",
+    path: PATHS.GRADEBOOK,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <GradebookRO />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.GRADEBOOK_SECTION,
     element: <GradebookRO />,
   },
   {
-    path: "/gradebook/:sectionId",
-    element: <GradebookRO />,
-  },
-  {
-    path: "/transcript",
+    path: PATHS.TRANSCRIPT,
     element: <TranscriptRO />,
   },
   {
-    path: "/category-weights",
+    path: PATHS.CATEGORY_WEIGHTS,
     element: <CategoryWeightsEditor />,
   },
   {
-    path: "/admissions",
+    path: PATHS.ADMISSIONS,
     element: <AdmissionsPipelineList />,
   },
   {
-    path: "/admissions/pipeline",
+    path: PATHS.ADMISSIONS_PIPELINE,
     element: <AdmissionsPipelineList />,
   },
-  // Wizard Hub — lists all registered wizards from /api/v1/wizards/
+  // Wizard Hub � lists all registered wizards from /api/v1/wizards/
   {
-    path: "/wizards",
+    path: PATHS.WIZARDS,
     element: <WizardHub />,
   },
   // Wizard routes are owned by routes/wizards.js.
   ...wizardRoutes(),
   {
-    path: "/finance/invoices",
+    path: PATHS.FINANCE_INVOICES,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <FinanceInvoicesList />
@@ -191,51 +213,55 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/communications",
+    path: PATHS.COMMUNICATIONS,
     element: <CommunicationsThreadsList />,
   },
   {
-    path: "/service-hours",
+    path: PATHS.SERVICE_HOURS,
     element: <ServiceHoursPage />,
   },
   {
-    path: "/ops",
+    path: PATHS.OPS,
     element: <OpsCommandCenter />,
   },
   {
-    path: "/academics/teacher-grading",
+    path: PATHS.ACADEMICS_TEACHER_GRADING,
     element: <AcademicsTeacherGrading />,
   },
   {
-    path: "/academics/student-work",
+    path: PATHS.ACADEMICS_STUDENT_WORK,
     element: <AcademicsStudentWork />,
   },
   {
-    path: "/academics/parent-snapshot",
+    path: PATHS.ACADEMICS_PARENT_SNAPSHOT,
     element: <AcademicsParentSnapshot />,
   },
   {
-    path: "/students/:id",
+    path: PATHS.STUDENT_DETAIL,
     element: <Student360Page />,
   },
   {
-    path: "/parent/students/:id",
+    path: PATHS.PARENT_STUDENT_DETAIL,
     element: <ParentStudent360Page />,
   },
   {
-    path: "/integrity",
-    element: <IntegrityDashboard />,
+    path: PATHS.REPORTING,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.REPORTING_VIEW}>
+        <IntegrityDashboard />
+      </RequirePermission>
+    ),
   },
   {
-    path: "/admin",
+    path: PATHS.ADMIN,
     element: <AdminDashboard />,
   },
   {
-    path: "/board",
+    path: PATHS.BOARD,
     element: <BoardDashboard />,
   },
   {
-    path: "/finance",
+    path: PATHS.FINANCE,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <FinanceDashboard />
@@ -243,111 +269,135 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/it",
+    path: PATHS.IT,
     element: <ITDashboard />,
   },
   {
-    path: "/marketing",
+    path: PATHS.MARKETING,
     element: <MarketingDashboard />,
   },
   {
-    path: "/spiritual-life",
+    path: PATHS.SPIRITUAL_LIFE,
     element: <SpiritualLifeDashboard />,
   },
   {
-    path: "/master-control",
+    path: PATHS.MASTER_CONTROL,
     element: <AdminDashboard />,
   },
   {
-    path: "/office",
+    path: PATHS.OFFICE,
     element: <OfficeDashboard />,
   },
   {
-    path: "/health",
+    path: PATHS.HEALTH,
     element: <HealthDashboard />,
   },
   {
-    path: "/counseling",
+    path: PATHS.COUNSELING,
     element: <CounselingDashboard />,
   },
   {
-    path: "/food",
+    path: PATHS.FOOD,
     element: <FoodDashboard />,
   },
   {
-    path: "/athletics",
+    path: PATHS.ATHLETICS,
     element: <AthleticsDashboard />,
   },
   {
-    path: "/advancement",
+    path: PATHS.SYSTEM_STATUS,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.SYSTEM_VIEW}>
+        <SystemStatusPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.RELEASE_READINESS,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.RELEASE_VIEW}>
+        <ReleaseReadinessPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.DEMO_READINESS,
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.DEMO_VIEW}>
+        <DemoReadinessPage />
+      </RequirePermission>
+    ),
+  },
+  {
+    path: PATHS.ADVANCEMENT,
     element: <AdvancementDashboard />,
   },
   {
-    path: "/transportation",
+    path: PATHS.TRANSPORTATION,
     element: <TransportationDashboard />,
   },
   {
-    path: "/facilities",
+    path: PATHS.FACILITIES,
     element: <FacilitiesDashboard />,
   },
   {
-    path: "/security",
+    path: PATHS.SECURITY,
     element: <SecurityDashboard />,
   },
   {
-    path: "/academic-support",
+    path: PATHS.ACADEMIC_SUPPORT,
     element: <AcademicSupportDashboard />,
   },
   {
-    path: "/fine-arts",
+    path: PATHS.FINE_ARTS,
     element: <FineArtsDashboard />,
   },
   {
-    path: "/library",
+    path: PATHS.LIBRARY,
     element: <LibraryDashboard />,
   },
   {
-    path: "/extended-care",
+    path: PATHS.EXTENDED_CARE,
     element: <ExtendedCareDashboard />,
   },
   {
-    path: "/registrar",
+    path: PATHS.REGISTRAR,
     element: <RegistrarDashboard />,
   },
   {
-    path: "/communications-director",
+    path: PATHS.COMMUNICATIONS_DIRECTOR,
     element: <CommunicationsDirectorDashboard />,
   },
   {
-    path: "/pd",
+    path: PATHS.PD,
     element: <PDDashboard />,
   },
   {
-    path: "/student-services",
+    path: PATHS.STUDENT_SERVICES,
     element: <StudentServicesDashboard />,
   },
   {
-    path: "/hr",
+    path: PATHS.HR,
     element: <HumanResources />,
   },
   {
-    path: "/safety",
+    path: PATHS.SAFETY,
     element: <SafetyDashboard />,
   },
   {
-    path: "/board/executive",
+    path: PATHS.BOARD_EXECUTIVE,
     element: <BoardExecutiveDashboard />,
   },
   {
-    path: "/aftercare/roster",
+    path: PATHS.AFTERCARE_ROSTER,
     element: <AftercareRosterPage />,
   },
   {
-    path: "/wizards/aftercare-setup",
+    path: PATHS.WIZARD_AFTERCARE_SETUP,
     element: <AftercareSetupWizard />,
   },
   {
-    path: "/wizards/finance-setup",
+    path: PATHS.WIZARD_FINANCE_SETUP,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <FinanceSetupWizard />
@@ -355,7 +405,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/compuwerx-test",
+    path: PATHS.FINANCE_COMPUWERX_TEST,
     element: (
       <RoleRouteGuard
         allowedRoles={["super_admin", "school_admin", "finance_admin"]}
@@ -365,7 +415,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/family-account",
+    path: PATHS.FINANCE_FAMILY_ACCOUNT,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <FamilyAccountDetail />
@@ -373,7 +423,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/disputes",
+    path: PATHS.FINANCE_DISPUTES,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <CompuwerxDisputesDashboard />
@@ -381,7 +431,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/payout-reconciliation",
+    path: PATHS.FINANCE_PAYOUT_RECONCILIATION,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <CompuwerxPayoutReconciliation />
@@ -389,7 +439,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/payment-methods",
+    path: PATHS.FINANCE_PAYMENT_METHODS,
     element: (
       <RoleRouteGuard
         allowedRoles={[
@@ -404,7 +454,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/exports",
+    path: PATHS.FINANCE_EXPORTS,
     element: (
       <RoleRouteGuard
         allowedRoles={[
@@ -419,7 +469,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/dispute-workbench",
+    path: PATHS.FINANCE_DISPUTE_WORKBENCH,
     element: (
       <RoleRouteGuard
         allowedRoles={["super_admin", "school_admin", "finance_admin"]}
@@ -429,7 +479,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/exceptions",
+    path: PATHS.FINANCE_EXCEPTIONS,
     element: (
       <RoleRouteGuard
         allowedRoles={["super_admin", "school_admin", "finance_admin"]}
@@ -439,7 +489,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/finance/bank-reconciliation",
+    path: PATHS.FINANCE_BANK_RECONCILIATION,
     element: (
       <RoleRouteGuard
         allowedRoles={["super_admin", "school_admin", "finance_admin"]}
@@ -447,5 +497,9 @@ export const router = createBrowserRouter([
         <CompuwerxBankReconciliation />
       </RoleRouteGuard>
     ),
+  },
+  {
+    path: PATHS.NOT_FOUND,
+    element: <NotFoundPage />,
   },
 ]);
