@@ -39,7 +39,7 @@ export default function StudentDashboard() {
 
           <Col span={6}>
             <KpiCardGrid>
-              <KpiCard title="GPA" value="3.5" trend="Strong this term" icon="GR" tone="good" />
+              <KpiCard title="My GPA" value="3.5" trend="Strong this term" icon="GR" tone="good" />
               <KpiCard title="Current Average" value="91.2%" trend="+2 this week" icon="AVG" tone="good" />
               <KpiCard title="Missing Work" value="1" trend="Needs submission" icon="MSW" tone="warn" />
               <KpiCard title="Balance Due" value="$250" trend="Current student account" icon="BIL" tone="warn" />
