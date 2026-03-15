@@ -148,8 +148,8 @@ def _parse_csv(raw_csv: str, required_headers: set):
             errors.extend(row_errors)
             rows.append({k: (v or "").strip() for k, v in row.items()})
 
-    except Exception as exc:
-        errors.append({"row": None, "field": None, "message": f"CSV parse error: {exc}"})
+    except Exception:
+        errors.append({"row": None, "field": None, "message": "CSV parse error."})
 
     students = {r["student_external_id"] for r in rows if r.get("student_external_id")}
     guardians = {r["guardian_external_id"] for r in rows if r.get("guardian_external_id")}
