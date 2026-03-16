@@ -59,11 +59,11 @@ def send_sms(sender, recipient, message: str) -> MessageLog:
         log.external_id     = msg.sid
         log.delivery_status = "sent"
         log.delivered_at    = timezone.now()
-        logger.info("SMS sent to %s sid=%s", phone, msg.sid)
+        logger.info("SMS sent sid=%s recipient_id=%s", msg.sid, getattr(recipient, "id", None))
     except Exception as exc:
         log.delivery_status = "failed"
         log.error_message   = str(exc)
-        logger.error("SMS failed to %s: %s", phone, exc)
+        logger.error("SMS failed recipient_id=%s: %s", getattr(recipient, "id", None), exc)
 
     log.save()
     return log

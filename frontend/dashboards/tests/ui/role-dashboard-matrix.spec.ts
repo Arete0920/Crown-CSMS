@@ -17,7 +17,7 @@ import { test, expect } from "@playwright/test";
 const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:3000";
 const DEMO_SCHOOL_ID =
   process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
-const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
+const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "";
 
 async function seedDemoSession(page, role: string) {
   await page.addInitScript(
@@ -90,6 +90,8 @@ const ACTIVE_CASES = [
 // ── Tests ────────────────────────────────────────────────────────────────
 
 test.describe("Role Dashboard Matrix", () => {
+  test.skip(!DEMO_TOKEN, "CROWN_DEMO_TOKEN is required for dashboard role tests");
+
   // ── 1. Redirects ────────────────────────────────────────────────────────
   test.describe("Role → route redirects (new dashboards)", () => {
     for (const c of REDIRECT_CASES) {

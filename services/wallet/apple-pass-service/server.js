@@ -22,6 +22,10 @@ import { PKPass } from "passkit-generator";
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 
+const RATE_WINDOW_MS = Number(process.env.PKPASS_RATE_WINDOW_MS || 60_000);
+const RATE_MAX_REQUESTS = Number(process.env.PKPASS_RATE_MAX_REQUESTS || 30);
+const rateBuckets = new Map();
+
 function requireEnv(name) {
   const v = process.env[name];
   if (!v) throw new Error(`Missing required env var: ${name}`);
@@ -31,7 +35,40 @@ function requireEnv(name) {
 // Health check
 app.get("/health", (_req, res) => res.json({ ok: true, service: "crown-apple-pass" }));
 
+function clientKey(req) {
+  const fwd = req.headers["x-forwarded-for"];
+  if (Array.isArray(fwd) && fwd.length > 0) {
+    return String(fwd[0]).split(",")[0].trim();
+  }
+  if (typeof fwd === "string" && fwd.length > 0) {
+    return fwd.split(",")[0].trim();
+  }
+  return req.ip || req.socket?.remoteAddress || "unknown";
+}
+
+function allowRequest(req) {
+  const now = Date.now();
+  const key = clientKey(req);
+  const bucket = rateBuckets.get(key);
+
+  if (!bucket || now - bucket.windowStart >= RATE_WINDOW_MS) {
+    rateBuckets.set(key, { windowStart: now, count: 1 });
+    return true;
+  }
+
+  if (bucket.count >= RATE_MAX_REQUESTS) {
+    return false;
+  }
+
+  bucket.count += 1;
+  return true;
+}
+
 app.post("/pkpass", async (req, res) => {
+  if (!allowRequest(req)) {
+    return res.status(429).json({ ok: false, message: "Too many requests" });
+  }
+
   try {
     const {
       serialNumber,
@@ -100,7 +137,7 @@ app.post("/pkpass", async (req, res) => {
     res.send(buffer);
   } catch (err) {
     console.error("[apple-pass-service]", err);
-    res.status(500).json({ ok: false, message: String(err?.message || err) });
+    res.status(500).json({ ok: false, message: "Internal server error" });
   }
 });
 
