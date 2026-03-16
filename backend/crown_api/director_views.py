@@ -32,26 +32,26 @@ ALLOWED_ROLE_CODES = {
 def crown_director_allowed(request):
     """
     Check if user is allowed to access director APIs.
-    
+
     Allows:
     1. Dev mode (CROWN_DEV_OPEN_API=1 env var)
     2. Superuser
     3. Users with director role codes
     """
     user = request.user
-    
+
     # Dev override (explicit toggle)
     if getattr(settings, "CROWN_DEV_OPEN_API", False):
         return True
-    
+
     # Superuser always allowed
     if user and getattr(user, "is_superuser", False):
         return True
-    
+
     # Check authenticated + role
     if not user or not user.is_authenticated:
         return False
-    
+
     user_id = getattr(user, "id", None)
     if not user_id:
         return False
@@ -82,7 +82,7 @@ def build_director_priority_snapshot(school_id, academic_year):
     """
     if not academic_year:
         return None
-    
+
     admissions_needs_info_apps = (
         AdmissionsApplication.objects
         .filter(
@@ -328,7 +328,7 @@ def director_dashboard(request):
             {"error": "Unauthorized. Director access required."},
             status=status.HTTP_403_FORBIDDEN,
         )
-    
+
     school_id = request.query_params.get("school_id")
     year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
 
@@ -446,11 +446,10 @@ def director_dashboard(request):
                 "registrar": registrar_data,
             },
         })
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Director dashboard error")
         return Response(
-            {"error": f"Dashboard error: {str(e)}"},
+            {"error": "Dashboard error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -467,7 +466,7 @@ def director_priority(request):
             {"error": "Unauthorized. Director access required."},
             status=status.HTTP_403_FORBIDDEN,
         )
-    
+
     school_id = request.query_params.get("school_id")
     academic_year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
 
@@ -714,10 +713,10 @@ def director_priority(request):
 def director_actions(request):
     """
     Endpoint for director/Head of School actions.
-    
+
     Supported actions:
     - POST_ACCEPTED_AWARDS: Post accepted award(s) to ledger
-    
+
     Request body:
     {
         "action": "POST_ACCEPTED_AWARDS",
@@ -745,19 +744,19 @@ def director_actions(request):
             {"error": "Unauthorized. Director access required."},
             status=status.HTTP_403_FORBIDDEN,
         )
-    
+
     try:
         action = request.data.get("action")
         school_id = request.data.get("school_id")
         year_id = request.data.get("year_id")
         ids = request.data.get("ids", [])
-        
+
         if not action:
             return Response(
                 {"error": "Missing required field: action"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         if action == "POST_ACCEPTED_AWARDS":
             if not ids:
                 return Response(
@@ -768,7 +767,7 @@ def director_actions(request):
             with transaction.atomic():
                 posted_count = 0
                 errors = []
-                
+
                 for award_id in ids:
                     try:
                         award = AidAward.objects.get(pk=award_id, school_id=school_id)
@@ -790,7 +789,7 @@ def director_actions(request):
                         was_unposted = award.ledger_entry_id is None
 
                         actor_user = request.user if getattr(request.user, "is_authenticated", False) else None
-                        
+
                         # Post to ledger (idempotent; will not double-post)
                         award.mark_accepted_and_post(actor_user=actor_user)
 
@@ -806,24 +805,25 @@ def director_actions(request):
                             "award_id": award_id,
                             "error": "Award not found",
                         })
-                    except Exception as e:
+                    except Exception:
+                        logger.exception("AID_ACCEPT_AND_POST_LEDGER failed for award", extra={"award_id": award_id})
                         errors.append({
                             "award_id": award_id,
-                            "error": str(e),
+                            "error": "Internal processing error",
                         })
-                
+
                 return Response({
                     "action": action,
                     "posted_count": posted_count,
                     "total_requested": len(ids),
                     "errors": errors if errors else None,
                 })
-        
+
         elif action == "AID_GENERATE_NEEDS_INFO_EMAILS":
             # Generate email drafts for needs-info applications (no sending)
             drafts = []
             failures = []
-            
+
             # Fetch academic year if provided
             academic_year = None
             if year_id:
@@ -832,17 +832,17 @@ def director_actions(request):
                     academic_year = AcademicYear.objects.get(pk=year_id, school_id=school_id)
                 except AcademicYear.DoesNotExist:
                     academic_year = None
-            
+
             from aid.models import AidApplication
-            
+
             # Build query
             query = AidApplication.objects.filter(id__in=ids)
             if school_id:
                 query = query.filter(school_id=school_id)
-            
+
             apps = query.select_related("family").select_related("academic_year")
             apps_by_id = {str(a.id): a for a in apps}
-            
+
             for raw_id in ids:
                 app = apps_by_id.get(str(raw_id))
                 if not app:
@@ -851,7 +851,7 @@ def director_actions(request):
                         "reason": "Application not found for school/year"
                     })
                     continue
-                
+
                 # Enforce NEEDS_INFO status
                 if app.status != AidApplication.STATUS_NEEDS_INFO:
                     failures.append({
@@ -859,10 +859,10 @@ def director_actions(request):
                         "reason": f"Application is in {app.status} status, not NEEDS_INFO"
                     })
                     continue
-                
+
                 family = getattr(app, "family", None)
                 family_name = getattr(family, "family_name", "Family") if family else "Family"
-                
+
                 # Try to fetch missing documents
                 missing = []
                 try:
@@ -878,13 +878,13 @@ def director_actions(request):
                 except Exception:
                     # If AidDocument doesn't exist or different structure, use generic
                     missing = []
-                
+
                 missing_lines = "\n".join([f"- {m}" for m in missing]) if missing else "- One or more required documents (see your portal checklist)"
-                
+
                 subject = "Financial Aid Application – Additional Information Needed"
-                
+
                 ay_name = getattr(academic_year or app.academic_year, "name", "current school year")
-                
+
                 body = f"""Hello {family_name},
 
 Thank you for submitting your financial aid application for the {ay_name}.
@@ -904,14 +904,14 @@ If you have questions, reply to this email and we will help you.
 With appreciation,
 Crown Financial Aid Office
 """
-                
+
                 drafts.append({
                     "application_id": str(app.id),
                     "family": family_name,
                     "subject": subject,
                     "body": body,
                 })
-            
+
             return Response({
                 "action": action,
                 "draft_count": len(drafts),
@@ -920,61 +920,61 @@ Crown Financial Aid Office
                 "failures": failures if failures else None,
                 "priority_refresh": build_director_priority_snapshot(school_id, academic_year),
             }, status=status.HTTP_200_OK)
-        
+
         elif action == "AID_MARK_NEEDS_INFO_EMAIL_SENT":
             # Mark needs-info email sent + optionally move to under review
             from django.utils import timezone
             move_to_under_review = bool(payload.get("move_to_under_review", False))
-            
+
             successes = []
             failures = []
-            
+
             from aid.models import AidApplication
-            
+
             query = AidApplication.objects.filter(id__in=ids)
             if school_id:
                 query = query.filter(school_id=school_id)
             if year_id:
                 query = query.filter(academic_year_id=year_id)
-            
+
             apps = query.select_related("family")
             apps_by_id = {str(a.id): a for a in apps}
-            
+
             now = timezone.now()
-            
+
             for raw_id in ids:
                 app = apps_by_id.get(str(raw_id))
                 if not app:
                     failures.append({"id": str(raw_id), "reason": "Application not found for school/year"})
                     continue
-                
+
                 if app.status != AidApplication.STATUS_NEEDS_INFO:
                     failures.append({"id": str(app.id), "reason": f"Application is in {app.status} status, not NEEDS_INFO"})
                     continue
-                
+
                 # Update audit fields
                 app.last_contacted_at = now
                 app.last_contacted_by = request.user if getattr(request.user, "is_authenticated", False) else None
                 app.last_contacted_reason = "NEEDS_INFO_EMAIL"
-                
+
                 # Optional: director can move it along after sending message
                 if move_to_under_review:
                     app.status = AidApplication.STATUS_UNDER_REVIEW
-                
+
                 app.save(update_fields=[
                     "last_contacted_at",
                     "last_contacted_by",
                     "last_contacted_reason",
                     "status",
                 ])
-                
+
                 successes.append({
                     "application_id": str(app.id),
                     "family": getattr(getattr(app, "family", None), "family_name", None),
                     "moved_to_under_review": move_to_under_review,
                     "last_contacted_at": app.last_contacted_at,
                 })
-            
+
             return Response({
                 "action": action,
                 "success_count": len(successes),
@@ -983,16 +983,17 @@ Crown Financial Aid Office
                 "failures": failures if failures else None,
                 "priority_refresh": build_director_priority_snapshot(school_id, academic_year),
             }, status=status.HTTP_200_OK)
-        
+
         else:
             return Response(
                 {"error": f"Unknown action: {action}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-    
-    except Exception as e:
+
+    except Exception:
+        logger.exception("director_actions failed")
         return Response(
-            {"error": str(e)},
+            {"error": "Internal server error"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
@@ -1003,7 +1004,7 @@ def director_timeline(request):
     Unified audit-style timeline of recent director-relevant events.
     Tightened for director storytelling: high-impact events first,
     noisy GL entries suppressed.
-    
+
     Params:
     - school_id: UUID of school
     - year_id (or academic_year_id): UUID of academic year
@@ -1014,21 +1015,21 @@ def director_timeline(request):
             {"error": "Unauthorized. Director access required."},
             status=status.HTTP_403_FORBIDDEN,
         )
-    
+
     school_id = request.query_params.get("school_id")
     year_id = request.query_params.get("year_id") or request.query_params.get("academic_year_id")
     limit = int(request.query_params.get("limit") or 50)
-    
+
     academic_year = resolve_academic_year(school_id, year_id)
-    
+
     if not academic_year:
         return Response(
             {"error": "Academic year not found"},
             status=status.HTTP_404_NOT_FOUND,
         )
-    
+
     items = []
-    
+
     # --- Aid: Awards posted to ledger (director actions, high-impact) ---
     posted_awards = (
         AidAward.objects
@@ -1040,23 +1041,23 @@ def director_timeline(request):
         .select_related("student", "student__family", "ledger_entry")
         .order_by("-ledger_entry__created_at")[:limit]
     )
-    
+
     for w in posted_awards:
         student = getattr(w, "student", None)
         student_name = (f"{getattr(student,'first_name','')} {getattr(student,'last_name','')}".strip() if student else "Student")
         le = getattr(w, "ledger_entry", None)
-        
+
         # timestamp fallback chain
         ts = getattr(w, "posted_at", None) or getattr(le, "created_at", None) or getattr(le, "entry_date", None) or timezone.now()
         amt_cents = getattr(w, "awarded_cents", None)
-        
+
         # Format amount as currency if present
         if amt_cents:
             amt_dollars = amt_cents / 100.0
             summary = f"${amt_dollars:,.0f} aid posted: {student_name}"
         else:
             summary = f"Aid posted: {student_name}"
-        
+
         items.append({
             "ts": ts,
             "type": "AID_POSTED_TO_LEDGER",
@@ -1066,7 +1067,7 @@ def director_timeline(request):
             "amount_cents": amt_cents,
             "summary": summary,
         })
-    
+
     # --- Aid: Needs-info outreach contacts (non-routine contacts only) ---
     recent_contacts = (
         AidApplication.objects
@@ -1078,16 +1079,16 @@ def director_timeline(request):
         .select_related("family", "last_contacted_by")
         .order_by("-last_contacted_at")[:limit]
     )
-    
+
     for a in recent_contacts:
         actor = getattr(getattr(a, "last_contacted_by", None), "username", None) or "System"
         family_name = getattr(getattr(a, "family", None), "family_name", "Family")
         reason = getattr(a, "last_contacted_reason", None) or "Contacted"
-        
+
         # Skip generic/routine contact reasons
         if reason.upper() in ["CONTACT", "ROUTINE"]:
             continue
-        
+
         items.append({
             "ts": a.last_contacted_at,
             "type": "AID_CONTACT",
@@ -1096,7 +1097,7 @@ def director_timeline(request):
             "entity_id": str(a.id),
             "summary": f"{reason}: {family_name}",
         })
-    
+
     # --- Finance: Significant ledger activity (payments, major charges, exclude routine GL) ---
     recent_ledger = (
         LedgerEntry.objects
@@ -1107,33 +1108,33 @@ def director_timeline(request):
         .select_related("family", "student")
         .order_by("-created_at")[:limit * 2]  # Fetch more to filter
     )
-    
+
     for le in recent_ledger:
         amt = getattr(le, "amount_cents", None)
-        
+
         # Suppress zero-amount and routine GL entries
         if amt is None or amt == 0:
             continue
-        
+
         acct = getattr(le, "account_code", None) or getattr(getattr(le, "account", None), "code", None) or "LEDGER"
-        
+
         # Suppress routine GL codes (adjustments, temporary entries)
         if acct.upper() in ["GL_ADJUSTMENT", "TEMP", "PENDING"]:
             continue
-        
+
         fam = getattr(le, "family", None)
         student = getattr(le, "student", None)
         family_name = getattr(fam, "family_name", None)
         student_name = (f"{getattr(student,'first_name','')} {getattr(student,'last_name','')}".strip() if student else None)
-        
+
         ts = getattr(le, "created_at", None) or getattr(le, "entry_date", None) or timezone.now()
         who = family_name or student_name or "Account"
-        
+
         # Tighten summary with amount
         amt_dollars = amt / 100.0
         sign = "+" if amt > 0 else "-"
         summary = f"{sign}${abs(amt_dollars):,.0f} {acct}: {who}"
-        
+
         items.append({
             "ts": ts,
             "type": "LEDGER_ENTRY",
@@ -1143,12 +1144,12 @@ def director_timeline(request):
             "amount_cents": amt,
             "summary": summary,
         })
-    
+
     # Sort by timestamp (reverse chrono), trim
     items = [i for i in items if i.get("ts") is not None]
     items.sort(key=lambda x: x["ts"], reverse=True)
     items = items[:limit]
-    
+
     return Response({
         "meta": {
             "school_id": school_id,
@@ -1212,14 +1213,14 @@ def force_seed_user(request):
     try:
         from django.core.management import call_command
         from django.core.management.base import CommandError
-        
+
         # Run migrations
         call_command('migrate', verbosity=1)
-        
+
         # Run dev_bootstrap to create admin user
         admin_password = os.environ.get("DEV_ADMIN_PASSWORD", "Crown2026!")
         call_command('dev_bootstrap', admin_password=admin_password, verbosity=1)
-        
+
         logger.warning(
             "DEV_SEED invoked: actor=%s auth=%s",
             getattr(user, "username", None) if jwt_ok else None,

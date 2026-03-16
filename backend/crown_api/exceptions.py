@@ -15,13 +15,13 @@ def api_exception_handler(get_response):
     def middleware(request):
         try:
             return get_response(request)
-        except Exception as e:
+        except Exception:
             # Log the full exception for debugging
-            logger.exception(f"Unhandled exception in {request.path}")
-            
+            logger.exception("Unhandled exception in %s", request.path)
+
             return JsonResponse({
                 "ok": False,
                 "error": "Internal Server Error",
-                "detail": str(e) if not request.META.get("SERVER_NAME", "").startswith("prod") else "An error occurred"
+                "detail": "An error occurred",
             }, status=500)
     return middleware

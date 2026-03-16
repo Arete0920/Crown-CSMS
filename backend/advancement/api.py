@@ -1516,7 +1516,8 @@ def apple_wallet_pass(request, ticket_id):
         import requests as _req
         r = _req.post(svc_url, json=payload, timeout=15)
         if r.status_code != 200:
-            return _JR({"ok": False, "message": f"Pass service error: {r.text[:300]}"}, status=502)
+            logger.warning("Apple Wallet pass service returned non-200", extra={"status_code": r.status_code})
+            return _JR({"ok": False, "message": "Pass service error."}, status=502)
         resp = _HR(r.content, content_type="application/vnd-apple.pkpass")
         resp["Content-Disposition"] = f'attachment; filename="ticket-{t.id}.pkpass"'
         return resp
