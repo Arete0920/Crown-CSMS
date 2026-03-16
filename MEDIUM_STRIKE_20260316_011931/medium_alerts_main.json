@@ -1,0 +1,47 @@
+﻿[
+    {
+        "number":  45,
+        "rule":  "py/stack-trace-exposure",
+        "severity":  "medium",
+        "path":  "backend/payments/exceptions_api.py",
+        "line":  44,
+        "commit":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/45"
+    },
+    {
+        "number":  30,
+        "rule":  "py/stack-trace-exposure",
+        "severity":  "medium",
+        "path":  "backend/crown_api/health_views.py",
+        "line":  111,
+        "commit":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/30"
+    },
+    {
+        "number":  25,
+        "rule":  "py/stack-trace-exposure",
+        "severity":  "medium",
+        "path":  "backend/core/auth/authentication.py",
+        "line":  52,
+        "commit":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/25"
+    },
+    {
+        "number":  22,
+        "rule":  "py/stack-trace-exposure",
+        "severity":  "medium",
+        "path":  "backend/advancement/api.py",
+        "line":  1342,
+        "commit":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/22"
+    },
+    {
+        "number":  21,
+        "rule":  "py/stack-trace-exposure",
+        "severity":  "medium",
+        "path":  "backend/advancement/api.py",
+        "line":  1292,
+        "commit":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/21"
+    }
+]

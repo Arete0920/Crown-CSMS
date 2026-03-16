@@ -1,0 +1,17 @@
+﻿    1284:     provider = get_checkout_provider()
+    1285:     try:
+    1286:         event = provider.verify_webhook(
+    1287:             payload=payload,
+    1288:             signature=signature,
+    1289:             webhook_secret=webhook_secret,
+    1290:         )
+    1291:     except Exception as exc:
+>>  1292:         return HttpResponse(f"Webhook verification failed: {exc}", status=400)
+    1293: 
+    1294:     provider_name = getattr(provider, "name", "unknown")
+    1295:     event_type = event.get("type", "")
+    1296:     event_id = event.get("id", "")
+    1297: 
+    1298:     # Idempotency guard
+    1299:     if already_processed_event(provider=provider_name, event_id=event_id):
+    1300:         return HttpResponse("already processed", status=200)

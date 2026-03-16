@@ -1288,8 +1288,9 @@ def stripe_webhook(request):
             signature=signature,
             webhook_secret=webhook_secret,
         )
-    except Exception as exc:
-        return HttpResponse(f"Webhook verification failed: {exc}", status=400)
+    except Exception:
+        logger.exception("stripe_webhook verification failed")
+        return HttpResponse("Webhook verification failed.", status=400)
 
     provider_name = getattr(provider, "name", "unknown")
     event_type = event.get("type", "")
@@ -1338,8 +1339,9 @@ def stripe_webhook(request):
                 except Exception:
                     logger.exception("stripe_webhook: receipt creation failed after order fulfillment")
 
-            except Exception as exc:
-                return HttpResponse(f"Fulfillment error: {exc}", status=500)
+            except Exception:
+                logger.exception("stripe_webhook fulfillment failed")
+                return HttpResponse("Internal server error.", status=500)
         else:
             mark_event_processed(provider=provider_name, event_id=event_id, school_id=None)
     else:
