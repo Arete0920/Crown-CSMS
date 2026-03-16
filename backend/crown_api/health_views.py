@@ -1,11 +1,14 @@
 from django.http import JsonResponse
 from django.conf import settings
 from django.db import connection
+import logging
 import os
 import socket
 from datetime import datetime, timezone
 
 # --- CROWN_ENV_BOOL_HELPER ---
+
+logger = logging.getLogger(__name__)
 
 def _crown_env_true(name: str, default: bool = False) -> bool:
     v = os.getenv(name)
@@ -93,8 +96,9 @@ def system_health(request):
             cursor.execute("SELECT 1;")
             cursor.fetchone()
         db_ok = True
-    except Exception as e:
-        db_error = f"{type(e).__name__}: {e}"
+    except Exception:
+        db_error = "database unavailable"
+        logger.exception("system_health: database connectivity check failed")
 
     payload = {
         "ok": db_ok,

@@ -1,0 +1,292 @@
+﻿[
+    {
+        "number":  45,
+        "created_at":  "2026-03-15T01:13:33Z",
+        "updated_at":  "2026-03-15T21:01:03Z",
+        "url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/45",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/45",
+        "state":  "open",
+        "fixed_at":  null,
+        "dismissed_by":  null,
+        "dismissed_at":  null,
+        "dismissed_reason":  null,
+        "dismissed_comment":  null,
+        "rule":  {
+                     "id":  "py/stack-trace-exposure",
+                     "severity":  "error",
+                     "description":  "Information exposure through an exception",
+                     "name":  "py/stack-trace-exposure",
+                     "tags":  [
+                                  "external/cwe/cwe-209",
+                                  "external/cwe/cwe-497",
+                                  "security"
+                              ],
+                     "full_description":  "Leaking information about an exception, such as messages and stack traces, to an external user can expose implementation details that are useful to an attacker for developing a subsequent exploit.",
+                     "help":  "# Information exposure through an exception\nSoftware developers often add stack traces to error messages, as a debugging aid. Whenever that error message occurs for an end user, the developer can use the stack trace to help identify how to fix the problem. In particular, stack traces can tell the developer more about the sequence of events that led to a failure, as opposed to merely the final state of the software when the error occurred.\n\nUnfortunately, the same information can be useful to an attacker. The sequence of class names in a stack trace can reveal the structure of the application as well as any internal components it relies on. Furthermore, the error message at the top of a stack trace can include information such as server-side file names and SQL code that the application relies on, allowing an attacker to fine-tune a subsequent injection attack.\n\n\n## Recommendation\nSend the user a more generic error message that reveals less information. Either suppress the stack trace entirely, or log it only on the server.\n\n\n## Example\nIn the following example, an exception is handled in two different ways. In the first version, labeled BAD, the exception is sent back to the remote user by returning it from the function. As such, the user is able to see a detailed stack trace, which may contain sensitive information. In the second version, the error message is logged only on the server, and a generic error message is displayed to the user. That way, the developers can still access and use the error log, but remote users will not see the information.\n\n\n```python\nfrom flask import Flask\napp = Flask(__name__)\n\n\nimport traceback\n\ndef do_computation():\n    raise Exception(\"Secret info\")\n\n# BAD\n@app.route(\u0027/bad\u0027)\ndef server_bad():\n    try:\n        do_computation()\n    except Exception as e:\n        return traceback.format_exc()\n\n# GOOD\n@app.route(\u0027/good\u0027)\ndef server_good():\n    try:\n        do_computation()\n    except Exception as e:\n        log(traceback.format_exc())\n        return \"An internal error has occurred!\"\n\n```\n\n## References\n* OWASP: [Improper Error Handling](https://owasp.org/www-community/Improper_Error_Handling).\n* Common Weakness Enumeration: [CWE-209](https://cwe.mitre.org/data/definitions/209.html).\n* Common Weakness Enumeration: [CWE-497](https://cwe.mitre.org/data/definitions/497.html).\n",
+                     "security_severity_level":  "medium"
+                 },
+        "tool":  {
+                     "name":  "CodeQL",
+                     "guid":  null,
+                     "version":  "2.24.3"
+                 },
+        "most_recent_instance":  {
+                                     "ref":  "refs/heads/main",
+                                     "analysis_key":  ".github/workflows/codeql.yml:analyze",
+                                     "environment":  "{\"language\":\"python\"}",
+                                     "category":  ".github/workflows/codeql.yml:analyze/language:python",
+                                     "state":  "open",
+                                     "commit_sha":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+                                     "message":  {
+                                                     "text":  "Stack trace information flows to this location and may be exposed to an external user."
+                                                 },
+                                     "location":  {
+                                                      "path":  "backend/payments/exceptions_api.py",
+                                                      "start_line":  44,
+                                                      "end_line":  44,
+                                                      "start_column":  21,
+                                                      "end_column":  38
+                                                  },
+                                     "classifications":  [
+
+                                                         ]
+                                 },
+        "instances_url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/45/instances",
+        "dismissal_approved_by":  null,
+        "assignees":  [
+
+                      ]
+    },
+    {
+        "number":  30,
+        "created_at":  "2026-03-11T23:04:16Z",
+        "updated_at":  "2026-03-12T23:13:17Z",
+        "url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/30",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/30",
+        "state":  "open",
+        "fixed_at":  null,
+        "dismissed_by":  null,
+        "dismissed_at":  null,
+        "dismissed_reason":  null,
+        "dismissed_comment":  null,
+        "rule":  {
+                     "id":  "py/stack-trace-exposure",
+                     "severity":  "error",
+                     "description":  "Information exposure through an exception",
+                     "name":  "py/stack-trace-exposure",
+                     "tags":  [
+                                  "external/cwe/cwe-209",
+                                  "external/cwe/cwe-497",
+                                  "security"
+                              ],
+                     "full_description":  "Leaking information about an exception, such as messages and stack traces, to an external user can expose implementation details that are useful to an attacker for developing a subsequent exploit.",
+                     "help":  "# Information exposure through an exception\nSoftware developers often add stack traces to error messages, as a debugging aid. Whenever that error message occurs for an end user, the developer can use the stack trace to help identify how to fix the problem. In particular, stack traces can tell the developer more about the sequence of events that led to a failure, as opposed to merely the final state of the software when the error occurred.\n\nUnfortunately, the same information can be useful to an attacker. The sequence of class names in a stack trace can reveal the structure of the application as well as any internal components it relies on. Furthermore, the error message at the top of a stack trace can include information such as server-side file names and SQL code that the application relies on, allowing an attacker to fine-tune a subsequent injection attack.\n\n\n## Recommendation\nSend the user a more generic error message that reveals less information. Either suppress the stack trace entirely, or log it only on the server.\n\n\n## Example\nIn the following example, an exception is handled in two different ways. In the first version, labeled BAD, the exception is sent back to the remote user by returning it from the function. As such, the user is able to see a detailed stack trace, which may contain sensitive information. In the second version, the error message is logged only on the server, and a generic error message is displayed to the user. That way, the developers can still access and use the error log, but remote users will not see the information.\n\n\n```python\nfrom flask import Flask\napp = Flask(__name__)\n\n\nimport traceback\n\ndef do_computation():\n    raise Exception(\"Secret info\")\n\n# BAD\n@app.route(\u0027/bad\u0027)\ndef server_bad():\n    try:\n        do_computation()\n    except Exception as e:\n        return traceback.format_exc()\n\n# GOOD\n@app.route(\u0027/good\u0027)\ndef server_good():\n    try:\n        do_computation()\n    except Exception as e:\n        log(traceback.format_exc())\n        return \"An internal error has occurred!\"\n\n```\n\n## References\n* OWASP: [Improper Error Handling](https://owasp.org/www-community/Improper_Error_Handling).\n* Common Weakness Enumeration: [CWE-209](https://cwe.mitre.org/data/definitions/209.html).\n* Common Weakness Enumeration: [CWE-497](https://cwe.mitre.org/data/definitions/497.html).\n",
+                     "security_severity_level":  "medium"
+                 },
+        "tool":  {
+                     "name":  "CodeQL",
+                     "guid":  null,
+                     "version":  "2.24.3"
+                 },
+        "most_recent_instance":  {
+                                     "ref":  "refs/heads/main",
+                                     "analysis_key":  ".github/workflows/codeql.yml:analyze",
+                                     "environment":  "{\"language\":\"python\"}",
+                                     "category":  ".github/workflows/codeql.yml:analyze/language:python",
+                                     "state":  "open",
+                                     "commit_sha":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+                                     "message":  {
+                                                     "text":  "Stack trace information flows to this location and may be exposed to an external user."
+                                                 },
+                                     "location":  {
+                                                      "path":  "backend/crown_api/health_views.py",
+                                                      "start_line":  111,
+                                                      "end_line":  111,
+                                                      "start_column":  25,
+                                                      "end_column":  32
+                                                  },
+                                     "classifications":  [
+
+                                                         ]
+                                 },
+        "instances_url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/30/instances",
+        "dismissal_approved_by":  null,
+        "assignees":  [
+
+                      ]
+    },
+    {
+        "number":  25,
+        "created_at":  "2026-03-11T23:04:16Z",
+        "updated_at":  "2026-03-12T23:13:17Z",
+        "url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/25",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/25",
+        "state":  "open",
+        "fixed_at":  null,
+        "dismissed_by":  null,
+        "dismissed_at":  null,
+        "dismissed_reason":  null,
+        "dismissed_comment":  null,
+        "rule":  {
+                     "id":  "py/stack-trace-exposure",
+                     "severity":  "error",
+                     "description":  "Information exposure through an exception",
+                     "name":  "py/stack-trace-exposure",
+                     "tags":  [
+                                  "external/cwe/cwe-209",
+                                  "external/cwe/cwe-497",
+                                  "security"
+                              ],
+                     "full_description":  "Leaking information about an exception, such as messages and stack traces, to an external user can expose implementation details that are useful to an attacker for developing a subsequent exploit.",
+                     "help":  "# Information exposure through an exception\nSoftware developers often add stack traces to error messages, as a debugging aid. Whenever that error message occurs for an end user, the developer can use the stack trace to help identify how to fix the problem. In particular, stack traces can tell the developer more about the sequence of events that led to a failure, as opposed to merely the final state of the software when the error occurred.\n\nUnfortunately, the same information can be useful to an attacker. The sequence of class names in a stack trace can reveal the structure of the application as well as any internal components it relies on. Furthermore, the error message at the top of a stack trace can include information such as server-side file names and SQL code that the application relies on, allowing an attacker to fine-tune a subsequent injection attack.\n\n\n## Recommendation\nSend the user a more generic error message that reveals less information. Either suppress the stack trace entirely, or log it only on the server.\n\n\n## Example\nIn the following example, an exception is handled in two different ways. In the first version, labeled BAD, the exception is sent back to the remote user by returning it from the function. As such, the user is able to see a detailed stack trace, which may contain sensitive information. In the second version, the error message is logged only on the server, and a generic error message is displayed to the user. That way, the developers can still access and use the error log, but remote users will not see the information.\n\n\n```python\nfrom flask import Flask\napp = Flask(__name__)\n\n\nimport traceback\n\ndef do_computation():\n    raise Exception(\"Secret info\")\n\n# BAD\n@app.route(\u0027/bad\u0027)\ndef server_bad():\n    try:\n        do_computation()\n    except Exception as e:\n        return traceback.format_exc()\n\n# GOOD\n@app.route(\u0027/good\u0027)\ndef server_good():\n    try:\n        do_computation()\n    except Exception as e:\n        log(traceback.format_exc())\n        return \"An internal error has occurred!\"\n\n```\n\n## References\n* OWASP: [Improper Error Handling](https://owasp.org/www-community/Improper_Error_Handling).\n* Common Weakness Enumeration: [CWE-209](https://cwe.mitre.org/data/definitions/209.html).\n* Common Weakness Enumeration: [CWE-497](https://cwe.mitre.org/data/definitions/497.html).\n",
+                     "security_severity_level":  "medium"
+                 },
+        "tool":  {
+                     "name":  "CodeQL",
+                     "guid":  null,
+                     "version":  "2.24.3"
+                 },
+        "most_recent_instance":  {
+                                     "ref":  "refs/heads/main",
+                                     "analysis_key":  ".github/workflows/codeql.yml:analyze",
+                                     "environment":  "{\"language\":\"python\"}",
+                                     "category":  ".github/workflows/codeql.yml:analyze/language:python",
+                                     "state":  "open",
+                                     "commit_sha":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+                                     "message":  {
+                                                     "text":  "Stack trace information flows to this location and may be exposed to an external user."
+                                                 },
+                                     "location":  {
+                                                      "path":  "backend/core/auth/authentication.py",
+                                                      "start_line":  52,
+                                                      "end_line":  52,
+                                                      "start_column":  44,
+                                                      "end_column":  77
+                                                  },
+                                     "classifications":  [
+
+                                                         ]
+                                 },
+        "instances_url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/25/instances",
+        "dismissal_approved_by":  null,
+        "assignees":  [
+
+                      ]
+    },
+    {
+        "number":  22,
+        "created_at":  "2026-03-11T23:04:16Z",
+        "updated_at":  "2026-03-12T23:13:17Z",
+        "url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/22",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/22",
+        "state":  "open",
+        "fixed_at":  null,
+        "dismissed_by":  null,
+        "dismissed_at":  null,
+        "dismissed_reason":  null,
+        "dismissed_comment":  null,
+        "rule":  {
+                     "id":  "py/stack-trace-exposure",
+                     "severity":  "error",
+                     "description":  "Information exposure through an exception",
+                     "name":  "py/stack-trace-exposure",
+                     "tags":  [
+                                  "external/cwe/cwe-209",
+                                  "external/cwe/cwe-497",
+                                  "security"
+                              ],
+                     "full_description":  "Leaking information about an exception, such as messages and stack traces, to an external user can expose implementation details that are useful to an attacker for developing a subsequent exploit.",
+                     "help":  "# Information exposure through an exception\nSoftware developers often add stack traces to error messages, as a debugging aid. Whenever that error message occurs for an end user, the developer can use the stack trace to help identify how to fix the problem. In particular, stack traces can tell the developer more about the sequence of events that led to a failure, as opposed to merely the final state of the software when the error occurred.\n\nUnfortunately, the same information can be useful to an attacker. The sequence of class names in a stack trace can reveal the structure of the application as well as any internal components it relies on. Furthermore, the error message at the top of a stack trace can include information such as server-side file names and SQL code that the application relies on, allowing an attacker to fine-tune a subsequent injection attack.\n\n\n## Recommendation\nSend the user a more generic error message that reveals less information. Either suppress the stack trace entirely, or log it only on the server.\n\n\n## Example\nIn the following example, an exception is handled in two different ways. In the first version, labeled BAD, the exception is sent back to the remote user by returning it from the function. As such, the user is able to see a detailed stack trace, which may contain sensitive information. In the second version, the error message is logged only on the server, and a generic error message is displayed to the user. That way, the developers can still access and use the error log, but remote users will not see the information.\n\n\n```python\nfrom flask import Flask\napp = Flask(__name__)\n\n\nimport traceback\n\ndef do_computation():\n    raise Exception(\"Secret info\")\n\n# BAD\n@app.route(\u0027/bad\u0027)\ndef server_bad():\n    try:\n        do_computation()\n    except Exception as e:\n        return traceback.format_exc()\n\n# GOOD\n@app.route(\u0027/good\u0027)\ndef server_good():\n    try:\n        do_computation()\n    except Exception as e:\n        log(traceback.format_exc())\n        return \"An internal error has occurred!\"\n\n```\n\n## References\n* OWASP: [Improper Error Handling](https://owasp.org/www-community/Improper_Error_Handling).\n* Common Weakness Enumeration: [CWE-209](https://cwe.mitre.org/data/definitions/209.html).\n* Common Weakness Enumeration: [CWE-497](https://cwe.mitre.org/data/definitions/497.html).\n",
+                     "security_severity_level":  "medium"
+                 },
+        "tool":  {
+                     "name":  "CodeQL",
+                     "guid":  null,
+                     "version":  "2.24.3"
+                 },
+        "most_recent_instance":  {
+                                     "ref":  "refs/heads/main",
+                                     "analysis_key":  ".github/workflows/codeql.yml:analyze",
+                                     "environment":  "{\"language\":\"python\"}",
+                                     "category":  ".github/workflows/codeql.yml:analyze/language:python",
+                                     "state":  "open",
+                                     "commit_sha":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+                                     "message":  {
+                                                     "text":  "Stack trace information flows to this location and may be exposed to an external user."
+                                                 },
+                                     "location":  {
+                                                      "path":  "backend/advancement/api.py",
+                                                      "start_line":  1342,
+                                                      "end_line":  1342,
+                                                      "start_column":  37,
+                                                      "end_column":  64
+                                                  },
+                                     "classifications":  [
+
+                                                         ]
+                                 },
+        "instances_url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/22/instances",
+        "dismissal_approved_by":  null,
+        "assignees":  [
+
+                      ]
+    },
+    {
+        "number":  21,
+        "created_at":  "2026-03-11T23:04:16Z",
+        "updated_at":  "2026-03-12T23:13:17Z",
+        "url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/21",
+        "html_url":  "https://github.com/tcmegahan/Crown2026/security/code-scanning/21",
+        "state":  "open",
+        "fixed_at":  null,
+        "dismissed_by":  null,
+        "dismissed_at":  null,
+        "dismissed_reason":  null,
+        "dismissed_comment":  null,
+        "rule":  {
+                     "id":  "py/stack-trace-exposure",
+                     "severity":  "error",
+                     "description":  "Information exposure through an exception",
+                     "name":  "py/stack-trace-exposure",
+                     "tags":  [
+                                  "external/cwe/cwe-209",
+                                  "external/cwe/cwe-497",
+                                  "security"
+                              ],
+                     "full_description":  "Leaking information about an exception, such as messages and stack traces, to an external user can expose implementation details that are useful to an attacker for developing a subsequent exploit.",
+                     "help":  "# Information exposure through an exception\nSoftware developers often add stack traces to error messages, as a debugging aid. Whenever that error message occurs for an end user, the developer can use the stack trace to help identify how to fix the problem. In particular, stack traces can tell the developer more about the sequence of events that led to a failure, as opposed to merely the final state of the software when the error occurred.\n\nUnfortunately, the same information can be useful to an attacker. The sequence of class names in a stack trace can reveal the structure of the application as well as any internal components it relies on. Furthermore, the error message at the top of a stack trace can include information such as server-side file names and SQL code that the application relies on, allowing an attacker to fine-tune a subsequent injection attack.\n\n\n## Recommendation\nSend the user a more generic error message that reveals less information. Either suppress the stack trace entirely, or log it only on the server.\n\n\n## Example\nIn the following example, an exception is handled in two different ways. In the first version, labeled BAD, the exception is sent back to the remote user by returning it from the function. As such, the user is able to see a detailed stack trace, which may contain sensitive information. In the second version, the error message is logged only on the server, and a generic error message is displayed to the user. That way, the developers can still access and use the error log, but remote users will not see the information.\n\n\n```python\nfrom flask import Flask\napp = Flask(__name__)\n\n\nimport traceback\n\ndef do_computation():\n    raise Exception(\"Secret info\")\n\n# BAD\n@app.route(\u0027/bad\u0027)\ndef server_bad():\n    try:\n        do_computation()\n    except Exception as e:\n        return traceback.format_exc()\n\n# GOOD\n@app.route(\u0027/good\u0027)\ndef server_good():\n    try:\n        do_computation()\n    except Exception as e:\n        log(traceback.format_exc())\n        return \"An internal error has occurred!\"\n\n```\n\n## References\n* OWASP: [Improper Error Handling](https://owasp.org/www-community/Improper_Error_Handling).\n* Common Weakness Enumeration: [CWE-209](https://cwe.mitre.org/data/definitions/209.html).\n* Common Weakness Enumeration: [CWE-497](https://cwe.mitre.org/data/definitions/497.html).\n",
+                     "security_severity_level":  "medium"
+                 },
+        "tool":  {
+                     "name":  "CodeQL",
+                     "guid":  null,
+                     "version":  "2.24.3"
+                 },
+        "most_recent_instance":  {
+                                     "ref":  "refs/heads/main",
+                                     "analysis_key":  ".github/workflows/codeql.yml:analyze",
+                                     "environment":  "{\"language\":\"python\"}",
+                                     "category":  ".github/workflows/codeql.yml:analyze/language:python",
+                                     "state":  "open",
+                                     "commit_sha":  "06ac7fcda98f01748f9e4841cacf0143b03e4a42",
+                                     "message":  {
+                                                     "text":  "Stack trace information flows to this location and may be exposed to an external user."
+                                                 },
+                                     "location":  {
+                                                      "path":  "backend/advancement/api.py",
+                                                      "start_line":  1292,
+                                                      "end_line":  1292,
+                                                      "start_column":  29,
+                                                      "end_column":  66
+                                                  },
+                                     "classifications":  [
+
+                                                         ]
+                                 },
+        "instances_url":  "https://api.github.com/repos/tcmegahan/Crown2026/code-scanning/alerts/21/instances",
+        "dismissal_approved_by":  null,
+        "assignees":  [
+
+                      ]
+    }
+]

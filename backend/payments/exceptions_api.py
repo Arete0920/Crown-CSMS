@@ -33,7 +33,7 @@ def payment_exceptions_list(request):
             "category": row.category,
             "severity": row.severity,
             "status": row.status,
-            "message": row.message,
+            "message": "Internal processing error. See server logs with exception ID." if row.message else "",
             "retry_count": row.retry_count,
             "gateway_event_id": row.gateway_event_id,
             "household_id": row.household_id,

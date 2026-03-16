@@ -1,0 +1,10 @@
+﻿     103:         "build_sha": build_sha,
+     104:         "host": hostname,
+     105:         "database": {
+     106:             "connected": db_ok,
+     107:             "error": db_error,
+     108:         },
+     109:     }
+     110: 
+>>   111:     return JsonResponse(payload, status=200 if db_ok else 503)
+     112: 

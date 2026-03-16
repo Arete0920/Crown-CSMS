@@ -48,7 +48,8 @@ class AADBearerAuthentication(BaseAuthentication):
         except Exception as exc:
             logger.debug("AADBearerAuthentication: token rejected — %s", exc)
             # Raise only for tokens that appear to be Microsoft-issued
-            if "matching JWKS" in str(exc) or "InvalidTokenError" in type(exc).__name__:
-                raise AuthenticationFailed(f"Microsoft token invalid: {exc}")
+            exc_text = f"{exc}"
+            if "matching JWKS" in exc_text or "InvalidTokenError" in type(exc).__name__:
+                raise AuthenticationFailed("Microsoft token invalid.")
             # Let other backends handle it
             return None

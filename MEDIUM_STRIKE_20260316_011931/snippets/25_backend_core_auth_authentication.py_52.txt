@@ -1,0 +1,11 @@
+﻿      44:         try:
+      45:             claims = decode_and_validate_bearer(token)
+      46:             user   = get_or_create_user_from_claims(claims)
+      47:             return (user, claims)
+      48:         except Exception as exc:
+      49:             logger.debug("AADBearerAuthentication: token rejected â€” %s", exc)
+      50:             # Raise only for tokens that appear to be Microsoft-issued
+      51:             if "matching JWKS" in str(exc) or "InvalidTokenError" in type(exc).__name__:
+>>    52:                 raise AuthenticationFailed(f"Microsoft token invalid: {exc}")
+      53:             # Let other backends handle it
+      54:             return None
