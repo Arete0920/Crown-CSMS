@@ -121,9 +121,8 @@ test.describe("Role Dashboard Matrix — Pack 2", () => {
         await seedDemoSession(page, c.role);
         await page.goto(BASE + "/", { waitUntil: "networkidle" });
         await page.waitForTimeout(250);
-        await expect(page).toHaveURL(
-          new RegExp(`${c.expectPath.replace(/\//g, "\\/")}$`)
-        );
+        const currentPath = new URL(page.url()).pathname;
+        expect(currentPath).toBe(c.expectPath);
       });
     }
   });

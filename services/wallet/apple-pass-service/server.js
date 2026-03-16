@@ -17,14 +17,21 @@
 
 import express from "express";
 import fs from "fs";
+import rateLimit from "express-rate-limit";
 import { PKPass } from "passkit-generator";
 
 const app = express();
 app.use(express.json({ limit: "1mb" }));
+app.set("trust proxy", 1);
 
-const RATE_WINDOW_MS = Number(process.env.PKPASS_RATE_WINDOW_MS || 60_000);
-const RATE_MAX_REQUESTS = Number(process.env.PKPASS_RATE_MAX_REQUESTS || 30);
-const rateBuckets = new Map();
+const configuredWindowMs = Number(process.env.PKPASS_RATE_WINDOW_MS);
+const configuredMax = Number(process.env.PKPASS_RATE_MAX_REQUESTS);
+const RATE_WINDOW_MS = Number.isFinite(configuredWindowMs) && configuredWindowMs > 0
+  ? configuredWindowMs
+  : 60_000;
+const RATE_MAX_REQUESTS = Number.isFinite(configuredMax) && configuredMax > 0
+  ? configuredMax
+  : 30;
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -35,40 +42,15 @@ function requireEnv(name) {
 // Health check
 app.get("/health", (_req, res) => res.json({ ok: true, service: "crown-apple-pass" }));
 
-function clientKey(req) {
-  const fwd = req.headers["x-forwarded-for"];
-  if (Array.isArray(fwd) && fwd.length > 0) {
-    return String(fwd[0]).split(",")[0].trim();
-  }
-  if (typeof fwd === "string" && fwd.length > 0) {
-    return fwd.split(",")[0].trim();
-  }
-  return req.ip || req.socket?.remoteAddress || "unknown";
-}
+const pkpassRateLimiter = rateLimit({
+  windowMs: RATE_WINDOW_MS,
+  limit: RATE_MAX_REQUESTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, message: "Too many requests" },
+});
 
-function allowRequest(req) {
-  const now = Date.now();
-  const key = clientKey(req);
-  const bucket = rateBuckets.get(key);
-
-  if (!bucket || now - bucket.windowStart >= RATE_WINDOW_MS) {
-    rateBuckets.set(key, { windowStart: now, count: 1 });
-    return true;
-  }
-
-  if (bucket.count >= RATE_MAX_REQUESTS) {
-    return false;
-  }
-
-  bucket.count += 1;
-  return true;
-}
-
-app.post("/pkpass", async (req, res) => {
-  if (!allowRequest(req)) {
-    return res.status(429).json({ ok: false, message: "Too many requests" });
-  }
-
+app.post("/pkpass", pkpassRateLimiter, async (req, res) => {
   try {
     const {
       serialNumber,
