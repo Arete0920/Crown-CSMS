@@ -30,6 +30,17 @@ export function getCurrentUserRoles() {
     return [];
   }
 
+  // Support lightweight demo/e2e role seeding keys.
+  const seededRoles = [
+    sessionStorage.getItem('crown.role'),
+    localStorage.getItem('crown.role'),
+    localStorage.getItem('crown.demo.role'),
+  ].filter(Boolean);
+  const seededNormalized = getUserRoles(seededRoles);
+  if (seededNormalized.length > 0) {
+    return seededNormalized;
+  }
+
   const windowRoles = getUserRoles(window.__CROWN_USER_ROLES__);
   if (windowRoles.length > 0) {
     return windowRoles;

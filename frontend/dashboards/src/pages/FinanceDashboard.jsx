@@ -1,20 +1,6 @@
-import { useState, useEffect } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  Divider,
-  Grid,
-  List,
-  ListItem,
-  ListItemText,
-  Stack,
-  Typography,
-} from "@mui/material";
+import React from "react";
 import useFinanceDashboardData from "../hooks/useFinanceDashboardData";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 function metricValue(source, key, fallback = "—") {
   const value = source?.[key];
@@ -27,44 +13,34 @@ function InvoiceList({ invoices }) {
   const openOnly = invoices.filter((row) => Number(row.balance_due || 0) > 0);
 
   if (!openOnly.length) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        No open invoices found.
-      </Typography>
-    );
+    return <p className="text-sm text-slate-600">No open invoices found.</p>;
   }
 
   return (
-    <List dense>
+    <ul className="space-y-2 text-sm text-slate-700">
       {openOnly.slice(0, 10).map((row) => (
-        <ListItem key={row.id} disableGutters>
-          <ListItemText
-            primary={row.invoice_number || `Invoice ${row.id}`}
-            secondary={`${row.household_name || "Household"} • Due ${row.balance_due}`}
-          />
-        </ListItem>
+        <li key={row.id} className="rounded border border-slate-200 px-3 py-2">
+          <div className="font-medium text-slate-900">
+            {row.invoice_number || `Invoice ${row.id}`}
+          </div>
+          <div className="text-slate-600">
+            {`${row.household_name || "Household"} • Due ${row.balance_due}`}
+          </div>
+        </li>
       ))}
-    </List>
+    </ul>
   );
 }
 
 function KpiCard({ title, value, subtitle }) {
   return (
-    <Card sx={{ height: "100%" }}>
-      <CardContent>
-        <Stack spacing={1}>
-          <Typography variant="overline" color="text.secondary">
-            {title}
-          </Typography>
-          <Typography variant="h4">{value}</Typography>
-          {subtitle ? (
-            <Typography variant="body2" color="text.secondary">
-              {subtitle}
-            </Typography>
-          ) : null}
-        </Stack>
-      </CardContent>
-    </Card>
+    <article className="h-full rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </p>
+      <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
+      {subtitle ? <p className="mt-2 text-sm text-slate-600">{subtitle}</p> : null}
+    </article>
   );
 }
 
@@ -73,114 +49,97 @@ export default function FinanceDashboard() {
     useFinanceDashboardData();
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Stack spacing={3}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={2}
-          justifyContent="space-between"
-          alignItems={{ xs: "stretch", md: "center" }}
-        >
-          <Box>
-            <Typography variant="h4">Finance Dashboard</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Live finance metrics and invoice visibility.
-            </Typography>
-          </Box>
+    <CrownLayout
+      title="Finance"
+      subtitle="Live finance metrics and invoice visibility"
+    >
+      <section className="space-y-6">
+        <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Finance Dashboard</h1>
+            <p className="text-sm text-slate-600">Live finance metrics and invoice visibility.</p>
+          </div>
 
-          <Button variant="outlined" onClick={reload}>
+          <button
+            type="button"
+            onClick={reload}
+            className="inline-flex items-center rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
             Refresh
-          </Button>
-        </Stack>
+          </button>
+        </header>
 
-        {error ? <Alert severity="error">{error}</Alert> : null}
+        {error ? (
+          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
 
         {loading ? (
-          <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
-            <CircularProgress />
-          </Box>
+          <div className="py-8 text-center text-sm text-slate-600">Loading finance data...</div>
         ) : (
           <>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div>
                 <KpiCard
                   title="AR Outstanding"
                   value={metricValue(metrics, "ar_outstanding")}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </div>
+              <div>
                 <KpiCard
                   title="Open Invoices"
                   value={metricValue(metrics, "open_invoices")}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </div>
+              <div>
                 <KpiCard
                   title="Collected This Month"
                   value={metricValue(metrics, "collected_month")}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              </div>
+              <div>
                 <KpiCard
                   title="Payment Failures"
                   value={metricValue(metrics, "payment_failures")}
                 />
-              </Grid>
-            </Grid>
+              </div>
+            </div>
 
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Card sx={{ height: "100%" }}>
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Typography variant="h6">Finance Summary</Typography>
-                      <Divider />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">Finance Summary</h2>
+                <hr className="my-3 border-slate-200" />
                       {!summary ? (
-                        <Typography variant="body2" color="text.secondary">
-                          No summary data available.
-                        </Typography>
+                        <p className="text-sm text-slate-600">No summary data available.</p>
                       ) : (
-                        <Stack spacing={1}>
+                        <div className="space-y-2">
                           {Object.entries(summary).map(([key, value]) => (
-                            <Stack
+                            <div
                               key={key}
-                              direction="row"
-                              justifyContent="space-between"
-                              spacing={2}
+                              className="flex items-center justify-between gap-2 text-sm"
                             >
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
+                              <span className="text-slate-600">
                                 {key}
-                              </Typography>
-                              <Typography variant="body2">
+                              </span>
+                              <span className="font-medium text-slate-900">
                                 {String(value)}
-                              </Typography>
-                            </Stack>
+                              </span>
+                            </div>
                           ))}
-                        </Stack>
+                        </div>
                       )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
+              </section>
 
-              <Grid item xs={12} md={6}>
-                <Card sx={{ height: "100%" }}>
-                  <CardContent>
-                    <Stack spacing={2}>
-                      <Typography variant="h6">Open Invoices</Typography>
-                      <Divider />
+              <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+                <h2 className="text-lg font-semibold text-slate-900">Open Invoices</h2>
+                <hr className="my-3 border-slate-200" />
                       <InvoiceList invoices={invoices} />
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
+              </section>
+            </div>
           </>
         )}
-      </Stack>
-    </Box>
+      </section>
+    </CrownLayout>
   );
 }
