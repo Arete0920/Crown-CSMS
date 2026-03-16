@@ -88,7 +88,24 @@ import CompuwerxDisputeWorkbench from "../pages/CompuwerxDisputeWorkbench.jsx";
 import PaymentExceptionsQueue from "../pages/PaymentExceptionsQueue.jsx";
 import CompuwerxBankReconciliation from "../pages/CompuwerxBankReconciliation.jsx";
 
-const FINANCE_ALLOWED_ROLES = ["super_admin", "school_admin", "finance_admin"];
+const FINANCE_ALLOWED_ROLES = [
+  "super_admin",
+  "school_admin",
+  "head_of_school",
+  "finance_admin",
+  "finance",
+  "biz_office",
+  "finance_director",
+  "admin",
+  "director",
+  "principal",
+];
+
+const FINANCIAL_AID_ALLOWED_ROLES = [
+  ...FINANCE_ALLOWED_ROLES,
+  "aid_director",
+  "financial_aid",
+];
 
 export const router = createBrowserRouter([
   {
@@ -140,9 +157,9 @@ export const router = createBrowserRouter([
   {
     path: PATHS.FINANCIAL_AID,
     element: (
-      <RequirePermission permission={APP_PERMISSIONS.FINANCIAL_AID_VIEW}>
-        <Navigate to={PATHS.FINANCIAL_AID_DASHBOARD} replace />
-      </RequirePermission>
+      <RoleRouteGuard allowedRoles={FINANCIAL_AID_ALLOWED_ROLES}>
+        <FinancialAidDashboard />
+      </RoleRouteGuard>
     ),
   },
   {

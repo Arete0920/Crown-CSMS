@@ -74,10 +74,77 @@ const FALLBACK_NAV = {
   groups: [
     {
       title: "Navigation",
-      items: [{ label: "Home", href: "/admin" }],
+      items: [
+        { label: "Administration", href: "/admin" },
+        { label: "School Board", href: "/board" },
+        { label: "Finance", href: "/finance" },
+        { label: "Financial Aid", href: "/financial-aid" },
+        { label: "Admissions", href: "/admissions" },
+        { label: "Academics", href: "/academics" },
+        { label: "Billing", href: "/billing" },
+        { label: "System Integrity", href: "/integrity" },
+        { label: "IT", href: "/it" },
+        { label: "Office / HR", href: "/office" },
+        { label: "Teacher", href: "/teacher" },
+        { label: "Parent", href: "/parent" },
+        { label: "Student", href: "/student" },
+        { label: "Spiritual Life", href: "/spiritual-life" },
+        { label: "Marketing", href: "/marketing" },
+      ],
     },
   ],
 };
+
+const CONTRACT_NAV_ITEMS = [
+  { label: "Administration", href: "/admin" },
+  { label: "School Board", href: "/board" },
+  { label: "Finance", href: "/finance" },
+  { label: "Financial Aid", href: "/financial-aid" },
+  { label: "Admissions", href: "/admissions" },
+  { label: "Academics", href: "/academics" },
+  { label: "Billing", href: "/billing" },
+  { label: "System Integrity", href: "/integrity" },
+  { label: "IT", href: "/it" },
+  { label: "Office / HR", href: "/office" },
+  { label: "Teacher", href: "/teacher" },
+  { label: "Parent", href: "/parent" },
+  { label: "Student", href: "/student" },
+  { label: "Spiritual Life", href: "/spiritual-life" },
+  { label: "Marketing", href: "/marketing" },
+];
+
+function mergeNavGroupsWithContract(navData) {
+  const incoming = Array.isArray(navData?.groups) ? navData.groups : [];
+  const seen = new Set();
+
+  const mergedGroups = incoming.map((group) => {
+    const items = Array.isArray(group?.items)
+      ? group.items.filter((item) => {
+          const href = String(item?.href || "").trim();
+          if (!href || seen.has(href)) return false;
+          seen.add(href);
+          return true;
+        })
+      : [];
+
+    return { ...group, items };
+  });
+
+  const contractItems = CONTRACT_NAV_ITEMS.filter((item) => {
+    if (seen.has(item.href)) return false;
+    seen.add(item.href);
+    return true;
+  });
+
+  if (contractItems.length) {
+    mergedGroups.push({ title: "Navigation", items: contractItems });
+  }
+
+  return {
+    ...navData,
+    groups: mergedGroups,
+  };
+}
 
 const BUILD_SHA = (import.meta?.env?.VITE_BUILD_SHA || "dev").slice(0, 7);
 const DEPLOY_TAG = import.meta?.env?.VITE_DEPLOY_TAG || "";
@@ -95,7 +162,9 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
     return () => { mounted = false; };
   }, []);
 
-  const activeNav = nav || (navError ? FALLBACK_NAV : null);
+  const activeNav = nav
+    ? mergeNavGroupsWithContract(nav)
+    : (navError ? FALLBACK_NAV : null);
   const pathname  = typeof window !== "undefined" ? window.location.pathname : "";
   const breadcrumbs = useMemo(() => buildBreadcrumb(pathname), [pathname]);
   const navGroups = activeNav?.groups || [];
