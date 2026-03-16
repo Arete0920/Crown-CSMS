@@ -19,30 +19,36 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Detect runtime changes
-        id: filter
-        uses: dorny/paths-filter@v3
-        continue-on-error: true
-        with:
-          base: ${{ github.event.pull_request.base.sha || 'HEAD~1' }}
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          filters: |
-            runtime:
-              - "backend/**"
-              - "frontend/**"
-              - "tools/dev_scripts/golden_path_gate.ps1"
-              - "tools/dev_scripts/demo_one_click.ps1"
-              - "tools/dev_scripts/demo_snapshot.ps1"
-              - "requirements*.txt"
-              - "package*.json"
-              - ".github/workflows/lockdown-golden-path-gate.yml"
-
-      - name: Set runtime_changed output (fallback-safe)
         id: out
         shell: bash
         run: |
-          val="${{ steps.filter.outputs.runtime }}"
-          if [ -z "$val" ]; then val="true"; fi
-          echo "runtime_changed=$val" >> "$GITHUB_OUTPUT"
+          EVENT_NAME="${{ github.event_name }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          BASE_SHA="${{ github.event.pull_request.base.sha || github.event.before }}"
+
+          if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            BASE_SHA="HEAD~1"
+          fi
+
+          changed_files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" || true)"
+          runtime_changed="false"
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              backend/*|frontend/*|requirements*.txt|package*.json|tools/dev_scripts/golden_path_gate.ps1|tools/dev_scripts/demo_one_click.ps1|tools/dev_scripts/demo_snapshot.ps1|.github/workflows/lockdown-golden-path-gate.yml)
+                runtime_changed="true"
+                break
+                ;;
+            esac
+          done <<< "$changed_files"
+
+          # For PR events, run the gate if diff detection cannot resolve cleanly.
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -z "$changed_files" ]; then
+            runtime_changed="true"
+          fi
+
+          echo "runtime_changed=$runtime_changed" >> "$GITHUB_OUTPUT"
 
   lockdown-gate:
     needs: changes
@@ -146,17 +152,17 @@ jobs:
           Set-Location backend
           $env:PYTHONUNBUFFERED = '1'
           $env:PYTHONIOENCODING = 'utf-8'
-          
+
           $outLog = Join-Path $env:RUNNER_TEMP 'backend.out.log'
           $errLog = Join-Path $env:RUNNER_TEMP 'backend.err.log'
-          
+
           Write-Host "Starting backend: python manage.py runserver 127.0.0.1:8000 --noreload"
           Write-Host "CWD: $(Get-Location)"
           Write-Host "Python: $(python --version)"
-          
+
           # Use cmd /c start for truly non-blocking background execution
           cmd /c "start /B python manage.py runserver 127.0.0.1:8000 --noreload > `"$outLog`" 2>&1"
-          
+
           Start-Sleep -Seconds 5
           Write-Host "Backend start command issued"
 
@@ -165,13 +171,13 @@ jobs:
         run: |
           Set-Location frontend/dashboards
           $outLog = Join-Path $env:RUNNER_TEMP 'frontend.out.log'
-          
+
           Write-Host "Starting frontend: npm run dev -- --host 127.0.0.1 --port 3000"
           Write-Host "CWD: $(Get-Location)"
-          
+
           # Use cmd /c start for truly non-blocking background execution
           cmd /c "start /B npm run dev -- --host 127.0.0.1 --port 3000 > `"$outLog`" 2>&1"
-          
+
           Start-Sleep -Seconds 5
           Write-Host "Frontend start command issued"
 
@@ -182,7 +188,7 @@ jobs:
           $backendOk = $false
           for ($i=0; $i -lt 60; $i++) {
             Write-Host "[Backend] Attempt $($i+1)/60..."
-            
+
             $listener = Get-NetTCPConnection -State Listen -LocalPort 8000 -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($listener) {
               Write-Host "[Backend] Port 8000 is listening, testing HTTP..."
@@ -197,7 +203,7 @@ jobs:
             }
             Start-Sleep -Seconds 2
           }
-          
+
           if (-not $backendOk) {
             Write-Host "=== BACKEND FAILURE DIAGNOSTICS ==="
             $outLog = Join-Path $env:RUNNER_TEMP 'backend.out.log'
@@ -207,13 +213,13 @@ jobs:
             } else {
               Write-Host "backend.out.log not found"
             }
-            
+
             Write-Host "=== Process check ==="
             Get-Process python -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -eq "" } | Select-Object Id,ProcessName,StartTime | Format-Table | Write-Host
-            
+
             Write-Host "=== Port check ==="
             Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalAddress -eq "127.0.0.1" } | Select-Object LocalPort,State | Write-Host
-            
+
             throw 'Backend did not become healthy on :8000 after 2 minutes'
           }
 
@@ -231,7 +237,7 @@ jobs:
               Start-Sleep -Seconds 2
             }
           }
-          
+
           if (-not $frontendOk) {
             Write-Host "=== FRONTEND FAILURE DIAGNOSTICS ==="
             $outLog = Join-Path $env:RUNNER_TEMP 'frontend.out.log'
@@ -241,10 +247,10 @@ jobs:
             } else {
               Write-Host "frontend.out.log not found"
             }
-            
+
             Write-Host "=== Process check ==="
             Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Format-Table | Write-Host
-            
+
             throw 'Frontend did not become healthy on :3000 after 2 minutes'
           }
 
@@ -302,21 +308,21 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "Stopping backend and frontend processes..."
-          
+
           # Kill python processes running manage.py
-          Get-Process python -ErrorAction SilentlyContinue | Where-Object { 
-            $_.Path -like "*hostedtoolcache*" -or $_.CommandLine -like "*manage.py*" 
+          Get-Process python -ErrorAction SilentlyContinue | Where-Object {
+            $_.Path -like "*hostedtoolcache*" -or $_.CommandLine -like "*manage.py*"
           } | ForEach-Object {
             Write-Host "Stopping Python PID $($_.Id)"
             Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
           }
-          
+
           # Kill node processes (Vite dev server)
-          Get-Process node -ErrorAction SilentlyContinue | Where-Object { 
-            $_.Path -like "*hostedtoolcache*" 
+          Get-Process node -ErrorAction SilentlyContinue | Where-Object {
+            $_.Path -like "*hostedtoolcache*"
           } | ForEach-Object {
             Write-Host "Stopping Node PID $($_.Id)"
             Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
           }
-          
+
           Write-Host "Server cleanup complete"
