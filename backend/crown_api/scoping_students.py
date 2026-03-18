@@ -4,13 +4,12 @@ Student access scoping helpers.
 Bridges household-based access control (from resolve_household_access) 
 to the new core.models.Student, which uses family FK instead of household.
 
-Uses AdmissionsApplication to link families to households for parent scoping.
+Uses HouseholdFamilyLink to link families to households for parent scoping.
 """
 
 from django.http import Http404
-from core.models import Student as CoreStudent
+from core.models import HouseholdFamilyLink, Student as CoreStudent
 from crown_api.access_households import resolve_household_access
-from admissions.models import AdmissionsApplication
 
 
 def get_core_student_or_404_for_request(*, request, student_id):
@@ -18,7 +17,7 @@ def get_core_student_or_404_for_request(*, request, student_id):
     Retrieve a core.models.Student with household-based access control.
     
     - Staff: can access any student
-    - Parents: can only access student if family is linked to their household via AdmissionsApplication
+    - Parents: can only access student if family is linked to their household via HouseholdFamilyLink
     - Returns: core.models.Student instance
     - Raises: Http404 if not found or out of scope (prevents existence leak)
     """
@@ -33,8 +32,8 @@ def get_core_student_or_404_for_request(*, request, student_id):
     if access.is_staff:
         return student
     
-    # Parent: enforce household scope via AdmissionsApplication family←→household link
-    family_is_linked = AdmissionsApplication.objects.filter(
+    # Parent: enforce household scope via HouseholdFamilyLink family←→household link
+    family_is_linked = HouseholdFamilyLink.objects.filter(
         family_id=student.family_id,
         household_id__in=access.household_ids,
     ).exists()
