@@ -403,3 +403,44 @@ from .models_seed import SeedRun  # noqa: E402,F401
 
 # Data retention policies — registered under core app
 from .models_retention import DataRetentionPolicy  # noqa: E402,F401
+
+
+class HouseholdFamilyLink(BaseModel):
+    """
+    First-class bridge between a household (by UUID) and a core.Family.
+
+    Replaces the temporary AdmissionsApplication bridge used in parent scoping
+    (see crown_api/scoping_students.py). Supports multiple source types so the
+    link can be created from admissions, enrollment, SIS import, or manually.
+
+    unique_together = ('household_id', 'family') ensures one link per pair.
+    """
+    SOURCE_ADMISSIONS = 'admissions'
+    SOURCE_ENROLLMENT = 'enrollment'
+    SOURCE_IMPORT = 'import'
+    SOURCE_MANUAL = 'manual'
+    SOURCE_CHOICES = [
+        (SOURCE_ADMISSIONS, 'From AdmissionsApplication'),
+        (SOURCE_ENROLLMENT, 'From enrollment event'),
+        (SOURCE_IMPORT, 'From SIS import'),
+        (SOURCE_MANUAL, 'Manual linking'),
+    ]
+
+    school = models.ForeignKey(
+        School,
+        on_delete=models.CASCADE,
+        related_name='household_family_links',
+    )
+    household_id = models.UUIDField(db_index=True)
+    family = models.ForeignKey(
+        Family,
+        on_delete=models.CASCADE,
+        related_name='household_family_links',
+    )
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES)
+
+    class Meta:
+        unique_together = ('household_id', 'family')
+
+    def __str__(self):
+        return f"HouseholdFamilyLink({self.household_id} ↔ {self.family_id})"

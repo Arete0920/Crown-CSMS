@@ -8,8 +8,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from aid.models import AidApplication, AidAward, AidDocument
+from decimal import Decimal
+
+from aid.models import AidApplication, AidAuditEvent, AidAward, AidDocument
 from admissions.models import AdmissionsApplication
+from ledger.models import Allocation as LedgerAllocation
+from ledger.models import LedgerAccount, Payment
 from core.models import (
     AcademicYear,
     Enrollment,
@@ -708,6 +712,63 @@ def director_priority(request):
     })
 
 
+def _post_award_to_new_ledger_pipeline(*, award, school_id, actor_user):
+    """
+    Post an accepted AidAward to the new ledger pipeline (ledger.Payment + Allocation).
+
+    Creates a ledger.Payment(source='FINANCIAL_AID') and, if a non-voided Charge
+    exists for the household's ledger account, a ledger.Allocation against it.
+
+    Idempotent: uses AidAuditEvent(action='DIRECTOR_LEDGER_POSTED') as guard.
+    Must be called inside a transaction.atomic() block.
+    """
+    already_posted = AidAuditEvent.objects.filter(
+        school=award.school,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=award.id,
+        action="DIRECTOR_LEDGER_POSTED",
+    ).exists()
+    if already_posted:
+        return
+
+    household = award.student.household
+    ledger_account, _ = LedgerAccount.objects.get_or_create(
+        household=household,
+        defaults={"school_id": school_id},
+    )
+
+    amount = Decimal(award.awarded_cents) / Decimal("100")
+    payment = Payment.objects.create(
+        school_id=school_id,
+        account=ledger_account,
+        amount=amount,
+        source="FINANCIAL_AID",
+        reference=f"director:award:{award.id}",
+    )
+
+    charge = ledger_account.charges.filter(is_void=False).order_by("-created_at").first()
+    if charge:
+        LedgerAllocation.objects.get_or_create(
+            school_id=school_id,
+            payment=payment,
+            charge=charge,
+            defaults={"amount": amount},
+        )
+
+    AidAuditEvent.log(
+        school=award.school,
+        entity_type=AidAuditEvent.ENTITY_AWARD,
+        entity_id=award.id,
+        action="DIRECTOR_LEDGER_POSTED",
+        actor_user=actor_user,
+        details={
+            "payment_id": str(payment.id),
+            "amount": str(amount),
+            "household_id": str(household.id),
+        },
+    )
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def director_actions(request):
@@ -792,6 +853,11 @@ def director_actions(request):
 
                         # Post to ledger (idempotent; will not double-post)
                         award.mark_accepted_and_post(actor_user=actor_user)
+
+                        # Also post to new ledger pipeline (idempotent)
+                        _post_award_to_new_ledger_pipeline(
+                            award=award, school_id=school_id, actor_user=actor_user
+                        )
 
                         if was_unposted and award.ledger_entry_id is not None:
                             posted_count += 1
