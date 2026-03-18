@@ -80,12 +80,21 @@ def pd_metrics(request):
     sid = get_request_school_id(request)
     resources = PDResource.objects.filter(school_id=sid)
     sessions = PDSession.objects.filter(school_id=sid)
-    now = timezone.now()
-    upcoming = sessions.filter(session_date__gte=now)
+
+    by_status = {
+        row["status"]: row["count"]
+        # Valid statuses: "upcoming", "in progress", "completed", "cancelled"
+        for row in sessions.values("status").annotate(count=Count("id"))
+    }
+
     avg_rating = sessions.aggregate(avg=Avg("satisfaction_score"))["avg"]
     return JsonResponse({
-        "total_resources":   resources.count(),
-        "total_sessions":    sessions.count(),
-        "upcoming_sessions": upcoming.count(),
-        "average_rating":    round(avg_rating, 2) if avg_rating else None,
+        "total_resources":      resources.count(),
+        "total_sessions":       sessions.count(),
+        "upcoming_sessions":    by_status.get("upcoming", 0),
+        "in_progress_sessions": by_status.get("in progress", 0),
+        "completed_sessions":   by_status.get("completed", 0),
+        "cancelled_sessions":   by_status.get("cancelled", 0),
+        "average_rating":       round(avg_rating, 2) if avg_rating else None,
+        "snapshot_date":        timezone.now().date().isoformat(),
     })
