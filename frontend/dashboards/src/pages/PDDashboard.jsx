@@ -101,7 +101,7 @@ export default function PDDashboard() {
   }, []);
 
   const { loading, live, data } = state;
-  const sessions  = data.upcoming_sessions   || DEMO.upcoming_sessions;
+  const sessions  = Array.isArray(data.upcoming_sessions) ? data.upcoming_sessions : DEMO.upcoming_sessions;
   const certs     = data.certifications      || DEMO.certifications;
   const deptComp  = data.completion_by_dept  || DEMO.completion_by_dept;
   const alerts    = data.alerts              || DEMO.alerts;
@@ -117,10 +117,10 @@ export default function PDDashboard() {
 
       <DashboardSection title="Overview">
         <CrownGrid>
-          <Col span={3}><CrownMetricCard label="Sessions This Month"     value={data.sessions_this_month    ?? DEMO.sessions_this_month}    /></Col>
-          <Col span={3}><CrownMetricCard label="Staff Hours Logged"      value={data.staff_hours_logged     ?? DEMO.staff_hours_logged}     /></Col>
-          <Col span={3}><CrownMetricCard label="Certifications Expiring" value={data.certifications_expiring?? DEMO.certifications_expiring} /></Col>
-          <Col span={3}><CrownMetricCard label="Avg Satisfaction Score"  value={`${data.satisfaction_avg ?? DEMO.satisfaction_avg}/5`}       /></Col>
+          <Col span={3}><CrownMetricCard label="Total Sessions"           value={data.total_sessions          ?? DEMO.sessions_this_month}    /></Col>
+          <Col span={3}><CrownMetricCard label="Upcoming"                 value={data.upcoming_sessions       ?? DEMO.sessions_this_month}    /></Col>
+          <Col span={3}><CrownMetricCard label="Completed"                value={data.completed_sessions      ?? 0}                           /></Col>
+          <Col span={3}><CrownMetricCard label="Avg Satisfaction Score"   value={`${data.average_rating ?? DEMO.satisfaction_avg}/5`} /></Col>
         </CrownGrid>
       </DashboardSection>
 
