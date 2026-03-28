@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import UserAccount
+from core.models import School, UserAccount
 from crown_api.models import Household, HouseholdMember, Invoice, Payment, Person, UserPersonLink
 from crown_api.models_households import ROLE_GUARDIAN
 
@@ -12,11 +12,14 @@ class BillingSummaryApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
+        self.school = School.objects.create(name="Test School")
+
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
             password="testpass",
             is_staff=True,
+            school=self.school,
         )
 
         self.parent_user = UserAccount.objects.create_user(
@@ -24,6 +27,7 @@ class BillingSummaryApiTests(TestCase):
             email="parent@example.com",
             password="testpass",
             is_staff=False,
+            school=self.school,
         )
 
         self.household_a = Household.objects.create(household_name="Household A")
@@ -102,7 +106,7 @@ class BillingSummaryApiTests(TestCase):
 
     def test_unauth_403(self):
         # IsAuthenticated + JWT configured → DRF emits 401 (not 403) for unauthenticated
-        resp = self.client.get(f"/api/households/{self.household_a.id}/billing/summary/")
+        resp = self.client.get(f"/api/households/{self.household_a.id}/billing/summary/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp.status_code, 401)
 
     def test_recent_invoices_limited_and_contains_invoice_number(self):

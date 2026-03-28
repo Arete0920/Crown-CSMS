@@ -74,6 +74,10 @@ elif not _allowed_hosts and _is_azure:
 if _allowed_hosts != ["*"] and "localhost" not in _allowed_hosts:
     _allowed_hosts = (_allowed_hosts or []) + ["localhost", "127.0.0.1"]
 
+# Ensure Django test client works in CI
+if "testserver" not in (_allowed_hosts or []):
+    _allowed_hosts = list(_allowed_hosts or []) + ["testserver"]
+
 ALLOWED_HOSTS = _allowed_hosts
 
 # --- CSRF trusted origins (Azure-safe) ---

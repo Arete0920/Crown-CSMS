@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import UserAccount, School, Family, Student
+from core.models import UserAccount, School, Family, Student, HouseholdFamilyLink
 from crown_api.models import (
     AttendanceRecord,
     Course,
@@ -20,11 +20,14 @@ class AcademicsApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
+        self.school = School.objects.create(name="Test School")
+
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
             password="testpass",
             is_staff=True,
+            school=self.school,
         )
 
         self.parent_user = UserAccount.objects.create_user(
@@ -32,6 +35,7 @@ class AcademicsApiTests(TestCase):
             email="parent@example.com",
             password="testpass",
             is_staff=False,
+            school=self.school,
         )
 
         self.household_a = Household.objects.create(household_name="Household A")
@@ -51,7 +55,7 @@ class AcademicsApiTests(TestCase):
         )
 
         # Create core School and Family for core.models.Student
-        self.school = School.objects.create(name="Test School")
+        # school created above; Family and Student follow
         self.family_a = Family.objects.create(school=self.school, family_name="Family A")
         self.family_b = Family.objects.create(school=self.school, family_name="Family B")
 
@@ -100,6 +104,15 @@ class AcademicsApiTests(TestCase):
             family=self.family_b,
             student=self.student_b,
             household=self.household_b,
+        )
+
+        # HouseholdFamilyLink is required by get_core_student_or_404_for_request
+        # for parent attendance/grades scoping (replaces AdmissionsApplication bridge)
+        HouseholdFamilyLink.objects.create(
+            school=self.school,
+            household_id=self.household_a.id,
+            family=self.family_a,
+            source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
         )
 
         self.course_math = Course.objects.create(course_code="MATH-101", name="Math")
@@ -180,8 +193,8 @@ class AcademicsApiTests(TestCase):
 
     def test_academics_unauth_403(self):
         # IsAuthenticated + JWT configured → DRF emits 401 (not 403) for unauthenticated
-        resp = self.client.get(f"/api/students/{self.student_a.id}/attendance/")
+        resp = self.client.get(f"/api/students/{self.student_a.id}/attendance/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp.status_code, 401)
 
-        resp2 = self.client.get(f"/api/students/{self.student_a.id}/grades/")
+        resp2 = self.client.get(f"/api/students/{self.student_a.id}/grades/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp2.status_code, 401)

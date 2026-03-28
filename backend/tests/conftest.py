@@ -1,6 +1,9 @@
 import os
 
 def pytest_configure(config):
+    # Conventions for API tenant context in tests:
+    # see backend/tests/TEST_CONVENTIONS.md
+
     # This runs early in pytest startup.
     print("\n=== PYTEST DJANGO DIAGNOSTICS (EARLY) ===")
     print("DJANGO_SETTINGS_MODULE env:", os.environ.get("DJANGO_SETTINGS_MODULE"))
