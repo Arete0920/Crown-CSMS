@@ -64,6 +64,9 @@ urlpatterns = [
     # Back-compat alias: /api/* behaves like /api/v1/*
     path("api/", include("crown_api.api_v1_urls")),
 
+        # Back-compat alias: /api/dashboards/* (mirrors api/v1/dashboards/)
+        path("api/dashboards/", include("crown_api.dashboards.urls")),
+
     # Curriculum (read-only, demo-safe)
     path("api/curriculum/", include("curriculum.urls")),
 

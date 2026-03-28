@@ -9,6 +9,7 @@ import uuid
 from decimal import Decimal
 
 from django.test import TestCase, override_settings
+from django.test import TestCase, override_settings
 
 from advancement.stripe_helpers import compute_totals_from_line_items, cents_to_decimal
 from advancement.receipt_render import make_receipt_pdf_bytes
@@ -140,6 +141,7 @@ class ReceiptModelTest(TestCase):
 # Sponsor placement model + endpoint
 # ---------------------------------------------------------------------------
 
+@override_settings(TENANT_HEADER_REQUIRED=True)
 class SponsorPlacementTest(TestCase):
     def test_create_sponsor_asset(self):
         school_id = uuid.uuid4()
@@ -231,6 +233,7 @@ class SponsorPlacementTest(TestCase):
 # Google Wallet
 # ---------------------------------------------------------------------------
 
+@override_settings(TENANT_HEADER_REQUIRED=True)
 class GoogleWalletTest(TestCase):
     @override_settings(GOOGLE_WALLET_ISSUER_ID="", GOOGLE_WALLET_SERVICE_ACCOUNT_JSON="")
     def test_unconfigured_returns_501(self):
@@ -283,6 +286,7 @@ class GoogleWalletTest(TestCase):
 # Apple Wallet
 # ---------------------------------------------------------------------------
 
+@override_settings(TENANT_HEADER_REQUIRED=True)
 class AppleWalletTest(TestCase):
     @override_settings(APPLE_PASS_SERVICE_URL="")
     def test_unconfigured_returns_501(self):

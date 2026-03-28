@@ -27,7 +27,7 @@ class FinancialAidDrilldownTests(TestCase):
 
     def test_happy_path_200(self):
         self.client.force_login(self.user)
-        resp = self.client.get("/api/financial-aid/drilldown/", HTTP_X_SCHOOL_ID="852e31bc-d953-48c5-b081-98d27469d634")
+        resp = self.client.get("/api/financial-aid/drilldown/", HTTP_X_SCHOOL_ID=str(self.school.id))
         # If no data yet, 200 should still return a stable shape
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
