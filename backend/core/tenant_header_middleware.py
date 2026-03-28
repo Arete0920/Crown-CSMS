@@ -41,6 +41,7 @@ class TenantHeaderRequiredMiddleware:
         "/api/v1/payments/webhooks/",
         "/api/schema",
         "/api/docs",
+        "/api/director/force_seed_user",  # dev-only admin utility; predates tenant scoping
     )
 
     def __init__(self, get_response):

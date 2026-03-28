@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import UserAccount, School, Family, Student
+from core.models import UserAccount, School, Family, Student, HouseholdFamilyLink
 from crown_api.models import Course, Household, HouseholdMember, Person, Section, SectionEnrollment, Term, UserPersonLink
 from crown_api.models_households import ROLE_GUARDIAN
 
@@ -12,11 +12,14 @@ class SchedulingApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
+        self.school = School.objects.create(name="Test School")
+
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
             password="testpass",
             is_staff=True,
+            school=self.school,
         )
 
         self.parent_user = UserAccount.objects.create_user(
@@ -24,6 +27,7 @@ class SchedulingApiTests(TestCase):
             email="parent@example.com",
             password="testpass",
             is_staff=False,
+            school=self.school,
         )
 
         self.household_a = Household.objects.create(household_name="Household A")
@@ -43,7 +47,7 @@ class SchedulingApiTests(TestCase):
         )
 
         # Create core School and Family for core.models.Student
-        self.school = School.objects.create(name="Test School")
+        # school created above; Family and Student follow
         self.family_a = Family.objects.create(school=self.school, family_name="Family A")
         self.family_b = Family.objects.create(school=self.school, family_name="Family B")
 
@@ -91,6 +95,15 @@ class SchedulingApiTests(TestCase):
             family=self.family_b,
             student=self.student_b,
             household=self.household_b,
+        )
+
+        # HouseholdFamilyLink is required by get_core_student_or_404_for_request
+        # for parent schedule scoping (replaces AdmissionsApplication bridge)
+        HouseholdFamilyLink.objects.create(
+            school=self.school,
+            household_id=self.household_a.id,
+            family=self.family_a,
+            source=HouseholdFamilyLink.SOURCE_ADMISSIONS,
         )
 
         self.term_active = Term.objects.create(
@@ -191,5 +204,5 @@ class SchedulingApiTests(TestCase):
 
     def test_unauth_terms_403(self):
         # IsAuthenticated + JWT configured → DRF emits 401 (not 403) for unauthenticated
-        resp = self.client.get("/api/terms/")
+        resp = self.client.get("/api/terms/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp.status_code, 401)

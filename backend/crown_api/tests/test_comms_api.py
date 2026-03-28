@@ -23,11 +23,14 @@ class CommsApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
+        self.school = School.objects.create(name="Test School")
+
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
             password="testpass",
             is_staff=True,
+            school=self.school,
         )
 
         self.parent_user = UserAccount.objects.create_user(
@@ -35,6 +38,7 @@ class CommsApiTests(TestCase):
             email="parent@example.com",
             password="testpass",
             is_staff=False,
+            school=self.school,
         )
 
         self.household_a = Household.objects.create(household_name="Household A")
@@ -54,7 +58,7 @@ class CommsApiTests(TestCase):
         )
 
         # Create core School and Family for core.models.Student
-        self.school = School.objects.create(name="Test School")
+        # school created above; Family and Student follow
         self.family_a = Family.objects.create(school=self.school, family_name="Family A")
         self.family_b = Family.objects.create(school=self.school, family_name="Family B")
 
@@ -192,5 +196,5 @@ class CommsApiTests(TestCase):
 
     def test_threads_unauth_403(self):
         # IsAuthenticated + JWT configured → DRF emits 401 (not 403) for unauthenticated
-        resp = self.client.get("/api/threads/")
+        resp = self.client.get("/api/threads/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp.status_code, 401)

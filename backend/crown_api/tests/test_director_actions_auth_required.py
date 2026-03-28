@@ -55,7 +55,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         }
 
         # 1) Unauthenticated -> 401 (JWT configured — DRF emits 401, not 403)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json")
+        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
         self.assertEqual(resp.status_code, 401)
 
         award.refresh_from_db()
@@ -69,7 +69,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
             password="password123",
         )
         self.client.force_login(nonstaff)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json")
+        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
         self.assertEqual(resp.status_code, 403)
 
         award.refresh_from_db()
@@ -83,7 +83,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
             is_staff=True,
         )
         self.client.force_login(staff)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json")
+        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
         self.assertEqual(resp.status_code, 200)
 
         award.refresh_from_db()

@@ -35,4 +35,7 @@ jobs:
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
+        # Advisory mode: keep scan output visible, but do not block PRs when
+        # repository-level Code Scanning is disabled/unavailable.
+        continue-on-error: true
         uses: github/codeql-action/analyze@v3

@@ -157,9 +157,9 @@ class HouseholdsApiTests(TestCase):
 
     def test_unauthenticated_401(self):
         """Unauthenticated requests return 401 (JWT auth configured — DRF emits 401 not 403)."""
-        resp = self.client.get("/api/households/")
+        resp = self.client.get("/api/households/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp.status_code, 401)
-        resp2 = self.client.get(f"/api/households/{self.household.id}/")
+        resp2 = self.client.get(f"/api/households/{self.household.id}/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp2.status_code, 401)
 
     def test_cross_school_isolation(self):
