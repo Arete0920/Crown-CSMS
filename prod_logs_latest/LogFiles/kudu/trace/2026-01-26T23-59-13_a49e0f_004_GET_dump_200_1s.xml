@@ -1,4 +1,0 @@
-<step title="Incoming Request" date="2026-01-26T23:59:13.376" instance="a49e0f" url="/dump" method="GET" type="request" pid="770,1,17" Host="crown-api-prod.scm.azurewebsites.net" User-Agent="AZURECLI/2.80.0 (MSI)" Accept-Encoding="identity" Authorization="Bea..." x-ms-client-request-id="f7446952-fb12-11f0-bc1a-7412b30b7864" X-ARR-LOG-ID="f7446952-fb12-11f0-bc1a-7412b30b7864" CLIENT-IP="71.123.48.18:56504" X-SITE-DEPLOYMENT-ID="crown-api-prod" WAS-DEFAULT-HOSTNAME="crown-api-prod.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/dump" X-Client-IP="71.123.48.18" X-Client-Port="56504" >
-  <step title="Cleanup Xml Logs" date="2026-01-26T23:59:13.389" /><!-- duration: 14ms -->
-  <step title="Outgoing response" date="2026-01-26T23:59:13.878" type="response" statusCode="200" statusText="OK" /><!-- duration: 11ms -->
-</step><!-- duration: 517ms -->
