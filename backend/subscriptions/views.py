@@ -1,14 +1,25 @@
-import json
-import logging
+"""
+Crown Admin Module Management API
+-----------------------------------
+Endpoints for Crown staff to activate/deactivate school modules after payment.
 
-from functools import wraps
+All endpoints require:
+  - IsAdminUser (Django staff/superuser)
+  - X-School-Id header (standard tenant middleware)
+
+These are internal Crown operations - NOT exposed to school users.
+"""
+
+import logging
+import json
 
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import user_passes_test
+from django.views.decorators.csrf import csrf_exempt
 
-from .gates import get_school_modules
 from .models import SchoolModule
+from .gates import get_school_modules
 
 logger = logging.getLogger(__name__)
 
@@ -17,20 +28,14 @@ def is_crown_admin(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
-def crown_admin_required(view_func):
-    @wraps(view_func)
-    def _wrapped(request, *args, **kwargs):
-        if not is_crown_admin(request.user):
-            return JsonResponse({"error": "Admin privileges required"}, status=403)
-        return view_func(request, *args, **kwargs)
-
-    return _wrapped
-
-
 @csrf_exempt
-@crown_admin_required
+@user_passes_test(is_crown_admin)
 @require_http_methods(["GET"])
 def list_school_modules(request):
+    """
+    GET /api/v1/admin/modules/
+    Returns all module entitlements for the school in X-School-Id header.
+    """
     school_id = getattr(request, "school_id", None)
     if not school_id:
         return JsonResponse({"error": "X-School-Id header required"}, status=400)
@@ -63,9 +68,20 @@ def list_school_modules(request):
 
 
 @csrf_exempt
-@crown_admin_required
+@user_passes_test(is_crown_admin)
 @require_http_methods(["POST"])
 def activate_module(request):
+    """
+    POST /api/v1/admin/modules/activate/
+    Body (JSON):
+    {
+        "module_key": "financial_aid",
+        "price_paid": 1500.00,
+        "billing_cycle": "annual",
+        "months": 12,
+        "notes": "Invoice #1234"
+    }
+    """
     school_id = getattr(request, "school_id", None)
     if not school_id:
         return JsonResponse({"error": "X-School-Id header required"}, status=400)
@@ -121,9 +137,13 @@ def activate_module(request):
 
 
 @csrf_exempt
-@crown_admin_required
+@user_passes_test(is_crown_admin)
 @require_http_methods(["POST"])
 def deactivate_module(request):
+    """
+    POST /api/v1/admin/modules/deactivate/
+    Body (JSON): { "module_key": "financial_aid" }
+    """
     school_id = getattr(request, "school_id", None)
     if not school_id:
         return JsonResponse({"error": "X-School-Id header required"}, status=400)
@@ -152,9 +172,14 @@ def deactivate_module(request):
 
 
 @csrf_exempt
-@crown_admin_required
+@user_passes_test(is_crown_admin)
 @require_http_methods(["POST"])
 def start_trial(request):
+    """
+    POST /api/v1/admin/modules/trial/
+    Body (JSON): { "module_key": "financial_aid", "days": 30 }
+    Starts a free trial for a module.
+    """
     school_id = getattr(request, "school_id", None)
     if not school_id:
         return JsonResponse({"error": "X-School-Id header required"}, status=400)

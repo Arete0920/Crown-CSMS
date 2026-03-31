@@ -1,3 +1,21 @@
+"""
+Crown Module Gate System
+-------------------------
+Use these helpers to check module entitlements anywhere in the codebase.
+
+Usage in a view:
+    from subscriptions.gates import require_module, school_has_module
+
+    # As a decorator:
+    @require_module('financial_aid')
+    def my_view(request):
+        ...
+
+    # As a check:
+    if school_has_module(request.school_id, 'financial_aid'):
+        ...
+"""
+
 from functools import wraps
 
 from django.http import JsonResponse
@@ -6,7 +24,12 @@ from .models import SchoolModule
 
 
 def school_has_module(school_id, module_key):
-    """Return True only when school has active or active-trial module entitlement."""
+    """
+    Returns True if the school has an active (or active trial) entitlement
+    for the given module_key.
+
+    Fail-closed: any exception -> returns False (safe default).
+    """
     try:
         module = SchoolModule.objects.get(school_id=school_id, module_key=module_key)
         return module.is_active or module.is_trial
@@ -17,7 +40,18 @@ def school_has_module(school_id, module_key):
 
 
 def get_school_modules(school_id):
-    """Return module_key -> status mapping for all known module keys."""
+    """
+    Returns a dict of all module keys -> status for a school.
+    Used by the frontend to build the module visibility map.
+
+    Example return:
+    {
+        'financial_aid': 'active',
+        'chapel_tracking': 'inactive',
+        'gradebook_pro': 'trial',
+        ...
+    }
+    """
     all_keys = [key for key, _ in SchoolModule.MODULE_CHOICES]
     result = {key: "inactive" for key in all_keys}
 
@@ -34,7 +68,17 @@ def get_school_modules(school_id):
 
 
 def require_module(module_key):
-    """Decorator that returns 403 when module entitlement is missing."""
+    """
+    View decorator that gates access to a module entitlement.
+    Returns 403 if the school does not have the module active.
+
+    Requires request.school_id to be set (Layer 04-05 middleware handles this).
+
+    Usage:
+        @require_module('financial_aid')
+        def financial_aid_dashboard(request):
+            ...
+    """
 
     def decorator(view_func):
         @wraps(view_func)
