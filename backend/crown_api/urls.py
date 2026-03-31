@@ -91,6 +91,9 @@ urlpatterns = [
     # Subscriptions & Entitlements
     path("api/v1/subscriptions/", include("subscriptions.api.urls")),
 
+    # Crown Admin Module Tier Management
+    path("api/v1/admin/modules/", include("subscriptions.urls")),
+
     # Integrations (webhooks, etc.)
     path("api/integrations/", include("integrations.urls")),
 
