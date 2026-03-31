@@ -9,6 +9,9 @@ Tier definitions (canonical):
 Add-on features (optional, per-tenant overrides):
   SMS/Text bundle, Payments processing bundle, Solomon KB, Advanced analytics pack.
 """
+import uuid
+
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -121,3 +124,107 @@ class UsageCounter(models.Model):
 
     def __str__(self) -> str:
         return f"UsageCounter({self.school_id}, {self.feature.key}, {self.period_yyyymm})"
+
+
+class SchoolModule(models.Model):
+    """Tracks add-on module entitlements per school (tenant)."""
+
+    MODULE_CHOICES = [
+        ("financial_aid", "Financial Aid Processing"),
+        ("chapel_tracking", "Chapel & Devotional Tracking"),
+        ("gradebook_pro", "Advanced Gradebook"),
+        ("curriculum_mgmt", "Curriculum Management"),
+        ("parent_portal_plus", "Enhanced Parent Portal"),
+        ("hr_staff", "HR & Staff Management"),
+        ("little_lambs", "Little Lambs Daycare"),
+        ("transportation", "Transportation & Bus Routing"),
+        ("health_office", "Health Office & Nurse Records"),
+        ("alumni", "Alumni Tracking"),
+    ]
+
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("inactive", "Inactive"),
+        ("trial", "Trial (30-day)"),
+        ("expired", "Expired"),
+        ("suspended", "Suspended"),
+    ]
+
+    BILLING_CYCLE_CHOICES = [
+        ("annual", "Annual"),
+        ("monthly", "Monthly"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    school = models.ForeignKey(
+        "core.School",
+        on_delete=models.CASCADE,
+        related_name="modules",
+        db_index=True,
+    )
+    module_key = models.CharField(max_length=50, choices=MODULE_CHOICES, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="inactive")
+
+    price_paid = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    billing_cycle = models.CharField(
+        max_length=20,
+        choices=BILLING_CYCLE_CHOICES,
+        default="annual",
+    )
+    purchased_date = models.DateTimeField(null=True, blank=True)
+    expiry_date = models.DateTimeField(null=True, blank=True)
+
+    activated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="modules_activated",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True, help_text="Internal Crown admin notes")
+
+    class Meta:
+        unique_together = ("school", "module_key")
+        ordering = ["school", "module_key"]
+        verbose_name = "School Module"
+        verbose_name_plural = "School Modules"
+
+    def __str__(self):
+        return f"{self.school} - {self.get_module_key_display()} [{self.status}]"
+
+    @property
+    def is_active(self):
+        if self.status != "active":
+            return False
+        if self.expiry_date and timezone.now() > self.expiry_date:
+            return False
+        return True
+
+    @property
+    def is_trial(self):
+        if self.status != "trial":
+            return False
+        if self.expiry_date and timezone.now() > self.expiry_date:
+            return False
+        return True
+
+    def activate(self, activated_by_user, price_paid=None, months=12):
+        self.status = "active"
+        self.activated_by = activated_by_user
+        self.purchased_date = timezone.now()
+        self.expiry_date = timezone.now() + timezone.timedelta(days=30 * months)
+        if price_paid is not None:
+            self.price_paid = price_paid
+        self.save()
+
+    def start_trial(self, days=30):
+        self.status = "trial"
+        self.purchased_date = timezone.now()
+        self.expiry_date = timezone.now() + timezone.timedelta(days=days)
+        self.save()
+
+    def deactivate(self):
+        self.status = "inactive"
+        self.save()
