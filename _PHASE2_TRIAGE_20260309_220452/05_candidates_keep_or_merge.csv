@@ -1,5 +1,0 @@
-"number","bucket","draft","merge","ageDays","updatedAt","head","base","title","url"
-"550","deps","False","UNSTABLE","0","2026-03-09T18:22:41Z","dependabot/pip/backend/django-5.2.12","main","chore(deps): bump django from 5.2.8 to 5.2.12 in /backend","https://github.com/tcmegahan/Crown2026/pull/550"
-"553","deps","False","BLOCKED","0","2026-03-09T18:22:55Z","dependabot/npm_and_yarn/frontend/dashboards/multi-2150d4f566","main","chore(deps): bump esbuild and vite in /frontend/dashboards","https://github.com/tcmegahan/Crown2026/pull/553"
-"509","review","False","DIRTY","1","2026-03-09T02:20:24Z","preserve/keep-now-runtime-auth-routing-20260306-2107","main","fix(release): certify tenant/dashboard runtime and router build readiness","https://github.com/tcmegahan/Crown2026/pull/509"
-"505","review","False","DIRTY","3","2026-03-07T07:36:47Z","backend/certifying-wave-tenant-dashboard","main","Fix tenant header enforcement and dashboard route compatibility for certifying backend wave","https://github.com/tcmegahan/Crown2026/pull/505"

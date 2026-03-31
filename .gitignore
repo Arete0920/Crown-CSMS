@@ -1,3 +1,25 @@
+
+# ── Prod logs (never commit) ──
+prod_logs/
+prod_logs_latest/
+prod_logs_now/
+app_logs.zip
+
+# ── Secrets (never commit) ──
+secrets/
+
+# ── Audit/phase snapshot folders ──
+MEDIUM_STRIKE_*/
+_PHASE*_INVENTORY_*/
+_PHASE*_TRIAGE_*/
+_PHASE*_APPLY_*/
+_PHASE*_VERIFY_*/
+_workflow_audit/
+
+# ── OS noise ──
+.DS_Store
+Thumbs.db
+desktop.ini
 # Python
 .venv/
 venv/

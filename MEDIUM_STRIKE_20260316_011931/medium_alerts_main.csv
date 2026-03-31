@@ -1,6 +1,0 @@
-﻿"number","rule","severity","path","line","commit","html_url"
-"45","py/stack-trace-exposure","medium","backend/payments/exceptions_api.py","44","06ac7fcda98f01748f9e4841cacf0143b03e4a42","https://github.com/tcmegahan/Crown2026/security/code-scanning/45"
-"30","py/stack-trace-exposure","medium","backend/crown_api/health_views.py","111","06ac7fcda98f01748f9e4841cacf0143b03e4a42","https://github.com/tcmegahan/Crown2026/security/code-scanning/30"
-"25","py/stack-trace-exposure","medium","backend/core/auth/authentication.py","52","06ac7fcda98f01748f9e4841cacf0143b03e4a42","https://github.com/tcmegahan/Crown2026/security/code-scanning/25"
-"22","py/stack-trace-exposure","medium","backend/advancement/api.py","1342","06ac7fcda98f01748f9e4841cacf0143b03e4a42","https://github.com/tcmegahan/Crown2026/security/code-scanning/22"
-"21","py/stack-trace-exposure","medium","backend/advancement/api.py","1292","06ac7fcda98f01748f9e4841cacf0143b03e4a42","https://github.com/tcmegahan/Crown2026/security/code-scanning/21"

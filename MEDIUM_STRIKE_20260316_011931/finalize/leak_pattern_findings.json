@@ -1,6 +1,0 @@
-﻿{
-    "file":  "backend/core/auth/authentication.py",
-    "line":  51,
-    "pattern":  "str\\(exc\\)",
-    "text":  "if \"matching JWKS\" in str(exc) or \"InvalidTokenError\" in type(exc).__name__:"
-}
