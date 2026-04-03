@@ -4,6 +4,8 @@ Copyright (c) 2026 Crown2026 and repository owner. All rights reserved.
 
 This repository and all contents within it are proprietary and confidential unless a separate file explicitly grants different rights.
 
+Repository lineage note: Crown2026 is the current active platform repository. Crown-Christian is retained as an archived legacy repository.
+
 ## No license granted
 
 No permission is granted to any person or entity to:
