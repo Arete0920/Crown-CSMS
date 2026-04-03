@@ -1,9 +1,0 @@
-﻿{
-    "email":  "playwright@crown-demo.local",
-    "exp":  1772392798,
-    "iat":  1772391898,
-    "role":  "director",
-    "school_id":  "19801b59-8c05-4c84-9312-5d792e4e839d",
-    "sub":  "554a6c2b-09c7-4b42-b001-47339774e564",
-    "typ":  "access"
-}
