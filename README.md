@@ -32,3 +32,5 @@ Crown2026 is built for Christian school leaders, administrators, and operations 
 
 Crown2026 is the current active platform repository.
 Crown-Christian is retained as an archived legacy repository.
+
+Documentation: see `docs/README.md`.
