@@ -8,6 +8,10 @@ It is designed to support core SIS and operational workflows across admissions, 
 
 This repository reflects an actively developed product codebase and operational delivery system. Some areas are production-oriented, some are release-candidate hardening work, and some are internal implementation surfaces that are not intended to be treated as public APIs unless explicitly documented.
 
+## Repository lineage
+
+Crown2026 is the current active platform repository. Crown-Christian is retained as an archived legacy repository.
+
 ## What is in this repository
 
 Top-level structure:
@@ -160,5 +164,8 @@ Recommended document entrypoints:
 
 Repository owner or maintainer:
 
+- John TC Megahan
+- Website: [Arete Advisory Group](https://www.areteadvisorygroup.org)
+- LinkedIn: [John Megahan](https://www.linkedin.com/in/john-megahan-935784232)
 - `REPLACE_WITH_MAINTAINER_NAME`
 - `REPLACE_WITH_MAINTAINER_EMAIL`
