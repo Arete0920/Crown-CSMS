@@ -25,6 +25,34 @@ Import-Module .\Scripts\Redact.psm1
 
 ## Files
 
+### `ops/root_legacy/` (Moved root helper scripts)
+
+These helper scripts were moved from repository root to reduce root clutter while keeping tooling available.
+
+Examples now located here:
+- `_list_urls.py`
+- `check_a535_dupes.py`
+- `clean_a535_admissions.py`
+- `d3_smoke_tests.py`
+- `fetch_real_payload.py`
+- `get_grades_payload.py`
+- `phase2_verification.py`
+- `proof_b2_render.py`
+- `verify_api_routing.py`
+- `verify_invoices_schema.py`
+- `verify_seed.py`
+- `hex_audit.ps1`
+
+Run from repo root, for example:
+
+```bash
+python scripts/ops/root_legacy/verify_api_routing.py
+```
+
+```powershell
+./scripts/ops/root_legacy/hex_audit.ps1
+```
+
 ### `Redact.psm1` (PowerShell Module)
 
 **Functions**:

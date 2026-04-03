@@ -9,7 +9,7 @@ on:
 
 jobs:
   pytest:
-    runs-on: [self-hosted, linux, x64, crown-runner]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
@@ -58,5 +58,6 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
           BUILD_SHA: ${{ github.sha }}
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           python -m pytest -q

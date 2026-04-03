@@ -1,22 +1,22 @@
-name: CodeQL
+name: CodeQL Security Analysis
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
   schedule:
-    - cron: '0 6 * * 1'
-
-permissions:
-  actions: read
-  contents: read
-  security-events: write
+    - cron: '30 5 * * 1'
 
 jobs:
   analyze:
-    name: Analyze
+    name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
     strategy:
       fail-fast: false
       matrix:
@@ -24,18 +24,20 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          queries: security-and-quality
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
-        # Advisory mode: keep scan output visible, but do not block PRs when
-        # repository-level Code Scanning is disabled/unavailable.
-        continue-on-error: true
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+        # No continue-on-error here. CodeQL failures block PR merges.
+        # For emergency bypass, require written TC approval before merge.

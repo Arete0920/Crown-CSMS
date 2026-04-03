@@ -32,8 +32,6 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import AddIcon from "@mui/icons-material/Add";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import axios from "axios";
 
 // ─── Status chip colour map ───────────────────────────────────────────────────
@@ -255,13 +253,13 @@ export default function PlatformOpsHome() {
         </Box>
         <Stack direction="row" spacing={1}>
           <Tooltip title="Refresh">
-            <Button variant="outlined" onClick={fetchSchools} startIcon={<RefreshIcon />}>
+            <Button variant="outlined" onClick={fetchSchools} startIcon={<span aria-hidden="true">↻</span>}>
               Refresh
             </Button>
           </Tooltip>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<span aria-hidden="true">＋</span>}
             onClick={() => setDialogOpen(true)}
           >
             Create School

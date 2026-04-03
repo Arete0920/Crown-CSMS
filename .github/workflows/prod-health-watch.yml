@@ -1,96 +1,68 @@
-name: prod-health-watch
+name: Production Health Watch
 
 on:
-  workflow_dispatch: {}
   schedule:
-    - cron: "*/15 * * * *"
-
-permissions:
-  contents: read
-  issues: write
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
-  check:
+  health-check:
+    name: Production Health Monitor
     runs-on: ubuntu-latest
+
     steps:
-      - name: Resolve health URL
-        id: url
+      - name: Check production health endpoint
+        id: health
         run: |
-          if [ -z "${{ vars.CROWN_PROD_HEALTH_URL }}" ]; then
-            echo "missing=true" >> $GITHUB_OUTPUT
-            echo "CROWN_PROD_HEALTH_URL repo variable is not set — skipping probe."
-            exit 0
-          fi
-          echo "missing=false" >> $GITHUB_OUTPUT
-          echo "url=${{ vars.CROWN_PROD_HEALTH_URL }}" >> $GITHUB_OUTPUT
+          RESPONSE=$(curl -sf --max-time 10 \
+            -o /tmp/health_response.json \
+            -w "%{http_code}" \
+            "${PRODUCTION_URL}/api/health/" || echo "000")
 
-      - name: Probe /health
-        id: probe
-        if: steps.url.outputs.missing != 'true'
-        run: |
-          URL="${{ steps.url.outputs.url }}"
-          echo "Probing $URL"
-          HTTP=$(curl -sS -m 20 -o health.json -w "%{http_code}" "$URL" || true)
-          echo "http_code=$HTTP" >> $GITHUB_OUTPUT
-          echo "HTTP=$HTTP"
-          echo "---- body ----"
-          cat health.json || true
-          echo "--------------"
-
-      - name: Validate build_sha present
-        id: validate
-        if: steps.url.outputs.missing != 'true'
-        run: |
-          if [ ! -f health.json ]; then
-            echo "ok=false" >> $GITHUB_OUTPUT
-            echo "reason=no health.json" >> $GITHUB_OUTPUT
-            exit 0
+          if [ "$RESPONSE" != "200" ]; then
+            echo "status=unhealthy" >> "$GITHUB_OUTPUT"
+            echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
+          else
+            STATUS=$(cat /tmp/health_response.json | python3 -c               "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))")
+            echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+            echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
           fi
-          SHA=$(jq -r '.build_sha // .sha // .version // ""' health.json 2>/dev/null || true)
-          if [ -z "$SHA" ]; then
-            echo "ok=false" >> $GITHUB_OUTPUT
-            echo "reason=missing build_sha/sha/version in response" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "ok=true" >> $GITHUB_OUTPUT
-          echo "sha=$SHA" >> $GITHUB_OUTPUT
-          echo "SHA confirmed: $SHA"
-
-      - name: Open issue on failure
-        if: steps.url.outputs.missing != 'true' && (steps.probe.outputs.http_code != '200' || steps.validate.outputs.ok != 'true')
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          URL="${{ steps.url.outputs.url }}"
-          HTTP="${{ steps.probe.outputs.http_code }}"
-          REASON="${{ steps.validate.outputs.reason }}"
-          TS="$(date -u +'%Y-%m-%d %H:%M:%SZ')"
-          BODY="$(cat health.json 2>/dev/null || echo 'no body')"
-          ISSUE_BODY=$(cat <<EOF
-          **Time (UTC):** ${TS}
+          PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
 
-          **URL:** ${URL}
+      - name: Report unhealthy status
+        if: steps.health.outputs.status != 'healthy'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.health.outputs.status }}';
+            const httpCode = '${{ steps.health.outputs.http_code }}';
+            const now = new Date().toISOString();
 
-          **HTTP:** ${HTTP}
+            const issueBody = [
+              '## Production Health Alert',
+              '',
+              '**Detected:** ' + now,
+              '**HTTP Status:** ' + httpCode,
+              '**Health status:** ' + status,
+              '',
+              '### Required actions',
+              '1. Check Sentry for recent errors.',
+              '2. Verify Azure app service is running.',
+              '3. Confirm database connectivity via `/api/health/` response body.',
+              '4. Escalate to TC if not resolved within 15 minutes.',
+              '',
+              '_This issue was opened automatically by the production health monitor._',
+            ].join('\n');
 
-          **Reason:** ${REASON}
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '[ALERT] Production health check failed - ' + now,
+              body: issueBody,
+              labels: ['production-alert', 'priority-high'],
+            });
 
-          **Response body:**
-
-          ```
-          ${BODY}
-          ```
-          EOF
-          )
-          gh issue create \
-            --repo ${{ github.repository }} \
-            --title "PROD HEALTH FAIL: ${TS}" \
-            --body "$ISSUE_BODY" || true
-
-      - name: Summary
-        if: always()
-        run: |
-          echo "URL=${{ vars.CROWN_PROD_HEALTH_URL }}" >> $GITHUB_STEP_SUMMARY
-          echo "HTTP=${{ steps.probe.outputs.http_code }}" >> $GITHUB_STEP_SUMMARY
-          echo "SHA=${{ steps.validate.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "OK=${{ steps.validate.outputs.ok }}" >> $GITHUB_STEP_SUMMARY
+      - name: Log healthy status
+        if: steps.health.outputs.status == 'healthy'
+        run: echo "Production health OK - HTTP ${{ steps.health.outputs.http_code }}"

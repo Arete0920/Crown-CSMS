@@ -7,7 +7,7 @@ on:
 
 jobs:
   phase3-runtime-proof:
-    runs-on: [self-hosted, linux, x64, crown-runner]
+    runs-on: ubuntu-latest
 
     services:
       postgres:

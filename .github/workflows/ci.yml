@@ -8,7 +8,7 @@ on:
 
 jobs:
   verify-immutable-tags:
-    runs-on: [self-hosted, linux, x64, crown-runner]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
@@ -76,7 +76,7 @@ jobs:
           echo "✅ All release tags verified immutable"
 
   test:
-    runs-on: [self-hosted, linux, x64, crown-runner]
+    runs-on: ubuntu-latest
     needs: verify-immutable-tags
     
     steps:

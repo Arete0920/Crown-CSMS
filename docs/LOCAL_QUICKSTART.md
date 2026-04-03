@@ -168,5 +168,5 @@ After following this guide:
 ## Related Documentation
 
 - [AZURE_DEV_APP_SETTINGS.md](./AZURE_DEV_APP_SETTINGS.md) - Azure deployment config
-- [README_DIRECTOR_ACTIONS.md](../README_DIRECTOR_ACTIONS.md) - Director API usage
-- [INTEGRATION_GUIDE.md](../INTEGRATION_GUIDE.md) - Frontend integration patterns
+- [README_DIRECTOR_ACTIONS.md](ops/README_DIRECTOR_ACTIONS.md) - Director API usage
+- [INTEGRATION_GUIDE.md](ops/INTEGRATION_GUIDE.md) - Frontend integration patterns
