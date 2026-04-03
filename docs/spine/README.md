@@ -2,7 +2,7 @@
 
 ## Authoritative freeze package (2026-02-02)
 - BASELINE_REALITY.md
-- BUYER_POSITIONING_NOTES.md
+- ../release/BUYER_POSITIONING_NOTES.md
 
 ## Purpose
 These documents freeze current truth, stop cost bleed, and define buyer-safe positioning.

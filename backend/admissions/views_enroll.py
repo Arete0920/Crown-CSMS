@@ -4,22 +4,47 @@ Admissions enrollment action.
 POST /api/admissions/enroll/
 Body: {"application_id": <int>}
 
-Staff-only. Moves an AdmissionsApplication from ACCEPTED → ENROLLED
+Staff-only. Moves an AdmissionsApplication from ACCEPTED -> ENROLLED
 and activates the linked sis_student record (if present).
-Returns: {ok, student_id, name, message}
+
+Returns:
+  - 200 OK (already enrolled):
+      {
+          "ok": true,
+          "already_enrolled": true,
+          "student_id": <str | null>,
+          "name": <str | null>,
+          "message": "Already enrolled."
+      }
+  - 200 OK (enrolled successfully):
+      {
+          "ok": true,
+          "already_enrolled": false,
+          "student_id": <str | null>,
+          "name": <str | null>,
+          "message": "Enrolled successfully."
+      }
+  - 400/401/403/404 error responses:
+      {
+          "ok": false,
+          "detail": <str>
+      }
+  - 409 Conflict (invalid stage transition):
+      {
+          "ok": false,
+          "detail": <str>,
+          "current_status": <str>
+      }
 """
 
-import json
-
 from django.db import transaction
-from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
 from admissions.models import AdmissionsApplication
-from core.models import School
+from admissions.services import InvalidStageTransition, move_stage
 from households.scoping import get_request_school_id
 
 
@@ -42,18 +67,12 @@ def _require_staff(request):
 @permission_classes([IsAuthenticated])
 def enroll_applicant(request):
     school_id = get_request_school_id(request, required=True)  # 400 if missing, 404 if wrong tenant
-    school = School.objects.get(pk=school_id)
 
     denied = _require_staff(request)
     if denied is not None:
         return denied
 
-    try:
-        body = json.loads(request.body) if request.body else {}
-    except (json.JSONDecodeError, ValueError):
-        body = {}
-
-    application_id = body.get("application_id")
+    application_id = request.data.get("application_id")
     if not application_id:
         return Response(
             {"ok": False, "detail": "application_id is required."},
@@ -62,7 +81,7 @@ def enroll_applicant(request):
 
     try:
         app = AdmissionsApplication.objects.select_related("sis_student").get(
-            id=application_id, school=school
+            id=application_id, school_id=school_id
         )
     except AdmissionsApplication.DoesNotExist:
         return Response(
@@ -84,8 +103,17 @@ def enroll_applicant(request):
         )
 
     with transaction.atomic():
-        app.status = AdmissionsApplication.STATUS_ENROLLED
-        app.save(update_fields=["status", "updated_at"])
+        try:
+            move_stage(app, AdmissionsApplication.STATUS_ENROLLED, actor_user=request.user)
+        except InvalidStageTransition:
+            return Response(
+                {
+                    "ok": False,
+                    "detail": "Enrollment is not permitted from the current application status.",
+                    "current_status": app.status,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
 
         student_id = None
         student_name = None

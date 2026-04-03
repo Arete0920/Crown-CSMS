@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { List, ListItemButton, ListItemText, Collapse, Typography, Box } from "@mui/material";
-import ExpandLess from "@mui/icons-material/ExpandLess";
-import ExpandMore from "@mui/icons-material/ExpandMore";
 import { getDashboardNavSections } from './dashboardNavConfig';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { filterVisibleNav } from '../../auth/roleAccess';
@@ -42,11 +40,13 @@ function Section({ title, children }) {
             </Typography>
           }
         />
-        {open ? (
-          <ExpandLess sx={{ fontSize: 14, color: "text.disabled" }} />
-        ) : (
-          <ExpandMore sx={{ fontSize: 14, color: "text.disabled" }} />
-        )}
+        <Typography
+          component="span"
+          aria-hidden="true"
+          sx={{ fontSize: 14, color: "text.disabled", lineHeight: 1 }}
+        >
+          {open ? "▴" : "▾"}
+        </Typography>
       </ListItemButton>
 
       <Collapse in={open} timeout="auto" unmountOnExit>

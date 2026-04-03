@@ -28,7 +28,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
+from admissions.models import AdmissionsApplication
+from core.models import AcademicYear, Family, School
 from finance.models import FinancePayment
 
 User = get_user_model()
@@ -298,3 +299,103 @@ class SharedSchoolResourceAccessTests(_ObjPermBase):
             msg=f"Staff list of installment plans returned {list_resp.status_code}.",
         )
         self.assertNotEqual(list_resp.status_code, 500)
+
+
+# ---------------------------------------------------------------------------
+# 4. Enrollment — invalid stage transition returns 409
+# ---------------------------------------------------------------------------
+
+class EnrollmentTransitionGuardTests(_ObjPermBase):
+    """
+    Endpoint-level regression tests for the 409 Conflict path in enroll_applicant.
+
+    When a staff user attempts to enroll an application that is NOT in an
+    allowed source status (only ACCEPTED → ENROLLED is valid), the endpoint
+    must return HTTP 409 with ok=False and current_status in the payload.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.academic_year = AcademicYear.objects.create(
+            school=self.school,
+            name="2025-2026",
+            start_date="2025-09-01",
+            end_date="2026-06-30",
+        )
+        self.family = Family.objects.create(
+            school=self.school,
+            family_name="Transition Guard Family",
+        )
+
+    def _make_app(self, status: str) -> AdmissionsApplication:
+        return AdmissionsApplication.objects.create(
+            school=self.school,
+            academic_year=self.academic_year,
+            family=self.family,
+            status=status,
+        )
+
+    def test_enroll_from_draft_returns_409(self):
+        """
+        Application in DRAFT status → 409 with ok=False and current_status=DRAFT.
+        """
+        app = self._make_app(AdmissionsApplication.STATUS_DRAFT)
+        self.client.force_authenticate(user=self.user_staff)
+        resp = self.client.post(
+            ENROLL_URL,
+            data={"application_id": app.id},
+            format="json",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+        self.assertEqual(
+            resp.status_code, 409,
+            msg=f"Expected 409 for DRAFT→ENROLLED, got {resp.status_code}. Body: {resp.content[:300]!r}",
+        )
+        data = resp.json()
+        self.assertFalse(data.get("ok"), "ok must be False on 409")
+        self.assertEqual(
+            data.get("current_status"), AdmissionsApplication.STATUS_DRAFT,
+            "current_status must reflect the application's actual status",
+        )
+
+    def test_enroll_from_submitted_returns_409(self):
+        """
+        Application in SUBMITTED status → 409 with ok=False and current_status=SUBMITTED.
+        """
+        app = self._make_app(AdmissionsApplication.STATUS_SUBMITTED)
+        self.client.force_authenticate(user=self.user_staff)
+        resp = self.client.post(
+            ENROLL_URL,
+            data={"application_id": app.id},
+            format="json",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+        self.assertEqual(
+            resp.status_code, 409,
+            msg=f"Expected 409 for SUBMITTED→ENROLLED, got {resp.status_code}. Body: {resp.content[:300]!r}",
+        )
+        data = resp.json()
+        self.assertFalse(data.get("ok"), "ok must be False on 409")
+        self.assertEqual(
+            data.get("current_status"), AdmissionsApplication.STATUS_SUBMITTED,
+            "current_status must reflect the application's actual status",
+        )
+
+    def test_409_response_does_not_expose_internal_details(self):
+        """
+        The 409 detail message must be the safe fixed string, not internal
+        exception/transition graph details.
+        """
+        app = self._make_app(AdmissionsApplication.STATUS_DRAFT)
+        self.client.force_authenticate(user=self.user_staff)
+        resp = self.client.post(
+            ENROLL_URL,
+            data={"application_id": app.id},
+            format="json",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+        self.assertEqual(resp.status_code, 409)
+        detail = resp.json().get("detail", "")
+        self.assertNotIn("→", detail, "detail must not expose internal transition notation")
+        self.assertNotIn("Allowed:", detail, "detail must not expose transition graph")
+

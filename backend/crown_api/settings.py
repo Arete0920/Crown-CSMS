@@ -158,6 +158,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
     'crown_api',
     'crown_api.exports',
     'core',
@@ -226,6 +228,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
     'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard — after auth so user.school_id is available for header-less fallback
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
@@ -343,6 +346,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_RENDERER_CLASSES": DRF_DEFAULT_RENDERERS,
     "DEFAULT_THROTTLE_RATES": {
         # Exports-only throttling scopes (applied per-view via throttle_classes).
@@ -351,6 +355,17 @@ REST_FRAMEWORK = {
         # Per-IP safety net. Keep generous to avoid harming shared networks.
         "exports_ip_minute": "60/min",
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Crown API",
+    "DESCRIPTION": (
+        "Investor review and partner integration surface for Crown. "
+        "Purpose-built for Christian and faith-based private schools."
+    ),
+    "VERSION": "1.0.0-rc1",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 

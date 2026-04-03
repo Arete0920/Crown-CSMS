@@ -4,6 +4,7 @@ URL configuration for crown_api project.
 import logging
 from django.urls import include, path
 from django.views.generic import RedirectView
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from crown_api.wizard_registry import get_wizard_urlpatterns  # single source of truth
 from crown_api.api.wizards import wizard_discovery
 from crown_api.health_views import health, health_version, system_health
@@ -28,6 +29,9 @@ urlpatterns = [
     path("health/", health, name="health"),
     path("api/health/", health, name="api_health"),
     path("api/integrity/", integrity, name="api_integrity"),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     path("api/system/health/", system_health, name="system_health"),
     path("health/version/", health_version, name="health_version"),
 

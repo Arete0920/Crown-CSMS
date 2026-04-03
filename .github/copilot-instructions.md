@@ -59,15 +59,15 @@ This alone dramatically reduces “creative” damage.
 - **Extensible by gold standard cloning:**  
   - New persona APIs should copy the Financial Aid pattern exactly—see [docs/REFERENCE_MODULE_PATTERN.md](docs/REFERENCE_MODULE_PATTERN.md).
 - **Documentation-first:**  
-  - Key guides: [README_DIRECTOR_ACTIONS.md](README_DIRECTOR_ACTIONS.md), [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md), [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md), [CHECKLIST.md](CHECKLIST.md), [MASTER_SUMMARY.md](MASTER_SUMMARY.md), [FILE_INDEX.md](FILE_INDEX.md).
+  - Key guides: [README_DIRECTOR_ACTIONS.md](docs/ops/README_DIRECTOR_ACTIONS.md), [IMPLEMENTATION_SUMMARY.md](docs/status/IMPLEMENTATION_SUMMARY.md), [INTEGRATION_GUIDE.md](docs/ops/INTEGRATION_GUIDE.md), [CHECKLIST.md](CHECKLIST.md), [MASTER_SUMMARY.md](docs/status/MASTER_SUMMARY.md), [FILE_INDEX.md](docs/maps/FILE_INDEX.md).
 - **Quick lookup for any task:**  
-  - Find code/tests/examples in [FILE_INDEX.md](FILE_INDEX.md)
+  - Find code/tests/examples in [FILE_INDEX.md](docs/maps/FILE_INDEX.md)
   - API specs/examples: [docs/DIRECTOR_ACTIONS_API.md](docs/DIRECTOR_ACTIONS_API.md)
   - Automated/manual testing: [test_director_actions.py](test_director_actions.py), [curl_examples_director_actions.sh](curl_examples_director_actions.sh)
 
 ## 🔗 Integration Points
 
-- **Frontend integration:** Use instructions/examples from [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)
+- **Frontend integration:** Use instructions/examples from [INTEGRATION_GUIDE.md](docs/ops/INTEGRATION_GUIDE.md)
 - **Cross-component communication:** Always route via Django APIs; never direct DB or file access.
 
 ## 🛡️ Guardrails

@@ -23,6 +23,6 @@
 
 ## Where the truth lives
 - `BASELINE_REALITY.md`
-- `BUYER_POSITIONING_NOTES.md`
+- `docs/release/BUYER_POSITIONING_NOTES.md`
 - `docs/spine/README.md`
 - `docs/spine/DAILY_EXECUTION_CHECKLIST.md`
