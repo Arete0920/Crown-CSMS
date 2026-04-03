@@ -2,191 +2,66 @@
 
 ## Scope
 
-This policy applies to the Crown2026 repository, its code, workflows, documentation, build surfaces, deployment-related automation, and associated operational artifacts.
+This policy applies to the Crown2026 repository, including source code, workflows, build and release automation, and operational documentation.
 
 Repository lineage note: Crown2026 is the current active platform repository. Crown-Christian is retained as an archived legacy repository.
 
-## Supported status
+## Supported Status
 
-Security fixes are applied according to current operational priorities.
+- `main`: actively supported
+- tagged release candidates: best-effort support based on active release intent
+- stale branches and archived artifacts: no guaranteed support
 
-Because this repository is under active development, support status should be interpreted as follows:
+## Reporting a Vulnerability
 
-- `main` - active hardening and active development
-- tagged releases and release candidates - support depends on current release intent
-- stale branches or archived artifacts - no support commitment unless explicitly stated
+Do not report vulnerabilities in public issues or pull requests.
 
-## Reporting a vulnerability
+Use private reporting channels:
 
-Do not disclose vulnerabilities publicly.
-
-Do not:
-
-- open a public GitHub issue
-- open a public pull request containing exploit details
-- post secrets, tokens, stack traces with sensitive values, or operational screenshots in public threads
-
-Instead, report privately to:
-
-- Security contact form: [Arete Advisory Group](https://www.areteadvisorygroup.org)
+- Security contact: [Arete Advisory Group](https://www.areteadvisorygroup.org)
 - Maintainer contact: [John Megahan on LinkedIn](https://www.linkedin.com/in/john-megahan-935784232)
 
-Subject line recommendation:
+Suggested subject line:
 
 ```text
 [SECURITY] Crown2026 vulnerability report
 ```
 
-## What to include in a report
-
-Please include:
+## What to Include
 
 - affected component or file path
 - vulnerability description
-- impact assessment
-- reproduction steps
-- proof of concept, if safe to share
-- whether secrets, customer data, or deployment surfaces may be affected
-- any suggested remediation
+- impact and probable blast radius
+- minimal reproduction steps
+- whether credentials or student data may be affected
 
-## Sensitive content handling
+Do not include live secrets unless absolutely necessary.
 
-Do not include live credentials in the report body unless absolutely necessary.
+## Handling Expectations
 
-Prefer:
-
-- redacted examples
-- minimal proof
-- rotated or invalidated sample tokens where possible
-
-If you believe a live secret has been exposed:
-
-- mark the report as urgent
-- identify the likely secret type
-- identify the affected environment if known
-- do not repost the secret in multiple locations
-
-## Response expectations
-
-Target handling process:
+Security reports are handled on a best-effort basis:
 
 - acknowledge receipt
-- validate the finding
-- assess severity and blast radius
-- rotate or revoke exposed secrets if applicable
-- remediate
-- document the fix internally
-- disclose publicly only if and when appropriate
+- validate and classify severity
+- rotate/revoke exposed secrets if needed
+- remediate and verify
+- disclose publicly only when appropriate
 
-Response timing is best-effort and depends on severity and active operational workload.
+## Safe Harbor and Out of Scope
 
-## Safe harbor
+Good-faith security research is welcome. The following are out of scope unless explicitly authorized:
 
-Good-faith security research intended to improve the security of this repository will be treated respectfully.
-
-However, the following are out of scope unless explicitly authorized:
-
-- denial-of-service activity
-- destructive testing
+- denial-of-service or destructive testing
 - social engineering
 - physical attacks
-- access to third-party accounts or infrastructure without permission
-- retention, reuse, or disclosure of non-public data
+- unauthorized access to third-party systems
 
-## Secret handling expectations
+## Security Controls and Evidence
 
-All contributors must:
+Crown2026 uses layered security controls including code scanning, dependency auditing, secret scanning, and branch governance checks.
 
-- avoid committing secrets
-- use approved secret storage mechanisms
-- rotate any accidentally exposed secrets immediately
-- report suspected exposure through the private security channel
-- avoid broad permanent allowlisting of sensitive findings without justification
-
-## Dependency and supply-chain expectations
-
-Changes affecting dependencies, CI, build logic, release automation, or deployment workflows may require elevated scrutiny.
-
-Contributors should expect:
-
-- dependency review
-- static analysis
-- secret scanning
-- targeted follow-up proof for release-affecting changes
-
-## Disclosure policy
-
-Public disclosure, if any, is controlled by the repository owner or designated maintainer.
-
-Do not publish details until:
-
-- the issue is validated
-- remediation or mitigation is in place
-- disclosure timing is approved
-
-## Contact
-
-Primary security contact:
-
-- [Arete Advisory Group](https://www.areteadvisorygroup.org)
-
-Secondary contact:
-
-- [John Megahan on LinkedIn](https://www.linkedin.com/in/john-megahan-935784232)
-## Supported Versions
-
-| Version | Supported |
-|---|---|
-| v0.9.x (pre-launch) | Yes |
-| < v0.9.0 | No |
-
-## Reporting a Vulnerability
-
-Do not open a public GitHub issue for security vulnerabilities.
-
-Report security issues privately to `security@crownschoolsystem.com`.
-
-Response targets:
-
-- Acknowledgment within 48 hours
-- Status update within 7 days
-
-## Active Security Controls
-
-| Control | Status | Details |
-|---|---|---|
-| CodeQL static analysis | Active - blocking target | Runs on PRs to `main` and `develop` |
-| Dependency audit | Active - blocking target | pip-audit and npm audit |
-| Secret scanning | Active - blocking | gitleaks on repository content |
-| Branch protection | Enforced target | PR required, approval required, required checks |
-| Tenant isolation | Active | Header-based school scoping and tenant guards |
-| FERPA audit logging | Active | Audit middleware and structured audit logging |
-| JWT authentication | Active | Bearer-token protected API surface |
-
-## Credential Policy
-
-- No credentials, API keys, tokens, or secrets should be committed to this repository.
-- Secrets are managed via GitHub Secrets for CI and Azure-managed secret storage in production.
-- Any accidental credential exposure is treated as a P0 incident and requires immediate rotation.
-
-## Data Protection
-
-Crown handles student data subject to FERPA and COPPA. See [docs/COMPLIANCE.md](docs/COMPLIANCE.md).
-
-## Security Evidence and Governance Artifacts
-
-Investor and release-governance security evidence is tracked in:
+Operational evidence and release security artifacts are maintained under:
 
 - [docs/release/SECURITY_GATES_EVIDENCE.md](docs/release/SECURITY_GATES_EVIDENCE.md)
 - [docs/release/BRANCH_PROTECTION_EVIDENCE.md](docs/release/BRANCH_PROTECTION_EVIDENCE.md)
-- [docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md](docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md)
 - [docs/release/FINAL_RELEASE_GATE.md](docs/release/FINAL_RELEASE_GATE.md)
-
-## Security Disclosure History
-
-| Date | Finding | Action |
-|---|---|---|
-| Feb 2026 | Secrets were committed to repository history | History purged and credentials rotated |
-| Feb 2026 | Production logs and archives were tracked | Removed from history and ignore rules tightened |
-| Mar 2026 | CodeQL was advisory | Blocking behavior restored |
-| Mar 2026 | Dependency review was unreliable | Replaced with deterministic audit workflow |
