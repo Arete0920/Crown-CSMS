@@ -1,0 +1,79 @@
+name: Stale Branch Cleanup
+
+# Runs weekly. Reports branches with no push activity for 60+ days.
+# Protected branch names and prefixes are excluded from reporting.
+
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Every Monday at 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report-stale-branches:
+    name: Report stale branches (no push in 60 days)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all remote branches
+        run: git fetch --prune origin
+
+      - name: Report branches with no activity in 60+ days
+        run: |
+          set -euo pipefail
+          CUTOFF=$(date -d "60 days ago" +%s)
+
+          PROTECTED_EXACT="main develop"
+          PROTECTED_PREFIXES="rc/ release/ stabilize/ hotfix/ copilot/"
+
+          echo "=== STALE BRANCH REPORT (>60 days inactive) ==="
+          echo "Cutoff date: $(date -d @$CUTOFF '+%Y-%m-%d')"
+          echo ""
+
+          STALE_COUNT=0
+          while IFS= read -r branch; do
+            short="${branch#origin/}"
+            [ "$short" = "HEAD" ] && continue
+
+            protected=false
+            for exact in $PROTECTED_EXACT; do
+              if [ "$short" = "$exact" ]; then
+                protected=true
+                break
+              fi
+            done
+            $protected && continue
+
+            for prefix in $PROTECTED_PREFIXES; do
+              if [[ "$short" == "$prefix"* ]]; then
+                protected=true
+                break
+              fi
+            done
+            $protected && continue
+
+            last_commit=$(git log -1 --format="%ct" "origin/$short" 2>/dev/null || echo "0")
+            if [ "$last_commit" -lt "$CUTOFF" ]; then
+              last_date=$(date -d @$last_commit '+%Y-%m-%d')
+              echo "  STALE: $short (last push: $last_date)"
+              STALE_COUNT=$((STALE_COUNT + 1))
+            fi
+          done < <(git branch -r | sed 's/^ *//')
+
+          echo ""
+          echo "Total stale branches: $STALE_COUNT"
+          if [ "$STALE_COUNT" -gt 0 ]; then
+            echo ""
+            echo "ACTION REQUIRED: Delete stale branches via:"
+            echo "  git push origin --delete <branch-name>"
+          else
+            echo "No stale branches found."
+          fi
