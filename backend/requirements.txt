@@ -1,7 +1,7 @@
 # Backend-only requirements for Crown2026 (Django/DRF API)
 # Keep in sync with root requirements.txt where applicable.
 
-Django==5.2.12
+Django==5.2.13
 djangorestframework==3.15.2
 python-dotenv==1.0.0
 gunicorn==22.0.0
