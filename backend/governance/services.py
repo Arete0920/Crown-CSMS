@@ -55,12 +55,26 @@ from signals.models import BoardExecutiveMetric
 
 try:
     from spiritual_life.services import build_spiritual_life_dashboard
-except Exception:  # pragma: no cover - fallback when optional spiritual dashboard imports are unavailable
-    def build_spiritual_life_dashboard(_school):
+except Exception:  # pragma: no cover - fallback when optional portrait imports are unavailable
+    from spiritual_life.models import ChapelAttendance
+
+    def build_spiritual_life_dashboard(school):
+        approved_hours = (
+            ServiceEntry.objects.filter(school=school, status="approved").aggregate(total=Sum("hours"))["total"]
+            or Decimal("0.00")
+        )
+        total_attendance = ChapelAttendance.objects.filter(school=school).count()
+        present_attendance = ChapelAttendance.objects.filter(
+            school=school,
+            status__in=["present", "late"],
+        ).count()
         return {
-            "approved_service_hours": 0,
-            "avg_chapel_attendance_pct": 0,
-            "avg_domain_rating": 0,
+            "approved_service_hours": round(float(approved_hours), 2),
+            "avg_chapel_attendance_pct": round((present_attendance / total_attendance) * 100, 1)
+            if total_attendance
+            else 0.0,
+            "avg_domain_rating": None,
+            "source": "live_db",
         }
 
 
