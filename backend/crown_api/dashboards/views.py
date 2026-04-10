@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.permissions import user_has_permission
+
 from .models import DashboardSnapshot
 from .payload_contract import validate_dashboard_payload
 from .sample_payloads import SAMPLE_PAYLOAD_BUILDERS
@@ -117,6 +119,15 @@ class DashboardSummaryView(APIView):
     def get(self, request, dashboard_key):
         key = str(dashboard_key).strip().lower()
         school_id = _school_id_from_request(request)
+
+        if key == 'portrait-service':
+            school = _resolve_school_strict(request)
+            user = getattr(request, 'user', None)
+            if not user or not getattr(user, 'is_authenticated', False):
+                return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_403_FORBIDDEN)
+            if not user_has_permission(user, 'spiritual_life.view', school=school):
+                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+            school_id = str(school.id)
 
         if key not in SAMPLE_PAYLOAD_BUILDERS:
             return Response(

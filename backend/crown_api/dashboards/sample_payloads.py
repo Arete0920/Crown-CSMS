@@ -153,8 +153,73 @@ def school_board_sample_payload(school_id):
         )
 
 
+def portrait_service_sample_payload(school_id):
+    try:
+        from core.models import School
+        from spiritual_life.services import build_mission_metrics_dashboard
+
+        school = School.objects.get(pk=school_id)
+        detail_metrics = build_mission_metrics_dashboard(school)
+        queue = [
+            queue_item(item.get('label') or item.get('secondary') or 'Review mission metrics')
+            for item in (detail_metrics.get('approval_queue') or [])[:2]
+        ]
+        queue.extend(
+            queue_item(item.get('label') or 'Review portrait record')
+            for item in (detail_metrics.get('portrait_review_queue') or [])[:2]
+        )
+        if not queue:
+            queue = [queue_item('Review mission readiness dashboard')]
+
+        payload = build_dashboard_payload(
+            dashboard_key='portrait-service',
+            metrics=[
+                metric('Mission readiness', detail_metrics.get('mission_readiness_pct', 0)),
+                metric('Approved service hours', detail_metrics.get('approved_service_hours', 0)),
+                metric('Pending service hours', detail_metrics.get('pending_service_hours', 0)),
+                metric('Portrait completion', detail_metrics.get('portrait_completion_pct', 0)),
+            ],
+            alerts=detail_metrics.get('alerts', []),
+            queue=queue,
+            meta={
+                'school_id': str(school_id),
+                'served_from': detail_metrics.get('source', 'live_db'),
+                'certification_candidate': 'live',
+            },
+        )
+        payload['detail_metrics'] = detail_metrics
+        return payload
+    except Exception:
+        payload = build_dashboard_payload(
+            dashboard_key='portrait-service',
+            metrics=[metric('Mission readiness', '0')],
+            alerts=[
+                alert(
+                    'Mission metrics are temporarily using the safe fallback contract',
+                    'Low',
+                    'Live portrait or spiritual-life data was unavailable during this request.',
+                )
+            ],
+            queue=[queue_item('Review mission readiness dashboard')],
+            meta={
+                'school_id': str(school_id),
+                'served_from': 'sample',
+                'certification_candidate': 'hybrid',
+            },
+        )
+        payload['detail_metrics'] = {
+            'approved_service_hours': 0.0,
+            'pending_service_hours': 0.0,
+            'portrait_completion_pct': 0.0,
+            'mission_readiness_pct': 0.0,
+            'source': 'sample',
+        }
+        return payload
+
+
 SAMPLE_PAYLOAD_BUILDERS = {
     'attendance': attendance_sample_payload,
     'release-reliability': release_reliability_sample_payload,
     'school-board': school_board_sample_payload,
+    'portrait-service': portrait_service_sample_payload,
 }

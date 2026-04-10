@@ -183,6 +183,7 @@ INSTALLED_APPS = [
     'discipline',  # Discipline incidents & actions
     'servicehours',  # Service hours tracking & approvals
     'comms',
+    'student_records.apps.StudentRecordsConfig',
     'student360',
     'parent360',
     'executive360',
@@ -193,6 +194,7 @@ INSTALLED_APPS = [
     'safety.apps.SafetyConfig',
     'integrations_real.apps.IntegrationsRealConfig',
     'spiritual_life.apps.SpiritualLifeConfig',
+    'portrait.apps.PortraitConfig',
     'outreach.apps.OutreachConfig',
     'athletics.apps.AthleticsConfig',
     'facops.apps.FacopsConfig',
