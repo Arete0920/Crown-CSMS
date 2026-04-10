@@ -145,7 +145,7 @@ class DashboardSummaryView(APIView):
         payload = SAMPLE_PAYLOAD_BUILDERS[key](school_id)
         payload = deepcopy(payload)
         payload.setdefault('meta', {})
-        payload['meta']['served_from'] = 'sample'
+        payload['meta'].setdefault('served_from', 'sample')
         payload['meta']['school_id'] = school_id
         validate_dashboard_payload(payload)
         return Response(payload, status=status.HTTP_200_OK)

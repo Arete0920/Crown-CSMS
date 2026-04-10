@@ -81,7 +81,80 @@ def release_reliability_sample_payload(_school_id):
     )
 
 
+def school_board_sample_payload(school_id):
+    try:
+        from governance.services import build_board_dashboard_payload
+
+        dashboard = build_board_dashboard_payload(school_id=school_id)
+        enrollment = dashboard.get('enrollment', {})
+        spiritual_life = dashboard.get('spiritual_life', {})
+        crown_compass = dashboard.get('crown_compass', {})
+        compliance = dashboard.get('compliance', {})
+        watchlist = list(crown_compass.get('watchlist') or [])
+
+        alerts = [
+            alert(item, 'Medium', 'Board watchlist item')
+            for item in watchlist[:3]
+        ]
+        if not alerts:
+            alerts = [
+                alert(
+                    'No high-risk governance alerts are currently flagged',
+                    'Low',
+                    'Board-facing health signals are stable right now.',
+                )
+            ]
+
+        return build_dashboard_payload(
+            dashboard_key='school-board',
+            metrics=[
+                metric('Current enrollment', enrollment.get('current_enrollment', 0)),
+                metric('Waitlist total', enrollment.get('waitlist_total', 0)),
+                metric('Service hours YTD', spiritual_life.get('service_hours_ytd', 0)),
+                metric('Overall health score', crown_compass.get('overall_score', 0)),
+            ],
+            alerts=alerts,
+            queue=[
+                queue_item('Review governance dashboard'),
+                queue_item('Confirm board packet agenda'),
+                queue_item(f"Open audit items: {compliance.get('open_audit_items', 0)}"),
+            ],
+            meta={
+                'school_id': str(school_id),
+                'served_from': 'live_db',
+                'certification_candidate': 'live',
+            },
+        )
+    except Exception:
+        return build_dashboard_payload(
+            dashboard_key='school-board',
+            metrics=[
+                metric('Current enrollment', '0'),
+                metric('Waitlist total', '0'),
+                metric('Service hours YTD', '0.0'),
+                metric('Overall health score', '0'),
+            ],
+            alerts=[
+                alert(
+                    'School board dashboard is using the safe fallback contract',
+                    'Low',
+                    'Live governance metrics were unavailable during this request.',
+                )
+            ],
+            queue=[
+                queue_item('Review governance dashboard'),
+                queue_item('Confirm board packet agenda'),
+            ],
+            meta={
+                'school_id': str(school_id),
+                'served_from': 'sample',
+                'certification_candidate': 'hybrid',
+            },
+        )
+
+
 SAMPLE_PAYLOAD_BUILDERS = {
     'attendance': attendance_sample_payload,
     'release-reliability': release_reliability_sample_payload,
+    'school-board': school_board_sample_payload,
 }
