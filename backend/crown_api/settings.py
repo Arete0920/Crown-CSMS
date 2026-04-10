@@ -541,6 +541,11 @@ try:
             "task": "support.tasks.escalate_overdue_tickets",
             "schedule": crontab(minute=0),
         },
+        # Stage 5 — Predictive analytics nightly run (02:00 UTC daily)
+        "predictive-analytics-0200-utc": {
+            "task": "analytics.tasks.run_predictive_analytics_nightly",
+            "schedule": crontab(hour=2, minute=0),
+        },
         # Stage 5 — Customer health scoring (03:30 UTC daily)
         "customer-health-0330-utc": {
             "task": "analytics.tasks.refresh_all_health_scores",
