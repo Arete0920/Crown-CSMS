@@ -124,7 +124,7 @@ class DashboardSummaryView(APIView):
             school = _resolve_school_strict(request)
             user = getattr(request, 'user', None)
             if not user or not getattr(user, 'is_authenticated', False):
-                return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_403_FORBIDDEN)
+                return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
             if not user_has_permission(user, 'spiritual_life.view', school=school):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
             school_id = str(school.id)
