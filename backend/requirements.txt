@@ -45,6 +45,3 @@ stripe>=10.0.0
 
 # Board Packet PDF generation (Stage 4)
 reportlab>=4.2.0
-
-# Conservative predictive analytics explainability
-shap>=0.46.0
