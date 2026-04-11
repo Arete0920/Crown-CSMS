@@ -82,7 +82,8 @@ def search_solomon_content(request, query="", module="", audience=""):
         qs = qs.filter(audiences__slug=audience)
 
     if query:
-        qs = qs.filter(title__icontains=query) | qs.filter(content__icontains=query)
+        from django.db.models import Q
+        qs = qs.filter(Q(title__icontains=query) | Q(content__icontains=query))
 
     articles = [_serialize_article(a) for a in qs.distinct()[:20]]
 
