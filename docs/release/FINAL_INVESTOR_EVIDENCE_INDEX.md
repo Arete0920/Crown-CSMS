@@ -1,7 +1,7 @@
 # Final Investor Evidence Index
 
-Generated: 2026-04-02  
-Branch: `chore/github-cleanup-phase3-investor-evidence`
+Generated: 2026-04-11
+Branch: `fix/frontend-audit`
 
 Purpose: single source of truth for evidence presence, status, and follow-up ownership.
 
@@ -18,16 +18,16 @@ Status legend:
 | `docs/release/security-gate-evidence/codeql-blocking-evidence.png` | Screenshot of CodeQL blocking behavior on PR | `MISSING` | No screenshot committed yet | DevOps |
 | `docs/release/security-gate-evidence/dep-audit-blocking-evidence.png` | Screenshot of dependency audit blocking PR | `MISSING` | No screenshot committed yet | DevOps |
 | `docs/release/security-gate-evidence/secret-scan-blocking-evidence.png` | Screenshot of secret-scan blocking behavior | `MISSING` | Path reserved; proof not captured | DevOps |
-| `.github/workflows/codeql.yml` | Source config for CodeQL workflow | `PRESENT` | Workflow exists and runs on main/develop + schedule | Engineering |
-| `.github/workflows/dependency-audit.yml` | Source config for pip-audit and npm audit | `PRESENT` | Workflow exists; blocking behavior requires manual PR capture | Engineering |
-| `.github/workflows/secret-scan.yml` | Source config for gitleaks scan | `PRESENT` | Workflow exists; blocking behavior requires manual PR capture | Engineering |
+| `docs/release/security-gate-evidence/codeql-live-state.txt` | Live CodeQL default-setup and required-check evidence | `PRESENT` | Captures GitHub API proof that default setup is configured and `main` now requires `CodeQL` plus the contract/pytest/security gates | Engineering |
+| `.github/workflows/dependency-audit.yml` | Source config for pip-audit and npm audit | `PRESENT` | Workflow exists; live branch protection now requires `dependency-review`, `Backend Python Dependency Audit`, and `Frontend Node Dependency Audit` | Engineering |
+| `.github/workflows/secret-scan.yml` | Source config for gitleaks scan | `PRESENT` | Workflow exists; live branch protection now requires `secret-scan` | Engineering |
 | `docs/release/SECURITY_GATES_EVIDENCE.md` | Security gate status and missing proof map | `PRESENT` | Canonical summary document | Engineering |
 
 ## 2. Branch Protection Evidence
 
 | File Path | Purpose | Status | Notes | Owner |
 |---|---|---|---|---|
-| `docs/release/branch-protection-export.json` | Branch protection/ruleset snapshot for main | `PRESENT` | Copied from `ruleset_main.json`; not a live API export | Engineering |
+| `docs/release/branch-protection-export.json` | Branch protection/ruleset snapshot for main | `PRESENT` | Refreshed from the live 2026-04-11 GitHub API for `main`; shows the full 18-check required set including CodeQL and security gates | Engineering |
 | `docs/release/security-gate-evidence/branch-protection-screenshot.png` | UI screenshot of branch protection settings | `MISSING` | Manual GitHub Settings capture required | Repo admin |
 | `docs/release/BRANCH_PROTECTION_EVIDENCE.md` | Detailed interpretation and manual capture checklist | `PRESENT` | Includes expected/manual fields | Engineering |
 
@@ -35,8 +35,8 @@ Status legend:
 
 | File Path | Purpose | Status | Notes | Owner |
 |---|---|---|---|---|
-| `artifacts/golden-path-pytest-output.txt` | Golden path test run output | `MISSING` | Required final run artifact not committed | QA |
-| `artifacts/tenant-isolation-pytest-output.txt` | Tenant isolation test output | `MISSING` | Required final run artifact not committed | QA |
+| `artifacts/golden-path-pytest-output.txt` | Golden path test run output | `PRESENT` | Fresh 2026-04-10 run captured from `backend/tests/test_golden_path.py` and `backend/tests/test_golden_path_bootstrap_school_create.py` | QA |
+| `artifacts/tenant-isolation-pytest-output.txt` | Tenant isolation test output | `PRESENT` | Fresh 2026-04-10 run captured from the canonical tenant isolation suite | QA |
 | `docs/proof/GRADEBOOK_PROOF_2026-02-10.md` | Historical proof artifact | `PRESENT` | Documentary proof exists | Engineering |
 | `docs/demo-proof/pp-003/proof/RUN1_PROOF.log` | Runtime proof log | `PRESENT` | Historical proof evidence | Engineering |
 | `docs/demo-proof/pp-003/proof/RUN2_PROOF.log` | Runtime proof log | `PRESENT` | Historical proof evidence | Engineering |
@@ -46,7 +46,7 @@ Status legend:
 
 | File Path | Purpose | Status | Notes | Owner |
 |---|---|---|---|---|
-| `docs/openapi/crown-openapi.yaml` | Exported OpenAPI schema | `PRESENT` | File exists in repo | Backend |
+| `docs/openapi/crown-openapi.yaml` | Exported OpenAPI schema | `PRESENT` | File exists in repo and schema export now completes again after the 2026-04-11 compatibility fix | Backend |
 | `docs/openapi/README.md` | OpenAPI generation and verification instructions | `PRESENT` | Added in Phase 3 | Backend |
 | `AUDIT_PACK_20260330_193349/06_BACKEND_URLS.txt` | URL export evidence | `PRESENT` | Report says show_urls unavailable in sampled env | DevOps |
 
@@ -54,9 +54,9 @@ Status legend:
 
 | File Path | Purpose | Status | Notes | Owner |
 |---|---|---|---|---|
-| `artifacts/load/crown-load-smoke.html` | Smoke load test report | `MISSING` | Not committed | QA |
-| `artifacts/load/crown-load-FINAL.html` | Final load test HTML report | `MISSING` | Not committed | QA |
-| `artifacts/load/crown-load-FINAL.csv` | Final load test CSV metrics | `MISSING` | Not committed | QA |
+| `artifacts/load/crown-load-smoke.html` | Smoke load test report | `PRESENT` | Canonical artifact path populated from verified release closeout load evidence | QA |
+| `artifacts/load/crown-load-FINAL.html` | Final load test HTML report | `PRESENT` | Canonical artifact path populated from verified release closeout load evidence | QA |
+| `artifacts/load/crown-load-FINAL.csv` | Final load test CSV metrics | `PRESENT` | Canonical artifact path populated from verified release closeout load evidence | QA |
 | `artifacts/load/` | Reserved canonical folder for load evidence | `PRESENT` | Folder created in Phase 3 | Engineering |
 
 ## 6. Documentation Package Evidence
@@ -90,19 +90,19 @@ Status legend:
 |---|---|---|
 | Final gate truth doc exists | `PRESENT` | `docs/release/FINAL_RELEASE_GATE.md` |
 | Security/branch protection evidence docs exist | `PRESENT` | `docs/release/SECURITY_GATES_EVIDENCE.md`, `docs/release/BRANCH_PROTECTION_EVIDENCE.md` |
-| Green-run evidence complete | `PENDING_GREEN_RUN` | Missing committed golden-path, tenant, and load reports |
+| Green-run evidence complete | `PRESENT` | `artifacts/golden-path-pytest-output.txt`, `artifacts/tenant-isolation-pytest-output.txt`, and `artifacts/load/*` are now committed as canonical evidence |
 | Branch protection UI capture complete | `MANUAL_CAPTURE_REQUIRED` | Missing screenshot from GitHub settings |
 
 ## 9. Deferred or Manual Items Still Required
 
 | Item | Status | Next Action | Owner |
 |---|---|---|---|
-| Live branch protection API export for `main` | `MANUAL_CAPTURE_REQUIRED` | Export current settings from GitHub UI/API and replace snapshot file | Repo admin |
+| Live branch protection API export for `main` | `PRESENT` | `docs/release/branch-protection-export.json` has been refreshed from the live GitHub API; only the optional UI screenshot remains | Repo admin |
 | Branch protection screenshot | `MANUAL_CAPTURE_REQUIRED` | Capture and commit `docs/release/security-gate-evidence/branch-protection-screenshot.png` | Repo admin |
 | CodeQL blocking screenshot | `MANUAL_CAPTURE_REQUIRED` | Open PR with intentional violation and capture failed required check screenshot | Security lead |
 | Dependency audit blocking screenshot | `MANUAL_CAPTURE_REQUIRED` | Open PR with vulnerable dependency and capture failed check screenshot | Security lead |
 | Secret scan blocking screenshot | `MANUAL_CAPTURE_REQUIRED` | Capture failed secret scan check from PR | Security lead |
-| Golden path test output | `PENDING_GREEN_RUN` | Run canonical golden path tests and commit output file in `artifacts/` | QA |
-| Tenant isolation test output | `PENDING_GREEN_RUN` | Run tenant isolation tests and commit output file in `artifacts/` | QA |
-| Final load reports | `PENDING_GREEN_RUN` | Run load test suite and commit smoke/final html+csv artifacts | QA |
-| Health and integrity endpoint production capture with required fields | `MANUAL_CAPTURE_REQUIRED` | Capture valid `/api/health` and `/api/integrity` responses from prod with tenant header where needed | DevOps |
+| Golden path test output | `PRESENT` | Fresh 2026-04-10 output is committed at `artifacts/golden-path-pytest-output.txt` | QA |
+| Tenant isolation test output | `PRESENT` | Fresh 2026-04-10 output is committed at `artifacts/tenant-isolation-pytest-output.txt` | QA |
+| Final load reports | `PRESENT` | Canonical smoke/final HTML+CSV artifacts are present in `artifacts/load/` | QA |
+| Health and integrity endpoint production capture with required fields | `PARTIAL` | `docs/release/security-gate-evidence/prod-health-capture.txt` and `prod-integrity-capture.txt` are now committed from the latest audit-pack probe; `/api/health` is good, while `/api/integrity` still shows `missing_tenant` without a scoped header | DevOps |

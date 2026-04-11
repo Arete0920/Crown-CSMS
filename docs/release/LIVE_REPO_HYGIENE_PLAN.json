@@ -1,0 +1,27 @@
+{
+    "local_commands":  [
+
+                       ],
+    "archived_docs":  {
+
+                      },
+    "generated_at_utc":  "2026-04-11T12:14:45.2600386Z",
+    "executed":  {
+
+                 },
+    "stale_docs":  [
+
+                   ],
+    "summary":  {
+                    "generated_at_utc":  "2026-04-11T12:14:45.2600386Z",
+                    "stale_doc_count":  0,
+                    "remote_delete_count":  0,
+                    "local_delete_count":  0,
+                    "archived_doc_count":  0,
+                    "executed_command_count":  0,
+                    "apply_script_path":  "scripts/release/generated/phase12_apply_repo_hygiene.ps1"
+                },
+    "remote_commands":  [
+
+                        ]
+}

@@ -1,0 +1,3828 @@
+{
+    "summary":  {
+                    "generated_at_utc":  "2026-04-11T08:53:25.1415918Z",
+                    "node_available":  true,
+                    "package_count":  1,
+                    "packages_with_build":  1,
+                    "build_attempt_count":  1,
+                    "build_success_count":  0,
+                    "dashboard_file_count":  757,
+                    "route_file_count":  272,
+                    "component_file_count":  292,
+                    "portal_file_count":  85
+                },
+    "builds":  [
+                   {
+                       "package_name":  "crown-dashboards",
+                       "package_dir":  "frontend/dashboards",
+                       "build_attempted":  true,
+                       "build_success":  false,
+                       "build_log_path":  "docs/release/live-audit/phase8/phase8_build_frontend_dashboards.txt"
+                   }
+               ],
+    "generated_at_utc":  "2026-04-11T08:53:25.1415918Z",
+    "packages":  [
+                     {
+                         "package_name":  "crown-dashboards",
+                         "package_path":  "frontend/dashboards/package.json",
+                         "package_dir":  "frontend/dashboards",
+                         "has_build_script":  true,
+                         "has_test_script":  true,
+                         "has_lint_script":  true,
+                         "lock_manager":  "npm",
+                         "script_names":  "dev, build, preview, test, test:unit, test:contracts, lint, lint:fix, test:e2e, test:e2e:smoke, test:e2e:magus, test:e2e:headed, test:e2e:report, api:proof:gradebook, ui:proof:gradebook, ui:proof:nav, ui:proof:matrix, ui:proof:matrix-pack-2, ui:proof:matrix-pack-3, ui:proof:nav-perms, ui:proof:student-v2, ui:proof:parent-v1, ui:proof:executive, check:module-readiness, check:shell-contracts, check:shell-certification, ci:shell, build:shell-backend-contract, check:shell-backend-contract-parity, print:shell-backend-contract, check:shell-backend-contract, debug:shell-backend-contract, ci:shell-backend-contract-parity, release:verify, verify:api-contracts, verify:navigation, release:demo-proof"
+                     }
+                 ],
+    "paths":  [
+                  {
+                      "path":  "frontend/dashboards/src/adapters/adminDashboardAdapter.js",
+                      "category":  "dashboard",
+                      "size_bytes":  6015
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/adapters/adminSectionAdapter.js",
+                      "category":  "dashboard",
+                      "size_bytes":  4457
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/academics.js",
+                      "category":  "dashboard",
+                      "size_bytes":  6293
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/academicsWeights.js",
+                      "category":  "dashboard",
+                      "size_bytes":  912
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/admissions.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1903
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/aftercareApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  4204
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/apiClient.js",
+                      "category":  "dashboard",
+                      "size_bytes":  793
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/attendance_codes_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2717
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/attendance_rules_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2355
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/bell_schedule_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2342
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/billing_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3208
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/boardApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  771
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/classrooms.js",
+                      "category":  "dashboard",
+                      "size_bytes":  894
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/client.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1783
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/comms_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3161
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/communications.js",
+                      "category":  "dashboard",
+                      "size_bytes":  648
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/compuwerxOps.js",
+                      "category":  "dashboard",
+                      "size_bytes":  669
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/compuwerxPackage3.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1935
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/compuwerxPackage4.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1143
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/compuwerxPayments.js",
+                      "category":  "dashboard",
+                      "size_bytes":  425
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/curriculum.js",
+                      "category":  "dashboard",
+                      "size_bytes":  693
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/dashboardClient.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3734
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/dashboards.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2313
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/enrollment_conversion_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2406
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/finance.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1320
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/financeSetupApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2668
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/financialAid.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1987
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/financial_aid_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3159
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/gradebook.js",
+                      "category":  "dashboard",
+                      "size_bytes":  4009
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/gradebook_setup_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2352
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/grade_weights_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2865
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/guardian_household_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3162
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/invoice_run_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2341
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/onboarding.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3383
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/ops.js",
+                      "category":  "dashboard",
+                      "size_bytes":  453
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/reenrollment.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3448
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/request.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1117
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/scheduling.js",
+                      "category":  "dashboard",
+                      "size_bytes":  865
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/scheduling_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3201
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/section_assign_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3356
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/section_staffing_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3266
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/signalsApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2346
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/student_import_wizard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2753
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/unwrap.js",
+                      "category":  "dashboard",
+                      "size_bytes":  502
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/api/wizards.js",
+                      "category":  "dashboard",
+                      "size_bytes":  358
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/AuthProvider.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1243
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/msalConfig.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1418
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/permissions.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3563
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/RequireAuth.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1254
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/roleAccess.js",
+                      "category":  "dashboard",
+                      "size_bytes":  5167
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/roleAccess.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3367
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/roleAdapter.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1850
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/auth/useApiToken.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1184
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/admin/AdminShell.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  16599
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/auth/RequirePermission.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  747
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/board/AftercareBoardCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2193
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/board/BoardCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  816
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/board/BoardCompassCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3003
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/board/BoardKpiTile.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  572
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/board/BoardSimpleTable.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  901
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/board/BoardTrendChart.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1302
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/board/index.js",
+                      "category":  "dashboard",
+                      "size_bytes":  311
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/classroom/ClassroomCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1264
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/classroom/ClassroomDetailDrawer.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6643
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/classroom/SeatingChart.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1773
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/crown/CrownCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  885
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/crown/CrownGrid.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  696
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/crown/CrownLayout.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11057
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/crown/CrownMetricCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  956
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/crown/CrownWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1901
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/crown/CrownWizardStepHeader.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1211
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/crown/useCrownDashboardMetrics.js",
+                      "category":  "dashboard",
+                      "size_bytes":  5366
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/activities/ActivitiesSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1189
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/activities/EligibilityAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  974
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/activities/EventQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  808
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admin/AdminOperationalReadinessCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1308
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admin/AdminPriorityPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1635
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admin/AdminSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1261
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1393
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1761
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsApplicantsSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2358
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsCalendarCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1373
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsCommunicationsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1300
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsPipelinePanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1181
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsPrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  831
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsReportSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1574
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1230
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/admissions/AdmissionsYieldCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1322
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/advancement/AdvancementCampaignPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1563
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/advancement/AdvancementPipelineCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1333
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/advancement/AdvancementSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1249
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/advancementops/AdvancementOpsAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1364
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/advancementops/AdvancementOpsQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  858
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/advancementops/AdvancementOpsSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1304
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/alumni/AlumniAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1346
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/alumni/AlumniQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  851
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/alumni/AlumniSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1276
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/athleticsdirector/AthleticsDirectorAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1332
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/athleticsdirector/AthleticsDirectorQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  855
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/athleticsdirector/AthleticsDirectorSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1248
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/attendance/AttendanceActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  506
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/attendance/AttendanceAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  578
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/attendance/AttendanceCalendarCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  480
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/attendance/AttendanceCommunicationsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  550
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/attendance/AttendancePrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  494
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/attendance/AttendanceReportsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  408
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/attendance/AttendanceSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  887
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  485
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  588
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardCalendarCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  474
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardCommunicationsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  546
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardKpiPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1424
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardPrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  547
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardReportSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  404
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardRiskPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1386
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1260
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/board/BoardStrategicSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  886
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/chaplain/ChaplainAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1373
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/chaplain/ChaplainQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  847
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/chaplain/ChaplainSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1285
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/communications/CommunicationsAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1006
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/communications/CommunicationsSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1206
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/communications/OutreachQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  796
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/complianceaudit/ComplianceAuditAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1373
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/complianceaudit/ComplianceAuditQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  863
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/complianceaudit/ComplianceAuditSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1278
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/curriculumpd/CurriculumPDAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1375
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/curriculumpd/CurriculumPDQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  863
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/curriculumpd/CurriculumPDSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1274
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/datamigration/DataMigrationAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1391
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/datamigration/DataMigrationQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  890
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/datamigration/DataMigrationSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1280
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/extendedcare/ExtendedCareAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1351
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/extendedcare/ExtendedCareQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  842
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/extendedcare/ExtendedCareSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1247
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/facilities/FacilitiesAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1290
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/facilities/FacilitiesQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  851
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/facilities/FacilitiesSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1229
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/finearts/FineArtsAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1341
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/finearts/FineArtsQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  849
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/finearts/FineArtsSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1264
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/foodservice/FoodServiceAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1302
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/foodservice/FoodServiceQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  827
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/foodservice/FoodServiceSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1253
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/gradebook/GradebookAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1066
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/gradebook/GradebookSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1196
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/gradebook/TeacherPostingQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  830
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/healthoffice/HealthOfficeAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1278
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/healthoffice/HealthOfficeQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  861
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/healthoffice/HealthOfficeSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1265
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/hr/HRAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1385
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/hr/HRSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1235
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/hr/HRWorkQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  861
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/implementationsuccess/ImplementationSuccessAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1380
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/implementationsuccess/ImplementationSuccessQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  927
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/implementationsuccess/ImplementationSuccessSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1307
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/integrationsautomation/IntegrationsAutomationAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1390
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/integrationsautomation/IntegrationsAutomationQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  868
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/integrationsautomation/IntegrationsAutomationSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1265
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/itsupport/ITSupportAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1287
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/itsupport/ITSupportQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  838
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/itsupport/ITSupportSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1251
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/librarymedia/LibraryMediaAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1356
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/librarymedia/LibraryMediaQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  865
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/librarymedia/LibraryMediaSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1253
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  470
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  566
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlAtAGlanceCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  746
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlCalendarCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  486
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlCommunicationsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  546
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlNoticesCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  565
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlPortfolioSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  856
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlPrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  476
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/master/MasterControlReportsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  385
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/mastercontrol/MasterControlAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1574
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/mastercontrol/MasterControlSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1263
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/mastercontrol/PortfolioHealthPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1378
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/networkbenchmarking/NetworkBenchmarkAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1406
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/networkbenchmarking/NetworkBenchmarkQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  908
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/networkbenchmarking/NetworkBenchmarkSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1304
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  488
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  487
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentAtAGlanceCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  725
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentCalendarCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  445
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentChildrenSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  799
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentMessagesCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  530
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentPrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  451
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/parent/ParentReportsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  359
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/portraitservice/PortraitServiceAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1372
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/portraitservice/PortraitServiceQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  870
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/portraitservice/PortraitServiceSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1298
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/releasereliability/ReleaseReliabilityAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1370
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/releasereliability/ReleaseReliabilityQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  887
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/releasereliability/ReleaseReliabilitySnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1292
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/revenueops/RevenueOpsAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1349
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/revenueops/RevenueOpsQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  857
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/revenueops/RevenueOpsSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1264
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/safetysecurity/SafetySecurityAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1348
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/safetysecurity/SafetySecurityQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  868
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/safetysecurity/SafetySecuritySnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1251
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/scheduling/SchedulingConflictsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1668
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/scheduling/SchedulingSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1208
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/scheduling/SchedulingWorkQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  844
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/shared/AlertListCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1207
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/shared/DashboardErrorState.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  225
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/shared/DashboardLoadingState.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  527
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/shared/DataStatusBanner.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1798
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/shared/MetricSummaryGrid.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  980
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/shared/TextListCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  610
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  467
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  453
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentAtAGlanceCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  726
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentCourseSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  859
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentMessagesCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  518
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentPrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  387
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentScheduleCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  453
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/student/StudentShortcutsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  807
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentcare/InterventionQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  841
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentcare/StudentCareAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1322
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentcare/StudentCareSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1220
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentlife/StudentLifeActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  478
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentlife/StudentLifeAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  558
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentlife/StudentLifeCalendarCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  468
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentlife/StudentLifeCommunicationsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  542
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentlife/StudentLifePrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  386
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentlife/StudentLifeReportsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  382
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/studentlife/StudentLifeSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  798
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  488
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  501
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherAtAGlanceCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  729
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherClassSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  842
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherMessagesCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  510
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherPrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  387
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherScheduleCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  482
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/teacher/TeacherShortcutsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  814
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/transportation/TransportationAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1324
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/transportation/TransportationQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  863
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/transportation/TransportationSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1252
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/volunteermanagement/VolunteerAlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1329
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/volunteermanagement/VolunteerQueueCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  851
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/volunteermanagement/VolunteerSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1273
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/ActionCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  785
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/ActionTile.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  566
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/ActivityFeedCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1416
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/AlertsPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1886
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/AttentionStrip.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  650
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/CalendarCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1411
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/ChartCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1726
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/ChartWidget.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5441
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/CommunicationsCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1322
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/CommunitySpiritualRow.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1344
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/DailyDevotion.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  843
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/DrilldownDrawer.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2401
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/FeedWidget.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2537
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/FlipMetricCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2345
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/FlipWidget.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6003
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/HeadOfSchoolKpiCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1609
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/HeadOfSchoolKpiGridRow.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  575
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/HealthRingCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1678
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/InsightPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  905
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/KpiCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  981
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/KpiCardGrid.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  250
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/KpiFlipCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  7144
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/KPIGridRow.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  622
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/LeadershipWorkflowRow.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2231
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/MetricCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  729
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/MicrosoftPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  818
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/OperationalSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3105
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/PageHeader.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  760
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/PrayerRequests.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  558
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/PrioritiesPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1022
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/ProgressGoalCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  979
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/QuickActionsWidget.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1659
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/ReportSnapshotCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1812
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/SectionCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  520
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/SpecialDays.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  435
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/StatWidget.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1995
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/TableWidget.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3171
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/TodaysFocusRow.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1220
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/TrendChartCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2452
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/dashboard/WidgetDispatcher.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1491
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/data/CrownDataTable.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4538
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/data/CrownTableToolbar.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1315
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/enrollment/EnrollmentPaymentPlanSection.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5331
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/layout/DashboardSection.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  690
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/layout/DashboardShell.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1507
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/layout/GhostModeBanner.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  421
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/layout/LeftSidebar.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4911
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/layout/RightRail.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3386
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/layout/TopHeader.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1759
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/navigation/CrownSidebar.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4505
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/navigation/dashboardNavConfig.js",
+                      "category":  "dashboard",
+                      "size_bytes":  5436
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/navigation/navItems.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1815
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/routing/ReleaseStateRoute.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  651
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/routing/RoleRouteGuard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  589
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/shell/DashboardHeader.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3873
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/states/PageState.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1547
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/states/WidgetState.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1198
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/student360/GraduationBreakdownDrawer.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6307
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/system/AppErrorBoundary.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1534
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/system/BuildInfoPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1063
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/system/DemoReadinessCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1026
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/system/StartupGuard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1337
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/system/TopStatusStrip.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  892
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/ui/EmptyState.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  557
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/ui/ErrorBanner.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  605
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/wizard/CrownWizardStepper.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1981
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/wizards/WizardFields.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5449
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/wizards/WizardShell.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2601
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/AutoLoginGate.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1546
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/BoardTrends.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2034
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/CurriculumPacingCard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8171
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/DevJwtPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3834
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/Drawer.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1958
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/FinanceKPI.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4174
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/HelpTooltip.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2609
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/OpsCommandCenter.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6449
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/components/SetupProgress.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1841
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/adminModuleContent.js",
+                      "category":  "dashboard",
+                      "size_bytes":  0
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/adminNavConfig.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2573
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/adminNavigation.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  0
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/apiContracts.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1393
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/dashboardCertificationRegistry.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3769
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/dashboardCertificationRegistry.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  708
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/dashboardDataRegistry.js",
+                      "category":  "dashboard",
+                      "size_bytes":  6262
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/dashboardDataRegistry.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  652
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                      "category":  "dashboard",
+                      "size_bytes":  18070
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/dashboardRegistry.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1820
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/dashboardReleaseProofCoverage.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2106
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/demoReadinessChecks.js",
+                      "category":  "dashboard",
+                      "size_bytes":  331
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/moduleReadiness.js",
+                      "category":  "dashboard",
+                      "size_bytes":  6064
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/moduleReadiness.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1365
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/navigationSurface.js",
+                      "category":  "dashboard",
+                      "size_bytes":  221
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/releaseChecklist.js",
+                      "category":  "dashboard",
+                      "size_bytes":  507
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/releaseState.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2083
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/shellCertification.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3592
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/shellCertification.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  826
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/shellOwnership.js",
+                      "category":  "dashboard",
+                      "size_bytes":  4210
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/shellOwnership.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1965
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/config/validateDashboardRegistry.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1988
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/contracts/shellBackendContract.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2963
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/data/headOfSchoolMockData.js",
+                      "category":  "dashboard",
+                      "size_bytes":  4759
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/entitlements/EntitlementGate.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1525
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/entitlements/entitlements.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  1436
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/entitlements/useEntitlements.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  1603
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/academics/AcademicsOperationsWorkspace.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  26992
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/api/aid.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  5839
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/components/AidMetricCard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  746
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/components/AidTimeline.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1228
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/components/AwardSummaryCard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1486
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/components/BucketRuleEditor.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  7281
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/components/RenewalStatusPanel.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1515
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/components/VerificationUploadPanel.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1858
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/pages/AidBucketAdminPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5764
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/pages/AidMetricsDashboardPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4573
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/pages/AidRenewalPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2631
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/aid/pages/ParentAidStatusPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2967
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/api/attendance.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  7569
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/components/AttendanceMetricCard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  621
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/components/AttendanceNotificationTimeline.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1793
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/components/AttendanceReportRunList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1284
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/components/ExcuseDocumentUploadPanel.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1649
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/components/ExcuseSubmissionCard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1253
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/components/ParentAttendanceNotificationCard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  541
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/components/ThresholdAlertList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1873
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/pages/AttendanceAlertsPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2299
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/pages/AttendanceMetricsDashboardPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3456
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/pages/AttendanceReportsPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2185
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/pages/AttendanceReviewQueuePage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3482
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/attendance/pages/ParentAttendanceExcusePage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3229
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/api/billing.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  5142
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/components/AutoPayEnrollmentPanel.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3581
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/components/BalanceSummaryCard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1007
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/components/InvoiceList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1064
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/components/LateFeeNoticeList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  972
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/components/PaymentHistoryList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1073
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/components/ReceiptList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1324
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/components/RolloverPreviewPanel.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  552
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/pages/AnnualBillingRolloverPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2162
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/pages/BillingMetricsDashboardPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4638
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/pages/ParentFinancialViewPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3417
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/billing/pages/TaxDocumentsPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3160
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/api/discipline.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  8542
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/components/DisciplineMetricCard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  634
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/components/DisciplineReportRunList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1379
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/components/EscalationRuleBuilder.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4018
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/components/FERPAAccessAuditList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  830
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/components/NotificationQueueList.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1628
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/components/PolicyPreviewPanel.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1732
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/pages/DisciplineDashboardPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10006
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/pages/DisciplineEscalationWizardPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6512
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/pages/DisciplineRecordDetailPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6505
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/pages/DisciplineReportsPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3027
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/discipline/pages/DisciplineReviewQueuePage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8978
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/documents/api/m365Documents.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  2411
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/documents/pages/DocumentCenterPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4453
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/documents/pages/DocumentPacketDetailPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3148
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/documents/pages/DocumentReportsPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4181
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/documents/pages/DocumentReviewQueuePage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2887
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/governance/api/governance.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  1126
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/governance/pages/BoardMemberDashboardPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  7782
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/governance/pages/BoardPacksPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5809
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/governance/pages/GovernanceDashboardPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  15936
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/features/m365/pages/Microsoft365WorkspacePage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  7089
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useAdminSectionData.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1553
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useAdmissionsDashboardData.js",
+                      "category":  "dashboard",
+                      "size_bytes":  4477
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useApiAction.js",
+                      "category":  "dashboard",
+                      "size_bytes":  543
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useAsyncPageData.js",
+                      "category":  "dashboard",
+                      "size_bytes":  666
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useAuth.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1333
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useBoardExecutiveData.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3997
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useCompuwerxCheckout.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1241
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useCurrentUserRole.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1418
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useDashboardData.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3050
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useDashboardHome.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1493
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useDashboardPermissions.js",
+                      "category":  "dashboard",
+                      "size_bytes":  391
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useFinanceDashboardData.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1526
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useGhostMode.js",
+                      "category":  "dashboard",
+                      "size_bytes":  886
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useHeadOfSchoolDashboard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1878
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/usePermissions.js",
+                      "category":  "dashboard",
+                      "size_bytes":  764
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/usePersistentTableState.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2098
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useUrlQueryState.js",
+                      "category":  "dashboard",
+                      "size_bytes":  741
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/hooks/useWizardDraft.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1061
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/export/csv.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1545
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/ui/gradeVisuals.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1147
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/ui/stickyTable.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1797
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/academicsApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2875
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/academicsReleaseApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  6226
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/api.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1466
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/authGuard.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2659
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/lib/http.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1434
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/AdvancementDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6632
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/BestAvailableCheckout.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12047
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/DonorsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6617
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/EventsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6307
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/GivePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  14181
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/MovesPipelinePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12741
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/SeatingAdminPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8886
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/SeatSelectionPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  15143
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/SponsorshipsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6710
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/StorePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4777
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/TicketCheckInPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5974
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/TicketsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8691
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/advancement/TicketSuccessPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  9545
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/imports/importsApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2762
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/imports/ImportWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  22175
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/imports/index.js",
+                      "category":  "dashboard",
+                      "size_bytes":  63
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/portrait/index.js",
+                      "category":  "dashboard",
+                      "size_bytes":  345
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/portrait/PoGApplicationSummary.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3583
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/portrait/PoGConfigWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  9274
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/portrait/PoGScoreDisplay.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4457
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/portrait/PoGScoringPanel.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6598
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/modules/portrait/portraitApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  4593
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminAcademicsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  570
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminAdmissionsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  334
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminAdvancementPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  336
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminAttendancePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1594
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminCalendarPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  330
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminCommunicationsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  180
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminDashboardHomePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1292
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminDisciplinePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1589
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminFinancePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1591
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminImportsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  136
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminReportsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  328
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminSectionPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6591
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminSettingsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  330
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminStaffPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  324
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdminStudentsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  13072
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/AdmissionsDashboardPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  237
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/ExecutiveRoleDashboards.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  242
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/HeritageAdminDashboardV2.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  87407
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/SchoolAdminDashboard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  239
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/admin/SchoolAdminDashboardPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  243
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/attendance_rules_wizard/Step1Configure.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2286
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/attendance_rules_wizard/Step2Codes.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3176
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/attendance_rules_wizard/Step3Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1314
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/attendance_rules_wizard/Step4Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1553
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/attendance_rules_wizard/Step5Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1469
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/bell_schedule_wizard/Step1Configure.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2265
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/bell_schedule_wizard/Step2Periods.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2821
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/bell_schedule_wizard/Step3Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1050
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/bell_schedule_wizard/Step4Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1541
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/bell_schedule_wizard/Step5Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1459
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/billing_wizard/Step1Mode.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4702
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/billing_wizard/Step2Plans.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6545
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/billing_wizard/Step3Fees.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6623
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/billing_wizard/Step4Schedule.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5552
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/billing_wizard/Step5Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3770
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/billing_wizard/Step6Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4963
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/board/BoardDashboard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2301
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/comms_wizard/Step1Purpose.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3989
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/comms_wizard/Step2Message.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3130
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/comms_wizard/Step3Recipients.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5028
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/comms_wizard/Step4Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3768
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/comms_wizard/Step5Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3092
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/comms_wizard/Step6Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3338
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/compass/CompassDashboard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  631
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/discipline/DisciplineDashboard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2217
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/enrollment_conversion_wizard/Step1Configure.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2470
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/enrollment_conversion_wizard/Step2Load.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1956
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/enrollment_conversion_wizard/Step3Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1127
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/enrollment_conversion_wizard/Step4Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1523
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/enrollment_conversion_wizard/Step5Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1479
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ferpa/FERPADashboard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1385
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/financial_aid_wizard/Step1Year.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2797
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/financial_aid_wizard/Step2Buckets.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3638
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/financial_aid_wizard/Step3Awards.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6663
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/financial_aid_wizard/Step4Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4261
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/financial_aid_wizard/Step5Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3779
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/financial_aid_wizard/Step6Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4482
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/gradebook_setup_wizard/Step1Configure.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1898
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/gradebook_setup_wizard/Step2Categories.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3224
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/gradebook_setup_wizard/Step3Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1406
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/gradebook_setup_wizard/Step4Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1556
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/gradebook_setup_wizard/Step5Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1424
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/hr/HRManagerDashboard.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2732
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/invoice_run_wizard/Step1Configure.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2593
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/invoice_run_wizard/Step2Load.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1950
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/invoice_run_wizard/Step3Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1127
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/invoice_run_wizard/Step4Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1592
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/invoice_run_wizard/Step5Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1438
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/onboarding/Step1ChooseMode.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2649
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/onboarding/Step2Upload.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2928
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/onboarding/Step3Validate.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4260
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/onboarding/Step4Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3869
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/onboarding/Step5Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3449
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/onboarding/Step6Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3909
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ops/SubscriptionManagerPage.tsx",
+                      "category":  "dashboard",
+                      "size_bytes":  7670
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/reenrollment/Step1Config.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3785
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/reenrollment/Step2Candidates.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4086
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/reenrollment/Step3Select.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4340
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/reenrollment/Step4Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3720
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/reenrollment/Step5Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3408
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/reenrollment/Step6Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3960
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/scheduling_wizard/Step1Term.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3741
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/scheduling_wizard/Step2Courses.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6185
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/scheduling_wizard/Step3Sections.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6158
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/scheduling_wizard/Step4Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4322
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/scheduling_wizard/Step5Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2888
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/scheduling_wizard/Step6Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3327
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/section_assign_wizard/Step1Section.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2915
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/section_assign_wizard/Step2LoadStudents.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2647
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/section_assign_wizard/Step3StageRoster.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3779
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/section_assign_wizard/Step4Preview.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2386
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/section_assign_wizard/Step5Commit.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2933
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/section_assign_wizard/Step6Verify.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3507
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/AftercareSetupWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6200
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/CurriculumMapWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8860
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/EnrollmentSetupWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  9575
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/FinanceSetupWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  25232
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/FinancialAidWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  19711
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/ReEnrollmentWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5105
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/SchoolOnboardingWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  15124
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/wizards/SchoolYearSetupWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10404
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AcademicsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  32027
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AcademicsParentSnapshot.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6739
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AcademicsStudentWork.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6143
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AcademicsTeacherGrading.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10180
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AcademicSupportDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11051
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AcademicYearWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8731
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ActivitiesAthleticsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1066
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AdminDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  9330
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AdmissionsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11703
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AdmissionsIntakeWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1570
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AdmissionsPipelineList.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8574
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AdvancementDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1146
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AdvancementOperationsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1199
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AftercareRosterPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5506
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AlumniRelationsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1077
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AthleticsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12200
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AthleticsDirectorDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1202
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AttendanceDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2514
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/AttendanceRulesWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1809
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/BellScheduleWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  14547
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/BillingDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  22475
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/BillingWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1482
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/BoardDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6721
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/BoardExecutiveDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10754
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CategoryWeightsEditor.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  9439
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ChaplainSpiritualLifeDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1129
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ClassroomsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4470
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CommsComposePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2365
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CommsInboxPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2338
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CommsThreadPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3942
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CommsWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1778
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CommunicationsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1464
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CommunicationsDirectorDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11155
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CommunicationsThreadsList.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8035
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ComplianceAuditDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1183
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CompuwerxBankReconciliation.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8011
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CompuwerxDisputesDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2129
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CompuwerxDisputeWorkbench.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5107
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CompuwerxPayoutReconciliation.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4796
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CompuwerxTestCheckout.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1835
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CounselingDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12767
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CourseCatalogWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2491
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CrownSolomonAdminPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6905
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CrownSolomonArticlePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3521
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CrownSolomonHub.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5296
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/CurriculumPDDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1155
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/DashboardCertificationCenter.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4608
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/DataMigrationDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1152
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/DemoReadinessPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3876
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/DisciplinePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2491
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/EnrollmentConversionWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1844
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/EnrollmentPeriodWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  14544
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ExtendedCareDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1136
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FacilitiesDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1099
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FamilyAccountDetail.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5352
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FamilyStatementExportPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2182
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FeeScheduleWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10078
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FinanceDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5402
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FinanceInvoicesList.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8067
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FinancialAidDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  14654
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FinancialAidWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1545
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FineArtsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1080
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FoodDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11740
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/FoodServiceDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1120
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ForbiddenPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1474
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/GradebookDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1438
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/GradebookRO.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  47126
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/GradebookSetupWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1829
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/GradeScaleWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  16871
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/HeadOfSchoolDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6128
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/HealthDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12948
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/HealthOfficeDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1133
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/HomeDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2836
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/HRDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  999
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/HumanResources.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  8785
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ImplementationSuccessDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1263
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/IntegrationsAutomationDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1284
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/IntegrityDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12391
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/InvoiceRunWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1771
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ITDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12375
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ITSupportDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1094
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/LibraryDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10958
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/LibraryMediaDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1139
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/Login.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1838
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/LoginPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  16246
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/MarketingDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  12163
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/MasterControlDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1149
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/NetworkBenchmarkingDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1224
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/NotAuthorized.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1666
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/NotFoundPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  877
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/OfficeDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10284
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ParentAttendancePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2945
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ParentDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5780
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ParentStudent360Page.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4331
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/PaymentExceptionsQueue.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3315
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/PDDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10915
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/PortraitServiceHoursDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1198
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/PromotionWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2566
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ReenrollmentWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1494
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/RegistrarDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10955
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ReleaseReadinessPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4785
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ReleaseReliabilityDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2107
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/RevenueOperationsDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1134
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/RoleDashboardPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5315
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/RoleHomeRedirect.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5083
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/RoomSetupWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2431
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SafetyDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  9193
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SafetySecurityDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1151
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SavedPaymentMethodsPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4440
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SchedulingDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1439
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SchedulingWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1496
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SchoolAdministratorDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1136
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SchoolBoardDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1045
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SectionAssignWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1884
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SectionSchedulerWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4179
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SecurityDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11550
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/ServiceHoursPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2751
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SpiritualLifeDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5607
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/StaffOnboardingWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  6709
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/StaffSetupWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2938
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/Student360Page.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  9039
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/StudentCareDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1088
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/StudentDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5725
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/StudentServicesDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11165
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/SystemStatusPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2792
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/TeacherAttendancePage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5037
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/TeacherDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  5479
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/TeamsPreviewPage.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1817
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/TermStructureWizard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10627
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/TranscriptRO.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  11612
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/TransportationDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1159
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/VolunteerManagementDashboard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1149
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/pages/WizardHub.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  3471
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/compuwerxOpsRouteAccess.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1152
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/compuwerxPackage3RouteAccess.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  923
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/compuwerxPackage4RouteAccess.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  615
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/compuwerxRouteAccess.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  679
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/dashboardRoutes.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  643
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/financeRouteAccess.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1696
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/paths.js",
+                      "category":  "dashboard",
+                      "size_bytes":  5536
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/RoleGuard.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  702
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/roleGuardRules.js",
+                      "category":  "dashboard",
+                      "size_bytes":  302
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/routeGroups.js",
+                      "category":  "dashboard",
+                      "size_bytes":  662
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/router.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  16252
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/wizard-manifest.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3870
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/wizardRouteAccess.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  2688
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/routes/wizards.js",
+                      "category":  "dashboard",
+                      "size_bytes":  9635
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/services/adminDashboardService.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1949
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/services/adminSectionService.js",
+                      "category":  "dashboard",
+                      "size_bytes":  23481
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/services/api.js",
+                      "category":  "dashboard",
+                      "size_bytes":  83
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/services/dashboardApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  899
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/services/executiveDashboardApi.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2005
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/apiContractRegistry.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1037
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/dashboardCardContract.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  641
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/navigationSurfaceContract.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1579
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/normalizeApiError.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  734
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/permissionContract.test.js",
+                      "category":  "dashboard",
+                      "size_bytes":  965
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/roleGuard.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  606
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/routeContract.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  989
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/sidebarContract.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1281
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/tests/writeFlowContract.test.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  4125
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/theme/chartConfig.js",
+                      "category":  "dashboard",
+                      "size_bytes":  569
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/theme/crownTheme.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1565
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/theme/tokens.js",
+                      "category":  "dashboard",
+                      "size_bytes":  495
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/types/adminDashboard.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  2474
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/apiContracts.js",
+                      "category":  "dashboard",
+                      "size_bytes":  506
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/authClient.js",
+                      "category":  "dashboard",
+                      "size_bytes":  3471
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/buildInfo.js",
+                      "category":  "dashboard",
+                      "size_bytes":  395
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/dashboardMappers.js",
+                      "category":  "dashboard",
+                      "size_bytes":  2001
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/demoAutoLogin.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  1526
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/downloadCsv.js",
+                      "category":  "dashboard",
+                      "size_bytes":  807
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/formatters.js",
+                      "category":  "dashboard",
+                      "size_bytes":  793
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/normalizeApiError.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1591
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/number.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  414
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/queryState.js",
+                      "category":  "dashboard",
+                      "size_bytes":  506
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/releaseChecks.js",
+                      "category":  "dashboard",
+                      "size_bytes":  741
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/requestTracing.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1300
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/tableSort.js",
+                      "category":  "dashboard",
+                      "size_bytes":  742
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/utils/wizardValidation.js",
+                      "category":  "dashboard",
+                      "size_bytes":  387
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/views/platformOps/PlatformOpsHome.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  10294
+                  },
+                  {
+                      "path":  "frontend/dashboards/src/main.jsx",
+                      "category":  "dashboard",
+                      "size_bytes":  1326
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/api/gradebook-api-proof.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  5908
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/api/wizard-contract.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  4624
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/e2e/golden-path.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  3966
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/admin-shell.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  6395
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/dashboard-proof.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  2454
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/dashboard-smoke.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  5418
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/demo-audit.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  4739
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/executive-dashboard-v1.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  3566
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/gradebook-ui-proof.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  4402
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/home-redirect-proof.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  1396
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/nav-permissions.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  3804
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/nav-role-routing.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  5047
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/parent-dashboard-v1.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  2910
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/role-dashboard-matrix-pack-2.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  7888
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/role-dashboard-matrix-pack-3.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  8343
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/role-dashboard-matrix.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  6107
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/ui/student-dashboard-v2.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  3115
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/magus-verification-smoke.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  4417
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/proof-smoke.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  7298
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/wiring-proof.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  2898
+                  },
+                  {
+                      "path":  "frontend/dashboards/eslint.config.js",
+                      "category":  "dashboard",
+                      "size_bytes":  1687
+                  },
+                  {
+                      "path":  "frontend/dashboards/playwright.config.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  2061
+                  },
+                  {
+                      "path":  "frontend/dashboards/vite.config.js",
+                      "category":  "dashboard",
+                      "size_bytes":  923
+                  },
+                  {
+                      "path":  "frontend/src/components/CurriculumPacingCard.jsx",
+                      "category":  "component",
+                      "size_bytes":  2515
+                  }
+              ]
+}

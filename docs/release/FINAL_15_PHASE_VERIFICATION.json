@@ -1,0 +1,23 @@
+{
+    "generated_at_utc":  "2026-04-11T12:14:54.9898644Z",
+    "artifact_check_passed":  true,
+    "required_artifact_count":  32,
+    "phase4_manage_check_ok":  true,
+    "phase4_deploy_check_ok":  true,
+    "phase6_high_actions":  0,
+    "phase6_medium_actions":  0,
+    "phase7_runtime_any_success":  true,
+    "phase8_build_success_count":  0,
+    "phase9_reporting_score":  100,
+    "phase10_overall_score":  98,
+    "phase10_overall_status":  "RELEASE_READY",
+    "phase11_checklist_percent":  100,
+    "phase12_remote_delete_count":  0,
+    "phase12_local_delete_count":  0,
+    "phase13_archive_candidate_count":  0,
+    "phase14_packet_ready":  true,
+    "phase15_ship_decision":  "SHIP",
+    "phase15_completion_percent":  100,
+    "error_count":  0,
+    "passed":  true
+}

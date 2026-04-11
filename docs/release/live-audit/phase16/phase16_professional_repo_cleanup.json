@@ -1,0 +1,15 @@
+{
+    "generated_at_utc":  "2026-04-11T12:14:55.1654936Z",
+    "summary":  {
+                    "generated_at_utc":  "2026-04-11T12:14:55.1654936Z",
+                    "stale_release_doc_count":  0,
+                    "remote_delete_count":  0,
+                    "local_delete_count":  0,
+                    "workflow_archive_count":  0,
+                    "dead_directory_count":  328,
+                    "dead_file_count":  0,
+                    "archived_item_count":  328,
+                    "executed_action_count":  7,
+                    "archive_root":  "docs/release/archive-cleanup/20260411_081314"
+                }
+}
