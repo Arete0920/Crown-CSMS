@@ -232,7 +232,7 @@ urlpatterns = [
 
     # ── Stage 4: Board Intelligence ──────────────────────────────────────
     path("v1/governance/", include("governance.urls")),
-    path("v1/dashboards/school-board/summary", governance_views.governance_dashboard, name="dashboard-school-board-summary"),
+    path("v1/dashboards/school-board/summary/", governance_views.governance_dashboard, name="dashboard-school-board-summary"),
     path("v1/board/packet/download/", api_governance.download_board_packet, name="board-packet-download"),
     path("v1/board/compass/", api_governance.compass_executive, name="board-compass"),
     path("v1/board/initiatives/", api_governance.initiative_summary, name="board-initiatives"),
