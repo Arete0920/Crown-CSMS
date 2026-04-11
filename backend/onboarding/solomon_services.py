@@ -89,7 +89,23 @@ def search_solomon_content(request, query="", module="", audience=""):
         from django.db.models import Q
         qs = qs.filter(Q(title__icontains=query) | Q(content__icontains=query))
 
-    articles = [_serialize_article(a) for a in qs.distinct()[:20]]
+    distinct_qs = qs.distinct()
+    articles = [_serialize_article(a) for a in distinct_qs[:20]]
+    categories = list(
+        distinct_qs.exclude(article_type="")
+        .values_list("article_type", flat=True)
+        .distinct()
+    )
+
+    playbook_qs = SolomonPlaybook.objects.all()
+    if module:
+        playbook_qs = playbook_qs.filter(module=module)
+    if query:
+        from django.db.models import Q
+        playbook_qs = playbook_qs.filter(
+            Q(title__icontains=query) | Q(summary__icontains=query)
+        )
+    playbooks = [_serialize_playbook(p) for p in playbook_qs[:20]]
 
     return {
         "results": articles,
@@ -97,4 +113,6 @@ def search_solomon_content(request, query="", module="", audience=""):
         "query": query,
         "module": module,
         "audience": audience,
+        "categories": categories,
+        "playbooks": playbooks,
     }
