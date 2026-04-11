@@ -47,19 +47,23 @@ def get_contextual_solomon_help(
 
     qs = HelpArticle.objects.filter(state=HelpArticle.STATE_PUBLISHED)
 
-    if slug:
-        article = qs.filter(slug=slug).first()
-        if article:
-            primary_article = _serialize_article(article)
+    resolved_article = None
 
-    if route_path and not primary_article:
-        article = qs.filter(route_path=route_path).first()
-        if article:
-            primary_article = _serialize_article(article)
+    if slug:
+        resolved_article = qs.filter(slug=slug).first()
+
+    if route_path and not resolved_article:
+        resolved_article = qs.filter(route_path=route_path).first()
+
+    if resolved_article:
+        primary_article = _serialize_article(resolved_article)
 
     if module:
-        related = qs.filter(module=module).exclude(slug=slug)[:5]
-        related_articles = [_serialize_article(a) for a in related]
+        exclude_pk = resolved_article.pk if resolved_article else None
+        related_qs = qs.filter(module=module)
+        if exclude_pk is not None:
+            related_qs = related_qs.exclude(pk=exclude_pk)
+        related_articles = [_serialize_article(a) for a in related_qs[:5]]
 
         pb_qs = SolomonPlaybook.objects.filter(module=module)[:3]
         playbooks = [_serialize_playbook(p) for p in pb_qs]
