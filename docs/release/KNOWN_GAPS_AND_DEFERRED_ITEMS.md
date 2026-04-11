@@ -13,7 +13,7 @@ This document is intentionally candid. It records unresolved items and what is r
 | Tenant isolation pytest output | Missing | Artifact file not committed | Run tests and commit `artifacts/tenant-isolation-pytest-output.txt` | QA |
 | Final load evidence | Missing | No load html/csv artifacts committed | Generate and commit expected files under `artifacts/load/` | QA |
 | Branch protection screenshot | Missing | Manual UI capture not done | Capture settings screenshot and commit to release evidence folder | Repo admin |
-| PR backlog and conflict PR cleanup | In progress | 16 open PRs with conflict states still present | Execute `docs/release/PR_ISSUES_CONCERNS_ACTION_PLAN.md` and update counts/status | Eng lead
+| PR backlog and conflict PR cleanup | Closed | Backlog reconciled against live repo state; 0 open PRs remain in the current release truth snapshot | Monitor for newly opened PRs and refresh this note if repo state changes | Eng lead |
 
 ## 2. Manual-Only Items
 

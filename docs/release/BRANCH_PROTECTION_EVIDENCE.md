@@ -1,35 +1,52 @@
 # Branch Protection Evidence
 
-Generated: 2026-04-02
+Generated: 2026-04-11
 
-This document records branch-protection proof currently available in-repo and what still requires manual capture.
+This document records the live `main` branch-protection proof currently committed in-repo and the small amount of evidence that still requires manual capture.
 
-## Expected Required Checks
+## Required Checks on `main`
 
-From repository ruleset snapshot (`ruleset_main.json` copied to `docs/release/branch-protection-export.json`), required checks currently include:
+From the live API export committed at `docs/release/branch-protection-export.json`, required checks currently include:
 
+- `changes`
+- `demo-proof-static`
+- `lockdown-gate`
+- `meta-check-job-if`
+- `phase1-contract`
+- `phase3-runtime-proof`
 - `proof-ceremony`
+- `rc-promotion-gate`
+- `spine-audit`
+- `test`
+- `verify-immutable-tags`
+- `CodeQL`
+- `contract-gate`
+- `pytest-gate`
+- `secret-scan`
+- `dependency-review`
+- `Backend Python Dependency Audit`
+- `Frontend Node Dependency Audit`
 
-Phase 2 governance analysis identifies additional checks that should be required (documented in `docs/repo-cleanup/REQUIRED_CHECKS_MAP_PHASE2.md`) but are not yet proven configured as required in live GitHub settings.
+This list now reflects the live GitHub API state, including the corrected CodeQL context (`CodeQL`) and the newly enforced contract, pytest, secret-scan, and dependency-audit gates.
 
 ## Evidence Matrix
 
 | Control | Evidence Present? | Evidence Path | Notes |
 |---|---|---|---|
-| Branch protection export file exists | Yes | `docs/release/branch-protection-export.json` | Snapshot copied from in-repo ruleset, not live API fetch |
-| Branch protection screenshot exists | No | `docs/release/security-gate-evidence/branch-protection-screenshot.png` | Manual screenshot capture required |
-| Required checks list documented | Yes | `docs/release/branch-protection-export.json` | Shows `proof-ceremony` only |
-| Admin enforcement proven | No | — | Manual GitHub settings confirmation required |
-| Force pushes disabled proven | No | — | Manual GitHub settings confirmation required |
-| Deletions disabled proven | Partial | `docs/release/branch-protection-export.json` | Ruleset includes `deletion`; live setting still requires UI/API verification |
-| Code owner review expected/proven | Partial | `docs/release/branch-protection-export.json` | Snapshot shows `require_code_owner_review: false`; manual policy decision required |
-| Conversation resolution expected/proven | Partial | `docs/release/branch-protection-export.json` | Snapshot shows `required_review_thread_resolution: false`; manual policy decision required |
-| Linear history expected/proven | No | — | Not evidenced in current snapshot; manual verification required |
+| Branch protection export file exists | Yes | `docs/release/branch-protection-export.json` | Live API export for `main` |
+| Branch protection screenshot exists | No | `docs/release/security-gate-evidence/branch-protection-screenshot.png` | Optional/manual screenshot capture still pending |
+| Required checks list documented | Yes | `docs/release/branch-protection-export.json` | Shows 18 live required checks including `CodeQL`, `contract-gate`, `pytest-gate`, `secret-scan`, `dependency-review`, `Backend Python Dependency Audit`, and `Frontend Node Dependency Audit` |
+| Admin enforcement proven | Yes | `docs/release/branch-protection-export.json` | `enforce_admins.enabled: true` |
+| Force pushes disabled proven | Yes | `docs/release/branch-protection-export.json` | `allow_force_pushes.enabled: false` |
+| Deletions disabled proven | Yes | `docs/release/branch-protection-export.json` | `allow_deletions.enabled: false` |
+| Code owner review expected/proven | Yes | `docs/release/branch-protection-export.json` | `require_code_owner_reviews: true` |
+| Conversation resolution expected/proven | Yes | `docs/release/branch-protection-export.json` | `required_conversation_resolution.enabled: true` |
+| Linear history expected/proven | No | `docs/release/branch-protection-export.json` | `required_linear_history.enabled: false` |
 
-## Manual Capture Required from GitHub Settings
+## Remaining Manual Capture from GitHub Settings
 
-1. Open repository settings for branch/ruleset protection on `main`.
-2. Export or capture screenshots covering:
+1. Open repository settings for branch protection on `main`.
+2. Capture a UI screenshot covering:
    - Required status checks
    - Require pull request before merging
    - Required approvals and stale review dismissal
@@ -37,11 +54,9 @@ Phase 2 governance analysis identifies additional checks that should be required
    - Require conversation resolution
    - Restrict force pushes and deletions
    - Enforce for administrators
-   - Require linear history
-3. Commit screenshot(s) to `docs/release/security-gate-evidence/`.
-4. Replace or supplement `docs/release/branch-protection-export.json` with live export output.
+3. Commit the screenshot to `docs/release/security-gate-evidence/` if the investor bundle still needs a UI artifact.
 
 ## Status
 
-Current status: `PARTIAL`  
-Reason: ruleset snapshot exists, but live GitHub settings proof package is incomplete.
+Current status: `PARTIAL`
+Reason: the live API export is now accurate and current; only the optional GitHub UI screenshot is still missing.

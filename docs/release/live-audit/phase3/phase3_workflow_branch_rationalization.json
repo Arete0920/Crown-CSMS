@@ -1,0 +1,11 @@
+{
+    "generated_at_utc":  "2026-04-11T11:56:54.1859557Z",
+    "default_branch":  "main",
+    "workflow_count":  53,
+    "workflow_group_count":  5,
+    "remote_branch_count":  240,
+    "local_branch_count":  9,
+    "remote_delete_candidate_count":  0,
+    "local_delete_candidate_count":  0,
+    "open_pull_request_count":  0
+}

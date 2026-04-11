@@ -1,0 +1,55 @@
+{
+    "summary":  {
+                    "generated_at_utc":  "2026-04-11T12:14:44.4562813Z",
+                    "overall_score":  98,
+                    "overall_status":  "RELEASE_READY",
+                    "gate_count":  7,
+                    "checklist_complete":  9,
+                    "checklist_total":  9,
+                    "checklist_percent":  100,
+                    "high_priority_actions":  0,
+                    "medium_priority_actions":  0,
+                    "module_count":  9
+                },
+    "generated_at_utc":  "2026-04-11T12:14:44.4562813Z",
+    "gates":  [
+                  {
+                      "gate":  "release_truth",
+                      "score":  100,
+                      "status":  "PASS"
+                  },
+                  {
+                      "gate":  "backend_verification",
+                      "score":  100,
+                      "status":  "PASS"
+                  },
+                  {
+                      "gate":  "module_proof",
+                      "score":  100,
+                      "status":  "PASS"
+                  },
+                  {
+                      "gate":  "runtime_api",
+                      "score":  100,
+                      "status":  "PASS"
+                  },
+                  {
+                      "gate":  "frontend_dashboard",
+                      "score":  80,
+                      "status":  "PASS"
+                  },
+                  {
+                      "gate":  "reporting_export",
+                      "score":  100,
+                      "status":  "PASS"
+                  },
+                  {
+                      "gate":  "action_register",
+                      "score":  100,
+                      "status":  "PASS"
+                  }
+              ],
+    "blockers":  [
+
+                 ]
+}
