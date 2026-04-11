@@ -50,7 +50,7 @@ urlpatterns = [
     path("pd/", include("pdhub.urls")),
     path("safety/", include("safety.urls")),
     path("connectors/", include("integrations_real.urls")),
-    path("", include("student_records.urls")),
+    path("student-records/", include("student_records.urls")),
     # Legacy api_urls catch-all (must come AFTER specific module includes above)
     path("", include("crown_api.api_urls")),
 ]
