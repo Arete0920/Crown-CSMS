@@ -1,0 +1,172 @@
+﻿{
+    "summary":  {
+                    "generated_at_utc":  "2026-04-11T12:14:44.4562813Z",
+                    "overall_score":  98,
+                    "overall_status":  "RELEASE_READY",
+                    "gate_count":  7,
+                    "checklist_complete":  9,
+                    "checklist_total":  9,
+                    "checklist_percent":  100,
+                    "high_priority_actions":  0,
+                    "medium_priority_actions":  0,
+                    "module_count":  9
+                },
+    "generated_at_utc":  "2026-04-11T12:14:44.4562813Z",
+    "modules":  [
+                    {
+                        "module_key":  "academics_gradebook",
+                        "label":  "Academics Attendance Gradebook",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  16,
+                        "tests":  47,
+                        "docs":  19,
+                        "workflows":  51
+                    },
+                    {
+                        "module_key":  "admissions_enrollment",
+                        "label":  "Admissions and Enrollment",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  6,
+                        "tests":  13,
+                        "docs":  15,
+                        "workflows":  41
+                    },
+                    {
+                        "module_key":  "communications_discipline",
+                        "label":  "Communications Discipline Safety",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  4,
+                        "tests":  9,
+                        "docs":  10,
+                        "workflows":  51
+                    },
+                    {
+                        "module_key":  "dashboards_portals",
+                        "label":  "Dashboards and Portals",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  3,
+                        "tests":  9,
+                        "docs":  26,
+                        "workflows":  49
+                    },
+                    {
+                        "module_key":  "extended_operations",
+                        "label":  "Extended Operations",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  6,
+                        "tests":  11,
+                        "docs":  11,
+                        "workflows":  48
+                    },
+                    {
+                        "module_key":  "finance_ledger",
+                        "label":  "Finance Ledger Payments Aid",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  11,
+                        "tests":  53,
+                        "docs":  14,
+                        "workflows":  40
+                    },
+                    {
+                        "module_key":  "mission_addons",
+                        "label":  "Mission Add-ons",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  6,
+                        "tests":  18,
+                        "docs":  25,
+                        "workflows":  51
+                    },
+                    {
+                        "module_key":  "platform_core",
+                        "label":  "Platform Core",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  5,
+                        "tests":  9,
+                        "docs":  20,
+                        "workflows":  31
+                    },
+                    {
+                        "module_key":  "release_controls",
+                        "label":  "Release Controls",
+                        "proof_score":  100,
+                        "proof_status":  "STRONG",
+                        "backend_paths":  0,
+                        "tests":  0,
+                        "docs":  48,
+                        "workflows":  31
+                    }
+                ],
+    "checklist":  [
+                      {
+                          "item_key":  "release_truth",
+                          "item_label":  "release truth",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_RELEASE_GATE_STATUS.md"
+                      },
+                      {
+                          "item_key":  "backend_verification",
+                          "item_label":  "backend verification",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_RELEASE_GATE_STATUS.md"
+                      },
+                      {
+                          "item_key":  "module_proof",
+                          "item_label":  "module proof",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_RELEASE_GATE_STATUS.md"
+                      },
+                      {
+                          "item_key":  "runtime_api",
+                          "item_label":  "runtime api",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_RELEASE_GATE_STATUS.md"
+                      },
+                      {
+                          "item_key":  "frontend_dashboard",
+                          "item_label":  "frontend dashboard",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_RELEASE_GATE_STATUS.md"
+                      },
+                      {
+                          "item_key":  "reporting_export",
+                          "item_label":  "reporting export",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_RELEASE_GATE_STATUS.md"
+                      },
+                      {
+                          "item_key":  "action_register",
+                          "item_label":  "action register",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_RELEASE_GATE_STATUS.md"
+                      },
+                      {
+                          "item_key":  "high_priority_actions_closed",
+                          "item_label":  "high priority actions closed",
+                          "is_complete":  true,
+                          "owner_hint":  "release",
+                          "evidence":  "docs/release/LIVE_ACTION_REGISTER.md"
+                      },
+                      {
+                          "item_key":  "module_proof_reviewed",
+                          "item_label":  "module proof summary reviewed",
+                          "is_complete":  true,
+                          "owner_hint":  "product",
+                          "evidence":  "docs/release/LIVE_MODULE_STATUS_SUMMARY.md"
+                      }
+                  ]
+}

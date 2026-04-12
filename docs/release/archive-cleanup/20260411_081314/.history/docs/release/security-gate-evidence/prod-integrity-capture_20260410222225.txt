@@ -1,0 +1,7 @@
+Production Integrity Endpoint Capture
+Source: AUDIT_PACK_20260408_080955/13_HEALTH_PROBE.txt
+Captured: 2026-04-08
+URL: https://crown-api-prod.azurewebsites.net/api/integrity/
+
+RESPONSE:
+{"detail": "Missing required header: X-School-Id.", "code": "missing_tenant"}

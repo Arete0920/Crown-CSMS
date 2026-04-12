@@ -28,6 +28,8 @@ from core.models import School
 from households.scoping import get_request_school_id
 
 from .models import FeeSchedule, FeeScheduleWizardSession, FeeLine
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
@@ -81,6 +83,7 @@ def _validate_line(line, idx):
 # 1. Create session
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -101,6 +104,7 @@ def create_session(request):
 # 2. Configure — name, term, effective_date
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -143,6 +147,7 @@ def configure_session(request, session_id):
 # 3. Lines — define fee lines
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -194,6 +199,7 @@ def set_lines(request, session_id):
 # 4. Commit — create FeeSchedule + FeeLine records
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -302,6 +308,7 @@ def commit_session(request, session_id):
 # 5. Verify — confirm FeeSchedule + line count
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

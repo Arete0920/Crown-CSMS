@@ -1,0 +1,4 @@
+﻿"phase","priority","action_key","owner_hint","status","evidence_path","next_step"
+"2","HIGH","refresh_release_truth_docs","release","OPEN","docs/release/live-audit/phase2/phase2_release_truth_mismatches.csv","Reconcile stale release docs against live repo state"
+"3","MEDIUM","cleanup_merged_branches","repo_admin","OPEN","docs/release/live-audit/phase3/phase3_branch_cleanup_candidates.csv","Delete merged stale branches after review"
+"5","HIGH","module_proof_release_controls","module_owner","OPEN","docs/release/live-audit/phase5/phase5_module_proof_matrix.csv","Raise proof coverage for Release Controls"

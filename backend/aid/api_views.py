@@ -25,6 +25,8 @@ from aid.services.award_engine import recommend_award
 from aid.services.ledger_bridge import AidBudgetError, approve_award
 from core.models import AcademicYear, LedgerEntry
 from households.scoping import MissingSchoolContext, get_request_school_id
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +41,7 @@ def days_waiting(dt):
     return max(0, int(delta.total_seconds() // 86400))
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def aid_priority_queue(request):
@@ -138,6 +141,7 @@ def aid_priority_queue(request):
     })
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def aid_metrics(request):
@@ -199,6 +203,7 @@ def aid_metrics(request):
     })
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def aid_timeline(request):
@@ -254,6 +259,7 @@ def aid_timeline(request):
 # Phase 7.5: Admin + Family endpoints
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admin_aid_overview(request):
@@ -288,6 +294,7 @@ def admin_aid_overview(request):
     })
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def admin_recommend_award(request):
@@ -361,6 +368,7 @@ def admin_recommend_award(request):
     )
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def admin_approve_award(request, award_id):
@@ -400,6 +408,7 @@ def admin_approve_award(request, award_id):
     return Response(AidAwardSerializer(approved).data)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def family_aid_status(request):

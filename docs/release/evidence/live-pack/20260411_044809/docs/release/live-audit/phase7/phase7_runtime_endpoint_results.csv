@@ -1,0 +1,7 @@
+﻿"label","url","success","status_code","content_type","content_length","elapsed_ms","error_message"
+"health","http://127.0.0.1:8000/api/health/","True","200","application/json","247","3474",
+"integrity","http://127.0.0.1:8000/api/integrity/","True","200","application/json","1233","124331",
+"schema","http://127.0.0.1:8000/api/schema/","True","200","application/vnd.oai.openapi; charset=utf-8","846204","2617",
+"openapi_json","http://127.0.0.1:8000/openapi.json","False","404",,"0","81","The remote server returned an error: (404) Not Found."
+"swagger","http://127.0.0.1:8000/swagger/","False","404",,"0","12","The remote server returned an error: (404) Not Found."
+"redoc","http://127.0.0.1:8000/redoc/","False","404",,"0","12","The remote server returned an error: (404) Not Found."

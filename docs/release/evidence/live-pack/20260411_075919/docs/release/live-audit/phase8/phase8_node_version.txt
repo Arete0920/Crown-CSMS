@@ -1,0 +1,5 @@
+﻿COMMAND: node --version
+WORKDIR: C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr
+EXIT_CODE: 0
+v24.14.1
+

@@ -1,0 +1,901 @@
+﻿===== /api/health/ =====
+backend/core/middleware.py:56:"/api/health/",
+backend/core/tenant_header_middleware.py:26:Exempted paths: /api/auth/*, /api/v1/auth/*, /api/health/*, /api/v1/health/*,
+backend/crown_api/tests/test_api_version_alias.py:43:r2 = client.get("/api/health/")
+backend/crown_api/tests/test_rbac_matrix_readonly.py:11:- One URL path per line (absolute, e.g. /api/health/)
+backend/crown_api/tests/test_rbac_matrix_readonly.py:74:Expected: 401, 403, or 200 (for public endpoints like /api/health/).
+backend/crown_api/tests/test_rbac_matrix_readonly.py:91:"/api/health/",
+backend/crown_api/tests/test_rbac_matrix_readonly.py:124:/api/health/ must include a 'build_sha' key in the JSON response.
+backend/crown_api/tests/test_rbac_matrix_readonly.py:128:r = c.get("/api/health/")
+backend/crown_api/tests/test_rbac_matrix_readonly.py:133:pytest.fail(f"/api/health/ response is not valid JSON: {exc}")
+backend/crown_api/tests/test_rbac_matrix_readonly.py:135:f"'build_sha' missing from /api/health/ response. Got keys: {list(data.keys())}"
+backend/crown_api/tests/test_rbac_matrix_readonly.py:138:f"'status' missing from /api/health/ response. Got keys: {list(data.keys())}"
+backend/crown_api/tests/test_rbac_matrix_readonly.py:142:f"'build_sha' in /api/health/ is empty or falsy: {data['build_sha']!r}"
+backend/crown_api/tests/test_seed_edge_cases.py:27:"/api/health/",
+backend/crown_api/tests/test_seed_edge_cases.py:59:r = c.get("/api/health/")
+backend/crown_api/tests/test_seed_edge_cases.py:65:"""/api/health/ must return JSON with at least a 'status' key."""
+backend/crown_api/tests/test_seed_edge_cases.py:67:r = c.get("/api/health/")
+backend/crown_api/tests/test_seed_edge_cases.py:72:pytest.fail(f"/api/health/ response is not valid JSON: {exc}")
+backend/crown_api/tests/test_seed_edge_cases.py:73:assert "status" in data, f"Missing 'status' key in /api/health/ response: {data}"
+backend/tenants/middleware.py:32:"/api/health/",
+backend/tests/test_health_demo_mode.py:10:r = self.client.get("/api/health/")
+backend/tests/test_health_demo_mode.py:18:r = self.client.get("/api/health/")
+
+===== /api/integrity/ =====
+backend/crown_api/tests/test_api_version_alias.py:77:response = integrity(rf.get("/api/integrity/"))
+backend/crown_api/tests/test_api_version_alias.py:114:response = integrity(rf.get("/api/integrity/"))
+backend/tenants/middleware.py:33:"/api/integrity/",
+
+===== urlpatterns =====
+backend/academics/urls.py:59:urlpatterns = [
+backend/academics_ro/urls.py:4:urlpatterns = [
+backend/academic_year_wizard/urls.py:4:urlpatterns = [
+backend/admissions/api_urls.py:18:urlpatterns = [
+backend/advancement/urls.py:92:urlpatterns = [
+backend/aftercare/urls.py:4:urlpatterns = [
+backend/aid/api_urls.py:19:urlpatterns = [
+backend/athletics/api/urls.py:31:urlpatterns = [path("", include(router.urls))]
+backend/attendance_codes_wizard/urls.py:4:urlpatterns = [
+backend/attendance_rules_wizard/urls.py:5:urlpatterns = [
+backend/bell_schedule_wizard/urls.py:5:urlpatterns = [
+backend/billing_wizard/urls.py:4:urlpatterns = [
+backend/board_oversight/urls.py:4:urlpatterns = [
+backend/classroom/urls.py:8:urlpatterns = router.urls
+backend/comms/api/urls.py:4:urlpatterns = [
+backend/comms/urls.py:9:urlpatterns = [
+backend/comms_wizard/urls.py:5:urlpatterns = [
+backend/compuwerx/urls.py:4:urlpatterns = [
+backend/core/auth/urls.py:11:urlpatterns = [
+backend/core/urls.py:11:urlpatterns = [
+backend/course_catalog_wizard/urls.py:4:urlpatterns = [
+backend/crown_api/billing_api/urls.py:6:urlpatterns = [
+backend/crown_api/dashboards/urls.py:10:urlpatterns = [
+backend/crown_api/executive360/urls.py:9:urlpatterns = [
+backend/crown_api/exports/urls.py:18:urlpatterns = [
+backend/crown_api/api_urls.py:58:urlpatterns = [
+backend/crown_api/api_v1_urls.py:14:urlpatterns = [
+backend/crown_api/urls.py:8:from crown_api.wizard_registry import get_wizard_urlpatterns  # single source of truth
+backend/crown_api/urls.py:24:urlpatterns = [
+backend/crown_api/urls.py:28:*get_wizard_urlpatterns(),  # wizard SDK: single source of truth in wizard_registry.py
+backend/crown_api/urls.py:126:urlpatterns.append(path("admin/", site.urls))
+backend/crown_api/wizard_registry.py:6:settings.py pulls WIZARD_INSTALLED_APPS; urls.py calls get_wizard_urlpatterns().
+backend/crown_api/wizard_registry.py:18:get_wizard_urlpatterns() uses a deferred import of path/include so it is only
+backend/crown_api/wizard_registry.py:269:def get_wizard_urlpatterns() -> list:
+backend/curricula/urls.py:12:urlpatterns = router.urls
+backend/curriculum/urls.py:12:urlpatterns = [
+backend/discipline/api/urls.py:9:urlpatterns = [
+backend/discipline/urls.py:32:urlpatterns = [
+backend/documents/urls.py:17:urlpatterns = [
+backend/enrollment_conversion_wizard/urls.py:5:urlpatterns = [
+backend/enrollment_period_wizard/urls.py:4:urlpatterns = [
+backend/executive360/api/urls.py:10:urlpatterns = [
+backend/facops/api/urls.py:27:urlpatterns = [
+backend/fee_schedule_wizard/urls.py:5:urlpatterns = [
+backend/ferpa_portal/urls.py:4:urlpatterns = [
+backend/finance/api_urls.py:8:urlpatterns = [
+backend/finance_setup/urls.py:5:urlpatterns = [
+backend/financial_aid/urls.py:11:urlpatterns = [
+backend/financial_aid_wizard/urls.py:4:urlpatterns = [
+backend/governance/urls.py:5:urlpatterns = [
+backend/gradebook/urls.py:23:urlpatterns = [
+backend/gradebook_setup_wizard/urls.py:5:urlpatterns = [
+backend/grade_scale_wizard/urls.py:5:urlpatterns = [
+backend/grade_weights_wizard/urls.py:4:urlpatterns = [
+backend/graduation/urls.py:5:urlpatterns = [
+backend/guardian_household_wizard/urls.py:4:urlpatterns = [
+backend/households/urls.py:10:urlpatterns = router.urls
+backend/hr/urls.py:10:urlpatterns = [
+backend/imports/urls.py:10:urlpatterns = [
+backend/integrations/api/urls.py:4:urlpatterns = [
+backend/integrations/m365/urls.py:11:urlpatterns = [
+backend/integrations/urls.py:5:urlpatterns = [
+backend/integrations_real/urls.py:5:urlpatterns = [
+backend/invoice_run_wizard/urls.py:5:urlpatterns = [
+backend/messaging/urls.py:6:urlpatterns = router.urls
+backend/msauth/urls.py:9:urlpatterns = [
+backend/onboarding/urls.py:4:urlpatterns = [
+backend/outreach/api/urls.py:24:urlpatterns = [
+backend/parent360/api/urls.py:4:urlpatterns = [
+backend/payments/api_urls.py:24:urlpatterns = [
+backend/pdhub/urls.py:11:urlpatterns = [
+backend/platform_ops/urls.py:14:urlpatterns = [
+backend/portrait/urls.py:17:urlpatterns = [
+backend/promotion_wizard/urls.py:4:urlpatterns = [
+backend/reenrollment/urls.py:10:urlpatterns = [
+backend/release_closure/urls.py:5:urlpatterns = [
+backend/room_setup_wizard/urls.py:4:urlpatterns = [
+backend/safety/urls.py:10:urlpatterns = [
+backend/scheduling_wizard/urls.py:4:urlpatterns = [
+backend/school_subscriptions/urls.py:4:urlpatterns = [
+backend/section_assign_wizard/urls.py:4:urlpatterns = [
+backend/section_scheduler_wizard/urls.py:4:urlpatterns = [
+backend/section_staffing_wizard/urls.py:4:urlpatterns = [
+backend/servicehours/api/urls.py:9:urlpatterns = [
+backend/signals/urls.py:4:urlpatterns = [
+backend/spiritual_life/api/urls.py:20:urlpatterns = [
+backend/staff_onboarding_wizard/urls.py:5:urlpatterns = [
+backend/staff_setup_wizard/urls.py:4:urlpatterns = [
+backend/student360/api/urls.py:4:urlpatterns = [
+backend/student_import_wizard/urls.py:4:urlpatterns = [
+backend/student_records/urls.py:34:urlpatterns = [
+backend/subscriptions/api/urls.py:16:urlpatterns = [
+backend/subscriptions/urls.py:5:urlpatterns = [
+backend/term_structure_wizard/urls.py:5:urlpatterns = [
+backend/tests/test_tenant_lifecycle_cleanup.py:17:urlpatterns = [
+backend/transportation/api/urls.py:27:urlpatterns = [path("", include(router.urls))]
+
+===== path( =====
+backend/academics/urls.py:60:path("", include(router.urls)),
+backend/academics/urls.py:61:path(
+backend/academics/urls.py:66:path(
+backend/academics/urls.py:71:path(
+backend/academics/urls.py:76:path(
+backend/academics/urls.py:81:path(
+backend/academics/urls.py:86:path(
+backend/academics/urls.py:91:path(
+backend/academics/urls.py:96:path(
+backend/academics/urls.py:102:path(
+backend/academics/urls.py:107:path(
+backend/academics/urls.py:112:path(
+backend/academics/urls.py:118:path(
+backend/academics/urls.py:123:path(
+backend/academics/urls.py:129:path(
+backend/academics/urls.py:134:path(
+backend/academics/urls.py:140:path(
+backend/academics/urls.py:145:path(
+backend/academics_ro/urls.py:5:path("sections/", SectionsList.as_view()),
+backend/academic_year_wizard/tests/test_views.py:172:def test_configure_happy_path(self):
+backend/academic_year_wizard/tests/test_views.py:236:def test_terms_happy_path(self):
+backend/academic_year_wizard/urls.py:5:path("",                                   views.create_session),
+backend/academic_year_wizard/urls.py:6:path("<uuid:session_id>/configure/",       views.configure_session),
+backend/academic_year_wizard/urls.py:7:path("<uuid:session_id>/terms/",           views.set_terms),
+backend/academic_year_wizard/urls.py:8:path("<uuid:session_id>/commit/",          views.commit_session),
+backend/academic_year_wizard/urls.py:9:path("<uuid:session_id>/verify/",          views.verify_session),
+backend/admissions/api_urls.py:19:path("priority-queue/", api_views.admissions_priority_queue, name="admissions_priority_queue"),
+backend/admissions/api_urls.py:20:path("metrics/", api_views.admissions_metrics, name="admissions_metrics"),
+backend/admissions/api_urls.py:21:path("timeline/", api_views.admissions_timeline, name="admissions_timeline"),
+backend/admissions/api_urls.py:24:path("enroll/", enroll_applicant, name="admissions_enroll"),
+backend/admissions/api_urls.py:27:path("applications/", admissions_applications_list, name="admissions_applications_list"),
+backend/admissions/api_urls.py:28:path(
+backend/advancement/urls.py:94:path("summary/", advancement_summary, name="advancement-summary"),
+backend/advancement/urls.py:96:path("metrics/", advancement_metrics, name="advancement-metrics"),
+backend/advancement/urls.py:98:path("purchase/ticket/", purchase_ticket, name="advancement-purchase-ticket"),
+backend/advancement/urls.py:99:path("purchase/store/", purchase_store_item, name="advancement-purchase-store"),
+backend/advancement/urls.py:101:path("gift/checkout/", gift_checkout, name="advancement-gift-checkout"),
+backend/advancement/urls.py:102:path("gift/<uuid:gift_id>/mark-paid/", gift_mark_paid, name="advancement-gift-mark-paid"),
+backend/advancement/urls.py:104:path("pledges/create/", pledge_create, name="advancement-pledge-create"),
+backend/advancement/urls.py:105:path("pledges/<uuid:pledge_id>/cancel/", pledge_cancel, name="advancement-pledge-cancel"),
+backend/advancement/urls.py:107:path("sponsorship/checkout/", sponsorship_checkout, name="advancement-sponsorship-checkout"),
+backend/advancement/urls.py:108:path("sponsorship/<uuid:agreement_id>/mark-paid/", sponsorship_mark_paid, name="advancement-sponsorship-mark-paid"),
+backend/advancement/urls.py:110:path("qr-checkin/", qr_checkin, name="advancement-qr-checkin"),
+backend/advancement/urls.py:112:path("moves/transition/", moves_transition, name="advancement-moves-transition"),
+backend/advancement/urls.py:114:path("seating/set-layout/", seating_set_layout, name="advancement-seating-set-layout"),
+backend/advancement/urls.py:115:path("seating/hold/", seating_hold, name="advancement-seating-hold"),
+backend/advancement/urls.py:116:path("seating/assign/", seating_assign, name="advancement-seating-assign"),
+backend/advancement/urls.py:118:path("sponsorship/impressions/log/", sponsorship_log_impressions, name="advancement-impressions-log"),
+backend/advancement/urls.py:120:path("seating/availability/", seating_availability, name="advancement-seating-availability"),
+backend/advancement/urls.py:121:path("seating/hold-strict/", seating_hold_strict, name="advancement-seating-hold-strict"),
+backend/advancement/urls.py:122:path("seating/purchase-held/", seating_purchase_held, name="advancement-seating-purchase-held"),
+backend/advancement/urls.py:124:path("seating/checkout/", seating_checkout, name="advancement-seating-checkout"),
+backend/advancement/urls.py:125:path("orders/<uuid:order_id>/status/", order_status, name="advancement-order-status"),
+backend/advancement/urls.py:126:path("payments/stripe/webhook/", stripe_webhook, name="advancement-stripe-webhook"),
+backend/advancement/urls.py:128:path("seating/best-available/checkout/", seating_best_available_checkout, name="advancement-best-available-checkout"),
+backend/advancement/urls.py:129:path("events/<uuid:event_id>/section-prices/", event_section_prices, name="advancement-section-prices"),
+backend/advancement/urls.py:131:path("events/<uuid:event_id>/sponsors/", event_sponsors, name="advancement-event-sponsors"),
+backend/advancement/urls.py:132:path("wallet/apple/tickets/<uuid:ticket_id>.pkpass", apple_wallet_pass, name="advancement-apple-wallet-pass"),
+backend/advancement/urls.py:133:path("wallet/google/tickets/<uuid:ticket_id>/link/", google_wallet_link, name="advancement-google-wallet-link"),
+backend/advancement/urls.py:135:path("", include(router.urls)),
+backend/aftercare/urls.py:6:path("config/",                                      api.program_config,           name="aftercare_config"),
+backend/aftercare/urls.py:7:path("wizard/setup/",                                wizard_api.aftercare_setup_wizard, name="aftercare_setup_wizard"),
+backend/aftercare/urls.py:10:path("enrollments/",                                 api.enrollments,              name="aftercare_enrollments"),
+backend/aftercare/urls.py:13:path("students/<int:student_id>/pickup-contacts/",   api.pickup_contacts,          name="aftercare_pickup_contacts"),
+backend/aftercare/urls.py:16:path("roster/today/",                                api.roster_today,             name="aftercare_roster_today"),
+backend/aftercare/urls.py:17:path("attendance/checkin/",                          api.checkin,                  name="aftercare_checkin"),
+backend/aftercare/urls.py:18:path("attendance/checkout/",                         api.checkout,                 name="aftercare_checkout"),
+backend/aftercare/urls.py:21:path("incidents/",                                   api.incidents,                name="aftercare_incidents"),
+backend/aftercare/urls.py:24:path("parent/<int:student_id>/",                     api.parent_view,              name="aftercare_parent_view"),
+backend/aftercare/urls.py:27:path("board/summary/",                               api.board_summary,            name="aftercare_board_summary"),
+backend/aid/api_urls.py:21:path("priority-queue/", api_views.aid_priority_queue, name="aid_priority_queue"),
+backend/aid/api_urls.py:22:path("metrics/", api_views.aid_metrics, name="aid_metrics"),
+backend/aid/api_urls.py:23:path("timeline/", api_views.aid_timeline, name="aid_timeline"),
+backend/aid/api_urls.py:26:path("admin/overview/", api_views.admin_aid_overview, name="aid_admin_overview"),
+backend/aid/api_urls.py:27:path("admin/recommend-award/", api_views.admin_recommend_award, name="aid_admin_recommend_award"),
+backend/aid/api_urls.py:28:path("admin/awards/<int:award_id>/approve/", api_views.admin_approve_award, name="aid_admin_approve_award"),
+backend/aid/api_urls.py:31:path("family/status/", api_views.family_aid_status, name="aid_family_status"),
+backend/applications/tests/test_admissions_endpoints.py:104:def test_summary_happy_path(self):
+backend/applications/tests/test_admissions_endpoints.py:186:def test_drilldown_happy_path(self):
+backend/athletics/api/urls.py:31:urlpatterns = [path("", include(router.urls))]
+backend/attendance_codes_wizard/urls.py:5:path("", views.create_session, name="attendance_codes_wizard_create"),
+backend/attendance_codes_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="attendance_codes_wizard_configure"),
+backend/attendance_codes_wizard/urls.py:7:path("<uuid:session_id>/stage_codes/", views.stage_codes, name="attendance_codes_wizard_stage_codes"),
+backend/attendance_codes_wizard/urls.py:8:path("<uuid:session_id>/commit/", views.commit_session, name="attendance_codes_wizard_commit"),
+backend/attendance_codes_wizard/urls.py:9:path("<uuid:session_id>/verify/", views.verify_session, name="attendance_codes_wizard_verify"),
+backend/attendance_rules_wizard/urls.py:6:path("", views.create_session),
+backend/attendance_rules_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session),
+backend/attendance_rules_wizard/urls.py:8:path("<uuid:session_id>/codes/", views.define_codes),
+backend/attendance_rules_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session),
+backend/attendance_rules_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session),
+backend/bell_schedule_wizard/urls.py:6:path("", views.create_session),
+backend/bell_schedule_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session),
+backend/bell_schedule_wizard/urls.py:8:path("<uuid:session_id>/blocks/", views.set_blocks),
+backend/bell_schedule_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session),
+backend/bell_schedule_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session),
+backend/billing_wizard/urls.py:5:path("", views.create_session, name="billing_wizard_create"),
+backend/billing_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="billing_wizard_configure"),
+backend/billing_wizard/urls.py:7:path("<uuid:session_id>/plans/", views.save_plans, name="billing_wizard_plans"),
+backend/billing_wizard/urls.py:8:path("<uuid:session_id>/fees/", views.save_fees, name="billing_wizard_fees"),
+backend/billing_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session, name="billing_wizard_commit"),
+backend/billing_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session, name="billing_wizard_verify"),
+backend/board_oversight/urls.py:6:path("metrics/", views.board_metrics, name="board_oversight_metrics"),
+backend/board_oversight/urls.py:8:path("dashboard/", views.board_dashboard, name="board_oversight_dashboard"),
+backend/board_oversight/urls.py:9:path("snapshots/", views.list_snapshots, name="board_oversight_snapshots"),
+backend/board_oversight/urls.py:10:path("packets/", views.list_packets, name="board_oversight_packets"),
+backend/board_oversight/urls.py:11:path("packets/<int:packet_id>/", views.get_packet, name="board_oversight_packet_detail"),
+backend/comms/api/urls.py:5:path("threads/", ThreadsList.as_view(), name="comms_threads_list"),
+backend/comms/api/urls.py:6:path("threads/<uuid:thread_id>/", ThreadDetail.as_view(), name="comms_thread_detail"),
+backend/comms/api/urls.py:7:path("threads/<uuid:thread_id>/messages/", ThreadPostMessage.as_view(), name="comms_thread_post_message"),
+backend/comms/api/urls.py:8:path("compose/", ComposeThread.as_view(), name="comms_compose"),
+backend/comms/api/urls.py:10:path("send-test-email/", SendTestEmail.as_view(), name="comms_send_test_email"),
+backend/comms/urls.py:10:path("", include("comms.api.urls")),
+backend/comms_wizard/urls.py:6:path("", views.create_session, name="comms_wizard_create"),
+backend/comms_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session, name="comms_wizard_configure"),
+backend/comms_wizard/urls.py:8:path("<uuid:session_id>/message/", views.draft_message, name="comms_wizard_message"),
+backend/comms_wizard/urls.py:9:path("<uuid:session_id>/recipients/", views.stage_recipients, name="comms_wizard_recipients"),
+backend/comms_wizard/urls.py:10:path("<uuid:session_id>/commit/", views.commit_session, name="comms_wizard_commit"),
+backend/comms_wizard/urls.py:11:path("<uuid:session_id>/verify/", views.verify_session, name="comms_wizard_verify"),
+backend/compuwerx/urls.py:5:path('reconciliation/', ReconciliationView.as_view(), name='cwx-reconciliation'),
+backend/compuwerx/urls.py:6:path('test-transaction/', TestTransactionView.as_view(), name='cwx-test-transaction'),
+backend/core/auth/urls.py:12:path("me/",          me,          name="iam_me"),
+backend/core/auth/urls.py:13:path("health-auth/", health_auth, name="iam_health_auth"),
+backend/core/management/commands/seed_heritage_realism_pack.py:28:repo_root = Path(__file__).resolve().parents[4]  # Crown2026/
+backend/core/management/commands/verify_demo_accounts.py:12:CREDS_PATH = Path(__file__).resolve().parents[2] / "demo" / "heritage_demo_credentials.json"
+backend/core/management/commands/verify_demo_school.py:17:SPEC_PATH = Path(__file__).resolve().parents[2] / "demo" / "heritage_christian_academy_spec.json"
+backend/core/urls.py:12:path("health/", HealthView.as_view(), name="core-health"),
+backend/core/urls.py:13:path("", include(router.urls)),
+backend/course_catalog_wizard/urls.py:5:path("", views.create_session),
+backend/course_catalog_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure),
+backend/course_catalog_wizard/urls.py:7:path("<uuid:session_id>/commit/", views.commit),
+backend/course_catalog_wizard/urls.py:8:path("<uuid:session_id>/verify/", views.verify),
+backend/crown_api/billing_api/urls.py:7:path(
+backend/crown_api/billing_api/urls.py:12:path("billing/payments/", PaymentsCreateView.as_view(), name="billing-payments-create"),
+backend/crown_api/billing_api/urls.py:13:path("billing/payments/record/", PaymentsRecordView.as_view(), name="billing-payments-record"),
+backend/crown_api/billing_api/urls.py:14:path(
+backend/crown_api/billing_api/urls.py:19:path("billing/runs/api/", BillingRunCreateApiView.as_view(), name="billing-runs-api-create"),
+backend/crown_api/dashboards/urls.py:12:path("me/", dashboard_me, name="dashboard-me"),
+backend/crown_api/dashboards/urls.py:13:path("summary/", dashboard_summary, name="dashboard-summary-api"),
+backend/crown_api/dashboards/urls.py:14:path("drilldown/", dashboard_drilldown, name="dashboard-drilldown"),
+backend/crown_api/dashboards/urls.py:15:path("alerts/", dashboard_alerts, name="dashboard-alerts"),
+backend/crown_api/dashboards/urls.py:17:path("admissions/funnel/", AdmissionsFunnelDashboard.as_view(), name="dashboard-admissions-funnel"),
+backend/crown_api/dashboards/urls.py:18:path("finance/summary/", FinanceSummaryDashboard.as_view(), name="dashboard-finance-summary"),
+backend/crown_api/dashboards/urls.py:19:path("academics/enrollment/", EnrollmentSnapshotView.as_view(), name="dashboard-academics-enrollment"),
+backend/crown_api/dashboards/urls.py:20:path('<slug:dashboard_key>/summary', DashboardSummaryView.as_view(), name='dashboard-summary'),
+backend/crown_api/executive360/urls.py:10:path("me/overview/", ExecutiveOverviewView.as_view(), name="executive-overview"),
+backend/crown_api/executive360/urls.py:11:path("me/kpi-drilldown/<str:kpi_key>/", ExecutiveKpiDrilldownView.as_view(), name="executive-kpi-drilldown"),
+backend/crown_api/executive360/urls.py:12:path("me/chart-drilldown/<str:chart_key>/", ExecutiveChartDrilldownView.as_view(), name="executive-chart-drilldown"),
+backend/crown_api/executive360/urls.py:13:path("me/ghost-context/", ExecutiveGhostContextView.as_view(), name="executive-ghost-context"),
+backend/crown_api/exports/admin.py:42:path(
+backend/crown_api/exports/urls.py:19:path("exports/invoices.csv", InvoicesCSVExportView.as_view(), name="exports-invoices-csv"),
+backend/crown_api/exports/urls.py:20:path(
+backend/crown_api/exports/urls.py:27:path("exports/households.csv", HouseholdsCSVExportView.as_view(), name="exports-households-csv"),
+backend/crown_api/exports/urls.py:28:path("exports/students.csv", StudentsCSVExportView.as_view(), name="exports-students-csv"),
+backend/crown_api/exports/urls.py:29:path("exports/staff.csv", StaffCSVExportView.as_view(), name="exports-staff-csv"),
+backend/crown_api/exports/urls.py:32:path("exports/ledger-charges.csv", LedgerChargesCSVExportView.as_view(), name="exports-ledger-charges-csv"),
+backend/crown_api/exports/urls.py:33:path(
+backend/crown_api/exports/urls.py:38:path("exports/payments.csv", PaymentsCSVExportView.as_view(), name="exports-payments-csv"),
+backend/crown_api/exports/urls.py:41:path("exports/statements.csv", StatementsCSVExportView.as_view(), name="exports-statements-csv"),
+backend/crown_api/exports/urls.py:44:path(
+backend/crown_api/exports/urls.py:51:path(
+backend/crown_api/exports/urls.py:58:path(
+backend/crown_api/tests/test_audit_log_contract.py:204:def test_audit_entry_model_field_is_request_path(self):
+backend/crown_api/tests/test_rbac_matrix_readonly.py:25:FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "rbac_endpoints_readonly.txt"
+backend/crown_api/api_urls.py:60:path('nav/',                    nav_view,               name='nav'),
+backend/crown_api/api_urls.py:63:path('admin/metrics/',          admin_metrics,          name='admin-metrics'),
+backend/crown_api/api_urls.py:64:path('finance/metrics/',        finance_metrics,        name='finance-metrics'),
+backend/crown_api/api_urls.py:65:path('teacher/metrics/',        teacher_metrics,        name='teacher-metrics'),
+backend/crown_api/api_urls.py:66:path('parent/metrics/',         parent_metrics,         name='parent-metrics'),
+backend/crown_api/api_urls.py:67:path('student/metrics/',        student_metrics,        name='student-metrics'),
+backend/crown_api/api_urls.py:68:path('it/metrics/',             it_metrics,             name='it-metrics'),
+backend/crown_api/api_urls.py:70:path('marketing/metrics/',      marketing_metrics,      name='marketing-metrics'),
+backend/crown_api/api_urls.py:71:path('spiritual-life/metrics/', spiritual_life_metrics, name='spiritual-life-metrics'),
+backend/crown_api/api_urls.py:72:path('office/metrics/',         office_metrics,         name='office-metrics'),
+backend/crown_api/api_urls.py:73:path('health/metrics/',         health_metrics,         name='health-metrics'),
+backend/crown_api/api_urls.py:74:path('counseling/metrics/',     counseling_metrics,     name='counseling-metrics'),
+backend/crown_api/api_urls.py:75:path('food/metrics/',           food_metrics,           name='food-metrics'),
+backend/crown_api/api_urls.py:76:path('athletics/metrics/',      athletics_metrics,      name='athletics-metrics'),
+backend/crown_api/api_urls.py:82:path('transportation/metrics/', transportation_metrics, name='transportation-metrics'),
+backend/crown_api/api_urls.py:83:path('facilities/metrics/',     facilities_metrics,     name='facilities-metrics'),
+backend/crown_api/api_urls.py:84:path('security/metrics/',       security_metrics,       name='security-metrics'),
+backend/crown_api/api_urls.py:85:path('academic-support/metrics/', academic_support_metrics, name='academic-support-metrics'),
+backend/crown_api/api_urls.py:86:path('fine-arts/metrics/',       fine_arts_metrics,      name='fine-arts-metrics'),
+backend/crown_api/api_urls.py:87:path('library/metrics/',         library_metrics,        name='library-metrics'),
+backend/crown_api/api_urls.py:88:path('extended-care/metrics/',   extended_care_metrics,  name='extended-care-metrics'),
+backend/crown_api/api_urls.py:89:path('registrar/metrics/',       registrar_metrics,      name='registrar-metrics'),
+backend/crown_api/api_urls.py:90:path('communications/metrics/',  communications_metrics, name='communications-metrics'),
+backend/crown_api/api_urls.py:91:path('student-services/metrics/', student_services_metrics, name='student-services-metrics'),
+backend/crown_api/api_urls.py:93:path('360/', include('student360.api.urls')),
+backend/crown_api/api_urls.py:94:path('parent360/', include('parent360.api.urls')),
+backend/crown_api/api_urls.py:95:path('executive360/', include('executive360.api.urls')),
+backend/crown_api/api_urls.py:96:path('comms/', include('comms.api.urls')),
+backend/crown_api/api_urls.py:98:path("aid/", include("aid.api_urls")),
+backend/crown_api/api_urls.py:100:path("admissions/", include("admissions.api_urls")),
+backend/crown_api/api_urls.py:101:path("portrait/", include("portrait.urls")),
+backend/crown_api/api_urls.py:104:path("discipline/", include("discipline.api.urls")),
+backend/crown_api/api_urls.py:105:path("service/", include("servicehours.api.urls")),
+backend/crown_api/api_urls.py:106:path("integrations/", include("integrations.api.urls")),
+backend/crown_api/api_urls.py:107:path("m365/", include("integrations.m365.urls")),
+backend/crown_api/api_urls.py:108:path("spiritual-life/", include("spiritual_life.api.urls")),
+backend/crown_api/api_urls.py:109:path("outreach/", include("outreach.api.urls")),
+backend/crown_api/api_urls.py:110:path("athletics/", include("athletics.api.urls")),
+backend/crown_api/api_urls.py:111:path("", include("facops.api.urls")),
+backend/crown_api/api_urls.py:112:path("transportation/", include("transportation.api.urls")),
+backend/crown_api/api_urls.py:115:path("households/", households_list, name="households_list"),
+backend/crown_api/api_urls.py:116:path("households/<uuid:household_id>/", household_detail, name="household_detail"),
+backend/crown_api/api_urls.py:119:path(
+backend/crown_api/api_urls.py:126:path("terms/", terms_list, name="terms_list"),
+backend/crown_api/api_urls.py:127:path("terms/<uuid:term_id>/sections/", term_sections, name="term_sections"),
+backend/crown_api/api_urls.py:128:path("students/<uuid:student_id>/schedule/", student_schedule, name="student_schedule"),
+backend/crown_api/api_urls.py:131:path("threads/", threads_list, name="threads_list"),
+backend/crown_api/api_urls.py:132:path("threads/<uuid:thread_id>/", thread_detail, name="thread_detail"),
+backend/crown_api/api_urls.py:135:path("applications/", applications_api.applications, name="applications"),
+backend/crown_api/api_urls.py:136:path("applications/<str:application_id>/", applications_api.application_detail, name="application-detail"),
+backend/crown_api/api_urls.py:137:path("applications/<str:application_id>/submit/", applications_api.application_submit, name="application-submit"),
+backend/crown_api/api_urls.py:138:path(
+backend/crown_api/api_urls.py:143:path("applicants/", applications_api.applicants, name="applicants"),
+backend/crown_api/api_urls.py:145:path("ledger/accounts/ensure/", ledger_api.ensure_account, name="ledger-ensure-account"),
+backend/crown_api/api_urls.py:146:path("ledger/accounts/<str:account_id>/", ledger_api.account_detail, name="ledger-account-detail"),
+backend/crown_api/api_urls.py:148:path("ledger/accounts/<str:account_id>/statement/", ledger_api.ledger_account_statement, name="ledger-account-statement"),
+backend/crown_api/api_urls.py:149:path("ledger/charges/", ledger_api.create_charge, name="ledger-create-charge"),
+backend/crown_api/api_urls.py:150:path("ledger/charges/<str:charge_id>/void/", ledger_api.void_charge, name="ledger-void-charge"),
+backend/crown_api/api_urls.py:151:path("ledger/payments/", ledger_api.record_payment, name="ledger-record-payment"),
+backend/crown_api/api_urls.py:152:path("ledger/payments/<str:payment_id>/void/", ledger_api.void_payment, name="ledger-void-payment"),
+backend/crown_api/api_urls.py:155:path("ledger/charges/open/", ledger_api.open_charges, name="ledger-open-charges"),
+backend/crown_api/api_urls.py:156:path("ledger/invoices/open/", ledger_api.open_invoices, name="ledger-open-invoices"),
+backend/crown_api/api_urls.py:158:path("ledger/payments/<str:payment_id>/allocate/", ledger_api.payment_allocate, name="ledger-payment-allocate"),
+backend/crown_api/api_urls.py:159:path("ledger/accounts/<str:account_id>/balance/", ledger_api.ledger_account_balance, name="ledger-account-balance"),
+backend/crown_api/api_urls.py:160:path("ledger/charges/<str:charge_id>/balance/", ledger_api.charge_balance, name="ledger-charge-balance"),
+backend/crown_api/api_urls.py:162:path("ledger/invariants/", ledger_api.ledger_invariants, name="ledger-invariants"),
+backend/crown_api/api_urls.py:165:path("finance/kpis/", finance_api.finance_kpis, name="finance-kpis"),
+backend/crown_api/api_urls.py:166:path("finance/chargebacks/", finance_api.chargeback_metrics, name="finance-chargebacks"),
+backend/crown_api/api_urls.py:167:path("finance/monthly-summary/", finance_api.monthly_financial_summary, name="finance-monthly-summary"),
+backend/crown_api/api_urls.py:168:path("finance/payout-audit/", finance_api.payout_audit_list, name="finance-payout-audit"),
+backend/crown_api/api_urls.py:169:path("finance/dunning/", finance_api.dunning_status, name="finance-dunning"),
+backend/crown_api/api_urls.py:172:path("academics/courses/", academics_api.courses, name="academics-courses"),
+backend/crown_api/api_urls.py:173:path("academics/sections/", academics_api.sections, name="academics-sections"),
+backend/crown_api/api_urls.py:174:path("academics/enroll/", academics_api.enroll, name="academics-enroll"),
+backend/crown_api/api_urls.py:175:path(
+backend/crown_api/api_urls.py:181:path("billing/runs/", billing_api.billing_runs, name="billing-runs"),
+backend/crown_api/api_urls.py:182:path("billing/runs/<str:billing_run_id>/", billing_api.billing_run_detail, name="billing-run-detail"),
+backend/crown_api/api_urls.py:184:path("billing/runs/<str:billing_run_id>/summary/", billing_api.billing_run_summary_view, name="billing-run-summary"),
+backend/crown_api/api_urls.py:187:path("billing/invoices/", billing_api.invoices, name="billing-invoices"),
+backend/crown_api/api_urls.py:190:path("billing/installment-plans/", billing_api.installment_plans, name="billing-installment-plans"),
+backend/crown_api/api_urls.py:193:path("students/", students_list, name="students_list"),
+backend/crown_api/api_urls.py:194:path("students/<uuid:student_id>/", student_detail, name="student_detail"),
+backend/crown_api/api_urls.py:197:path(
+backend/crown_api/api_urls.py:202:path(
+backend/crown_api/api_urls.py:209:path("director/aid/summary/", aid_summary, name="aid_summary"),
+backend/crown_api/api_urls.py:210:path("director/finance/summary/", finance_summary, name="finance_summary"),
+backend/crown_api/api_urls.py:211:path("director/registrar/summary/", registrar_summary, name="registrar_summary"),
+backend/crown_api/api_urls.py:212:path("director/dashboard/", director_dashboard, name="director_dashboard"),
+backend/crown_api/api_urls.py:213:path("director/priority/", director_priority, name="director_priority"),
+backend/crown_api/api_urls.py:214:path("director/actions/", director_actions, name="director_actions"),
+backend/crown_api/api_urls.py:215:path("director/timeline/", director_timeline, name="director_timeline"),
+backend/crown_api/api_urls.py:216:path("director/force_seed_user/", force_seed_user, name="force_seed_user"),
+backend/crown_api/api_urls.py:219:path("signals/", include("signals.urls")),
+backend/crown_api/api_urls.py:221:path("aftercare/", include("aftercare.urls")),
+backend/crown_api/api_urls.py:223:path("finance-setup/", include("finance_setup.urls")),
+backend/crown_api/api_urls.py:226:path("onboarding/<str:school_id>/progress/", api_onboarding.onboarding_progress, name="onboarding-progress"),
+backend/crown_api/api_urls.py:227:path("onboarding/<str:school_id>/tasks/<int:task_id>/complete/", api_onboarding.mark_task_complete, name="onboarding-task-complete"),
+backend/crown_api/api_urls.py:228:path("onboarding/<str:school_id>/can-activate/", api_onboarding.activation_gate, name="onboarding-activation-gate"),
+backend/crown_api/api_urls.py:229:path("help/<slug:slug>/", api_onboarding.help_article, name="help-article"),
+backend/crown_api/api_urls.py:230:path("solomon/articles/", api_onboarding.solomon_articles, name="solomon-articles"),
+backend/crown_api/api_urls.py:231:path("solomon/articles/<slug:slug>/", api_onboarding.solomon_article_detail, name="solomon-article-detail"),
+backend/crown_api/api_urls.py:232:path("solomon/context/", api_onboarding.solomon_context, name="solomon-context"),
+backend/crown_api/api_urls.py:233:path("solomon/categories/", api_onboarding.solomon_categories, name="solomon-categories"),
+backend/crown_api/api_urls.py:234:path("solomon/playbooks/", api_onboarding.solomon_playbooks, name="solomon-playbooks"),
+backend/crown_api/api_urls.py:235:path("solomon/search/", api_onboarding.solomon_search, name="solomon-search"),
+backend/crown_api/api_urls.py:238:path("governance/", include("governance.urls")),
+backend/crown_api/api_urls.py:239:path("dashboards/school-board/summary", governance_views.governance_dashboard, name="dashboard-school-board-summary"),
+backend/crown_api/api_urls.py:240:path("board/packet/download/", api_governance.download_board_packet, name="board-packet-download"),
+backend/crown_api/api_urls.py:241:path("board/compass/", api_governance.compass_executive, name="board-compass"),
+backend/crown_api/api_urls.py:242:path("board/initiatives/", api_governance.initiative_summary, name="board-initiatives"),
+backend/crown_api/api_urls.py:243:path("board/trends/", api_governance.board_trends, name="board-trends"),
+backend/crown_api/api_urls.py:244:path("board/roadmap/", api_governance.public_roadmap, name="board-roadmap"),
+backend/crown_api/api_urls.py:245:path("board/releases/", api_governance.release_notes, name="board-releases"),
+backend/crown_api/api_urls.py:248:path("support/tickets/", api_support.tickets, name="support-tickets"),
+backend/crown_api/api_urls.py:249:path("support/tickets/<int:ticket_id>/resolve/", api_support.resolve_ticket, name="support-resolve-ticket"),
+backend/crown_api/api_urls.py:250:path("support/escalation/run/", api_support.run_escalation, name="support-run-escalation"),
+backend/crown_api/api_urls.py:251:path("analytics/health/", api_health.customer_health, name="analytics-customer-health"),
+backend/crown_api/api_urls.py:252:path("analytics/export/", api_health.export_school, name="analytics-export"),
+backend/crown_api/api_urls.py:253:path("status/", api_health.public_status, name="public-status"),
+backend/crown_api/api_v1_urls.py:16:path("system/ensure-ci-user/", ensure_ci_user, name="system-ensure-ci-user"),
+backend/crown_api/api_v1_urls.py:17:path("system/demo-school/", demo_school, name="system-demo-school"),
+backend/crown_api/api_v1_urls.py:20:path("auth/token/", TokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
+backend/crown_api/api_v1_urls.py:21:path("auth/token/refresh/", TokenRefreshView.as_view(), name="v1_token_refresh"),
+backend/crown_api/api_v1_urls.py:24:path("admissions/summary/", admissions_summary, name="admissions_summary"),
+backend/crown_api/api_v1_urls.py:25:path("admissions/drilldown/", admissions_drilldown, name="admissions_drilldown"),
+backend/crown_api/api_v1_urls.py:27:path("system/seed-status/", SeedStatusView.as_view(), name="seed_status"),
+backend/crown_api/api_v1_urls.py:28:path("system/demo-reset/", demo_reset_view, name="system-demo-reset"),
+backend/crown_api/api_v1_urls.py:29:path("system/diagnose-db-tables/", diagnose_db_tables_view, name="system-diagnose-db-tables"),
+backend/crown_api/api_v1_urls.py:30:path("system/fix-schema-drift/", fix_schema_drift_view, name="system-fix-schema-drift"),
+backend/crown_api/api_v1_urls.py:34:path("academics-ro/", include("academics_ro.urls")),
+backend/crown_api/api_v1_urls.py:35:path("", include("academics.urls")),
+backend/crown_api/api_v1_urls.py:36:path("curricula/", include("curricula.urls")),
+backend/crown_api/api_v1_urls.py:37:path("", include("gradebook.urls")),
+backend/crown_api/api_v1_urls.py:38:path("", include("households.urls")),
+backend/crown_api/api_v1_urls.py:39:path("", include("crown_api.billing_api.urls")),
+backend/crown_api/api_v1_urls.py:40:path("", include("crown_api.exports.urls")),
+backend/crown_api/api_v1_urls.py:42:path("financial-aid/", include("financial_aid.urls")),
+backend/crown_api/api_v1_urls.py:43:path("payments/", include("payments.api_urls")),
+backend/crown_api/api_v1_urls.py:47:path("board/", include("board_oversight.urls")),
+backend/crown_api/api_v1_urls.py:48:path("hr/", include("hr.urls")),
+backend/crown_api/api_v1_urls.py:49:path("advancement/", include("advancement.urls")),
+backend/crown_api/api_v1_urls.py:50:path("pd/", include("pdhub.urls")),
+backend/crown_api/api_v1_urls.py:51:path("safety/", include("safety.urls")),
+backend/crown_api/api_v1_urls.py:52:path("connectors/", include("integrations_real.urls")),
+backend/crown_api/api_v1_urls.py:53:path("", include("student_records.urls")),
+backend/crown_api/api_v1_urls.py:55:path("", include("crown_api.api_urls")),
+backend/crown_api/authenticated_contract_probe.py:10:ROOT = Path(__file__).resolve().parents[2]
+backend/crown_api/authenticated_contract_probe.py:23:def normalize_path(value):
+backend/crown_api/authenticated_contract_probe.py:59:"path": normalize_path(entry.get("path")),
+backend/crown_api/lifecycle_contract_probe.py:13:ROOT = Path(__file__).resolve().parents[2]
+backend/crown_api/lifecycle_contract_probe.py:34:def normalize_path(value):
+backend/crown_api/lifecycle_contract_probe.py:73:"path": normalize_path(entry.get("path")),
+backend/crown_api/seeded_contract_probe.py:12:ROOT = Path(__file__).resolve().parents[2]
+backend/crown_api/seeded_contract_probe.py:22:def normalize_path(value):
+backend/crown_api/seeded_contract_probe.py:60:"path": normalize_path(entry.get("path")),
+backend/crown_api/settings.py:37:BASE_DIR = Path(__file__).resolve().parent.parent
+backend/crown_api/urls.py:25:path("", RedirectView.as_view(url="director/", permanent=False)),
+backend/crown_api/urls.py:26:path("api/v1/graduation/", include('graduation.urls')),
+backend/crown_api/urls.py:27:path("api/v1/wizards/", wizard_discovery, name="wizard-discovery"),  # discovery: single source of truth
+backend/crown_api/urls.py:29:path("health/", health, name="health"),
+backend/crown_api/urls.py:30:path("api/health/", health, name="api_health"),
+backend/crown_api/urls.py:31:path("api/integrity/", integrity, name="api_integrity"),
+backend/crown_api/urls.py:32:path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+backend/crown_api/urls.py:33:path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+backend/crown_api/urls.py:34:path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+backend/crown_api/urls.py:35:path("api/system/health/", system_health, name="system_health"),
+backend/crown_api/urls.py:36:path("health/version/", health_version, name="health_version"),
+backend/crown_api/urls.py:39:path("api/system/whoami/", whoami, name="system_whoami"),
+backend/crown_api/urls.py:42:path("api/v1/version/", version, name="version"),
+backend/crown_api/urls.py:45:path("api/ops/summary/", ops_summary, name="ops_summary"),
+backend/crown_api/urls.py:48:path("api/ops/alerts/", ops_alerts, name="ops_alerts"),
+backend/crown_api/urls.py:51:path("api/system/rbac/finance-proof/", finance_guardrail_proof, name="finance_guardrail_proof"),
+backend/crown_api/urls.py:54:path("api/system/audit/recent/", recent_audit_events, name="recent_audit_events"),
+backend/crown_api/urls.py:57:path("api/auth/login/", login, name="auth_login"),
+backend/crown_api/urls.py:58:path("api/auth/refresh/", refresh, name="auth_refresh"),
+backend/crown_api/urls.py:59:path("api/auth/me/", me, name="auth_me"),
+backend/crown_api/urls.py:62:path("api/dev/token/", dev_token, name="dev_token"),
+backend/crown_api/urls.py:65:path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:66:path("api/v1/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:69:path("api/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:72:path("api/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:75:path("api/curriculum/", include("curriculum.urls")),
+backend/crown_api/urls.py:78:path("api/classroom/", include("classroom.urls")),
+backend/crown_api/urls.py:81:path("api/student360/", include("student360.api.urls")),
+backend/crown_api/urls.py:84:path("api/parent360/", include("parent360.api.urls")),
+backend/crown_api/urls.py:87:path("api/executive360/", include("executive360.api.urls")),
+backend/crown_api/urls.py:90:path("api/finance/", include("finance.api_urls")),
+backend/crown_api/urls.py:93:path("api/platform/", include("platform_ops.urls")),
+backend/crown_api/urls.py:96:path("api/v1/subscriptions/", include("subscriptions.api.urls")),
+backend/crown_api/urls.py:99:path("api/v1/admin/modules/", include("subscriptions.urls")),
+backend/crown_api/urls.py:102:path("api/integrations/", include("integrations.urls")),
+backend/crown_api/urls.py:103:path("api/m365/", include("integrations.m365.urls")),
+backend/crown_api/urls.py:106:path("auth/", include("msauth.urls")),
+backend/crown_api/urls.py:110:path("api/iam/", include("core.auth.urls")),
+backend/crown_api/urls.py:113:path("accounts/", include("django.contrib.auth.urls")),
+backend/crown_api/urls.py:116:path("director/", director_router, name="director_router"),
+backend/crown_api/urls.py:117:path("director/aid/", director_dashboard_page, {'persona': 'aid'}, name="director_aid"),
+backend/crown_api/urls.py:118:path("director/admissions/", director_dashboard_page, {'persona': 'admissions'}, name="director_admissions"),
+backend/crown_api/urls.py:119:path("director/finance/", director_dashboard_page, {'persona': 'finance'}, name="director_finance"),
+backend/crown_api/urls.py:120:path("director/registrar/", director_dashboard_page, {'persona': 'registrar'}, name="director_registrar"),
+backend/crown_api/urls.py:126:urlpatterns.append(path("admin/", site.urls))
+backend/crown_api/wizard_registry.py:276:return [path(w["url_prefix"], include(w["urls_module"])) for w in WIZARDS]
+backend/crown_api/write_contract_probe.py:16:ROOT = Path(__file__).resolve().parents[2]
+backend/crown_api/write_contract_probe.py:26:def normalize_path(value):
+backend/crown_api/write_contract_probe.py:65:"path": normalize_path(entry.get("path")),
+backend/curriculum/urls.py:13:path("", include(router.urls)),
+backend/discipline/api/urls.py:10:path("incidents/", DisciplineIncidentsListCreate.as_view(), name="discipline_incidents"),
+backend/discipline/api/urls.py:11:path("incidents/<uuid:incident_id>/", DisciplineIncidentDetail.as_view(), name="discipline_incident_detail"),
+backend/discipline/api/urls.py:12:path("incidents/<uuid:incident_id>/actions/", DisciplineIncidentActions.as_view(), name="discipline_incident_actions"),
+backend/discipline/api/urls.py:13:path("metrics/", DisciplineMetrics.as_view(), name="discipline_metrics"),
+backend/discipline/urls.py:33:path("metrics/", DisciplineMetricsDashboardView.as_view(), name="discipline-metrics-legacy"),
+backend/discipline/urls.py:34:path("metrics/dashboard/", DisciplineMetricsDashboardView.as_view(), name="discipline-metrics-dashboard"),
+backend/discipline/urls.py:35:path("metrics/drilldown/<str:bucket_name>/", DisciplineMetricsDrilldownView.as_view(), name="discipline-metrics-drilldown"),
+backend/discipline/urls.py:36:path("metrics/reconciliation/", DisciplineMetricsReconciliationView.as_view(), name="discipline-metrics-reconciliation"),
+backend/discipline/urls.py:37:path("metrics/verification/<str:school_slug_or_id>/", DisciplineMetricsVerificationView.as_view(), name="discipline-metrics-verification"),
+backend/discipline/urls.py:38:path("records/<uuid:incident_id>/", DisciplineRecordDetailView.as_view(), name="discipline-record-detail"),
+backend/discipline/urls.py:39:path("records/<uuid:incident_id>/parent-summary/", DisciplineParentRecordSummaryView.as_view(), name="discipline-parent-record-summary"),
+backend/discipline/urls.py:40:path("records/<uuid:incident_id>/export/", DisciplineRecordExportView.as_view(), name="discipline-record-export"),
+backend/discipline/urls.py:41:path("parent/incidents/", ParentDisciplineIncidentListView.as_view(), name="discipline-parent-incidents"),
+backend/discipline/urls.py:42:path("parent/incident/<uuid:incident_id>/", ParentDisciplineIncidentDetailView.as_view(), name="discipline-parent-incident-detail"),
+backend/discipline/urls.py:43:path("parent/acknowledge-incident/", ParentDisciplineAcknowledgeIncidentView.as_view(), name="discipline-parent-acknowledge"),
+backend/discipline/urls.py:44:path("parent/respond/", ParentDisciplineRespondView.as_view(), name="discipline-parent-respond"),
+backend/discipline/urls.py:45:path("", include(router.urls)),
+backend/documents/urls.py:18:path("", include(router.urls)),
+backend/documents/urls.py:19:path("reports/completeness/", completeness_report, name="documents-completeness-report"),
+backend/documents/urls.py:20:path("reports/expiring/", expiring_report, name="documents-expiring-report"),
+backend/documents/urls.py:21:path("reports/rejections/", rejections_report, name="documents-rejections-report"),
+backend/documents/urls.py:22:path("reports/bundle/<uuid:packet_id>/", bundle_report, name="documents-bundle-report"),
+backend/enrollment_conversion_wizard/urls.py:6:path("", views.create_session),
+backend/enrollment_conversion_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session),
+backend/enrollment_conversion_wizard/urls.py:8:path("<uuid:session_id>/load/", views.load_applicants),
+backend/enrollment_conversion_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session),
+backend/enrollment_conversion_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session),
+backend/enrollment_period_wizard/tests/test_views.py:189:def test_configure_happy_path(self):
+backend/enrollment_period_wizard/tests/test_views.py:288:def test_capacities_happy_path(self):
+backend/enrollment_period_wizard/urls.py:5:path("",                              views.create_session,    name="ep-wizard-create"),
+backend/enrollment_period_wizard/urls.py:6:path("<uuid:session_id>/configure/",  views.configure_session, name="ep-wizard-configure"),
+backend/enrollment_period_wizard/urls.py:7:path("<uuid:session_id>/capacities/", views.set_capacities,    name="ep-wizard-capacities"),
+backend/enrollment_period_wizard/urls.py:8:path("<uuid:session_id>/commit/",     views.commit_session,    name="ep-wizard-commit"),
+backend/enrollment_period_wizard/urls.py:9:path("<uuid:session_id>/verify/",     views.verify_session,    name="ep-wizard-verify"),
+backend/executive360/api/urls.py:11:path("me/overview/", ExecutiveSelfOverview.as_view(), name="executive_360_self"),
+backend/executive360/api/urls.py:12:path("me/kpi-drilldown/<str:kpi_key>/", ExecutiveKpiDrilldownView.as_view(), name="executive_360_kpi_drilldown"),
+backend/executive360/api/urls.py:13:path("me/chart-drilldown/<str:chart_key>/", ExecutiveChartDrilldownView.as_view(), name="executive_360_chart_drilldown"),
+backend/executive360/api/urls.py:14:path("me/ghost-context/", ExecutiveGhostContextView.as_view(), name="executive_360_ghost_context"),
+backend/facops/api/urls.py:28:path("facilities/summary/", facilities_summary, name="facilities-summary"),
+backend/facops/api/urls.py:29:path("security/summary/", security_summary, name="security-summary"),
+backend/facops/api/urls.py:30:path("", include(router.urls)),
+backend/fee_schedule_wizard/tests/test_views.py:162:def test_configure_happy_path(self):
+backend/fee_schedule_wizard/tests/test_views.py:213:def test_lines_happy_path(self):
+backend/fee_schedule_wizard/urls.py:6:path("", views.create_session),
+backend/fee_schedule_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session),
+backend/fee_schedule_wizard/urls.py:8:path("<uuid:session_id>/lines/", views.set_lines),
+backend/fee_schedule_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session),
+backend/fee_schedule_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session),
+backend/ferpa_portal/urls.py:5:path('audit-log/', AuditLogView.as_view(), name='ferpa-audit-log'),
+backend/ferpa_portal/urls.py:6:path('records-requests/', RecordsRequestView.as_view(), name='ferpa-records-requests'),
+backend/ferpa_portal/urls.py:7:path('dashboard/', ComplianceDashboardView.as_view(), name='ferpa-dashboard'),
+backend/finance/api_urls.py:10:path("obligations/", views.obligations, name="finance-obligations"),
+backend/finance/api_urls.py:13:path("invoices/", views.invoice_list, name="finance-invoice-list"),
+backend/finance/api_urls.py:14:path("invoices/create-from-obligations/", views.invoice_create_from_obligations, name="finance-invoice-create"),
+backend/finance/api_urls.py:17:path("parent/balance/", views.parent_balance, name="finance-parent-balance"),
+backend/finance/api_urls.py:20:path("payments/intent/", views.payment_intent_create, name="finance-payment-intent"),
+backend/finance/api_urls.py:21:path("payments/<int:payment_id>/settle/", views.payment_settle, name="finance-payment-settle"),
+backend/finance/api_urls.py:22:path("payments/<int:payment_id>/refund/", views.refund_create, name="finance-refund-create"),
+backend/finance/api_urls.py:25:path("donations/", views.donation_list, name="finance-donation-list"),
+backend/finance/api_urls.py:26:path("donations/create/", views.donation_create, name="finance-donation-create"),
+backend/finance_setup/urls.py:6:path("wizard/status/", wizard_status, name="finance_setup_wizard_status"),
+backend/finance_setup/urls.py:7:path("wizard/configure/", wizard_configure, name="finance_setup_wizard_configure"),
+backend/finance_setup/urls.py:8:path("wizard/lock/", wizard_lock, name="finance_setup_wizard_lock"),
+backend/finance_setup/urls.py:9:path("wizard/snapshot/", wizard_snapshot, name="finance_setup_wizard_snapshot"),
+backend/financial_aid/tests/test_financial_aid_endpoints.py:53:def test_summary_happy_path(self):
+backend/financial_aid/tests/test_url_routes.py:39:"Fix: add path('financial-aid/', include('financial_aid.urls')) to api_urls.py."
+backend/financial_aid/urls.py:12:path("summary/", FinancialAidSummaryView.as_view(), name="financial-aid-summary"),
+backend/financial_aid/urls.py:13:path("drilldown/", FinancialAidDrilldownView.as_view(), name="financial-aid-drilldown"),
+backend/financial_aid/urls.py:15:path("metrics/", financial_aid_metrics, name="financial-aid-metrics"),
+backend/financial_aid/urls.py:17:path("applications/", aid_applications, name="financial-aid-applications"),
+backend/financial_aid/urls.py:18:path("applications/<uuid:application_id>/process/", process_application_review, name="financial-aid-process-application"),
+backend/financial_aid/urls.py:19:path("awards/", aid_awards, name="financial-aid-awards"),
+backend/financial_aid/urls.py:20:path("billing-runs/<str:billing_run_id>/disburse/", disburse_to_billing_run, name="financial-aid-disburse-to-billing-run"),
+backend/financial_aid_wizard/urls.py:5:path("", views.create_session, name="aid_wizard_create"),
+backend/financial_aid_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="aid_wizard_configure"),
+backend/financial_aid_wizard/urls.py:7:path("<uuid:session_id>/buckets/", views.save_buckets, name="aid_wizard_buckets"),
+backend/financial_aid_wizard/urls.py:8:path("<uuid:session_id>/awards/", views.stage_awards, name="aid_wizard_awards"),
+backend/financial_aid_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session, name="aid_wizard_commit"),
+backend/financial_aid_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session, name="aid_wizard_verify"),
+backend/governance/urls.py:6:path("board-metrics/", views.governance_board_metrics, name="governance-board-metrics"),
+backend/governance/urls.py:7:path("dashboard/", views.governance_dashboard, name="governance-dashboard"),
+backend/governance/urls.py:8:path("crown-compass/", views.crown_compass, name="governance-crown-compass"),
+backend/governance/urls.py:9:path("crown-compass/history/", views.crown_compass_history, name="governance-crown-compass-history"),
+backend/governance/urls.py:10:path("board-packs/", views.board_packs, name="governance-board-packs"),
+backend/governance/urls.py:11:path("board-packs/<int:packet_id>/", views.board_pack_detail, name="governance-board-pack-detail"),
+backend/governance/urls.py:12:path("schedules/", views.governance_schedule, name="governance-schedules"),
+backend/governance/urls.py:13:path(
+backend/gradebook/urls.py:24:path("", include(router.urls)),
+backend/gradebook/urls.py:25:path("gradebook/assignments/", assignments_list, name="gradebook-assignments-list"),
+backend/gradebook/urls.py:26:path("gradebook/students/", students_list, name="gradebook-students-list"),
+backend/gradebook/urls.py:27:path(
+backend/gradebook/urls.py:32:path(
+backend/gradebook/urls.py:37:path(
+backend/gradebook/urls.py:42:path(
+backend/gradebook/urls.py:47:path(
+backend/gradebook/urls.py:52:path(
+backend/gradebook/urls.py:57:path(
+backend/gradebook/urls.py:62:path(
+backend/gradebook_setup_wizard/urls.py:6:path("", views.create_session),
+backend/gradebook_setup_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session),
+backend/gradebook_setup_wizard/urls.py:8:path("<uuid:session_id>/categories/", views.define_categories),
+backend/gradebook_setup_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session),
+backend/gradebook_setup_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session),
+backend/grade_scale_wizard/tests/test_views.py:200:def test_configure_happy_path(self):
+backend/grade_scale_wizard/tests/test_views.py:290:def test_bands_happy_path(self):
+backend/grade_scale_wizard/tests/test_views.py:399:def test_weights_happy_path(self):
+backend/grade_scale_wizard/urls.py:6:path("",                              views.create_session,   name="grade_scale_create"),
+backend/grade_scale_wizard/urls.py:7:path("<uuid:session_id>/configure/",  views.configure_session, name="grade_scale_configure"),
+backend/grade_scale_wizard/urls.py:8:path("<uuid:session_id>/bands/",      views.set_bands,         name="grade_scale_bands"),
+backend/grade_scale_wizard/urls.py:9:path("<uuid:session_id>/weights/",    views.set_weights,       name="grade_scale_weights"),
+backend/grade_scale_wizard/urls.py:10:path("<uuid:session_id>/commit/",     views.commit_session,    name="grade_scale_commit"),
+backend/grade_scale_wizard/urls.py:11:path("<uuid:session_id>/verify/",     views.verify_session,    name="grade_scale_verify"),
+backend/grade_weights_wizard/urls.py:5:path("", views.create_session, name="grade_weights_wizard_create"),
+backend/grade_weights_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="grade_weights_wizard_configure"),
+backend/grade_weights_wizard/urls.py:7:path("<uuid:session_id>/stage_categories/", views.stage_categories, name="grade_weights_wizard_stage_categories"),
+backend/grade_weights_wizard/urls.py:8:path("<uuid:session_id>/commit/", views.commit_session, name="grade_weights_wizard_commit"),
+backend/grade_weights_wizard/urls.py:9:path("<uuid:session_id>/verify/", views.verify_session, name="grade_weights_wizard_verify"),
+backend/graduation/urls.py:6:path("audit/<uuid:student_id>/", GraduationAuditView.as_view(), name="graduation-audit"),
+backend/graduation/urls.py:7:path("audit/<uuid:student_id>/breakdown/", GraduationAuditBreakdownView.as_view(), name="graduation-audit-breakdown"),
+backend/guardian_household_wizard/urls.py:5:path("", views.create_session, name="guardian_household_wizard_create"),
+backend/guardian_household_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="guardian_household_wizard_configure"),
+backend/guardian_household_wizard/urls.py:7:path("<uuid:session_id>/add_guardians/", views.add_guardians, name="guardian_household_wizard_add_guardians"),
+backend/guardian_household_wizard/urls.py:8:path("<uuid:session_id>/link_students/", views.link_students, name="guardian_household_wizard_link_students"),
+backend/guardian_household_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session, name="guardian_household_wizard_commit"),
+backend/guardian_household_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session, name="guardian_household_wizard_verify"),
+backend/hr/urls.py:11:path("metrics/", hr_metrics, name="hr-metrics"),
+backend/hr/urls.py:12:path("", include(router.urls)),
+backend/imports/urls.py:11:path("platforms/", PlatformListView.as_view(), name="import-platforms"),
+backend/imports/urls.py:12:path("auto-map/", AutoMapView.as_view(), name="import-auto-map"),
+backend/imports/urls.py:13:path("crown-fields/", CrownFieldsView.as_view(), name="import-crown-fields"),
+backend/imports/urls.py:14:path("", include(router.urls)),
+backend/integrations/api/urls.py:5:path("teams/preview/", TeamsPreview.as_view(), name="teams_preview"),
+backend/integrations/m365/urls.py:12:path("workspace/", WorkspaceView.as_view(), name="m365-workspace"),
+backend/integrations/m365/urls.py:13:path("services-status/", ServicesStatusView.as_view(), name="m365-services-status"),
+backend/integrations/m365/urls.py:14:path("callbacks/flow/", FlowCallbackView.as_view(), name="m365-flow-callback"),
+backend/integrations/m365/urls.py:15:path("callbacks/sharepoint/", FlowCallbackView.as_view(), name="m365-sharepoint-callback"),
+backend/integrations/m365/urls.py:16:path("callbacks/signature/", FlowCallbackView.as_view(), name="m365-signature-callback"),
+backend/integrations/m365/urls.py:17:path("sharepoint/deeplink/", SharePointDeeplinkView.as_view(), name="m365-sharepoint-deeplink"),
+backend/integrations/m365/urls.py:18:path("teams/deeplink/", TeamsDeeplinkView.as_view(), name="m365-teams-deeplink"),
+backend/integrations/urls.py:6:path("compuwerx/webhook/", compuwerx_webhook, name="compuwerx-webhook"),
+backend/integrations/urls.py:7:path("oneroster/export/", oneroster_export_bundle, name="oneroster-export"),
+backend/integrations_real/urls.py:6:path("health/", connectors_health, name="integrations-real-health"),
+backend/integrations_real/urls.py:7:path("status/", connectors_status, name="integrations-real-status"),
+backend/invoice_run_wizard/urls.py:6:path("", views.create_session),
+backend/invoice_run_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session),
+backend/invoice_run_wizard/urls.py:8:path("<uuid:session_id>/load/", views.load_obligations),
+backend/invoice_run_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session),
+backend/invoice_run_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session),
+backend/msauth/urls.py:10:path("microsoft/login/", microsoft_login, name="microsoft_login"),
+backend/msauth/urls.py:11:path("microsoft/callback/", microsoft_callback, name="microsoft_callback"),
+backend/msauth/urls.py:12:path("logout/", logout_view, name="sso_logout"),
+backend/msauth/urls.py:13:path("me/", me_view, name="sso_me"),
+backend/onboarding/urls.py:6:path("", views.create_session, name="onboarding_create_session"),
+backend/onboarding/urls.py:8:path("<int:session_id>/upload/", views.upload_file, name="onboarding_upload"),
+backend/onboarding/urls.py:10:path("<int:session_id>/validate/", views.validate_session, name="onboarding_validate"),
+backend/onboarding/urls.py:12:path("<int:session_id>/preview/", views.preview_session, name="onboarding_preview"),
+backend/onboarding/urls.py:14:path("<int:session_id>/commit/", views.commit_session, name="onboarding_commit"),
+backend/onboarding/urls.py:16:path("<int:session_id>/verify/", views.verify_session, name="onboarding_verify"),
+backend/outreach/api/urls.py:25:path("", include(router.urls)),
+backend/parent360/api/urls.py:5:path("me/overview/", ParentSelfOverview.as_view(), name="parent_360_self"),
+backend/payments/api_urls.py:25:path("intents/", create_payment_intent, name="payments-create-intent"),
+backend/payments/api_urls.py:26:path("intents/<str:intent_id>/status/", payment_intent_status, name="payments-intent-status"),
+backend/payments/api_urls.py:27:path("webhooks/compuwerx/", compuwerx_webhook, name="payments-webhook-compuwerx"),
+backend/payments/api_urls.py:28:path("accounts/<uuid:household_id>/summary/", household_finance_summary, name="payments-household-summary"),
+backend/payments/api_urls.py:29:path("accounts/<uuid:household_id>/history/", household_payment_history, name="payments-household-history"),
+backend/payments/api_urls.py:30:path("accounts/<uuid:household_id>/statement.csv", household_statement_csv, name="payments-household-statement-csv"),
+backend/payments/api_urls.py:31:path("receipts/<uuid:payment_id>/", payment_receipt_html, name="payments-receipt-html"),
+backend/payments/api_urls.py:32:path("accounts/<uuid:household_id>/methods/", list_saved_payment_methods, name="payments-methods-list"),
+backend/payments/api_urls.py:33:path("accounts/<uuid:household_id>/methods/setup/", create_payment_method_setup, name="payments-methods-setup"),
+backend/payments/api_urls.py:34:path("accounts/<uuid:household_id>/methods/<int:method_id>/default/", set_default_payment_method, name="payments-methods-default"),
+backend/payments/api_urls.py:35:path("accounts/<uuid:household_id>/methods/<int:method_id>/", detach_payment_method, name="payments-methods-detach"),
+backend/payments/api_urls.py:36:path("disputes/", disputes_list, name="payments-disputes-list"),
+backend/payments/api_urls.py:37:path("disputes/<int:dispute_id>/", dispute_detail, name="payments-dispute-detail"),
+backend/payments/api_urls.py:38:path("disputes/<int:dispute_id>/actions/", dispute_action_create, name="payments-dispute-action-create"),
+backend/payments/api_urls.py:39:path("payout-batches/", payout_batches_list, name="payments-payout-batches-list"),
+backend/payments/api_urls.py:40:path("payout-batches/<int:batch_id>/", payout_batch_detail, name="payments-payout-batch-detail"),
+backend/payments/api_urls.py:41:path("exceptions/", payment_exceptions_list, name="payments-exceptions-list"),
+backend/payments/api_urls.py:42:path("exceptions/<int:exception_id>/retry/", payment_exception_retry, name="payments-exception-retry"),
+backend/payments/api_urls.py:43:path("exceptions/<int:exception_id>/ignore/", payment_exception_ignore, name="payments-exception-ignore"),
+backend/payments/api_urls.py:44:path("bank/imports/", bank_statement_imports_list, name="payments-bank-imports-list"),
+backend/payments/api_urls.py:45:path("bank/imports/upload/", upload_bank_statement_csv, name="payments-bank-import-upload"),
+backend/payments/api_urls.py:46:path("bank/unmatched-entries/", unmatched_bank_entries_list, name="payments-bank-unmatched-entries"),
+backend/payments/api_urls.py:47:path("bank/payout-matches/", payout_bank_matches_list, name="payments-bank-payout-matches-list"),
+backend/payments/api_urls.py:48:path("bank/payout-matches/auto/", auto_match_payouts, name="payments-bank-payout-auto-match"),
+backend/payments/api_urls.py:49:path("bank/payout-matches/manual/", manual_match_payout, name="payments-bank-payout-manual-match"),
+backend/pdhub/urls.py:12:path("metrics/", pd_metrics, name="pd-metrics"),
+backend/pdhub/urls.py:13:path("", include(router.urls)),
+backend/platform_ops/urls.py:15:path("schools", views.platform_create_school, name="platform_create_school"),
+backend/platform_ops/urls.py:16:path("schools/list", views.platform_list_schools, name="platform_list_schools"),
+backend/platform_ops/urls.py:17:path(
+backend/portrait/urls.py:18:path("", include(router.urls)),
+backend/portrait/urls.py:19:path("configs/<int:config_pk>/domains/", PoGDomainListCreateView.as_view(), name="portrait-domain-list"),
+backend/portrait/urls.py:20:path(
+backend/portrait/urls.py:25:path(
+backend/portrait/urls.py:30:path("applicant/<str:applicant_id>/", ApplicantPoGView.as_view(), name="portrait-applicant-record"),
+backend/promotion_wizard/urls.py:5:path("", views.create_session),
+backend/promotion_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure),
+backend/promotion_wizard/urls.py:7:path("<uuid:session_id>/commit/", views.commit),
+backend/promotion_wizard/urls.py:8:path("<uuid:session_id>/verify/", views.verify),
+backend/reenrollment/urls.py:12:path('', views.create_session, name='reenrollment-create'),
+backend/reenrollment/urls.py:15:path('<uuid:session_id>/configure/', views.configure_session, name='reenrollment-configure'),
+backend/reenrollment/urls.py:18:path('<uuid:session_id>/candidates/', views.list_candidates, name='reenrollment-candidates'),
+backend/reenrollment/urls.py:21:path('<uuid:session_id>/select/', views.select_students, name='reenrollment-select'),
+backend/reenrollment/urls.py:24:path('<uuid:session_id>/commit/', views.commit_session, name='reenrollment-commit'),
+backend/reenrollment/urls.py:27:path('<uuid:session_id>/verify/', views.verify_session, name='reenrollment-verify'),
+backend/release_closure/urls.py:6:path("exports/jobs/", api.export_jobs, name="release_closure_export_jobs"),
+backend/release_closure/urls.py:7:path("exports/board-packet/", api.board_packet_summary, name="release_closure_board_packet_summary"),
+backend/release_closure/urls.py:8:path("discipline/escalations/", api.discipline_escalations, name="release_closure_discipline_escalations"),
+backend/release_closure/urls.py:9:path(
+backend/release_closure/urls.py:14:path("transcripts/graduation-audits/", api.graduation_audits, name="release_closure_graduation_audits"),
+backend/release_closure/urls.py:15:path("transcripts/render-jobs/", api.transcript_render_jobs, name="release_closure_transcript_render_jobs"),
+backend/release_closure/urls.py:16:path("compass/rules/", api.compass_rules, name="release_closure_compass_rules"),
+backend/release_closure/urls.py:17:path("compass/run/", api.compass_run, name="release_closure_compass_run"),
+backend/release_closure/urls.py:18:path("reporting/live-metrics/", api.live_metrics_snapshots, name="release_closure_live_metrics"),
+backend/release_closure/urls.py:19:path("evidence/golden-path/", api.golden_path_evidence, name="release_closure_golden_path_evidence"),
+backend/release_closure/urls.py:20:path("evidence/tenant-proof/", api.tenant_proof_evidence, name="release_closure_tenant_proof_evidence"),
+backend/release_closure/urls.py:21:path("evidence/load-results/", api.load_test_results, name="release_closure_load_results"),
+backend/release_closure/urls.py:22:path("evidence/openapi-manifest/", api.openapi_manifest, name="release_closure_openapi_manifest"),
+backend/release_closure/urls.py:23:path("evidence/signoff/", api.signoff_checklist, name="release_closure_signoff"),
+backend/release_closure/urls.py:24:path("evidence/health-truth/", api.health_truth, name="release_closure_health_truth"),
+backend/room_setup_wizard/urls.py:5:path("", views.create_session),
+backend/room_setup_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure),
+backend/room_setup_wizard/urls.py:7:path("<uuid:session_id>/commit/", views.commit),
+backend/room_setup_wizard/urls.py:8:path("<uuid:session_id>/verify/", views.verify),
+backend/safety/urls.py:11:path("metrics/", safety_metrics, name="safety-metrics"),
+backend/safety/urls.py:12:path("", include(router.urls)),
+backend/scheduling_wizard/urls.py:5:path("", views.create_session, name="scheduling_wizard_create"),
+backend/scheduling_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="scheduling_wizard_configure"),
+backend/scheduling_wizard/urls.py:7:path("<uuid:session_id>/courses/", views.save_courses, name="scheduling_wizard_courses"),
+backend/scheduling_wizard/urls.py:8:path("<uuid:session_id>/sections/", views.stage_sections, name="scheduling_wizard_sections"),
+backend/scheduling_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session, name="scheduling_wizard_commit"),
+backend/scheduling_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session, name="scheduling_wizard_verify"),
+backend/school_subscriptions/urls.py:5:path('',            views.list_school_modules, name='modules-list'),
+backend/school_subscriptions/urls.py:6:path('activate/',   views.activate_module,     name='modules-activate'),
+backend/school_subscriptions/urls.py:7:path('deactivate/', views.deactivate_module,   name='modules-deactivate'),
+backend/school_subscriptions/urls.py:8:path('trial/',      views.start_trial,          name='modules-trial'),
+backend/scripts/check_shell_backend_contract.py:10:REPO_ROOT = Path(__file__).resolve().parents[2]
+backend/scripts/print-shell-backend-contract.py:5:target = Path(__file__).with_name("print_shell_backend_contract.py")
+backend/scripts/print-shell-backend-contract.py:6:runpy.run_path(str(target), run_name="__main__")
+backend/scripts/print_shell_backend_contract.py:9:REPO_ROOT = Path(__file__).resolve().parents[2]
+backend/scripts/seed_academics_readonly.py:21:BASE_DIR = Path(__file__).resolve().parents[1]
+backend/section_assign_wizard/urls.py:5:path("", views.create_session, name="section_assign_wizard_create"),
+backend/section_assign_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="section_assign_wizard_configure"),
+backend/section_assign_wizard/urls.py:7:path("<uuid:session_id>/load/", views.load_students, name="section_assign_wizard_load"),
+backend/section_assign_wizard/urls.py:8:path("<uuid:session_id>/stage/", views.stage_roster, name="section_assign_wizard_stage"),
+backend/section_assign_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session, name="section_assign_wizard_commit"),
+backend/section_assign_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session, name="section_assign_wizard_verify"),
+backend/section_scheduler_wizard/urls.py:5:path("", views.create_session),
+backend/section_scheduler_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure),
+backend/section_scheduler_wizard/urls.py:7:path("<uuid:session_id>/sections/", views.set_sections),
+backend/section_scheduler_wizard/urls.py:8:path("<uuid:session_id>/commit/", views.commit),
+backend/section_scheduler_wizard/urls.py:9:path("<uuid:session_id>/verify/", views.verify),
+backend/section_staffing_wizard/urls.py:5:path("", views.create_session, name="section_staffing_wizard_create"),
+backend/section_staffing_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="section_staffing_wizard_configure"),
+backend/section_staffing_wizard/urls.py:7:path("<uuid:session_id>/load_sections/", views.load_sections, name="section_staffing_wizard_load_sections"),
+backend/section_staffing_wizard/urls.py:8:path("<uuid:session_id>/stage_assignments/", views.stage_assignments, name="section_staffing_wizard_stage_assignments"),
+backend/section_staffing_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session, name="section_staffing_wizard_commit"),
+backend/section_staffing_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session, name="section_staffing_wizard_verify"),
+backend/servicehours/api/urls.py:10:path("entries/", ServiceEntriesListCreate.as_view(), name="service_entries"),
+backend/servicehours/api/urls.py:11:path("students/<uuid:student_id>/summary/", ServiceStudentSummary.as_view(), name="service_student_summary"),
+backend/servicehours/api/urls.py:12:path("approvals/", ServiceApprovalQueue.as_view(), name="service_approvals_queue"),
+backend/servicehours/api/urls.py:13:path("approvals/<uuid:entry_id>/", ServiceApproveReject.as_view(), name="service_approve_reject"),
+backend/signals/urls.py:6:path("board/compass/",      api.board_compass_summary, name="board_compass_summary"),
+backend/signals/urls.py:7:path("board/risk-counts/",  api.board_risk_counts,    name="board_risk_counts"),
+backend/signals/urls.py:10:path("students/<uuid:student_id>/signals/", api.student_signals, name="student_signals"),
+backend/signals/urls.py:13:path("interventions/cases/",                        api.intervention_cases,   name="intervention_cases"),
+backend/signals/urls.py:14:path("interventions/cases/<uuid:case_id>/actions/",  api.intervention_actions, name="intervention_actions"),
+backend/spiritual_life/api/urls.py:22:path("profiles/", SpiritualProfileView.as_view(), name="spiritual_profiles"),
+backend/spiritual_life/api/urls.py:23:path(
+backend/spiritual_life/api/urls.py:29:path(
+backend/spiritual_life/api/urls.py:35:path("chapel-events/", ChapelEventListCreate.as_view(), name="chapel_events"),
+backend/spiritual_life/api/urls.py:36:path(
+backend/spiritual_life/api/urls.py:41:path(
+backend/spiritual_life/api/urls.py:47:path("small-groups/", SmallGroupListCreate.as_view(), name="small_groups"),
+backend/spiritual_life/api/urls.py:48:path(
+backend/spiritual_life/api/urls.py:53:path(
+backend/spiritual_life/api/urls.py:58:path(
+backend/spiritual_life/api/urls.py:64:path(
+backend/spiritual_life/api/urls.py:69:path(
+backend/spiritual_life/api/urls.py:75:path("pastoral-notes/", PastoralNoteListCreate.as_view(), name="pastoral_notes"),
+backend/spiritual_life/api/urls.py:76:path(
+backend/staff_onboarding_wizard/tests/test_views.py:167:def test_configure_happy_path(self):
+backend/staff_onboarding_wizard/tests/test_views.py:231:def test_preview_happy_path(self):
+backend/staff_onboarding_wizard/urls.py:6:path("", views.create_session),
+backend/staff_onboarding_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session),
+backend/staff_onboarding_wizard/urls.py:8:path("<uuid:session_id>/preview/", views.preview_session),
+backend/staff_onboarding_wizard/urls.py:9:path("<uuid:session_id>/commit/", views.commit_session),
+backend/staff_onboarding_wizard/urls.py:10:path("<uuid:session_id>/verify/", views.verify_session),
+backend/staff_setup_wizard/urls.py:5:path("", views.create_session),
+backend/staff_setup_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure),
+backend/staff_setup_wizard/urls.py:7:path("<uuid:session_id>/commit/", views.commit),
+backend/staff_setup_wizard/urls.py:8:path("<uuid:session_id>/verify/", views.verify),
+backend/student360/api/urls.py:5:path("students/<uuid:student_id>/overview/", StudentOverview.as_view(), name="student_360_overview"),
+backend/student360/api/urls.py:6:path("me/overview/", StudentSelfOverview.as_view(), name="student_360_self"),
+backend/student_import_wizard/urls.py:5:path("", views.create_session, name="student_import_wizard_create"),
+backend/student_import_wizard/urls.py:6:path("<uuid:session_id>/configure/", views.configure_session, name="student_import_wizard_configure"),
+backend/student_import_wizard/urls.py:7:path("<uuid:session_id>/preview/", views.preview_session, name="student_import_wizard_preview"),
+backend/student_import_wizard/urls.py:8:path("<uuid:session_id>/commit/", views.commit_session, name="student_import_wizard_commit"),
+backend/student_import_wizard/urls.py:9:path("<uuid:session_id>/verify/", views.verify_session, name="student_import_wizard_verify"),
+backend/student_records/urls.py:35:path("students/id-cards/", StudentIdCardView.as_view(), name="student-record-id-cards"),
+backend/student_records/urls.py:36:path("students/records/summary/<uuid:student_id>/", StudentRecordsSummaryView.as_view(), name="student-record-summary"),
+backend/student_records/urls.py:37:path("students/health/<uuid:student_id>/", HealthRecordView.as_view(), name="student-record-health"),
+backend/student_records/urls.py:38:path("students/ferpa/quick-export/", FERPAQuickExportView.as_view(), name="student-record-ferpa-quick-export"),
+backend/student_records/urls.py:39:path("", include(router.urls)),
+backend/subscriptions/api/urls.py:17:path("me/entitlements/", views.me_entitlements, name="subscriptions_me_entitlements"),
+backend/subscriptions/api/urls.py:18:path("plans/", views.plan_list, name="subscriptions_plan_list"),
+backend/subscriptions/api/urls.py:19:path("features/", views.feature_list, name="subscriptions_feature_list"),
+backend/subscriptions/api/urls.py:20:path(
+backend/subscriptions/urls.py:6:path("", views.list_school_modules, name="modules-list"),
+backend/subscriptions/urls.py:7:path("activate/", views.activate_module, name="modules-activate"),
+backend/subscriptions/urls.py:8:path("deactivate/", views.deactivate_module, name="modules-deactivate"),
+backend/subscriptions/urls.py:9:path("trial/", views.start_trial, name="modules-trial"),
+backend/term_structure_wizard/tests/test_views.py:212:def test_configure_happy_path(self):
+backend/term_structure_wizard/tests/test_views.py:468:def test_verify_happy_path(self):
+backend/term_structure_wizard/urls.py:6:path("",                          views.create_session,    name="ts-create"),
+backend/term_structure_wizard/urls.py:7:path("<uuid:session_id>/configure/", views.configure_session, name="ts-configure"),
+backend/term_structure_wizard/urls.py:8:path("<uuid:session_id>/periods/",   views.set_periods,       name="ts-periods"),
+backend/term_structure_wizard/urls.py:9:path("<uuid:session_id>/commit/",    views.commit_session,    name="ts-commit"),
+backend/term_structure_wizard/urls.py:10:path("<uuid:session_id>/verify/",    views.verify_session,    name="ts-verify"),
+backend/tests/release_gate/test_release_gate_api.py:8:ROOT = Path(__file__).resolve().parents[3]
+backend/tests/test_heritage_demo_commands.py:16:SPEC_PATH = Path("backend/core/demo/heritage_christian_academy_spec.json")
+backend/tests/test_shell_backend_contract_parity.py:10:REPO_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_tenant_lifecycle_cleanup.py:18:path("_test/ok/", ok_view),
+backend/tests/test_tenant_lifecycle_cleanup.py:19:path("_test/boom/", boom_view),
+backend/transportation/api/urls.py:27:urlpatterns = [path("", include(router.urls))]
+
+===== include( =====
+backend/academics/urls.py:60:path("", include(router.urls)),
+backend/advancement/urls.py:135:path("", include(router.urls)),
+backend/athletics/api/urls.py:31:urlpatterns = [path("", include(router.urls))]
+backend/comms/urls.py:10:path("", include("comms.api.urls")),
+backend/core/urls.py:13:path("", include(router.urls)),
+backend/crown_api/api_urls.py:93:path('360/', include('student360.api.urls')),
+backend/crown_api/api_urls.py:94:path('parent360/', include('parent360.api.urls')),
+backend/crown_api/api_urls.py:95:path('executive360/', include('executive360.api.urls')),
+backend/crown_api/api_urls.py:96:path('comms/', include('comms.api.urls')),
+backend/crown_api/api_urls.py:98:path("aid/", include("aid.api_urls")),
+backend/crown_api/api_urls.py:100:path("admissions/", include("admissions.api_urls")),
+backend/crown_api/api_urls.py:101:path("portrait/", include("portrait.urls")),
+backend/crown_api/api_urls.py:104:path("discipline/", include("discipline.api.urls")),
+backend/crown_api/api_urls.py:105:path("service/", include("servicehours.api.urls")),
+backend/crown_api/api_urls.py:106:path("integrations/", include("integrations.api.urls")),
+backend/crown_api/api_urls.py:107:path("m365/", include("integrations.m365.urls")),
+backend/crown_api/api_urls.py:108:path("spiritual-life/", include("spiritual_life.api.urls")),
+backend/crown_api/api_urls.py:109:path("outreach/", include("outreach.api.urls")),
+backend/crown_api/api_urls.py:110:path("athletics/", include("athletics.api.urls")),
+backend/crown_api/api_urls.py:111:path("", include("facops.api.urls")),
+backend/crown_api/api_urls.py:112:path("transportation/", include("transportation.api.urls")),
+backend/crown_api/api_urls.py:219:path("signals/", include("signals.urls")),
+backend/crown_api/api_urls.py:221:path("aftercare/", include("aftercare.urls")),
+backend/crown_api/api_urls.py:223:path("finance-setup/", include("finance_setup.urls")),
+backend/crown_api/api_urls.py:238:path("governance/", include("governance.urls")),
+backend/crown_api/api_v1_urls.py:34:path("academics-ro/", include("academics_ro.urls")),
+backend/crown_api/api_v1_urls.py:35:path("", include("academics.urls")),
+backend/crown_api/api_v1_urls.py:36:path("curricula/", include("curricula.urls")),
+backend/crown_api/api_v1_urls.py:37:path("", include("gradebook.urls")),
+backend/crown_api/api_v1_urls.py:38:path("", include("households.urls")),
+backend/crown_api/api_v1_urls.py:39:path("", include("crown_api.billing_api.urls")),
+backend/crown_api/api_v1_urls.py:40:path("", include("crown_api.exports.urls")),
+backend/crown_api/api_v1_urls.py:42:path("financial-aid/", include("financial_aid.urls")),
+backend/crown_api/api_v1_urls.py:43:path("payments/", include("payments.api_urls")),
+backend/crown_api/api_v1_urls.py:47:path("board/", include("board_oversight.urls")),
+backend/crown_api/api_v1_urls.py:48:path("hr/", include("hr.urls")),
+backend/crown_api/api_v1_urls.py:49:path("advancement/", include("advancement.urls")),
+backend/crown_api/api_v1_urls.py:50:path("pd/", include("pdhub.urls")),
+backend/crown_api/api_v1_urls.py:51:path("safety/", include("safety.urls")),
+backend/crown_api/api_v1_urls.py:52:path("connectors/", include("integrations_real.urls")),
+backend/crown_api/api_v1_urls.py:53:path("", include("student_records.urls")),
+backend/crown_api/api_v1_urls.py:55:path("", include("crown_api.api_urls")),
+backend/crown_api/urls.py:26:path("api/v1/graduation/", include('graduation.urls')),
+backend/crown_api/urls.py:65:path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:66:path("api/v1/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:69:path("api/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:72:path("api/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:75:path("api/curriculum/", include("curriculum.urls")),
+backend/crown_api/urls.py:78:path("api/classroom/", include("classroom.urls")),
+backend/crown_api/urls.py:81:path("api/student360/", include("student360.api.urls")),
+backend/crown_api/urls.py:84:path("api/parent360/", include("parent360.api.urls")),
+backend/crown_api/urls.py:87:path("api/executive360/", include("executive360.api.urls")),
+backend/crown_api/urls.py:90:path("api/finance/", include("finance.api_urls")),
+backend/crown_api/urls.py:93:path("api/platform/", include("platform_ops.urls")),
+backend/crown_api/urls.py:96:path("api/v1/subscriptions/", include("subscriptions.api.urls")),
+backend/crown_api/urls.py:99:path("api/v1/admin/modules/", include("subscriptions.urls")),
+backend/crown_api/urls.py:102:path("api/integrations/", include("integrations.urls")),
+backend/crown_api/urls.py:103:path("api/m365/", include("integrations.m365.urls")),
+backend/crown_api/urls.py:106:path("auth/", include("msauth.urls")),
+backend/crown_api/urls.py:110:path("api/iam/", include("core.auth.urls")),
+backend/crown_api/urls.py:113:path("accounts/", include("django.contrib.auth.urls")),
+backend/crown_api/wizard_registry.py:30:urls_module: str    # dotted module path for include(), e.g. "myapp.urls"
+backend/crown_api/wizard_registry.py:276:return [path(w["url_prefix"], include(w["urls_module"])) for w in WIZARDS]
+backend/curriculum/urls.py:13:path("", include(router.urls)),
+backend/discipline/urls.py:45:path("", include(router.urls)),
+backend/documents/urls.py:18:path("", include(router.urls)),
+backend/facops/api/urls.py:30:path("", include(router.urls)),
+backend/financial_aid/tests/test_url_routes.py:39:"Fix: add path('financial-aid/', include('financial_aid.urls')) to api_urls.py."
+backend/gradebook/urls.py:24:path("", include(router.urls)),
+backend/hr/urls.py:12:path("", include(router.urls)),
+backend/imports/urls.py:14:path("", include(router.urls)),
+backend/outreach/api/urls.py:25:path("", include(router.urls)),
+backend/pdhub/urls.py:13:path("", include(router.urls)),
+backend/portrait/urls.py:18:path("", include(router.urls)),
+backend/safety/urls.py:12:path("", include(router.urls)),
+backend/student_records/urls.py:39:path("", include(router.urls)),
+backend/transportation/api/urls.py:27:urlpatterns = [path("", include(router.urls))]
+

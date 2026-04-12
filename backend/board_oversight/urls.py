@@ -10,3 +10,10 @@ urlpatterns = [
     path("packets/", views.list_packets, name="board_oversight_packets"),
     path("packets/<int:packet_id>/", views.get_packet, name="board_oversight_packet_detail"),
 ]
+
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+urlpatterns += [
+    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
+]

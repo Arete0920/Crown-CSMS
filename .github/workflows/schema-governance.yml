@@ -1,0 +1,62 @@
+name: Schema Governance
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  schema-governance:
+    name: schema-governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then
+            pip install -r backend/requirements.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install drf-spectacular drf-spectacular-sidecar reportlab pytest-django
+
+      - name: W002 inventory
+        run: python scripts/release/schema_w002_inventory.py
+
+      - name: Schema export
+        run: |
+          mkdir -p docs/openapi
+          if [ -f backend/manage.py ]; then
+            python backend/manage.py spectacular --file docs/openapi/crown-openapi.yaml || true
+          elif [ -f manage.py ]; then
+            python manage.py spectacular --file docs/openapi/crown-openapi.yaml || true
+          fi
+
+      - name: Route catalog
+        run: python scripts/release/route_catalog_release.py
+
+      - name: Update schema progress
+        run: python scripts/release/update_schema_progress_doc.py
+
+      - name: Schema gate
+        run: python scripts/release/schema_gate.py
+
+      - name: Schema governance tests
+        run: pytest -q tests/test_schema_governance_assets.py
+
+      - name: Upload schema artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-governance-artifacts
+          path: |
+            audit-artifacts/release-verify/**
+            audit-artifacts/release-manifest/**
+            docs/release/SCHEMA_W002_PROGRESS.md
+            docs/openapi/crown-openapi.yaml

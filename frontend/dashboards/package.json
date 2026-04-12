@@ -40,7 +40,9 @@
     "release:verify": "node ../../scripts/release/verify-frontend-rc.mjs",
     "verify:api-contracts": "node ../../scripts/release/verify-api-contracts.mjs",
     "verify:navigation": "node ../../scripts/release/verify-navigation-surface.mjs",
-    "release:demo-proof": "node ../../scripts/release/generate-demo-proof.mjs"
+    "release:demo-proof": "node ../../scripts/release/generate-demo-proof.mjs",
+    "test:release:routes": "playwright test tests/release-auth-golden-path.spec.ts",
+    "test:release:a11y": "playwright test tests/release-accessibility.spec.ts"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.28.1",
@@ -68,6 +70,7 @@
     "jsdom": "^28.1.0",
     "vite": "^7.3.2",
     "vitest": "^4.0.18",
-    "yaml": "^2.8.3"
+    "yaml": "^2.8.3",
+    "@axe-core/playwright": "^4.10.2"
   }
 }
