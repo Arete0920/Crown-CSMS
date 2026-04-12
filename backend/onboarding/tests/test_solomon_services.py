@@ -85,8 +85,9 @@ def _article(
     )
 
 
-def _playbook(slug, *, module="fin", title=None, state=HelpArticle.STATE_PUBLISHED,
-               visibility=HelpArticle.VISIBILITY_PUBLIC, summary=""):
+def _playbook(slug, *, module="fin", title=None,
+              state=HelpArticle.STATE_PUBLISHED,
+              visibility=HelpArticle.VISIBILITY_PUBLIC, summary=""):
     return SolomonPlaybook.objects.create(
         slug=slug,
         title=title or f"PB {slug}",
@@ -319,10 +320,9 @@ class TestSearchSolomonContent:
         assert HelpArticle.TYPE_GUIDE in payload["categories"]
         assert HelpArticle.TYPE_FAQ in payload["categories"]
 
-    def test_categories_excludes_blank_article_type(self):
-        """Empty article_type should not appear in categories."""
-        # Create an article with no article_type set; model default is TYPE_GUIDE
-        # To simulate a blank, test that '' is never in categories regardless
+    def test_categories_never_contains_empty_string(self):
+        """The service excludes blank article_type values from categories."""
+        _article("blank-type-art", article_type=HelpArticle.TYPE_GUIDE)
         payload = search_solomon_content(_FakeRequest())
         assert "" not in payload["categories"]
 
@@ -352,7 +352,7 @@ class TestSearchSolomonContent:
         _playbook("pb-shape", module="fin")
         payload = search_solomon_content(_FakeRequest())
         match = next((p for p in payload["playbooks"] if p["slug"] == "pb-shape"), None)
-        assert match is not None
+        assert match is not None, "Playbook pb-shape not found in search results"
         for field in ("id", "slug", "title", "summary", "module"):
             assert field in match, f"missing playbook field: {field}"
 
@@ -360,7 +360,7 @@ class TestSearchSolomonContent:
         _article("shape-search-art", module="fin")
         payload = search_solomon_content(_FakeRequest(), module="fin")
         match = next((r for r in payload["results"] if r["slug"] == "shape-search-art"), None)
-        assert match is not None
+        assert match is not None, "Article shape-search-art not found in search results"
         for field in ("id", "slug", "title", "summary", "content", "module",
                       "article_type", "visibility", "state", "route_path", "published"):
             assert field in match, f"missing article field: {field}"
