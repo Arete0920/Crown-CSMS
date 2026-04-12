@@ -1,12 +1,11 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { authenticatedFetch } from "../utils/authClient.js";
+import { apiFetch } from "../lib/api.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path, opts = {}) {
-  const base = import.meta.env.VITE_API_BASE_URL || "";
-  const res = await authenticatedFetch(`${base}${path}`, opts);
-  return res.json();
+  const response = await apiFetch(path, opts);
+  return response.json();
 }
 
 export default function CommsThreadPage() {
@@ -17,7 +16,8 @@ export default function CommsThreadPage() {
   const [info, setInfo] = useState("");
 
   const load = async () => {
-    setErr(""); setInfo("");
+    setErr("");
+    setInfo("");
     try {
       const data = await api(`/api/comms/threads/${id}/`);
       setThread(data);
@@ -26,10 +26,33 @@ export default function CommsThreadPage() {
     }
   };
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initialize() {
+      try {
+        const data = await api(`/api/comms/threads/${id}/`);
+        if (!cancelled) {
+          setThread(data);
+          setErr("");
+          setInfo("");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setErr(String(e.message || e));
+        }
+      }
+    }
+
+    void initialize();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const send = async () => {
-    setErr(""); setInfo("");
+    setErr("");
+    setInfo("");
     try {
       await api(`/api/comms/threads/${id}/messages/`, {
         method: "POST",
@@ -44,7 +67,8 @@ export default function CommsThreadPage() {
   };
 
   const teamsPreview = async () => {
-    setErr(""); setInfo("");
+    setErr("");
+    setInfo("");
     try {
       const resp = await api("/api/integrations/teams/preview/", {
         method: "POST",
@@ -64,7 +88,7 @@ export default function CommsThreadPage() {
   return (
     <CrownLayout
       title={thread?.subject || "Thread"}
-      subtitle={<Link to="/comms">? Back to Inbox</Link>}
+      subtitle={<Link to="/comms">Back to Inbox</Link>}
       right={<button className="crown-btn" onClick={teamsPreview}>Send to Teams (Preview)</button>}
     >
 
@@ -75,7 +99,7 @@ export default function CommsThreadPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
           {(thread?.messages || []).map((m) => (
             <div key={m.id} style={{ border: "1px solid var(--crown-border)", borderRadius: "8px", padding: "0.75rem" }}>
-              <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{m.sender_name || "User"} � {m.created_at}</div>
+              <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{m.sender_name || "User"} | {m.created_at}</div>
               <div style={{ fontSize: "0.875rem" }}>{m.body}</div>
             </div>
           ))}
@@ -86,7 +110,7 @@ export default function CommsThreadPage() {
           <textarea
             style={{ width: "100%", border: "1px solid var(--crown-border)", borderRadius: "8px", padding: "0.5rem", fontSize: "0.875rem" }}
             rows={3}
-            placeholder="Type a message�"
+            placeholder="Type a message..."
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />

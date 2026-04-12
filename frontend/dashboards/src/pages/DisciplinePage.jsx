@@ -1,19 +1,22 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { apiFetch } from "../lib/api.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path, opts = {}) {
-  const base = import.meta.env.VITE_API_BASE_URL || "";
-  const res = await fetch(`${base}${path}`, {
+  const response = await apiFetch(path, {
     ...opts,
     headers: {
       "Content-Type": "application/json",
       ...(opts.headers || {}),
     },
   });
-  const text = await res.text();
+  const text = await response.text();
   let data = null;
-  try { data = JSON.parse(text); } catch { data = text; }
-  if (!res.ok) throw new Error(typeof data === "string" ? data : (data.detail || "Request failed"));
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = text;
+  }
   return data;
 }
 
@@ -31,7 +34,28 @@ export default function DisciplinePage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initialize() {
+      try {
+        const data = await api("/api/discipline/incidents/");
+        if (!cancelled) {
+          setItems(Array.isArray(data) ? data : []);
+          setErr("");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setErr(String(e.message || e));
+        }
+      }
+    }
+
+    void initialize();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <CrownLayout title="Discipline" subtitle="Incidents" right={<button className="crown-btn" onClick={load}>Refresh</button>}>
@@ -48,7 +72,7 @@ export default function DisciplinePage() {
                 <div style={{ fontSize: "0.75rem", opacity: 0.7 }}>{x.status} / {x.severity}</div>
               </div>
               <div style={{ fontSize: "0.875rem", opacity: 0.8 }}>{x.student_name}</div>
-              <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{x.category} � {x.occurred_at}</div>
+              <div style={{ fontSize: "0.75rem", opacity: 0.6 }}>{x.category} | {x.occurred_at}</div>
             </div>
           ))}
           {items.length === 0 ? <div style={{ fontSize: "0.875rem", opacity: 0.7 }}>No incidents found.</div> : null}
