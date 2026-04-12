@@ -1,19 +1,18 @@
 /**
- * RoleDashboardPage — unified role-based dashboard.
+ * RoleDashboardPage - unified role-based dashboard.
  *
  * Route: /dash/:role  (e.g., /dash/admin, /dash/teacher)
  *
  * Fetches /api/dashboards/summary/ with the current school + role context,
  * renders widgets via WidgetDispatcher, and shows a DrilldownDrawer on expand.
  */
-import React, { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import WidgetDispatcher from "../components/dashboard/WidgetDispatcher.jsx";
 import DrilldownDrawer from "../components/dashboard/DrilldownDrawer.jsx";
 import { fetchDashboardSummary } from "../api/dashboards.js";
 
-// Skeleton tile for loading state
 function WidgetSkeleton() {
   return (
     <div
@@ -30,47 +29,59 @@ function WidgetSkeleton() {
   );
 }
 
-// Grid size → CSS grid-column span
 const SIZE_COLS = { sm: "span 4", md: "span 6", lg: "span 12" };
 
 function getSchoolId() {
-  try { return sessionStorage.getItem("crown.school.id") || ""; }
-  catch { return ""; }
+  try {
+    return sessionStorage.getItem("crown.school.id") || "";
+  } catch {
+    return "";
+  }
 }
 
 export default function RoleDashboardPage() {
   const { role: routeRole } = useParams();
   const role = routeRole || "admin";
 
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
-  const [widgets, setWidgets]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [widgets, setWidgets] = useState([]);
   const [generatedAt, setGenAt] = useState(null);
-  const [drawer, setDrawer]     = useState({ open: false, widget: null });
+  const [drawer, setDrawer] = useState({ open: false, widget: null });
 
   const schoolId = getSchoolId();
 
-  const load = useCallback(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
+  const applyDashboardResponse = useCallback(({ ok, data, error: err }) => {
+    if (ok && data?.widgets) {
+      const sorted = [...data.widgets].sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
+      setWidgets(sorted);
+      setGenAt(data.generated_at ?? null);
+      setError(null);
+    } else {
+      setError(err || "Failed to load dashboard");
+    }
+    setLoading(false);
+  }, []);
 
-    fetchDashboardSummary(schoolId, role).then(({ ok, data, error: err }) => {
-      if (!mounted) return;
-      if (ok && data?.widgets) {
-        const sorted = [...data.widgets].sort((a, b) => (a.priority ?? 999) - (b.priority ?? 999));
-        setWidgets(sorted);
-        setGenAt(data.generated_at ?? null);
-      } else {
-        setError(err || "Failed to load dashboard");
+  const load = useCallback(() => {
+    setLoading(true);
+    fetchDashboardSummary(schoolId, role).then(applyDashboardResponse);
+  }, [applyDashboardResponse, role, schoolId]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchDashboardSummary(schoolId, role).then((result) => {
+      if (!mounted) {
+        return;
       }
-      setLoading(false);
+      applyDashboardResponse(result);
     });
 
-    return () => { mounted = false; };
-  }, [role, schoolId]);
-
-  useEffect(load, [load]);
+    return () => {
+      mounted = false;
+    };
+  }, [applyDashboardResponse, role, schoolId]);
 
   const openDrawer = useCallback((widget) => {
     setDrawer({ open: true, widget });
@@ -81,9 +92,9 @@ export default function RoleDashboardPage() {
   }, []);
 
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
-  const subtitle  = generatedAt
+  const subtitle = generatedAt
     ? `Updated ${new Date(generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-    : "Loading…";
+    : "Loading...";
 
   return (
     <CrownLayout
@@ -104,12 +115,11 @@ export default function RoleDashboardPage() {
             padding: "4px 12px",
           }}
         >
-          ↻
+          ?
         </button>
       }
     >
-      {/* Error banner */}
-      {error && (
+      {error ? (
         <div
           role="alert"
           style={{
@@ -124,9 +134,8 @@ export default function RoleDashboardPage() {
         >
           {error}
         </div>
-      )}
+      ) : null}
 
-      {/* Widget grid */}
       <div
         data-testid="dashboard-grid"
         style={{
@@ -136,26 +145,25 @@ export default function RoleDashboardPage() {
         }}
       >
         {loading
-          ? [1, 2, 3, 4].map((k) => (
-              <div key={k} style={{ gridColumn: "span 6" }}>
+          ? [1, 2, 3, 4].map((key) => (
+              <div key={key} style={{ gridColumn: "span 6" }}>
                 <WidgetSkeleton />
               </div>
             ))
-          : widgets.map((w) => (
+          : widgets.map((widget) => (
               <div
-                key={w.key}
-                data-widget-key={w.key}
-                style={{ gridColumn: SIZE_COLS[w.size] ?? "span 6" }}
+                key={widget.key}
+                data-widget-key={widget.key}
+                style={{ gridColumn: SIZE_COLS[widget.size] ?? "span 6" }}
               >
                 <WidgetDispatcher
-                  widget={w}
-                  onExpand={w.drilldown?.enabled ? () => openDrawer(w) : undefined}
+                  widget={widget}
+                  onExpand={widget.drilldown?.enabled ? () => openDrawer(widget) : undefined}
                 />
               </div>
             ))}
       </div>
 
-      {/* Drilldown drawer */}
       <DrilldownDrawer
         open={drawer.open}
         title={drawer.widget?.title ?? "Detail"}
@@ -164,7 +172,6 @@ export default function RoleDashboardPage() {
         onClose={closeDrawer}
       />
 
-      {/* Shimmer keyframe — injected once */}
       <style>{`
         @keyframes crown-shimmer {
           0%  { background-position: -400px 0; }
