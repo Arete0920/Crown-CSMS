@@ -4,6 +4,8 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from django.db.models import Sum, Count
 from django.http import JsonResponse
 from django.utils import timezone

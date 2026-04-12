@@ -19,7 +19,7 @@ JSON_ROUTES = [
 ]
 
 
-@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False)
+@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False, SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("route", JSON_ROUTES)
 def test_release_json_routes(route):
@@ -29,7 +29,7 @@ def test_release_json_routes(route):
     assert "application/json" in response["Content-Type"]
 
 
-@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False)
+@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False, SECURE_SSL_REDIRECT=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("route", PDF_ROUTES)
 def test_release_pdf_routes(route):
