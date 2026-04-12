@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchOpsSummary, fetchOpsAlerts } from "../api/ops";
 
 export default function OpsCommandCenter() {
@@ -101,7 +101,7 @@ export default function OpsCommandCenter() {
 
       {depErrors.length > 0 && (
         <div style={{ padding: 12, border: "1px solid var(--crown-warn)", backgroundColor: "var(--crown-warn-bg)", marginBottom: 12 }}>
-          <strong style={{ color: "var(--crown-warn)" }}>⚠ Ops Alerts Degraded:</strong>
+          <strong style={{ color: "var(--crown-warn)" }}>Ops Alerts Degraded:</strong>
           <div style={{ fontSize: 12, marginTop: 8 }}>
             {depErrors.map((e, i) => (
               <div key={i} style={{ marginBottom: 4 }}>• {e}</div>
@@ -158,3 +158,4 @@ export default function OpsCommandCenter() {
     </div>
   );
 }
+

@@ -1,4 +1,3 @@
-import React from "react";
 
 export default function ErrorBanner({ title = "Something went wrong", message, correlationId }) {
   if (!message) return null;
