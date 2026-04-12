@@ -2,7 +2,6 @@
  * TableWidget — compact data table with column headers and rows.
  * Used for missing work, student lists, etc.
  */
-import React from "react";
 
 export default function TableWidget({ widget, onExpand }) {
   const { title, subtitle, data } = widget;
