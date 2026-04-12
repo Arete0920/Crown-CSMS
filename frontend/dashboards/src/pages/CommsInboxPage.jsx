@@ -1,12 +1,11 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { authenticatedFetch } from "../utils/authClient.js";
+import { apiFetch } from "../lib/api.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 
 async function api(path, opts = {}) {
-  const base = import.meta.env.VITE_API_BASE_URL || "";
-  const res = await authenticatedFetch(`${base}${path}`, opts);
-  return res.json();
+  const response = await apiFetch(path, opts);
+  return response.json();
 }
 
 export default function CommsInboxPage() {
@@ -23,7 +22,28 @@ export default function CommsInboxPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initialize() {
+      try {
+        const data = await api("/api/comms/threads/");
+        if (!cancelled) {
+          setThreads(Array.isArray(data) ? data : []);
+          setErr("");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setErr(String(e.message || e));
+        }
+      }
+    }
+
+    void initialize();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <CrownLayout
