@@ -1,4 +1,3 @@
-import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { hasAnyRole } from '../../auth/roleAccess';

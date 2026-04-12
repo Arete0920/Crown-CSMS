@@ -1,7 +1,6 @@
 // frontend/dashboards/src/auth/AuthProvider.jsx
 // Wraps the app with MSAL's context provider.
 // Initialises the MSAL PublicClientApplication once at module load.
-import React from "react";
 import { MsalProvider } from "@azure/msal-react";
 import { PublicClientApplication, EventType } from "@azure/msal-browser";
 import { msalConfig } from "./msalConfig";

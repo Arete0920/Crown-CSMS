@@ -1,4 +1,3 @@
-import React from 'react';
 import { Alert, Box, Paper, Stack, Typography } from '@mui/material';
 import { getBuildInfo } from '../../utils/buildInfo';
 
