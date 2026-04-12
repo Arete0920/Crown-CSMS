@@ -47,7 +47,7 @@
   {
     "file": "release_closeout\\urls.py",
     "removed_duplicate_lines": 0,
-    "changed": true
+    "changed": false
   },
   {
     "file": "backend\\academics\\urls.py",
@@ -412,7 +412,7 @@
   {
     "file": "venv\\Lib\\site-packages\\tutorial\\urls.py",
     "removed_duplicate_lines": 0,
-    "changed": true
+    "changed": false
   },
   {
     "file": "venv\\Lib\\site-packages\\authlib\\common\\urls.py",

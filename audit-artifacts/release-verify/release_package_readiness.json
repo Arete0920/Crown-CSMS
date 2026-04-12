@@ -1,8 +1,4 @@
 {
-  "backend_added": [
-    "locust"
-  ],
-  "frontend_added": [
-    "@axe-core/playwright"
-  ]
+  "backend_added": [],
+  "frontend_added": []
 }

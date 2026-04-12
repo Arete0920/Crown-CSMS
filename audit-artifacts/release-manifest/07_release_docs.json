@@ -204,6 +204,10 @@
         "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\MODULE_INVENTORY.md"
     },
     {
+        "Name":  "NEXT_ACTION_SUMMARY.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\NEXT_ACTION_SUMMARY.md"
+    },
+    {
         "Name":  "NEXT_RELEASE_SEQUENCE_REPORT.md",
         "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\NEXT_RELEASE_SEQUENCE_REPORT.md"
     },
@@ -228,6 +232,14 @@
         "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\PR_ISSUES_CONCERNS_ACTION_PLAN.md"
     },
     {
+        "Name":  "PR_MERGE_RULES_AFTER_FREEZE.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\PR_MERGE_RULES_AFTER_FREEZE.md"
+    },
+    {
+        "Name":  "PR_OVERLAP_RECONCILIATION.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\PR_OVERLAP_RECONCILIATION.md"
+    },
+    {
         "Name":  "RELEASE_ENV_MATRIX.md",
         "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\RELEASE_ENV_MATRIX.md"
     },
@@ -236,12 +248,32 @@
         "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\SCHEMA_W002_BUDGET.json"
     },
     {
+        "Name":  "SCHEMA_W002_PROGRESS.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\SCHEMA_W002_PROGRESS.md"
+    },
+    {
         "Name":  "SECURITY_GATES_EVIDENCE.md",
         "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\SECURITY_GATES_EVIDENCE.md"
     },
     {
         "Name":  "SHIP_CANDIDATE.md",
         "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\SHIP_CANDIDATE.md"
+    },
+    {
+        "Name":  "SHIP_CANDIDATE_32_46.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\SHIP_CANDIDATE_32_46.md"
+    },
+    {
+        "Name":  "SHIP_CANDIDATE_47_61.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\SHIP_CANDIDATE_47_61.md"
+    },
+    {
+        "Name":  "TOP_W002_OFFENDERS_POST.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\TOP_W002_OFFENDERS_POST.md"
+    },
+    {
+        "Name":  "TOP_W002_OFFENDERS_PRE.md",
+        "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\docs\\release\\TOP_W002_OFFENDERS_PRE.md"
     },
     {
         "Name":  "WORKFLOW_CONSOLIDATION_PLAN.md",
