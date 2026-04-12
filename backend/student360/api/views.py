@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework import permissions
+from drf_spectacular.openapi import AutoSchema as SpectacularAutoSchema
 
 from core.models import School
 from django.core.exceptions import ImproperlyConfigured
@@ -166,6 +167,7 @@ def _try_get_core_student(households_student):
 
 
 class StudentOverview(APIView):
+    schema = SpectacularAutoSchema()
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, student_id):
@@ -437,6 +439,7 @@ class StudentOverview(APIView):
 
 class StudentSelfOverview(APIView):
     """Resolve the calling user to their student record, then delegate to StudentOverview."""
+    schema = SpectacularAutoSchema()
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):

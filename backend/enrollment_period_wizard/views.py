@@ -28,14 +28,14 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from audit.models import AuditLog
 from core.models import AcademicYear, School
 from households.scoping import get_request_school_id
 
 from .models import (
-from drf_spectacular.utils import extend_schema
-from drf_spectacular.types import OpenApiTypes
     EnrollmentPeriod,
     EnrollmentPeriodWizardSession,
     GradeCapacity,
