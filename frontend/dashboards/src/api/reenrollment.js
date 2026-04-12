@@ -1,102 +1,69 @@
-﻿/**
+/**
  * api/reenrollment.js
  *
- * Follows the api/admissions.js pattern exactly:
- *  - getToken / getSchoolId from ../lib/api
- *  - const API_BASE from VITE_API_BASE_URL
- *  - raw fetch() with manual Authorization + X-School-Id headers
- *  - explicit .json() parsing
- *  - structured error throw: { status, body, url }
+ * Uses the shared crownApiClient and preserves the existing JSON/null/error
+ * behavior for the reenrollment wizard flow.
  */
-import { getToken, getSchoolId } from "../lib/api";
+import { crownApiClient } from "./client";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-function headers(extra = {}) {
-  return {
-    Authorization: `Bearer ${getToken()}`,
-    "X-School-Id": getSchoolId(),
-    ...extra,
-  };
-}
+async function requestJson(url, { method = "GET", data } = {}) {
+  const response = await crownApiClient.request({
+    method,
+    url,
+    data,
+    validateStatus: () => true,
+  });
 
-async function checkResponse(res, url) {
-  if (!res.ok) {
-    let body = null;
-    try { body = await res.json(); } catch { /* ignore */ }
-    const err = new Error(`HTTP ${res.status}`);
-    err.status = res.status;
-    err.body = body;
+  if (response.status < 200 || response.status >= 300) {
+    const err = new Error(`HTTP ${response.status}`);
+    err.status = response.status;
+    err.body = response.data ?? null;
     err.url = url;
     throw err;
   }
-  // 204 No Content or empty body â€” return null instead of throwing a JSON parse error
-  const ct = res.headers.get("content-type") || "";
-  if (res.status === 204 || !ct.includes("application/json")) return null;
-  return res.json();
+  return response.data ?? null;
 }
 
 /** Step 1: create a ReenrollmentSession */
 export async function createReenrollmentSession() {
-  const url = `${API_BASE}/api/v1/reenrollment/sessions/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/reenrollment/sessions/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({}),
+    data: {},
   });
-  return checkResponse(res, url);
 }
 
 /** Step 2: configure session (set year label + enrollment fee, snapshot candidates) */
 export async function configureSession(sessionId, targetYearLabel, enrollmentFee) {
-  const url = `${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/configure/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/configure/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ target_year_label: targetYearLabel, enrollment_fee: enrollmentFee }),
+    data: { target_year_label: targetYearLabel, enrollment_fee: enrollmentFee },
   });
-  return checkResponse(res, url);
 }
 
 /** Step 3: fetch list of eligible candidates */
 export async function listCandidates(sessionId) {
-  const url = `${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/candidates/`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: headers(),
-  });
-  return checkResponse(res, url);
+  return requestJson(`${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/candidates/`);
 }
 
 /** Step 4: save student exclusion list */
 export async function selectStudents(sessionId, excludedIds) {
-  const url = `${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/select/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/select/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ excluded_ids: excludedIds }),
+    data: { excluded_ids: excludedIds },
   });
-  return checkResponse(res, url);
 }
 
 /** Step 5: commit the re-enrollment (requires confirm flag) */
 export async function commitReenrollment(sessionId) {
-  const url = `${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/commit/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/commit/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ confirm: true }),
+    data: { confirm: true },
   });
-  return checkResponse(res, url);
 }
 
 /** Step 6: verify results post-commit */
 export async function verifyReenrollment(sessionId) {
-  const url = `${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/verify/`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: headers(),
-  });
-  return checkResponse(res, url);
+  return requestJson(`${API_BASE}/api/v1/reenrollment/sessions/${sessionId}/verify/`);
 }
-
