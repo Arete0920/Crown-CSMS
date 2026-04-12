@@ -175,3 +175,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '0.9.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+INSTALLED_APPS = globals().get("INSTALLED_APPS", INSTALLED_APPS if "INSTALLED_APPS" in globals() else [])
+if "django_extensions" not in INSTALLED_APPS:
+    INSTALLED_APPS.append("django_extensions")

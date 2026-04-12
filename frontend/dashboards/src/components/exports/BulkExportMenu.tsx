@@ -7,8 +7,9 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import axios from "axios";
+
+const ArrowDropDownIcon = () => <span aria-hidden="true">v</span>;
 
 interface BulkExportMenuProps {
   label?: string;
