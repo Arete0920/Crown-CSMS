@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 
 export default function PageHeader({ title, subtitle, actions = null }) {

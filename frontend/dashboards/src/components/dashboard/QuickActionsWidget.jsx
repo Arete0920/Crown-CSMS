@@ -1,7 +1,6 @@
 /**
  * QuickActionsWidget — grid of fast-jump action buttons.
  */
-import React from "react";
 
 export default function QuickActionsWidget({ widget }) {
   const { title, data } = widget;
