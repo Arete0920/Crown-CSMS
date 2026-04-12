@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Button, CircularProgress, Tooltip } from "@mui/material";
-import DownloadIcon from "@mui/icons-material/Download";
 import axios from "axios";
+
+const DownloadIcon = () => <span aria-hidden="true">DL</span>;
 
 type ReportType =
   | "transcript"

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Button, CircularProgress } from "@mui/material";
-import DownloadIcon from "@mui/icons-material/Download";
 import releaseApi from "../../lib/releaseApi";
+
+const DownloadIcon = () => <span aria-hidden="true">DL</span>;
 
 type ReleaseReport =
   | "transcript"

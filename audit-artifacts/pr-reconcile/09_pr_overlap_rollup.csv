@@ -1,4 +1,4 @@
-"PRNumber","Title","Branch","Draft","UpdatedAt","OverlapCount","HighRiskOverlapCount","Risk","Url"
+eas you think ne"PRNumber","Title","Branch","Draft","UpdatedAt","OverlapCount","HighRiskOverlapCount","Risk","Url"
 "699","Fix/frontend audit","fix/frontend-audit","False","2026-04-12T01:29:11Z","100","84","CRITICAL","https://github.com/tcmegahan/Crown2026/pull/699"
 "703","Fix backend-gate: create missing Django apps/modules, fix student_records URL prefix, fix related-article exclusion bug, add portrait/services.py, add Solomon regression tests, split article serializers, add visibility gating and audience filtering","copilot/fix-student-records-url-routing","True","2026-04-12T01:36:34Z","17","3","CRITICAL","https://github.com/tcmegahan/Crown2026/pull/703"
 "701","Fix CI PYTHONPATH, HTTP 401, trailing slash, route collision, and audit privacy leak","copilot/fix-ci-workflow-pythonpath-errors","True","2026-04-11T18:44:22Z","5","3","HIGH","https://github.com/tcmegahan/Crown2026/pull/701"

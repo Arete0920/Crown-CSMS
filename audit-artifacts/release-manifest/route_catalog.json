@@ -164,6 +164,34 @@
     "route": "api/v1/notifications/sms/status/"
   },
   {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
     "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
     "route": "api/v1/release-closeout/status/"
   },
@@ -233,6 +261,42 @@
   },
   {
     "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/graduation/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
     "route": "api/v1/notifications/sms/status/"
   },
   {
