@@ -13,3 +13,10 @@ urlpatterns = [
     path("interventions/cases/",                        api.intervention_cases,   name="intervention_cases"),
     path("interventions/cases/<uuid:case_id>/actions/",  api.intervention_actions, name="intervention_actions"),
 ]
+
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+urlpatterns += [
+    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
+]

@@ -22,6 +22,8 @@ from .services import create_tuition_billing_run
 from crown_api.billing_api.permissions import has_finance_runtime_role
 from ledger.services import billing_run_summary
 from ledger.models import Allocation, Charge
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +42,7 @@ def _plan_to_dict(p: InstallmentPlan):
     }
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def installment_plans(request: HttpRequest):
@@ -146,6 +149,7 @@ def _run_to_dict(r: BillingRun):
     }
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def billing_runs(request: HttpRequest):
@@ -200,6 +204,7 @@ def billing_runs(request: HttpRequest):
     )
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def billing_run_detail(request: HttpRequest, billing_run_id: str):
@@ -262,6 +267,7 @@ def billing_run_detail(request: HttpRequest, billing_run_id: str):
     return _envelope(data, status=200)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
@@ -278,6 +284,7 @@ def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
     return _envelope(data, status=200)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def invoices(request):

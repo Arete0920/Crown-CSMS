@@ -13,8 +13,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 
 from core.auth.authentication import AADBearerAuthentication
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes([AADBearerAuthentication])
 @permission_classes([IsAuthenticated])
@@ -46,6 +49,7 @@ def me(request: Request) -> JsonResponse:
     )
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes([AADBearerAuthentication])
 @permission_classes([IsAuthenticated])

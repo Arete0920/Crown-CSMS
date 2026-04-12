@@ -8,3 +8,10 @@ urlpatterns = [
     path("<uuid:session_id>/commit/", views.commit_session, name="attendance_codes_wizard_commit"),
     path("<uuid:session_id>/verify/", views.verify_session, name="attendance_codes_wizard_verify"),
 ]
+
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+urlpatterns += [
+    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
+]

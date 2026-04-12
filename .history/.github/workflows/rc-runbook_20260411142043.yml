@@ -1,0 +1,51 @@
+name: rc-runbook
+
+on:
+  push:
+    branches:
+      - "rc/**"
+  pull_request:
+    branches:
+      - "rc/**"
+    paths:
+      - "tools/verify_rc_runbook.ps1"
+      - "tools/verify_*gate*.py"
+      - "tools/rc_endpoint_probes.json"
+      - ".github/workflows/rc-runbook.yml"
+      - "backend/**"
+
+jobs:
+  runbook:
+    name: "RC Runbook (gate-only)"
+    runs-on: windows-latest
+
+    env:
+      DJANGO_SETTINGS_MODULE: crown_api.settings
+      DATABASE_URL: sqlite:///./ci_rc.sqlite3
+      SECRET_KEY: rc-ci-not-secret
+      ALLOWED_HOSTS: "127.0.0.1,localhost"
+      DJANGO_DEBUG: "0"
+      DEBUG: "0"
+      RC_SKIP_PROBES: "1"
+      RC_SKIP_SERVER_START: "1"
+
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: "RC Runbook -- gate-only (no server, no probes, deterministic)"
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File tools/verify_rc_runbook.ps1 -SkipProbes -SkipServerStart

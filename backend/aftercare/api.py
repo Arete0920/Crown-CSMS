@@ -20,6 +20,8 @@ from .serializers import (
     AftercareIncidentSerializer,
 )
 from .services import ensure_config, checkin_student, checkout_student, record_incident
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
 def require_role(request, allowed_roles: set) -> bool:
@@ -49,6 +51,7 @@ def require_role(request, allowed_roles: set) -> bool:
 # Config
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "PUT"])
 def program_config(request):
     school_id = school_id_from_request(request, required=True)
@@ -71,6 +74,7 @@ def program_config(request):
 # Enrollments
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def enrollments(request):
     school_id = school_id_from_request(request, required=True)
@@ -92,6 +96,7 @@ def enrollments(request):
 # Pickup contacts
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def pickup_contacts(request, student_id: int):
     school_id = school_id_from_request(request, required=True)
@@ -115,6 +120,7 @@ def pickup_contacts(request, student_id: int):
 # Roster
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 def roster_today(request):
     """Students enrolled for today, with their check-in/out state."""
@@ -153,6 +159,7 @@ def roster_today(request):
 # Check-in / Check-out
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 def checkin(request):
     school_id = school_id_from_request(request, required=True)
@@ -167,6 +174,7 @@ def checkin(request):
     return Response(AftercareAttendanceSerializer(a).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 def checkout(request):
     school_id = school_id_from_request(request, required=True)
@@ -192,6 +200,7 @@ def checkout(request):
 # Incidents
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def incidents(request):
     school_id = school_id_from_request(request, required=True)
@@ -222,6 +231,7 @@ def incidents(request):
 # Parent view
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 def parent_view(request, student_id: int):
     """
@@ -247,6 +257,7 @@ def parent_view(request, student_id: int):
 # Board summary (read-only, no student identifiers)
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 def board_summary(request):
     """Board governance summary — enrollment counts + MTD stats only, no PII."""

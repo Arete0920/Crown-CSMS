@@ -1,0 +1,70 @@
+name: Release Verify
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  release-verify:
+    name: release-verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then
+            pip install -r backend/requirements.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+      - name: Backend checks
+        shell: bash
+        run: |
+          if [ -f backend/manage.py ]; then
+            python backend/manage.py check
+            python backend/manage.py showmigrations
+            python backend/manage.py check --deploy || true
+          elif [ -f manage.py ]; then
+            python manage.py check
+            python manage.py showmigrations
+            python manage.py check --deploy || true
+          else
+            echo "manage.py not found" >&2
+            exit 1
+          fi
+      - name: Tenant and URL smoke tests
+        run: pytest -q tests/test_release_tenant_and_urls.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+      - name: Frontend smoke
+        working-directory: frontend/dashboards
+        run: |
+          npm ci
+          npm run test --if-present
+          npx playwright install --with-deps
+      - name: Export OpenAPI schema
+        shell: bash
+        run: |
+          mkdir -p docs/openapi
+          if [ -f backend/manage.py ]; then
+            python backend/manage.py spectacular --file docs/openapi/crown-openapi.yaml || true
+          elif [ -f manage.py ]; then
+            python manage.py spectacular --file docs/openapi/crown-openapi.yaml || true
+          fi
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-verify-artifacts
+          path: |
+            docs/openapi/crown-openapi.yaml
+            audit-artifacts/**
+            docs/release/**

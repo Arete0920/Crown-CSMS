@@ -1,0 +1,11 @@
+﻿{
+    "generated_at_utc":  "2026-04-11T07:27:30.8844687Z",
+    "evidence_count":  5,
+    "action_count":  3,
+    "high_priority_count":  2,
+    "medium_priority_count":  1,
+    "repo_branch_count":  9,
+    "repo_workflow_count":  53,
+    "backend_app_count":  91,
+    "module_count":  9
+}

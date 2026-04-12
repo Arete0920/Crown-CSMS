@@ -10,6 +10,8 @@ from core.models import School
 
 from crown_api.models_comms_core import MessageThread, Message
 from comms.api.serializers import (
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
     ThreadListSerializer,
     ThreadDetailSerializer,
     ComposeThreadSerializer,

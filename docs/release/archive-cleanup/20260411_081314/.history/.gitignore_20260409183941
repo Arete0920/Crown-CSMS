@@ -1,0 +1,153 @@
+
+# ── Prod logs (never commit) ──
+prod_logs/
+prod_logs_latest/
+prod_logs_now/
+app_logs.zip
+
+# ── Secrets (never commit) ──
+secrets/
+
+# ── Audit/phase snapshot folders ──
+MEDIUM_STRIKE_*/
+_PHASE*_INVENTORY_*/
+_PHASE*_TRIAGE_*/
+_PHASE*_APPLY_*/
+_PHASE*_VERIFY_*/
+_workflow_audit/
+
+# ── OS noise ──
+.DS_Store
+Thumbs.db
+desktop.ini
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+build/
+.vite/
+frontend/dashboards/node_modules/
+frontend/dashboards/dist/
+frontend/dashboards/test-results/
+frontend/dashboards/playwright-report/
+
+# Demo proof/log artifacts
+BOOTPASS_*.log
+ONEPASS_*.log
+*.log
+*.out
+*.err
+docs/demo-proof/**/proof/
+docs/demo-proof/**/out/
+docs/demo-proof/**/tmp/
+
+# Local generated artifacts
+db.sqlite3
+backend/db.sqlite3
+backend/ci.sqlite3
+backend/ci_audit.sqlite3
+_tmp/
+_local_proofs/
+app_logs/
+media/
+
+# Local secrets (never commit — contains rotated credentials)
+local.secrets.ps1
+local.secrets.sh
+*.local.secrets
+
+# Audit runner output (attach to PRs/tags manually)
+artifacts/
+audit-logs/
+
+# Editor/OS
+.vscode/
+Thumbs.db
+.DS_Store
+
+# Developer scratch
+._scratch_local/
+
+# Local closeout / session tracking docs (not production artifacts)
+closeout/
+PACK3_ACCURATE_STATUS.md
+PACK3_VISUAL_PROOF_CHECKLIST.md
+pr_smoke_404.txt
+test_student360_auth.ps1
+
+# Audit pack outputs (generated locally, never commit)
+AUDIT_PACK_*/
+AUDIT_*.txt
+DEPLOYMENT_CONTRACT_*.txt
+pytest_out.txt
+_local_artifacts/
+
+# Test coverage
+coverage/
+
+# Local dev process artifacts (django server output, local db)
+ci_local.sqlite3
+django_err.txt
+django_out.txt
+
+# Ad-hoc scratch files
+student360_test.txt
+tools/_step1a.py
+
+# PR body scratch files (created by CI agent during PR workflow)
+pr_*.txt
+# Temp agent/automation scratch files
+_*.txt
+commit_result.txt
+PYTEST_PROOF_*.txt
+
+# CI-generated build artifact (written by CI before npm build, not a source file)
+frontend/dashboards/public/build.json
+
+# Ops war-room and Azure evidence artifacts
+_warroom/
+_azure_evidence/
+_azure_evidence.zip
+release_proof/
+release_proof.zip
+ops_logs/
+
+# war-room and local diagnostics
+_warroom/
+_azure_evidence/
+
+# local generated archives
+*.zip
+
+# transient logs and dumps
+prod_logs/
+prod_logs_now/
+prod_logs_latest/
+app_logs.zip
+webapp_logs.zip
+*.log
+.env*.local
+**/.env*.local
+
+# local env / secrets
+.env
+.env.release
+login.json
+test_login.json
+backend/core/demo/heritage_demo_credentials.json
+frontend/dashboards/public/demo/heritage_demo_credentials.json
+
+# editor history / generated artifacts
+.history/
+*.history
+audit-artifacts/
+
+!*.example

@@ -1,0 +1,8 @@
+﻿{
+    "FrontendPackageJson":  true,
+    "FrontendPackageLock":  true,
+    "BackendRequirements":  true,
+    "RootRequirements":  true,
+    "ManagePyBackend":  true,
+    "ManagePyRoot":  true
+}

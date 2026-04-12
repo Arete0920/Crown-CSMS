@@ -1,0 +1,1 @@
+default_app_config = "release_closeout.apps.ReleaseCloseoutConfig"

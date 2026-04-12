@@ -1,0 +1,8 @@
+﻿"gate","score","status"
+"release_truth","100","PASS"
+"backend_verification","100","PASS"
+"module_proof","100","PASS"
+"runtime_api","100","PASS"
+"frontend_dashboard","80","PASS"
+"reporting_export","100","PASS"
+"action_register","100","PASS"

@@ -1,0 +1,9 @@
+{
+  "student_refs": [
+    "DEMO-001",
+    "DEMO-002"
+  ],
+  "has_demo_001": true,
+  "has_demo_002": true,
+  "green": true
+}

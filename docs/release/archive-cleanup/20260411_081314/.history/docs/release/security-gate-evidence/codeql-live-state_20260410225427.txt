@@ -1,0 +1,38 @@
+CodeQL live state capture
+Captured: 2026-04-11
+Repo: tcmegahan/Crown2026
+
+1) GitHub Advanced Security default setup
+- state: configured
+- languages: actions, javascript, javascript-typescript, python, typescript
+- query_suite: default
+- threat_model: remote
+- schedule: weekly
+- updated_at: 2026-04-03T18:40:34Z
+
+2) Required status checks on main after correction
+- CodeQL
+- changes
+- demo-proof-static
+- demo-surface-static-gate
+- lockdown-gate
+- meta-check-job-if
+- phase1-contract
+- phase3-runtime-proof
+- proof-ceremony
+- pytest
+- rc-promotion-gate
+- spine-audit
+- test
+- verify-immutable-tags
+
+3) Recent PR proof of actual emitted CodeQL check
+- sample PR ref commit: fedc930ef473fbecaf8815616a0af7dcbb9049ad
+- check name: CodeQL
+- status: completed
+- conclusion: success
+- app: github-advanced-security
+
+Note:
+- The repo is currently using GitHub Advanced Security default setup for CodeQL, not a committed `.github/workflows/codeql.yml` workflow on `main`.
+- Branch protection was corrected from the stale `CodeQL / Analyze` context to the live `CodeQL` context so required-check enforcement now matches the actual emitted status.

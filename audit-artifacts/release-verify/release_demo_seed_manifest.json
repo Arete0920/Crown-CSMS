@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-04-12T01:34:14.086520+00:00",
+  "school": "demo-school",
+  "students": [
+    {
+      "ref": "DEMO-001",
+      "name": "Abigail Carter",
+      "grade": "5"
+    },
+    {
+      "ref": "DEMO-002",
+      "name": "Samuel Reed",
+      "grade": "8"
+    }
+  ],
+  "billing_accounts": [
+    {
+      "household_ref": "HH-001",
+      "balance": 0
+    },
+    {
+      "household_ref": "HH-002",
+      "balance": 125.0
+    }
+  ],
+  "attendance": [
+    {
+      "student_ref": "DEMO-001",
+      "present": true
+    },
+    {
+      "student_ref": "DEMO-002",
+      "present": true
+    }
+  ]
+}

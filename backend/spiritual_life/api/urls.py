@@ -71,11 +71,18 @@ urlpatterns = [
         PrayerRequestDetail.as_view(),
         name="prayer_request_detail",
     ),
-    # Pastoral Notes — staff only
+    # Pastoral Notes Ã¢â‚¬â€ staff only
     path("pastoral-notes/", PastoralNoteListCreate.as_view(), name="pastoral_notes"),
     path(
         "pastoral-notes/<uuid:note_id>/",
         PastoralNoteDetail.as_view(),
         name="pastoral_note_detail",
     ),
+]
+
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+urlpatterns += [
+    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
 ]

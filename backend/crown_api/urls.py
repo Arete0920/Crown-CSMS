@@ -1,4 +1,4 @@
-﻿"""
+"""
 URL configuration for crown_api project.
 """
 import logging
@@ -125,3 +125,7 @@ try:
     urlpatterns.append(path("admin/", site.urls))
 except Exception:
     logger.exception("crown_api.urls: failed to register admin URL")
+
+urlpatterns += [
+    path("", include("release_closeout.urls")),
+]

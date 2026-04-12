@@ -1,0 +1,19 @@
+
+Traceback (most recent call last):
+  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\manage.py", line 22, in <module>
+    main()
+  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\manage.py", line 11, in main
+    from django.core.management import execute_from_command_line
+  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\django\core\management\__init__.py", line 17, in <module>
+    from django.conf import settings
+  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\django\conf\__init__.py", line 19, in <module>
+    from django.utils.deprecation import RemovedInDjango60Warning
+  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\django\utils\deprecation.py", line 4, in <module>
+    from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
+  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\asgiref\sync.py", line 1, in <module>
+    import asyncio
+  File "C:\Users\JMega\AppData\Local\Programs\Python\Python312\Lib\asyncio\__init__.py", line 43, in <module>
+    from .windows_events import *
+  File "C:\Users\JMega\AppData\Local\Programs\Python\Python312\Lib\asyncio\windows_events.py", line 8, in <module>
+    import _overlapped
+OSError: [WinError 10106] The requested service provider could not be loaded or initialized
