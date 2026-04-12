@@ -28,11 +28,25 @@ powershell -ExecutionPolicy Bypass -File scripts\release\compuwerx_sandbox_captu
 Write-Host "=== FRONTEND RELEASE TESTS ===" -ForegroundColor Cyan
 if (Test-Path "frontend\dashboards\package.json") {
   Push-Location "frontend\dashboards"
+  $prevEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+
   npm ci 2>&1 | Tee-Object -FilePath "..\..\$verify\24_npm_ci_release_doctor.txt"
+  if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
+
   npm run test --if-present 2>&1 | Tee-Object -FilePath "..\..\$verify\25_frontend_unit_release_doctor.txt"
+  if ($LASTEXITCODE -ne 0) { throw "npm test failed with exit code $LASTEXITCODE" }
+
   npx playwright install --with-deps 2>&1 | Tee-Object -FilePath "..\..\$verify\26_playwright_install_release_doctor.txt"
+  if ($LASTEXITCODE -ne 0) { throw "playwright install failed with exit code $LASTEXITCODE" }
+
   npx playwright test tests/release-auth-golden-path.spec.ts 2>&1 | Tee-Object -FilePath "..\..\$verify\27_playwright_auth_golden_path.txt"
+  if ($LASTEXITCODE -ne 0) { throw "playwright auth test failed with exit code $LASTEXITCODE" }
+
   npx playwright test tests/release-accessibility.spec.ts 2>&1 | Tee-Object -FilePath "..\..\$verify\28_playwright_accessibility.txt"
+  if ($LASTEXITCODE -ne 0) { throw "playwright accessibility test failed with exit code $LASTEXITCODE" }
+
+  $ErrorActionPreference = $prevEap
   Pop-Location
 } else {
   "frontend/dashboards/package.json not found" | Out-File "$verify\24_npm_ci_release_doctor.txt"

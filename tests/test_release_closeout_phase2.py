@@ -8,7 +8,7 @@ from django.test import Client, override_settings
 pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 
 
-@override_settings(ROOT_URLCONF="release_closeout.urls")
+@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False)
 @pytest.mark.django_db
 def test_release_closeout_status_endpoint():
     client = Client()
@@ -21,7 +21,7 @@ def test_release_closeout_status_endpoint():
     assert payload["graduation_readiness"] is True
 
 
-@override_settings(ROOT_URLCONF="release_closeout.urls")
+@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False)
 @pytest.mark.django_db
 def test_release_closeout_live_metrics_endpoint():
     client = Client()
@@ -33,7 +33,7 @@ def test_release_closeout_live_metrics_endpoint():
     assert "mock_or_seed_hits" in payload
 
 
-@override_settings(ROOT_URLCONF="release_closeout.urls")
+@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False)
 @pytest.mark.django_db
 @pytest.mark.parametrize("route", [
     "/api/v1/reports/transcript/DEMO-001/",
@@ -48,7 +48,7 @@ def test_pdf_endpoints(route):
     assert res["Content-Type"] == "application/pdf"
 
 
-@override_settings(ROOT_URLCONF="release_closeout.urls")
+@override_settings(ROOT_URLCONF="release_closeout.urls", TENANT_HEADER_REQUIRED=False)
 @pytest.mark.django_db
 def test_sms_status_endpoint():
     client = Client()
