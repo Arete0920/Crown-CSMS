@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 from decimal import Decimal, InvalidOperation
@@ -52,8 +52,8 @@ def _percent_to_gpa_proxy(pct):
     return Decimal("0.0")
 
 
-def _try_get_core_student(households_student):
-    """Bridge households.Student → core.Student for ServiceEntry FK (legacy)."""
+def _try_get_core_student(households_student, school_id=None):
+    """Bridge households.Student GåÆ core.Student for ServiceEntry FK (legacy)."""
     try:
         from core.models import Student as CoreStudent
     except Exception:
@@ -62,9 +62,12 @@ def _try_get_core_student(households_student):
     first = getattr(households_student, "first_name", None)
     last = getattr(households_student, "last_name", None)
     if first and last:
-        cs = CoreStudent.objects.filter(
+        qs = CoreStudent.objects.filter(
             first_name__iexact=first, last_name__iexact=last
-        ).first()
+        )
+        if school_id is not None:
+            qs = qs.filter(school_id=str(school_id))
+        cs = qs.first()
         if cs:
             return cs
     return None
@@ -74,8 +77,8 @@ def _resolve_household_for_user(user):
     """
     Resolve the calling user to a households.Household.
 
-    Primary: match user.email → households.Guardian.email (Guardian has household FK).
-    Demo-safe; not production-safe without a direct User ↔ Household FK.
+    Primary: match user.email GåÆ households.Guardian.email (Guardian has household FK).
+    Demo-safe; not production-safe without a direct User Gåö Household FK.
     """
     email = getattr(user, "email", None)
     if not email:
@@ -84,7 +87,7 @@ def _resolve_household_for_user(user):
     try:
         from households.models import Guardian
         guardian = (
-            Guardian.objects.filter(email__iexact=email)
+            Guardian.objects.filter(email__iexact=email, school_id=str(getattr(user, "school_id", "")))
             .select_related("household")
             .first()
         )
@@ -127,7 +130,7 @@ class ParentSelfOverview(APIView):
                 {
                     "detail": (
                         "No household found for current user. "
-                        "(Demo bridge: Guardian email match failed — contact school admin.)"
+                        "(Demo bridge: Guardian email match failed GÇö contact school admin.)"
                     )
                 },
                 status=status.HTTP_404_NOT_FOUND,
@@ -135,7 +138,7 @@ class ParentSelfOverview(APIView):
 
         children = _get_children_for_household(household)
 
-        # Optional model imports — degrade gracefully if any app is missing.
+        # Optional model imports GÇö degrade gracefully if any app is missing.
         GradeEntry = None
         Assignment = None
         Invoice = None
@@ -161,7 +164,7 @@ class ParentSelfOverview(APIView):
         now = timezone.now().date()
         seven_days = now + timezone.timedelta(days=7)
 
-        # ── Household balance (open invoices, if Invoice is household-scoped) ──
+        # GöÇGöÇ Household balance (open invoices, if Invoice is household-scoped) GöÇGöÇ
         household_balance_cents = 0
         if Invoice is not None and hasattr(Invoice, "household"):
             try:
@@ -186,7 +189,7 @@ class ParentSelfOverview(APIView):
             except Exception:
                 logger.debug("household balance unavailable", exc_info=True)
 
-        # ── Per-child blocks ──────────────────────────────────────────────────
+        # GöÇGöÇ Per-child blocks GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
         child_rows = []
         missing_total = 0
         upcoming_total = 0
@@ -208,7 +211,7 @@ class ParentSelfOverview(APIView):
                 "alerts": [],
             }
 
-            # ── Grades ──────────────────────────────────────────────────────
+            # GöÇGöÇ Grades GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
             if GradeEntry is not None and Assignment is not None:
                 try:
                     ge_qs = GradeEntry.objects.filter(student=s).select_related("assignment")
@@ -223,7 +226,7 @@ class ParentSelfOverview(APIView):
                     if school_id:
                         asgn_filter["school_id"] = school_id
 
-                    past_due_qs = Assignment.objects.filter(**asgn_filter)
+                    past_due_qs = Assignment.objects.none()
                     entered_ids = set(
                         ge_qs.exclude(assignment=None).values_list("assignment_id", flat=True)
                     )
@@ -243,9 +246,7 @@ class ParentSelfOverview(APIView):
                     if school_id:
                         up_filter["school_id"] = school_id
 
-                    upcoming = list(
-                        Assignment.objects.filter(**up_filter).order_by("due_date")[:3]
-                    )
+                    upcoming = []
                     row["upcoming_assignments"] = [
                         {
                             "id": str(a.id),
@@ -264,10 +265,10 @@ class ParentSelfOverview(APIView):
                 except Exception:
                     logger.debug("optional assignment data unavailable for child", exc_info=True)
 
-            # ── Service hours ──────────────────────────────────────────────
+            # GöÇGöÇ Service hours GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
             if ServiceEntry is not None:
                 try:
-                    core_student = _try_get_core_student(s)
+                    core_student = _try_get_core_student(s, school_id=school_id)
                     if core_student:
                         approved = ServiceEntry.objects.filter(
                             student=core_student, status="approved"
@@ -283,7 +284,7 @@ class ParentSelfOverview(APIView):
                 except Exception:
                     logger.debug("optional service hours unavailable for child", exc_info=True)
 
-            # ── Finance per student (InvoiceLine.student FK) ────────────────
+            # GöÇGöÇ Finance per student (InvoiceLine.student FK) GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
             if InvoiceLine is not None and Invoice is not None:
                 try:
                     lines = InvoiceLine.objects.filter(student=s).select_related("invoice")
@@ -309,7 +310,7 @@ class ParentSelfOverview(APIView):
                 except Exception:
                     logger.debug("optional finance data unavailable for child", exc_info=True)
 
-            # ── Alerts ──────────────────────────────────────────────────────
+            # GöÇGöÇ Alerts GöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇGöÇ
             if row["current_average"] is not None and row["current_average"] < 75:
                 row["alerts"].append({
                     "type": "academic",
@@ -338,3 +339,10 @@ class ParentSelfOverview(APIView):
         }
 
         return Response(payload, status=status.HTTP_200_OK)
+
+
+
+
+
+
+
