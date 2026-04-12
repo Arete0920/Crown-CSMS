@@ -8,10 +8,3 @@ urlpatterns = [
     path("wizard/lock/", wizard_lock, name="finance_setup_wizard_lock"),
     path("wizard/snapshot/", wizard_snapshot, name="finance_setup_wizard_snapshot"),
 ]
-
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-urlpatterns += [
-    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
-]

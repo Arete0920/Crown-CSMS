@@ -19,10 +19,3 @@ urlpatterns = [
     path("academics/enrollment/", EnrollmentSnapshotView.as_view(), name="dashboard-academics-enrollment"),
     path('<slug:dashboard_key>/summary', DashboardSummaryView.as_view(), name='dashboard-summary'),
 ]
-
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-urlpatterns += [
-    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
-]

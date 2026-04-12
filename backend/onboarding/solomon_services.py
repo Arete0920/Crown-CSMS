@@ -12,6 +12,24 @@ HELP_ARTICLE_MANAGER = cast(Any, HelpArticle).objects
 SOLOMON_PLAYBOOK_MANAGER = cast(Any, SolomonPlaybook).objects
 
 
+def _visibility_qs(request):
+    """Return a Q filter that limits articles to what this request can see."""
+    user = getattr(request, "user", None)
+    is_authenticated = bool(user and getattr(user, "is_authenticated", False))
+    is_staff = is_authenticated and bool(getattr(user, "is_staff", False))
+    is_admin = is_authenticated and bool(getattr(user, "is_superuser", False))
+
+    allowed = [HelpArticle.VISIBILITY_PUBLIC]
+    if is_authenticated:
+        allowed.append(HelpArticle.VISIBILITY_AUTHENTICATED)
+    if is_staff:
+        allowed.append(HelpArticle.VISIBILITY_STAFF)
+    if is_admin:
+        allowed.append(HelpArticle.VISIBILITY_ADMIN)
+
+    return Q(visibility__in=allowed)
+
+
 def _serialize_article(article):
     return {
         "id": article.pk,
@@ -47,12 +65,12 @@ def get_contextual_solomon_help(
     context_key="",
 ):
     """Return contextual help for the given slug or route_path."""
-    _ = (request, audience, context_key)
+    _ = (audience, context_key)
     primary_article = None
     related_articles = []
     playbooks = []
 
-    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED)
+    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED).filter(_visibility_qs(request))
 
     resolved_article = None
 
@@ -84,8 +102,7 @@ def get_contextual_solomon_help(
 
 def search_solomon_content(request, query="", module="", audience=""):
     """Search Solomon articles by query, module, and/or audience."""
-    _ = request
-    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED)
+    qs = HELP_ARTICLE_MANAGER.filter(state=HelpArticle.STATE_PUBLISHED).filter(_visibility_qs(request))
 
     if module:
         qs = qs.filter(module=module)
