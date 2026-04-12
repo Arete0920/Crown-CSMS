@@ -118,9 +118,9 @@ def _can_manage_solomon(user) -> bool:
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def help_article(request, slug):
-    """Return a public or request-visible help article by slug."""
+    """Return a help article by slug (authenticated users only)."""
     payload = get_contextual_solomon_help(request, slug=slug)
     article = payload.get("primary_article")
     if not article:
@@ -145,6 +145,13 @@ def solomon_articles(request):
     if not _can_manage_solomon(request.user):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
+    slug = request.data.get("slug", "").strip()
+    if not slug:
+        return Response({"detail": "slug is required."}, status=status.HTTP_400_BAD_REQUEST)
+    title = request.data.get("title", "").strip()
+    if not title:
+        return Response({"detail": "title is required."}, status=status.HTTP_400_BAD_REQUEST)
+
     ensure_solomon_seed_data()
     category = None
     category_slug = request.data.get("category_slug") or ""
@@ -152,9 +159,9 @@ def solomon_articles(request):
         category = SolomonCategory.objects.filter(slug=category_slug).first()
 
     article, _ = HelpArticle.objects.update_or_create(
-        slug=request.data.get("slug", ""),
+        slug=slug,
         defaults={
-            "title": request.data.get("title", ""),
+            "title": title,
             "summary": request.data.get("summary", ""),
             "content": request.data.get("content", ""),
             "module": request.data.get("module", "solomon"),

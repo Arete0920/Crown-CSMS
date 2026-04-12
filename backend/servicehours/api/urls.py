@@ -12,10 +12,3 @@ urlpatterns = [
     path("approvals/", ServiceApprovalQueue.as_view(), name="service_approvals_queue"),
     path("approvals/<uuid:entry_id>/", ServiceApproveReject.as_view(), name="service_approve_reject"),
 ]
-
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-urlpatterns += [
-    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
-]

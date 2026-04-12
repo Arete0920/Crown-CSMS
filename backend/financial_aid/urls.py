@@ -12,10 +12,3 @@ urlpatterns = [
     path("awards/", aid_awards, name="financial-aid-awards"),
     path("billing-runs/<str:billing_run_id>/disburse/", disburse_to_billing_run, name="financial-aid-disburse-to-billing-run"),
 ]
-
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-urlpatterns += [
-    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='api-schema'), name='api-docs'),
-]
