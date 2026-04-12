@@ -1,0 +1,9 @@
+﻿{
+    "baseRefName":  "fix/frontend-audit",
+    "headRefName":  "copilot/fix-pythonpath-issues",
+    "isDraft":  true,
+    "number":  700,
+    "title":  "fix: include backend/ in PYTHONPATH for tests.yml and lockdown-golden-path-gate.yml",
+    "updatedAt":  "2026-04-11T20:04:27Z",
+    "url":  "https://github.com/tcmegahan/Crown2026/pull/700"
+}

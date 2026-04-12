@@ -1,0 +1,9 @@
+﻿{
+    "baseRefName":  "main",
+    "headRefName":  "copilot/fix-ci-pythonpath-issues",
+    "isDraft":  false,
+    "number":  702,
+    "title":  "fix: CI PYTHONPATH, HTTP 401 vs 403 in portrait-service dashboard",
+    "updatedAt":  "2026-04-11T16:47:56Z",
+    "url":  "https://github.com/tcmegahan/Crown2026/pull/702"
+}

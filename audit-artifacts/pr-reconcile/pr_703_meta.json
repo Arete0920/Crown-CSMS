@@ -1,0 +1,9 @@
+﻿{
+    "baseRefName":  "fix/frontend-audit",
+    "headRefName":  "copilot/fix-student-records-url-routing",
+    "isDraft":  true,
+    "number":  703,
+    "title":  "Fix backend-gate: create missing Django apps/modules, fix student_records URL prefix, fix related-article exclusion bug, add portrait/services.py, add Solomon regression tests, split article serializers, add visibility gating and audience filtering",
+    "updatedAt":  "2026-04-12T01:36:34Z",
+    "url":  "https://github.com/tcmegahan/Crown2026/pull/703"
+}
