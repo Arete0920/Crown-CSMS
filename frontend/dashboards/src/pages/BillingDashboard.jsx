@@ -25,8 +25,9 @@ import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
-// Dev-mode regression guard: catch missing API_BASE before it breaks exports
-if (import.meta.env.DEV && !API_BASE) {
+// Dev-mode regression guard: catch missing API_BASE before it breaks exports.
+// Skip this warning under tests to avoid noisy stderr that obscures true failures.
+if (import.meta.env.DEV && import.meta.env.MODE !== "test" && !API_BASE) {
   console.warn("?? BillingDashboard: API_BASE is empty. Exports will fail. Set VITE_API_BASE_URL in .env.local");
 }
 

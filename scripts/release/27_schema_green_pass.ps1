@@ -73,8 +73,16 @@ pytest -q tests/test_schema_governance_assets.py 2>&1 | Tee-Object -FilePath "$v
 Write-Host "=== FRONTEND SMOKE ===" -ForegroundColor Cyan
 if (Test-Path "frontend\dashboards\package.json") {
   Push-Location "frontend\dashboards"
+  $prevEap = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+
   npm ci 2>&1 | Tee-Object -FilePath "..\..\$verify\40_npm_ci_schema_green_pass.txt"
+  if ($LASTEXITCODE -ne 0) { throw "npm ci failed with exit code $LASTEXITCODE" }
+
   npm run test --if-present 2>&1 | Tee-Object -FilePath "..\..\$verify\41_frontend_test_schema_green_pass.txt"
+  if ($LASTEXITCODE -ne 0) { throw "npm test failed with exit code $LASTEXITCODE" }
+
+  $ErrorActionPreference = $prevEap
   Pop-Location
 } else {
   "frontend/dashboards/package.json not found" | Out-File "$verify\40_npm_ci_schema_green_pass.txt"

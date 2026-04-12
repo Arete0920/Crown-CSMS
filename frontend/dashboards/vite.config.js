@@ -28,5 +28,10 @@ export default defineConfig(({ mode }) => {
       // Keep warning signal meaningful while avoiding noisy false alarms for this bundle profile.
       chunkSizeWarningLimit: 2000,
     },
+    test: {
+      environment: 'jsdom',
+      include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}', 'tests/**/*.test.{js,jsx,ts,tsx}'],
+      exclude: ['tests/**/*.spec.{js,jsx,ts,tsx}'],
+    },
   };
 });
