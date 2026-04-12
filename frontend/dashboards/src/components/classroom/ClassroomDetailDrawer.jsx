@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import { useState } from "react";
 import {
   Drawer,
   Box,
@@ -14,9 +14,9 @@ import {
 import SeatingChart from "./SeatingChart";
 
 function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function getAssignmentStatusColor(dueDate) {
@@ -28,7 +28,7 @@ function getAssignmentStatusColor(dueDate) {
 }
 
 function getAssignmentStatusLabel(dueDate) {
-  if (!dueDate) return "—";
+  if (!dueDate) return "-";
   const today = new Date().toISOString().split("T")[0];
   if (dueDate < today) return "Overdue";
   if (dueDate === today) return "Due Today";
@@ -37,7 +37,6 @@ function getAssignmentStatusLabel(dueDate) {
 
 function TabContent({ tabIndex, classroom }) {
   if (tabIndex === 0) {
-    // Overview
     return (
       <>
         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap" }}>
@@ -50,7 +49,6 @@ function TabContent({ tabIndex, classroom }) {
   }
 
   if (tabIndex === 1) {
-    // Roster
     return (
       <>
         <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
@@ -60,9 +58,9 @@ function TabContent({ tabIndex, classroom }) {
           <Typography variant="body2" sx={{ opacity: 0.7 }}>No students enrolled.</Typography>
         ) : (
           <Stack spacing={0.5}>
-            {(classroom.students || []).map((s) => (
-              <Typography key={s.id} variant="body2">
-                • {s.name}
+            {(classroom.students || []).map((student) => (
+              <Typography key={student.id} variant="body2">
+                - {student.name}
               </Typography>
             ))}
           </Stack>
@@ -72,35 +70,34 @@ function TabContent({ tabIndex, classroom }) {
   }
 
   if (tabIndex === 2) {
-    // Assignments
     return (
       <>
         {(classroom.assignments || []).length === 0 ? (
           <Typography variant="body2" sx={{ opacity: 0.7 }}>No assignments.</Typography>
         ) : (
           <Stack spacing={1.5}>
-            {(classroom.assignments || []).map((a) => (
-              <Box key={a.id} sx={{ p: 1.5, bgcolor: "var(--crown-surface-2)", borderRadius: 1 }}>
+            {(classroom.assignments || []).map((assignment) => (
+              <Box key={assignment.id} sx={{ p: 1.5, bgcolor: "var(--crown-surface-2)", borderRadius: 1 }}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 1, mb: 0.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>
-                    {a.title}
+                    {assignment.title}
                   </Typography>
                   <Chip
-                    label={getAssignmentStatusLabel(a.due_date)}
+                    label={getAssignmentStatusLabel(assignment.due_date)}
                     size="small"
-                    color={getAssignmentStatusColor(a.due_date)}
+                    color={getAssignmentStatusColor(assignment.due_date)}
                     variant="outlined"
                   />
                 </Box>
                 <Typography variant="caption" sx={{ opacity: 0.75 }}>
-                  {a.description}
+                  {assignment.description}
                 </Typography>
                 <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.75 }}>
                   <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    Due: {formatDate(a.due_date)}
+                    Due: {formatDate(assignment.due_date)}
                   </Typography>
                   <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    {a.points} pts
+                    {assignment.points} pts
                   </Typography>
                 </Box>
               </Box>
@@ -112,25 +109,24 @@ function TabContent({ tabIndex, classroom }) {
   }
 
   if (tabIndex === 3) {
-    // Announcements
     return (
       <>
         {(classroom.announcements || []).length === 0 ? (
           <Typography variant="body2" sx={{ opacity: 0.7 }}>No announcements.</Typography>
         ) : (
           <Stack spacing={1.5}>
-            {(classroom.announcements || []).map((a) => (
-              <Box key={a.id} sx={{ p: 1.5, bgcolor: a.pinned ? "var(--crown-warn-bg)" : "var(--crown-surface-2)", borderRadius: 1 }}>
+            {(classroom.announcements || []).map((announcement) => (
+              <Box key={announcement.id} sx={{ p: 1.5, bgcolor: announcement.pinned ? "var(--crown-warn-bg)" : "var(--crown-surface-2)", borderRadius: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 700, flex: 1 }}>
-                    {a.pinned ? "📌 " : ""}{a.title}
+                    {announcement.pinned ? "[Pinned] " : ""}{announcement.title}
                   </Typography>
                 </Box>
                 <Typography variant="caption" sx={{ opacity: 0.75, display: "block" }}>
-                  {a.body}
+                  {announcement.body}
                 </Typography>
                 <Typography variant="caption" sx={{ opacity: 0.65, mt: 0.5, display: "block" }}>
-                  {formatDate(a.created_at)}
+                  {formatDate(announcement.created_at)}
                 </Typography>
               </Box>
             ))}
@@ -152,7 +148,7 @@ export default function ClassroomDetailDrawer({ open, onClose, loading, classroo
         {loading ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <CircularProgress size={22} />
-            <Typography>Loading…</Typography>
+            <Typography>Loading...</Typography>
           </Box>
         ) : !classroom ? (
           <Alert severity="info">No classroom selected.</Alert>
@@ -162,11 +158,11 @@ export default function ClassroomDetailDrawer({ open, onClose, loading, classroo
               {classroom.name}
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
-              Room: {classroom.room || "—"} • Grade: {classroom.grade_level || "—"} • Teacher:{" "}
-              {classroom.homeroom_teacher_name || "—"}
+              Room: {classroom.room || "-"} | Grade: {classroom.grade_level || "-"} | Teacher:{" "}
+              {classroom.homeroom_teacher_name || "-"}
             </Typography>
 
-            <Tabs value={tabIndex} onChange={(e, v) => setTabIndex(v)} sx={{ mb: 2 }}>
+            <Tabs value={tabIndex} onChange={(event, value) => setTabIndex(value)} sx={{ mb: 2 }}>
               <Tab label="Overview" />
               <Tab label="Roster" />
               <Tab label="Assignments" />
