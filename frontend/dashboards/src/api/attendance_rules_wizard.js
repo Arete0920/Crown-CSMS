@@ -1,6 +1,6 @@
-﻿/**
+/**
  * api/attendance_rules_wizard.js
- * Attendance Rules Wizard â€” API layer
+ * Attendance Rules Wizard  API layer
  */
 import { getToken, getSchoolId } from "../lib/api";
 
@@ -31,7 +31,7 @@ async function checkResponse(res, url) {
 }
 
 export async function createAttendanceRulesSession() {
-  const res = await fetch(SESSIONS, {
+  const res = await globalThis.fetch(SESSIONS, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({}),
@@ -41,7 +41,7 @@ export async function createAttendanceRulesSession() {
 
 export async function configureAttendanceRulesSession(sessionId, label, school_year) {
   const url = `${SESSIONS}${sessionId}/configure/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ label, school_year }),
@@ -51,7 +51,7 @@ export async function configureAttendanceRulesSession(sessionId, label, school_y
 
 export async function defineCodes(sessionId, codes) {
   const url = `${SESSIONS}${sessionId}/codes/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ codes }),
@@ -61,7 +61,7 @@ export async function defineCodes(sessionId, codes) {
 
 export async function commitAttendanceRulesSession(sessionId) {
   const url = `${SESSIONS}${sessionId}/commit/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ confirm: true }),
@@ -71,7 +71,7 @@ export async function commitAttendanceRulesSession(sessionId) {
 
 export async function verifyAttendanceRulesSession(sessionId) {
   const url = `${SESSIONS}${sessionId}/verify/`;
-  const res = await fetch(url, { method: "GET", headers: headers() });
+  const res = await globalThis.fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
 

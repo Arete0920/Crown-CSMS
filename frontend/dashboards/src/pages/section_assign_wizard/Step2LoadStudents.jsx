@@ -44,7 +44,7 @@ export default function Step2LoadStudents({ context, setContext, goNext, goPrev,
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 540 }}>
         <div>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Student IDs</label>
+          <div style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Student IDs</div>
           <textarea
             className="crown-input"
             rows={8}

@@ -8,7 +8,7 @@ from django.core.management import call_command
 from rest_framework.test import APIClient
 
 from core.models import AcademicYear, School, Staff, UserRole
-from academics.models import Course, Enrollment, Section, Term
+from academics.models import Course, Enrollment, Section, Term, TranscriptEntry
 from households.models import Household, Student
 from gradebook.models import GradeEntry
 
@@ -223,3 +223,80 @@ def test_student_transcript_contract_shape():
     assert "teacher" in course0
     assert "final_grade" in course0
     assert "status" in course0
+
+
+
+
+
+
+def test_transcript_ro_includes_dual_enrollment_metadata():
+    school = School.objects.create(name="Metadata School")
+    user = _mk_user(school=school, email="director-metadata@test.local")
+    _assign_role(user=user, school=school, role_code="DIRECTOR")
+
+    student = _seed_transcript_test_data(school=school)
+    section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
+    assert section is not None
+
+    TranscriptEntry.objects.create(
+        school_id=school.id,
+        student=student,
+        course=section.course,
+        term=section.term_ref,
+        credit_value="1.00",
+        final_letter_grade="A",
+        final_percentage="90.00",
+        gpa_points="4.00",
+        provider="Acme Online Academy",
+        dual_enrollment_label="Dual Enrollment",
+    )
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get(f"/api/v1/academics/transcript/{student.id}/", HTTP_X_SCHOOL_ID=str(school.id))
+    assert resp.status_code == 200, resp.content
+    data = resp.json()
+
+    all_courses = [c for term in data["terms"] for c in term["courses"]]
+    math_course = next(c for c in all_courses if c["course_code"] == "MATH-101")
+    assert math_course["provider"] == "Acme Online Academy"
+    assert math_course["dual_enrollment_label"] == "Dual Enrollment"
+
+
+def test_student_transcript_contract_includes_dual_enrollment_metadata():
+    school = School.objects.create(name="Metadata School 2")
+    user = _mk_user(school=school, email="director-metadata2@test.local")
+    _assign_role(user=user, school=school, role_code="DIRECTOR")
+
+    student = _seed_transcript_test_data(school=school)
+    section = Section.objects.filter(school_id=school.id, course__code="MATH-101").first()
+    assert section is not None
+
+    TranscriptEntry.objects.create(
+        school_id=school.id,
+        student=student,
+        course=section.course,
+        term=section.term_ref,
+        credit_value="1.00",
+        final_letter_grade="A",
+        final_percentage="90.00",
+        gpa_points="4.00",
+        provider="Acme Online Academy",
+        dual_enrollment_label="Dual Enrollment",
+    )
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get(
+        f"/api/v1/academics/students/{student.id}/transcript/",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    assert resp.status_code == 200, resp.content
+    data = resp.json()
+
+    all_courses = [c for year in data["school_years"] for term in year["terms"] for c in term["courses"]]
+    math_course = next(c for c in all_courses if c["course_code"] == "MATH-101")
+    assert math_course["provider"] == "Acme Online Academy"
+    assert math_course["dual_enrollment_label"] == "Dual Enrollment"

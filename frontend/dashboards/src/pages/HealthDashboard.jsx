@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -6,7 +6,7 @@ import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
-/* ── Auth helpers ─────────────────────────────────────────────────────── */
+/*  Auth helpers  */
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
   return base.endsWith('/') ? base.slice(0, -1) : base;
@@ -20,7 +20,7 @@ function getSession() {
   } catch { return { token: '', schoolId: '' }; }
 }
 
-/* ── Static demo fallback ─────────────────────────────────────────────── */
+/*  Static demo fallback  */
 const DEMO = {
   visits_today:            14,
   meds_administered:        9,
@@ -30,7 +30,7 @@ const DEMO = {
     { name: 'Elijah Turner',   grade: '9',  reason: 'Headache',     time: '8:12 AM',  disposition: 'Sent home' },
     { name: 'Sofia Medina',    grade: '11', reason: 'Stomach ache',  time: '9:45 AM',  disposition: 'Returned to class' },
     { name: 'Marcus Brown',    grade: '7',  reason: 'Inhaler (asthma)', time: '10:30 AM', disposition: 'Returned to class' },
-    { name: 'Ava Chen',        grade: '10', reason: 'Ankle twist – PE', time: '11:05 AM', disposition: 'Ice + rest period' },
+    { name: 'Ava Chen',        grade: '10', reason: 'Ankle twist  PE', time: '11:05 AM', disposition: 'Ice + rest period' },
     { name: 'Noah Williams',   grade: '8',  reason: 'Medication pickup', time: '12:00 PM', disposition: 'Completed' },
   ],
   medication_log: [
@@ -49,9 +49,9 @@ const DEMO = {
   ],
   alerts: [
     { label: '2 student physicals expire this month',              severity: 'yellow' },
-    { label: '6 immunization records incomplete — parent follow-up needed', severity: 'red' },
-    { label: '1 pending parent callback — Sofia Medina (sent home)', severity: 'yellow' },
-    { label: 'Inhaler stock — refill needed this week',            severity: 'gray'   },
+    { label: '6 immunization records incomplete  parent follow-up needed', severity: 'red' },
+    { label: '1 pending parent callback  Sofia Medina (sent home)', severity: 'yellow' },
+    { label: 'Inhaler stock  refill needed this week',            severity: 'gray'   },
   ],
 };
 
@@ -62,7 +62,7 @@ async function fetchHealthMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -70,7 +70,7 @@ async function fetchHealthMetrics() {
   }
 }
 
-/* ── Helpers ──────────────────────────────────────────────────────────── */
+/*  Helpers  */
 function Pill({ color = 'gray', children }) {
   const map = {
     red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
@@ -85,8 +85,8 @@ function Pill({ color = 'gray', children }) {
   );
 }
 
-/* ── Main component ───────────────────────────────────────────────────── */
-/* â”€â”€ Health / Nurse KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Main component  */
+/*  Health / Nurse KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Students Seen Today", value: "4",  trend: null,              trendUp: null,
     definition: "Students who visited the health office today for any reason.",
@@ -126,9 +126,9 @@ export default function HealthDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
-      {/* ── Section 1: Overview KPIs ── */}
+      {/*  Section 1: Overview KPIs  */}
       <DashboardSection title="Overview">
         <CrownGrid>
           <Col span={3}>
@@ -146,7 +146,7 @@ export default function HealthDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      {/* ── Section 2: Daily Activity ── */}
+      {/*  Section 2: Daily Activity  */}
       <DashboardSection title="Daily Activity">
         <CrownGrid>
           {/* Today's Visits */}
@@ -201,7 +201,7 @@ export default function HealthDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      {/* ── Section 3: Compliance & Alerts ── */}
+      {/*  Section 3: Compliance & Alerts  */}
       <DashboardSection title="Compliance & Alerts">
         <CrownGrid>
           {/* Immunization Compliance by Grade */}
@@ -216,7 +216,7 @@ export default function HealthDashboard() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 3 }}>
                         <span style={{ fontWeight: 500, color: 'var(--crown-ink)' }}>{g.grade}</span>
                         <span style={{ color: g.missing > 0 ? 'var(--crown-danger)' : 'var(--crown-ok)' }}>
-                          {pct}% — {g.missing > 0 ? `${g.missing} missing` : 'complete'}
+                          {pct}%  {g.missing > 0 ? `${g.missing} missing` : 'complete'}
                         </span>
                       </div>
                       <div style={{ height: 6, background: 'var(--crown-surface-2)', borderRadius: 4, overflow: 'hidden', border: '1px solid var(--crown-border)' }}>

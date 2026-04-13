@@ -50,9 +50,9 @@ export default function Step1Year({ context, setContext, goNext, stepIndex, tota
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 18 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <div style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Aid Year *
-          </label>
+          </div>
           <input
             className="crown-input"
             type="text"

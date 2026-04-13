@@ -54,9 +54,9 @@ export default function Step1Config({ context, setContext, goNext, stepIndex, to
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <div style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Target Academic Year *
-          </label>
+          </div>
           <input
             className="crown-input"
             type="text"
@@ -70,9 +70,9 @@ export default function Step1Config({ context, setContext, goNext, stepIndex, to
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <div style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Enrollment Fee (per student, $) *
-          </label>
+          </div>
           <input
             className="crown-input"
             type="number"

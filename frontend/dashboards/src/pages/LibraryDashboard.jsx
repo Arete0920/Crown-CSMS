@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
@@ -39,7 +39,7 @@ const DEMO = {
     { name: 'ProQuest K-12',    licenses: 100, usage_mtd: 43  },
   ],
   alerts: [
-    { label: '17 overdue items — 2 over 21 days, contact parents', severity: 'red'    },
+    { label: '17 overdue items  2 over 21 days, contact parents', severity: 'red'    },
     { label: 'Library shelving reorganization scheduled Feb 28',  severity: 'yellow' },
   ],
 };
@@ -51,7 +51,7 @@ async function fetchLibraryMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch { return { ok: false, data: DEMO }; }
@@ -74,7 +74,7 @@ function Pill({ color = 'gray', children }) {
 const TH = { padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 };
 const TD = { padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' };
 
-/* â”€â”€ Library KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Library KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Checked Out",        value: "87",  trend: null,              trendUp: null,
     definition: "Total items (books, media, equipment) currently checked out to students or staff.",
@@ -110,7 +110,7 @@ export default function LibraryDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
@@ -124,7 +124,7 @@ export default function LibraryDashboard() {
       <DashboardSection title="Circulation & Overdue">
         <CrownGrid>
           <Col span={8}>
-            <CrownCard title="Overdue Items (Staff View — Redacted)">
+            <CrownCard title="Overdue Items (Staff View  Redacted)">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr style={{ background: 'var(--crown-surface-2)' }}>
                   {['Borrower ID', 'Title', 'Due Date', 'Overdue'].map(h => <th key={h} style={TH}>{h}</th>)}

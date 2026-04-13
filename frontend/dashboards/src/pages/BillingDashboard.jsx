@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { downloadCsv } from "../utils/downloadCsv.js";
 import { authenticatedFetch } from "../utils/authClient.js";
@@ -10,8 +10,8 @@ import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
 
 /*
-  Crown2026 � Billing Dashboard (0101 UI)
-  - Export Center for 0093�0096
+  Crown2026 ? Billing Dashboard (0101 UI)
+  - Export Center for 0093?0096
   - Manual Record Payment (0102)
   - Open invoice lookup (0102)
 
@@ -38,7 +38,7 @@ function formatMoney(x) {
   return n.toFixed(2);
 }
 
-/* â”€â”€ Billing / Accounts-Receivable KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Billing / Accounts-Receivable KPI flip cards ───────────────────── */
 const ADMIN_KPI = [
   { label: "Collection Rate",   value: "93.1%", trend: "+6.0% vs last yr", trendUp: true,
     definition: "Percentage of total billed tuition and fees collected as of today.",
@@ -209,7 +209,7 @@ export function BillingDashboard() {
   }
 
   function formatApiError(status, bodyText, bodyJson) {
-    if (status === 403) return "You don�t have permission to record payments (finance role required).";
+    if (status === 403) return "You don?t have permission to record payments (finance role required).";
     if (status === 409) return "Duplicate reference: this payment reference was already recorded.";
     if (status === 400) {
       const detail =
@@ -404,7 +404,7 @@ export function BillingDashboard() {
       {/* Household selector */}
       <div style={{ display: "flex", gap: 12, alignItems: "end", marginBottom: 16, flexWrap: "wrap" }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Household ID (UUID)</label>
+          <div style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Household ID (UUID)</div>
           <input
             value={householdId}
             onChange={(e) => setHouseholdId(e.target.value)}
@@ -438,7 +438,7 @@ export function BillingDashboard() {
         {/* Exports */}
         <div style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap", marginBottom: 14 }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Export Year</label>
+            <div style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Export Year</div>
             <input value={exportYear} onChange={(e) => setExportYear(e.target.value)} style={{ padding: 8, width: 120 }} />
           </div>
 
@@ -523,7 +523,7 @@ export function BillingDashboard() {
                     </td>
                     <td style={{ padding: 8 }}>{it.due_on}</td>
                     <td style={{ padding: 8 }}>{it.invoice_id}</td>
-                    <td style={{ padding: 8 }}>{it.charge?.description ? `${cid} � ${it.charge.description}` : cid || "-"}</td>
+                    <td style={{ padding: 8 }}>{it.charge?.description ? `${cid} ? ${it.charge.description}` : cid || "-"}</td>
                     <td style={{ padding: 8 }}>{formatMoney(it.total_amount)}</td>
                     <td style={{ padding: 8 }}>{formatMoney(it.paid_amount)}</td>
                     <td style={{ padding: 8 }}>{formatMoney(it.balance)}</td>
@@ -553,27 +553,27 @@ export function BillingDashboard() {
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 10 }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Amount</label>
+            <div style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Amount</div>
             <input value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} style={{ padding: 8, width: 140 }} />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Payment Date</label>
+            <div style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Payment Date</div>
             <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} style={{ padding: 8, width: 160 }} />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Reference</label>
+            <div style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Reference</div>
             <input value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} style={{ padding: 8, width: 220 }} />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Source</label>
+            <div style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Source</div>
             <input value={paymentSource} onChange={(e) => setPaymentSource(e.target.value)} style={{ padding: 8, width: 140 }} />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Account ID (UUID)</label>
+            <div style={{ display: "block", fontSize: 12, opacity: 0.8 }}>Account ID (UUID)</div>
             <input value={accountId} onChange={(e) => setAccountId(e.target.value)} style={{ padding: 8, width: 360 }} />
           </div>
         </div>

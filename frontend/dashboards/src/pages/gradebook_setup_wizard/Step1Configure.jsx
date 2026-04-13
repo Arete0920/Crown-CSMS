@@ -29,7 +29,7 @@ export default function Step1Configure({ context, setContext, goNext, stepIndex,
     <div>
       <CrownWizardStepHeader title="Select Section" subtitle="Enter the section UUID for gradebook category setup." stepIndex={stepIndex} totalSteps={totalSteps} steps={steps} />
       <div className="crown-wizard-field">
-        <label>Section ID (UUID)</label>
+        <div>Section ID (UUID)</div>
         <input className="crown-input" value={sectionId} onChange={e => setSectionId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
       </div>
       {error && <p className="crown-error">{error}</p>}

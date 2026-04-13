@@ -1,5 +1,5 @@
 /**
- * TicketCheckInPage — QR code-based event check-in scanner.
+ * TicketCheckInPage  QR code-based event check-in scanner.
  * Calls POST /api/v1/advancement/qr-checkin/
  * Body:  { qr_code: string }
  * Returns TicketScan audit record with result: "accepted" | "duplicate" | "invalid"
@@ -29,9 +29,9 @@ function authHeaders() {
 }
 
 const RESULT_STYLE = {
-  accepted: { color: "#15803d", bg: "#dcfce7", label: "✓ Accepted" },
-  duplicate: { color: "#b45309", bg: "#fef3c7", label: "⚠ Duplicate — already checked in" },
-  invalid: { color: "#b91c1c", bg: "#fee2e2", label: "✗ Invalid QR code" },
+  accepted: { color: "#15803d", bg: "#dcfce7", label: " Accepted" },
+  duplicate: { color: "#b45309", bg: "#fef3c7", label: " Duplicate  already checked in" },
+  invalid: { color: "#b91c1c", bg: "#fee2e2", label: " Invalid QR code" },
 };
 
 export default function TicketCheckInPage() {
@@ -48,7 +48,7 @@ export default function TicketCheckInPage() {
     setScanning(true);
     setError(null);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/advancement/qr-checkin/`, {
+      const res = await globalThis.fetch(`${apiBase()}/api/v1/advancement/qr-checkin/`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({ qr_code: code }),
@@ -101,10 +101,9 @@ export default function TicketCheckInPage() {
       <form onSubmit={handleSubmit} style={{ display: "flex", gap: 8, marginBottom: "2rem" }}>
         <input
           type="text"
-          placeholder="Scan or paste QR code…"
+          placeholder="Scan or paste QR code"
           value={qrInput}
           onChange={(e) => setQrInput(e.target.value)}
-          autoFocus
           disabled={scanning}
           style={{
             flex: 1,
@@ -127,7 +126,7 @@ export default function TicketCheckInPage() {
             fontWeight: 600,
           }}
         >
-          {scanning ? "Checking…" : "Check In"}
+          {scanning ? "Checking" : "Check In"}
         </button>
       </form>
 
@@ -162,7 +161,7 @@ export default function TicketCheckInPage() {
                       {s.qr_attempted}
                     </td>
                     <td style={{ padding: "0.4rem 0.5rem", color: "#6b7280" }}>
-                      {s.scanned_at ? new Date(s.scanned_at).toLocaleTimeString() : "—"}
+                      {s.scanned_at ? new Date(s.scanned_at).toLocaleTimeString() : ""}
                     </td>
                   </tr>
                 );

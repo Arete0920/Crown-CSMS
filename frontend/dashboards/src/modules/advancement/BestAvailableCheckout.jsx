@@ -1,18 +1,18 @@
 /**
- * BestAvailableCheckout – "Ticketmaster-style" quantity + section picker.
+ * BestAvailableCheckout  "Ticketmaster-style" quantity + section picker.
  *
  * Screen A (selection):
- *   - Quantity selector (1–8)
+ *   - Quantity selector (18)
  *   - Optional preferred section picker (loads from GET /events/<id>/section-prices/)
- *   - "Find Best Seats" button → POST /seating/best-available/checkout/
+ *   - "Find Best Seats" button  POST /seating/best-available/checkout/
  *   - Shows computed amount + checkout_url
  *
- * Screen B (after redirect back from Stripe → via TicketSuccessPage):
- *   - User lands on TicketSuccessPage with ?order_id=…
+ * Screen B (after redirect back from Stripe  via TicketSuccessPage):
+ *   - User lands on TicketSuccessPage with ?order_id=
  *
  * Props:
- *   eventId  – UUID of the event
- *   maxQty   – max tickets per order (default: 8)
+ *   eventId   UUID of the event
+ *   maxQty    max tickets per order (default: 8)
  *
  * Usage:
  *   <BestAvailableCheckout eventId="<uuid>" />
@@ -62,7 +62,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
     if (!eventId) return;
     (async () => {
       try {
-        const r = await fetch(
+        const r = await globalThis.fetch(
           `${apiBase()}/api/v1/advancement/events/${eventId}/section-prices/`,
           { headers: authHeaders() }
         );
@@ -112,7 +112,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
         body.preferred_sections = Array.from(preferredSections);
       }
 
-      const r = await fetch(
+      const r = await globalThis.fetch(
         `${apiBase()}/api/v1/advancement/seating/best-available/checkout/`,
         {
           method: "POST",
@@ -134,7 +134,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
 
       // Redirect to Stripe
       if (data.checkout_url) {
-        setTimeout(() => { window.location.href = data.checkout_url; }, 800);
+        setTimeout(() => { globalThis.location.href = data.checkout_url; }, 800);
       }
     } catch (e) {
       setError(e.message);
@@ -164,11 +164,11 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
+          <div style={{ fontSize: 48, marginBottom: 12 }}></div>
           <h2 style={{ ...styles.heading, color: "#16a34a" }}>Seats Found!</h2>
           <p style={styles.subtext}>
             {result.seat_ids?.length} seat{result.seat_ids?.length !== 1 ? "s" : ""} reserved for you.
-            Redirecting to checkout…
+            Redirecting to checkout
           </p>
           <div style={styles.infoBox}>
             <div style={styles.infoRow}>
@@ -191,7 +191,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
       </p>
 
       {/* Quantity */}
-      <label style={styles.fieldLabel}>How many tickets?</label>
+      <div style={styles.fieldLabel}>How many tickets?</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
         {Array.from({ length: maxQty }, (_, i) => i + 1).map((n) => (
           <button
@@ -214,7 +214,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
       {/* Section preference */}
       {!loadingPrices && sectionPrices.length > 0 && (
         <>
-          <label style={styles.fieldLabel}>Preferred section (optional)</label>
+          <div style={styles.fieldLabel}>Preferred section (optional)</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
             {sectionPrices.map(({ section, price_cents }) => {
               const selected = preferredSections.has(section);
@@ -253,7 +253,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
       )}
 
       {/* Buyer info */}
-      <label style={styles.fieldLabel}>Your details</label>
+      <div style={styles.fieldLabel}>Your details</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
         <input
           type="text"
@@ -288,7 +288,7 @@ export default function BestAvailableCheckout({ eventId, maxQty = 8 }) {
           opacity: loading ? 0.7 : 1,
         }}
       >
-        {loading ? "Finding your seats…" : `Get ${qty} Best Seat${qty !== 1 ? "s" : ""} →`}
+        {loading ? "Finding your seats" : `Get ${qty} Best Seat${qty !== 1 ? "s" : ""} `}
       </button>
 
       <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 12, textAlign: "center" }}>

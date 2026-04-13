@@ -6,7 +6,7 @@ from rest_framework.test import APIClient
 
 from core.models import AcademicYear, School, Staff, UserRole
 from households.models import Guardian, Household, Student
-from academics.models import Course, Section, TeacherAssignment, Term
+from academics.models import Course, CurriculumSource, Section, TeacherAssignment, Term
 
 
 pytestmark = pytest.mark.django_db
@@ -220,3 +220,39 @@ def test_parent_only_sees_linked_students():
     results = resp.json()
     assert len(results) == 1
     assert results[0]["student_id"] == str(student_a.id)
+
+def test_curriculum_sources_filter_supported_only():
+    school = School.objects.create(name="Curriculum School")
+    user = _mk_user(school=school, email="curriculum.staff@test", is_staff=True)
+
+    CurriculumSource.objects.create(school_id=school.id, name="BJU Press Heritage Studies")
+    CurriculumSource.objects.create(school_id=school.id, name="Abeka Grade 5")
+    CurriculumSource.objects.create(school_id=school.id, name="Independent Teacher Notes", source_type="research")
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get('/api/v1/academics/curriculum-sources/?supported_only=true')
+    assert resp.status_code == 200
+    payload = resp.json()
+    results = payload['results']
+    assert len(results) == 2
+    assert all(item['is_supported_publisher'] is True for item in results)
+
+
+def test_curriculum_sources_filter_by_publisher_alias():
+    school = School.objects.create(name="Curriculum Alias School")
+    user = _mk_user(school=school, email="curriculum.alias@test", is_staff=True)
+
+    CurriculumSource.objects.create(school_id=school.id, name="BJU Press Math 6")
+    CurriculumSource.objects.create(school_id=school.id, name="Summit Ministries Worldview")
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get('/api/v1/academics/curriculum-sources/?publisher=bju')
+    assert resp.status_code == 200
+    payload = resp.json()
+    results = payload['results']
+    assert len(results) == 1
+    assert results[0]['canonical_publisher'] == 'BJU Press'

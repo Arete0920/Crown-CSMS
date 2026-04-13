@@ -1,13 +1,13 @@
-﻿/**
+/**
  * TermStructureWizard.jsx
  *
- * Wizard #18 — Term & Marking Period Setup
+ * Wizard #18 � Term & Marking Period Setup
  *
  * Steps:
- *   1. Configure — academic year ID, structure type (SEMESTER/QUARTER/TRIMESTER/CUSTOM)
- *   2. Periods   — define ordered marking periods (code, name, start_date, end_date)
- *                  full adjacency coverage required: periods must span ay.start_date → ay.end_date
- *   3. Done      — commit result: term_structure_id, structure_type, periods created/updated
+ *   1. Configure � academic year ID, structure type (SEMESTER/QUARTER/TRIMESTER/CUSTOM)
+ *   2. Periods   � define ordered marking periods (code, name, start_date, end_date)
+ *                  full adjacency coverage required: periods must span ay.start_date ? ay.end_date
+ *   3. Done      � commit result: term_structure_id, structure_type, periods created/updated
  */
 import { useState, useCallback } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
@@ -29,7 +29,7 @@ async function _post(path, body) {
   const json = await r.json().catch(() => ({}));
   if (!r.ok) {
     const msgs = json.errors || [json.error] || [`HTTP ${r.status}`];
-    throw new Error(Array.isArray(msgs) ? msgs.join(" · ") : String(msgs));
+    throw new Error(Array.isArray(msgs) ? msgs.join(" � ") : String(msgs));
   }
   return json;
 }
@@ -51,7 +51,7 @@ export default function TermStructureWizard() {
   const [error, setError]   = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ── Step helpers ──────────────────────────────────────────────────────────
+  // -- Step helpers ----------------------------------------------------------
 
   const handleConfigure = useCallback(async () => {
     setError(null);
@@ -104,7 +104,7 @@ export default function TermStructureWizard() {
     }
   }, [sessionId, periods]);
 
-  // ── Period table helpers ──────────────────────────────────────────────────
+  // -- Period table helpers --------------------------------------------------
 
   const updatePeriod = (idx, field, value) => {
     setPeriods((prev) => prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p)));
@@ -115,15 +115,15 @@ export default function TermStructureWizard() {
   const removePeriod = (idx) =>
     setPeriods((prev) => prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // -- Render ----------------------------------------------------------------
 
   return (
     <CrownLayout title="Term & Marking Period Setup">
       {phase === "configure" && (
         <div style={{ maxWidth: 520 }}>
-          <h2>Step 1 — Configure Structure</h2>
+          <h2>Step 1 � Configure Structure</h2>
 
-          <label>Academic Year ID</label>
+          <div>Academic Year ID</div>
           <input
             type="text"
             value={academicYearId}
@@ -132,7 +132,7 @@ export default function TermStructureWizard() {
             style={{ display: "block", width: "100%", marginBottom: 12 }}
           />
 
-          <label>Structure Type</label>
+          <div>Structure Type</div>
           <select
             value={structureType}
             onChange={(e) => setStructureType(e.target.value)}
@@ -149,14 +149,14 @@ export default function TermStructureWizard() {
             onClick={handleConfigure}
             disabled={loading || !academicYearId.trim()}
           >
-            {loading ? "Saving…" : "Next: Set Periods →"}
+            {loading ? "Saving�" : "Next: Set Periods ?"}
           </button>
         </div>
       )}
 
       {phase === "periods" && (
         <div style={{ maxWidth: 820 }}>
-          <h2>Step 2 — Marking Periods</h2>
+          <h2>Step 2 � Marking Periods</h2>
           <p style={{ color: "var(--crown-muted)", fontSize: 13 }}>
             Periods must be non-overlapping and cover the full academic year with no gaps.
             Adjacent periods: <code>period[i].end_date + 1 day == period[i+1].start_date</code>
@@ -217,7 +217,7 @@ export default function TermStructureWizard() {
                     />
                   </td>
                   <td style={{ padding: "4px 8px" }}>
-                    <button onClick={() => removePeriod(idx)} title="Remove">✕</button>
+                    <button onClick={() => removePeriod(idx)} title="Remove">?</button>
                   </td>
                 </tr>
               ))}
@@ -230,10 +230,10 @@ export default function TermStructureWizard() {
 
           <div>
             <button onClick={() => { setPhase("configure"); setError(null); }} style={{ marginRight: 12 }}>
-              ← Back
+              ? Back
             </button>
             <button onClick={handleSetPeriods} disabled={loading}>
-              {loading ? "Saving…" : "Commit Structure →"}
+              {loading ? "Saving�" : "Commit Structure ?"}
             </button>
           </div>
         </div>
@@ -241,7 +241,7 @@ export default function TermStructureWizard() {
 
       {phase === "done" && result && (
         <div style={{ maxWidth: 600 }}>
-          <h2>✓ Term Structure Committed</h2>
+          <h2>? Term Structure Committed</h2>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <tbody>
               {[
@@ -273,7 +273,7 @@ export default function TermStructureWizard() {
             }}
             style={{ marginTop: 16 }}
           >
-            ← Set Up Another Term Structure
+            ? Set Up Another Term Structure
           </button>
         </div>
       )}

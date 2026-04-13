@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -41,7 +41,7 @@ const DEMO = {
     { specialist: 'R. Williams', active_plans: 13, pending_reviews: 3 },
   ],
   alerts: [
-    { label: '4 IEP reviews overdue — action required',        severity: 'red'    },
+    { label: '4 IEP reviews overdue  action required',        severity: 'red'    },
     { label: '9 annual reviews due within 30 days',            severity: 'yellow' },
     { label: '3 transition plans pending specialist review',   severity: 'yellow' },
   ],
@@ -54,7 +54,7 @@ async function fetchAcademicSupportMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch { return { ok: false, data: DEMO }; }
@@ -78,7 +78,7 @@ const STATUS_PILL = { active: 'green', scheduled: 'blue', pending: 'yellow', fla
 const TH = { padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 };
 const TD = { padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' };
 
-/* â”€â”€ Academic Support KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Academic Support KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Students in Support", value: "24", trend: null,              trendUp: null,
     definition: "Students currently enrolled in at least one academic support or intervention program.",
@@ -113,9 +113,9 @@ export default function AcademicSupportDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading</p>}
 
-      {/* ── Overview KPIs ── */}
+      {/*  Overview KPIs  */}
       <DashboardSection title="Overview">
         <CrownGrid>
           <Col span={3}><CrownMetricCard label="Students on IEP"       value={data.students_on_iep       ?? DEMO.students_on_iep}       /></Col>
@@ -125,7 +125,7 @@ export default function AcademicSupportDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      {/* ── IEP Tracking & Caseload ── */}
+      {/*  IEP Tracking & Caseload  */}
       <DashboardSection title="IEP Reviews & Caseload">
         <CrownGrid>
           <Col span={7}>
@@ -172,7 +172,7 @@ export default function AcademicSupportDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      {/* ── Accommodations & Alerts ── */}
+      {/*  Accommodations & Alerts  */}
       <DashboardSection title="Accommodations & Alerts">
         <CrownGrid>
           <Col span={6}>

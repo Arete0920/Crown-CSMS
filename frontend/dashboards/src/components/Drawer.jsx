@@ -1,4 +1,5 @@
-﻿import { useEffect } from "react";
+import PropTypes from "prop-types";
+import { useEffect } from "react";
 
 export default function Drawer({
   open,
@@ -9,31 +10,35 @@ export default function Drawer({
 }) {
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose?.();
+    const onKey = (event) => {
+      if (event.key === "Escape") onClose?.();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    globalThis.addEventListener("keydown", onKey);
+    return () => globalThis.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open) return null;
 
   return (
     <>
-      {/* Overlay */}
-      <div
+      <button
+        type="button"
         onClick={onClose}
+        aria-label="Close drawer overlay"
         style={{
           position: "fixed",
           inset: 0,
           background: "rgba(0,0,0,0.25)",
           zIndex: 1000,
+          border: 0,
+          padding: 0,
+          margin: 0,
+          cursor: "pointer",
         }}
       />
 
-      {/* Panel */}
-      <aside
-        role="dialog"
+      <dialog
+        open
         aria-modal="true"
         style={{
           position: "fixed",
@@ -46,9 +51,11 @@ export default function Drawer({
           boxShadow: "-8px 0 24px rgba(0,0,0,0.15)",
           display: "flex",
           flexDirection: "column",
+          border: 0,
+          margin: 0,
+          padding: 0,
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: "14px 16px",
@@ -70,15 +77,22 @@ export default function Drawer({
               padding: "2px 6px",
             }}
           >
-            ×
+            x
           </button>
         </div>
 
-        {/* Body */}
         <div style={{ padding: 16, overflowY: "auto", flex: 1 }}>
           {children}
         </div>
-      </aside>
+      </dialog>
     </>
   );
 }
+
+Drawer.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func,
+  title: PropTypes.node,
+  children: PropTypes.node,
+  width: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+};

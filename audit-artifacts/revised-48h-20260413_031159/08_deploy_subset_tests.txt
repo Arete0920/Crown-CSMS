@@ -1,0 +1,61 @@
+﻿[13/Apr/2026 03:15:44,450] WARNING django.request: Not Found: /api/households/bd1b1f40-36cb-40e8-b418-4d95ef64482f/
+[13/Apr/2026 03:15:46,023] WARNING django.request: Not Found: /api/households/b90a2c46-b6a8-4617-8aca-7639da60ab58/
+[13/Apr/2026 03:15:55,786] WARNING django.request: Unauthorized: /api/households/
+[13/Apr/2026 03:15:55,788] WARNING django.request: Unauthorized: /api/households/06345197-358d-4553-8194-699886d4e5df/
+[13/Apr/2026 03:15:58,009] WARNING django.request: Not Found: /api/households/0d049666-edaf-4297-872e-f4f2cb9e216a/
+[13/Apr/2026 03:16:02,809] WARNING django.request: Not Found: /api/students/972d9c51-8c12-4a20-b178-72b9aeac10f4/
+[13/Apr/2026 03:16:04,355] WARNING django.request: Unauthorized: /api/students/
+[13/Apr/2026 03:16:04,357] WARNING django.request: Unauthorized: /api/students/1c3f581a-b092-4e1d-a252-add8674b3591/
+[13/Apr/2026 03:16:09,165] WARNING django.request: Unauthorized: /api/director/actions/
+[13/Apr/2026 03:16:09,902] WARNING django.request: Forbidden: /api/director/actions/
+AID_ACCEPT_AND_POST_LEDGER failed for award
+Traceback (most recent call last):
+  File "C:\crown2026_recovery\wt_20260413_031159\backend\crown_api\director_views.py", line 866, in director_actions
+    _post_award_to_new_ledger_pipeline(
+  File "C:\crown2026_recovery\wt_20260413_031159\backend\crown_api\director_views.py", line 741, in _post_award_to_new_ledger_pipeline
+    household = award.student.household
+                ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Student' object has no attribute 'household'
+[13/Apr/2026 03:16:10,648] WARNING django.request: Not Found: /api/director/force_seed_user/
+[13/Apr/2026 03:16:10,652] WARNING django.request: Not Found: /api/director/force_seed_user/
+[13/Apr/2026 03:16:10,654] WARNING django.request: Forbidden: /api/director/force_seed_user/
+[13/Apr/2026 03:16:10,656] WARNING django.request: Forbidden: /api/director/force_seed_user/
+DEV_SEED invoked: actor=None auth=seed_key
+[13/Apr/2026 03:16:12,356] WARNING crown.performance: SLOW_REQUEST path=/api/director/force_seed_user/ method=POST status=200 duration_ms=1699
+DEV_SEED invoked: actor=seed_staff auth=jwt
+[13/Apr/2026 03:16:15,093] WARNING crown.performance: SLOW_REQUEST path=/api/director/force_seed_user/ method=POST status=200 duration_ms=1962
+[13/Apr/2026 03:16:16,662] WARNING django.request: Forbidden: /api/admissions/applications/
+[13/Apr/2026 03:16:19,984] WARNING django.request: Unauthorized: /api/students/f554c3a2-bf04-49a6-b4e0-94138cd6372e/attendance/
+[13/Apr/2026 03:16:19,987] WARNING django.request: Unauthorized: /api/students/f554c3a2-bf04-49a6-b4e0-94138cd6372e/grades/
+[13/Apr/2026 03:16:21,414] WARNING django.request: Not Found: /api/students/9f4ecc87-d224-4da5-86d7-2990555af51f/attendance/
+[13/Apr/2026 03:16:24,210] WARNING django.request: Not Found: /api/students/cfd6f827-23e6-4c17-abfb-d45b287c2f8b/grades/
+[13/Apr/2026 03:16:26,989] WARNING django.request: Not Found: /api/households/702ce056-7e1e-4abf-8ae5-e0d994b0e9ce/billing/summary/
+[13/Apr/2026 03:16:31,115] WARNING django.request: Unauthorized: /api/households/0e95fc40-7175-432d-89d2-d65cc59ac777/billing/summary/
+[13/Apr/2026 03:16:33,889] WARNING django.request: Not Found: /api/threads/2116d93b-917f-47a7-b1ec-09f9946cc6a9/
+[13/Apr/2026 03:16:38,934] WARNING django.request: Unauthorized: /api/threads/
+[13/Apr/2026 03:16:40,191] WARNING django.request: Not Found: /api/students/6617a107-7813-4455-9f23-2c3e55ce302a/schedule/
+[13/Apr/2026 03:16:42,709] WARNING django.request: Unauthorized: /api/terms/
+----------------------------------------------------------------------
+Ran 42 tests in 59.820s
+System.Management.Automation.RemoteException
+OK
+[gradebook 0003] created categories: 0, created assignments: 0, linked GradeEntry rows: 0
+System check identified no issues (0 silenced).
+Operations to perform:
+  Apply all migrations: academic_year_wizard, academics, academics_ro, admin, admissions, advancement, aftercare, aid, analytics, applications, athletics, attendance_codes_wizard, attendance_rules_wizard, audit, auth, bell_schedule_wizard, billing, billing_wizard, board_oversight, classroom, comms, comms_wizard, contenttypes, core, course_catalog_wizard, crown_api, curricula, curriculum, discipline, enrollment_conversion_wizard, enrollment_period_wizard, exports, facops, fee_schedule_wizard, finance, finance_setup, financial_aid, financial_aid_wizard, grade_scale_wizard, grade_weights_wizard, gradebook, gradebook_setup_wizard, graduation, guardian_household_wizard, households, hr, integrations, invoice_run_wizard, journal, ledger, onboarding, outreach, payments, pdhub, platform_ops, promotion_wizard, reenrollment, room_setup_wizard, safety, scheduling_wizard, section_assign_wizard, section_scheduler_wizard, section_staffing_wizard, servicehours, sessions, signals, spiritual_life, staff_onboarding_wizard, staff_setup_wizard, student_import_wizard, subscriptions, support, tenants, term_structure_wizard, transportation
+Running migrations:
+  No migrations to apply.
+dev_bootstrap complete
+Primary school: 6eb4f85f-4e88-4b83-ae3b-ce915ff012d0 (Crown Demo Christian Academy)
+Secondary school: ba41674f-e87c-448f-9c31-fdaf8fc56689 (Smoke Secondary School)
+Admin: admin school_id=6eb4f85f-4e88-4b83-ae3b-ce915ff012d0
+Created/updated: school:Crown Demo Christian Academy, school:Smoke Secondary School, admin_user, admin_school_link
+Operations to perform:
+  Apply all migrations: academic_year_wizard, academics, academics_ro, admin, admissions, advancement, aftercare, aid, analytics, applications, athletics, attendance_codes_wizard, attendance_rules_wizard, audit, auth, bell_schedule_wizard, billing, billing_wizard, board_oversight, classroom, comms, comms_wizard, contenttypes, core, course_catalog_wizard, crown_api, curricula, curriculum, discipline, enrollment_conversion_wizard, enrollment_period_wizard, exports, facops, fee_schedule_wizard, finance, finance_setup, financial_aid, financial_aid_wizard, grade_scale_wizard, grade_weights_wizard, gradebook, gradebook_setup_wizard, graduation, guardian_household_wizard, households, hr, integrations, invoice_run_wizard, journal, ledger, onboarding, outreach, payments, pdhub, platform_ops, promotion_wizard, reenrollment, room_setup_wizard, safety, scheduling_wizard, section_assign_wizard, section_scheduler_wizard, section_staffing_wizard, servicehours, sessions, signals, spiritual_life, staff_onboarding_wizard, staff_setup_wizard, student_import_wizard, subscriptions, support, tenants, term_structure_wizard, transportation
+Running migrations:
+  No migrations to apply.
+dev_bootstrap complete
+Primary school: 6eb4f85f-4e88-4b83-ae3b-ce915ff012d0 (Crown Demo Christian Academy)
+Secondary school: ba41674f-e87c-448f-9c31-fdaf8fc56689 (Smoke Secondary School)
+Admin: admin school_id=6eb4f85f-4e88-4b83-ae3b-ce915ff012d0
+No changes needed.

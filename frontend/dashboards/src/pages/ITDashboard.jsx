@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout   from '../components/crown/CrownLayout.jsx';
 import CrownCard     from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -6,7 +6,7 @@ import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection   from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
-/* ── Auth helpers ─────────────────────────────────────────────────────── */
+/*  Auth helpers  */
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
   return base.endsWith('/') ? base.slice(0, -1) : base;
@@ -20,7 +20,7 @@ function getSession() {
   } catch { return { token: '', schoolId: '' }; }
 }
 
-/* ── Static demo fallback ─────────────────────────────────────────────── */
+/*  Static demo fallback  */
 const DEMO = {
   api_status:      'ok',
   db_status:       'ok',
@@ -36,7 +36,7 @@ const DEMO = {
   alerts: [
     { label: 'SSL cert expires in 42 days',         severity: 'yellow' },
     { label: '7 devices out of compliance',         severity: 'yellow' },
-    { label: 'Open ticket older than 14 days (×1)', severity: 'red'    },
+    { label: 'Open ticket older than 14 days (1)', severity: 'red'    },
   ],
 };
 
@@ -47,7 +47,7 @@ async function fetchITMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -55,7 +55,7 @@ async function fetchITMetrics() {
   }
 }
 
-/* ── Helpers ──────────────────────────────────────────────────────────── */
+/*  Helpers  */
 function Pill({ color = 'gray', children }) {
   const map = {
     red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
@@ -79,8 +79,8 @@ function StatusDot({ status }) {
   );
 }
 
-/* ── Main component ───────────────────────────────────────────────────── */
-/* â”€â”€ IT KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Main component  */
+/*  IT KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Tickets Open",   value: "12",     trend: "-4 vs last wk",   trendUp: true,
     definition: "Open helpdesk tickets assigned to IT staff awaiting resolution.",
@@ -110,9 +110,6 @@ export default function ITDashboard() {
     ? Math.round((data.devices_compliant / data.total_devices) * 100)
     : 0;
 
-  const TH = { padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 };
-  const TD = { padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' };
-
   return (
     <CrownLayout
       title="IT Director"
@@ -120,9 +117,9 @@ export default function ITDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
-      {/* ── Section 1: Overview KPIs ── */}
+      {/*  Section 1: Overview KPIs  */}
       <DashboardSection title="Overview">
         <CrownGrid>
           <Col span={3}>
@@ -140,7 +137,7 @@ export default function ITDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      {/* ── Section 2: System Status & Devices ── */}
+      {/*  Section 2: System Status & Devices  */}
       <DashboardSection title="System Status & Devices">
         <CrownGrid>
           {/* System Status */}
@@ -193,7 +190,7 @@ export default function ITDashboard() {
         </CrownGrid>
       </DashboardSection>
 
-      {/* ── Section 3: Tickets & Alerts ── */}
+      {/*  Section 3: Tickets & Alerts  */}
       <DashboardSection title="Tickets & Alerts">
         <CrownGrid>
           {/* Support Tickets */}
@@ -218,7 +215,7 @@ export default function ITDashboard() {
           <Col span={6}>
             <CrownCard title="Alerts &amp; Attention">
               {alerts.length === 0
-                ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No active alerts — all clear.</p>
+                ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No active alerts  all clear.</p>
                 : <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {alerts.map((a, i) => (
                       <div key={i} style={{

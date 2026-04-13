@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   clearAccessToken,
   getAccessToken,
@@ -32,7 +32,7 @@ export default function DevJwtPanel() {
     setErr("");
     setStatus("requesting...");
     try {
-      const res = await fetch(`${apiBase}/api/dev/token/`, {
+      const res = await globalThis.fetch(`${apiBase}/api/dev/token/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -55,7 +55,7 @@ export default function DevJwtPanel() {
       setSchoolId(data.school_id);
       
       // Auto-reload page to refresh all authenticated data
-      setTimeout(() => window.location.reload(), 500);
+      setTimeout(() => globalThis.location.reload(), 500);
     } catch (e) {
       setErr(String(e?.message || e));
       setStatus("login failed");

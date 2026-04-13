@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from core.audit_mixins import AuditMutationMixin
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
@@ -17,6 +17,7 @@ from households.scoping import get_request_school_id
 
 from .models import AssignmentCategory, Course, Enrollment, Section, Term, Assignment
 from .models import CurriculumSource, Unit, Lesson, PublisherObjective, Submission, Grade, MasteryRecord, TranscriptEntry
+from .curriculum_publishers import publisher_search_terms, is_supported_curriculum_publisher
 from .serializers import (
     AcademicYearSerializer,
     CourseSerializer,
@@ -539,8 +540,27 @@ class CurriculumSourceViewSet(PaginatedReadOnlyViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request)
-        return self.queryset.filter(school_id=school_id).order_by("name")
+        qs = self.queryset.filter(school_id=school_id)
 
+        publisher = (self.request.query_params.get("publisher") or "").strip()
+        if publisher:
+            search_terms = publisher_search_terms(publisher)
+            name_query = Q()
+            for term in search_terms:
+                name_query |= Q(name__icontains=term)
+            if name_query:
+                qs = qs.filter(name_query)
+
+        supported_only = (self.request.query_params.get("supported_only") or "").strip().lower()
+        if supported_only in {"1", "true", "yes"}:
+            supported_ids = [
+                source.id
+                for source in qs
+                if is_supported_curriculum_publisher(source.name)
+            ]
+            qs = qs.filter(id__in=supported_ids)
+
+        return qs.order_by("name")
 
 class UnitViewSet(PaginatedReadOnlyViewSet):
     serializer_class = UnitSerializer

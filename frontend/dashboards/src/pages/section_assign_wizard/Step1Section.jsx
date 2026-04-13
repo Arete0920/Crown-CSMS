@@ -42,7 +42,7 @@ export default function Step1Section({ context, setContext, goNext, stepIndex, t
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 480 }}>
         <div>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Section ID (UUID)</label>
+          <div style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Section ID (UUID)</div>
           <input
             className="crown-input"
             type="text"
@@ -53,7 +53,7 @@ export default function Step1Section({ context, setContext, goNext, stepIndex, t
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Term (optional — inherited from section if blank)</label>
+          <div style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Term (optional — inherited from section if blank)</div>
           <input
             className="crown-input"
             type="text"
