@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+﻿const fs = require("node:fs");
+const path = require("node:path");
 
 const targetFiles = [
   "frontend/dashboards/src/pages/Student360Page.jsx",
@@ -8,7 +8,7 @@ const targetFiles = [
 ];
 
 function safeId(base, n) {
-  return `${base}-${n}`.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
+  return `${base}-${n}`.toLowerCase().replaceAll(/[^a-z0-9_-]/g, "-");
 }
 
 for (const rel of targetFiles) {
@@ -35,7 +35,7 @@ for (const rel of targetFiles) {
     if (!plainLabel || !plainControl) continue;
 
     const labelTextMatch = labelLine.match(/<label[^>]*>(.*?)<\/label>/);
-    const labelText = labelTextMatch ? labelTextMatch[1].replace(/<[^>]+>/g, "").trim() : "field";
+    const labelText = labelTextMatch ? labelTextMatch[1].replaceAll(/<[^>]+>/g, "").trim() : "field";
     const id = safeId(labelText || "field", i + 1);
 
     lines[i] = labelLine.replace("<label", `<label htmlFor="${id}"`);
@@ -53,3 +53,4 @@ for (const rel of targetFiles) {
 
   console.log(`${rel} changed=${changed}`);
 }
+

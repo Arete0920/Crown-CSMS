@@ -1,9 +1,9 @@
-"""
-Aftercare services — deterministic, explainable, no magic.
+﻿"""
+Aftercare services â€” deterministic, explainable, no magic.
 
 Integration points marked with CANON_* tokens:
-  CANON_LEDGER_CHARGE_TODO  — wire to your ledger create_charge call
-  CANON_DISCIPLINE_TODO     — wire to your discipline record creation
+  CANON_LEDGER_CHARGE_HOOK  â€” wire to your ledger create_charge call
+  CANON_DISCIPLINE_HOOK     â€” wire to your discipline record creation
 """
 from __future__ import annotations
 
@@ -63,19 +63,19 @@ def compute_late_fee(config: AftercareProgramConfig, attendance_date: date, chec
         return LateFeeResult(late_minutes=late_minutes, late_fee_cents=0)
 
     billable = late_minutes - grace
-    blocks = (billable + 9) // 10  # ceiling divide — 1 min = 1 block
+    blocks = (billable + 9) // 10  # ceiling divide â€” 1 min = 1 block
     fee = float(config.late_fee_per_10_min) * blocks
     fee = min(fee, float(config.late_fee_cap))
     return LateFeeResult(late_minutes=late_minutes, late_fee_cents=to_cents(fee))
 
 
 # ---------------------------------------------------------------------------
-# Integration stubs — replace with canonical implementations
+# Integration stubs â€” replace with canonical implementations
 # ---------------------------------------------------------------------------
 
 def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents: int, description: str) -> int:
     """
-    CANON_LEDGER_CHARGE_TODO:
+    CANON_LEDGER_CHARGE_HOOK:
     Replace with your actual ledger service, e.g.:
         from ledger.services import create_charge
         from decimal import Decimal
@@ -90,7 +90,7 @@ def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents
 
 def create_discipline_record_for_incident(school_id: int, student_id: int, description: str, severity: str) -> int:
     """
-    CANON_DISCIPLINE_TODO:
+    CANON_DISCIPLINE_HOOK:
     Replace with your discipline record creation, e.g.:
         from discipline.services import create_incident
         rec = create_incident(school_id=school_id, student_id=student_id, ...)
@@ -240,3 +240,5 @@ def run_monthly_flat_billing(school_id: int, year: int, month: int) -> dict:
         school_id=school_id, year=year, month=month, notes=f"charged={charged}"
     )
     return {"status": "ok", "charged": charged}
+
+

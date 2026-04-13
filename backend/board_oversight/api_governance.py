@@ -50,19 +50,39 @@ def download_board_packet(request):
 # Crown Compass
 
 def _compass_summary(school_id=None) -> dict:
-    """
-    Aggregate health scores across pillars.
-    Placeholder values until real data pipelines are wired.
-    Future: pull from BoardKPISnapshot + sub-module analytics.
-    """
-    # TODO: derive from real BoardKPISnapshot rows when available
+    """Aggregate health scores across pillars from latest KPI snapshot."""
+    school_label = str(school_id) if school_id else None
+    latest = (
+        BoardKPISnapshot.objects.filter(school_id=school_id).order_by("-month").first()
+        if school_id
+        else BoardKPISnapshot.objects.order_by("-month").first()
+    )
+
+    if latest is None:
+        return {
+            "school_id": school_label,
+            "enrollment_health": 0,
+            "financial_health": 0,
+            "discipline_health": 0,
+            "spiritual_life_health": 0,
+            "overall_score": 0,
+            "source": "empty",
+        }
+
+    enrollment_health = max(0, min(100, latest.enrollment))
+    financial_health = max(0, min(100, int(float(latest.revenue) / 1000)))
+    discipline_health = max(0, min(100, 100 - min(latest.discipline_incidents * 2, 100)))
+    spiritual_health = max(0, min(100, latest.financial_aid_awards))
+    overall = round((enrollment_health + financial_health + discipline_health + spiritual_health) / 4)
+
     return {
-        "school_id": str(school_id) if school_id else None,
-        "enrollment_health": 92,
-        "financial_health": 88,
-        "discipline_health": 95,
-        "spiritual_life_health": 90,
-        "overall_score": 91,
+        "school_id": school_label,
+        "enrollment_health": enrollment_health,
+        "financial_health": financial_health,
+        "discipline_health": discipline_health,
+        "spiritual_life_health": spiritual_health,
+        "overall_score": overall,
+        "source": str(latest.month),
     }
 
 
@@ -136,3 +156,4 @@ def release_notes(request):
     """Versioned release log - public."""
     logs = list(ReleaseLog.objects.values("version", "release_date", "notes"))
     return Response({"releases": logs})
+

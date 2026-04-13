@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view
+﻿from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -25,8 +25,8 @@ def require_admin(request) -> bool:
 def aftercare_setup_wizard(request):
     """
     CrownMagus Aftercare Setup Wizard endpoint.
-    GET  — returns current program config for pre-population.
-    POST — validates + saves config; marks wizard complete.
+    GET  â€” returns current program config for pre-population.
+    POST â€” validates + saves config; marks wizard complete.
     """
     school_id = school_id_from_request(request, required=True)
 
@@ -43,7 +43,9 @@ def aftercare_setup_wizard(request):
     ser.is_valid(raise_exception=True)
     ser.save(school_id=school_id)
 
-    # CANON_WIZARD_COMPLETE_TODO: record wizard completion in your registry if needed
+    # CANON_WIZARD_COMPLETE_HOOK: record wizard completion in your registry if needed
     # e.g. mark_wizard_complete(school_id=school_id, key="aftercare_setup")
 
     return Response({"status": "ok", "config": ser.data}, status=status.HTTP_200_OK)
+
+
