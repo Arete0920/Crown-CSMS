@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import AdvancementOpsSnapshotCard from '../components/dashboard/advancementops/AdvancementOpsSnapshotCard';
 import AdvancementOpsAlertsPanel from '../components/dashboard/advancementops/AdvancementOpsAlertsPanel';

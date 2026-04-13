@@ -5,7 +5,7 @@
  * Front: var(--crown-brand) blue — status counts (Good / Watch / Action)
  * Back:  var(--crown-gold)  gold — action items with severity markers
  */
-import React, { useState } from "react";
+import { useState } from "react";
 
 const LEVEL_COLOR = {
   good: "#86efac",   /* green tint readable on gold/blue */

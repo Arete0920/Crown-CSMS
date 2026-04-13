@@ -1,0 +1,7 @@
+{
+  "frontend_import_cleanup": [],
+  "frontend_label_fix": [],
+  "backend_schema_patch": [
+    "backend/aftercare/api.py"
+  ]
+}

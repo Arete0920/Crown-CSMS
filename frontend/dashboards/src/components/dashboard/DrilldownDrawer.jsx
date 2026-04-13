@@ -2,7 +2,7 @@
  * DrilldownDrawer — slide-in panel that shows detail rows for a widget.
  * Uses the Crown CSS card + overlay pattern (no external drawer library).
  */
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 
 export default function DrilldownDrawer({ open, title, widget, schoolId, onClose, children }) {
   const overlayRef = useRef(null);

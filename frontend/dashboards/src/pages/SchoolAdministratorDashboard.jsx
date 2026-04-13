@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import AdminSnapshotCard from '../components/dashboard/admin/AdminSnapshotCard';
 import AdminPriorityPanel from '../components/dashboard/admin/AdminPriorityPanel';

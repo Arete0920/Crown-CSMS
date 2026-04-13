@@ -4,6 +4,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
 
 from core.permissions import user_has_permission
 from .models import (
@@ -102,6 +103,7 @@ def require_role(request, allowed_roles: set) -> bool:
     request=AftercareProgramConfigSerializer,
     responses=AftercareProgramConfigSerializer,
 )
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "PUT"])
 def program_config(request):
     school_id = school_id_from_request(request, required=True)
@@ -126,6 +128,7 @@ def program_config(request):
     request=AftercareEnrollmentSerializer,
     responses=AftercareEnrollmentSerializer,
 )
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def enrollments(request):
     school_id = school_id_from_request(request, required=True)
@@ -149,6 +152,7 @@ def enrollments(request):
     request=AftercarePickupContactSerializer,
     responses=AftercarePickupContactSerializer,
 )
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def pickup_contacts(request, student_id: int):
     school_id = school_id_from_request(request, required=True)
@@ -209,6 +213,7 @@ def roster_today(request):
     request=AftercareCheckinRequestSerializer,
     responses={201: AftercareAttendanceSerializer, 400: AftercareStudentRequiredSerializer},
 )
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 def checkin(request):
     school_id = school_id_from_request(request, required=True)
@@ -231,6 +236,7 @@ def checkin(request):
     request=AftercareCheckoutRequestSerializer,
     responses={200: AftercareAttendanceSerializer, 400: AftercareStudentRequiredSerializer},
 )
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 def checkout(request):
     school_id = school_id_from_request(request, required=True)
@@ -258,6 +264,7 @@ def checkout(request):
     request=AftercareIncidentCreateRequestSerializer,
     responses={201: AftercareIncidentSerializer, 400: AftercareStudentRequiredSerializer},
 )
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def incidents(request):
     school_id = school_id_from_request(request, required=True)

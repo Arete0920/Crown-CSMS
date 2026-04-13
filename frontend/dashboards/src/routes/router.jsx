@@ -14,12 +14,7 @@ import FinanceInvoicesList from "../pages/FinanceInvoicesList.jsx";
 import CommunicationsThreadsList from "../pages/CommunicationsThreadsList.jsx";
 import OpsCommandCenter from "../components/OpsCommandCenter.jsx";
 import ClassroomsDashboard from "../pages/ClassroomsDashboard.jsx";
-import DisciplinePage from "../pages/DisciplinePage.jsx";
 import ServiceHoursPage from "../pages/ServiceHoursPage.jsx";
-import TeamsPreviewPage from "../pages/TeamsPreviewPage.jsx";
-import CommsInboxPage from "../pages/CommsInboxPage.jsx";
-import CommsThreadPage from "../pages/CommsThreadPage.jsx";
-import CommsComposePage from "../pages/CommsComposePage.jsx";
 import Student360Page from "../pages/Student360Page.jsx";
 import ParentStudent360Page from "../pages/ParentStudent360Page.jsx";
 import AcademicsTeacherGrading from "../pages/AcademicsTeacherGrading.jsx";
@@ -205,7 +200,11 @@ export const router = createBrowserRouter([
   ...dashboardRoutes,
   {
     path: PATHS.ACADEMICS,
-    element: <AcademicsDashboard />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <AcademicsDashboard />
+      </RoleGuard>
+    ),
   },
   {
     path: PATHS.TEACHER,
@@ -233,15 +232,27 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.GRADEBOOK_SECTION,
-    element: <GradebookRO />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <GradebookRO />
+      </RoleGuard>
+    ),
   },
   {
     path: PATHS.TRANSCRIPT,
-    element: <TranscriptRO />,
+    element: (
+      <RoleGuard allowedRoles={[...ROLE_GROUPS.ACADEMIC_TEAM, ...ROLE_GROUPS.FAMILY_VIEW]}>
+        <TranscriptRO />
+      </RoleGuard>
+    ),
   },
   {
     path: PATHS.CATEGORY_WEIGHTS,
-    element: <CategoryWeightsEditor />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <CategoryWeightsEditor />
+      </RoleGuard>
+    ),
   },
   {
     path: PATHS.ADMISSIONS,
@@ -280,15 +291,27 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.ACADEMICS_TEACHER_GRADING,
-    element: <AcademicsTeacherGrading />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <AcademicsTeacherGrading />
+      </RoleGuard>
+    ),
   },
   {
     path: PATHS.ACADEMICS_STUDENT_WORK,
-    element: <AcademicsStudentWork />,
+    element: (
+      <RoleGuard allowedRoles={[...ROLE_GROUPS.ACADEMIC_TEAM, ...ROLE_GROUPS.FAMILY_VIEW]}>
+        <AcademicsStudentWork />
+      </RoleGuard>
+    ),
   },
   {
     path: PATHS.ACADEMICS_PARENT_SNAPSHOT,
-    element: <AcademicsParentSnapshot />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.FAMILY_VIEW}>
+        <AcademicsParentSnapshot />
+      </RoleGuard>
+    ),
   },
   {
     path: '/students/:id',

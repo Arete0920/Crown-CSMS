@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import AlumniSnapshotCard from '../components/dashboard/alumni/AlumniSnapshotCard';
 import AlumniAlertsPanel from '../components/dashboard/alumni/AlumniAlertsPanel';

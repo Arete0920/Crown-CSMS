@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import ComplianceAuditSnapshotCard from '../components/dashboard/complianceaudit/ComplianceAuditSnapshotCard';
 import ComplianceAuditAlertsPanel from '../components/dashboard/complianceaudit/ComplianceAuditAlertsPanel';

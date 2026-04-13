@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import HealthOfficeSnapshotCard from '../components/dashboard/healthoffice/HealthOfficeSnapshotCard';
 import HealthOfficeAlertsPanel from '../components/dashboard/healthoffice/HealthOfficeAlertsPanel';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack } from '@mui/material';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import GradebookSnapshotCard from '../components/dashboard/gradebook/GradebookSnapshotCard.jsx';

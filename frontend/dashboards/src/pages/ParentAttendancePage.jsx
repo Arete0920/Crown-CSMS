@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner";
@@ -88,3 +88,4 @@ export default function ParentAttendancePage() {
     </CrownLayout>
   );
 }
+

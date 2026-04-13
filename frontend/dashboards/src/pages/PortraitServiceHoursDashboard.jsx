@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import PortraitServiceSnapshotCard from '../components/dashboard/portraitservice/PortraitServiceSnapshotCard';
 import PortraitServiceAlertsPanel from '../components/dashboard/portraitservice/PortraitServiceAlertsPanel';

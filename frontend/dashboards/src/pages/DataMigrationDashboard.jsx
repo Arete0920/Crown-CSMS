@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import DataMigrationSnapshotCard from '../components/dashboard/datamigration/DataMigrationSnapshotCard';
 import DataMigrationAlertsPanel from '../components/dashboard/datamigration/DataMigrationAlertsPanel';

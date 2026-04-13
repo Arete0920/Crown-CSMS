@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import { apiFetch } from '../lib/api.js';
 
@@ -28,32 +28,32 @@ function emptyCapRow() {
 }
 
 export default function EnrollmentPeriodWizard() {
-  // ── Phase: 'configure' | 'capacities' | 'done'
+  // -- Phase: 'configure' | 'capacities' | 'done'
   const [phase, setPhase] = useState('configure');
 
-  // ── Session
+  // -- Session
   const [sessionId, setSessionId] = useState(null);
 
-  // ── Configure phase fields
+  // -- Configure phase fields
   const [academicYearId, setAcademicYearId] = useState('');
   const [openDate, setOpenDate]             = useState('');
   const [closeDate, setCloseDate]           = useState('');
   const [reenrollCloseDate, setReenrollCloseDate] = useState('');
   const [reenrollFirst, setReenrollFirst]   = useState(false);
 
-  // ── Capacities phase
+  // -- Capacities phase
   const [capRows, setCapRows] = useState([emptyCapRow()]);
 
-  // ── Done phase
+  // -- Done phase
   const [result, setResult] = useState(null);
 
-  // ── Error/loading
+  // -- Error/loading
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ─────────────────────────────────────────
-  // PHASE 1 — CONFIGURE
-  // ─────────────────────────────────────────
+  // -----------------------------------------
+  // PHASE 1 � CONFIGURE
+  // -----------------------------------------
 
   const handleConfigure = useCallback(async () => {
     setError('');
@@ -84,7 +84,7 @@ export default function EnrollmentPeriodWizard() {
       const cfgBody = await cfgRes.json();
       if (!cfgRes.ok) {
         const msgs = cfgBody.errors || [cfgBody.error] || ['Configure failed'];
-        throw new Error(Array.isArray(msgs) ? msgs.join(' · ') : msgs);
+        throw new Error(Array.isArray(msgs) ? msgs.join(' � ') : msgs);
       }
 
       setPhase('capacities');
@@ -95,9 +95,9 @@ export default function EnrollmentPeriodWizard() {
     }
   }, [academicYearId, openDate, closeDate, reenrollCloseDate, reenrollFirst]);
 
-  // ─────────────────────────────────────────
-  // PHASE 2 — CAPACITIES
-  // ─────────────────────────────────────────
+  // -----------------------------------------
+  // PHASE 2 � CAPACITIES
+  // -----------------------------------------
 
   const addCapRow = () => setCapRows((prev) => [...prev, emptyCapRow()]);
 
@@ -127,7 +127,7 @@ export default function EnrollmentPeriodWizard() {
       const capsBody = await capsRes.json();
       if (!capsRes.ok) {
         const msgs = capsBody.errors || [capsBody.error] || ['Capacities failed'];
-        throw new Error(Array.isArray(msgs) ? msgs.join(' · ') : msgs);
+        throw new Error(Array.isArray(msgs) ? msgs.join(' � ') : msgs);
       }
 
       // Commit
@@ -149,18 +149,18 @@ export default function EnrollmentPeriodWizard() {
     }
   }, [sessionId, capRows]);
 
-  // ─────────────────────────────────────────
+  // -----------------------------------------
   // RENDER
-  // ─────────────────────────────────────────
+  // -----------------------------------------
 
   const usedCodes = USED_CODES(capRows);
 
   return (
     <CrownLayout
       title="Enrollment Period Setup"
-      subtitle="Wizard #16 — Define the enrollment window and grade-level capacity targets for an academic year."
+      subtitle="Wizard #16 � Define the enrollment window and grade-level capacity targets for an academic year."
     >
-      {/* ── PHASE: configure ── */}
+      {/* -- PHASE: configure -- */}
       {phase === 'configure' && (
         <div style={{ maxWidth: 560 }}>
           <h2 style={{ marginBottom: 24 }}>Step 1: Configure Enrollment Window</h2>
@@ -222,12 +222,12 @@ export default function EnrollmentPeriodWizard() {
             disabled={loading || !academicYearId || !openDate || !closeDate}
             style={btnStyle}
           >
-            {loading ? 'Saving…' : 'Next: Set Capacities →'}
+            {loading ? 'Saving�' : 'Next: Set Capacities ?'}
           </button>
         </div>
       )}
 
-      {/* ── PHASE: capacities ── */}
+      {/* -- PHASE: capacities -- */}
       {phase === 'capacities' && (
         <div style={{ maxWidth: 720 }}>
           <h2 style={{ marginBottom: 8 }}>Step 2: Grade Capacities</h2>
@@ -253,7 +253,7 @@ export default function EnrollmentPeriodWizard() {
                       onChange={(e) => updateCapRow(idx, 'grade_code', e.target.value)}
                       style={{ ...inputStyle, margin: 0 }}
                     >
-                      <option value="">— select —</option>
+                      <option value="">� select �</option>
                       {GRADE_OPTIONS.map((g) => (
                         <option
                           key={g.code}
@@ -287,7 +287,7 @@ export default function EnrollmentPeriodWizard() {
                         onClick={() => removeCapRow(idx)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--crown-danger)', fontSize: 18 }}
                       >
-                        ✕
+                        ?
                       </button>
                     )}
                   </td>
@@ -307,15 +307,15 @@ export default function EnrollmentPeriodWizard() {
             disabled={loading || capRows.some((r) => !r.grade_code)}
             style={btnStyle}
           >
-            {loading ? 'Committing…' : 'Commit Enrollment Period ✓'}
+            {loading ? 'Committing�' : 'Commit Enrollment Period ?'}
           </button>
         </div>
       )}
 
-      {/* ── PHASE: done ── */}
+      {/* -- PHASE: done -- */}
       {phase === 'done' && result && (
         <div style={{ maxWidth: 560 }}>
-          <h2 style={{ color: 'var(--crown-ok)', marginBottom: 16 }}>✓ Enrollment Period Committed</h2>
+          <h2 style={{ color: 'var(--crown-ok)', marginBottom: 16 }}>? Enrollment Period Committed</h2>
           <p>{result.message}</p>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20 }}>
@@ -324,7 +324,7 @@ export default function EnrollmentPeriodWizard() {
                 ['Academic Year',     result.academic_year_name],
                 ['Open Date',         result.open_date],
                 ['Close Date',        result.close_date],
-                ['Re-enroll Closes',  result.reenroll_close_date || '—'],
+                ['Re-enroll Closes',  result.reenroll_close_date || '�'],
                 ['Re-enroll First',   result.reenroll_first ? 'Yes' : 'No'],
                 ['Grades Created',    result.capacities_created],
                 ['Grades Updated',    result.capacities_updated],
@@ -361,7 +361,7 @@ export default function EnrollmentPeriodWizard() {
   );
 }
 
-// ── Styles ──
+// -- Styles --
 const labelStyle = {
   display: 'flex',
   flexDirection: 'column',
@@ -393,3 +393,4 @@ const btnStyle = {
 const errorStyle = { color: 'var(--crown-danger)', marginTop: 8, fontSize: 14 };
 const thStyle = { padding: '8px 10px', textAlign: 'left', borderBottom: '2px solid var(--crown-border)', fontSize: 13 };
 const tdStyle = { padding: '6px 8px', borderBottom: '1px solid var(--crown-border)' };
+
