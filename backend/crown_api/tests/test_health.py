@@ -30,3 +30,18 @@ def test_health_endpoint():
     
     # db status validation
     assert data["db"] in ["ok", "unreachable"]
+
+
+@pytest.mark.django_db
+def test_integrity_endpoint_is_public_and_returns_contract():
+    client = Client()
+
+    response = client.get('/api/integrity/')
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data['ok'] is True
+    assert 'build_sha' in data
+    assert 'prod_deploy_tag' in data
+    assert 'required_checks' in data
+    assert 'meta_gates' in data
