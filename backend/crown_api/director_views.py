@@ -955,7 +955,7 @@ def director_actions(request):
 
                 missing_lines = "\n".join([f"- {m}" for m in missing]) if missing else "- One or more required documents (see your portal checklist)"
 
-                subject = "Financial Aid Application â€“ Additional Information Needed"
+                subject = "Financial Aid Application – Additional Information Needed"
 
                 ay_name = getattr(academic_year or app.academic_year, "name", "current school year")
 
