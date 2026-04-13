@@ -228,7 +228,7 @@ export default function PlatformOpsHome() {
         data.results.map((r) => ({ id: r.school_id, ...r }))
       );
       setTotal(data.total);
-    } catch (err) {
+    } catch {
       setError("Failed to load schools. Make sure you have super-admin access.");
     } finally {
       setLoading(false);

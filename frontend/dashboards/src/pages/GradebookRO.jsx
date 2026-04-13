@@ -1,5 +1,5 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown, patchGradeEntry, upsertAssignmentGrades } from "../api/gradebook";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown, upsertAssignmentGrades } from "../api/gradebook";
 import { patchAssignment } from "../api/academics";
 import { getSchoolId, getToken } from "../lib/api";
 import { csvEscape, downloadTextFile } from "../lib/export/csv";
@@ -14,7 +14,7 @@ const keyOf = (name) => String(name ?? "").trim();
 const HEADER_ROW_HEIGHT = 40;
 
 function formatScore(earned, possible) {
-  if (earned === null || earned === undefined || earned === "") return "—";
+  if (earned === null || earned === undefined || earned === "") return "�";
   const e = Number(earned);
   const p = Number(possible);
   if (!Number.isFinite(e) || !Number.isFinite(p) || p <= 0) return `${earned} / ${possible}`;
@@ -44,7 +44,7 @@ const calcRowTotals = (row, assignments) => {
 };
 
 const formatTotals = ({ earned, possible, pct }) => {
-  if (!possible) return "—";
+  if (!possible) return "�";
   return `${fmt2(earned)} / ${possible}\n(${pct ?? 0}%)`;
 };
 
@@ -192,7 +192,6 @@ export function GradebookRO() {
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch grades when section changes (no double-fetch)
@@ -212,7 +211,11 @@ export function GradebookRO() {
 
     // optional abort previous
     if (gradesAbortRef.current) {
-      try { gradesAbortRef.current.abort(); } catch {}
+      try {
+        gradesAbortRef.current.abort();
+      } catch (abortErr) {
+        void abortErr;
+      }
     }
     const controller = new AbortController();
     gradesAbortRef.current = controller;
@@ -265,7 +268,11 @@ export function GradebookRO() {
       });
 
     return () => {
-      try { controller.abort(); } catch {}
+      try {
+        controller.abort();
+      } catch (abortErr) {
+        void abortErr;
+      }
     };
   }, [selectedSectionId]);
 
@@ -280,11 +287,9 @@ export function GradebookRO() {
 
     probedRef.current = true;
     probeCanWrite(a.assignment_id, a.points_possible);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, assignments]);
 
 
-  const isAuthed = !!token && !!schoolId;
   const isDev = import.meta.env.DEV;
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === "1";
   const showDevPanels = isDev && !isDemoMode;
@@ -297,12 +302,6 @@ export function GradebookRO() {
     [sections, selectedSectionId]
   );
   const rosterCount = selectedSection?.roster_count ?? 0;
-
-  // memoize assignment keys to avoid render churn
-  const assignmentKeysForHeader = useMemo(
-    () => assignments.map((a) => a._key),
-    [assignments]
-  );
 
   // memoize totals per student
   const totalsByStudentId = useMemo(() => {
@@ -382,7 +381,7 @@ export function GradebookRO() {
       // PATCH same value; backend validates and returns 200 if allowed
       await patchAssignment(assignmentId, { points_possible: String(currentPointsPossible) });
       setCanWriteAssignments(true);
-    } catch (e) {
+    } catch {
       // If 403 or other error, disable editing UI quietly
       setCanWriteAssignments(false);
     }
@@ -400,10 +399,10 @@ export function GradebookRO() {
       await patchAssignment(assignmentId, { points_possible: trimmed });
       await refreshGradebook();
       setEditingAssignmentId(null);
-      setEditMsg("✅ Points possible updated");
+      setEditMsg("? Points possible updated");
       setTimeout(() => setEditMsg(""), 3000);
     } catch (e) {
-      setEditMsg(`❌ Failed to update points possible: ${String(e)}`);
+      setEditMsg("Failed to update points possible: " + String(e));
     } finally {
       setSavingAssignmentId(null);
     }
@@ -576,7 +575,7 @@ export function GradebookRO() {
             disabled={lane4Saving}
             style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: lane4EditMode ? 600 : 400, border: '1px solid var(--crown-border)', borderRadius: 3, background: lane4EditMode ? 'var(--crown-brand)' : 'var(--crown-surface)', color: lane4EditMode ? 'var(--crown-surface)' : 'var(--crown-ink)' }}
           >
-            {lane4EditMode ? 'Editing ✓' : 'Edit Grades'}
+            {lane4EditMode ? 'Editing ?' : 'Edit Grades'}
           </button>
           {lane4EditMode && (
             <>
@@ -585,7 +584,7 @@ export function GradebookRO() {
                 disabled={lane4Saving}
                 style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid var(--crown-brand)', borderRadius: 3, background: 'var(--crown-brand)', color: 'var(--crown-surface)' }}
               >
-                {lane4Saving ? 'Saving…' : 'Save Grades'}
+                {lane4Saving ? 'Saving�' : 'Save Grades'}
               </button>
               <button
                 onClick={() => { setLane4Edits({}); setLane4EditMode(false); setLane4Msg(null); }}
@@ -598,7 +597,7 @@ export function GradebookRO() {
           )}
           {lane4Msg && (
             <span style={{ fontSize: 13, marginLeft: 8, color: lane4Msg.type === 'error' ? 'var(--crown-danger)' : lane4Msg.type === 'success' ? 'var(--crown-ok)' : 'var(--crown-muted)' }}>
-              {lane4Msg.type === 'success' ? '✅ ' : lane4Msg.type === 'error' ? '⛔ ' : 'ℹ️ '}{lane4Msg.text}
+              {lane4Msg.type === 'success' ? '? ' : lane4Msg.type === 'error' ? '? ' : '?? '}{lane4Msg.text}
             </span>
           )}
           {lane4EditMode && (
@@ -609,23 +608,23 @@ export function GradebookRO() {
 
       {showDevPanels && (
         <div className="debug-panel">
-          <h4>🔧 Request Diagnostics (DEV)</h4>
+          <h4>?? Request Diagnostics (DEV)</h4>
           <dl>
             <dt>API Base:</dt>
             <dd>{import.meta.env.VITE_API_BASE_URL || "(default)"}</dd>
             <dt>Token:</dt>
             <dd style={{ color: token ? "inherit" : "red", fontWeight: token ? "normal" : "bold" }}>
-              {token ? `${token.length} chars` : "❌ MISSING"}
+              {token ? `${token.length} chars` : "? MISSING"}
             </dd>
             <dt>School ID:</dt>
             <dd style={{ color: schoolId ? "inherit" : "red", fontWeight: schoolId ? "normal" : "bold" }}>
-              {schoolId || "❌ MISSING"}
+              {schoolId || "? MISSING"}
             </dd>
             {lastRequest && (
               <>
                 <dt>Last Request:</dt>
                 <dd>
-                  {lastRequest.name || "grades"} → {lastRequest.url}
+                  {lastRequest.name || "grades"} ? {lastRequest.url}
                   {lastRequest.status && <span style={{ color: lastRequest.status === 200 ? "green" : "red" }}> [{lastRequest.status}]</span>}
                 </dd>
               </>
@@ -663,7 +662,7 @@ export function GradebookRO() {
       {/* Sections chooser */}
       <div style={{ marginBottom: 12 }}>
         {loadingSections ? (
-          <div>Loading sections…</div>
+          <div>Loading sections�</div>
         ) : sections.length === 0 ? (
           <div className="empty-state">
             <h3>No sections available</h3>
@@ -682,7 +681,7 @@ export function GradebookRO() {
                 }}
                 style={{ padding: 6, minWidth: 300, fontSize: 14 }}
               >
-                <option value="">— Select a Section —</option>
+                <option value="">� Select a Section �</option>
                 {sections.map((s) => (
                   <option key={s.section_id} value={s.section_id}>
                     {s.course_name || s.name || s.section_id} {s.roster_count > 0 ? `(${s.roster_count} students)` : "(empty)"}
@@ -695,7 +694,7 @@ export function GradebookRO() {
       </div>
 
       {/* Grades states */}
-      {selectedSectionId && loadingGrades && <div>Loading grades…</div>}
+      {selectedSectionId && loadingGrades && <div>Loading grades�</div>}
       {selectedSectionId && !loadingGrades && gradesError ? (
         <ErrorBanner title="Failed to load grades" message={gradesError} />
       ) : null}
@@ -703,7 +702,7 @@ export function GradebookRO() {
       {/* Debug panel: show selected section details */}
       {selectedSectionId && !loadingGrades && showDevPanels && (
         <div className="debug-panel" style={{ background: "var(--crown-warn-bg)", borderColor: "var(--crown-warn)" }}>
-          <h4>📊 Selected Section State</h4>
+          <h4>?? Selected Section State</h4>
           <dl>
             <dt>Section ID:</dt>
             <dd>{selectedSectionId}</dd>
@@ -750,8 +749,8 @@ export function GradebookRO() {
                 style={{
                   padding: "6px 12px",
                   fontSize: 13,
-                  background: editMsg.includes("✅") ? "var(--crown-ok-bg)" : "var(--crown-danger-bg)",
-                  border: `1px solid ${editMsg.includes("✅") ? "var(--crown-ok)" : "var(--crown-danger)"}`,
+                  background: editMsg.includes("?") ? "var(--crown-ok-bg)" : "var(--crown-danger-bg)",
+                  border: `1px solid ${editMsg.includes("?") ? "var(--crown-ok)" : "var(--crown-danger)"}`,
                   borderRadius: 4,
                 }}
               >
@@ -764,7 +763,7 @@ export function GradebookRO() {
                 className="crown-btn"
                 onClick={onExportCsv}
               >
-                Export CSV ↓
+                Export CSV ?
               </button>
             </div>
           </div>
@@ -799,7 +798,7 @@ export function GradebookRO() {
                       }
                       style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
-                      Name {rowSort.key === "name" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
+                      Name {rowSort.key === "name" ? (rowSort.dir === "asc" ? "?" : "?") : ""}
                     </button>
                     <button
                       type="button"
@@ -811,7 +810,7 @@ export function GradebookRO() {
                       }
                       style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
-                      Avg {rowSort.key === "totalPct" ? (rowSort.dir === "asc" ? "↑" : "↓") : ""}
+                      Avg {rowSort.key === "totalPct" ? (rowSort.dir === "asc" ? "?" : "?") : ""}
                     </button>
                   </div>
                 </th>
@@ -846,7 +845,6 @@ export function GradebookRO() {
                             if (e.key === "Enter") e.currentTarget.blur();
                             if (e.key === "Escape") setEditingAssignmentId(null);
                           }}
-                          autoFocus
                         />
                       ) : (
                         <>
@@ -919,7 +917,7 @@ export function GradebookRO() {
                       }
                       style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
-                      Sort cols: Title {colSort.key === "title" ? (colSort.dir === "asc" ? "↑" : "↓") : ""}
+                      Sort cols: Title {colSort.key === "title" ? (colSort.dir === "asc" ? "?" : "?") : ""}
                     </button>
 
                     <button
@@ -932,7 +930,7 @@ export function GradebookRO() {
                       }
                       style={{ fontSize: 12, padding: "2px 6px", cursor: "pointer", background: "none", border: "1px solid var(--crown-border)", borderRadius: "3px" }}
                     >
-                      Avg {colSort.key === "avgPct" ? (colSort.dir === "asc" ? "↑" : "↓") : ""}
+                      Avg {colSort.key === "avgPct" ? (colSort.dir === "asc" ? "?" : "?") : ""}
                     </button>
                   </div>
                 </th>
@@ -941,7 +939,7 @@ export function GradebookRO() {
                   const key = a?._key ?? a?.id;
                   const s = assignmentAverages.get(key);
                   const label =
-                    s && s.pct != null ? `Avg: ${s.pct}% (n=${s.n})` : "Avg: —";
+                    s && s.pct != null ? `Avg: ${s.pct}% (n=${s.n})` : "Avg: �";
 
                   return (
                     <th
@@ -1010,7 +1008,7 @@ export function GradebookRO() {
                     >
                       <div style={{ fontWeight: 500 }}>{label || "Unnamed Student"}</div>
                       <div style={{ fontSize: 12, opacity: 0.7 }}>
-                        Grade {s.grade_level ?? "—"}
+                        Grade {s.grade_level ?? "�"}
                       </div>
                     </td>
 
@@ -1153,7 +1151,7 @@ export function GradebookRO() {
                           }}
                         >
                           <div>
-                            <strong>{row.student_name}</strong> —{" "}
+                            <strong>{row.student_name}</strong> �{" "}
                             <span
                               style={{
                                 background:
@@ -1167,8 +1165,8 @@ export function GradebookRO() {
                           </div>
                           <div style={{ color: "var(--crown-muted)", marginTop: "0.25rem", fontSize: "0.75rem" }}>
                             {row.total_points_earned} / {row.total_points_possible} points
-                            {row.missing_count > 0 && ` • ${row.missing_count} missing`}
-                            {row.status !== "normal" && ` • [${row.status}]`}
+                            {row.missing_count > 0 && ` � ${row.missing_count} missing`}
+                            {row.status !== "normal" && ` � [${row.status}]`}
                           </div>
                         </div>
                       ))}
@@ -1184,4 +1182,14 @@ export function GradebookRO() {
     </CrownLayout>
   );
 }
+
+
+
+
+
+
+
+
+
+
 

@@ -1,7 +1,7 @@
-﻿/**
+/**
  * StaffSetupWizard.jsx
- * Wizard #21 — Staff & Roles Setup
- * Steps: configure (roster) → done
+ * Wizard #21 - Staff and Roles Setup.
+ * Steps: configure roster, then commit.
  */
 import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
@@ -20,7 +20,6 @@ function emptyStaff() { return { email: "", first_name: "", last_name: "", is_te
 
 export default function StaffSetupWizard() {
   const [phase, setPhase] = useState("configure");
-  const [sessionId, setSessionId] = useState(null);
   const [roster, setRoster] = useState([emptyStaff()]);
   const [result, setResult] = useState(null);
   const [err, setErr] = useState(null);
@@ -31,7 +30,6 @@ export default function StaffSetupWizard() {
     try {
       const sess = await _post(BASE);
       const sid = sess.session_id;
-      setSessionId(sid);
       await _post(`${BASE}${sid}/configure/`, { roster });
       const r = await _post(`${BASE}${sid}/commit/`);
       setResult(r);
@@ -47,7 +45,7 @@ export default function StaffSetupWizard() {
     <CrownLayout title="Staff & Roles Setup">
       {phase === "configure" && (
         <form onSubmit={handleConfigure}>
-          <h2>Step 1 — Staff Roster</h2>
+          <h2>Step 1  Staff Roster</h2>
           {roster.map((row, i) => (
             <div key={i} style={{ marginBottom: 8 }}>
               <input placeholder="Email" value={row.email} onChange={e => updateRow(i, "email", e.target.value)} required />
@@ -65,7 +63,7 @@ export default function StaffSetupWizard() {
       {phase === "done" && (
         <div>
           <h2>Done</h2>
-          <p>Created: {result?.created} · Updated: {result?.updated} · Total: {result?.total}</p>
+          <p>Created: {result?.created}  Updated: {result?.updated}  Total: {result?.total}</p>
         </div>
       )}
     </CrownLayout>

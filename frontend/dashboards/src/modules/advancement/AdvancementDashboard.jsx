@@ -1,5 +1,5 @@
 /**
- * AdvancementDashboard — Stage 1 KPI overview
+ * AdvancementDashboard  Stage 1 KPI overview
  * Calls /api/v1/advancement/summary/
  * Falls back to empty-state if API is unavailable.
  */
@@ -37,7 +37,7 @@ export default function AdvancementDashboard() {
     if (token)    headers["Authorization"] = `Bearer ${token}`;
     if (schoolId) headers["X-School-Id"] = schoolId;
 
-    fetch(url, { headers })
+    globalThis.fetch(url, { headers })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -46,7 +46,7 @@ export default function AdvancementDashboard() {
       .catch((e) => { setError(e.message); setLoading(false); });
   }, []);
 
-  if (loading) return <p aria-busy="true">Loading advancement data…</p>;
+  if (loading) return <p aria-busy="true">Loading advancement data</p>;
   if (error)   return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
   if (!data)   return null;
 

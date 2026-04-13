@@ -57,9 +57,9 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <div style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Term Label *
-          </label>
+          </div>
           <input
             className="crown-input"
             type="text"
@@ -73,9 +73,9 @@ export default function Step1Term({ context, setContext, goNext, stepIndex, tota
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <div style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             School Year *
-          </label>
+          </div>
           <input
             className="crown-input"
             type="text"

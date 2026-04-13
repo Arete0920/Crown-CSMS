@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { fetchFinancialAidSummary, fetchFinancialAidDrilldown } from "../api/financialAid.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownCard from "../components/crown/CrownCard.jsx";
@@ -10,7 +10,7 @@ import PageState from "../components/states/PageState.jsx";
 import WidgetState from "../components/states/WidgetState.jsx";
 
 /*
-  Crown2026 � Financial Aid Dashboard
+  Crown2026 ? Financial Aid Dashboard
   - Summary cards showing applications and awards by bucket
   - Drilldown drawer for detailed award rows with filters
   - Wired to real backend: /api/v1/financial-aid/
@@ -21,18 +21,18 @@ function formatMoney(x) {
   return String(x);
 }
 
-/* â”€â”€ Financial Aid KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Financial Aid KPI flip cards ───────────────────────────────────── */
 const ADMIN_KPI = [
-  { label: "Applications",      value: "—",    trend: null,          trendUp: null,
+  { label: "Applications",      value: "�",    trend: null,          trendUp: null,
     definition: "Total financial aid applications submitted for the selected academic year.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Awards Active",     value: "—",    trend: null,          trendUp: null,
+  { label: "Awards Active",     value: "�",    trend: null,          trendUp: null,
     definition: "Number of approved aid awards currently disbursed to students.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Total Awarded",     value: "—",    trend: null,          trendUp: null,
+  { label: "Total Awarded",     value: "�",    trend: null,          trendUp: null,
     definition: "Sum of all aid amounts granted this academic year across all buckets.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Avg Award",         value: "—",    trend: null,          trendUp: null,
+  { label: "Avg Award",         value: "�",    trend: null,          trendUp: null,
     definition: "Mean aid amount per household awarded this term.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
   { label: "Budget Utilization", value: "73%", trend: "+5% vs plan",  trendUp: true,
@@ -210,6 +210,9 @@ export function FinancialAidDashboard() {
               <div
                 key={bucket}
                 onClick={() => handleBucketClick(bucket)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleBucketClick(bucket); }}
+                role="button"
+                tabIndex={0}
                 style={{
                   border: "1px solid var(--crown-brand)",
                   padding: 16,
@@ -265,7 +268,7 @@ function DrilldownDrawer({ drilldown, loading, error, onClose, onRetry, onLoadMo
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2>Award Details</h2>
-        <button onClick={onClose} style={{ fontSize: "24px", border: "none", background: "none", cursor: "pointer" }}>�</button>
+        <button onClick={onClose} style={{ fontSize: "24px", border: "none", background: "none", cursor: "pointer" }}>?</button>
       </div>
 
       {error && (
@@ -307,16 +310,16 @@ function DrilldownDrawer({ drilldown, loading, error, onClose, onRetry, onLoadMo
                     {row.award_id.slice(0, 8)}...
                   </td>
                   <td style={{ border: "1px solid var(--crown-border)", padding: 8, fontSize: 12, fontFamily: "monospace" }}>
-                    {row.household_id ? row.household_id.slice(0, 8) + "..." : "�"}
+                    {row.household_id ? row.household_id.slice(0, 8) + "..." : "?"}
                   </td>
                   <td style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "right" }}>
                     ${formatMoney(row.amount)}
                   </td>
                   <td style={{ border: "1px solid var(--crown-border)", padding: 8 }}>
-                    {row.status || "�"}
+                    {row.status || "?"}
                   </td>
                   <td style={{ border: "1px solid var(--crown-border)", padding: 8 }}>
-                    {row.rationale || "�"}
+                    {row.rationale || "?"}
                   </td>
                 </tr>
               ))}

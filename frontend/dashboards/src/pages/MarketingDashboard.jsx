@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -6,7 +6,7 @@ import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection   from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
-/* ── Auth helpers ─────────────────────────────────────────────────────── */
+/*  Auth helpers  */
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
   return base.endsWith('/') ? base.slice(0, -1) : base;
@@ -20,7 +20,7 @@ function getSession() {
   } catch { return { token: '', schoolId: '' }; }
 }
 
-/* ── Static demo fallback ─────────────────────────────────────────────── */
+/*  Static demo fallback  */
 const DEMO = {
   inquiries_ytd:  187,
   tours_scheduled: 62,
@@ -51,7 +51,7 @@ async function fetchMarketingMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -59,7 +59,7 @@ async function fetchMarketingMetrics() {
   }
 }
 
-/* ── Helpers ──────────────────────────────────────────────────────────── */
+/*  Helpers  */
 function Pill({ color = 'gray', children }) {
   const map = {
     red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
@@ -86,13 +86,13 @@ function FunnelStep({ label, value, isLast }) {
         <span style={{ fontSize: 12, color: 'var(--crown-muted)' }}>{label}</span>
         <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--crown-ink)' }}>{value}</span>
       </div>
-      {!isLast && <span style={{ fontSize: 16, color: 'var(--crown-muted)', flexShrink: 0 }}>→</span>}
+      {!isLast && <span style={{ fontSize: 16, color: 'var(--crown-muted)', flexShrink: 0 }}></span>}
     </div>
   );
 }
 
-/* ── Main component ───────────────────────────────────────────────────── */
-/* â”€â”€ Marketing KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Main component  */
+/*  Marketing KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Inquiries MTD",     value: "28",    trend: "+6 vs last mo",  trendUp: true,
     definition: "Prospective families who submitted an inquiry form this month.",
@@ -128,7 +128,7 @@ export default function MarketingDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
@@ -203,7 +203,7 @@ export default function MarketingDashboard() {
             <CrownCard title="Alerts &amp; Stalled Leads">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {alerts.length === 0
-                  ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No stalled leads — pipeline healthy.</p>
+                  ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No stalled leads  pipeline healthy.</p>
                   : alerts.map((a, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
                         background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',

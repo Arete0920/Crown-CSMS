@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { saveAidBuckets } from "../../api/financial_aid_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -49,7 +49,7 @@ export default function Step2Buckets({ context, setContext, goNext, goPrev, step
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
         {ALL_BUCKETS.map((b) => (
-          <label
+          <div
             key={b.value}
             style={{
               display: "flex",
@@ -73,7 +73,7 @@ export default function Step2Buckets({ context, setContext, goNext, goPrev, step
               <div style={{ fontWeight: 600, fontSize: 13 }}>{b.label}</div>
               <div style={{ fontSize: 12, color: "var(--crown-muted)" }}>{b.desc}</div>
             </div>
-          </label>
+          </div>
         ))}
 
         {error && <div className="crown-alert crown-alert--error">{error}</div>}
@@ -83,7 +83,7 @@ export default function Step2Buckets({ context, setContext, goNext, goPrev, step
             Back
           </button>
           <button className="crown-btn crown-btn--primary" onClick={handleContinue} disabled={loading}>
-            {loading ? "Saving…" : "Continue"}
+            {loading ? "Saving�" : "Continue"}
           </button>
         </div>
       </div>

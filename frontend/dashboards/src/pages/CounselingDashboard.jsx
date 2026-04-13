@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -6,7 +6,7 @@ import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection   from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
-/* ── Auth helpers ─────────────────────────────────────────────────────── */
+/*  Auth helpers  */
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
   return base.endsWith('/') ? base.slice(0, -1) : base;
@@ -20,7 +20,7 @@ function getSession() {
   } catch { return { token: '', schoolId: '' }; }
 }
 
-/* ── Static demo fallback ─────────────────────────────────────────────── */
+/*  Static demo fallback  */
 const DEMO = {
   referrals_this_week:  11,
   active_plans:          8,
@@ -46,8 +46,8 @@ const DEMO = {
   ],
   alerts: [
     { label: '2 follow-up meetings overdue this week',                   severity: 'red'    },
-    { label: 'Tyler Green — 3rd truancy this semester, parent mtg needed', severity: 'red'    },
-    { label: 'Repeat incident: Marcus Brown — 2nd referral in 5 days',   severity: 'yellow' },
+    { label: 'Tyler Green  3rd truancy this semester, parent mtg needed', severity: 'red'    },
+    { label: 'Repeat incident: Marcus Brown  2nd referral in 5 days',   severity: 'yellow' },
     { label: '1 suspension pending VP review',                           severity: 'yellow' },
   ],
 };
@@ -59,7 +59,7 @@ async function fetchCounselingMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -67,7 +67,7 @@ async function fetchCounselingMetrics() {
   }
 }
 
-/* ── Helpers ──────────────────────────────────────────────────────────── */
+/*  Helpers  */
 function Pill({ color = 'gray', children }) {
   const map = {
     red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
@@ -88,8 +88,8 @@ const STATUS_COLOR = {
   resolved:     'green',
 };
 
-/* ── Main component ───────────────────────────────────────────────────── */
-/* â”€â”€ Counseling KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Main component  */
+/*  Counseling KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Students Seen MTD",  value: "18",  trend: null,              trendUp: null,
     definition: "Unique students who had a counseling session this calendar month.",
@@ -127,7 +127,7 @@ export default function CounselingDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>

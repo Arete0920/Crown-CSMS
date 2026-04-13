@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -49,10 +49,10 @@ const DEMO = {
     { label: 'Thu',  count: 287 },
   ],
   alerts: [
-    { label: '2 inventory items critically low — reorder immediately',        severity: 'red'    },
-    { label: '18 unpaid lunch balances — $342 aggregate outstanding',         severity: 'yellow' },
+    { label: '2 inventory items critically low  reorder immediately',        severity: 'red'    },
+    { label: '18 unpaid lunch balances  $342 aggregate outstanding',         severity: 'yellow' },
     { label: 'Free/reduced verification renewals due for 8 students (April)', severity: 'yellow' },
-    { label: 'Chocolate milk deliverya delayed — contact vendor',             severity: 'gray'   },
+    { label: 'Chocolate milk deliverya delayed  contact vendor',             severity: 'gray'   },
   ],
 };
 
@@ -63,7 +63,7 @@ async function fetchFoodMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -85,7 +85,7 @@ function Pill({ color = 'gray', children }) {
   );
 }
 
-/* â”€â”€ Food / Lunch Program KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Food / Lunch Program KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Meals Today",         value: "312",     trend: null,             trendUp: null,
     definition: "Total meals served today across all meal periods (breakfast, lunch, aftercare).",
@@ -94,7 +94,7 @@ const ADMIN_KPI = [
     definition: "Percentage of students participating in federal free or reduced-price meal programs.",
     dataSource: "Food Module", dataHref: "/food" },
   { label: "Low Balance Alerts",  value: "12",      trend: "+3 vs yesterday",trendUp: false,
-    definition: "Student accounts with a meal balance below $5.00 — contact families.",
+    definition: "Student accounts with a meal balance below $5.00  contact families.",
     dataSource: "Food Module", dataHref: "/food" },
   { label: "Revenue Today",       value: "$1,248",  trend: null,             trendUp: null,
     definition: "Total meal revenue collected today (paid accounts only, excluding free/reduced).",
@@ -124,7 +124,7 @@ export default function FoodDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
@@ -138,13 +138,13 @@ export default function FoodDashboard() {
       <DashboardSection title="Menu &amp; Inventory">
         <CrownGrid>
           <Col span={6}>
-            <CrownCard title="Menu — Today &amp; Tomorrow">
+            <CrownCard title="Menu  Today &amp; Tomorrow">
               <div style={{ marginBottom: 12 }}>
                 <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--crown-muted)', marginBottom: 6 }}>TODAY</div>
                 {menuToday.map((m, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--crown-border)', fontSize: 13 }}>
                     <span style={{ fontWeight: 500, color: 'var(--crown-ink)' }}>{m.item}</span>
-                    <span style={{ color: 'var(--crown-muted)', fontSize: 11 }}>{m.allergens !== 'None' ? `⚠ ${m.allergens}` : ''}</span>
+                    <span style={{ color: 'var(--crown-muted)', fontSize: 11 }}>{m.allergens !== 'None' ? ` ${m.allergens}` : ''}</span>
                   </div>
                 ))}
               </div>
@@ -153,14 +153,14 @@ export default function FoodDashboard() {
                 {menuTmrw.map((m, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--crown-border)', fontSize: 13 }}>
                     <span style={{ fontWeight: 500, color: 'var(--crown-ink)' }}>{m.item}</span>
-                    <span style={{ color: 'var(--crown-muted)', fontSize: 11 }}>{m.allergens !== 'None' ? `⚠ ${m.allergens}` : ''}</span>
+                    <span style={{ color: 'var(--crown-muted)', fontSize: 11 }}>{m.allergens !== 'None' ? ` ${m.allergens}` : ''}</span>
                   </div>
                 ))}
               </div>
             </CrownCard>
           </Col>
           <Col span={6}>
-            <CrownCard title="Inventory — Low Stock">
+            <CrownCard title="Inventory  Low Stock">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {invLow.map((item, i) => (
                   <div key={i} style={{

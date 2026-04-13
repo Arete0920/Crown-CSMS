@@ -46,7 +46,7 @@ export default function ParentAttendancePage() {
   return (
     <CrownLayout title="Parent Attendance" subtitle="View your student's attendance record">
       <div style={{ marginBottom: 12 }}>
-        <label>Student: </label>
+        <div>Student: </div>
         <select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
           <option value="">-- select --</option>
           {students.map((s) => (

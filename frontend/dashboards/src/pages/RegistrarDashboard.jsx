@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
@@ -20,15 +20,15 @@ const DEMO = {
   snapshot_date: 'Feb 26, 2026',
   pending_requests_list: [
     { type: 'Enrollment Verification', submitted: 'Feb 20', target_date: 'Feb 27', status: 'in_progress' },
-    { type: 'Transcript – College',    submitted: 'Feb 21', target_date: 'Feb 28', status: 'pending'     },
-    { type: 'Transcript – College',    submitted: 'Feb 22', target_date: 'Mar 1',  status: 'pending'     },
+    { type: 'Transcript  College',    submitted: 'Feb 21', target_date: 'Feb 28', status: 'pending'     },
+    { type: 'Transcript  College',    submitted: 'Feb 22', target_date: 'Mar 1',  status: 'pending'     },
     { type: 'Records Transfer',        submitted: 'Feb 18', target_date: 'Feb 25', status: 'hold'        },
     { type: 'Name Change Request',     submitted: 'Feb 19', target_date: 'Feb 26', status: 'complete'    },
   ],
   transcript_queue: [
     { destination_type: 'College / University', count: 14, avg_days: 2.3 },
-    { destination_type: 'Transfer – Public',    count:  4, avg_days: 1.8 },
-    { destination_type: 'Transfer – Private',   count:  3, avg_days: 2.1 },
+    { destination_type: 'Transfer  Public',    count:  4, avg_days: 1.8 },
+    { destination_type: 'Transfer  Private',   count:  3, avg_days: 2.1 },
     { destination_type: 'Court / Legal',        count:  2, avg_days: 5.0 },
   ],
   new_enrollments_by_grade: [
@@ -42,7 +42,7 @@ const DEMO = {
   alerts: [
     { label: '1 records request on administrative hold',          severity: 'red'    },
     { label: '3 enrollment holds pending financial clearance',    severity: 'yellow' },
-    { label: 'Semester end transcript deadline — Mar 15',        severity: 'yellow' },
+    { label: 'Semester end transcript deadline  Mar 15',        severity: 'yellow' },
   ],
 };
 
@@ -53,7 +53,7 @@ async function fetchRegistrarMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch { return { ok: false, data: DEMO }; }
@@ -79,7 +79,7 @@ function Pill({ color = 'gray', children }) {
 const TH = { padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 };
 const TD = { padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' };
 
-/* â”€â”€ Registrar KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Registrar KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Records Pending",    value: "8",    trend: null,             trendUp: null,
     definition: "Student records with incomplete or missing required fields awaiting review.",
@@ -114,7 +114,7 @@ export default function RegistrarDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -38,11 +38,11 @@ const DEMO = {
     { category: 'Security',         count: 2 },
   ],
   recent: [
-    { id: '1', category: 'Behavioral',    severity: 'critical', description: 'Physical altercation — hallway B2', resolved: false,  created_at: '2026-02-22' },
+    { id: '1', category: 'Behavioral',    severity: 'critical', description: 'Physical altercation  hallway B2', resolved: false,  created_at: '2026-02-22' },
     { id: '2', category: 'Medical',       severity: 'medium',   description: 'Allergic reaction at lunch',        resolved: false,  created_at: '2026-02-21' },
     { id: '3', category: 'Slip/Fall',     severity: 'low',      description: 'Student fell on wet stairs',        resolved: true,   created_at: '2026-02-20' },
-    { id: '4', category: 'Security',      severity: 'medium',   description: 'Tailgate entry — side door',        resolved: false,  created_at: '2026-02-19' },
-    { id: '5', category: 'Property Damage',severity: 'low',     description: 'Broken window — classroom 14',     resolved: true,   created_at: '2026-02-18' },
+    { id: '4', category: 'Security',      severity: 'medium',   description: 'Tailgate entry  side door',        resolved: false,  created_at: '2026-02-19' },
+    { id: '5', category: 'Property Damage',severity: 'low',     description: 'Broken window  classroom 14',     resolved: true,   created_at: '2026-02-18' },
   ],
 };
 
@@ -55,8 +55,8 @@ async function fetchSafetyData() {
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
     const [metricsRes, listRes] = await Promise.all([
-      fetch(`${apiBase()}/api/v1/safety/metrics/`, { headers }),
-      fetch(`${apiBase()}/api/v1/safety/incidents/`, { headers }),
+      globalThis.fetch(`${apiBase()}/api/v1/safety/metrics/`, { headers }),
+      globalThis.fetch(`${apiBase()}/api/v1/safety/incidents/`, { headers }),
     ]);
     if (!metricsRes.ok || !listRes.ok) throw new Error('non-ok');
     const metrics = await metricsRes.json();
@@ -84,7 +84,7 @@ function Pill({ color = 'gray', children }) {
   );
 }
 
-/* â”€â”€ Safety KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Safety KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Incidents MTD",     value: "2",    trend: "-1 vs last mo",  trendUp: true,
     definition: "Safety incidents (injury, near-miss, property damage) logged this month.",
@@ -113,7 +113,7 @@ export default function SafetyDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
@@ -165,7 +165,7 @@ export default function SafetyDashboard() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--crown-muted)' }}>
                       <span>{inc.created_at ? String(inc.created_at).slice(0, 10) : ''}</span>
                       <span style={{ color: inc.resolved ? 'var(--crown-ok)' : 'var(--crown-danger)', fontWeight: 600 }}>
-                        {inc.resolved ? '✓ Resolved' : '● Open'}
+                        {inc.resolved ? ' Resolved' : ' Open'}
                       </span>
                     </div>
                   </div>

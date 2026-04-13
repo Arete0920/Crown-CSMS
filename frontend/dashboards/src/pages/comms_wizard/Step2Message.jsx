@@ -39,10 +39,11 @@ export default function Step2Message({ context, setContext, goNext, goPrev, step
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <label htmlFor="comms-subject" style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Subject *
           </label>
           <input
+            id="comms-subject"
             className="crown-input"
             type="text"
             placeholder="e.g. Action Required: Please Re-enroll by March 1"
@@ -54,12 +55,13 @@ export default function Step2Message({ context, setContext, goNext, goPrev, step
         </div>
 
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <label htmlFor="comms-message-body" style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Message Body *
           </label>
           <textarea
+            id="comms-message-body"
             className="crown-input"
-            placeholder="Write your message here…"
+            placeholder="Write your message here..."
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={8}
@@ -70,13 +72,13 @@ export default function Step2Message({ context, setContext, goNext, goPrev, step
         {error && <div className="crown-alert">{error}</div>}
 
         <div style={{ display: "flex", gap: 12 }}>
-          <button className="crown-btn" onClick={goPrev}>← Back</button>
+          <button className="crown-btn" onClick={goPrev}>Back</button>
           <button
             className="crown-btn crown-btn-primary"
             onClick={handleContinue}
             disabled={loading}
           >
-            {loading ? "Saving…" : "Continue →"}
+            {loading ? "Saving..." : "Continue"}
           </button>
         </div>
       </div>

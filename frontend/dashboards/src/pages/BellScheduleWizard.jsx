@@ -1,14 +1,14 @@
-﻿/**
+/**
  * BellScheduleWizard.jsx
  *
- * Wizard #19 � Bell Schedule / Day Template Seed
+ * Wizard #19 ? Bell Schedule / Day Template Seed
  *
  * Phases:
- *   1. Configure  � schedule name, mode (SINGLE_DAY | DAY_TEMPLATES), academic year ID
- *   2. Blocks     � define period blocks per template
+ *   1. Configure  ? schedule name, mode (SINGLE_DAY | DAY_TEMPLATES), academic year ID
+ *   2. Blocks     ? define period blocks per template
  *                   SINGLE_DAY: 1 template (DEFAULT), N blocks
  *                   DAY_TEMPLATES: 2+ templates (e.g. A/B or MON-FRI), each with N blocks
- *   3. Done       � commit result: schedule_id, template_count, snapshot
+ *   3. Done       ? commit result: schedule_id, template_count, snapshot
  */
 import { useState, useCallback } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
@@ -36,7 +36,7 @@ async function _post(path, body) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 1 � Configure
+// Phase 1 ? Configure
 // ---------------------------------------------------------------------------
 
 function PhaseConfig({ onDone }) {
@@ -69,7 +69,7 @@ function PhaseConfig({ onDone }) {
 
   return (
     <section>
-      <h3 style={{ marginBottom: 16 }}>Step 1 � Configure Bell Schedule</h3>
+      <h3 style={{ marginBottom: 16 }}>Step 1 ? Configure Bell Schedule</h3>
       <table style={{ borderCollapse: "collapse", width: "100%", maxWidth: 520 }}>
         <tbody>
           <tr>
@@ -113,7 +113,7 @@ function PhaseConfig({ onDone }) {
         disabled={busy}
         style={{ marginTop: 16, padding: "8px 20px", fontWeight: 600 }}
       >
-        {busy ? "Saving�" : "Next: Define Period Blocks ?"}
+        {busy ? "Saving?" : "Next: Define Period Blocks ?"}
       </button>
     </section>
   );
@@ -171,7 +171,7 @@ const tdS = { padding: "4px 6px", border: "1px solid var(--crown-border)", verti
 const inputS = { width: "100%", padding: "4px 6px", boxSizing: "border-box", border: "1px solid var(--crown-border)" };
 
 // ---------------------------------------------------------------------------
-// Phase 2 � Blocks
+// Phase 2 ? Blocks
 // ---------------------------------------------------------------------------
 
 function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
@@ -204,7 +204,7 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
 
   return (
     <section>
-      <h3 style={{ marginBottom: 8 }}>Step 2 � Define Period Blocks</h3>
+      <h3 style={{ marginBottom: 8 }}>Step 2 ? Define Period Blocks</h3>
       {scheduleMode === "SINGLE_DAY" && (
         <p style={{ fontSize: 13, color: "var(--crown-muted)", marginBottom: 12 }}>
           SINGLE_DAY: one template (DEFAULT) applied to all days. Gaps between blocks are allowed.
@@ -223,11 +223,11 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
               <strong>Template: DEFAULT</strong>
             ) : (
               <>
-                <label style={{ fontWeight: 600 }}>Template code:</label>
+                <div style={{ fontWeight: 600 }}>Template code:</div>
                 <input
                   value={tpl.template_code}
                   onChange={e => updateTemplateCode(i, e.target.value.toUpperCase())}
-                  placeholder="A, B, MON, TUE�"
+                  placeholder="A, B, MON, TUE?"
                   style={{ padding: "4px 8px", width: 100, textTransform: "uppercase" }}
                 />
                 {templates.length > 2 && (
@@ -251,7 +251,7 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
           disabled={busy}
           style={{ padding: "8px 20px", fontWeight: 600 }}
         >
-          {busy ? "Committing�" : "Commit Bell Schedule ?"}
+          {busy ? "Committing?" : "Commit Bell Schedule ?"}
         </button>
       </div>
     </section>
@@ -259,7 +259,7 @@ function PhaseBlocks({ sessionId, scheduleMode, onDone }) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 3 � Done
+// Phase 3 ? Done
 // ---------------------------------------------------------------------------
 
 function PhaseDone({ result, onReset }) {
@@ -284,10 +284,10 @@ function PhaseDone({ result, onReset }) {
       </table>
       {result.templates?.map((tpl, i) => (
         <div key={i} style={{ marginBottom: 10 }}>
-          <strong>Template: {tpl.template_code}</strong> � {tpl.block_count} block{tpl.block_count !== 1 ? "s" : ""}
+          <strong>Template: {tpl.template_code}</strong> ? {tpl.block_count} block{tpl.block_count !== 1 ? "s" : ""}
           <ul style={{ margin: "4px 0 0 20px", fontSize: 13 }}>
             {tpl.blocks.map(b => (
-              <li key={b.code}>{b.code}: {b.start_time} � {b.end_time}</li>
+              <li key={b.code}>{b.code}: {b.start_time} ? {b.end_time}</li>
             ))}
           </ul>
         </div>

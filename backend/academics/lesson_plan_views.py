@@ -1,10 +1,10 @@
-"""
+﻿"""
 Lesson Plan API views.
 
 Endpoints:
     GET  /api/v1/academics/sections/<section_id>/lesson-plans/
-         ?date=YYYY-MM-DD  → single plan (or 404)
-         ?date_from=&date_to=  → range of plans
+         ?date=YYYY-MM-DD  ? single plan (or 404)
+         ?date_from=&date_to=  ? range of plans
     POST /api/v1/academics/sections/<section_id>/lesson-plans/  (upsert by section+date)
     GET  /api/v1/academics/lesson-plans/<plan_id>/
     PATCH/PUT  /api/v1/academics/lesson-plans/<plan_id>/
@@ -22,21 +22,23 @@ Permissions:
 """
 from __future__ import annotations
 
+from uuid import UUID
+
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 
 from core.models import UserRole
 from households.scoping import get_request_school_id
 
-from .models import Section, Lesson, LessonPlan, LessonResource
+from .models import Lesson, LessonPlan, LessonResource, Section
 from .serializers import (
-    LessonPlanSerializer,
     LessonPlanPublicSerializer,
+    LessonPlanSerializer,
     LessonResourceSerializer,
 )
 
@@ -66,7 +68,39 @@ def _can_read_private(user, school_id) -> bool:
     roles = set(
         UserRole.objects.filter(user_id=user.id, school_id=school_id).values_list("role_code", flat=True)
     )
-    return bool(roles)  # any role → teacher/admin → can see private notes
+    return bool(roles)
+
+
+def _validate_lesson_ids_for_section(*, school_id, section, lesson_ids):
+    """Ensure lesson_ids are UUIDs that belong to the same school and section course."""
+    if lesson_ids is None:
+        return
+    if not isinstance(lesson_ids, list):
+        raise ValidationError({"lesson_ids": "lesson_ids must be a list of lesson UUID strings."})
+    if not lesson_ids:
+        return
+
+    normalized_ids = []
+    for raw_id in lesson_ids:
+        try:
+            normalized_ids.append(UUID(str(raw_id)))
+        except (TypeError, ValueError):
+            raise ValidationError({"lesson_ids": "Each lesson_id must be a valid UUID."})
+
+    lessons = Lesson.objects.filter(
+        id__in=normalized_ids,
+        school_id=school_id,
+        unit__course_id=section.course_id,
+    )
+    found_ids = {lesson.id for lesson in lessons}
+    missing = [str(lesson_id) for lesson_id in normalized_ids if lesson_id not in found_ids]
+    if missing:
+        raise ValidationError(
+            {
+                "lesson_ids": "All lesson_ids must belong to lessons in this section course and school.",
+                "invalid_lesson_ids": missing,
+            }
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -77,8 +111,8 @@ def _can_read_private(user, school_id) -> bool:
 @permission_classes([IsAuthenticated])
 def lesson_plan_list_create(request, section_id):
     """
-    GET  – list plans for a section; optional ?date=YYYY-MM-DD or ?date_from=&date_to=
-    POST – upsert (create or update) plan identified by section + plan_date
+    GET  - list plans for a section; optional ?date=YYYY-MM-DD or ?date_from=&date_to=
+    POST - upsert (create or update) plan identified by section + plan_date
     """
     school_id = get_request_school_id(request)
     section = get_object_or_404(Section, id=section_id, school_id=school_id)
@@ -103,13 +137,21 @@ def lesson_plan_list_create(request, section_id):
         ser_class = LessonPlanSerializer if include_private else LessonPlanPublicSerializer
         return Response(ser_class(qs, many=True).data)
 
-    # POST – upsert
     if not _can_write(request.user, school_id):
         return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
 
     plan_date = request.data.get("plan_date")
     if not plan_date:
         return Response({"detail": "plan_date is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        _validate_lesson_ids_for_section(
+            school_id=school_id,
+            section=section,
+            lesson_ids=request.data.get("lesson_ids"),
+        )
+    except ValidationError as exc:
+        return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
         plan, created = LessonPlan.objects.select_for_update().get_or_create(
@@ -118,7 +160,6 @@ def lesson_plan_list_create(request, section_id):
             plan_date=plan_date,
             defaults={"created_by": request.user, "updated_by": request.user},
         )
-        # Apply fields from request body
         editable_fields = ["lesson_ids", "objectives", "materials", "activities", "homework", "teacher_notes_private"]
         for field in editable_fields:
             if field in request.data:
@@ -133,8 +174,8 @@ def lesson_plan_list_create(request, section_id):
 @permission_classes([IsAuthenticated])
 def lesson_plan_detail(request, plan_id):
     """
-    GET   – retrieve a single lesson plan
-    PATCH/PUT – update fields
+    GET   - retrieve a single lesson plan
+    PATCH/PUT - update fields
     """
     school_id = get_request_school_id(request)
     plan = get_object_or_404(LessonPlan, id=plan_id, school_id=school_id)
@@ -144,9 +185,17 @@ def lesson_plan_detail(request, plan_id):
         ser_class = LessonPlanSerializer if include_private else LessonPlanPublicSerializer
         return Response(ser_class(plan).data)
 
-    # PATCH / PUT – require write access
     if not _can_write(request.user, school_id):
         return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        _validate_lesson_ids_for_section(
+            school_id=school_id,
+            section=plan.section,
+            lesson_ids=request.data.get("lesson_ids"),
+        )
+    except ValidationError as exc:
+        return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
 
     editable_fields = ["lesson_ids", "objectives", "materials", "activities", "homework", "teacher_notes_private", "plan_date"]
     with transaction.atomic():
@@ -167,8 +216,8 @@ def lesson_plan_detail(request, plan_id):
 @permission_classes([IsAuthenticated])
 def lesson_resource_list_create(request, lesson_id):
     """
-    GET  – list resources for a lesson (tenant-scoped)
-    POST – add a resource to a lesson
+    GET  - list resources for a lesson (tenant-scoped)
+    POST - add a resource to a lesson
     """
     school_id = get_request_school_id(request)
     lesson = get_object_or_404(Lesson, id=lesson_id, school_id=school_id)
@@ -177,7 +226,6 @@ def lesson_resource_list_create(request, lesson_id):
         resources = LessonResource.objects.filter(lesson=lesson, school_id=school_id).order_by("id")
         return Response(LessonResourceSerializer(resources, many=True).data)
 
-    # POST
     if not _can_write(request.user, school_id):
         return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
 
@@ -200,9 +248,9 @@ def lesson_resource_list_create(request, lesson_id):
 @permission_classes([IsAuthenticated])
 def lesson_resource_detail(request, resource_id):
     """
-    GET    – retrieve a single resource
-    PATCH  – update title/kind/url/file_ref
-    DELETE – remove resource (staff only)
+    GET    - retrieve a single resource
+    PATCH  - update title/kind/url/file_ref
+    DELETE - remove resource (staff only)
     """
     school_id = get_request_school_id(request)
     resource = get_object_or_404(LessonResource, id=resource_id, school_id=school_id)
@@ -217,9 +265,9 @@ def lesson_resource_detail(request, resource_id):
         resource.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # PATCH
     for field in ["title", "kind", "url", "file_ref"]:
         if field in request.data:
             setattr(resource, field, request.data[field])
     resource.save()
     return Response(LessonResourceSerializer(resource).data)
+

@@ -31,12 +31,12 @@ export default function Step1Configure({ context, setContext, goNext, stepIndex,
     <div>
       <CrownWizardStepHeader title="Label & Year" subtitle="Name this bell schedule and enter the school year." stepIndex={stepIndex} totalSteps={totalSteps} steps={steps} />
       <div className="crown-wizard-field">
-        <label>Schedule Label</label>
-        <input className="crown-input" value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Standard Day Schedule" />
+        <label htmlFor="bell-schedule-label">Schedule Label</label>
+        <input id="bell-schedule-label" className="crown-input" value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Standard Day Schedule" />
       </div>
       <div className="crown-wizard-field">
-        <label>School Year</label>
-        <input className="crown-input" value={schoolYear} onChange={e => setSchoolYear(e.target.value)} placeholder="e.g. 2026-2027" />
+        <label htmlFor="bell-schedule-school-year">School Year</label>
+        <input id="bell-schedule-school-year" className="crown-input" value={schoolYear} onChange={e => setSchoolYear(e.target.value)} placeholder="e.g. 2026-2027" />
       </div>
       {error && <p className="crown-error">{error}</p>}
       <button className="crown-btn crown-btn-primary" onClick={handleNext} disabled={loading}>

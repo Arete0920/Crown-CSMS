@@ -1,45 +1,56 @@
 /**
- * DrilldownDrawer — slide-in panel that shows detail rows for a widget.
+ * DrilldownDrawer - slide-in panel that shows detail rows for a widget.
  * Uses the Crown CSS card + overlay pattern (no external drawer library).
  */
-import { useEffect, useRef } from "react";
+import PropTypes from "prop-types";
+import { useEffect } from "react";
 
-export default function DrilldownDrawer({ open, title, widget, schoolId, onClose, children }) {
-  const overlayRef = useRef(null);
-
-  // Close on Escape
+export default function DrilldownDrawer({ open, title, onClose, children }) {
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    const handler = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    globalThis.addEventListener("keydown", handler);
+    return () => globalThis.removeEventListener("keydown", handler);
   }, [open, onClose]);
-
-  // Close on overlay click
-  const handleOverlayClick = (e) => {
-    if (e.target === overlayRef.current) onClose();
-  };
 
   if (!open) return null;
 
   return (
-    <div
-      ref={overlayRef}
-      onClick={handleOverlayClick}
+    <dialog
+      open
+      aria-modal="true"
+      aria-label={`${title} detail`}
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.55)",
         zIndex: 999,
         display: "flex",
         justifyContent: "flex-end",
+        border: 0,
+        margin: 0,
+        padding: 0,
+        background: "transparent",
       }}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`${title} detail`}
     >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={`Close ${title} detail overlay`}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.55)",
+          border: 0,
+          padding: 0,
+          margin: 0,
+          cursor: "pointer",
+        }}
+      />
       <div
         style={{
+          position: "relative",
           width: "min(440px, 95vw)",
           height: "100%",
           background: "var(--crown-surface)",
@@ -49,10 +60,10 @@ export default function DrilldownDrawer({ open, title, widget, schoolId, onClose
           boxShadow: "var(--crown-shadow)",
         }}
       >
-        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div style={{ fontWeight: 800, fontSize: 17 }}>{title}</div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close drawer"
             style={{
@@ -65,17 +76,23 @@ export default function DrilldownDrawer({ open, title, widget, schoolId, onClose
               fontSize: 16,
             }}
           >
-            ✕
+            x
           </button>
         </div>
 
-        {/* Body */}
         {children ?? (
           <div style={{ color: "var(--crown-muted)", fontSize: 13, fontStyle: "italic" }}>
             Drilldown detail coming in Phase B.
           </div>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }
+
+DrilldownDrawer.propTypes = {
+  open: PropTypes.bool.isRequired,
+  title: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
+  children: PropTypes.node,
+};

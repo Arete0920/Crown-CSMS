@@ -80,7 +80,7 @@ export async function authenticatedFetch(input, init = {}) {
     credentials: init.credentials ?? "include",
   };
 
-  const resp = await fetch(input, finalInit);
+  const resp = await globalThis.fetch(input, finalInit);
 
   // Throw structured error with status/url/body for diagnostics
   if (!resp.ok) {
@@ -101,7 +101,7 @@ export async function authenticatedFetch(input, init = {}) {
  *   POST /api/auth/token/  { username, password } -> { access, refresh }
  */
 export async function jwtLogin({ username, password, apiBase = "" }) {
-  const resp = await fetch(`${apiBase}/api/v1/auth/token/`, {
+  const resp = await globalThis.fetch(`${apiBase}/api/v1/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),

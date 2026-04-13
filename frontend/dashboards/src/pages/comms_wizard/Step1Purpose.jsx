@@ -20,7 +20,7 @@ export default function Step1Purpose({ context, setContext, goNext, stepIndex, t
 
   function toggleChannel(value) {
     setChannels((prev) =>
-      prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value]
+      prev.includes(value) ? prev.filter((channel) => channel !== value) : [...prev, value]
     );
   }
 
@@ -69,10 +69,11 @@ export default function Step1Purpose({ context, setContext, goNext, stepIndex, t
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 16 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <label htmlFor="comms-purpose" style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Campaign Purpose *
           </label>
           <input
+            id="comms-purpose"
             className="crown-input"
             type="text"
             placeholder="e.g. Re-enrollment Reminder"
@@ -84,23 +85,24 @@ export default function Step1Purpose({ context, setContext, goNext, stepIndex, t
           <span style={{ fontSize: 11, color: "var(--crown-muted)" }}>Max 128 characters.</span>
         </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 8 }}>
+        <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
+          <legend style={{ fontSize: 12, color: "var(--crown-muted)", marginBottom: 8 }}>
             Channels *
-          </label>
+          </legend>
           <div style={{ display: "flex", gap: 20 }}>
-            {CHANNEL_OPTIONS.map((ch) => (
-              <label key={ch.value} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+            {CHANNEL_OPTIONS.map((channelOption) => (
+              <label key={channelOption.value} htmlFor={`comms-channel-${channelOption.value}`} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
                 <input
+                  id={`comms-channel-${channelOption.value}`}
                   type="checkbox"
-                  checked={channels.includes(ch.value)}
-                  onChange={() => toggleChannel(ch.value)}
+                  checked={channels.includes(channelOption.value)}
+                  onChange={() => toggleChannel(channelOption.value)}
                 />
-                {ch.label}
+                {channelOption.label}
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         {error && <div className="crown-alert">{error}</div>}
 
@@ -110,7 +112,7 @@ export default function Step1Purpose({ context, setContext, goNext, stepIndex, t
           disabled={loading}
           style={{ alignSelf: "flex-start" }}
         >
-          {loading ? "Saving…" : "Continue →"}
+          {loading ? "Saving..." : "Continue"}
         </button>
       </div>
     </div>

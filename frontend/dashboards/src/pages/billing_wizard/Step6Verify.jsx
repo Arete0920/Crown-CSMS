@@ -1,19 +1,22 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { verifyBillingSetup } from "../../api/billing_wizard.js";
 import "../../styles/crown-wizard.css";
 
 export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
-  const [result, setResult] = useState(context.verify || null);
-  const [loading, setLoading] = useState(!context.verify);
+  const existingVerify = context.verify || null;
+  const sessionId = context.sessionId;
+  const term = context.term;
+  const [result, setResult] = useState(existingVerify);
+  const [loading, setLoading] = useState(!existingVerify);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (context.verify) return;
-    verifyBillingSetup(context.sessionId)
+    if (existingVerify || !sessionId) return;
+    verifyBillingSetup(sessionId)
       .then((data) => { setResult(data); setLoading(false); })
       .catch((e) => { setError(e.body?.error || e.message || "Verification failed."); setLoading(false); });
-  }, []);
+  }, [existingVerify, sessionId]);
 
   const plans = result?.result?.plans || [];
   const feesCount = result?.result?.fees_count ?? 0;
@@ -30,7 +33,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
       />
 
       <div style={{ marginTop: 16 }}>
-        {loading && <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Verifying…</div>}
+        {loading && <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Verifying...</div>}
         {error && <div className="crown-alert">{error}</div>}
 
         {result && !loading && (
@@ -50,10 +53,10 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {plans.map((p, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid var(--crown-border)" }}>
-                        <td style={{ padding: "6px 14px" }}>{p.name}</td>
-                        <td style={{ padding: "6px 14px", fontFamily: "monospace", fontSize: 11 }}>{p.plan_id}</td>
+                    {plans.map((plan) => (
+                      <tr key={plan.plan_id} style={{ borderBottom: "1px solid var(--crown-border)" }}>
+                        <td style={{ padding: "6px 14px" }}>{plan.name}</td>
+                        <td style={{ padding: "6px 14px", fontFamily: "monospace", fontSize: 11 }}>{plan.plan_id}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -73,11 +76,11 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {fees.map((f, fi) => (
-                      <tr key={fi} style={{ borderBottom: "1px solid var(--crown-border)" }}>
-                        <td style={{ padding: "6px 14px" }}>{f.name}</td>
-                        <td style={{ padding: "6px 14px" }}>{f.fee_type}</td>
-                        <td style={{ padding: "6px 14px", textAlign: "right" }}>${parseFloat(f.amount).toFixed(2)}</td>
+                    {fees.map((fee) => (
+                      <tr key={[fee.name, fee.fee_type, fee.amount].join("-")} style={{ borderBottom: "1px solid var(--crown-border)" }}>
+                        <td style={{ padding: "6px 14px" }}>{fee.name}</td>
+                        <td style={{ padding: "6px 14px" }}>{fee.fee_type}</td>
+                        <td style={{ padding: "6px 14px", textAlign: "right" }}>${Number.parseFloat(fee.amount).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -86,7 +89,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
             )}
 
             <div style={{ fontSize: 12, color: "var(--crown-muted)" }}>
-              Setup complete for term <strong>{result.result?.term || context.term}</strong>. Return to the dashboard to begin billing runs.
+              Setup complete for term <strong>{result.result?.term || term}</strong>. Return to the dashboard to begin billing runs.
             </div>
           </div>
         )}
@@ -95,7 +98,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
       <div className="crown-wizard-actions">
         <span />
         <div className="crown-wizard-actions-right">
-          <span className="crown-muted" style={{ fontSize: 12 }}>Step {stepIndex + 1} of {totalSteps} — Complete</span>
+          <span className="crown-muted" style={{ fontSize: 12 }}>Step {stepIndex + 1} of {totalSteps} - Complete</span>
         </div>
       </div>
     </div>

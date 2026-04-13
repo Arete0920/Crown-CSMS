@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -36,14 +36,14 @@ const DEMO = {
     { drill: 'Evacuation (full)',    date: 'Apr 23', status: 'planned',   required: true },
   ],
   open_issues: [
-    { issue: 'Camera #7 — Main Hall (west): offline 2 days', severity: 'red'    },
+    { issue: 'Camera #7  Main Hall (west): offline 2 days', severity: 'red'    },
     { issue: 'Fob access log: 2 unknown badge scans Feb 22', severity: 'yellow' },
     { issue: 'South gate key pad battery low',               severity: 'yellow' },
   ],
   alerts: [
-    { label: 'Camera #7 offline — main hall west blind spot until repaired',     severity: 'red'    },
-    { label: '3 door access exceptions logged — review required',                severity: 'yellow' },
-    { label: 'Next required drill due Mar 5 — logistics not yet confirmed',      severity: 'yellow' },
+    { label: 'Camera #7 offline  main hall west blind spot until repaired',     severity: 'red'    },
+    { label: '3 door access exceptions logged  review required',                severity: 'yellow' },
+    { label: 'Next required drill due Mar 5  logistics not yet confirmed',      severity: 'yellow' },
     { label: 'Annual safety checklist review due March 31',                      severity: 'gray'   },
   ],
 };
@@ -55,7 +55,7 @@ async function fetchSecurityMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -80,7 +80,7 @@ function Pill({ color = 'gray', children }) {
 const SEV_COLOR = { high: 'red', medium: 'yellow', low: 'gray' };
 const DRILL_COLOR = { scheduled: 'yellow', planned: 'gray', completed: 'green' };
 
-/* â”€â”€ Security KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Security KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Visitors Logged",   value: "14",        trend: null,            trendUp: null,
     definition: "Visitors signed in through the front-office visitor management system today.",
@@ -89,7 +89,7 @@ const ADMIN_KPI = [
     definition: "Total door access log events recorded today across all controlled entry points.",
     dataSource: "Security Module", dataHref: "/security" },
   { label: "Camera Status",     value: "All Online",trend: null,            trendUp: null,
-    definition: "Status of the campus security camera network — all feeds online and recording.",
+    definition: "Status of the campus security camera network  all feeds online and recording.",
     dataSource: "Security Module", dataHref: "/security" },
   { label: "Incidents MTD",     value: "1",         trend: "-1 vs last mo", trendUp: true,
     definition: "Security incidents (unauthorized access, alarm triggers) logged this month.",
@@ -117,7 +117,7 @@ export default function SecurityDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>

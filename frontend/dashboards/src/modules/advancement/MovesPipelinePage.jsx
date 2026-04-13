@@ -1,12 +1,12 @@
 /**
- * MovesPipelinePage — Major Gift Moves Management (Stage 3)
+ * MovesPipelinePage  Major Gift Moves Management (Stage 3)
  *
  * Displays all active prospects grouped by pipeline stage.
  * Allows a staff user to transition a prospect to the next stage.
  *
- * GET  /api/v1/advancement/prospects/?active=true   → prospect list
- * GET  /api/v1/advancement/moves/?prospect_id=X     → move history
- * POST /api/v1/advancement/moves/transition/         → stage transition
+ * GET  /api/v1/advancement/prospects/?active=true    prospect list
+ * GET  /api/v1/advancement/moves/?prospect_id=X      move history
+ * POST /api/v1/advancement/moves/transition/          stage transition
  */
 import { useState, useEffect, useCallback } from "react";
 
@@ -65,8 +65,8 @@ const STAGE_COLOR = {
 const CAPACITY_LABEL = {
   unknown: "Unknown",
   tier1: "Tier 1 ($10k+)",
-  tier2: "Tier 2 ($5k–$9.9k)",
-  tier3: "Tier 3 ($1k–$4.9k)",
+  tier2: "Tier 2 ($5k$9.9k)",
+  tier3: "Tier 3 ($1k$4.9k)",
   tier4: "Tier 4 (<$1k)",
 };
 
@@ -83,7 +83,7 @@ const ACTION_TYPES = [
 
 export default function MovesPipelinePage() {
   const [prospects, setProspects] = useState([]);
-  const [latestMove, setLatestMove] = useState({}); // prospect_id → move
+  const [latestMove, setLatestMove] = useState({}); // prospect_id  move
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null); // prospect being transitioned
@@ -100,7 +100,7 @@ export default function MovesPipelinePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/advancement/prospects/?active=true`, {
+      const res = await globalThis.fetch(`${apiBase()}/api/v1/advancement/prospects/?active=true`, {
         headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -112,7 +112,7 @@ export default function MovesPipelinePage() {
       const moveMap = {};
       await Promise.all(
         list.map(async (p) => {
-          const mr = await fetch(
+          const mr = await globalThis.fetch(
             `${apiBase()}/api/v1/advancement/moves/?prospect_id=${p.id}`,
             { headers: authHeaders() }
           );
@@ -155,7 +155,7 @@ export default function MovesPipelinePage() {
     setTransitioning(true);
     setError(null);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/advancement/moves/transition/`, {
+      const res = await globalThis.fetch(`${apiBase()}/api/v1/advancement/moves/transition/`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({ prospect_id: selected.id, ...form }),
@@ -185,14 +185,14 @@ export default function MovesPipelinePage() {
 
   return (
     <div style={{ padding: "1.5rem" }}>
-      <h2 style={{ marginBottom: "0.25rem" }}>Moves Pipeline — Major Gifts</h2>
+      <h2 style={{ marginBottom: "0.25rem" }}>Moves Pipeline  Major Gifts</h2>
       <p style={{ color: "#6b7280", marginBottom: "1rem" }}>
         Active prospects grouped by cultivation stage.
       </p>
 
       {successMsg && (
         <div style={{ background: "#dcfce7", color: "#15803d", padding: "0.75rem 1rem", borderRadius: 6, marginBottom: "1rem" }}>
-          ✓ {successMsg}
+           {successMsg}
         </div>
       )}
       {error && (
@@ -202,7 +202,7 @@ export default function MovesPipelinePage() {
       )}
 
       {loading ? (
-        <p style={{ color: "#6b7280" }}>Loading prospects…</p>
+        <p style={{ color: "#6b7280" }}>Loading prospects</p>
       ) : (
         <div style={{ display: "flex", gap: "0.75rem", overflowX: "auto", paddingBottom: "1rem" }}>
           {STAGES.map((stage) => (
@@ -276,13 +276,14 @@ export default function MovesPipelinePage() {
             display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setSelected(null); }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Escape") setSelected(null); }}
         >
           <div style={{ background: "#fff", borderRadius: 10, padding: "1.5rem", width: 400, maxWidth: "95vw" }}>
             <h3 style={{ marginBottom: "1rem" }}>Advance Prospect</h3>
             <form onSubmit={handleTransition}>
-              <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-                New Stage
-              </label>
+              <label htmlFor="moves-new-stage" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n                New Stage`n              </label>
               <select
                 value={form.new_stage}
                 onChange={(e) => setForm((f) => ({ ...f, new_stage: e.target.value }))}
@@ -294,9 +295,7 @@ export default function MovesPipelinePage() {
                 ))}
               </select>
 
-              <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-                Action Type
-              </label>
+              <label htmlFor="moves-action-type" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n                Action Type`n              </label>
               <select
                 value={form.action_type}
                 onChange={(e) => setForm((f) => ({ ...f, action_type: e.target.value }))}
@@ -307,20 +306,16 @@ export default function MovesPipelinePage() {
                 ))}
               </select>
 
-              <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-                Summary
-              </label>
+              <label htmlFor="moves-summary" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n                Summary`n              </label>
               <input
                 type="text"
                 value={form.summary}
                 onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
-                placeholder="Brief note on this action…"
+                placeholder="Brief note on this action"
                 style={{ width: "100%", padding: "0.45rem", borderRadius: 5, border: "1px solid #d1d5db", marginBottom: "0.75rem", boxSizing: "border-box" }}
               />
 
-              <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-                Notes
-              </label>
+              <label htmlFor="moves-notes" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n                Notes`n              </label>
               <textarea
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -345,7 +340,7 @@ export default function MovesPipelinePage() {
                   disabled={transitioning}
                   style={{ padding: "0.45rem 1rem", borderRadius: 5, border: "none", background: "#2563eb", color: "#fff", cursor: "pointer", opacity: transitioning ? 0.6 : 1 }}
                 >
-                  {transitioning ? "Saving…" : "Save Move"}
+                  {transitioning ? "Saving" : "Save Move"}
                 </button>
               </div>
             </form>

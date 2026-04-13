@@ -28,7 +28,7 @@ export default function Step1ChooseMode({ context, setContext, goNext, stepIndex
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
         {MODES.map((m) => (
-          <label
+          <div
             key={m.value}
             className="crown-card"
             style={{
@@ -52,7 +52,7 @@ export default function Step1ChooseMode({ context, setContext, goNext, stepIndex
               <span style={{ fontWeight: 600, color: "var(--crown-text)" }}>{m.label}</span>
               <span style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginTop: 4 }}>{m.description}</span>
             </span>
-          </label>
+          </div>
         ))}
       </div>
 

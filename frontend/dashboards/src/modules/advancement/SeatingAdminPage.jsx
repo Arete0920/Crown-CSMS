@@ -1,12 +1,12 @@
 /**
- * SeatingAdminPage — Seating Map layout editor (Stage 3)
+ * SeatingAdminPage  Seating Map layout editor (Stage 3)
  *
  * 1. Loads all seating maps for the current school.
  * 2. Shows current layout JSON (pretty-printed) in a textarea.
  * 3. Submits PUT to set-layout endpoint, which regenerates Seat rows.
  *
- * GET  /api/v1/advancement/seating-maps/           → map list
- * POST /api/v1/advancement/seating/set-layout/     → { seating_map_id, layout_json }
+ * GET  /api/v1/advancement/seating-maps/            map list
+ * POST /api/v1/advancement/seating/set-layout/      { seating_map_id, layout_json }
  *
  * Layout JSON schema:
  * {
@@ -65,7 +65,7 @@ export default function SeatingAdminPage() {
     setLoadingMaps(true);
     setError(null);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/advancement/seating-maps/`, {
+      const res = await globalThis.fetch(`${apiBase()}/api/v1/advancement/seating-maps/`, {
         headers: authHeaders(),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -119,7 +119,7 @@ export default function SeatingAdminPage() {
     try {
       parsedLayout = JSON.parse(layoutText);
     } catch {
-      setParseError("Invalid JSON — please fix the layout before saving.");
+      setParseError("Invalid JSON  please fix the layout before saving.");
       return;
     }
 
@@ -130,7 +130,7 @@ export default function SeatingAdminPage() {
 
     setSaving(true);
     try {
-      const res = await fetch(`${apiBase()}/api/v1/advancement/seating/set-layout/`, {
+      const res = await globalThis.fetch(`${apiBase()}/api/v1/advancement/seating/set-layout/`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
@@ -170,18 +170,16 @@ export default function SeatingAdminPage() {
     <div style={{ padding: "1.5rem", maxWidth: 760 }}>
       <h2 style={{ marginBottom: "0.25rem" }}>Seating Map Admin</h2>
       <p style={{ color: "#6b7280", marginBottom: "1.25rem" }}>
-        Edit the JSON layout for a seating map. Saving regenerates all Seat rows — only do
+        Edit the JSON layout for a seating map. Saving regenerates all Seat rows  only do
         this before tickets are sold for the affected events.
       </p>
 
       {loadingMaps ? (
-        <p style={{ color: "#6b7280" }}>Loading maps…</p>
+        <p style={{ color: "#6b7280" }}>Loading maps</p>
       ) : (
         <form onSubmit={handleSave}>
           {/* Map selector */}
-          <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-            Seating Map
-          </label>
+          <label htmlFor="seating-map-select" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n            Seating Map`n          </label>
           {maps.length === 0 ? (
             <p style={{ color: "#9ca3af", marginBottom: "1rem" }}>
               No seating maps found. Create one via the API or admin.
@@ -201,8 +199,7 @@ export default function SeatingAdminPage() {
           )}
 
           {/* Layout JSON editor */}
-          <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-            Layout JSON
+          <label htmlFor="seating-layout-json" style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>`n            Layout JSON
             {seatCount !== null && (
               <span style={{ marginLeft: "0.5rem", fontWeight: 400, color: "#6b7280", fontSize: "0.875rem" }}>
                 ({seatCount} seats)
@@ -256,7 +253,7 @@ export default function SeatingAdminPage() {
           )}
           {result?.ok && (
             <div style={{ background: "#dcfce7", color: "#15803d", padding: "0.75rem", borderRadius: 6, marginBottom: "0.75rem" }}>
-              ✓ Layout saved — {result.seats_created} seats created.
+               Layout saved  {result.seats_created} seats created.
             </div>
           )}
 
@@ -274,7 +271,7 @@ export default function SeatingAdminPage() {
               opacity: saving || maps.length === 0 ? 0.6 : 1,
             }}
           >
-            {saving ? "Saving…" : "Save Layout"}
+            {saving ? "Saving" : "Save Layout"}
           </button>
         </form>
       )}

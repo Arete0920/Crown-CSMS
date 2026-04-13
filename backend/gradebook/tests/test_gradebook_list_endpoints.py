@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 
 from core.models import AcademicYear, School, Staff, UserRole
 from households.models import Household, Student
-from academics.models import Course, Enrollment, Section, Term, TeacherAssignment
+from academics.models import Assignment, AssignmentCategory, Course, Enrollment, Section, Term, TeacherAssignment
 from gradebook.models import GradeEntry
 
 
@@ -231,3 +231,70 @@ def test_students_list_teacher_cannot_see_other_sections():
     # Teacher 1 cannot access Teacher 2's section
     resp = client.get(f"/api/v1/gradebook/students/?section_id={section2.id}")
     assert resp.status_code == 404
+
+
+
+def test_students_list_includes_enrolled_student_without_grades():
+    school = School.objects.create(name="School I")
+    section, staff, student_with_grade = _seed_section_with_data(school=school, staff_email="teach.i@example.com")
+
+    household = Household.objects.create(school_id=school.id, name="Household B")
+    student_without_grade = Student.objects.create(
+        school_id=school.id,
+        household=household,
+        first_name="Ben",
+        last_name="Brooks",
+        grade_level="5",
+    )
+    Enrollment.objects.create(school_id=school.id, section=section, student=student_without_grade)
+
+    user = _mk_user(school=school, email=staff.email, is_staff=False)
+    user.staff = staff
+    user.save(update_fields=["staff"])
+    _assign_role(user=user, school=school, role_code="TEACHER")
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get(f"/api/v1/gradebook/students/?section_id={section.id}")
+    assert resp.status_code == 200
+    payload = resp.json()
+    student_ids = {item["student_id"] for item in payload}
+    assert str(student_with_grade.id) in student_ids
+    assert str(student_without_grade.id) in student_ids
+
+
+def test_assignments_list_includes_published_assignment_without_grade_entries():
+    school = School.objects.create(name="School J")
+    section, staff, _ = _seed_section_with_data(school=school, staff_email="teach.j@example.com")
+
+    category = AssignmentCategory.objects.create(
+        school_id=school.id,
+        section=section,
+        name="Homework",
+        weight_percent=100,
+        sort_order=1,
+        is_active=True,
+    )
+    Assignment.objects.create(
+        school_id=school.id,
+        section=section,
+        category=category,
+        name="Online Module 1",
+        points_possible=20,
+        is_published=True,
+    )
+
+    user = _mk_user(school=school, email=staff.email, is_staff=False)
+    user.staff = staff
+    user.save(update_fields=["staff"])
+    _assign_role(user=user, school=school, role_code="TEACHER")
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get(f"/api/v1/gradebook/assignments/?section_id={section.id}")
+    assert resp.status_code == 200
+    payload = resp.json()
+    names = {item["assignment_name"] for item in payload}
+    assert "Online Module 1" in names

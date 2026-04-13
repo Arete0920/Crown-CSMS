@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -43,9 +43,9 @@ const DEMO = {
     { sport: "Swimming",        roster: 14, forms_complete: 14, physicals_ok: 14 },
   ],
   alerts: [
-    { label: "1 eligibility hold — Boys Basketball roster may be short Saturday",  severity: "red"    },
-    { label: "Missing physical: Girls Soccer — Mia Torres (parent notified)",      severity: "yellow" },
-    { label: "Track consent form missing — deadline Feb 23",                       severity: "yellow" },
+    { label: "1 eligibility hold  Boys Basketball roster may be short Saturday",  severity: "red"    },
+    { label: "Missing physical: Girls Soccer  Mia Torres (parent notified)",      severity: "yellow" },
+    { label: "Track consent form missing  deadline Feb 23",                       severity: "yellow" },
     { label: "4 away game transport requests need driver confirmation",             severity: "yellow" },
   ],
 };
@@ -57,7 +57,7 @@ async function fetchAthleticsMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -79,7 +79,7 @@ function Pill({ color = 'gray', children }) {
   );
 }
 
-/* â”€â”€ Athletics KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Athletics KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Teams Active",      value: "6",   trend: null,              trendUp: null,
     definition: "Active sports teams in season currently rostered and scheduled.",
@@ -116,7 +116,7 @@ export default function AthleticsDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
@@ -162,12 +162,12 @@ export default function AthleticsDashboard() {
                     <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: 3, background: 'var(--crown-danger)' }} />
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--crown-ink)' }}>{e.sport}</div>
-                      <div style={{ fontSize: 12, color: 'var(--crown-danger)' }}>{e.count} student — {e.issue}</div>
+                      <div style={{ fontSize: 12, color: 'var(--crown-danger)' }}>{e.count} student  {e.issue}</div>
                     </div>
                   </div>
                 ))}
                 {eligWatch.length === 0 && (
-                  <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>All athletes eligible ✓</p>
+                  <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>All athletes eligible </p>
                 )}
               </div>
             </CrownCard>
