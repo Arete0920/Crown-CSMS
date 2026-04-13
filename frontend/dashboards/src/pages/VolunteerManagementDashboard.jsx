@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import VolunteerSnapshotCard from '../components/dashboard/volunteermanagement/VolunteerSnapshotCard';
 import VolunteerAlertsPanel from '../components/dashboard/volunteermanagement/VolunteerAlertsPanel';

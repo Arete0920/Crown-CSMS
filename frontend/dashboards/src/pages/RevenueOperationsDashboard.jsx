@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import RevenueOpsSnapshotCard from '../components/dashboard/revenueops/RevenueOpsSnapshotCard';
 import RevenueOpsAlertsPanel from '../components/dashboard/revenueops/RevenueOpsAlertsPanel';

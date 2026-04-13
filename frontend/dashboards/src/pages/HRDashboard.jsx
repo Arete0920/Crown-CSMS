@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import HRSnapshotCard from '../components/dashboard/hr/HRSnapshotCard';
 import HRAlertsPanel from '../components/dashboard/hr/HRAlertsPanel';

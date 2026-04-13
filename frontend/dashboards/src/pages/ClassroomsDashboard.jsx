@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Box, Typography, Grid, Alert, CircularProgress } from "@mui/material";
 
 import { getSelectedSchoolId } from "../utils/authClient";
@@ -119,3 +119,4 @@ export default function ClassroomsDashboard() {
     </Box>
   );
 }
+

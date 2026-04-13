@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -186,3 +186,4 @@ export default function AcademicsStudentWork() {
     </Box>
   );
 }
+

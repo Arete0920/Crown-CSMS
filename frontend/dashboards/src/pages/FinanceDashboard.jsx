@@ -1,4 +1,3 @@
-import React from "react";
 import useFinanceDashboardData from "../hooks/useFinanceDashboardData";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 

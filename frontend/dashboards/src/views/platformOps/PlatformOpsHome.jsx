@@ -12,7 +12,7 @@
  * Dependencies: @mui/material, @mui/x-data-grid, axios (all already in use
  * elsewhere in the Crown2026 frontend).
  */
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Button,
