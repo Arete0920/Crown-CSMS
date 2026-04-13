@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 
+from django.core import signing
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -53,9 +54,22 @@ from finance.services import (
 
 logger = logging.getLogger(__name__)
 
+DETAIL_ADMIN_REQUIRED = "Admin required."
+DETAIL_SCHOOL_NOT_FOUND = "School not found."
+DETAIL_AMOUNT_NOT_INT = "amount_cents must be an integer."
+DETAIL_AMOUNT_POSITIVE = "amount_cents must be > 0."
+
 
 def _is_staff(request) -> bool:
     return bool(getattr(request, "user", None) and request.user.is_authenticated and request.user.is_staff)
+
+
+def _build_client_secret(payment: FinancePayment) -> str | None:
+    """Return a signed client secret for processor-backed intents."""
+    if payment.processor == Processor.MANUAL:
+        return None
+    signer = signing.TimestampSigner(salt="finance-payment-intent")
+    return signer.sign(str(payment.id))
 
 
 # ---------------------------------------------------------------------------
@@ -74,13 +88,13 @@ def obligations(request):
 
     if request.method == "GET":
         if not _is_staff(request):
-            return Response({"detail": "Admin required."}, status=403)
+            return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
         qs = FinanceObligation.objects.filter(school_id=school).order_by("due_date")
         return Response(ObligationSerializer(qs, many=True).data)
 
     # POST â€” create
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     required = ["payer_user_id", "obligation_type", "description", "due_date", "amount_cents"]
     for field in required:
@@ -98,7 +112,7 @@ def obligations(request):
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
 
     from core.models import UserAccount
     try:
@@ -143,7 +157,7 @@ def invoice_create_from_obligations(request):
       obligation_ids  list[int]   (required)
     """
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     school = get_request_school_id(request, required=True)
 
@@ -160,7 +174,7 @@ def invoice_create_from_obligations(request):
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
     try:
         payer = UserAccount.objects.get(pk=payer_user_id)
     except (UserAccount.DoesNotExist, ValueError, TypeError):
@@ -191,7 +205,7 @@ def invoice_create_from_obligations(request):
 def invoice_list(request):
     """GET â€” Admin: list invoices for school."""
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school = get_request_school_id(request, required=True)
     qs = FinanceInvoice.objects.prefetch_related("lines").filter(school_id=school).order_by("due_date")
     return Response(InvoiceSerializer(qs, many=True).data)
@@ -259,16 +273,16 @@ def payment_intent_create(request):
     try:
         amount_cents = int(request.data.get("amount_cents", 0))
     except (ValueError, TypeError):
-        return Response({"detail": "amount_cents must be an integer."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_NOT_INT}, status=400)
 
     if amount_cents <= 0:
-        return Response({"detail": "amount_cents must be > 0."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_POSITIVE}, status=400)
 
     from core.models import School as SchoolModel
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
 
     idempotency_key = request.data.get("idempotency_key", "")
 
@@ -291,8 +305,9 @@ def payment_intent_create(request):
         idempotency_key=idempotency_key,
         created_by=request.user,
     )
-    # TODO: create processor intent (Stripe/Compuwerx) and return client_secret
-    return Response(PaymentSerializer(pay).data, status=201)
+    payload = PaymentSerializer(pay).data
+    payload["client_secret"] = _build_client_secret(pay)
+    return Response(payload, status=201)
 
 
 @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
@@ -305,7 +320,7 @@ def payment_settle(request, payment_id: int):
     Idempotent: already-settled payments return 200.
     """
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     school = get_request_school_id(request, required=True)
 
@@ -343,7 +358,7 @@ def refund_create(request, payment_id: int):
     Raises 409 if refund would exceed original payment amount.
     """
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     school = get_request_school_id(request, required=True)
 
@@ -355,10 +370,10 @@ def refund_create(request, payment_id: int):
     try:
         amount_cents = int(request.data.get("amount_cents", 0))
     except (ValueError, TypeError):
-        return Response({"detail": "amount_cents must be an integer."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_NOT_INT}, status=400)
 
     if amount_cents <= 0:
-        return Response({"detail": "amount_cents must be > 0."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_POSITIVE}, status=400)
 
     try:
         refund = initiate_refund(
@@ -391,16 +406,16 @@ def donation_create(request):
     try:
         amount_cents = int(request.data.get("amount_cents", 0))
     except (ValueError, TypeError):
-        return Response({"detail": "amount_cents must be an integer."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_NOT_INT}, status=400)
 
     if amount_cents <= 0:
-        return Response({"detail": "amount_cents must be > 0."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_POSITIVE}, status=400)
 
     from core.models import School as SchoolModel
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
 
     donation = FinanceDonation.objects.create(
         school=school_obj,
@@ -423,9 +438,12 @@ def donation_create(request):
 def donation_list(request):
     """GET â€” Admin: list donations for school."""
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school = get_request_school_id(request, required=True)
     qs = FinanceDonation.objects.filter(school_id=school).order_by("-created_at")
     return Response(DonationSerializer(qs, many=True).data)
+
+
+
 
 

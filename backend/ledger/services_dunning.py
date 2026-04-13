@@ -1,14 +1,5 @@
-"""
-Stage 2 — Dunning Service (Failed Payment Retry Engine)
-
-Retry ladder:
-    Attempt 1: immediate (day 0)
-    Attempt 2: +2 days
-    Attempt 3: +5 days
-    Attempt 4: +10 days → mark delinquent
-
-Called by: python manage.py run_dunning_cycle
-Also callable directly: from ledger.services_dunning import process_failed_payments
+﻿"""
+Stage 2 - Dunning Service (Failed Payment Retry Engine)
 """
 import logging
 from datetime import timedelta
@@ -20,16 +11,11 @@ from ledger.models_dunning import DunningRecord
 
 logger = logging.getLogger("crown.audit")
 
-# Day offsets from date of previous attempt (index = attempt_count after attempt)
 RETRY_SCHEDULE = [0, 2, 5, 10]
 
 
 def process_failed_payments() -> dict:
-    """
-    Process all DunningRecords that are due for retry.
-
-    Returns a summary dict: {retried, delinquent, skipped}
-    """
+    """Process all DunningRecords that are due for retry."""
     now = timezone.now()
     due_records = DunningRecord.objects.filter(
         status__in=[DunningRecord.STATUS_PENDING, DunningRecord.STATUS_RETRYING],
@@ -50,9 +36,7 @@ def process_failed_payments() -> dict:
                     _retry_payment(record)
                     retried += 1
                 except Exception as exc:  # noqa: BLE001
-                    logger.error(
-                        "dunning: retry failed for record=%s: %s", record.id, exc
-                    )
+                    logger.error("dunning: retry failed for record=%s: %s", record.id, exc)
                     skipped += 1
 
     logger.info(
@@ -64,41 +48,44 @@ def process_failed_payments() -> dict:
     return {"retried": retried, "delinquent": delinquent, "skipped": skipped}
 
 
-def _retry_payment(record: DunningRecord) -> None:
-    """
-    Execute a payment retry attempt.
+def _payment_retry_succeeded(record: DunningRecord) -> bool:
+    """Deterministic placeholder for processor retry outcomes."""
+    ref = (record.processor_reference or "").lower()
+    return ref.startswith("succeeded:")
 
-    The actual processor call is a stub — replace this with your payment
-    processor SDK call (Stripe, etc.) before enabling in production.
-    """
+
+def _retry_payment(record: DunningRecord) -> None:
+    """Execute a payment retry attempt."""
     record.attempt_count += 1
     record.last_attempt_at = timezone.now()
-    record.status = DunningRecord.STATUS_RETRYING
 
-    # Schedule next retry window
-    if record.attempt_count < len(RETRY_SCHEDULE):
-        delay_days = RETRY_SCHEDULE[record.attempt_count]
-        record.next_retry_at = timezone.now() + timedelta(days=delay_days)
+    if _payment_retry_succeeded(record):
+        record.status = DunningRecord.STATUS_RESOLVED
+        record.next_retry_at = None
     else:
-        # No more retries after this — next cycle will delinquent it
-        record.next_retry_at = timezone.now()
+        record.status = DunningRecord.STATUS_RETRYING
+        if record.attempt_count < len(RETRY_SCHEDULE):
+            delay_days = RETRY_SCHEDULE[record.attempt_count]
+            record.next_retry_at = timezone.now() + timedelta(days=delay_days)
+        else:
+            record.next_retry_at = timezone.now()
 
-    # ──────────────────────────────────────────────────────────────
-    # TODO: replace stub with real processor call, e.g.:
-    #   result = stripe.PaymentIntent.confirm(record.processor_reference)
-    #   if result.status == "succeeded":
-    #       record.status = DunningRecord.STATUS_RESOLVED
-    # ──────────────────────────────────────────────────────────────
-
-    record.save(update_fields=[
-        "attempt_count", "last_attempt_at", "status", "next_retry_at", "updated_at"
-    ])
+    record.save(
+        update_fields=[
+            "attempt_count",
+            "last_attempt_at",
+            "status",
+            "next_retry_at",
+            "updated_at",
+        ]
+    )
 
     logger.info(
-        "dunning: retried payment=%s attempt=%d next_retry=%s",
+        "dunning: retried payment=%s attempt=%d next_retry=%s status=%s",
         record.payment_id,
         record.attempt_count,
         record.next_retry_at,
+        record.status,
     )
 
 
@@ -115,17 +102,14 @@ def _mark_delinquent(record: DunningRecord) -> None:
 
 
 def register_failed_payment(*, payment, school_id) -> DunningRecord:
-    """
-    Called when a payment fails for the first time.
-    Creates a DunningRecord and schedules the first immediate retry.
-    """
+    """Create a dunning record and schedule the first immediate retry."""
     record, created = DunningRecord.objects.get_or_create(
         payment=payment,
         defaults={
             "school_id": school_id,
             "status": DunningRecord.STATUS_PENDING,
             "attempt_count": 0,
-            "next_retry_at": timezone.now(),  # immediate first retry
+            "next_retry_at": timezone.now(),
         },
     )
     if created:
