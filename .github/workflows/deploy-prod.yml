@@ -248,7 +248,7 @@ jobs:
         run: |
           sleep 30
           for i in {1..30}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health)
+            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
             if [ "$response" == "200" ]; then
               echo "Γ£à Health check passed"
               exit 0
@@ -259,13 +259,13 @@ jobs:
           echo "Γ¥î Health check failed"
           exit 1
 
-      - name: Verify deployed build_sha via /health
+      - name: Verify deployed build_sha via /api/health/
         shell: bash
         env:
           WANT_SHA: ${{ steps.vars.outputs.deploy_sha }}
         run: |
           set -euo pipefail
-          URL="https://crown-api-prod.azurewebsites.net/health"
+          URL="https://crown-api-prod.azurewebsites.net/api/health/"
           echo "Polling $URL for build_sha match (up to 5 min)..."
           for attempt in $(seq 1 20); do
             BODY="$(curl -fsS --max-time 10 "$URL" 2>/dev/null || true)"
@@ -296,7 +296,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          HEALTH_URL="https://crown-api-prod.azurewebsites.net/health"
+          HEALTH_URL="https://crown-api-prod.azurewebsites.net/api/health/"
 
           echo "Checking production health endpoint..."
 
@@ -343,7 +343,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          HEALTH_URL="https://crown-api-prod.azurewebsites.net/health"
+          HEALTH_URL="https://crown-api-prod.azurewebsites.net/api/health/"
           APP_NAME="crown-api-prod"
           RESOURCE_GROUP="crown-rg"
 
@@ -379,7 +379,7 @@ jobs:
           done
 
           if [ -z "$RESPONSE" ]; then
-            echo "No response from /health."
+            echo "No response from /api/health/."
             exit 1
           fi
 
@@ -454,3 +454,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
