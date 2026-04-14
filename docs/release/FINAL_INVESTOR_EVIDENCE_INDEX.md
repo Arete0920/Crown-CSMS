@@ -87,6 +87,7 @@ Status legend:
 | `docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md` | Priority #9 moat-compounding execution playbook | `PRESENT` | Added in Priority #9 moat tranche |
 | `docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md` | Priority #10 optionality and financeability governance canon | `PRESENT` | Added in Priority #10 optionality tranche |
 | `docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md` | Priority #10 optionality and diligence execution playbook | `PRESENT` | Added in Priority #10 optionality tranche |
+| `docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md` | One-page 10-priority execution dashboard with owners, windows, and gates | `PRESENT` | Added in master-ladder tranche |
 
 ## 7. Repo Hygiene Evidence
 

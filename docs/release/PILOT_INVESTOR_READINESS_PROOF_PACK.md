@@ -88,3 +88,7 @@ Avoid:
 
 - docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md
 - docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md
+
+### 10. Master Priority Ladder Dashboard
+
+- docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md
