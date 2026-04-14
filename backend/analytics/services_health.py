@@ -10,8 +10,13 @@ from finance.models import FinancePayment, PaymentStatus
 from support.models import SupportTicket
 
 
-def _clamp(score: int) -> int:
-    return max(0, min(100, int(score)))
+def _clamp(score: int | float | None) -> int:
+    """Clamp score to 0..100 and tolerate unexpected/null inputs."""
+    try:
+        normalized = int(round(float(score)))
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(100, normalized))
 
 
 def _login_frequency_score(school_id) -> int:
