@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 import datetime
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -11,6 +11,9 @@ from course_catalog_wizard.models import Course
 from staff_setup_wizard.models import StaffMember
 from room_setup_wizard.models import Room
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 BASE = "/api/v1/section-scheduler-wizard/sessions/"
 
@@ -20,7 +23,7 @@ def _uid():
 
 
 def _user():
-    return User.objects.create_user(username=f"u{_uid()}", password="pw")
+    return User.objects.create_user(username=f"u{_uid()}", password=TEST_AUTH_SECRET)
 
 
 def _authed():

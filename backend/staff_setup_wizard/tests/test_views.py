@@ -1,8 +1,11 @@
-﻿import uuid
+import uuid
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
 from core.models import School
+
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 
 User = get_user_model()
 BASE = "/api/v1/staff-setup-wizard/sessions/"
@@ -13,7 +16,7 @@ def _school():
 
 
 def _user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:6]}", password="pw")
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:6]}", password=TEST_AUTH_SECRET)
 
 
 def _authed():

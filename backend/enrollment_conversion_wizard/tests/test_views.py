@@ -9,6 +9,9 @@ from admissions.models import AdmissionsApplication
 from core.models import AcademicYear, Family, School
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/enrollment-conversion-wizard/sessions/"
@@ -19,7 +22,7 @@ def _make_school():
 
 
 def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password="pw")
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):

@@ -8,6 +8,9 @@ from core.models import School
 from households.models import Household, Student
 from section_assign_wizard.models import SectionAssignWizardSession
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/section-assign-wizard/sessions/"
@@ -20,7 +23,7 @@ def _make_school(name=None):
 
 def _make_user(school=None, username=None):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    return User.objects.create_user(username=username, password="pw")
+    return User.objects.create_user(username=username, password=TEST_AUTH_SECRET)
 
 
 def _make_section(school_id, term="2026-FALL"):

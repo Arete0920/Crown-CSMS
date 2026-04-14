@@ -7,6 +7,9 @@ from core.models import School
 from financial_aid.models import AidAward, AidBucket, FinancialAidApplication
 from financial_aid_wizard.models import FinancialAidWizardSession
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/aid-wizard/sessions/"
@@ -22,7 +25,7 @@ def _make_school(name="Aid School"):
 
 def _make_user(school, username=None):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    return User.objects.create_user(username=username, password="pw")
+    return User.objects.create_user(username=username, password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):
