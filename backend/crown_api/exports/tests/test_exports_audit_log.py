@@ -4,6 +4,8 @@ from django.contrib.auth.models import Group
 
 from crown_api.exports.models import ExportAuditLog
 from core.models import School
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 
 @pytest.mark.django_db
@@ -14,7 +16,7 @@ def test_export_creates_audit_log_row(client):
     
     # Create finance user (exports are finance-gated for some endpoints)
     User = get_user_model()
-    user = User.objects.create_user(username="fin", password="pw", school_id=school_id)
+    user = User.objects.create_user(username="fin", password=TEST_AUTH_SECRET, school_id=school_id)
     finance_group, _ = Group.objects.get_or_create(name="Business Manager")
     user.groups.add(finance_group)
 
