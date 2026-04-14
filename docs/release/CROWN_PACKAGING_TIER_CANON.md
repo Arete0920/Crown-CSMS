@@ -79,3 +79,31 @@ Pricing pages and proposals must map exactly to:
 - Mission Suite
 
 No custom bundle naming that breaks this canon.
+
+## Expansion Annex (Priority #6)
+
+6A standalone-capable expansion first:
+- Crown Compass
+- Board Governance Suite
+- PD Hub
+- CRM / Marketing
+- Survey / Sentiment
+- Mobile App / Family App
+- Standalone Schedule Builder
+
+6B mission-distinctive integrated expansion second:
+- Chaplain / Pastoral Care
+- Portrait of the Graduate
+- Mission Metrics
+- Deeper Spiritual Life layers
+- Deeper Service and Outreach layers
+
+6C ecosystem expansion third:
+- API-first contracts
+- Integration/webhook surfaces
+- Configurable workflows
+- Versioned compatibility policy
+
+Authoritative references:
+- docs/release/PRIORITY_6_SELECTIVE_EXPANSION_CANON.md
+- docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md

@@ -63,3 +63,8 @@ Avoid:
 - Engineering lead: validates architecture/canon compliance
 - QA/release owner: validates gate evidence and runbook freshness
 - GTM owner: validates packaging and buyer messaging alignment
+
+### 5. Priority #6 Expansion Governance
+
+- docs/release/PRIORITY_6_SELECTIVE_EXPANSION_CANON.md
+- docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md

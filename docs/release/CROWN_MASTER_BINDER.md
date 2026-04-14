@@ -15,6 +15,7 @@ It does not replace module closeout evidence. It controls sequencing and claims.
 3. Second-wave operational modules (Attendance, Gradebook/Scheduling, broader operations)
 4. First-wave add-ons/differentiators (Compass, Board Governance, Spiritual Life, Service/Outreach, PD Hub)
 5. Packaging and pilot-readiness system
+6. Later add-ons and standalone-capable expansion products
 
 No expansion work may skip this order.
 
@@ -53,6 +54,11 @@ No expansion work may skip this order.
 - docs/LOCKDOWN_RUNBOOK.md
 - docs/DEMO_RUNBOOK_25MIN.md
 
+### F. Expansion Governance
+
+- docs/release/PRIORITY_6_SELECTIVE_EXPANSION_CANON.md
+- docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md
+
 ## Governance Rules
 
 1. No overclaiming. Use "credible operating MVP" unless full gate evidence is green.
@@ -67,3 +73,4 @@ No expansion work may skip this order.
 - Commercial packaging owner: product + GTM lead
 
 Disputes are resolved in favor of canon order and release safety.
+
