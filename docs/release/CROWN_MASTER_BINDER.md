@@ -1,11 +1,11 @@
-﻿# Crown Master Binder (Governance Canon)
+# Crown Master Binder (Governance Canon)
 
 Status: Active governance source of truth
 Updated: 2026-04-14
 
 ## Purpose
 
-This binder defines how Crown is governed, packaged, positioned, and presented for pilot and investor review.
+This binder defines how Crown is governed, packaged, positioned, and presented for final production release governance and investor diligence review.
 It does not replace module closeout evidence. It controls sequencing and claims.
 
 ## Canonical Build Order
@@ -14,7 +14,7 @@ It does not replace module closeout evidence. It controls sequencing and claims.
 2. First-wave modules (Admissions, Re-enrollment, Billing/Payments, Communications + Portals)
 3. Second-wave operational modules (Attendance, Gradebook/Scheduling, broader operations)
 4. First-wave add-ons/differentiators (Compass, Board Governance, Spiritual Life, Service/Outreach, PD Hub)
-5. Packaging and pilot-readiness system
+5. Packaging and production-readiness system
 6. Later add-ons and standalone-capable expansion products
 7. Implementation, support, integrations, and scale operations
 8. Partnership-led market capture and expansion
@@ -89,9 +89,9 @@ No expansion work may skip this order.
 
 ## Governance Rules
 
-1. No overclaiming. Use "credible operating MVP" unless full gate evidence is green.
+1. No overclaiming. Use only evidence-backed release state language; claim final production-ready release only when all gate evidence is green.
 2. Packaging must map to Core/Modules/Add-ons; no ad hoc bundle claims.
-3. Deferred items remain explicit and time-boxed in release docs.
+3. Out-of-scope and in-progress items remain explicit and time-boxed in release docs.
 4. Any new module or add-on requires owner, evidence path, and tier assignment.
 
 ## Decision Authority
@@ -101,4 +101,6 @@ No expansion work may skip this order.
 - Commercial packaging owner: product + GTM lead
 
 Disputes are resolved in favor of canon order and release safety.
+
+
 

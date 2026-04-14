@@ -1,4 +1,4 @@
-﻿# Priority #7 Operating Company Canon
+# Priority #7 Operating Company Canon
 
 Status: Delivery and scale governance policy
 Updated: 2026-04-14
@@ -32,7 +32,7 @@ Each school implementation must follow a documented sequence:
 3. Configuration standards by Core, Modules, and Add-ons
 4. Training plan by role (leadership, staff, support users)
 5. Rollout checklist for pilot and production start
-6. Pilot-to-live checklist with go/no-go evidence
+6. Pilot-to-live checklist with release-gate evidence
 
 ## 7B. Support and Customer Success System
 
@@ -84,3 +84,5 @@ Establish durable trust posture before broad rollout:
 - docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md
 - docs/release/RELEASE_ENV_MATRIX.md
 - docs/LOCKDOWN_RUNBOOK.md
+
+

@@ -1,4 +1,4 @@
-﻿# Crown Packaging and Tier Canon
+# Crown Packaging and Tier Canon
 
 Status: Commercial packaging policy
 Updated: 2026-04-14
@@ -24,7 +24,7 @@ Scope:
 - Communications + Parent/Teacher/Admin portals
 
 Use case:
-- Day-to-day operational MVP for school adoption
+- Day-to-day operational foundation for school adoption
 
 ### Tier 3: Crown Complete
 
@@ -64,7 +64,7 @@ If any are false, add-on remains integrated-only.
 Allowed:
 - "Core verified"
 - "First-wave operationally proven"
-- "Credible operating MVP"
+- "Evidence-backed release candidate"
 
 Not allowed without full evidence:
 - "Institution-wide production ready"
@@ -107,3 +107,5 @@ No custom bundle naming that breaks this canon.
 Authoritative references:
 - docs/release/PRIORITY_6_SELECTIVE_EXPANSION_CANON.md
 - docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md
+
+
