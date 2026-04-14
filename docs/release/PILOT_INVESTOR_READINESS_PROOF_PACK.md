@@ -83,3 +83,8 @@ Avoid:
 
 - docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md
 - docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md
+
+### 9. Priority #10 Strategic Optionality and Transaction Readiness
+
+- docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md
+- docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md

@@ -81,6 +81,16 @@ Turn Crown from a strong codebase into a deliverable, supportable, and scalable 
 | Success-as-moat execution | Onboarding and retention-quality control loop | Client success manager | docs/canon/CROWN_SOLOMON_CANON.md |
 | Continuity and capital discipline | Team continuity and strategic allocation governance | Platform lead (TC) | docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md |
 | Enterprise-value metrics | Durable retention and moat KPI reporting cadence | Finance lead | docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md |
+
+## Workstream 8: Strategic Optionality and Transaction Readiness
+
+| Capability | Required Output | Owner | Evidence Artifact |
+|---|---|---|---|
+| Transaction-structure flexibility | Recap/raise/M&A optionality framework | Platform lead (TC) | docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md |
+| Diligence packet operations | Always-ready branch, module, demo, payment, and pipeline evidence set | Release owner | docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md |
+| Valuation proof metrics | Pilot, ARR, implementation, and stability scorecards | Finance lead | docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md |
+| Investor language discipline | Evidence-aligned narrative and disclosure controls | Platform lead (TC) | docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md |
+| Optionality protection gate | No-urgency decision framework across transaction paths | Platform lead (TC) | docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md |
 ## Exit Rule for Priority #7
 
 Priority #7 is complete only when each workstream has:
