@@ -12,14 +12,16 @@ from core.models import School
 from households.models import Household
 from ledger.models import Allocation, Charge, LedgerAccount, Payment
 
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
 def finance_user():
     school = School.objects.create(name="Test School")
-    User = get_user_model()
-    u = User.objects.create_user(username="finance_user_multi", password="pass12345!")
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="finance_user_multi", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -39,8 +41,8 @@ def finance_client(finance_user):
 @pytest.fixture
 def non_finance_user():
     school = School.objects.create(name="Test School 2")
-    User = get_user_model()
-    u = User.objects.create_user(username="non_finance_user_multi", password="pass12345!")
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="non_finance_user_multi", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
