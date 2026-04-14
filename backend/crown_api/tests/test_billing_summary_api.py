@@ -8,6 +8,8 @@ from crown_api.models import Household, HouseholdMember, Invoice, Payment, Perso
 from crown_api.models_households import ROLE_GUARDIAN
 
 
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 class BillingSummaryApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -17,7 +19,7 @@ class BillingSummaryApiTests(TestCase):
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=True,
             school=self.school,
         )
@@ -25,7 +27,7 @@ class BillingSummaryApiTests(TestCase):
         self.parent_user = UserAccount.objects.create_user(
             username="parentuser",
             email="parent@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=False,
             school=self.school,
         )
@@ -118,3 +120,5 @@ class BillingSummaryApiTests(TestCase):
 
         self.assertLessEqual(len(recent), 5)
         self.assertTrue(any(row["invoice_number"] == "INV-A-0001" for row in recent))
+
+
