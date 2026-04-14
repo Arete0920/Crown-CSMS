@@ -35,7 +35,7 @@ for (const rel of targetFiles) {
     if (!plainLabel || !plainControl) continue;
 
     const labelTextMatch = labelLine.match(/<label[^>]*>(.*?)<\/label>/);
-    const labelText = labelTextMatch ? labelTextMatch[1].replaceAll(/<[^>]+>/g, "").trim() : "field";
+    const labelText = labelTextMatch ? labelTextMatch[1].replace(/[<>]/g, "").trim() : "field";
     const id = safeId(labelText || "field", i + 1);
 
     lines[i] = labelLine.replace("<label", `<label htmlFor="${id}"`);
