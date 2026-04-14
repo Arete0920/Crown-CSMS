@@ -16,6 +16,7 @@ It does not replace module closeout evidence. It controls sequencing and claims.
 4. First-wave add-ons/differentiators (Compass, Board Governance, Spiritual Life, Service/Outreach, PD Hub)
 5. Packaging and pilot-readiness system
 6. Later add-ons and standalone-capable expansion products
+7. Implementation, support, integrations, and scale operations
 
 No expansion work may skip this order.
 
@@ -58,6 +59,11 @@ No expansion work may skip this order.
 
 - docs/release/PRIORITY_6_SELECTIVE_EXPANSION_CANON.md
 - docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md
+
+### G. Operating Company System
+
+- docs/release/PRIORITY_7_OPERATING_COMPANY_CANON.md
+- docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md
 
 ## Governance Rules
 
