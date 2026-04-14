@@ -1,9 +1,7 @@
 import uuid
 
+import pandas as pd
 import pytest
-
-pd = pytest.importorskip("pandas")
-
 from analytics.predictors import run_retention_risk
 from core.models import School
 from onboarding.models_tasks import HelpArticle
