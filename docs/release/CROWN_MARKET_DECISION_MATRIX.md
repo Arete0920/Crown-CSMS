@@ -24,6 +24,7 @@ Legend:
 | Extended discipline workflows | Defer | Valuable, but follows core and second-wave stability | docs/release/extended_discipline_workflows_closeout/ |
 | Broad adjacent CRM-style expansion | Ignore (current phase) | Scope control and release discipline | docs/release/KNOWN_GAPS_AND_DEFERRED_ITEMS.md |
 | Mission Suite add-ons as separate SKU | Standalone Candidate | Conditional on standalone policy proof | docs/release/CROWN_PACKAGING_TIER_CANON.md |
+| CompuWerx payment-routing compliance moat | Differentiate | Revenue durability and enforceable economics layer | docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md |
 
 ## Enforcement
 

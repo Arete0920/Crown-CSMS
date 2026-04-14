@@ -71,6 +71,16 @@ Turn Crown from a strong codebase into a deliverable, supportable, and scalable 
 | Partner ecosystem expansion | Association and consortium expansion playbook | Platform lead (TC) | docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md |
 | Segment expansion gates | Secular/daycare expansion stage gates | Marketing director | docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md |
 | Channel delivery quality | Partner cohort onboarding quality controls | Client success manager | docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md |
+
+## Workstream 7: Moat Protection and Value Compounding
+
+| Capability | Required Output | Owner | Evidence Artifact |
+|---|---|---|---|
+| Dual-moat defense | Mission-plus-payment moat protection controls | Platform lead (TC) | docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md |
+| Payment-routing enforcement | Contract, monitoring, and escalation controls | Platform lead (TC) | docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md |
+| Success-as-moat execution | Onboarding and retention-quality control loop | Client success manager | docs/canon/CROWN_SOLOMON_CANON.md |
+| Continuity and capital discipline | Team continuity and strategic allocation governance | Platform lead (TC) | docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md |
+| Enterprise-value metrics | Durable retention and moat KPI reporting cadence | Finance lead | docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md |
 ## Exit Rule for Priority #7
 
 Priority #7 is complete only when each workstream has:
