@@ -78,3 +78,8 @@ Avoid:
 
 - docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md
 - docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md
+
+### 8. Priority #9 Moat Protection and Value Compounding
+
+- docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md
+- docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md

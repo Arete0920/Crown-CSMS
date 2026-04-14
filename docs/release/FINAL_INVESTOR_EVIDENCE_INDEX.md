@@ -83,6 +83,8 @@ Status legend:
 | `docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md` | Priority #7 implementation/support/scale execution blueprint | `PRESENT` | Added in Priority #7 operating tranche |
 | `docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md` | Priority #8 partnership-led market capture governance canon | `PRESENT` | Added in Priority #8 market tranche |
 | `docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md` | Priority #8 channel execution operating playbook | `PRESENT` | Added in Priority #8 market tranche |
+| `docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md` | Priority #9 moat-protection and value-compounding governance canon | `PRESENT` | Added in Priority #9 moat tranche |
+| `docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md` | Priority #9 moat-compounding execution playbook | `PRESENT` | Added in Priority #9 moat tranche |
 
 ## 7. Repo Hygiene Evidence
 

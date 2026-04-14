@@ -18,6 +18,7 @@ It does not replace module closeout evidence. It controls sequencing and claims.
 6. Later add-ons and standalone-capable expansion products
 7. Implementation, support, integrations, and scale operations
 8. Partnership-led market capture and expansion
+9. Moat protection, retention discipline, payment-routing enforcement, and enterprise-value compounding
 
 No expansion work may skip this order.
 
@@ -70,6 +71,11 @@ No expansion work may skip this order.
 
 - docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md
 - docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md
+
+### I. Moat and Value Compounding
+
+- docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md
+- docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md
 
 ## Governance Rules
 
