@@ -7,6 +7,8 @@ from rest_framework.test import APIClient
 from core.models import School
 from households.models import Household
 
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 @pytest.mark.django_db
 def test_school_override_header_ignored_for_nonstaff_user():
@@ -15,8 +17,8 @@ def test_school_override_header_ignored_for_nonstaff_user():
 
     hh_b = Household.objects.create(school_id=school_b.id, name="HH B")
 
-    User = get_user_model()
-    u = User.objects.create_user(username="u1", password="pass12345!", school=school_a)
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="u1", password=TEST_AUTH_SECRET, school=school_a)
 
     client = APIClient()
     client.force_authenticate(user=u)
@@ -36,8 +38,13 @@ def test_school_override_header_allows_staff_user_switch():
 
     hh_b = Household.objects.create(school_id=school_b.id, name="HH B")
 
-    User = get_user_model()
-    u = User.objects.create_user(username="staff1", password="pass12345!", school=school_a, is_staff=True)
+    user_model = get_user_model()
+    u = user_model.objects.create_user(
+        username="staff1",
+        password=TEST_AUTH_SECRET,
+        school=school_a,
+        is_staff=True,
+    )
 
     client = APIClient()
     client.force_authenticate(user=u)
@@ -55,8 +62,13 @@ def test_school_override_header_invalid_uuid_is_400_for_staff():
     school = School.objects.create(name="School A", timezone="America/New_York", is_active=True)
     hh = Household.objects.create(school_id=school.id, name="HH")
 
-    User = get_user_model()
-    u = User.objects.create_user(username="staff2", password="pass12345!", school=school, is_staff=True)
+    user_model = get_user_model()
+    u = user_model.objects.create_user(
+        username="staff2",
+        password=TEST_AUTH_SECRET,
+        school=school,
+        is_staff=True,
+    )
 
     client = APIClient()
     client.force_authenticate(user=u)
@@ -75,8 +87,13 @@ def test_school_override_header_school_not_found_is_404_for_staff():
 
     missing = uuid.uuid4()
 
-    User = get_user_model()
-    u = User.objects.create_user(username="staff3", password="pass12345!", school=school, is_staff=True)
+    user_model = get_user_model()
+    u = user_model.objects.create_user(
+        username="staff3",
+        password=TEST_AUTH_SECRET,
+        school=school,
+        is_staff=True,
+    )
 
     client = APIClient()
     client.force_authenticate(user=u)
