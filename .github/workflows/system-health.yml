@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
@@ -110,3 +110,4 @@ jobs:
             kill "$(cat /tmp/django-system-health.pid)" >/dev/null 2>&1 || true
           fi
           cat /tmp/django-system-health.log || true
+

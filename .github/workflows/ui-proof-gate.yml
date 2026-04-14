@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -49,3 +49,4 @@ jobs:
           name: playwright-report-${{ github.run_id }}
           path: frontend/dashboards/playwright-report/
           retention-days: 7
+

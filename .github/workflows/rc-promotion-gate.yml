@@ -17,11 +17,11 @@ jobs:
 
       - name: Checkout
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Setup Python
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -103,3 +103,4 @@ jobs:
           RC_TIER: "T1"
         run: |
           python tools/rc_deployed_smoke.py
+

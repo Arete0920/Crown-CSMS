@@ -1,4 +1,4 @@
-﻿name: Production Deploy (Dispatch v2)
+name: Production Deploy (Dispatch v2)
 
 on:
   workflow_dispatch:
@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           ref: ${{ env.DEPLOY_TAG }}
           fetch-depth: 0
@@ -62,7 +62,7 @@ jobs:
           echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
-      - name: "Guard: deploy contract ΓÇö SHA and tag must be present and valid"
+      - name: "Guard: deploy contract - SHA and tag must be present and valid"
         shell: bash
         run: |
           set -euo pipefail
@@ -73,10 +73,10 @@ jobs:
             exit 1
           fi
           if [[ -z "$TAG" ]]; then
-            echo "ERROR: deploy_tag input is empty ΓÇö a tag is required for prod dispatch deploy"
+            echo "ERROR: deploy_tag input is empty - a tag is required for prod dispatch deploy"
             exit 1
           fi
-          echo "Γ£ô Deploy contract satisfied: TAG=$TAG SHA=${SHA:0:7}"
+          echo "Deploy contract satisfied: TAG=$TAG SHA=${SHA:0:7}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -100,12 +100,12 @@ jobs:
             echo "ACR: $ACR_ID"
             exit 1
           fi
-          echo "Γ£ô AcrPull verified for ${{ env.WEBAPP_NAME }} ($PRINCIPAL_ID)"
+          echo "G�� AcrPull verified for ${{ env.WEBAPP_NAME }} ($PRINCIPAL_ID)"
 
       - name: Bake BUILD_SHA into artifact
         run: |
           echo "BUILD_SHA = \"${{ steps.vars.outputs.deploy_sha_short }}\"" > backend/crown_api/build_info.py
-          echo "Γ£ô Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
+          echo "G�� Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -247,13 +247,13 @@ jobs:
           for i in {1..30}; do
             response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/health)
             if [ "$response" == "200" ]; then
-              echo "Γ£à Health check passed"
+              echo "G�� Health check passed"
               exit 0
             fi
             echo "Health check attempt $i - response code: $response"
             sleep 10
           done
-          echo "Γ¥î Health check failed"
+          echo "G�� Health check failed"
           exit 1
 
       - name: Verify deployed build_sha via /health
@@ -270,7 +270,7 @@ jobs:
               GOT="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)"
               if [ -n "$GOT" ]; then
                 if [ "$GOT" = "$WANT_SHA" ] || [ "${GOT:0:8}" = "${WANT_SHA:0:8}" ] || [ "${WANT_SHA:0:7}" = "${GOT:0:7}" ]; then
-                  echo "Γ£à build_sha verified: got=$GOT want=$WANT_SHA"
+                  echo "G�� build_sha verified: got=$GOT want=$WANT_SHA"
                   exit 0
                 else
                   echo "Attempt $attempt: MISMATCH got=$GOT want=$WANT_SHA"
@@ -283,7 +283,7 @@ jobs:
             fi
             sleep 15
           done
-          echo "Γ¥î build_sha did not match after 20 attempts (300s)"
+          echo "G�� build_sha did not match after 20 attempts (300s)"
           exit 1
 
       - name: Verify release identity end-to-end
@@ -366,13 +366,13 @@ jobs:
       - name: Notify deployment
         if: success()
         run: |
-          echo "Γ£à Deployment successful"
+          echo "G�� Deployment successful"
           echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
 
       - name: Rollback on failure
         if: failure()
         run: |
-          echo "Γ¥î Deployment failed - rolling back"
+          echo "G�� Deployment failed - rolling back"
           # Azure will handle automatic rollback based on health check
           exit 1
 
@@ -404,3 +404,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+

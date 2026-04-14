@@ -69,7 +69,7 @@ class StripeConnect:
         """
         Create a Stripe Express connected account for a school tenant.
 
-        Returns the Stripe account ID string (e.g. "acct_xxxxxxxxxx").
+        Returns the Stripe account ID string (e.g. "acct_example123").
         The account ID should be stored in TenantProfile.stripe_account_id.
 
         Args:
@@ -137,3 +137,4 @@ class StripeConnect:
             "payouts_enabled": account.payouts_enabled,
             "details_submitted": account.details_submitted,
         }
+

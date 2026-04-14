@@ -17,7 +17,7 @@ jobs:
       run:
         working-directory: frontend/dashboards
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Use Node 20
         uses: actions/setup-node@v4
@@ -70,3 +70,4 @@ jobs:
           VITE_BUILD_SHA: ${{ github.sha }}
           VITE_DEPLOY_TAG: ${{ github.ref_name }}
         run: npm run build
+

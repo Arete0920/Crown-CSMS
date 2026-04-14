@@ -14,10 +14,10 @@ jobs:
     name: Python — safety check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
@@ -39,10 +39,10 @@ jobs:
     name: Python — pip-audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
@@ -75,7 +75,7 @@ jobs:
     name: Node — npm audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -87,3 +87,4 @@ jobs:
         run: |
           npm ci --prefer-offline 2>/dev/null || npm install
           npm audit --audit-level=high || true
+

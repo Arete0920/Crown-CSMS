@@ -16,8 +16,9 @@ jobs:
     name: routes-gate
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - name: Run Routes Gate (PowerShell)
         shell: pwsh
         run: |
           pwsh -File tools/verify_routes_gate.ps1
+

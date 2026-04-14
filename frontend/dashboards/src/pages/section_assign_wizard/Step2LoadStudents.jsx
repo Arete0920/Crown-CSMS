@@ -1,19 +1,20 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { loadStudents } from "../../api/section_assign_wizard.js";
 import "../../styles/crown-wizard.css";
 
+function parseIds(text) {
+  return text
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export default function Step2LoadStudents({ context, setContext, goNext, goPrev, stepIndex, totalSteps, steps }) {
   const [raw, setRaw] = useState((context.student_ids || []).join("\n"));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  function parseIds(text) {
-    return text
-      .split(/[\n,\s]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
 
   async function handleNext() {
     const ids = parseIds(raw);
@@ -48,7 +49,7 @@ export default function Step2LoadStudents({ context, setContext, goNext, goPrev,
           <textarea
             className="crown-input"
             rows={8}
-            placeholder={"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\nxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"}
+            placeholder={"00000000-0000-0000-0000-000000000000\n11111111-1111-1111-1111-111111111111"}
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             style={{ width: "100%", fontFamily: "monospace", fontSize: 12 }}
@@ -61,12 +62,25 @@ export default function Step2LoadStudents({ context, setContext, goNext, goPrev,
         {error && <div className="crown-alert">{error}</div>}
 
         <div style={{ display: "flex", gap: 12 }}>
-          <button className="crown-btn" onClick={goPrev} disabled={loading}>← Back</button>
+          <button className="crown-btn" onClick={goPrev} disabled={loading}>Back</button>
           <button className="crown-btn crown-btn-primary" onClick={handleNext} disabled={loading}>
-            {loading ? "Loading…" : "Next →"}
+            {loading ? "Loading..." : "Next ->"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+Step2LoadStudents.propTypes = {
+  context: PropTypes.shape({
+    sessionId: PropTypes.string,
+    student_ids: PropTypes.arrayOf(PropTypes.string),
+  }).isRequired,
+  setContext: PropTypes.func.isRequired,
+  goNext: PropTypes.func.isRequired,
+  goPrev: PropTypes.func.isRequired,
+  stepIndex: PropTypes.number.isRequired,
+  totalSteps: PropTypes.number.isRequired,
+  steps: PropTypes.arrayOf(PropTypes.object).isRequired,
+};
