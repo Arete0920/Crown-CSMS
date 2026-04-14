@@ -91,7 +91,7 @@ def run_all_predictive_models(self, tenant_id):
         try:
             import pandas as _pd
             retention_features = _pd.DataFrame(retention_features)
-        except Exception:  # pragma: no cover - pandas optional
+        except (ImportError, ModuleNotFoundError):  # pragma: no cover - pandas optional
             pass
         retention_result = run_retention_risk(school, retention_features)
 
