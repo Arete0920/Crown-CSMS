@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from decimal import Decimal
 
 import pytest
@@ -12,11 +12,13 @@ from ledger.models import LedgerAccount, Charge, Payment, Allocation
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 
 def _mk_user_with_school_id(school_id):
     School.objects.get_or_create(id=school_id, defaults={"name": f"School-{school_id}"})
     User = get_user_model()
-    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password="pass12345!")
+    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school_id)
         u.save(update_fields=["school_id"])
@@ -98,3 +100,4 @@ def test_open_charges_lists_remaining_balances():
     data = resp.json()["data"]
     assert len(data) == 1
     assert data[0]["charge"]["id"] == str(ch1.id)
+

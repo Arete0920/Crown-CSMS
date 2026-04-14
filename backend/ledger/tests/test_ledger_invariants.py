@@ -1,10 +1,10 @@
-"""
-Phase 2 Priority 2 – Ledger Invariant endpoint proof tests.
+﻿"""
+Phase 2 Priority 2 â€“ Ledger Invariant endpoint proof tests.
 
 Invariants checked by GET /api/v1/ledger/invariants/:
-  1. over_allocated  – allocations exceed charge face value
-  2. negative_charges – non-void charges with amount < 0
-  3. negative_payments – non-void payments with amount < 0
+  1. over_allocated  â€“ allocations exceed charge face value
+  2. negative_charges â€“ non-void charges with amount < 0
+  3. negative_payments â€“ non-void payments with amount < 0
 
 All tests are self-contained; no seed command required.
 """
@@ -21,6 +21,8 @@ from ledger.services import allocate_payment_fifo
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 URL = "/api/v1/ledger/invariants/"
 
 
@@ -29,7 +31,7 @@ def _school_and_user():
     sid = uuid.uuid4()
     school = School.objects.get_or_create(id=sid, defaults={"name": f"School-{sid}"})[0]
     User = get_user_model()
-    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password="pass12345!")
+    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
     if hasattr(user, "school_id"):
         user.school_id = sid
         user.save(update_fields=["school_id"])
@@ -55,7 +57,7 @@ def test_invariants_unauthenticated_rejected():
 
 
 # ---------------------------------------------------------------------------
-# Test 2: authenticated, no seed violations → 200 + clean=True
+# Test 2: authenticated, no seed violations â†’ 200 + clean=True
 # ---------------------------------------------------------------------------
 
 def test_invariants_clean_ledger_returns_clean():
@@ -91,7 +93,7 @@ def test_invariants_detects_over_allocation():
 
     charge = Charge.objects.create(school_id=sid, account=acct, description="Fee", amount=Decimal("100.00"))
     payment = Payment.objects.create(school_id=sid, account=acct, amount=Decimal("999.00"))
-    # Allocated 150 against a 100-face charge → over by 50
+    # Allocated 150 against a 100-face charge â†’ over by 50
     Allocation.objects.create(school_id=sid, payment=payment, charge=charge, amount=Decimal("150.00"))
 
     c = Client()
@@ -108,7 +110,7 @@ def test_invariants_detects_over_allocation():
 
 
 # ---------------------------------------------------------------------------
-# Test 4: tenant isolation — other school's violations invisible
+# Test 4: tenant isolation â€” other school's violations invisible
 # ---------------------------------------------------------------------------
 
 def test_invariants_tenant_isolation():
@@ -186,3 +188,4 @@ def test_allocation_on_voided_charge_skipped():
     assert Allocation.objects.filter(payment=payment).count() == 0, (
         "No Allocation rows should exist for a payment against only voided charges"
     )
+
