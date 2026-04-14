@@ -81,6 +81,8 @@ Status legend:
 | `docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md` | Standalone-capable add-ons expansion tracker | `PRESENT` | Added in Priority #6 expansion tranche |
 | `docs/release/PRIORITY_7_OPERATING_COMPANY_CANON.md` | Priority #7 operating-company governance canon | `PRESENT` | Added in Priority #7 operating tranche |
 | `docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md` | Priority #7 implementation/support/scale execution blueprint | `PRESENT` | Added in Priority #7 operating tranche |
+| `docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md` | Priority #8 partnership-led market capture governance canon | `PRESENT` | Added in Priority #8 market tranche |
+| `docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md` | Priority #8 channel execution operating playbook | `PRESENT` | Added in Priority #8 market tranche |
 
 ## 7. Repo Hygiene Evidence
 
