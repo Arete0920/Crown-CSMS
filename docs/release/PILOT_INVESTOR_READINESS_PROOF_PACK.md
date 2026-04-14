@@ -73,3 +73,8 @@ Avoid:
 
 - docs/release/PRIORITY_7_OPERATING_COMPANY_CANON.md
 - docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md
+
+### 7. Priority #8 Partnership-Led Market Capture
+
+- docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md
+- docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md

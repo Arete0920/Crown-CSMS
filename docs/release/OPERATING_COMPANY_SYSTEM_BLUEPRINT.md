@@ -61,6 +61,16 @@ Turn Crown from a strong codebase into a deliverable, supportable, and scalable 
 | Security review rhythm | Scheduled security review process | Security owner | docs/release/SECURITY_GATES_EVIDENCE.md |
 | Customer trust materials | Customer-facing confidence packet | GTM + customer success | docs/release/PILOT_INVESTOR_READINESS_PROOF_PACK.md |
 
+
+## Workstream 6: Partnership-Led Market Capture
+
+| Capability | Required Output | Owner | Evidence Artifact |
+|---|---|---|---|
+| Association channel strategy | Network-first partner model and target cohorts | Platform lead (TC) | docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md |
+| Referral and case-study flywheel | Reference and referral operating loop | Marketing director | docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md |
+| Partner ecosystem expansion | Association and consortium expansion playbook | Platform lead (TC) | docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md |
+| Segment expansion gates | Secular/daycare expansion stage gates | Marketing director | docs/release/PRIORITY_8_PARTNERSHIP_MARKET_CAPTURE_CANON.md |
+| Channel delivery quality | Partner cohort onboarding quality controls | Client success manager | docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md |
 ## Exit Rule for Priority #7
 
 Priority #7 is complete only when each workstream has:
