@@ -5,6 +5,8 @@ from core.models import School, UserAccount, UserRole
 from households.models import Guardian, Household, Student
 
 
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 class StudentsApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -15,7 +17,7 @@ class StudentsApiTests(TestCase):
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=True,
             school=self.school,
         )
@@ -23,7 +25,7 @@ class StudentsApiTests(TestCase):
         self.parent_user = UserAccount.objects.create_user(
             username="parentuser",
             email="parent@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=False,
             school=self.school,
         )
@@ -99,3 +101,5 @@ class StudentsApiTests(TestCase):
         self.assertEqual(resp.status_code, 401)
         resp2 = self.client.get(f"/api/students/{self.student_a.id}/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp2.status_code, 401)
+
+
