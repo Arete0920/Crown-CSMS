@@ -1,4 +1,4 @@
-from django.conf import settings
+﻿from django.conf import settings
 from rest_framework import permissions, viewsets
 from core.models import UserRole
 from core.scoping import DOMAIN_STUDENTS, scope_queryset
@@ -36,8 +36,8 @@ class HouseholdViewSet(ScopedReadOnlyModelViewSet):
 		# We only add optional guardian-level filtering here
 		qs = super().get_queryset()
 
-		# Apply guardian scoping if enabled — PARENT role users only
-		if getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", False):
+		# Apply guardian scoping if enabled - PARENT role users only
+		if getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", True):
 			user = self.request.user
 			school = getattr(self.request, "school", None)
 			school_id = school.id if school else None
@@ -60,13 +60,14 @@ class StudentViewSet(ScopedReadOnlyModelViewSet):
 	serializer_class = StudentSerializer
 
 	def get_queryset(self):
-		# Tenant (school) scoping comes first — enforced by scope_to_school.
+		# Tenant (school) scoping comes first - enforced by scope_to_school.
 		# Role-based row scoping is delegated entirely to core.scoping.scope_queryset.
-		# DO NOT add inline role checks here — add them to core/scoping.py instead.
+		# DO NOT add inline role checks here - add them to core/scoping.py instead.
 		qs = Student.objects.select_related("household").all()
 		qs = scope_to_school(self.request, qs)
-		if not getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", False):
+		if not getattr(settings, "HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED", True):
 			return qs
 		school = getattr(self.request, "school", None)
 		school_id = school.id if school else None
 		return scope_queryset(self.request.user, qs, DOMAIN_STUDENTS, school_id=school_id)
+
