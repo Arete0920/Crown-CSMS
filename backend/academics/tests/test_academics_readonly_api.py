@@ -232,7 +232,7 @@ def test_curriculum_sources_filter_supported_only():
     client = APIClient()
     client.force_authenticate(user)
 
-    resp = client.get('/api/v1/academics/curriculum-sources/?supported_only=true')
+    resp = client.get('/api/v1/academics/curriculum-sources/?supported_only=true', HTTP_X_SCHOOL_ID=str(school.id))
     assert resp.status_code == 200
     payload = resp.json()
     results = payload['results']
@@ -250,7 +250,7 @@ def test_curriculum_sources_filter_by_publisher_alias():
     client = APIClient()
     client.force_authenticate(user)
 
-    resp = client.get('/api/v1/academics/curriculum-sources/?publisher=bju')
+    resp = client.get('/api/v1/academics/curriculum-sources/?publisher=bju', HTTP_X_SCHOOL_ID=str(school.id))
     assert resp.status_code == 200
     payload = resp.json()
     results = payload['results']

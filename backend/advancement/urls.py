@@ -44,18 +44,18 @@ from .api import (
     seating_hold,
     seating_assign,
     sponsorship_log_impressions,
-    # Stage 3.1 Ã¢â‚¬â€œ live availability + strict holds + purchase
+    # Stage 3.1 – live availability + strict holds + purchase
     seating_availability,
     seating_hold_strict,
     seating_purchase_held,
-    # Stage 3.2 Ã¢â‚¬â€œ Stripe checkout + order status
+    # Stage 3.2 – Stripe checkout + order status
     seating_checkout,
     order_status,
     stripe_webhook,
-    # Stage 3.3 Ã¢â‚¬â€œ section pricing + best-available
+    # Stage 3.3 – section pricing + best-available
     seating_best_available_checkout,
     event_section_prices,
-    # Stage 3.4 Ã¢â‚¬â€œ sponsors, receipts, Wallet passes
+    # Stage 3.4 – sponsors, receipts, Wallet passes
     event_sponsors,
     apple_wallet_pass,
     google_wallet_link,

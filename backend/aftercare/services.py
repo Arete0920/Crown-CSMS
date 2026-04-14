@@ -1,9 +1,9 @@
-﻿"""
-Aftercare services â€” deterministic, explainable, no magic.
+"""
+Aftercare services — deterministic, explainable, no magic.
 
 Integration points marked with CANON_* tokens:
-  CANON_LEDGER_CHARGE_HOOK  â€” wire to your ledger create_charge call
-  CANON_DISCIPLINE_HOOK     â€” wire to your discipline record creation
+  CANON_LEDGER_CHARGE_HOOK  — wire to your ledger create_charge call
+  CANON_DISCIPLINE_HOOK     — wire to your discipline record creation
 """
 from __future__ import annotations
 
@@ -63,14 +63,14 @@ def compute_late_fee(config: AftercareProgramConfig, attendance_date: date, chec
         return LateFeeResult(late_minutes=late_minutes, late_fee_cents=0)
 
     billable = late_minutes - grace
-    blocks = (billable + 9) // 10  # ceiling divide â€” 1 min = 1 block
+    blocks = (billable + 9) // 10  # ceiling divide — 1 min = 1 block
     fee = float(config.late_fee_per_10_min) * blocks
     fee = min(fee, float(config.late_fee_cap))
     return LateFeeResult(late_minutes=late_minutes, late_fee_cents=to_cents(fee))
 
 
 # ---------------------------------------------------------------------------
-# Integration stubs â€” replace with canonical implementations
+# Integration stubs — replace with canonical implementations
 # ---------------------------------------------------------------------------
 
 def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents: int, description: str) -> int:

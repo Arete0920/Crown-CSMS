@@ -554,11 +554,11 @@ class CurriculumSourceViewSet(PaginatedReadOnlyViewSet):
         supported_only = (self.request.query_params.get("supported_only") or "").strip().lower()
         if supported_only in {"1", "true", "yes"}:
             supported_ids = [
-                source.id
-                for source in qs
-                if is_supported_curriculum_publisher(source.name)
+                source_id
+                for source_id, source_name in qs.values_list("id", "name")
+                if is_supported_curriculum_publisher(source_name)
             ]
-            qs = qs.filter(id__in=supported_ids)
+            qs = qs.filter(id__in=supported_ids) if supported_ids else qs.none()
 
         return qs.order_by("name")
 
