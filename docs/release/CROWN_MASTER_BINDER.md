@@ -83,6 +83,10 @@ No expansion work may skip this order.
 - docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md
 - docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md
 
+### K. Execution Dashboard
+
+- docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md
+
 ## Governance Rules
 
 1. No overclaiming. Use "credible operating MVP" unless full gate evidence is green.
