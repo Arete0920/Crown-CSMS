@@ -35,6 +35,8 @@ from core.scoping import (
 from households.models import Guardian as HouseholdsGuardian, Household, Student
 from academics.models import Course, Enrollment as AcademicEnrollment, Section
 from financial_aid.models import FinancialAidApplication
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 
 # ---------------------------------------------------------------------------
@@ -48,13 +50,13 @@ class TestScopingStudentsTeacher(TestCase):
 
         # Teacher with a section and one enrolled student.
         self.teacher = UserAccount.objects.create_user(
-            username="teacher_scope_test", password="x"
+            username="teacher_scope_test", password=TEST_AUTH_SECRET
         )
         self.teacher.role = "TEACHER"  # fallback for resolve_role (no UserRole record)
 
         # Second teacher with no sections — must see nothing.
         self.unassigned_teacher = UserAccount.objects.create_user(
-            username="unassigned_teacher_scope_test", password="x"
+            username="unassigned_teacher_scope_test", password=TEST_AUTH_SECRET
         )
         self.unassigned_teacher.role = "TEACHER"
 
@@ -106,7 +108,7 @@ class TestScopingStudentsParent(TestCase):
         self.school_id = uuid.uuid4()
 
         self.parent = UserAccount.objects.create_user(
-            username="parent_scope_test", password="x", email="mama@family.com"
+            username="parent_scope_test", password=TEST_AUTH_SECRET, email="mama@family.com"
         )
         self.parent.role = "PARENT"
 
@@ -140,7 +142,7 @@ class TestScopingStudentsParent(TestCase):
     def test_parent_email_match_is_case_insensitive(self):
         """Guardian email stored as 'mama@family.com', user.email as 'MAMA@Family.com'"""
         case_parent = UserAccount.objects.create_user(
-            username="case_parent_scope_test", password="x",
+            username="case_parent_scope_test", password=TEST_AUTH_SECRET,
             email="MAMA@Family.com",
         )
         case_parent.role = "PARENT"
@@ -150,7 +152,7 @@ class TestScopingStudentsParent(TestCase):
 
     def test_parent_with_no_guardian_record_sees_nothing(self):
         orphan = UserAccount.objects.create_user(
-            username="orphan_parent_scope_test", password="x",
+            username="orphan_parent_scope_test", password=TEST_AUTH_SECRET,
             email="no.guardian@example.com",
         )
         orphan.role = "PARENT"
@@ -168,7 +170,7 @@ class TestScopingFinancialAidParent(TestCase):
         self.school_id = uuid.uuid4()
 
         self.parent = UserAccount.objects.create_user(
-            username="aid_parent_scope_test", password="x",
+            username="aid_parent_scope_test", password=TEST_AUTH_SECRET,
             email="guardian@family.com",
         )
         self.parent.role = "PARENT"
@@ -203,7 +205,7 @@ class TestScopingFinancialAidParent(TestCase):
 
     def test_parent_with_no_guardian_record_sees_nothing(self):
         ghost = UserAccount.objects.create_user(
-            username="ghost_aid_scope_test", password="x",
+            username="ghost_aid_scope_test", password=TEST_AUTH_SECRET,
             email="nobody@void.com",
         )
         ghost.role = "PARENT"
@@ -234,7 +236,7 @@ class TestScopingFinancialParentFamily(TestCase):
 
         # Link guardian via DB update so guardian_id is persisted, then role attribute.
         self.parent = UserAccount.objects.create_user(
-            username="fin_parent_scope_test", password="x",
+            username="fin_parent_scope_test", password=TEST_AUTH_SECRET,
         )
         UserAccount.objects.filter(pk=self.parent.pk).update(guardian=self.guardian)
         self.parent.refresh_from_db()
@@ -258,12 +260,12 @@ class TestScopingFinancialParentFamily(TestCase):
         Using mock qs — consistent with above.
         """
         orphan = UserAccount.objects.create_user(
-            username="fin_orphan_scope_test", password="x",
+            username="fin_orphan_scope_test", password=TEST_AUTH_SECRET,
         )
         orphan.role = "PARENT"
         mock_qs = MagicMock()
 
-        result = scope_queryset(orphan, mock_qs, DOMAIN_FINANCIAL)
+        _ = scope_queryset(orphan, mock_qs, DOMAIN_FINANCIAL)
 
         mock_qs.filter.assert_not_called()
 
@@ -276,7 +278,7 @@ class TestScopingFinancialParentFamily(TestCase):
 class TestScopingDefaultDenyUnknownDomain(TestCase):
     def test_unknown_domain_returns_empty_queryset(self):
         user = UserAccount.objects.create_user(
-            username="unknown_domain_scope_test", password="x",
+            username="unknown_domain_scope_test", password=TEST_AUTH_SECRET,
         )
         qs = Student.objects.all()
         result = scope_queryset(user, qs, "nonexistent_domain_xyz")
@@ -285,7 +287,7 @@ class TestScopingDefaultDenyUnknownDomain(TestCase):
 
     def test_empty_domain_string_returns_empty_queryset(self):
         user = UserAccount.objects.create_user(
-            username="empty_domain_scope_test", password="x",
+            username="empty_domain_scope_test", password=TEST_AUTH_SECRET,
         )
         qs = Student.objects.all()
         result = scope_queryset(user, qs, "")
@@ -318,7 +320,7 @@ class TestScopingFieldScope(TestCase):
 
     def test_teacher_student_fields_are_pruned(self):
         teacher = UserAccount.objects.create_user(
-            username="field_teacher_test", password="x"
+            username="field_teacher_test", password=TEST_AUTH_SECRET
         )
         teacher.role = "TEACHER"
         ser = self._make_serializer(
@@ -335,7 +337,7 @@ class TestScopingFieldScope(TestCase):
 
     def test_director_student_fields_unchanged(self):
         director = UserAccount.objects.create_user(
-            username="field_director_test", password="x"
+            username="field_director_test", password=TEST_AUTH_SECRET
         )
         director.role = "HEAD_OF_SCHOOL"
         all_fields = ["id", "first_name", "last_name", "ssn", "counseling_notes", "grade_level"]
@@ -347,7 +349,7 @@ class TestScopingFieldScope(TestCase):
 
     def test_missing_domain_in_context_clears_all_fields(self):
         user = UserAccount.objects.create_user(
-            username="field_nodomain_test", password="x"
+            username="field_nodomain_test", password=TEST_AUTH_SECRET
         )
         ser = self._MockSerializer(
             ["id", "first_name", "secret"],
@@ -355,3 +357,5 @@ class TestScopingFieldScope(TestCase):
         )
         scope_serializer_fields(user, ser)
         self.assertEqual(len(ser.fields), 0)
+
+
