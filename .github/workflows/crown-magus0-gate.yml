@@ -46,10 +46,10 @@ jobs:
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
           cache: pip
@@ -128,7 +128,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # full history for git grep
 
@@ -190,7 +190,7 @@ jobs:
         working-directory: frontend/dashboards
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Node.js 18
         uses: actions/setup-node@v4
@@ -230,10 +230,10 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -288,10 +288,10 @@ jobs:
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
           cache: pip
@@ -320,3 +320,4 @@ jobs:
           name: pytest-audit
           path: /tmp/pytest-audit.txt
           retention-days: 30
+

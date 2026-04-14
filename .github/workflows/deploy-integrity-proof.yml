@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -35,3 +35,4 @@ jobs:
             -HealthUrl "${{ inputs.health_url }}" `
             -ExpectedTag "${{ inputs.expected_tag }}" `
             -ExpectedSha "${{ inputs.expected_sha }}"
+

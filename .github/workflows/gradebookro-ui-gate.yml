@@ -21,8 +21,9 @@ jobs:
   gate:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - name: Run GradebookRO UI Gate (PowerShell)
         shell: pwsh
         run: |
           pwsh -File tools/verify_gradebookro_ui_gate.ps1
+

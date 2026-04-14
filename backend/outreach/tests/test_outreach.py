@@ -102,7 +102,7 @@ class TestTenantIsolation:
     def test_student_cannot_create_partner(self):
         school = _mk_school()
         c = _student_client(_mk_user(school), school)
-        r = c.post("/api/outreach/partners/", {"name": "Hack"}, format="json")
+        r = c.post("/api/outreach/partners/", {"name": "Forbidden Partner"}, format="json")
         assert r.status_code == 403
 
 
@@ -328,7 +328,7 @@ class TestServiceGoal:
     def test_student_blocked(self):
         user = _mk_user(self.school)
         c = _student_client(user, self.school)
-        r = c.post("/api/outreach/goals/", {"name": "Hack", "required_hours": "999"}, format="json")
+        r = c.post("/api/outreach/goals/", {"name": "Forbidden Goal", "required_hours": "999"}, format="json")
         assert r.status_code == 403
 
 
@@ -461,7 +461,7 @@ class TestReportStudentProgress:
         fake = str(uuid.uuid4())
         r = self.client.get(f"/api/outreach/service-logs/report/student-progress/?student_id={fake}")
         assert r.status_code == 200
-        assert r.json()["progress_pct"] == 0.0
+        assert abs(r.json()["progress_pct"] - 0.0) < 1e-9
 
 
 # ---------------------------------------------------------------------------
@@ -484,3 +484,5 @@ class TestSerializerValidation:
             format="json",
         )
         assert r.status_code == 400
+
+

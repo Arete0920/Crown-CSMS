@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout (fetch all tags)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -46,3 +46,4 @@ jobs:
             -Tag      "${{ inputs.tag }}" `
             -ApiBase  "${{ inputs.api_base }}" `
             -DashBase "${{ inputs.dash_base }}"
+

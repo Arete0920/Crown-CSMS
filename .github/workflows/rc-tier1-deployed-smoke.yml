@@ -37,10 +37,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -101,3 +101,4 @@ jobs:
         run: |
           echo "Deployed smoke skipped — add RC_BASE_URL, RC_SCHOOL_ID as repository secrets to enable."
           echo "See: Settings → Secrets and variables → Actions"
+

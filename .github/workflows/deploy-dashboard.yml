@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
@@ -129,3 +129,4 @@ jobs:
           app_location: "frontend/dashboards/dist"
           output_location: ""
           skip_app_build: true
+

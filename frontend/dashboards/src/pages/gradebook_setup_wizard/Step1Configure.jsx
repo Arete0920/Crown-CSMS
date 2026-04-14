@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { createGradebookSetupSession, configureGradebookSetupSession } from "../../api/gradebook_setup_wizard.js";
@@ -30,7 +31,7 @@ export default function Step1Configure({ context, setContext, goNext, stepIndex,
       <CrownWizardStepHeader title="Select Section" subtitle="Enter the section UUID for gradebook category setup." stepIndex={stepIndex} totalSteps={totalSteps} steps={steps} />
       <div className="crown-wizard-field">
         <div>Section ID (UUID)</div>
-        <input className="crown-input" value={sectionId} onChange={e => setSectionId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <input className="crown-input" value={sectionId} onChange={e => setSectionId(e.target.value)} placeholder="00000000-0000-0000-0000-000000000000" />
       </div>
       {error && <p className="crown-error">{error}</p>}
       <button className="crown-btn crown-btn-primary" onClick={handleNext} disabled={loading}>
@@ -39,3 +40,15 @@ export default function Step1Configure({ context, setContext, goNext, stepIndex,
     </div>
   );
 }
+
+Step1Configure.propTypes = {
+  context: PropTypes.shape({
+    section_id: PropTypes.string,
+    sessionId: PropTypes.string,
+  }).isRequired,
+  setContext: PropTypes.func.isRequired,
+  goNext: PropTypes.func.isRequired,
+  stepIndex: PropTypes.number.isRequired,
+  totalSteps: PropTypes.number.isRequired,
+  steps: PropTypes.arrayOf(PropTypes.object).isRequired,
+};

@@ -10,7 +10,7 @@ jobs:
   verify-immutable-tags:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Need full history to verify tags
           fetch-tags: true
@@ -80,7 +80,7 @@ jobs:
     needs: verify-immutable-tags
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
       - name: Guard against forbidden frontend imports
         run: |
@@ -108,7 +108,7 @@ jobs:
           echo "✅ No forbidden imports found"
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
@@ -171,3 +171,4 @@ jobs:
           echo "  - Test failures (run: python manage.py test)"
           echo "  - Health endpoint broken (check crown_api/health_views.py)"
           exit 1
+

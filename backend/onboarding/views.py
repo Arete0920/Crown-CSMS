@@ -337,7 +337,7 @@ def commit_session(request, session_id):
 
     MVP: parses CSV and records planned record counts in commit_result.
     Actual model creation is scaffolded — extend this view when the
-    Student/Household intake models are ready (see TODO below).
+    Student/Household intake models are ready (see note below).
     """
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
@@ -390,8 +390,9 @@ def commit_session(request, session_id):
             for hid, hrows in rows_by_household.items():
                 first_row = hrows[0]
                 # Derive household name from first guardian last name, or fallback.
+                guardian_last = first_row.get("guardian_last_name", "").strip()
                 hh_name = (
-                    f"{first_row.get('guardian_last_name', '').strip()} Family"
+                    (f"{guardian_last} Family" if guardian_last else "")
                     or hid
                     or "Unknown Family"
                 )
@@ -518,3 +519,6 @@ def verify_session(request, session_id):
         "exceptions_count": cr.get("exceptions_count", 0),
         "checks": checks,
     })
+
+
+
