@@ -68,3 +68,8 @@ Avoid:
 
 - docs/release/PRIORITY_6_SELECTIVE_EXPANSION_CANON.md
 - docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md
+
+### 6. Priority #7 Operating Company System
+
+- docs/release/PRIORITY_7_OPERATING_COMPANY_CANON.md
+- docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md
