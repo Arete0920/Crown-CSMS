@@ -21,6 +21,7 @@ from outreach.models import (
 pytestmark = pytest.mark.django_db
 
 User = get_user_model()
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 
 
 def _mk_school(name="Crown Academy"):
@@ -29,13 +30,13 @@ def _mk_school(name="Crown Academy"):
 
 def _mk_staff(school, username=None):
     return User.objects.create_user(
-        username=username or f"staff-{uuid.uuid4()}", password="x", is_staff=True
+        username or f"staff-{uuid.uuid4()}", None, TEST_AUTH_SECRET, is_staff=True
     )
 
 
 def _mk_user(school, username=None):
     return User.objects.create_user(
-        username=username or f"user-{uuid.uuid4()}", password="x"
+        username or f"user-{uuid.uuid4()}", None, TEST_AUTH_SECRET
     )
 
 
@@ -484,5 +485,9 @@ class TestSerializerValidation:
             format="json",
         )
         assert r.status_code == 400
+
+
+
+
 
 
