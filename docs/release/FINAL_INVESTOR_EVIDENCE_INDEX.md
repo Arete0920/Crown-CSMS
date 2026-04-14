@@ -77,6 +77,8 @@ Status legend:
 | `docs/release/CROWN_PACKAGING_TIER_CANON.md` | Commercial tiering and claim language canon | `PRESENT` | Added in Priority #5 packaging tranche |
 | `docs/release/CROWN_MARKET_DECISION_MATRIX.md` | Market positioning and scope decision matrix | `PRESENT` | Added in Priority #5 packaging tranche |
 | `docs/release/PILOT_INVESTOR_READINESS_PROOF_PACK.md` | Pilot and investor proof-pack assembly guide | `PRESENT` | Added in Priority #5 packaging tranche |
+| `docs/release/PRIORITY_6_SELECTIVE_EXPANSION_CANON.md` | Priority #6 selective expansion governance canon | `PRESENT` | Added in Priority #6 expansion tranche |
+| `docs/release/STANDALONE_ADDONS_PRODUCT_TRACK.md` | Standalone-capable add-ons expansion tracker | `PRESENT` | Added in Priority #6 expansion tranche |
 
 ## 7. Repo Hygiene Evidence
 
@@ -110,3 +112,5 @@ Status legend:
 | Tenant isolation test output | `PRESENT` | Fresh 2026-04-10 output is committed at `artifacts/tenant-isolation-pytest-output.txt` | QA |
 | Final load reports | `PRESENT` | Canonical smoke/final HTML+CSV artifacts are present in `artifacts/load/` | QA |
 | Health and integrity endpoint production capture with required fields | `PARTIAL` | `docs/release/security-gate-evidence/prod-health-capture.txt` and `prod-integrity-capture.txt` are now committed from the latest audit-pack probe; `/api/health` is good, while `/api/integrity` still shows `missing_tenant` without a scoped header | DevOps |
+
+
