@@ -1,4 +1,4 @@
-# Final Investor Evidence Index
+﻿# Final Investor Evidence Index
 
 Generated: 2026-04-11
 Branch: `fix/frontend-audit`
@@ -73,6 +73,10 @@ Status legend:
 | `docs/release/INVESTOR_REPO_REVIEW_GUIDE.md` | 5-minute reviewer walkthrough | `PRESENT` | Added in Phase 3 |
 | `docs/release/KNOWN_GAPS_AND_DEFERRED_ITEMS.md` | Honest gap/defer registry | `PRESENT` | Added in Phase 3 |
 | `docs/release/FINAL_SIGNOFF_CHECKLIST.md` | TC signoff checklist | `PRESENT` | Added in Phase 3 |
+| `docs/release/CROWN_MASTER_BINDER.md` | Governance canon and sequencing authority | `PRESENT` | Added in Priority #5 packaging tranche |
+| `docs/release/CROWN_PACKAGING_TIER_CANON.md` | Commercial tiering and claim language canon | `PRESENT` | Added in Priority #5 packaging tranche |
+| `docs/release/CROWN_MARKET_DECISION_MATRIX.md` | Market positioning and scope decision matrix | `PRESENT` | Added in Priority #5 packaging tranche |
+| `docs/release/PILOT_INVESTOR_READINESS_PROOF_PACK.md` | Pilot and investor proof-pack assembly guide | `PRESENT` | Added in Priority #5 packaging tranche |
 
 ## 7. Repo Hygiene Evidence
 
