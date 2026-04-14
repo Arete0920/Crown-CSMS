@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from decimal import Decimal
 
 import pytest
@@ -12,10 +12,12 @@ from journal.models import JournalEntry, GLAccount
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 
 def test_void_charge_creates_single_reversal_entry():
     User = get_user_model()
-    user = User.objects.create_user(username="t", password="t")
+    user = User.objects.create_user(username="t", password=TEST_AUTH_SECRET)
 
     school = School.objects.create(name="Heritage")
     
@@ -68,3 +70,4 @@ def test_void_charge_creates_single_reversal_entry():
     # Idempotent: saving again doesn't create another reversal
     ch.save()
     assert JournalEntry.objects.filter(reversal_of=original).count() == 1
+

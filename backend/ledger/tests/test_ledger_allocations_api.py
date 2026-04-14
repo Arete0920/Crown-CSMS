@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 import pytest
 from decimal import Decimal
 from django.contrib.auth import get_user_model
@@ -11,10 +11,12 @@ from ledger.models import LedgerAccount, Charge, Payment
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 
 def _mk_user_with_school(school: School):
     User = get_user_model()
-    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password="pass12345!")
+    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -54,3 +56,4 @@ def test_payment_allocation_fifo_and_balances():
     resp = c.get(f"/api/v1/ledger/accounts/{acct.id}/balance/")
     assert resp.status_code == 200
     assert Decimal(resp.json()["data"]["balance"]) == Decimal("300.00")
+
