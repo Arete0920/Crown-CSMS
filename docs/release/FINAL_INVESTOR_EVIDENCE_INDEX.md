@@ -85,6 +85,8 @@ Status legend:
 | `docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md` | Priority #8 channel execution operating playbook | `PRESENT` | Added in Priority #8 market tranche |
 | `docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md` | Priority #9 moat-protection and value-compounding governance canon | `PRESENT` | Added in Priority #9 moat tranche |
 | `docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md` | Priority #9 moat-compounding execution playbook | `PRESENT` | Added in Priority #9 moat tranche |
+| `docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md` | Priority #10 optionality and financeability governance canon | `PRESENT` | Added in Priority #10 optionality tranche |
+| `docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md` | Priority #10 optionality and diligence execution playbook | `PRESENT` | Added in Priority #10 optionality tranche |
 
 ## 7. Repo Hygiene Evidence
 
