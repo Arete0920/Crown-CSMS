@@ -1,11 +1,11 @@
-﻿# Pilot and Investor Readiness Proof Pack
+# Pilot and Investor Readiness Proof Pack
 
 Status: Packaging and evidence playbook
 Updated: 2026-04-14
 
 ## Positioning Statement
 
-Crown is presented as a credible operating MVP with proven vertical slices and explicit deferred scope.
+Crown is presented using evidence-backed release-state language with explicit in-scope and out-of-scope boundaries.
 Do not claim full institutional readiness unless all gate conditions are green.
 
 ## Required Proof Pack Contents
@@ -36,9 +36,9 @@ Do not claim full institutional readiness unless all gate conditions are green.
 - docs/release/INVESTOR_REPO_REVIEW_GUIDE.md
 - docs/DEMO_RUNBOOK_25MIN.md
 
-## Pilot Go/No-Go Criteria
+## Final Production Release Gate Criteria
 
-Go only when all are true:
+Final production-ready release claim only when all are true:
 
 1. Core and first-wave module proof lanes are green.
 2. Second-wave operational lanes are green or explicitly waived.
@@ -49,7 +49,7 @@ Go only when all are true:
 ## Messaging Discipline
 
 Use:
-- "credible operating MVP"
+- "evidence-backed release candidate"
 - "proof-backed release candidate"
 - "staged expansion model"
 
@@ -92,3 +92,5 @@ Avoid:
 ### 10. Master Priority Ladder Dashboard
 
 - docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md
+
+
