@@ -11,10 +11,10 @@ on:
 
 jobs:
   python-safety:
-    name: Python — safety check
+    name: Python â€” safety check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -36,10 +36,10 @@ jobs:
         continue-on-error: true
 
   python-pip-audit:
-    name: Python — pip-audit
+    name: Python â€” pip-audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -60,7 +60,7 @@ jobs:
               echo "[]"
             fi
           else
-            echo "No requirements.txt found — skipping pip-audit"
+            echo "No requirements.txt found â€” skipping pip-audit"
           fi
 
       - name: Upload pip-audit results
@@ -72,10 +72,10 @@ jobs:
           if-no-files-found: ignore
 
   node-audit:
-    name: Node — npm audit
+    name: Node â€” npm audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Node
         uses: actions/setup-node@v4

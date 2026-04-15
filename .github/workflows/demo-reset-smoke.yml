@@ -29,7 +29,7 @@ jobs:
       CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
@@ -71,7 +71,7 @@ jobs:
             fi
             sleep 1
           done
-          echo "health timeout — last 50 lines of django.log:"
+          echo "health timeout â€” last 50 lines of django.log:"
           tail -50 /tmp/django.log || true
           exit 1
 

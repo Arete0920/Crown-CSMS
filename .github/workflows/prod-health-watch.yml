@@ -1,9 +1,13 @@
-name: Production Health Watch
+﻿name: Production Health Watch
 
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   health-check:
@@ -14,7 +18,14 @@ jobs:
       - name: Check production health endpoint
         id: health
         run: |
-          RESPONSE=$(curl -sf --max-time 10 \
+          set -euo pipefail
+          if [ -z "${PRODUCTION_URL:-}" ]; then
+            echo "status=misconfigured" >> "$GITHUB_OUTPUT"
+            echo "http_code=000" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          RESPONSE=$(curl -sS --max-time 10 \
             -o /tmp/health_response.json \
             -w "%{http_code}" \
             "${PRODUCTION_URL}/api/health/" || echo "000")
@@ -22,11 +33,25 @@ jobs:
           if [ "$RESPONSE" != "200" ]; then
             echo "status=unhealthy" >> "$GITHUB_OUTPUT"
             echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
-          else
-            STATUS=$(cat /tmp/health_response.json | python3 -c               "import sys,json; d=json.load(sys.stdin); print(d.get('status','unknown'))")
-            echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-            echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          STATUS=$(python3 - <<'PY'
+import json
+try:
+    with open('/tmp/health_response.json','r',encoding='utf-8') as f:
+        d=json.load(f)
+except Exception:
+    print('unhealthy')
+    raise SystemExit(0)
+if d.get('status') == 'healthy' or d.get('ok') is True:
+    print('healthy')
+else:
+    print(d.get('status','unhealthy'))
+PY
+)
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
         env:
           PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
 

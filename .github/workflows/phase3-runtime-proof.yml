@@ -29,12 +29,12 @@ jobs:
       DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
       CROWN_DEMO_MODE: "true"
       CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
-      # CROWN_DEMO_KEY is intentionally absent — Django settings provides the
+      # CROWN_DEMO_KEY is intentionally absent â€” Django settings provides the
       # correct default when CROWN_DEMO_MODE=true. Never hardcode it here.
       CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
@@ -58,7 +58,7 @@ jobs:
           cd backend
           python manage.py seed_demo_school --wipe
 
-      - name: Seed permissions (role → permission mappings required for authz gates)
+      - name: Seed permissions (role â†’ permission mappings required for authz gates)
         run: |
           cd backend
           python manage.py seed_permissions

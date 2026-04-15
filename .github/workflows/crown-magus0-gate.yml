@@ -1,6 +1,6 @@
 name: crown-magus0-gate
 
-# Crown Magus 0 — Trust-Nothing Audit Gate
+# Crown Magus 0 â€” Trust-Nothing Audit Gate
 # Runs on every PR and every push to main.
 # Blocks merge on: compile errors, Django check failures, migration drift,
 #   tenant tripwire violations, URL collisions, secret pattern hits,
@@ -30,10 +30,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # JOB 1: Backend gates (compile, system checks, migration drift,
   #         tenant tripwires, URL collisions, dangerous settings)
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   backend-audit:
     name: "Audit: Backend (compile + checks + tenant + URLs)"
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -104,7 +104,7 @@ jobs:
 
           # Hard fail on CORS_ALLOW_ALL_ORIGINS = True
           if grep -qE "CORS_ALLOW_ALL_ORIGINS\s*=\s*True" "$SETTINGS_FILE"; then
-            echo "FAIL: CORS_ALLOW_ALL_ORIGINS = True in settings — hard security failure"
+            echo "FAIL: CORS_ALLOW_ALL_ORIGINS = True in settings â€” hard security failure"
             exit 1
           fi
           echo "PASS: CORS_ALLOW_ALL_ORIGINS safe"
@@ -120,19 +120,19 @@ jobs:
       - name: "C8: Full backend gate (compile + checks + migration + tenant)"
         run: python tools/verify_backend_gate.py
 
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # JOB 2: Secret scan
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   secret-audit:
     name: "Audit: Secret scan"
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 0  # full history for git grep
 
-      - name: "B1: Secret pattern scan (metadata only — values not logged)"
+      - name: "B1: Secret pattern scan (metadata only â€” values not logged)"
         run: |
           FAIL=0
           declare -a PATTERNS=(
@@ -155,7 +155,7 @@ jobs:
               ':!.github/workflows/**' ':!tools/audit/**' \
               ':!scripts/README.md' 2>/dev/null || true)
             if [ -n "$HITS" ]; then
-              echo "::error::Secret pattern hit: $p — files: $HITS"
+              echo "::error::Secret pattern hit: $p â€” files: $HITS"
               FAIL=1
             fi
           done
@@ -167,7 +167,7 @@ jobs:
               ':!.github/workflows/**' ':!tools/audit/**' \
               ':!scripts/README.md' 2>/dev/null || true)
             if [ -n "$HITS" ]; then
-              echo "::error::Secret regex pattern hit: $p — in files: $HITS"
+              echo "::error::Secret regex pattern hit: $p â€” in files: $HITS"
               FAIL=1
             fi
           done
@@ -178,9 +178,9 @@ jobs:
           fi
           echo "PASS: No secret patterns found in tracked files."
 
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # JOB 3: Frontend gate (lint + build)
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   frontend-audit:
     name: "Audit: Frontend (lint + build)"
     runs-on: ubuntu-latest
@@ -190,7 +190,7 @@ jobs:
         working-directory: frontend/dashboards
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Node.js 18
         uses: actions/setup-node@v4
@@ -220,9 +220,9 @@ jobs:
           path: /tmp/frontend-build.txt
           retention-days: 30
 
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # JOB 4: Dependency audit (runs on main push + workflow_dispatch full)
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   dep-audit:
     name: "Audit: Dependency vulnerabilities"
     runs-on: ubuntu-latest
@@ -230,7 +230,7 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -273,9 +273,9 @@ jobs:
             /tmp/dep-node.txt
           retention-days: 30
 
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   # JOB 5: Permission surface + pytest (focused)
-  # ─────────────────────────────────────────────────────────────────────────
+  # â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   pytest-audit:
     name: "Audit: pytest (subscriptions + contracts + permissions)"
     runs-on: ubuntu-latest
@@ -288,7 +288,7 @@ jobs:
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -305,7 +305,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
-      - name: "C9: pytest — subscriptions + contracts + permissions"
+      - name: "C9: pytest â€” subscriptions + contracts + permissions"
         run: |
           python -m pytest \
             backend/subscriptions/tests/ \
