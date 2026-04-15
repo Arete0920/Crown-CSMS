@@ -145,14 +145,16 @@ if (Test-Path $preferredFrontendPackage) {
 if ($packageJson) {
   $frontendDir = Split-Path $packageJson.FullName -Parent
   if ($RunFrontendBuild) {
+    $lintLog = Join-Path $RepoRoot "$logs\FRONTEND_LINT.txt"
+    $buildLog = Join-Path $RepoRoot "$logs\FRONTEND_BUILD.txt"
     Push-Location $frontendDir
-    cmd /c npm run lint *> "$logs\FRONTEND_LINT.txt"
+    cmd /c npm run lint *> $lintLog
     if ($LASTEXITCODE -eq 0) {
       Add-Result -Check "FRONTEND_LINT" -Status "PASS" -Artifact "$logs\FRONTEND_LINT.txt" -Notes ""
     } else {
       Add-Result -Check "FRONTEND_LINT" -Status "FAIL" -Artifact "$logs\FRONTEND_LINT.txt" -Notes "lint failed"
     }
-    cmd /c npm run build *> "$logs\FRONTEND_BUILD.txt"
+    cmd /c npm run build *> $buildLog
     if ($LASTEXITCODE -eq 0) {
       Add-Result -Check "FRONTEND_BUILD" -Status "PASS" -Artifact "$logs\FRONTEND_BUILD.txt" -Notes ""
     } else {
@@ -217,6 +219,7 @@ $md | Set-Content "$evidence\PROOF_SUMMARY.md" -Encoding UTF8
 
 Write-Host "Runtime checks complete."
 Write-Host "Open docs\audit\evidence\PROOF_SUMMARY.csv"
+
 
 
 
