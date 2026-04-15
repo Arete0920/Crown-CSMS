@@ -4998,8 +4998,8 @@ paths:
       operationId: aftercare_wizard_setup_retrieve
       description: |-
         CrownMagus Aftercare Setup Wizard endpoint.
-        GET  â€” returns current program config for pre-population.
-        POST â€” validates + saves config; marks wizard complete.
+        GET  — returns current program config for pre-population.
+        POST — validates + saves config; marks wizard complete.
       tags:
       - aftercare
       security:
@@ -5012,8 +5012,8 @@ paths:
       operationId: aftercare_wizard_setup_create
       description: |-
         CrownMagus Aftercare Setup Wizard endpoint.
-        GET  â€” returns current program config for pre-population.
-        POST â€” validates + saves config; marks wizard complete.
+        GET  — returns current program config for pre-population.
+        POST — validates + saves config; marks wizard complete.
       tags:
       - aftercare
       security:
@@ -19544,8 +19544,8 @@ paths:
       operationId: v1_aftercare_wizard_setup_retrieve
       description: |-
         CrownMagus Aftercare Setup Wizard endpoint.
-        GET  â€” returns current program config for pre-population.
-        POST â€” validates + saves config; marks wizard complete.
+        GET  — returns current program config for pre-population.
+        POST — validates + saves config; marks wizard complete.
       tags:
       - v1
       security:
@@ -19558,8 +19558,8 @@ paths:
       operationId: v1_aftercare_wizard_setup_create
       description: |-
         CrownMagus Aftercare Setup Wizard endpoint.
-        GET  â€” returns current program config for pre-population.
-        POST â€” validates + saves config; marks wizard complete.
+        GET  — returns current program config for pre-population.
+        POST — validates + saves config; marks wizard complete.
       tags:
       - v1
       security:
