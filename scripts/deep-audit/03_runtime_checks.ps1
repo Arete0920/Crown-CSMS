@@ -2,7 +2,8 @@
   [string]$RepoRoot = (Get-Location).Path,
   [string]$BaseUrl = "http://127.0.0.1:8000",
   [switch]$RunFullRegression,
-  [switch]$RunFrontendBuild
+  [switch]$RunFrontendBuild,
+  [int]$FullRegressionMaxFail = 1
 )
 
 $ErrorActionPreference = "Continue"
@@ -44,14 +45,32 @@ function Run-Capture {
   param(
     [string]$Check,
     [string]$Command,
-    [string[]]$Args,
+    [string[]]$CommandArgs,
     [string]$LogPath
   )
-  & $Command @Args *> $LogPath
-  if ($LASTEXITCODE -eq 0) {
-    Add-Result -Check $Check -Status "PASS" -Artifact $LogPath -Notes ""
+  $start = Get-Date
+  $stdout = "$LogPath.stdout"
+  $stderr = "$LogPath.stderr"
+  Remove-Item $LogPath,$stdout,$stderr -Force -ErrorAction SilentlyContinue
+  $exitCode = 1
+  try {
+    $proc = Start-Process -FilePath $Command -ArgumentList $CommandArgs -NoNewWindow -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+    $exitCode = $proc.ExitCode
+  } catch {
+    $_ | Out-String | Set-Content $stderr -Encoding UTF8
+  }
+  $duration = [math]::Round(((Get-Date) - $start).TotalSeconds, 2)
+  if (Test-Path $stdout) { Get-Content $stdout | Set-Content $LogPath -Encoding UTF8 } else { '' | Set-Content $LogPath -Encoding UTF8 }
+  if (Test-Path $stderr) {
+    Add-Content $LogPath -Value "`n--- STDERR ---" -Encoding UTF8
+    Get-Content $stderr | Add-Content $LogPath -Encoding UTF8
+  }
+  Add-Content $LogPath -Value "`n__END__ exit=$exitCode duration_seconds=$duration" -Encoding UTF8
+  Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
+  if ($exitCode -eq 0) {
+    Add-Result -Check $Check -Status "PASS" -Artifact $LogPath -Notes "duration_seconds=$duration"
   } else {
-    Add-Result -Check $Check -Status "FAIL" -Artifact $LogPath -Notes "exit=$LASTEXITCODE"
+    Add-Result -Check $Check -Status "FAIL" -Artifact $LogPath -Notes "exit=$exitCode duration_seconds=$duration"
   }
 }
 
@@ -59,8 +78,8 @@ $results = @()
 $python = Get-PythonExe
 
 if (Test-Path "backend\manage.py") {
-  Run-Capture -Check "DJANGO_CHECK" -Command $python -Args @("backend\manage.py","check") -LogPath "$logs\DJANGO_CHECK.txt"
-  Run-Capture -Check "SHOW_MIGRATIONS" -Command $python -Args @("backend\manage.py","showmigrations") -LogPath "$logs\SHOW_MIGRATIONS.txt"
+  Run-Capture -Check "DJANGO_CHECK" -Command $python -CommandArgs @("backend\manage.py","check") -LogPath "$logs\DJANGO_CHECK.txt"
+  Run-Capture -Check "SHOW_MIGRATIONS" -Command $python -CommandArgs @("backend\manage.py","showmigrations") -LogPath "$logs\SHOW_MIGRATIONS.txt"
 } else {
   Add-Result -Check "DJANGO_CHECK" -Status "FAIL" -Artifact "" -Notes "backend\manage.py missing"
   Add-Result -Check "SHOW_MIGRATIONS" -Status "FAIL" -Artifact "" -Notes "backend\manage.py missing"
@@ -101,18 +120,28 @@ $criticalTests = @(
 ) | Where-Object { Test-Path $_ }
 
 if ($criticalTests.Count -gt 0) {
-  Run-Capture -Check "CRITICAL_TEST_CLUSTER" -Command $python -Args (@("-m","pytest") + $criticalTests + @("-q")) -LogPath "$logs\CRITICAL_TEST_CLUSTER.txt"
+  Run-Capture -Check "CRITICAL_TEST_CLUSTER" -Command $python -CommandArgs (@("-m","pytest") + $criticalTests + @("-q")) -LogPath "$logs\CRITICAL_TEST_CLUSTER.txt"
 } else {
   Add-Result -Check "CRITICAL_TEST_CLUSTER" -Status "FAIL" -Artifact "" -Notes "no critical tests found"
 }
 
 if ($RunFullRegression) {
-  Run-Capture -Check "FULL_BACKEND_REGRESSION" -Command $python -Args @("-m","pytest","backend","-q") -LogPath "$logs\FULL_BACKEND_REGRESSION.txt"
+  $fullRegressionArgs = @("-m","pytest","backend","-q")
+  if ($FullRegressionMaxFail -gt 0) {
+    $fullRegressionArgs += "--maxfail=$FullRegressionMaxFail"
+  }
+  Run-Capture -Check "FULL_BACKEND_REGRESSION" -Command $python -CommandArgs $fullRegressionArgs -LogPath "$logs\FULL_BACKEND_REGRESSION.txt"
 } else {
   Add-Result -Check "FULL_BACKEND_REGRESSION" -Status "FAIL" -Artifact "" -Notes "not run; use -RunFullRegression"
 }
 
-$packageJson = Get-ChildItem "frontend" -Recurse -File -Filter package.json -ErrorAction SilentlyContinue | Select-Object -First 1
+$preferredFrontendPackage = "frontend\dashboards\package.json"
+$packageJson = $null
+if (Test-Path $preferredFrontendPackage) {
+  $packageJson = Get-Item $preferredFrontendPackage
+} else {
+  $packageJson = Get-ChildItem "frontend" -Recurse -File -Filter package.json -ErrorAction SilentlyContinue | Select-Object -First 1
+}
 if ($packageJson) {
   $frontendDir = Split-Path $packageJson.FullName -Parent
   if ($RunFrontendBuild) {
@@ -188,3 +217,6 @@ $md | Set-Content "$evidence\PROOF_SUMMARY.md" -Encoding UTF8
 
 Write-Host "Runtime checks complete."
 Write-Host "Open docs\audit\evidence\PROOF_SUMMARY.csv"
+
+
+

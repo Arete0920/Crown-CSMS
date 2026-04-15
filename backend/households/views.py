@@ -9,11 +9,13 @@ from .serializers import GuardianSerializer, HouseholdSerializer, StudentSeriali
 
 def _user_has_parent_role(user, school_id):
     """Return True if user holds a PARENT role at this school."""
-    if not hasattr(user, "roles"):
+    user_id = getattr(user, "id", None)
+    if not user_id:
         return False
+    roles = UserRole.objects.filter(user_id=user_id, role_code="PARENT")
     if school_id:
-        return user.roles.filter(role_code="PARENT", school_id=school_id).exists()
-    return user.roles.filter(role_code="PARENT").exists()
+        roles = roles.filter(school_id=school_id)
+    return roles.exists()
 
 
 class ScopedReadOnlyModelViewSet(viewsets.ReadOnlyModelViewSet):
@@ -70,4 +72,5 @@ class StudentViewSet(ScopedReadOnlyModelViewSet):
 		school = getattr(self.request, "school", None)
 		school_id = school.id if school else None
 		return scope_queryset(self.request.user, qs, DOMAIN_STUDENTS, school_id=school_id)
+
 
