@@ -7,8 +7,8 @@
 - API / route assets inventoried: **224**
 - Model / service assets inventoried: **174**
 - Test / CI / doc assets inventoried: **12077**
-- Proof checks passed: **6**
-- Proof checks failed: **5**
+- Proof checks passed: **8**
+- Proof checks failed: **3**
 - Modules GREEN: **0**
 - Modules YELLOW: **0**
 - Modules RED: **23**
