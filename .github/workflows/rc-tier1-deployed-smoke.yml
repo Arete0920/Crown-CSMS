@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
 
-    # Only run if secrets are populated — this avoids noisy failures on forks
+    # Only run if secrets are populated â€” this avoids noisy failures on forks
     # or when secrets aren't configured yet.
     # The check is: if RC_BASE_URL secret is non-empty, proceed.
     env:
@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.1
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -52,7 +52,7 @@ jobs:
         run: |
           if [ -z "$RC_BASE_URL" ] || [ -z "$RC_SCHOOL_ID" ]; then
             echo "SKIP=true" >> $GITHUB_OUTPUT
-            echo "::warning::RC deployed smoke skipped — secrets not configured (RC_BASE_URL, RC_SCHOOL_ID)"
+            echo "::warning::RC deployed smoke skipped â€” secrets not configured (RC_BASE_URL, RC_SCHOOL_ID)"
           else
             echo "SKIP=false" >> $GITHUB_OUTPUT
           fi
@@ -99,6 +99,6 @@ jobs:
       - name: Smoke skipped (secrets not set)
         if: steps.secrets-check.outputs.SKIP == 'true'
         run: |
-          echo "Deployed smoke skipped — add RC_BASE_URL, RC_SCHOOL_ID as repository secrets to enable."
-          echo "See: Settings → Secrets and variables → Actions"
+          echo "Deployed smoke skipped â€” add RC_BASE_URL, RC_SCHOOL_ID as repository secrets to enable."
+          echo "See: Settings â†’ Secrets and variables â†’ Actions"
 

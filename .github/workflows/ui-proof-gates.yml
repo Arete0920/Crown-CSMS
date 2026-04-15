@@ -1,4 +1,4 @@
-name: UI Proof — Dashboard Gates (Student · Parent · Executive)
+name: UI Proof â€” Dashboard Gates (Student Â· Parent Â· Executive)
 
 on:
   workflow_dispatch:
@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 1
 
@@ -55,7 +55,7 @@ jobs:
       # because Playwright also tried to start the server when reuseExistingServer=false.
 
       - name: Run UI proof gates
-        # IMPORTANT: specs are listed explicitly — do NOT replace with `tests/ui`.
+        # IMPORTANT: specs are listed explicitly â€” do NOT replace with `tests/ui`.
         # The folder contains matrix specs (role-dashboard-matrix*.spec.ts) that
         # assert sidebar nav links which don't exist in CI, causing false failures.
         # Add new dashboard specs here individually when they are ready to gate.

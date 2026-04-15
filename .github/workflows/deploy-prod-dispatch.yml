@@ -1,4 +1,4 @@
-﻿name: Production Deploy (Dispatch v2)
+name: Production Deploy (Dispatch v2)
 
 on:
   workflow_dispatch:
@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.1.1.1
         with:
           ref: ${{ env.DEPLOY_TAG }}
           fetch-depth: 0
