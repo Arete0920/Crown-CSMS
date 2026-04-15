@@ -174,7 +174,7 @@ $deduped = foreach ($g in $grouped) {
   }
 }
 
-$top = $deduped | Sort-Object Score -Descending, Title | Select-Object -First 25
+$top = $deduped | Sort-Object -Property @{Expression='Score';Descending=$true}, Title | Select-Object -First 25
 $rank = 1
 $top = $top | ForEach-Object {
   $_.Rank = $rank
@@ -256,3 +256,4 @@ $md | Set-Content "$reports\EXEC_BOARD_REPORT.md" -Encoding UTF8
 Write-Host "Board report generated:"
 Write-Host "  $reports\BOARD_TOP_25_BLOCKERS.csv"
 Write-Host "  $reports\EXEC_BOARD_REPORT.md"
+
