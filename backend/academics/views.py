@@ -17,7 +17,7 @@ from households.scoping import get_request_school_id
 
 from .models import AssignmentCategory, Course, Enrollment, Section, Term, Assignment
 from .models import CurriculumSource, Unit, Lesson, PublisherObjective, Submission, Grade, MasteryRecord, TranscriptEntry
-from .curriculum_publishers import publisher_search_terms, is_supported_curriculum_publisher
+from .curriculum_publishers import publisher_search_terms, SUPPORTED_CURRICULUM_PUBLISHERS
 from .serializers import (
     AcademicYearSerializer,
     CourseSerializer,
@@ -548,17 +548,16 @@ class CurriculumSourceViewSet(PaginatedReadOnlyViewSet):
             name_query = Q()
             for term in search_terms:
                 name_query |= Q(name__icontains=term)
-            if name_query:
+            if name_query.children:
                 qs = qs.filter(name_query)
 
         supported_only = (self.request.query_params.get("supported_only") or "").strip().lower()
         if supported_only in {"1", "true", "yes"}:
-            supported_ids = [
-                source_id
-                for source_id, source_name in qs.values_list("id", "name")
-                if is_supported_curriculum_publisher(source_name)
-            ]
-            qs = qs.filter(id__in=supported_ids) if supported_ids else qs.none()
+            supported_query = Q()
+            for aliases in SUPPORTED_CURRICULUM_PUBLISHERS.values():
+                for alias in aliases:
+                    supported_query |= Q(name__icontains=alias)
+            qs = qs.filter(supported_query) if SUPPORTED_CURRICULUM_PUBLISHERS else qs.none()
 
         return qs.order_by("name")
 

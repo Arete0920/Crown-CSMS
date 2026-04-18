@@ -270,7 +270,7 @@ jobs:
             -ContentType "application/json" `
             -Body $body
           $token = $resp.access
-          if (-not $token) { throw "Failed to acquire gate JWT â€” check seed or token endpoint" }
+          if (-not $token) { throw "Failed to acquire gate JWT - check seed or token endpoint" }
           Add-Content -Path $env:GITHUB_ENV -Value "CROWN_DEMO_TOKEN=$token"
           Write-Host "Gate token acquired (length=$($token.Length))"
 

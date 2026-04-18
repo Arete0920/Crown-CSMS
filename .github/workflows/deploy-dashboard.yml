@@ -3,8 +3,7 @@ permissions:
   contents: read
   id-token: write
 
-
-# Phase 8 â€” Frontend proof leg.
+# Phase 8â€” Frontend proof leg.
 #
 # Triggers on the same prod-deploy-* tags as the backend deploy so both
 # services are stamped from the same SHA and tag on every production push.
