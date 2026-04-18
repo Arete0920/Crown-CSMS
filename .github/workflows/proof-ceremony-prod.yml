@@ -1,4 +1,7 @@
 name: proof-ceremony-prod
+permissions:
+  contents: read
+
 
 # Phase 7C â€” Crown Proof Ceremony (Production)
 #

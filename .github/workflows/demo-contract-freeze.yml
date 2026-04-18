@@ -1,4 +1,7 @@
 name: demo-contract-freeze
+permissions:
+  contents: read
+
 
 on:
   push:

@@ -1,4 +1,7 @@
 name: Proof Ceremony
+permissions:
+  contents: read
+
 
 on:
   workflow_dispatch:

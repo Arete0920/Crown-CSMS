@@ -1,4 +1,7 @@
 name: crown-magus0-gate
+permissions:
+  contents: read
+
 
 # Crown Magus 0 â€” Trust-Nothing Audit Gate
 # Runs on every PR and every push to main.
@@ -40,7 +43,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
-      SECRET_KEY: ci-audit-not-a-real-secret
+      SECRET_KEY: ${{ github.sha }}
       DEBUG: "0"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
@@ -282,7 +285,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
-      SECRET_KEY: ci-audit-not-a-real-secret
+      SECRET_KEY: ${{ github.sha }}
       DEBUG: "0"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"

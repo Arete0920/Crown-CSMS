@@ -1,4 +1,7 @@
 name: proof-ceremony-after-prod
+permissions:
+  contents: read
+
 
 # Phase 7C â€” Auto Proof Ceremony
 #

@@ -1,4 +1,8 @@
 name: Azure DEV Smoke (Deterministic)
+permissions:
+  contents: read
+  id-token: write
+
 
 env:
   SMOKE_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
