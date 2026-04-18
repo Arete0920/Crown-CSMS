@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import CurriculumPDSnapshotCard from '../components/dashboard/curriculumpd/CurriculumPDSnapshotCard';
 import CurriculumPDAlertsPanel from '../components/dashboard/curriculumpd/CurriculumPDAlertsPanel';

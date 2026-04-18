@@ -1,7 +1,6 @@
 /**
  * FeedWidget — compact list of recent items (messages, events, alerts).
  */
-import React from "react";
 
 export default function FeedWidget({ widget, onExpand }) {
   const { title, subtitle, data } = widget;

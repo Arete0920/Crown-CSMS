@@ -1,5 +1,5 @@
 /**
- * TicketSuccessPage – polls order status after Stripe redirect and shows confirmation.
+ * TicketSuccessPage  polls order status after Stripe redirect and shows confirmation.
  *
  * Stripe redirects buyer to: /advancement/tickets/success?order_id=<uuid>
  * This page polls GET /api/v1/advancement/orders/<orderId>/status/ every 3 s
@@ -7,7 +7,7 @@
  *
  * Usage:
  *   <TicketSuccessPage />
- * (Reads ?order_id from URL via window.location.search)
+ * (Reads ?order_id from URL via globalThis.location.search)
  */
 import { useState, useEffect, useRef } from "react";
 
@@ -38,7 +38,7 @@ const MAX_POLLS = 20; // ~60 s before giving up
 
 function getOrderIdFromUrl() {
   try {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     return params.get("order_id") || "";
   } catch {
     return "";
@@ -62,7 +62,7 @@ export default function TicketSuccessPage() {
     const poll = async () => {
       pollCount.current += 1;
       try {
-        const r = await fetch(
+        const r = await globalThis.fetch(
           `${apiBase()}/api/v1/advancement/orders/${orderId}/status/`,
           { headers: authHeaders() }
         );
@@ -106,7 +106,7 @@ export default function TicketSuccessPage() {
       <div style={styles.container}>
         <div style={styles.card}>
           <div style={styles.spinner} />
-          <h2 style={styles.heading}>Confirming your payment…</h2>
+          <h2 style={styles.heading}>Confirming your payment</h2>
           <p style={styles.subtext}>This usually takes just a few seconds. Please don't close this page.</p>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function TicketSuccessPage() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={{ fontSize: 56, marginBottom: 12 }}>🎟</div>
+          <div style={{ fontSize: 56, marginBottom: 12 }}></div>
           <h2 style={{ ...styles.heading, color: "#16a34a" }}>You're in!</h2>
           <p style={styles.subtext}>
             Order confirmed for <strong>{orderData.purchaser_email}</strong>.
@@ -145,7 +145,7 @@ export default function TicketSuccessPage() {
             Check your email for your PDF tickets. Add them to your digital wallet or print and bring to the event.
           </p>
 
-          {/* Stage 3.4 – Wallet buttons (shown once we have ticket IDs) */}
+          {/* Stage 3.4  Wallet buttons (shown once we have ticket IDs) */}
           {orderData.ticket_ids?.length > 0 && (
             <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
               <a
@@ -156,17 +156,17 @@ export default function TicketSuccessPage() {
                   fontWeight: 600, fontSize: 13, textDecoration: "none",
                 }}
               >
-                🍎 Add to Apple Wallet
+                 Add to Apple Wallet
               </a>
               <button
                 onClick={async () => {
                   try {
-                    const r = await fetch(
+                    const r = await globalThis.fetch(
                       `/api/v1/advancement/wallet/google/tickets/${orderData.ticket_ids[0]}/link/`,
                       { headers: { Authorization: `Bearer ${sessionStorage.getItem("crown.jwt.access") || ""}` } }
                     );
                     const d = await r.json();
-                    if (d.save_url) window.open(d.save_url, "_blank");
+                    if (d.save_url) globalThis.open(d.save_url, "_blank");
                   } catch { /* non-fatal */ }
                 }}
                 style={{
@@ -175,7 +175,7 @@ export default function TicketSuccessPage() {
                   fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer",
                 }}
               >
-                🔵 Add to Google Wallet
+                 Add to Google Wallet
               </button>
             </div>
           )}
@@ -188,14 +188,14 @@ export default function TicketSuccessPage() {
     return (
       <div style={styles.container}>
         <div style={styles.card}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>❌</div>
+          <div style={{ fontSize: 48, marginBottom: 12 }}></div>
           <h2 style={{ ...styles.heading, color: "#ef4444" }}>Payment not completed</h2>
           <p style={styles.subtext}>
             Your payment could not be processed. Your seats have been released.
             Please try again or contact support.
           </p>
           <button
-            onClick={() => window.history.back()}
+            onClick={() => globalThis.history.back()}
             style={styles.button}
           >
             Try Again
@@ -209,7 +209,7 @@ export default function TicketSuccessPage() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
+        <div style={{ fontSize: 48, marginBottom: 12 }}></div>
         <h2 style={{ ...styles.heading, color: "#f59e0b" }}>Something went wrong</h2>
         <p style={styles.subtext}>{error}</p>
         <p style={{ fontSize: 13, color: "#6b7280" }}>

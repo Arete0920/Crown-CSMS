@@ -1,0 +1,45 @@
+build-and-deploy	Azure Login	∩╗┐2026-04-13T06:56:38.3785569Z ##[group]Run azure/login@v2
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3785846Z with:
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3786331Z   client-id: ***
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3786594Z   tenant-id: ***
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3786865Z   subscription-id: ***
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3787093Z   enable-AzPSSession: false
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3787338Z   environment: azurecloud
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3787566Z   allow-no-subscriptions: false
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3787833Z   audience: api://AzureADTokenExchange
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3788112Z   auth-type: SERVICE_PRINCIPAL
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3788642Z env:
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3788843Z   REGISTRY: crownregistry.azurecr.io
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3789098Z   IMAGE_NAME: crown2026
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3789306Z   RESOURCE_GROUP: crown-rg
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3789535Z   WEBAPP_NAME: crown-api-prod
+build-and-deploy	Azure Login	2026-04-13T06:56:38.3789765Z ##[endgroup]
+build-and-deploy	Azure Login	2026-04-13T06:56:38.4157617Z Running Azure CLI Login.
+build-and-deploy	Azure Login	2026-04-13T06:56:48.2645580Z [command]/usr/bin/az cloud set -n azurecloud
+build-and-deploy	Azure Login	2026-04-13T06:56:48.5032999Z Done setting cloud: "azurecloud"
+build-and-deploy	Azure Login	2026-04-13T06:56:48.7331748Z Federated token details:
+build-and-deploy	Azure Login	2026-04-13T06:56:48.7332419Z  issuer - https://token.actions.githubusercontent.com
+build-and-deploy	Azure Login	2026-04-13T06:56:48.7333249Z  subject claim - repo:tcmegahan/Crown2026:environment:production
+build-and-deploy	Azure Login	2026-04-13T06:56:48.7333991Z  audience - api://AzureADTokenExchange
+build-and-deploy	Azure Login	2026-04-13T06:56:48.7335159Z  job_workflow_ref - tcmegahan/Crown2026/.github/workflows/deploy-prod.yml@refs/tags/prod-deploy-20260413_024257-controlled
+build-and-deploy	Azure Login	2026-04-13T06:56:48.7336260Z Attempting Azure CLI login by using OIDC...
+build-and-deploy	Azure Login	2026-04-13T06:56:49.7222186Z ##[error]AADSTS700213: No matching federated identity record found for presented assertion subject 'repo:tcmegahan/Crown2026:environment:production'. Check your federated identity credential Subject, Audience and Issuer against the presented assertion. https://learn.microsoft.com/entra/workload-id/workload-identity-federation Trace ID: b01b8bc3-9b20-4a5d-bd97-16e73d531c00 Correlation ID: 0a5be033-95e4-4979-8069-62dc3988bbf6 Timestamp: 2026-04-13 06:56:49Z
+build-and-deploy	Azure Login	
+build-and-deploy	Azure Login	2026-04-13T06:56:49.7231344Z ##[error]Run the command below to authenticate interactively; additional arguments may be added as needed:
+build-and-deploy	Azure Login	az logout
+build-and-deploy	Azure Login	az login
+build-and-deploy	Azure Login	
+build-and-deploy	Azure Login	2026-04-13T06:56:49.7971817Z ##[error]Login failed with Error: The process '/usr/bin/az' failed with exit code 1. Double check if the 'auth-type' is correct. Refer to https://github.com/Azure/login#readme for more information.
+build-and-deploy	Rollback on failure	∩╗┐2026-04-13T06:56:49.8746168Z ##[group]Run echo "╬ô┬Ñ├« Deployment failed - rolling back"
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8746608Z [36;1mecho "╬ô┬Ñ├« Deployment failed - rolling back"[0m
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8746997Z [36;1m# Azure will handle automatic rollback based on health check[0m
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8747331Z [36;1mexit 1[0m
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8768703Z shell: /usr/bin/bash -e {0}
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8768943Z env:
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8769137Z   REGISTRY: crownregistry.azurecr.io
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8769405Z   IMAGE_NAME: crown2026
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8769622Z   RESOURCE_GROUP: crown-rg
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8769853Z   WEBAPP_NAME: crown-api-prod
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8770076Z ##[endgroup]
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8808743Z ╬ô┬Ñ├« Deployment failed - rolling back
+build-and-deploy	Rollback on failure	2026-04-13T06:56:49.8812503Z ##[error]Process completed with exit code 1.

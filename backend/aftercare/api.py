@@ -1,25 +1,77 @@
-from django.db.models import Sum, Q
+from django.db.models import Q, Sum
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
+from rest_framework import serializers, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
 
 from core.permissions import user_has_permission
-from .tenant import school_id_from_request
 from .models import (
-    AftercareEnrollment,
-    AftercarePickupContact,
     AftercareAttendance,
+    AftercareEnrollment,
     AftercareIncident,
+    AftercarePickupContact,
 )
 from .serializers import (
-    AftercareProgramConfigSerializer,
-    AftercareEnrollmentSerializer,
-    AftercarePickupContactSerializer,
     AftercareAttendanceSerializer,
+    AftercareEnrollmentSerializer,
     AftercareIncidentSerializer,
+    AftercarePickupContactSerializer,
+    AftercareProgramConfigSerializer,
 )
-from .services import ensure_config, checkin_student, checkout_student, record_incident
+from .services import checkin_student, checkout_student, ensure_config, record_incident
+from .tenant import school_id_from_request
+
+
+class RosterTodayRowSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    enrollment = AftercareEnrollmentSerializer()
+    attendance = AftercareAttendanceSerializer(allow_null=True)
+
+
+class RosterTodayResponseSerializer(serializers.Serializer):
+    date = serializers.CharField()
+    dow = serializers.CharField()
+    rows = RosterTodayRowSerializer(many=True)
+
+
+class ParentViewResponseSerializer(serializers.Serializer):
+    enrollment = AftercareEnrollmentSerializer(allow_null=True)
+    attendance = AftercareAttendanceSerializer(many=True)
+
+
+class BoardSummaryResponseSerializer(serializers.Serializer):
+    as_of = serializers.CharField()
+    active_enrollment = serializers.IntegerField()
+    sessions_mtd = serializers.IntegerField()
+    late_pickups_mtd = serializers.IntegerField()
+    incidents_mtd = serializers.IntegerField()
+    late_fee_revenue_mtd = serializers.FloatField()
+
+
+class AftercareCheckinRequestSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    note = serializers.CharField(required=False, allow_blank=True)
+
+
+class AftercareCheckoutRequestSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    pickup_contact_id = serializers.IntegerField(required=False, allow_null=True)
+    pickup_name_freeform = serializers.CharField(required=False, allow_blank=True)
+    pickup_verified = serializers.BooleanField(required=False)
+
+
+class AftercareIncidentCreateRequestSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    severity = serializers.CharField(required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    attendance_id = serializers.IntegerField(required=False, allow_null=True)
+    parent_notified = serializers.BooleanField(required=False)
+
+
+class AftercareStudentRequiredSerializer(serializers.Serializer):
+    detail = serializers.CharField()
 
 
 def require_role(request, allowed_roles: set) -> bool:
@@ -31,7 +83,7 @@ def require_role(request, allowed_roles: set) -> bool:
         return True
 
     school = getattr(request, "school", None)
-    normalized = {str(r).lower() for r in allowed_roles}
+    normalized = {str(role).lower() for role in allowed_roles}
 
     if "board" in normalized and user_has_permission(user, "board.view", school=school):
         return True
@@ -45,10 +97,13 @@ def require_role(request, allowed_roles: set) -> bool:
     return False
 
 
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
-
+@extend_schema(methods=["GET"], responses=AftercareProgramConfigSerializer)
+@extend_schema(
+    methods=["PUT"],
+    request=AftercareProgramConfigSerializer,
+    responses=AftercareProgramConfigSerializer,
+)
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "PUT"])
 def program_config(request):
     school_id = school_id_from_request(request, required=True)
@@ -67,10 +122,13 @@ def program_config(request):
     return Response(ser.data)
 
 
-# ---------------------------------------------------------------------------
-# Enrollments
-# ---------------------------------------------------------------------------
-
+@extend_schema(methods=["GET"], responses=AftercareEnrollmentSerializer(many=True))
+@extend_schema(
+    methods=["POST"],
+    request=AftercareEnrollmentSerializer,
+    responses=AftercareEnrollmentSerializer,
+)
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def enrollments(request):
     school_id = school_id_from_request(request, required=True)
@@ -88,10 +146,13 @@ def enrollments(request):
     return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
-# ---------------------------------------------------------------------------
-# Pickup contacts
-# ---------------------------------------------------------------------------
-
+@extend_schema(methods=["GET"], responses=AftercarePickupContactSerializer(many=True))
+@extend_schema(
+    methods=["POST"],
+    request=AftercarePickupContactSerializer,
+    responses=AftercarePickupContactSerializer,
+)
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def pickup_contacts(request, student_id: int):
     school_id = school_id_from_request(request, required=True)
@@ -111,10 +172,7 @@ def pickup_contacts(request, student_id: int):
     return Response(ser.data, status=status.HTTP_201_CREATED)
 
 
-# ---------------------------------------------------------------------------
-# Roster
-# ---------------------------------------------------------------------------
-
+@extend_schema(responses=RosterTodayResponseSerializer)
 @api_view(["GET"])
 def roster_today(request):
     """Students enrolled for today, with their check-in/out state."""
@@ -129,30 +187,33 @@ def roster_today(request):
         school_id=school_id,
         is_active=True,
         start_date__lte=today,
-    ).filter(
-        Q(end_date__isnull=True) | Q(end_date__gte=today)
-    )
-    # Day-of-week filter (stored as JSON array)
-    enroll = [e for e in enroll_qs if dow in (e.days_of_week or [])]
+    ).filter(Q(end_date__isnull=True) | Q(end_date__gte=today))
+    enroll = [enrollment for enrollment in enroll_qs if dow in (enrollment.days_of_week or [])]
 
-    att_map = {a.student_id: a for a in AftercareAttendance.objects.filter(school_id=school_id, date=today)}
+    attendance_map = {
+        attendance.student_id: attendance
+        for attendance in AftercareAttendance.objects.filter(school_id=school_id, date=today)
+    }
 
     rows = []
-    for e in enroll:
-        a = att_map.get(e.student_id)
-        rows.append({
-            "student_id": e.student_id,
-            "enrollment": AftercareEnrollmentSerializer(e).data,
-            "attendance": AftercareAttendanceSerializer(a).data if a else None,
-        })
+    for enrollment in enroll:
+        attendance = attendance_map.get(enrollment.student_id)
+        rows.append(
+            {
+                "student_id": enrollment.student_id,
+                "enrollment": AftercareEnrollmentSerializer(enrollment).data,
+                "attendance": AftercareAttendanceSerializer(attendance).data if attendance else None,
+            }
+        )
 
     return Response({"date": str(today), "dow": dow, "rows": rows})
 
 
-# ---------------------------------------------------------------------------
-# Check-in / Check-out
-# ---------------------------------------------------------------------------
-
+@extend_schema(
+    request=AftercareCheckinRequestSerializer,
+    responses={201: AftercareAttendanceSerializer, 400: AftercareStudentRequiredSerializer},
+)
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 def checkin(request):
     school_id = school_id_from_request(request, required=True)
@@ -163,10 +224,19 @@ def checkin(request):
     if not student_id:
         return Response({"detail": "student_id required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    a = checkin_student(school_id=school_id, student_id=student_id, note=request.data.get("note", ""))
-    return Response(AftercareAttendanceSerializer(a).data, status=status.HTTP_201_CREATED)
+    attendance = checkin_student(
+        school_id=school_id,
+        student_id=student_id,
+        note=request.data.get("note", ""),
+    )
+    return Response(AftercareAttendanceSerializer(attendance).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    request=AftercareCheckoutRequestSerializer,
+    responses={200: AftercareAttendanceSerializer, 400: AftercareStudentRequiredSerializer},
+)
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 def checkout(request):
     school_id = school_id_from_request(request, required=True)
@@ -178,20 +248,23 @@ def checkout(request):
         return Response({"detail": "student_id required."}, status=status.HTTP_400_BAD_REQUEST)
 
     raw_contact_id = request.data.get("pickup_contact_id")
-    a = checkout_student(
+    attendance = checkout_student(
         school_id=school_id,
         student_id=student_id,
         pickup_contact_id=int(raw_contact_id) if raw_contact_id else None,
         pickup_name_freeform=request.data.get("pickup_name_freeform", "") or "",
         pickup_verified=bool(request.data.get("pickup_verified", False)),
     )
-    return Response(AftercareAttendanceSerializer(a).data, status=status.HTTP_200_OK)
+    return Response(AftercareAttendanceSerializer(attendance).data, status=status.HTTP_200_OK)
 
 
-# ---------------------------------------------------------------------------
-# Incidents
-# ---------------------------------------------------------------------------
-
+@extend_schema(methods=["GET"], responses=AftercareIncidentSerializer(many=True))
+@extend_schema(
+    methods=["POST"],
+    request=AftercareIncidentCreateRequestSerializer,
+    responses={201: AftercareIncidentSerializer, 400: AftercareStudentRequiredSerializer},
+)
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 def incidents(request):
     school_id = school_id_from_request(request, required=True)
@@ -206,50 +279,45 @@ def incidents(request):
     if not student_id:
         return Response({"detail": "student_id required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    raw_att_id = request.data.get("attendance_id")
-    inc = record_incident(
+    raw_attendance_id = request.data.get("attendance_id")
+    incident = record_incident(
         school_id=school_id,
         student_id=student_id,
         severity=request.data.get("severity", "MINOR"),
         description=request.data.get("description", ""),
-        attendance_id=int(raw_att_id) if raw_att_id else None,
+        attendance_id=int(raw_attendance_id) if raw_attendance_id else None,
         parent_notified=bool(request.data.get("parent_notified", False)),
     )
-    return Response(AftercareIncidentSerializer(inc).data, status=status.HTTP_201_CREATED)
+    return Response(AftercareIncidentSerializer(incident).data, status=status.HTTP_201_CREATED)
 
 
-# ---------------------------------------------------------------------------
-# Parent view
-# ---------------------------------------------------------------------------
-
+@extend_schema(responses=ParentViewResponseSerializer)
 @api_view(["GET"])
 def parent_view(request, student_id: int):
-    """
-    Parent-facing read-only summary: enrollment + attendance history (last 30).
-    """
+    """Parent-facing read-only summary: enrollment and attendance history."""
     school_id = school_id_from_request(request, required=True)
     if not require_role(request, {"admin", "aftercare_staff", "board"}):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
-    enr = AftercareEnrollment.objects.filter(
+
+    enrollment = AftercareEnrollment.objects.filter(
         school_id=school_id, student_id=student_id, is_active=True
     ).first()
-    att = AftercareAttendance.objects.filter(
+    attendance = AftercareAttendance.objects.filter(
         school_id=school_id, student_id=student_id
     ).order_by("-date")[:30]
 
-    return Response({
-        "enrollment": AftercareEnrollmentSerializer(enr).data if enr else None,
-        "attendance": AftercareAttendanceSerializer(att, many=True).data,
-    })
+    return Response(
+        {
+            "enrollment": AftercareEnrollmentSerializer(enrollment).data if enrollment else None,
+            "attendance": AftercareAttendanceSerializer(attendance, many=True).data,
+        }
+    )
 
 
-# ---------------------------------------------------------------------------
-# Board summary (read-only, no student identifiers)
-# ---------------------------------------------------------------------------
-
+@extend_schema(responses=BoardSummaryResponseSerializer)
 @api_view(["GET"])
 def board_summary(request):
-    """Board governance summary — enrollment counts + MTD stats only, no PII."""
+    """Board governance summary with enrollment counts and MTD stats only."""
     school_id = school_id_from_request(request, required=True)
     if not require_role(request, {"board", "admin"}):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
@@ -257,9 +325,9 @@ def board_summary(request):
     today = timezone.now().date()
     month_start = today.replace(day=1)
 
-    active_enroll = AftercareEnrollment.objects.filter(school_id=school_id, is_active=True).count()
+    active_enrollment = AftercareEnrollment.objects.filter(school_id=school_id, is_active=True).count()
     sessions = AftercareAttendance.objects.filter(school_id=school_id, date__gte=month_start).count()
-    late = AftercareAttendance.objects.filter(
+    late_pickups = AftercareAttendance.objects.filter(
         school_id=school_id, date__gte=month_start, late_minutes__gt=0
     ).count()
     incidents_mtd = AftercareIncident.objects.filter(
@@ -267,14 +335,17 @@ def board_summary(request):
     ).count()
     late_fee_cents = (
         AftercareAttendance.objects.filter(school_id=school_id, date__gte=month_start)
-        .aggregate(total=Sum("late_fee_cents"))["total"] or 0
+        .aggregate(total=Sum("late_fee_cents"))["total"]
+        or 0
     )
 
-    return Response({
-        "as_of": str(today),
-        "active_enrollment": active_enroll,
-        "sessions_mtd": sessions,
-        "late_pickups_mtd": late,
-        "incidents_mtd": incidents_mtd,
-        "late_fee_revenue_mtd": float(late_fee_cents) / 100.0,
-    })
+    return Response(
+        {
+            "as_of": str(today),
+            "active_enrollment": active_enrollment,
+            "sessions_mtd": sessions,
+            "late_pickups_mtd": late_pickups,
+            "incidents_mtd": incidents_mtd,
+            "late_fee_revenue_mtd": float(late_fee_cents) / 100.0,
+        }
+    )

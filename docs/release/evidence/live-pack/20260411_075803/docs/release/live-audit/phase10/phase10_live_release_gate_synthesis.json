@@ -1,0 +1,14 @@
+﻿{
+    "generated_at_utc":  "2026-04-11T11:57:59.0613466Z",
+    "overall_score":  98,
+    "overall_status":  "RELEASE_READY",
+    "release_truth_score":  100,
+    "backend_score":  100,
+    "module_score":  100,
+    "runtime_score":  100,
+    "frontend_score":  80,
+    "reporting_score":  100,
+    "action_score":  96,
+    "high_priority_actions":  0,
+    "medium_priority_actions":  1
+}

@@ -31,6 +31,8 @@ from core.models import School, Staff
 from households.scoping import get_request_school_id
 
 from .models import StaffOnboardingWizardSession
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
@@ -54,6 +56,7 @@ def _get_session(session_id, school_id):
 # 1. Create session
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -74,6 +77,7 @@ def create_session(request):
 # 2. Configure — collect staff details
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -115,6 +119,7 @@ def configure_session(request, session_id):
 # 3. Preview — show what will be created (read-only)
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -156,6 +161,7 @@ def preview_session(request, session_id):
 # 4. Commit — create the Staff record
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -224,6 +230,7 @@ def commit_session(request, session_id):
 # 5. Verify — confirm the Staff record exists
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

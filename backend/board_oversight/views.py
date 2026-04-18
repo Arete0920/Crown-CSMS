@@ -1,7 +1,9 @@
-from rest_framework.decorators import api_view, permission_classes
+﻿from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from core.permissions import user_has_permission
 from .models import BoardPacket, BoardReportSnapshot
@@ -19,6 +21,7 @@ def _check_board_access(request):
     return school_id, None
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def board_metrics(request):
@@ -31,6 +34,7 @@ def board_metrics(request):
     return Response(payload, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def board_dashboard(request):
@@ -42,6 +46,7 @@ def board_dashboard(request):
     return Response(payload, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_snapshots(request):
@@ -54,6 +59,7 @@ def list_snapshots(request):
     return Response(BoardReportSnapshotSerializer(qs, many=True).data, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_packets(request):
@@ -66,6 +72,7 @@ def list_packets(request):
     return Response(BoardPacketSerializer(qs, many=True).data, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def get_packet(request, packet_id: int):

@@ -1,0 +1,7 @@
+﻿"label","url","success","status_code","content_type","content_length","elapsed_ms","error_message"
+"health","http://127.0.0.1:8000/api/health/","True","200","application/json","247","25",
+"integrity","http://127.0.0.1:8000/api/integrity/","True","200","application/json","1233","14",
+"schema","http://127.0.0.1:8000/api/schema/","True","200","application/vnd.oai.openapi; charset=utf-8","846204","3183",
+"openapi_json","http://127.0.0.1:8000/api/schema/?format=json","True","200","application/vnd.oai.openapi+json","1853406","3030",
+"swagger","http://127.0.0.1:8000/api/docs/","True","200","text/html; charset=utf-8","4642","409",
+"redoc","http://127.0.0.1:8000/api/redoc/","True","200","text/html; charset=utf-8","725","19",

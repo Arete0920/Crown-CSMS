@@ -21,6 +21,7 @@ from outreach.models import (
 pytestmark = pytest.mark.django_db
 
 User = get_user_model()
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 
 
 def _mk_school(name="Crown Academy"):
@@ -29,13 +30,13 @@ def _mk_school(name="Crown Academy"):
 
 def _mk_staff(school, username=None):
     return User.objects.create_user(
-        username=username or f"staff-{uuid.uuid4()}", password="x", is_staff=True
+        username or f"staff-{uuid.uuid4()}", None, TEST_AUTH_SECRET, is_staff=True
     )
 
 
 def _mk_user(school, username=None):
     return User.objects.create_user(
-        username=username or f"user-{uuid.uuid4()}", password="x"
+        username or f"user-{uuid.uuid4()}", None, TEST_AUTH_SECRET
     )
 
 
@@ -102,7 +103,7 @@ class TestTenantIsolation:
     def test_student_cannot_create_partner(self):
         school = _mk_school()
         c = _student_client(_mk_user(school), school)
-        r = c.post("/api/outreach/partners/", {"name": "Hack"}, format="json")
+        r = c.post("/api/outreach/partners/", {"name": "Forbidden Partner"}, format="json")
         assert r.status_code == 403
 
 
@@ -328,7 +329,7 @@ class TestServiceGoal:
     def test_student_blocked(self):
         user = _mk_user(self.school)
         c = _student_client(user, self.school)
-        r = c.post("/api/outreach/goals/", {"name": "Hack", "required_hours": "999"}, format="json")
+        r = c.post("/api/outreach/goals/", {"name": "Forbidden Goal", "required_hours": "999"}, format="json")
         assert r.status_code == 403
 
 
@@ -461,7 +462,7 @@ class TestReportStudentProgress:
         fake = str(uuid.uuid4())
         r = self.client.get(f"/api/outreach/service-logs/report/student-progress/?student_id={fake}")
         assert r.status_code == 200
-        assert r.json()["progress_pct"] == 0.0
+        assert abs(r.json()["progress_pct"] - 0.0) < 1e-9
 
 
 # ---------------------------------------------------------------------------
@@ -484,3 +485,9 @@ class TestSerializerValidation:
             format="json",
         )
         assert r.status_code == 400
+
+
+
+
+
+

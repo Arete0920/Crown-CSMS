@@ -37,6 +37,8 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from core.models import AcademicYear, School
 from households.scoping import get_request_school_id
@@ -233,6 +235,7 @@ def _validate_weights(raw_weights):
 # 1. Create session
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -255,6 +258,7 @@ def create_session(request):
 # 2. Configure session: academic_year + scale metadata
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -320,6 +324,7 @@ def configure_session(request, session_id):
 # 3. Set bands
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -359,6 +364,7 @@ def set_bands(request, session_id):
 # 4. Set weights (optional; callable from bands_set or weights_set)
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -402,6 +408,7 @@ def set_weights(request, session_id):
 # 5. Commit
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -534,6 +541,7 @@ def commit_session(request, session_id):
 # 6. Verify
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

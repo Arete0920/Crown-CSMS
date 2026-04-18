@@ -46,7 +46,7 @@ async function fetchAdminMetrics() {
   if (schoolId) headers['X-School-Id'] = schoolId;
 
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {

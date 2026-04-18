@@ -7,6 +7,8 @@ from rest_framework.test import APIClient
 from rest_framework import throttling as drf_throttling
 
 from core.models import School
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 
 pytestmark = pytest.mark.django_db
@@ -16,7 +18,7 @@ pytestmark = pytest.mark.django_db
 def finance_user():
     school = School.objects.create(name="Test School")
     User = get_user_model()
-    u = User.objects.create_user(username="throttle_user", password="pass12345!")
+    u = User.objects.create_user(username="throttle_user", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])

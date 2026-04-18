@@ -15,6 +15,8 @@ from crown_api.models import (
 )
 from crown_api.models_households import ROLE_GUARDIAN
 
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 class AcademicsApiTests(TestCase):
     def setUp(self):
@@ -25,7 +27,7 @@ class AcademicsApiTests(TestCase):
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=True,
             school=self.school,
         )
@@ -33,7 +35,7 @@ class AcademicsApiTests(TestCase):
         self.parent_user = UserAccount.objects.create_user(
             username="parentuser",
             email="parent@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=False,
             school=self.school,
         )
@@ -198,3 +200,8 @@ class AcademicsApiTests(TestCase):
 
         resp2 = self.client.get(f"/api/students/{self.student_a.id}/grades/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp2.status_code, 401)
+
+
+
+
+

@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 
 from core.models import AcademicYear, School, Staff, UserRole
 from households.models import Household, Student
-from academics.models import Course, Enrollment, Section, Term, TeacherAssignment
+from academics.models import Assignment, AssignmentCategory, Course, Enrollment, Section, Term, TeacherAssignment
 from gradebook.models import GradeEntry
 
 
@@ -136,3 +136,53 @@ def test_non_teacher_role_forbidden():
 
     resp = client.get("/api/v1/gradebook/sections/")
     assert resp.status_code == 403
+
+
+
+def test_teacher_grades_grid_includes_published_assignment_without_scores():
+    school = School.objects.create(name="School Z")
+    section, staff = _seed_section(school=school, staff_email="teach.z@example.com")
+
+    household = Household.objects.create(school_id=school.id, name="Household Z")
+    student = Student.objects.create(
+        school_id=school.id,
+        household=household,
+        first_name="Nina",
+        last_name="North",
+        grade_level="5",
+    )
+    Enrollment.objects.create(school_id=school.id, section=section, student=student)
+
+    category = AssignmentCategory.objects.create(
+        school_id=school.id,
+        section=section,
+        name="Projects",
+        weight_percent=100,
+        sort_order=1,
+        is_active=True,
+    )
+    Assignment.objects.create(
+        school_id=school.id,
+        section=section,
+        category=category,
+        name="Virtual Lab",
+        points_possible=15,
+        is_published=True,
+    )
+
+    user = _mk_user(school=school, email=staff.email, is_staff=False)
+    user.staff = staff
+    user.save(update_fields=["staff"])
+    _assign_role(user=user, school=school, role_code="TEACHER")
+
+    client = APIClient()
+    client.force_authenticate(user)
+
+    resp = client.get(f"/api/v1/gradebook/sections/{section.id}/grades/")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assignment_names = {a["assignment_name"] for a in payload["assignments"]}
+    assert "Virtual Lab" in assignment_names
+
+    score = payload["rows"][0]["scores"]["Virtual Lab"]
+    assert score["points_earned"] is None

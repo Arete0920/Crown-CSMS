@@ -215,6 +215,49 @@ class TestLessonPlanCreate:
 
         assert r.status_code == 400
 
+
+    def test_rejects_non_list_lesson_ids(self):
+        school = _mk_school()
+        user = _mk_user(school=school, email="badids@school.com")
+        _assign_role(user=user, school=school, role_code="ADMIN")
+        section = _seed_section(school)
+
+        c = _client_auth(user, school)
+        r = c.post(f"/api/academics/sections/{section.id}/lesson-plans/", {
+            "plan_date": "2026-09-09",
+            "lesson_ids": "not-a-list",
+        }, format="json")
+
+        assert r.status_code == 400
+        assert "lesson_ids" in r.data
+
+    def test_rejects_lesson_ids_from_other_course(self):
+        school = _mk_school("Course Scope School")
+        user = _mk_user(school=school, email="othercourse@school.com")
+        _assign_role(user=user, school=school, role_code="ADMIN")
+
+        section_a = _seed_section(school)
+        other_course = Course.objects.create(
+            school_id=school.id,
+            code="SCI-201",
+            name="Science II",
+        )
+        section_b = Section.objects.create(
+            school_id=school.id,
+            course=other_course,
+            term_ref=section_a.term_ref,
+            term=section_a.term,
+        )
+        lesson_b = _seed_lesson(school, section_b)
+
+        c = _client_auth(user, school)
+        r = c.post(f"/api/academics/sections/{section_a.id}/lesson-plans/", {
+            "plan_date": "2026-09-10",
+            "lesson_ids": [str(lesson_b.id)],
+        }, format="json")
+
+        assert r.status_code == 400
+        assert "invalid_lesson_ids" in r.data
     def test_non_admin_cannot_create_lesson_plan(self):
         school = _mk_school()
         viewer = _mk_user(school=school, email="viewer@school.com")
@@ -520,3 +563,5 @@ class TestLessonResourceCRUD:
         c_a = _client_auth(user_a, school_a)
         r = c_a.get(f"/api/academics/lesson-resources/{res.id}/")
         assert r.status_code == 404
+
+

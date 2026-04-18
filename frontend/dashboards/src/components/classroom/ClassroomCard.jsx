@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, Typography, Box, Button, Chip } from "@mui/material";
 
 export default function ClassroomCard({ classroom, onOpen }) {

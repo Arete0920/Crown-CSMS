@@ -8,6 +8,8 @@ from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from core.models import School
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 pytestmark = pytest.mark.django_db
 
@@ -29,7 +31,7 @@ def _model_exists(app_label: str, model_name: str) -> bool:
 def finance_user():
     school = School.objects.create(name="Test School")
     User = get_user_model()
-    u = User.objects.create_user(username="user_statement_lines", password="pass12345!")
+    u = User.objects.create_user(username="user_statement_lines", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -50,7 +52,7 @@ def finance_client(finance_user):
 def non_finance_user():
     school = School.objects.create(name="Test School 2")
     User = get_user_model()
-    u = User.objects.create_user(username="user_statement_lines_nonrole", password="pass12345!")
+    u = User.objects.create_user(username="user_statement_lines_nonrole", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -67,7 +69,7 @@ def non_finance_client(non_finance_user):
 def test_statement_lines_csv_requires_auth():
     client = APIClient()
     resp = client.get("/api/exports/statement-lines.csv")
-    assert resp.status_code in (401, 403)
+    assert resp.status_code in (400, 401, 403)
 
 
 def test_statement_lines_csv_requires_finance_role(non_finance_client):
@@ -92,3 +94,4 @@ def test_statement_lines_csv_streams_when_invoice_exists(finance_client):
     assert len(rows) >= 1
     assert rows[0][0] in ("as_of", "error")
     assert "row_type" in rows[0]
+

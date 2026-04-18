@@ -1,0 +1,130 @@
+PACK=AUDIT_PACK_20260412_090616
+
+FILE=05_BRANCH_PROTECTION_MAIN.json
+{"url":"https://api.github.com/repos/tcmegahan/Crown2026/branches/main/protection","required_status_checks":{"url":"https://api.github.com/repos/tcmegahan/Crown2026/branches/main/protection/required_status_checks","strict":true,"contexts":["changes","demo-proof-static","lockdown-gate","meta-check-job-if","phase1-contract","phase3-runtime-proof","proof-ceremony","rc-promotion-gate","spine-audit","test","verify-immutable-tags","CodeQL","contract-gate","pytest-gate","secret-scan","dependency-review","Backend Python Dependency Audit","Frontend Node Dependency Audit"],"contexts_url":"https://api.github.com/repos/tcmegahan/Crown2026/branches/main/protection/required_status_checks/contexts","checks":[{"context":"changes","app_id":15368},{"context":"demo-proof-static","app_id":15368},{"context":"lockdown-gate","app_id":15368},{"context":"meta-check-job-if","app_id":15368},{"context":"phase1-contract","app_id":15368},{"context":"phase3-runtime-proof","app_id":15368},{"context":"proof-ceremony","app_id":15368},{"context":"rc-promotion-gate","app_id":15368},{"context":"spine-audit","app_id":15368},{"context":"test","app_id":15368},{"context":"verify-immutable-tags","app_id":15368},{"context":"CodeQL","app_id":57789},{"context":"contract-gate","app_id":15368},{"context":"pytest-gate","app_id":15368},{"context":"secret-scan","app_id":15368},{"context":"dependency-review","app_id":15368},{"context":"Backend Python Dependency Audit","app_id":15368},{"context":"Frontend Node Dependency Audit","app_id":15368}]},"required_pull_request_reviews":{"url":"https://api.github.com/repos/tcmegahan/Crown2026/branches/main/protection/required_pull_request_reviews","dismiss_stale_reviews":true,"require_code_owner_reviews":true,"require_last_push_approval":false,"required_approving_review_count":1},"required_signatures":{"url":"https://api.github.com/repos/tcmegahan/Crown2026/branches/main/protection/required_signatures","enabled":false},"enforce_admins":{"url":"https://api.github.com/repos/tcmegahan/Crown2026/branches/main/protection/enforce_admins","enabled":true},"required_linear_history":{"enabled":false},"allow_force_pushes":{"enabled":false},"allow_deletions":{"enabled":false},"block_creations":{"enabled":false},"required_conversation_resolution":{"enabled":true},"lock_branch":{"enabled":false},"allow_fork_syncing":{"enabled":false}}
+
+FILE=06_BACKEND_URLS.txt
+/	django.views.generic.base.RedirectView
+/accounts/login/	django.contrib.auth.views.LoginView	login
+/accounts/logout/	django.contrib.auth.views.LogoutView	logout
+/accounts/password_change/	django.contrib.auth.views.PasswordChangeView	password_change
+/accounts/password_change/done/	django.contrib.auth.views.PasswordChangeDoneView	password_change_done
+/accounts/password_reset/	django.contrib.auth.views.PasswordResetView	password_reset
+/accounts/password_reset/done/	django.contrib.auth.views.PasswordResetDoneView	password_reset_done
+/accounts/reset/<uidb64>/<token>/	django.contrib.auth.views.PasswordResetConfirmView	password_reset_confirm
+/accounts/reset/done/	django.contrib.auth.views.PasswordResetCompleteView	password_reset_complete
+/admin/	django.contrib.admin.sites.index	admin:index
+/admin/<app_label>/	django.contrib.admin.sites.app_index	admin:app_list
+/admin/<url>	django.contrib.admin.sites.catch_all_view
+/admin/advancement/campaign/	django.contrib.admin.options.changelist_view	admin:advancement_campaign_changelist
+/admin/advancement/campaign/<path:object_id>/	django.views.generic.base.RedirectView
+/admin/advancement/campaign/<path:object_id>/change/	django.contrib.admin.options.change_view	admin:advancement_campaign_change
+/admin/advancement/campaign/<path:object_id>/delete/	django.contrib.admin.options.delete_view	admin:advancement_campaign_delete
+/admin/advancement/campaign/<path:object_id>/history/	django.contrib.admin.options.history_view	admin:advancement_campaign_history
+/admin/advancement/campaign/add/	django.contrib.admin.options.add_view	admin:advancement_campaign_add
+/admin/advancement/donor/	django.contrib.admin.options.changelist_view	admin:advancement_donor_changelist
+/admin/advancement/donor/<path:object_id>/	django.views.generic.base.RedirectView
+/admin/advancement/donor/<path:object_id>/change/	django.contrib.admin.options.change_view	admin:advancement_donor_change
+/admin/advancement/donor/<path:object_id>/delete/	django.contrib.admin.options.delete_view	admin:advancement_donor_delete
+/admin/advancement/donor/<path:object_id>/history/	django.contrib.admin.options.history_view	admin:advancement_donor_history
+/admin/advancement/donor/add/	django.contrib.admin.options.add_view	admin:advancement_donor_add
+/admin/aid/aidapplication/	django.contrib.admin.options.changelist_view	admin:aid_aidapplication_changelist
+/admin/aid/aidapplication/<path:object_id>/	django.views.generic.base.RedirectView
+/admin/aid/aidapplication/<path:object_id>/change/	django.contrib.admin.options.change_view	admin:aid_aidapplication_change
+/admin/aid/aidapplication/<path:object_id>/delete/	django.contrib.admin.options.delete_view	admin:aid_aidapplication_delete
+/admin/aid/aidapplication/<path:object_id>/history/	django.contrib.admin.options.history_view	admin:aid_aidapplication_history
+/admin/aid/aidapplication/add/	django.contrib.admin.options.add_view	admin:aid_aidapplication_add
+
+FILE=07_MIGRATIONS.txt
+academic_year_wizard
+ [X] 0001_initial
+academics
+ [X] 0030_academics_core
+ [X] 0031_academics_readonly
+ [X] 0032_rename_teacher_ass_school__7df83a_idx_teacher_ass_school__e963a3_idx_and_more
+ [X] 0033_assignmentcategory_assignment_and_more
+ [X] 0034_course_term_spine_fields
+ [X] 0035_section_teacher_id
+ [X] 0036_remove_section_teacher_id_section_teacher
+ [X] 0037_lesson_curriculumsource_assignment_lesson_and_more
+ [X] 0038_lesson_plan_and_resource
+ [X] 0039_term_uniq_term_year_code
+academics_ro
+ [X] 0001_initial
+admin
+ [X] 0001_initial
+ [X] 0002_logentry_remove_auto_add
+ [X] 0003_logentry_add_action_flag_choices
+admissions
+ [X] 0001_initial
+ [X] 0002_link_household_student
+ [X] 0003_alter_admissionsapplication_status
+advancement
+ [X] 0001_initial
+ [X] 0002_stage1_advancement
+ [X] 0003_stage2_advancement
+ [X] 0004_stage3_advancement
+ [X] 0005_stage3_1_2_3_seat_checkout
+ [X] 0006_receipt_sponsorasset_eventsponsorplacement
+
+FILE=08_PY_DEPS.txt
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.3
+aiohttp-retry==2.9.1
+aiosignal==1.4.0
+alabaster==1.0.0
+amqp==5.3.1
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.13.0
+asgiref==3.11.1
+astroid==4.0.4
+attrs==26.1.0
+Authlib==1.6.9
+babel==2.18.0
+bandit==1.9.4
+bidict==0.23.1
+billiard==4.2.4
+black==26.3.1
+blinker==1.9.0
+brotli==1.2.0
+celery==5.6.3
+certifi==2026.2.25
+cffi==2.0.0
+cfgv==3.5.0
+charset-normalizer==3.4.6
+click==8.3.1
+click-didyoumean==0.3.1
+click-plugins==1.1.1.2
+click-repl==0.3.0
+cloudpickle==3.1.2
+
+FILE=13_HEALTH_PROBE.txt
+Health probe: https://crown-api-prod.azurewebsites.net/api/health/
+
+{"ok": true, "status": "ok", "demo_mode": false, "build_sha": "c7ab4328516ad0354d20606c5e6a60d05dc07b73", "prod_deploy_tag": "prod-2026-03-28-02", "env": "prod", "build_time_utc": "2026-04-12T13:08:30.078927+00:00", "version": "crown-0.3.0", "db": "ok", "deploy_run_id": "23694152214", "deploy_workflow": "Production Deploy (Dispatch v2)"}
+
+--- integrity probe: https://crown-api-prod.azurewebsites.net/api/integrity/ ---
+{"detail": "Missing required header: X-School-Id.", "code": "missing_tenant"}
+
+FILE=14_DEPLOY_PROD_RECENT.txt
+Recent deploy-prod.yml runs (metadata only).
+
+unknown command "status" for "gh run list"
+System.Management.Automation.RemoteException
+Usage:  gh run list [flags]
+System.Management.Automation.RemoteException
+Flags:
+  -a, --all               Include disabled workflows
+  -b, --branch string     Filter runs by branch
+  -c, --commit SHA        Filter runs by the SHA of the commit
+      --created date      Filter runs by the date it was created
+  -e, --event event       Filter runs by which event triggered the run
+  -q, --jq expression     Filter JSON output using a jq expression
+      --json fields       Output JSON with the specified fields
+  -L, --limit int         Maximum number of runs to fetch (default 20)
+  -s, --status string     Filter runs by status: {queued|completed|in_progress|requested|waiting|pending|action_required|cancelled|failure|neutral|skipped|stale|startup_failure|success|timed_out}
+  -t, --template string   Format JSON output using a Go template; see "gh help formatting"
+  -u, --user string       Filter runs by user who triggered the run
+  -w, --workflow string   Filter runs by workflow
+  

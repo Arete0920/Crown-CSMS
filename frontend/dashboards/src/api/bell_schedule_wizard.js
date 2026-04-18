@@ -1,6 +1,6 @@
-﻿/**
+/**
  * api/bell_schedule_wizard.js
- * Bell Schedule Wizard â€” API layer
+ * Bell Schedule Wizard  API layer
  */
 import { getToken, getSchoolId } from "../lib/api";
 
@@ -31,7 +31,7 @@ async function checkResponse(res, url) {
 }
 
 export async function createBellScheduleSession() {
-  const res = await fetch(SESSIONS, {
+  const res = await globalThis.fetch(SESSIONS, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({}),
@@ -41,7 +41,7 @@ export async function createBellScheduleSession() {
 
 export async function configureBellScheduleSession(sessionId, label, school_year) {
   const url = `${SESSIONS}${sessionId}/configure/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ label, school_year }),
@@ -51,7 +51,7 @@ export async function configureBellScheduleSession(sessionId, label, school_year
 
 export async function definePeriods(sessionId, periods) {
   const url = `${SESSIONS}${sessionId}/periods/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ periods }),
@@ -61,7 +61,7 @@ export async function definePeriods(sessionId, periods) {
 
 export async function commitBellScheduleSession(sessionId) {
   const url = `${SESSIONS}${sessionId}/commit/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ confirm: true }),
@@ -71,7 +71,7 @@ export async function commitBellScheduleSession(sessionId) {
 
 export async function verifyBellScheduleSession(sessionId) {
   const url = `${SESSIONS}${sessionId}/verify/`;
-  const res = await fetch(url, { method: "GET", headers: headers() });
+  const res = await globalThis.fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
 

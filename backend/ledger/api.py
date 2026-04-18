@@ -20,6 +20,8 @@ from .models import Payment, PaymentAllocation, Charge, LedgerAccount
 from .models import Allocation, compute_account_balance
 from .services import allocate_payment_fifo, account_balance, charge_remaining_balance
 from .services import build_account_statement
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
 def _get_account_for_scope(*, sid, account_id: str | None, household_id: str | None):
@@ -110,6 +112,7 @@ def _payment_to_dict(p: Payment):
     }
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def ensure_account(request: HttpRequest):
@@ -143,6 +146,7 @@ def ensure_account(request: HttpRequest):
     return _envelope(_acct_to_dict(acct), status=200)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def account_detail(request: HttpRequest, account_id: str):
@@ -165,6 +169,7 @@ def account_detail(request: HttpRequest, account_id: str):
     return _envelope(data, status=200)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_charge(request: HttpRequest):
@@ -211,6 +216,7 @@ def create_charge(request: HttpRequest):
     return _envelope(_charge_to_dict(c), status=201)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def record_payment(request: HttpRequest):
@@ -436,6 +442,7 @@ def ledger_account_statement(request: HttpRequest, account_id: str):
     return _envelope(data, status=200)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def open_charges(request: HttpRequest):
@@ -502,6 +509,7 @@ def open_charges(request: HttpRequest):
     return _envelope(open_rows, status=200)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def open_invoices(request: HttpRequest):
@@ -567,6 +575,7 @@ def open_invoices(request: HttpRequest):
 # Phase 2 Priority 2 — Ledger Invariants (read-only, tenant-scoped)
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def ledger_invariants(request: HttpRequest):
@@ -650,6 +659,7 @@ def ledger_invariants(request: HttpRequest):
 # Both endpoints are idempotent: voiding twice returns 200 cleanly.
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def void_charge(request: HttpRequest, charge_id: str):
@@ -680,6 +690,7 @@ def void_charge(request: HttpRequest, charge_id: str):
     return _envelope({"id": str(ch.id), "school_id": str(sid), "is_void": True}, status=200)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def void_payment(request: HttpRequest, payment_id: str):
@@ -708,4 +719,3 @@ def void_payment(request: HttpRequest, payment_id: str):
         p.save(update_fields=["is_void"])
 
     return _envelope({"id": str(p.id), "school_id": str(sid), "is_void": True}, status=200)
-

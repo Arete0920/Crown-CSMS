@@ -1,0 +1,68 @@
+name: Schema Governance
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  schema-governance:
+    name: schema-governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.1.1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then
+            pip install -r backend/requirements.txt
+          elif [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          pip install drf-spectacular==0.27.2 drf-spectacular-sidecar==2025.3.1 reportlab==4.2.0 pytest-django==4.7.0
+
+      - name: W002 inventory
+        run: python scripts/release/schema_w002_inventory.py
+
+      - name: Schema export
+        run: |
+          mkdir -p docs/openapi
+          if [ -f backend/manage.py ]; then
+            python backend/manage.py spectacular --file docs/openapi/crown-openapi.yaml
+          elif [ -f manage.py ]; then
+            python manage.py spectacular --file docs/openapi/crown-openapi.yaml
+          else
+            echo "Schema export failed: no manage.py found in backend/ or repository root." >&2
+            exit 1
+          fi
+
+      - name: Route catalog
+        run: python scripts/release/route_catalog_release.py
+
+      - name: Update schema progress
+        run: python scripts/release/update_schema_progress_doc.py
+
+      - name: Schema gate
+        run: python scripts/release/schema_gate.py
+
+      - name: Schema governance tests
+        run: pytest -q tests/test_schema_governance_assets.py
+
+      - name: Upload schema artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-governance-artifacts
+          path: |
+            audit-artifacts/release-verify/**
+            audit-artifacts/release-manifest/**
+            docs/release/SCHEMA_W002_PROGRESS.md
+            docs/openapi/crown-openapi.yaml

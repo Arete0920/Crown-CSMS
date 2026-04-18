@@ -10,27 +10,11 @@ function parseStorageValue(raw) {
   }
 }
 
-function normalizeRoleArray(raw) {
-  if (Array.isArray(raw)) {
-    return raw.filter(Boolean).map((role) => String(role).trim());
-  }
-
-  if (typeof raw === 'string') {
-    return raw
-      .split(',')
-      .map((role) => role.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-}
-
 export function getCurrentUserRoles() {
   if (typeof window === 'undefined') {
     return [];
   }
 
-  // Support lightweight demo/e2e role seeding keys.
   const seededRoles = [
     sessionStorage.getItem('crown.role'),
     localStorage.getItem('crown.role'),
@@ -41,7 +25,7 @@ export function getCurrentUserRoles() {
     return seededNormalized;
   }
 
-  const windowRoles = getUserRoles(window.__CROWN_USER_ROLES__);
+  const windowRoles = getUserRoles(globalThis.__CROWN_USER_ROLES__);
   if (windowRoles.length > 0) {
     return windowRoles;
   }

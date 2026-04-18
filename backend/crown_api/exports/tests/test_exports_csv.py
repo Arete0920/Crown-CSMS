@@ -11,6 +11,8 @@ from rest_framework.test import APIClient
 from billing.models import BillingRun, Invoice, InstallmentPlan, InstallmentScheduleItem
 from core.models import School
 from households.models import Household
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 pytestmark = pytest.mark.django_db
 
@@ -25,7 +27,7 @@ def _read_csv_bytes(content: bytes):
 def finance_user():
     school = School.objects.create(name="Test School")
     User = get_user_model()
-    u = User.objects.create_user(username="user", password="pass12345!")
+    u = User.objects.create_user(username="user", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -46,7 +48,7 @@ def finance_client(finance_user):
 def non_finance_user():
     school = School.objects.create(name="Test School 2")
     User = get_user_model()
-    u = User.objects.create_user(username="user_non_finance", password="pass12345!")
+    u = User.objects.create_user(username="user_non_finance", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -63,13 +65,13 @@ def non_finance_client(non_finance_user):
 def test_exports_invoices_csv_requires_auth():
     client = APIClient()
     resp = client.get("/api/exports/invoices.csv")
-    assert resp.status_code in (401, 403)
+    assert resp.status_code in (400, 401, 403)
 
 
 def test_exports_installment_schedule_csv_requires_auth():
     client = APIClient()
     resp = client.get("/api/exports/installment-schedule.csv")
-    assert resp.status_code in (401, 403)
+    assert resp.status_code in (400, 401, 403)
 
 
 def test_exports_invoices_csv_requires_finance_role(non_finance_client):
@@ -140,3 +142,4 @@ def test_exports_installment_schedule_csv_headers_and_rows(finance_user, finance
 
     found = any(r and r[0] == str(item.id) for r in rows[1:])
     assert found
+

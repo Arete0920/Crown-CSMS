@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import SafetySecuritySnapshotCard from '../components/dashboard/safetysecurity/SafetySecuritySnapshotCard';
 import SafetySecurityAlertsPanel from '../components/dashboard/safetysecurity/SafetySecurityAlertsPanel';

@@ -1,38 +1,79 @@
-"""
-analytics/services_health.py
+"""Customer health scoring engine."""
+from __future__ import annotations
 
-Customer health scoring engine.
-Computes a composite 0-100 score per school from observable signals.
-"""
+from django.db.models import Count, Q
+from django.utils import timezone
+
 from analytics.models_customer_health import CustomerHealth
+from core.models import UserAccount
+from finance.models import FinancePayment, PaymentStatus
+from support.models import SupportTicket
+
+
+def _clamp(score: int | float | None) -> int:
+    """Clamp score to 0..100 and tolerate unexpected/null inputs."""
+    try:
+        normalized = int(round(float(score)))
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(100, normalized))
+
+
+def _login_frequency_score(school_id) -> int:
+    horizon = timezone.now() - timezone.timedelta(days=30)
+    totals = UserAccount.objects.filter(school_id=school_id).aggregate(
+        total=Count("id"),
+        logged_in=Count("id", filter=Q(last_login__gte=horizon)),
+    )
+    active_users = totals["total"] or 0
+    if active_users == 0:
+        return 0
+    logged_in_users = totals["logged_in"] or 0
+    return _clamp(round((logged_in_users / active_users) * 100))
+
+
+def _payment_failure_score(school_id) -> int:
+    horizon = timezone.now() - timezone.timedelta(days=90)
+    totals = FinancePayment.objects.filter(school_id=school_id, created_at__gte=horizon).aggregate(
+        total=Count("id"),
+        failed=Count("id", filter=Q(status=PaymentStatus.FAILED)),
+    )
+    total = totals["total"] or 0
+    failed = totals["failed"] or 0
+    if total == 0:
+        return 100
+    failure_rate = failed / total
+    return _clamp(round((1 - failure_rate) * 100))
+
+
+def _support_ticket_score(school_id) -> int:
+    open_high = SupportTicket.objects.filter(
+        school_id=school_id,
+        status__in=[SupportTicket.STATUS_OPEN, SupportTicket.STATUS_ESCALATED],
+        priority__in=["high", "critical"],
+    ).count()
+    return _clamp(100 - (open_high * 10))
+
+
+def _compute_scores(school_id) -> tuple[int, int, int]:
+    """Return (login_frequency_score, payment_failure_score, support_ticket_score) for school_id."""
+    return (
+        _login_frequency_score(school_id),
+        _payment_failure_score(school_id),
+        _support_ticket_score(school_id),
+    )
 
 
 def calculate_health(school_id) -> int:
-    """
-    Return overall health score 0-100 for school_id.
-    TODO: Replace placeholders with real signal queries when telemetry is wired.
-
-    Signal sources (planned):
-      login_frequency_score  — login events per 30d vs active user count
-      payment_failure_score  — % failed payments in last 90d (lower = better)
-      support_ticket_score   — open critical/high tickets per seat (lower = better)
-    """
-    # Placeholder scores — replace with real queries when signals are available
-    login_score = 90
-    payment_score = 85
-    support_score = 95
-
-    overall = round((login_score + payment_score + support_score) / 3)
-    return overall
+    """Return overall health score 0-100 for school_id."""
+    login_score, payment_score, support_score = _compute_scores(school_id)
+    return _clamp(round((login_score + payment_score + support_score) / 3))
 
 
 def upsert_customer_health(school_id) -> CustomerHealth:
     """Compute and persist the health record for a school."""
-    # Placeholder scores
-    login_score = 90
-    payment_score = 85
-    support_score = 95
-    overall = round((login_score + payment_score + support_score) / 3)
+    login_score, payment_score, support_score = _compute_scores(school_id)
+    overall = _clamp(round((login_score + payment_score + support_score) / 3))
 
     record, _ = CustomerHealth.objects.update_or_create(
         school_id=school_id,

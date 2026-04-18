@@ -43,7 +43,9 @@ def aftercare_setup_wizard(request):
     ser.is_valid(raise_exception=True)
     ser.save(school_id=school_id)
 
-    # CANON_WIZARD_COMPLETE_TODO: record wizard completion in your registry if needed
+    # CANON_WIZARD_COMPLETE_HOOK: record wizard completion in your registry if needed
     # e.g. mark_wizard_complete(school_id=school_id, key="aftercare_setup")
 
     return Response({"status": "ok", "config": ser.data}, status=status.HTTP_200_OK)
+
+

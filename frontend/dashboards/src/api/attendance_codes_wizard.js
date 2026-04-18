@@ -1,4 +1,4 @@
-﻿/**
+/**
  * api/attendance_codes_wizard.js
  *
  * Follows the section_assign_wizard.js pattern exactly.
@@ -34,7 +34,7 @@ async function checkResponse(res, url) {
 /** Step 1: create session */
 export async function createAttendanceCodesSession() {
   const url = `${PREFIX}/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({}),
@@ -47,7 +47,7 @@ export async function createAttendanceCodesSession() {
  */
 export async function configureAttendanceCodesSession(sessionId, policy_config) {
   const url = `${PREFIX}/${sessionId}/configure/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ policy_config }),
@@ -60,7 +60,7 @@ export async function configureAttendanceCodesSession(sessionId, policy_config) 
  */
 export async function stageCodes(sessionId, codes_staged) {
   const url = `${PREFIX}/${sessionId}/stage_codes/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ codes_staged }),
@@ -71,7 +71,7 @@ export async function stageCodes(sessionId, codes_staged) {
 /** Step 4: commit */
 export async function commitAttendanceCodesSession(sessionId) {
   const url = `${PREFIX}/${sessionId}/commit/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ confirm: true }),
@@ -82,7 +82,7 @@ export async function commitAttendanceCodesSession(sessionId) {
 /** Step 5: verify */
 export async function verifyAttendanceCodesSession(sessionId) {
   const url = `${PREFIX}/${sessionId}/verify/`;
-  const res = await fetch(url, { method: "GET", headers: headers() });
+  const res = await globalThis.fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
 

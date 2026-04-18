@@ -1,0 +1,7 @@
+Production Health Endpoint Capture
+Source: AUDIT_PACK_20260408_080955/13_HEALTH_PROBE.txt
+Captured: 2026-04-08
+URL: https://crown-api-prod.azurewebsites.net/api/health/
+
+RESPONSE:
+{"ok": true, "status": "ok", "demo_mode": false, "build_sha": "c7ab4328516ad0354d20606c5e6a60d05dc07b73", "prod_deploy_tag": "prod-2026-03-28-02", "env": "prod", "build_time_utc": "2026-04-08T12:11:35.896781+00:00", "version": "crown-0.3.0", "db": "ok", "deploy_run_id": "23694152214", "deploy_workflow": "Production Deploy (Dispatch v2)"}

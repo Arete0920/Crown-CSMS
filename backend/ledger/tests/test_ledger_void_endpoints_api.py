@@ -1,11 +1,11 @@
-"""
-Phase 2 Priority 5 — Void endpoint API proof tests.
+﻿"""
+Phase 2 Priority 5 â€” Void endpoint API proof tests.
 
 Guards locked in CI:
-  1. POST /api/v1/ledger/charges/<id>/void/ marks charge is_void=True → 200
+  1. POST /api/v1/ledger/charges/<id>/void/ marks charge is_void=True â†’ 200
   2. void_charge is idempotent (second call returns 200, no error)
   3. void_charge deletes allocations tied to the charge
-  4. POST /api/v1/ledger/payments/<id>/void/ marks payment is_void=True → 200
+  4. POST /api/v1/ledger/payments/<id>/void/ marks payment is_void=True â†’ 200
   5. void_payment is idempotent (second call returns 200, no error)
   6. void_payment deletes allocations tied to the payment
 
@@ -23,6 +23,8 @@ from ledger.models import LedgerAccount, Charge, Payment, Allocation
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 VOID_CHARGE_URL = "/api/v1/ledger/charges/{}/void/"
 VOID_PAYMENT_URL = "/api/v1/ledger/payments/{}/void/"
 
@@ -33,7 +35,7 @@ def _school_and_account():
     hh = Household.objects.create(school_id=sid, name=f"HH-{uuid.uuid4()}")
     acct = LedgerAccount.objects.create(school_id=sid, household=hh)
     User = get_user_model()
-    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password="pass!")
+    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
     return sid, acct, user
 
 
@@ -83,7 +85,7 @@ def test_void_charge_marks_void_and_returns_200():
 
 
 # ---------------------------------------------------------------------------
-# 2. void_charge: idempotent — second call also 200
+# 2. void_charge: idempotent â€” second call also 200
 # ---------------------------------------------------------------------------
 
 def test_void_charge_is_idempotent():
@@ -140,7 +142,7 @@ def test_void_payment_marks_void_and_returns_200():
 
 
 # ---------------------------------------------------------------------------
-# 5. void_payment: idempotent — second call also 200
+# 5. void_payment: idempotent â€” second call also 200
 # ---------------------------------------------------------------------------
 
 def test_void_payment_is_idempotent():
@@ -206,3 +208,4 @@ def test_void_charge_no_duplicate_reversal_entry():
     assert reversals.count() == 1, (
         f"Expected exactly 1 reversal JE after two void calls, got {reversals.count()}"
     )
+

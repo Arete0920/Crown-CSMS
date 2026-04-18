@@ -1,40 +1,21 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import DashboardSection from "../components/layout/DashboardSection.jsx";
 import { fetchRosterToday, checkinStudent, checkoutStudent } from "../api/aftercareApi.js";
 
-function getSession() {
-  try {
-    return {
-      token: sessionStorage.getItem("crown.jwt.access") || "",
-      schoolId: sessionStorage.getItem("crown.school.id") || "",
-    };
-  } catch {
-    return { token: "", schoolId: "" };
-  }
-}
-
 const TAG = {
   base: { display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600 },
   default: { background: "var(--crown-surface-2)", color: "var(--crown-muted)" },
-  primary:  { background: "var(--crown-surface-2)", color: "var(--crown-brand)" },
-  success:  { background: "var(--crown-ok-bg)", color: "var(--crown-ok)" },
+  primary: { background: "var(--crown-surface-2)", color: "var(--crown-brand)" },
+  success: { background: "var(--crown-ok-bg)", color: "var(--crown-ok)" },
 };
-
-function AttendanceChip({ row }) {
-  const att = row.attendance;
-  if (!att) return <span style={{ ...TAG.base, ...TAG.default }}>Not checked in</span>;
-  if (att.checkout_time) return <span style={{ ...TAG.base, ...TAG.success }}>Checked out</span>;
-  return <span style={{ ...TAG.base, ...TAG.primary }}>Checked in</span>;
-}
 
 const TH = { padding: "8px 12px", textAlign: "left", fontSize: 12, fontWeight: 700, borderBottom: "2px solid var(--crown-border)", whiteSpace: "nowrap" };
 const TD = { padding: "8px 12px", fontSize: 13, borderBottom: "1px solid var(--crown-border)" };
-const BTN_OUT  = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "1px solid var(--crown-border)", background: "transparent" };
+const BTN_OUT = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "1px solid var(--crown-border)", background: "transparent" };
 const BTN_PRIM = { cursor: "pointer", padding: "4px 10px", fontSize: 12, borderRadius: 4, border: "none", background: "var(--crown-ok)", color: "var(--crown-surface)" };
 
 export default function AftercareRosterPage() {
-  const { token, schoolId } = getSession();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [roster, setRoster] = useState(null);
@@ -52,7 +33,32 @@ export default function AftercareRosterPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initialize() {
+      try {
+        const data = await fetchRosterToday();
+        if (!cancelled) {
+          setRoster(data);
+          setError(null);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initialize();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleCheckin(studentId) {
     try {
@@ -72,10 +78,14 @@ export default function AftercareRosterPage() {
     }
   }
 
+  const rosterTitle = roster
+    ? `Today's Aftercare Roster - ${roster.date} (${roster.dow})`
+    : "Today's Aftercare Roster";
+
   return (
     <CrownLayout title="Aftercare Roster">
-      <DashboardSection title={`Today's Aftercare Roster${roster ? ` — ${roster.date} (${roster.dow})` : ""}`}>
-        {loading && <span>Loading…</span>}
+      <DashboardSection title={rosterTitle}>
+        {loading && <span>Loading...</span>}
         {error && <div style={{ color: "var(--crown-danger)", background: "var(--crown-danger-bg)", padding: "10px 14px", borderRadius: 4, marginBottom: 12 }}>{error}</div>}
         {!loading && !error && roster && (
           <div style={{ border: "1px solid var(--crown-border)", borderRadius: 4, overflowX: "auto" }}>
@@ -99,16 +109,22 @@ export default function AftercareRosterPage() {
                 {roster.rows.map((row) => {
                   const hasCheckin = !!row.attendance;
                   const hasCheckout = row.attendance?.checkout_time;
+                  const statusChip = !row.attendance
+                    ? <span style={{ ...TAG.base, ...TAG.default }}>Not checked in</span>
+                    : row.attendance.checkout_time
+                      ? <span style={{ ...TAG.base, ...TAG.success }}>Checked out</span>
+                      : <span style={{ ...TAG.base, ...TAG.primary }}>Checked in</span>;
+
                   return (
                     <tr key={row.student_id}>
                       <td style={TD}>{row.student_id}</td>
                       <td style={TD}>{row.enrollment?.billing_model}</td>
-                      <td style={TD}><AttendanceChip row={row} /></td>
-                      <td style={TD}>{row.attendance?.late_minutes ?? "—"}</td>
+                      <td style={TD}>{statusChip}</td>
+                      <td style={TD}>{row.attendance?.late_minutes ?? "-"}</td>
                       <td style={TD}>
                         {row.attendance?.late_fee_cents
                           ? `$${(row.attendance.late_fee_cents / 100).toFixed(2)}`
-                          : "—"}
+                          : "-"}
                       </td>
                       <td style={TD}>
                         {!hasCheckin && (

@@ -2,7 +2,6 @@
  * StatWidget — single KPI tile: large value + label + optional hint.
  * Extends CrownMetricCard with expand + status coloring.
  */
-import React from "react";
 
 const STATUS_COLOR = {
   good: "var(--crown-ok)",

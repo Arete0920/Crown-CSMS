@@ -1,8 +1,8 @@
 /**
- * GivePage — donation upsell (Gift checkout) + recurring Pledge creation.
- * Calls POST /api/v1/advancement/gift/checkout/  → pending Gift
- *       POST /api/v1/advancement/pledges/create/ → Pledge
- *       GET  /api/v1/advancement/campaigns/      → active campaigns for selection
+ * GivePage  donation upsell (Gift checkout) + recurring Pledge creation.
+ * Calls POST /api/v1/advancement/gift/checkout/   pending Gift
+ *       POST /api/v1/advancement/pledges/create/  Pledge
+ *       GET  /api/v1/advancement/campaigns/       active campaigns for selection
  */
 import { useState, useEffect } from "react";
 
@@ -64,7 +64,7 @@ export default function GivePage() {
   const [pledgeError, setPledgeError] = useState(null);
 
   useEffect(() => {
-    fetch(`${apiBase()}/api/v1/advancement/campaigns/?status=active`, {
+    globalThis.fetch(`${apiBase()}/api/v1/advancement/campaigns/?status=active`, {
       headers: authHeaders(),
     })
       .then((r) => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
@@ -87,7 +87,7 @@ export default function GivePage() {
       };
       if (giftForm.campaign_id) payload.campaign_id = giftForm.campaign_id;
 
-      const res = await fetch(`${apiBase()}/api/v1/advancement/gift/checkout/`, {
+      const res = await globalThis.fetch(`${apiBase()}/api/v1/advancement/gift/checkout/`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify(payload),
@@ -119,7 +119,7 @@ export default function GivePage() {
       };
       if (pledgeForm.campaign_id) payload.campaign_id = pledgeForm.campaign_id;
 
-      const res = await fetch(`${apiBase()}/api/v1/advancement/pledges/create/`, {
+      const res = await globalThis.fetch(`${apiBase()}/api/v1/advancement/pledges/create/`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify(payload),
@@ -167,7 +167,7 @@ export default function GivePage() {
 
         {giftResult && (
           <div style={{ background: "#dcfce7", border: "1px solid #15803d", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "#15803d", fontWeight: 600 }}>
-            Gift created! ID: {giftResult.id} — Status: {giftResult.status}
+            Gift created! ID: {giftResult.id}  Status: {giftResult.status}
           </div>
         )}
         {giftError && (
@@ -178,7 +178,7 @@ export default function GivePage() {
 
         <form onSubmit={handleGiftSubmit}>
           <div style={fieldStyle}>
-            <label style={labelStyle}>Amount ($)</label>
+            <label htmlFor="gift-amount" style={labelStyle}>Amount ($)</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
               {AMOUNTS.map((a) => (
                 <button
@@ -204,7 +204,7 @@ export default function GivePage() {
               type="number"
               min="1"
               step="0.01"
-              placeholder="Other amount…"
+              placeholder="Other amount"
               value={giftForm.amount}
               onChange={(e) => setGiftForm((f) => ({ ...f, amount: e.target.value }))}
               style={inputStyle}
@@ -213,14 +213,14 @@ export default function GivePage() {
           </div>
 
           <div style={fieldStyle}>
-            <label style={labelStyle}>Campaign (optional)</label>
+            <label htmlFor="gift-campaign" style={labelStyle}>Campaign (optional)</label>
             <select
               value={giftForm.campaign_id}
               onChange={(e) => setGiftForm((f) => ({ ...f, campaign_id: e.target.value }))}
               style={inputStyle}
               disabled={loadingCampaigns}
             >
-              <option value="">— No specific campaign —</option>
+              <option value=""> No specific campaign </option>
               {campaigns.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -241,7 +241,7 @@ export default function GivePage() {
 
           {giftForm.restricted && (
             <div style={fieldStyle}>
-              <label style={labelStyle}>Restriction label</label>
+              <label htmlFor="gift-restriction-label" style={labelStyle}>Restriction label</label>
               <input
                 type="text"
                 placeholder="e.g. Library Fund"
@@ -254,10 +254,10 @@ export default function GivePage() {
           )}
 
           <div style={fieldStyle}>
-            <label style={labelStyle}>Memo (optional)</label>
+            <label htmlFor="gift-memo" style={labelStyle}>Memo (optional)</label>
             <input
               type="text"
-              placeholder="In honor of…"
+              placeholder="In honor of"
               value={giftForm.memo}
               onChange={(e) => setGiftForm((f) => ({ ...f, memo: e.target.value }))}
               style={inputStyle}
@@ -280,7 +280,7 @@ export default function GivePage() {
               cursor: giftSubmitting ? "wait" : "pointer",
             }}
           >
-            {giftSubmitting ? "Processing…" : "Give Now"}
+            {giftSubmitting ? "Processing" : "Give Now"}
           </button>
         </form>
       </div>
@@ -291,7 +291,7 @@ export default function GivePage() {
 
         {pledgeResult && (
           <div style={{ background: "#dcfce7", border: "1px solid #15803d", borderRadius: 6, padding: "0.75rem 1rem", marginBottom: "1rem", color: "#15803d", fontWeight: 600 }}>
-            Pledge created! ${pledgeResult.total_amount} {pledgeResult.frequency} — Status: {pledgeResult.status}
+            Pledge created! ${pledgeResult.total_amount} {pledgeResult.frequency}  Status: {pledgeResult.status}
           </div>
         )}
         {pledgeError && (
@@ -302,7 +302,7 @@ export default function GivePage() {
 
         <form onSubmit={handlePledgeSubmit}>
           <div style={fieldStyle}>
-            <label style={labelStyle}>Total pledge amount ($)</label>
+            <label htmlFor="pledge-total-amount" style={labelStyle}>Total pledge amount ($)</label>
             <input
               type="number"
               min="1"
@@ -316,7 +316,7 @@ export default function GivePage() {
           </div>
 
           <div style={fieldStyle}>
-            <label style={labelStyle}>Frequency</label>
+            <div style={labelStyle}>Frequency</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {FREQUENCIES.map(({ value, label }) => (
                 <button
@@ -341,7 +341,7 @@ export default function GivePage() {
           </div>
 
           <div style={fieldStyle}>
-            <label style={labelStyle}>Start date</label>
+            <label htmlFor="pledge-start-date" style={labelStyle}>Start date</label>
             <input
               type="date"
               value={pledgeForm.start_date}
@@ -352,14 +352,14 @@ export default function GivePage() {
           </div>
 
           <div style={fieldStyle}>
-            <label style={labelStyle}>Campaign (optional)</label>
+            <label htmlFor="gift-campaign" style={labelStyle}>Campaign (optional)</label>
             <select
               value={pledgeForm.campaign_id}
               onChange={(e) => setPledgeForm((f) => ({ ...f, campaign_id: e.target.value }))}
               style={inputStyle}
               disabled={loadingCampaigns}
             >
-              <option value="">— No specific campaign —</option>
+              <option value=""> No specific campaign </option>
               {campaigns.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -381,7 +381,7 @@ export default function GivePage() {
               cursor: pledgeSubmitting ? "wait" : "pointer",
             }}
           >
-            {pledgeSubmitting ? "Creating pledge…" : "Create Pledge"}
+            {pledgeSubmitting ? "Creating pledge" : "Create Pledge"}
           </button>
         </form>
       </div>

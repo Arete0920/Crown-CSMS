@@ -7,6 +7,9 @@ from comms.models import OutboxMessage
 from comms_wizard.models import CommsWizardSession
 from core.models import School
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/comms-wizard/sessions/"
@@ -24,7 +27,7 @@ def _make_school(name="Comms School"):
 
 def _make_user(school, username=None):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    return User.objects.create_user(username=username, password="pw")
+    return User.objects.create_user(username=username, password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):

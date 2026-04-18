@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from academics.models import Assignment, AssignmentCategory, Enrollment
+from academics.models import Assignment, AssignmentCategory, Enrollment, TranscriptEntry
 from gradebook.models import GradeEntry
 from households.models import Student
 
@@ -198,6 +198,45 @@ class CourseRow:
     credits: float
 
 
+
+@dataclass(frozen=True)
+class TranscriptMeta:
+    provider: str
+    dual_enrollment_label: str
+
+
+def _transcript_meta_maps(school_id: str, student_id: UUID):
+    entries = list(
+        TranscriptEntry.objects.filter(school_id=school_id, student_id=student_id)
+    )
+    by_course_term: Dict[Tuple[str, str], TranscriptMeta] = {}
+    by_course: Dict[str, TranscriptMeta] = {}
+
+    for entry in entries:
+        meta = TranscriptMeta(
+            provider=(entry.provider or "").strip(),
+            dual_enrollment_label=(entry.dual_enrollment_label or "").strip(),
+        )
+        course_key = str(entry.course_id)
+        term_key = str(entry.term_id or "")
+        by_course_term[(course_key, term_key)] = meta
+        if course_key not in by_course:
+            by_course[course_key] = meta
+
+    return by_course_term, by_course
+
+
+def _resolve_transcript_meta(section, by_course_term, by_course) -> TranscriptMeta:
+    course_key = str(getattr(section, "course_id", "") or "")
+    term_key = str(getattr(section, "term_ref_id", "") or "")
+
+    return (
+        by_course_term.get((course_key, term_key))
+        or by_course_term.get((course_key, ""))
+        or by_course.get(course_key)
+        or TranscriptMeta(provider="", dual_enrollment_label="")
+    )
+
 class TranscriptROView(APIView):
     """
     Read-only transcript summary derived from:
@@ -215,7 +254,6 @@ class TranscriptROView(APIView):
         if not school_id:
             return JsonResponse({"detail": "Missing X-School-Id header."}, status=400)
 
-        # Student identity scoped to this school
         try:
             student = Student.objects.get(pk=student_id, school_id=school_id)
         except Student.DoesNotExist:
@@ -227,16 +265,14 @@ class TranscriptROView(APIView):
             .select_related("section__course", "section__term_ref")
         )
 
-        # Group enrollments by term (prefer term_ref_id if present; fall back to term string).
         terms: Dict[str, Dict[str, Any]] = {}
-        courses_by_term: Dict[str, List[CourseRow]] = defaultdict(list)
+        courses_by_term: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        by_course_term, by_course = _transcript_meta_maps(school_id, student_id)
 
-        for e in enrollments:
-            section = e.section
+        for enrollment in enrollments:
+            section = enrollment.section
             term_id = str(getattr(section, "term_ref_id", None) or "")
             term_code = getattr(section, "term", None) or "UNKNOWN"
-
-            # Stable key even if term_ref is missing
             term_key = term_id if term_id else f"TERM::{term_code}"
 
             if term_key not in terms:
@@ -245,32 +281,32 @@ class TranscriptROView(APIView):
                     "term_code": term_code,
                 }
 
-            # Compute final_percent using weighted grading if configured
             final_percent = _compute_section_final_percent(school_id, section.id, student_id)
             letter = _letter_from_percent(final_percent)
+            meta = _resolve_transcript_meta(section, by_course_term, by_course)
 
             courses_by_term[term_key].append(
-                CourseRow(
-                    section_id=str(section.id),
-                    course_code=getattr(section.course, "code", ""),
-                    course_name=getattr(section.course, "name", ""),
-                    teacher_name=getattr(section, "teacher_name", "") or "",
-                    final_percent=final_percent,
-                    final_letter=letter,
-                    credits=1.0,  # MVP placeholder
-                )
+                {
+                    "section_id": str(section.id),
+                    "course_code": getattr(section.course, "code", ""),
+                    "course_name": getattr(section.course, "name", ""),
+                    "teacher_name": getattr(section, "teacher_name", "") or "",
+                    "final_percent": final_percent,
+                    "final_letter": letter,
+                    "credits": 1.0,
+                    "provider": meta.provider,
+                    "dual_enrollment_label": meta.dual_enrollment_label,
+                }
             )
 
-        # Build term GPA (MVP: average of course GPA points for courses with real grades)
         term_blocks: List[Dict[str, Any]] = []
         all_points: List[float] = []
 
-        # deterministic ordering: by term_code, then course_code
         for term_key, term_meta in sorted(terms.items(), key=lambda kv: (kv[1]["term_code"], kv[0])):
             course_rows = courses_by_term.get(term_key, [])
-            course_rows.sort(key=lambda r: (r.course_code, r.course_name, r.section_id))
+            course_rows.sort(key=lambda r: (r["course_code"], r["course_name"], r["section_id"]))
 
-            pts = [_gpa_points(r.final_letter) for r in course_rows if r.final_letter != "N/A"]
+            pts = [_gpa_points(r["final_letter"]) for r in course_rows if r["final_letter"] != "N/A"]
             term_gpa = round(sum(pts) / len(pts), 2) if pts else None
             if pts:
                 all_points.extend(pts)
@@ -278,18 +314,7 @@ class TranscriptROView(APIView):
             term_blocks.append({
                 "term_id": term_meta["term_id"],
                 "term_code": term_meta["term_code"],
-                "courses": [
-                    {
-                        "section_id": r.section_id,
-                        "course_code": r.course_code,
-                        "course_name": r.course_name,
-                        "teacher_name": r.teacher_name,
-                        "final_percent": r.final_percent,
-                        "final_letter": r.final_letter,
-                        "credits": r.credits,
-                    }
-                    for r in course_rows
-                ],
+                "courses": course_rows,
                 "term_gpa_mvp": term_gpa,
             })
 
@@ -309,7 +334,6 @@ class TranscriptROView(APIView):
                 "Credits default to 1.0 until credit model is implemented.",
             ],
         }, status=200)
-
 
 def _term_school_year(term) -> str:
     return (
@@ -347,6 +371,7 @@ class StudentTranscriptContractView(APIView):
             .filter(school_id=school_id, student_id=student_id)
             .select_related("section__course", "section__term_ref", "section__term_ref__academic_year")
         )
+        by_course_term, by_course = _transcript_meta_maps(school_id, student_id)
 
         by_year: Dict[str, Dict[str, Any]] = {}
         by_term: Dict[Tuple[str, str], Dict[str, Any]] = {}
@@ -378,6 +403,7 @@ class StudentTranscriptContractView(APIView):
             final_percent = _compute_section_final_percent(school_id, section.id, student_id)
             final_letter = _letter_from_percent(final_percent)
             final_grade = None if final_letter == "N/A" else final_letter
+            meta = _resolve_transcript_meta(section, by_course_term, by_course)
 
             by_term[term_key]["courses"].append({
                 "section_id": str(section.id),
@@ -387,6 +413,8 @@ class StudentTranscriptContractView(APIView):
                 "teacher": getattr(section, "teacher_name", ""),
                 "final_grade": final_grade,
                 "status": "in_progress" if final_grade is None else "final",
+                "provider": meta.provider,
+                "dual_enrollment_label": meta.dual_enrollment_label,
             })
 
         school_years = list(by_year.values())
@@ -401,3 +429,4 @@ class StudentTranscriptContractView(APIView):
             "student_name": f"{student.first_name} {student.last_name}".strip(),
             "school_years": school_years,
         }, status=200)
+

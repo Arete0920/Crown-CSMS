@@ -1,14 +1,14 @@
-﻿/**
+/**
  * FinanceSetupWizard.jsx
  * ======================
- * Year-locked financial canon wizard: Tuition → Discounts → Aid → Plans → Extended Care → Review.
- * Crown component library only — no @mui/material.
+ * Year-locked financial canon wizard: Tuition ? Discounts ? Aid ? Plans ? Extended Care ? Review.
+ * Crown component library only � no @mui/material.
  */
 
 import { useEffect, useState } from "react";
 import { fetchFinanceStatus, lockFinancePolicy, saveFinancePolicy } from "../../api/financeSetupApi.js";
 
-// ── Layout primitives ─────────────────────────────────────────────────────────
+// -- Layout primitives ---------------------------------------------------------
 
 function WizardShell({ title, children }) {
   return (
@@ -135,7 +135,7 @@ function MoneyCentsInput({ value, onChange, disabled }) {
   );
 }
 
-// ── Default wizardState shape ─────────────────────────────────────────────────
+// -- Default wizardState shape -------------------------------------------------
 
 function defaults() {
   return {
@@ -191,12 +191,12 @@ function defaults() {
   };
 }
 
-// ── Step renderers ────────────────────────────────────────────────────────────
+// -- Step renderers ------------------------------------------------------------
 
 function StepTuition({ data, onChange, locked }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 1 — Tuition Structure">
+    <StepCard label="Step 1 � Tuition Structure">
       <FieldRow label="Tuition Mode">
         <Select
           value={data.tuition_mode}
@@ -235,7 +235,7 @@ function StepTuition({ data, onChange, locked }) {
 function StepDiscounts({ data, onChange, locked }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 2 — Discount Policy">
+    <StepCard label="Step 2 � Discount Policy">
       <FieldRow label="Discounts apply to">
         <Select
           value={data.discounts_apply_to}
@@ -289,7 +289,7 @@ function StepDiscounts({ data, onChange, locked }) {
 function StepAid({ data, onChange, locked }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 3 — Financial Aid Policy">
+    <StepCard label="Step 3 � Financial Aid Policy">
       <FieldRow label="Application fee">
         <MoneyCentsInput value={data.application_fee_cents} onChange={set("application_fee_cents")} disabled={locked} />
       </FieldRow>
@@ -320,7 +320,7 @@ function StepAid({ data, onChange, locked }) {
 function StepPlans({ data, onChange, locked }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 4 — Payment Plans">
+    <StepCard label="Step 4 � Payment Plans">
       {[
         ["allow_pay_in_full", "Pay in full"],
         ["allow_semi_annual", "Semi-annual (2 payments)"],
@@ -351,7 +351,7 @@ function StepPlans({ data, onChange, locked }) {
 function StepExtendedCare({ data, onChange, locked }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 5 — Extended Care / Before & After School">
+    <StepCard label="Step 5 � Extended Care / Before & After School">
       {[
         ["supports_annual", "Annual plan"],
         ["supports_monthly", "Monthly plan"],
@@ -384,12 +384,12 @@ function StepExtendedCare({ data, onChange, locked }) {
 
 function StepReview({ academicYear, policy, locked, onSave, onLock, saving, locking, error, success }) {
   return (
-    <StepCard label={`Step 6 — Review & ${locked ? "Snapshot" : "Lock"}`}>
+    <StepCard label={`Step 6 � Review & ${locked ? "Snapshot" : "Lock"}`}>
       <p style={{ fontSize: 13, color: "var(--crown-ink)", marginBottom: 16 }}>
         Academic year: <strong>{academicYear}</strong>&nbsp;
         {locked && (
           <span style={{ color: "var(--crown-danger)", fontWeight: 600 }}>
-            ⚑ LOCKED — read only
+            ? LOCKED � read only
           </span>
         )}
       </p>
@@ -442,7 +442,7 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
               opacity: saving ? 0.6 : 1,
             }}
           >
-            {saving ? "Saving…" : "Save Draft"}
+            {saving ? "Saving�" : "Save Draft"}
           </button>
           <button
             onClick={onLock}
@@ -459,7 +459,7 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
               opacity: locking ? 0.6 : 1,
             }}
           >
-            {locking ? "Locking…" : "Lock Policy (irreversible)"}
+            {locking ? "Locking�" : "Lock Policy (irreversible)"}
           </button>
         </div>
       )}
@@ -494,7 +494,7 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
   );
 }
 
-// ── Step tab nav ──────────────────────────────────────────────────────────────
+// -- Step tab nav --------------------------------------------------------------
 
 const STEPS = ["Tuition", "Discounts", "Aid", "Plans", "Extended Care", "Review & Lock"];
 
@@ -524,7 +524,7 @@ function StepNav({ current, onSelect }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// -- Main component ------------------------------------------------------------
 
 const DEFAULT_YEAR = "2026-2027";
 
@@ -557,7 +557,7 @@ export default function FinanceSetupWizard() {
             extended_care: d.extended_care ?? defaults().extended_care,
           });
         }
-      } catch (e) {
+      } catch {
         // Non-fatal: wizard starts with defaults
       } finally {
         setLoading(false);
@@ -579,7 +579,7 @@ export default function FinanceSetupWizard() {
       setSnapshot(result.data);
       setSuccess("Policy saved successfully.");
     } catch (e) {
-      setError(e.status === 409 ? "Policy is locked — no changes allowed." : e.message);
+      setError(e.status === 409 ? "Policy is locked � no changes allowed." : e.message);
     } finally {
       setSaving(false);
     }
@@ -613,13 +613,13 @@ export default function FinanceSetupWizard() {
   if (loading) {
     return (
       <WizardShell title="Finance Setup Wizard">
-        <p style={{ color: "var(--crown-muted)", fontSize: 14 }}>Loading policy…</p>
+        <p style={{ color: "var(--crown-muted)", fontSize: 14 }}>Loading policy�</p>
       </WizardShell>
     );
   }
 
   return (
-    <WizardShell title={`Finance Setup Wizard — ${academicYear}`}>
+    <WizardShell title={`Finance Setup Wizard � ${academicYear}`}>
       {locked && (
         <div
           style={{
@@ -633,7 +633,7 @@ export default function FinanceSetupWizard() {
             fontWeight: 600,
           }}
         >
-          ⚑ This policy is LOCKED. All fields are read-only.
+          ? This policy is LOCKED. All fields are read-only.
         </div>
       )}
 
@@ -683,7 +683,7 @@ export default function FinanceSetupWizard() {
             opacity: step === 0 ? 0.4 : 1,
           }}
         >
-          ← Previous
+          ? Previous
         </button>
         <button
           onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
@@ -698,7 +698,7 @@ export default function FinanceSetupWizard() {
             opacity: step === STEPS.length - 1 ? 0.4 : 1,
           }}
         >
-          Next →
+          Next ?
         </button>
       </div>
     </WizardShell>

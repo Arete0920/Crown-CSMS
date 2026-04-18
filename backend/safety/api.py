@@ -9,6 +9,8 @@ from core.audit import audit_event
 from core.permissions import CrownModulePermission
 from .models import IncidentReport
 from .serializers import IncidentSerializer as IncidentReportSerializer
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
 def _require_school(request):
@@ -45,6 +47,7 @@ class IncidentViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def safety_metrics(request):

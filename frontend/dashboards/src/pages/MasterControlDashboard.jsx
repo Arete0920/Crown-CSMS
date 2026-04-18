@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import MasterControlSnapshotCard from '../components/dashboard/mastercontrol/MasterControlSnapshotCard';
 import PortfolioHealthPanel from '../components/dashboard/mastercontrol/PortfolioHealthPanel';

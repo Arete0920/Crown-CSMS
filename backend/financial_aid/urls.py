@@ -5,7 +5,7 @@ from .api import aid_applications, aid_awards, disburse_to_billing_run, financia
 urlpatterns = [
     path("summary/", FinancialAidSummaryView.as_view(), name="financial-aid-summary"),
     path("drilldown/", FinancialAidDrilldownView.as_view(), name="financial-aid-drilldown"),
-    # Metrics — live DB-backed, school-scoped (replaces stub formerly in metrics_views.py)
+    # Metrics Ã¢â‚¬â€ live DB-backed, school-scoped (replaces stub formerly in metrics_views.py)
     path("metrics/", financial_aid_metrics, name="financial-aid-metrics"),
     # Phase 4B: ledger-integrated aid endpoints
     path("applications/", aid_applications, name="financial-aid-applications"),

@@ -18,6 +18,7 @@ from subscriptions.models import Plan, TenantSubscription
 pytestmark = pytest.mark.django_db
 
 User = get_user_model()
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 
 
 def _make_plan(code="smart_start"):
@@ -30,7 +31,7 @@ def _make_plan(code="smart_start"):
 def _make_staff():
     return User.objects.create_user(
         username=f"staff_{uuid.uuid4().hex[:8]}",
-        password="x",
+        password=TEST_AUTH_SECRET,
         is_staff=True,
     )
 
@@ -38,7 +39,7 @@ def _make_staff():
 def _make_user():
     return User.objects.create_user(
         username=f"user_{uuid.uuid4().hex[:8]}",
-        password="x",
+        password=TEST_AUTH_SECRET,
     )
 
 
@@ -175,3 +176,6 @@ def test_ops_post_missing_plan_id():
         format="json",
     )
     assert resp.status_code == 400
+
+
+

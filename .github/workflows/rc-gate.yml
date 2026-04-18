@@ -18,10 +18,10 @@ jobs:
       ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: sqlite:///./ci.sqlite3
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4.1.1
 
       - name: Use Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.11"
           cache: "pip"
@@ -55,7 +55,7 @@ jobs:
       run:
         working-directory: frontend/dashboards
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4.1.1
 
       - name: Use Node 20
         uses: actions/setup-node@v4
@@ -82,7 +82,7 @@ jobs:
   ui-static-gates:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4.1.1
 
       - name: UI Shell Gate
         shell: pwsh
@@ -99,3 +99,4 @@ jobs:
         shell: pwsh
         run: |
           pwsh -File tools/verify_routes_gate.ps1
+

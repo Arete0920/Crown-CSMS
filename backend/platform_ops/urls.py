@@ -3,9 +3,9 @@ Platform Operations URL configuration.
 
 All routes are mounted under /api/platform/ in crown_api/urls.py.
 
-  POST /api/platform/schools                — platform_create_school
-  GET  /api/platform/schools/list           — platform_list_schools
-  GET  /api/platform/provisioning/<job_id>  — platform_provisioning_status
+  POST /api/platform/schools                Ã¢â‚¬â€ platform_create_school
+  GET  /api/platform/schools/list           Ã¢â‚¬â€ platform_list_schools
+  GET  /api/platform/provisioning/<job_id>  Ã¢â‚¬â€ platform_provisioning_status
 """
 from django.urls import path
 

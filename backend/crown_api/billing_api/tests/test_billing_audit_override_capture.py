@@ -13,6 +13,8 @@ from core.models import School
 from households.models import Household
 from ledger.models import Charge, LedgerAccount, Payment
 
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 pytestmark = pytest.mark.django_db
 
 
@@ -21,8 +23,8 @@ def staff_finance_user():
     primary_school = School.objects.create(name="Primary School")
     override_school = School.objects.create(name="Override School")
 
-    User = get_user_model()
-    u = User.objects.create_user(username="staff_finance_user", password="pass12345!")
+    user_model = get_user_model()
+    u = user_model.objects.create_user(username="staff_finance_user", password=TEST_AUTH_SECRET)
     u.is_staff = True
     u.save(update_fields=["is_staff"])
 
@@ -57,7 +59,7 @@ def _seed_household_with_charge(school_id):
 
 
 def test_billing_audit_includes_school_override_id_on_record_payment(staff_finance_user, staff_finance_client):
-    u, _primary_school, override_school = staff_finance_user
+    _, _primary_school, override_school = staff_finance_user
 
     hh, acct, ch = _seed_household_with_charge(override_school.id)
 

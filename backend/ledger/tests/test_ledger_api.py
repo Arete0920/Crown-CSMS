@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
@@ -10,11 +10,13 @@ from ledger.models import LedgerAccount, Charge
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 
 def _mk_user_with_school_id(school_id):
     School.objects.get_or_create(id=school_id, defaults={"name": f"School-{school_id}"})
     User = get_user_model()
-    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password="pass12345!")
+    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school_id)
         u.save(update_fields=["school_id"])
@@ -57,3 +59,4 @@ def test_create_charge_requires_account_and_scopes():
     )
     assert resp.status_code == 201
     assert Charge.objects.filter(account=acct).count() == 1
+

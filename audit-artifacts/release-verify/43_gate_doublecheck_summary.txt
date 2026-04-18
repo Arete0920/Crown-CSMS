@@ -1,0 +1,4 @@
+lint_pass_1=0
+lint_pass_2=0
+django_check_pass_1=0
+django_check_pass_2=0

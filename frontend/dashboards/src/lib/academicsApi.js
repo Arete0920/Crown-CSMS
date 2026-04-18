@@ -21,14 +21,14 @@ async function apiPostJson(path, body) {
 // ── Sections ──────────────────────────────────────────────
 
 export async function listSections() {
-  return apiGet("/api/academics/sections/");
+  return apiGet("/api/v1/academics/sections/");
 }
 
 // ── Assignments (nested under section) ────────────────────
 
 export async function listAssignments(sectionId) {
   return apiGet(
-    `/api/academics/sections/${encodeURIComponent(sectionId)}/assignments/`
+    `/api/v1/academics/sections/${encodeURIComponent(sectionId)}/assignments/`
   );
 }
 
@@ -36,20 +36,20 @@ export async function listAssignments(sectionId) {
 
 export async function listSubmissions(assignmentId) {
   return apiGet(
-    `/api/academics/submissions/?assignment_id=${encodeURIComponent(assignmentId)}`
+    `/api/v1/academics/submissions/?assignment_id=${encodeURIComponent(assignmentId)}`
   );
 }
 
 export async function listStudentSubmissions(studentId) {
   return apiGet(
-    `/api/academics/submissions/?student_id=${encodeURIComponent(studentId)}`
+    `/api/v1/academics/submissions/?student_id=${encodeURIComponent(studentId)}`
   );
 }
 
 // ── Grading ───────────────────────────────────────────────
 
 export async function gradeSubmission(submissionId, numericScore, teacherFeedback = "") {
-  return apiPostJson("/api/academics/grades/grade/", {
+  return apiPostJson("/api/v1/academics/grades/grade/", {
     submission_id: submissionId,
     numeric_score: numericScore,
     teacher_feedback: teacherFeedback,
@@ -60,20 +60,20 @@ export async function gradeSubmission(submissionId, numericScore, teacherFeedbac
 
 export async function listMastery(studentId) {
   return apiGet(
-    `/api/academics/mastery/?student_id=${encodeURIComponent(studentId)}`
+    `/api/v1/academics/mastery/?student_id=${encodeURIComponent(studentId)}`
   );
 }
 
 // ── Students ──────────────────────────────────────────────
 
 export async function listStudents() {
-  return apiGet("/api/academics/parents/me/students/");
+  return apiGet("/api/v1/academics/parents/me/students/");
 }
 
 // ── Transcript ────────────────────────────────────────────
 
 export async function listTranscript(studentId) {
   return apiGet(
-    `/api/academics/transcript-entries/?student_id=${encodeURIComponent(studentId)}`
+    `/api/v1/academics/transcript-entries/?student_id=${encodeURIComponent(studentId)}`
   );
 }

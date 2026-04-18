@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from django.shortcuts import get_object_or_404
 from rest_framework import status, permissions
@@ -19,6 +19,8 @@ from spiritual_life.models import (
     PrayerRequest,
     PastoralNote,
 )
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 from spiritual_life.api.serializers import (
     StudentSpiritualProfileSerializer,
     SpiritualAssessmentSerializer,
@@ -37,9 +39,9 @@ def _get_school(request) -> School:
     """
     Canonical tenant resolver for spiritual_life views.
 
-    - Missing / invalid X-School-Id header → MissingSchoolContext (400)
-    - Non-staff user pointing at wrong school → NotFound (404)
-    - Staff users → pass-through
+    - Missing / invalid X-School-Id header â†’ MissingSchoolContext (400)
+    - Non-staff user pointing at wrong school â†’ NotFound (404)
+    - Staff users â†’ pass-through
     """
     sid = get_request_school_id(request, required=True)
     return School.objects.get(pk=sid)
@@ -61,12 +63,14 @@ def _is_pastoral_staff(user) -> bool:
 
 class SpiritualProfileView(APIView):
     """
-    GET  spiritual-life/profiles/          → list all profiles for school
-    POST spiritual-life/profiles/          → create / upsert profile
+    GET  spiritual-life/profiles/          â†’ list all profiles for school
+    POST spiritual-life/profiles/          â†’ create / upsert profile
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = StudentSpiritualProfileSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         school = _get_school(request)
         qs = StudentSpiritualProfile.objects.filter(school=school).select_related(
@@ -74,6 +78,7 @@ class SpiritualProfileView(APIView):
         )
         return Response(StudentSpiritualProfileSerializer(qs, many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request):
         school = _get_school(request)
         student_id = request.data.get("student_id")
@@ -104,20 +109,23 @@ class SpiritualProfileView(APIView):
 
 class SpiritualProfileDetailView(APIView):
     """
-    GET   spiritual-life/profiles/<id>/   → retrieve
-    PATCH spiritual-life/profiles/<id>/   → update
+    GET   spiritual-life/profiles/<id>/   â†’ retrieve
+    PATCH spiritual-life/profiles/<id>/   â†’ update
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = StudentSpiritualProfileSerializer
 
     def _get(self, profile_id, school):
         return get_object_or_404(StudentSpiritualProfile, id=profile_id, school=school)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, profile_id):
         school = _get_school(request)
         profile = self._get(profile_id, school)
         return Response(StudentSpiritualProfileSerializer(profile).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def patch(self, request, profile_id):
         school = _get_school(request)
         profile = self._get(profile_id, school)
@@ -142,12 +150,14 @@ class SpiritualProfileDetailView(APIView):
 
 class SpiritualAssessmentListCreate(APIView):
     """
-    GET  spiritual-life/assessments/   → list (filter: ?student_id=)
-    POST spiritual-life/assessments/   → create
+    GET  spiritual-life/assessments/   â†’ list (filter: ?student_id=)
+    POST spiritual-life/assessments/   â†’ create
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SpiritualAssessmentSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         school = _get_school(request)
         qs = SpiritualAssessment.objects.filter(school=school)
@@ -156,6 +166,7 @@ class SpiritualAssessmentListCreate(APIView):
             qs = qs.filter(student__id=student_id)
         return Response(SpiritualAssessmentSerializer(qs[:500], many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request):
         school = _get_school(request)
         student_id = request.data.get("student_id")
@@ -197,12 +208,14 @@ class SpiritualAssessmentListCreate(APIView):
 
 class ChapelEventListCreate(APIView):
     """
-    GET  spiritual-life/chapel-events/   → list (filter: ?date_from=, ?date_to=)
-    POST spiritual-life/chapel-events/   → create
+    GET  spiritual-life/chapel-events/   â†’ list (filter: ?date_from=, ?date_to=)
+    POST spiritual-life/chapel-events/   â†’ create
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChapelEventSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         school = _get_school(request)
         qs = ChapelEvent.objects.filter(school=school)
@@ -214,6 +227,7 @@ class ChapelEventListCreate(APIView):
             qs = qs.filter(event_date__lte=date_to)
         return Response(ChapelEventSerializer(qs[:500], many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request):
         school = _get_school(request)
         title = request.data.get("title", "").strip()
@@ -246,14 +260,17 @@ class ChapelEventDetail(APIView):
     """GET / PATCH for a single ChapelEvent."""
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChapelEventSerializer
 
     def _get(self, event_id, school):
         return get_object_or_404(ChapelEvent, id=event_id, school=school)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, event_id):
         school = _get_school(request)
         return Response(ChapelEventSerializer(self._get(event_id, school)).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def patch(self, request, event_id):
         school = _get_school(request)
         event = self._get(event_id, school)
@@ -267,18 +284,21 @@ class ChapelEventDetail(APIView):
 
 class ChapelAttendanceListCreate(APIView):
     """
-    GET  spiritual-life/chapel-events/<id>/attendance/  → list attendance
-    POST spiritual-life/chapel-events/<id>/attendance/  → record attendance
+    GET  spiritual-life/chapel-events/<id>/attendance/  â†’ list attendance
+    POST spiritual-life/chapel-events/<id>/attendance/  â†’ record attendance
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChapelAttendanceSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, event_id):
         school = _get_school(request)
         event = get_object_or_404(ChapelEvent, id=event_id, school=school)
         qs = ChapelAttendance.objects.filter(school=school, event=event)
         return Response(ChapelAttendanceSerializer(qs, many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request, event_id):
         school = _get_school(request)
         event = get_object_or_404(ChapelEvent, id=event_id, school=school)
@@ -309,12 +329,14 @@ class ChapelAttendanceListCreate(APIView):
 
 class SmallGroupListCreate(APIView):
     """
-    GET  spiritual-life/small-groups/   → list active groups
-    POST spiritual-life/small-groups/   → create group
+    GET  spiritual-life/small-groups/   â†’ list active groups
+    POST spiritual-life/small-groups/   â†’ create group
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SmallGroupSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         school = _get_school(request)
         qs = SmallGroup.objects.filter(school=school)
@@ -323,6 +345,7 @@ class SmallGroupListCreate(APIView):
             qs = qs.filter(is_active=True)
         return Response(SmallGroupSerializer(qs[:200], many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request):
         school = _get_school(request)
         name = request.data.get("name", "").strip()
@@ -341,18 +364,21 @@ class SmallGroupListCreate(APIView):
 
 class SmallGroupMemberListCreate(APIView):
     """
-    GET  spiritual-life/small-groups/<id>/members/   → list members
-    POST spiritual-life/small-groups/<id>/members/   → add member
+    GET  spiritual-life/small-groups/<id>/members/   â†’ list members
+    POST spiritual-life/small-groups/<id>/members/   â†’ add member
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SmallGroupMemberSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, group_id):
         school = _get_school(request)
         group = get_object_or_404(SmallGroup, id=group_id, school=school)
         qs = SmallGroupMember.objects.filter(school=school, group=group)
         return Response(SmallGroupMemberSerializer(qs, many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request, group_id):
         school = _get_school(request)
         group = get_object_or_404(SmallGroup, id=group_id, school=school)
@@ -371,18 +397,21 @@ class SmallGroupMemberListCreate(APIView):
 
 class SmallGroupSessionListCreate(APIView):
     """
-    GET  spiritual-life/small-groups/<id>/sessions/   → list sessions
-    POST spiritual-life/small-groups/<id>/sessions/   → create session
+    GET  spiritual-life/small-groups/<id>/sessions/   â†’ list sessions
+    POST spiritual-life/small-groups/<id>/sessions/   â†’ create session
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SmallGroupSessionSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, group_id):
         school = _get_school(request)
         group = get_object_or_404(SmallGroup, id=group_id, school=school)
         qs = SmallGroupSession.objects.filter(school=school, group=group)
         return Response(SmallGroupSessionSerializer(qs[:200], many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request, group_id):
         school = _get_school(request)
         group = get_object_or_404(SmallGroup, id=group_id, school=school)
@@ -412,13 +441,16 @@ class SmallGroupSessionAttendanceView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = SmallGroupAttendanceSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, session_id):
         school = _get_school(request)
         session = get_object_or_404(SmallGroupSession, id=session_id, school=school)
         qs = SmallGroupAttendance.objects.filter(school=school, session=session)
         return Response(SmallGroupAttendanceSerializer(qs, many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request, session_id):
         school = _get_school(request)
         session = get_object_or_404(SmallGroupSession, id=session_id, school=school)
@@ -450,12 +482,14 @@ class SmallGroupSessionAttendanceView(APIView):
 
 class PrayerRequestListCreate(APIView):
     """
-    GET  spiritual-life/prayer-requests/   → list (filter: ?status=, ?visibility=)
-    POST spiritual-life/prayer-requests/   → create
+    GET  spiritual-life/prayer-requests/   â†’ list (filter: ?status=, ?visibility=)
+    POST spiritual-life/prayer-requests/   â†’ create
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PrayerRequestSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         school = _get_school(request)
         qs = PrayerRequest.objects.filter(school=school)
@@ -473,6 +507,7 @@ class PrayerRequestListCreate(APIView):
 
         return Response(PrayerRequestSerializer(qs[:500], many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request):
         school = _get_school(request)
         title = request.data.get("title", "").strip()
@@ -511,10 +546,12 @@ class PrayerRequestDetail(APIView):
     """GET / PATCH a single PrayerRequest."""
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PrayerRequestSerializer
 
     def _get(self, pr_id, school):
         return get_object_or_404(PrayerRequest, id=pr_id, school=school)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, pr_id):
         school = _get_school(request)
         pr = self._get(pr_id, school)
@@ -522,6 +559,7 @@ class PrayerRequestDetail(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
         return Response(PrayerRequestSerializer(pr).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def patch(self, request, pr_id):
         school = _get_school(request)
         pr = self._get(pr_id, school)
@@ -535,18 +573,20 @@ class PrayerRequestDetail(APIView):
 
 
 # ---------------------------------------------------------------------------
-# Pastoral Notes — Staff / HEAD_OF_SCHOOL ONLY
+# Pastoral Notes â€” Staff / HEAD_OF_SCHOOL ONLY
 # ---------------------------------------------------------------------------
 
 class PastoralNoteListCreate(APIView):
     """
-    GET  spiritual-life/pastoral-notes/   → list (filter: ?student_id=)
-    POST spiritual-life/pastoral-notes/   → create
+    GET  spiritual-life/pastoral-notes/   â†’ list (filter: ?student_id=)
+    POST spiritual-life/pastoral-notes/   â†’ create
     Staff / HEAD_OF_SCHOOL only.
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PastoralNoteSerializer
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         if not _is_pastoral_staff(request.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
@@ -557,6 +597,7 @@ class PastoralNoteListCreate(APIView):
             qs = qs.filter(student__id=student_id)
         return Response(PastoralNoteSerializer(qs[:500], many=True).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def post(self, request):
         if not _is_pastoral_staff(request.user):
             return Response(status=status.HTTP_403_FORBIDDEN)
@@ -585,12 +626,14 @@ class PastoralNoteDetail(APIView):
     """GET / PATCH / DELETE a single PastoralNote. Staff only."""
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PastoralNoteSerializer
 
     def _require_pastoral(self, user):
         if not _is_pastoral_staff(user):
             return Response(status=status.HTTP_403_FORBIDDEN)
         return None
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request, note_id):
         denied = self._require_pastoral(request.user)
         if denied:
@@ -599,6 +642,7 @@ class PastoralNoteDetail(APIView):
         note = get_object_or_404(PastoralNote, id=note_id, school=school)
         return Response(PastoralNoteSerializer(note).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def patch(self, request, note_id):
         denied = self._require_pastoral(request.user)
         if denied:
@@ -611,6 +655,7 @@ class PastoralNoteDetail(APIView):
         note.save()
         return Response(PastoralNoteSerializer(note).data)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def delete(self, request, note_id):
         denied = self._require_pastoral(request.user)
         if denied:
@@ -619,3 +664,4 @@ class PastoralNoteDetail(APIView):
         note = get_object_or_404(PastoralNote, id=note_id, school=school)
         note.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+

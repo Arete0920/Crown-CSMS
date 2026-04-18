@@ -81,10 +81,10 @@ export function useBoardExecutiveData({ token, schoolId }) {
 
       try {
         const [rk, rt, rr, rd] = await Promise.allSettled([
-          fetch(URLS.kpis,    { headers }),
-          fetch(URLS.trends,  { headers }),
-          fetch(URLS.risk,    { headers }),
-          fetch(URLS.drivers, { headers }),
+          globalThis.fetch(URLS.kpis,    { headers }),
+          globalThis.fetch(URLS.trends,  { headers }),
+          globalThis.fetch(URLS.risk,    { headers }),
+          globalThis.fetch(URLS.drivers, { headers }),
         ]);
 
         const next = structuredClone(DEMO);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   Box,
@@ -50,7 +50,7 @@ export default function ParentStudent360Page() {
       setErr("");
       try {
         const url = `${API_BASE}/api/v1/graduation/audit/${studentUuid}/breakdown/`;
-        const res = await fetch(url, {
+        const res = await globalThis.fetch(url, {
           method: "GET",
           headers: getAuthHeaders(),
           signal: controller.signal,
@@ -58,7 +58,7 @@ export default function ParentStudent360Page() {
 
         if (!res.ok) {
           const text = await res.text().catch(() => "");
-          throw new Error(`Graduation breakdown failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`);
+          throw new Error(`Graduation breakdown failed: ${res.status} ${res.statusText}${text ? `  ${text}` : ""}`);
         }
 
         const json = await res.json();
@@ -76,13 +76,13 @@ export default function ParentStudent360Page() {
 
   const credits = breakdown?.credits
     ? `${breakdown.credits.earned} / ${breakdown.credits.required}`
-    : "—";
+    : "";
 
   const statusLabel =
     breakdown?.status === "ON_TRACK" ? "On Track" :
     breakdown?.status === "AT_RISK" ? "At Risk" :
     breakdown?.status === "NOT_ELIGIBLE" ? "Not Eligible" :
-    (breakdown?.status || "—");
+    (breakdown?.status || "");
 
   // For a simple progress bar, clamp 0..100
   const pct = (() => {
@@ -142,3 +142,4 @@ export default function ParentStudent360Page() {
     </Box>
   );
 }
+

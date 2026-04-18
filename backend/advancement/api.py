@@ -4,6 +4,8 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from django.db.models import Sum, Count
 from django.http import JsonResponse
 from django.utils import timezone
@@ -225,6 +227,7 @@ class StoreItemViewSet(viewsets.ModelViewSet):
 # Purchase endpoints (functional views)
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def purchase_ticket(request):
@@ -256,6 +259,7 @@ def purchase_ticket(request):
     return Response(TicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def purchase_store_item(request):
@@ -304,6 +308,7 @@ def advancement_metrics(request):
     })
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def advancement_summary(request):
@@ -422,6 +427,7 @@ class SponsorshipAgreementViewSet(viewsets.ReadOnlyModelViewSet):
 # Stage 2: functional views � gift checkout + payment confirmation
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def gift_checkout(request):
@@ -447,6 +453,7 @@ def gift_checkout(request):
     return Response(GiftSerializer(gift).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def gift_mark_paid(request, gift_id):
@@ -469,6 +476,7 @@ def gift_mark_paid(request, gift_id):
 # Stage 2: functional views � pledge create + cancel
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def pledge_create(request):
@@ -494,6 +502,7 @@ def pledge_create(request):
     return Response(PledgeSerializer(pledge).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def pledge_cancel(request, pledge_id):
@@ -515,6 +524,7 @@ def pledge_cancel(request, pledge_id):
 # Stage 2: functional views � sponsorship checkout + payment confirmation
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def sponsorship_checkout(request):
@@ -541,6 +551,7 @@ def sponsorship_checkout(request):
     return Response(SponsorshipAgreementSerializer(agreement).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def sponsorship_mark_paid(request, agreement_id):
@@ -563,6 +574,7 @@ def sponsorship_mark_paid(request, agreement_id):
 # Stage 2: QR check-in (body-based, distinct from URL-based TicketViewSet action)
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def qr_checkin(request):
@@ -815,6 +827,7 @@ class SponsorImpressionViewSet(viewsets.ReadOnlyModelViewSet):
 # Stage 3: Action endpoints
 # ===========================================================================
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def moves_transition(request):
@@ -853,6 +866,7 @@ def moves_transition(request):
     return Response(MoveSerializer(move).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def seating_set_layout(request):
@@ -878,6 +892,7 @@ def seating_set_layout(request):
     return Response({"ok": True, "seats_created": created})
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def seating_hold(request):
@@ -909,6 +924,7 @@ def seating_hold(request):
     return Response(result)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def seating_assign(request):
@@ -937,6 +953,7 @@ def seating_assign(request):
     return Response(TicketSeatSerializer(ts).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def sponsorship_log_impressions(request):
@@ -967,6 +984,7 @@ def sponsorship_log_impressions(request):
 # Stage 3.1 � Live seat availability + strict holds + purchase of held seats
 # ===========================================================================
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def seating_availability(request):
@@ -988,6 +1006,7 @@ def seating_availability(request):
     return Response(grid)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def seating_hold_strict(request):
@@ -1025,6 +1044,7 @@ def seating_hold_strict(request):
     return Response(result, status=status.HTTP_409_CONFLICT)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([CrownModulePermission("advancement.edit")])
 def seating_purchase_held(request):
@@ -1063,6 +1083,7 @@ def seating_purchase_held(request):
 # Stage 3.2 � Stripe Checkout + webhook + order status polling
 # ===========================================================================
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def seating_checkout(request):
@@ -1127,6 +1148,7 @@ def _ticket_ids_for_order(order) -> list[str]:
         return []
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def order_status(request, order_id):
@@ -1261,6 +1283,8 @@ def _create_receipt_and_queue_email(*, order, totals: dict | None, provider_paym
 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 
 @csrf_exempt
@@ -1354,6 +1378,7 @@ def stripe_webhook(request):
 # Stage 3.3 � Section pricing + best-available checkout
 # ===========================================================================
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def event_section_prices(request, event_id):
@@ -1395,6 +1420,7 @@ def event_section_prices(request, event_id):
     )
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def seating_best_available_checkout(request):
@@ -1438,6 +1464,7 @@ def seating_best_available_checkout(request):
 # Stage 3.4 � Receipts, Sponsor placements, Apple Wallet, Google Wallet
 # ===========================================================================
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def event_sponsors(request, event_id):
@@ -1472,6 +1499,7 @@ def event_sponsors(request, event_id):
     ], status=status.HTTP_200_OK)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def apple_wallet_pass(request, ticket_id):
@@ -1530,6 +1558,7 @@ def apple_wallet_pass(request, ticket_id):
         return _JR({"ok": False, "message": "Request failed."}, status=502)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([CrownModulePermission("advancement.view")])
 def google_wallet_link(request, ticket_id):

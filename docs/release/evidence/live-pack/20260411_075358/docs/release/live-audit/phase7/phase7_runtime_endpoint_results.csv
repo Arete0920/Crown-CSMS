@@ -1,0 +1,7 @@
+﻿"label","url","success","status_code","content_type","content_length","elapsed_ms","error_message"
+"health","http://127.0.0.1:8000/api/health/","False",,,"0","2088","Unable to connect to the remote server"
+"integrity","http://127.0.0.1:8000/api/integrity/","False",,,"0","2028","Unable to connect to the remote server"
+"schema","http://127.0.0.1:8000/api/schema/","False",,,"0","2015","Unable to connect to the remote server"
+"openapi_json","http://127.0.0.1:8000/openapi.json","False",,,"0","2024","Unable to connect to the remote server"
+"swagger","http://127.0.0.1:8000/swagger/","False",,,"0","2040","Unable to connect to the remote server"
+"redoc","http://127.0.0.1:8000/redoc/","False",,,"0","2027","Unable to connect to the remote server"

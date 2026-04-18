@@ -13,7 +13,7 @@ jobs:
       runtime_changed: ${{ steps.out.outputs.runtime_changed }}
     steps:
       - name: Checkout PR head
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -66,7 +66,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4.1.1
 
       - name: Preflight artifact alignment
         shell: pwsh
@@ -94,7 +94,7 @@ jobs:
           }
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
@@ -267,7 +267,7 @@ jobs:
             -ContentType "application/json" `
             -Body $body
           $token = $resp.access
-          if (-not $token) { throw "Failed to acquire gate JWT — check seed or token endpoint" }
+          if (-not $token) { throw "Failed to acquire gate JWT - check seed or token endpoint" }
           Add-Content -Path $env:GITHUB_ENV -Value "CROWN_DEMO_TOKEN=$token"
           Write-Host "Gate token acquired (length=$($token.Length))"
 
@@ -326,3 +326,4 @@ jobs:
           }
 
           Write-Host "Server cleanup complete"
+

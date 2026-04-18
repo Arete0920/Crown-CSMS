@@ -9,7 +9,9 @@ const STATIC_NAV_SECTIONS = [
   {
     label: 'Academics',
     children: [
+      { key: 'academics-workspace', label: 'Academics', href: PATHS.ACADEMICS, tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
       { key: 'gradebook-workspace', label: 'Gradebook', href: PATHS.GRADEBOOK, tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
+      { key: 'teacher-grading', label: 'Teacher Grading', href: PATHS.ACADEMICS_TEACHER_GRADING, tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
       { key: 'classrooms', label: 'Classrooms', href: '/classrooms', tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
       { key: 'attendance-workspace', label: 'Attendance', href: PATHS.ATTENDANCE, tier: 0, roles: ROLE_GROUPS.ACADEMIC_TEAM },
     ],

@@ -1,0 +1,9 @@
+﻿{
+    "baseRefName":  "fix/frontend-audit",
+    "headRefName":  "copilot/fix-ci-workflow-pythonpath-errors",
+    "isDraft":  true,
+    "number":  701,
+    "title":  "Fix CI PYTHONPATH, HTTP 401, trailing slash, route collision, and audit privacy leak",
+    "updatedAt":  "2026-04-11T18:44:22Z",
+    "url":  "https://github.com/tcmegahan/Crown2026/pull/701"
+}

@@ -22,7 +22,7 @@ export async function apiFetch(path, opts = {}) {
     // If not, add one to authClient (preferred) and call it here.
     const base = import.meta.env.VITE_API_BASE_URL || "";
     const url = path.startsWith("http") ? path : `${base}${path}`;
-    const resp = await fetch(url, fetchOpts);
+    const resp = await globalThis.fetch(url, fetchOpts);
     if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
     const ct = resp.headers.get("content-type") || "";
     return ct.includes("application/json") ? resp.json() : resp.text();

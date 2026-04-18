@@ -1,68 +1,97 @@
-/**
- * EventsPage — list events and attendance.
- * Calls GET /api/v1/advancement/events/
- */
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { apiFetch } from "../../lib/api.js";
 
-function apiBase() {
-  const base = (import.meta?.env?.VITE_API_BASE_URL || "").trim();
-  return base.endsWith("/") ? base.slice(0, -1) : base;
-}
-function getSession() {
+async function api(path, opts = {}) {
+  const response = await apiFetch(path, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...opts.headers,
+    },
+  });
+  const text = await response.text();
   try {
-    return {
-      token:    sessionStorage.getItem("crown.jwt.access") || "",
-      schoolId: sessionStorage.getItem("crown.school.id")  || "",
-    };
-  } catch { return { token: "", schoolId: "" }; }
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
-function authHeaders() {
-  const { token, schoolId } = getSession();
-  const h = { Accept: "application/json", "Content-Type": "application/json" };
-  if (token)    h["Authorization"] = `Bearer ${token}`;
-  if (schoolId) h["X-School-Id"] = schoolId;
-  return h;
-}
+
+const EMPTY_FORM = { name: "", date: "", location: "", ticket_price: "", capacity: "", description: "" };
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", date: "", location: "", ticket_price: "", capacity: "", description: "" });
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  function load() {
+  const load = async () => {
     setLoading(true);
-    fetch(`${apiBase()}/api/v1/advancement/events/`, { headers: authHeaders() })
-      .then((r) => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
-      .then((d) => { setEvents(d.results ?? d); setLoading(false); })
-      .catch((e) => { setError(String(e)); setLoading(false); });
-  }
+    setError(null);
+    try {
+      const data = await api("/api/v1/advancement/events/");
+      setEvents(data.results ?? data);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
 
-  function handleCreate(e) {
-    e.preventDefault();
-    setSaving(true);
-    const payload = {
-      ...form,
-      ticket_price: parseFloat(form.ticket_price) || 0,
-      capacity: parseInt(form.capacity) || 0,
+    async function initialize() {
+      try {
+        const data = await api("/api/v1/advancement/events/");
+        if (!cancelled) {
+          setEvents(data.results ?? data);
+          setError(null);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(String(e.message || e));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void initialize();
+    return () => {
+      cancelled = true;
     };
-    fetch(`${apiBase()}/api/v1/advancement/events/`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify(payload),
-    })
-      .then((r) => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
-      .then(() => { setShowForm(false); setForm({ name: "", date: "", location: "", ticket_price: "", capacity: "", description: "" }); load(); })
-      .catch((e) => alert(`Error: ${e}`))
-      .finally(() => setSaving(false));
-  }
+  }, []);
 
-  if (loading) return <p aria-busy="true">Loading events…</p>;
-  if (error)   return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
+  const handleCreate = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        ticket_price: Number.parseFloat(form.ticket_price) || 0,
+        capacity: Number.parseInt(form.capacity, 10) || 0,
+      };
+      await api("/api/v1/advancement/events/", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+      await load();
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <p aria-busy="true">Loading events...</p>;
+  if (error) return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
 
   return (
     <div aria-label="Events">
@@ -75,15 +104,33 @@ export default function EventsPage() {
         <form onSubmit={handleCreate} aria-label="Create Event Form" style={{ marginBottom: 20, padding: 16, border: "1px solid #e2e8f0", borderRadius: 8 }}>
           <h3 style={{ margin: "0 0 12px" }}>New Event</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Event Name *" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
-            <Field label="Date & Time *" type="datetime-local" value={form.date} onChange={(v) => setForm({ ...form, date: v })} required />
-            <Field label="Location" value={form.location} onChange={(v) => setForm({ ...form, location: v })} />
-            <Field label="Ticket Price ($)" type="number" value={form.ticket_price} onChange={(v) => setForm({ ...form, ticket_price: v })} />
-            <Field label="Capacity (0 = unlimited)" type="number" value={form.capacity} onChange={(v) => setForm({ ...form, capacity: v })} />
-            <Field label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} />
+            <div>
+              <label htmlFor="event-name" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Event Name *</label>
+              <input id="event-name" type="text" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required style={INPUT_STYLE} />
+            </div>
+            <div>
+              <label htmlFor="event-date" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Date & Time *</label>
+              <input id="event-date" type="datetime-local" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} required style={INPUT_STYLE} />
+            </div>
+            <div>
+              <label htmlFor="event-location" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Location</label>
+              <input id="event-location" type="text" value={form.location} onChange={(event) => setForm({ ...form, location: event.target.value })} style={INPUT_STYLE} />
+            </div>
+            <div>
+              <label htmlFor="event-price" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Ticket Price ($)</label>
+              <input id="event-price" type="number" value={form.ticket_price} onChange={(event) => setForm({ ...form, ticket_price: event.target.value })} style={INPUT_STYLE} />
+            </div>
+            <div>
+              <label htmlFor="event-capacity" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Capacity (0 = unlimited)</label>
+              <input id="event-capacity" type="number" value={form.capacity} onChange={(event) => setForm({ ...form, capacity: event.target.value })} style={INPUT_STYLE} />
+            </div>
+            <div>
+              <label htmlFor="event-description" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Description</label>
+              <input id="event-description" type="text" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} style={INPUT_STYLE} />
+            </div>
           </div>
           <div style={{ marginTop: 12 }}>
-            <button type="submit" disabled={saving}>{saving ? "Saving…" : "Create Event"}</button>
+            <button type="submit" disabled={saving}>{saving ? "Saving..." : "Create Event"}</button>
             <button type="button" onClick={() => setShowForm(false)} style={{ marginLeft: 8 }}>Cancel</button>
           </div>
         </form>
@@ -95,23 +142,23 @@ export default function EventsPage() {
         <table aria-label="Events Table" style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              {["Event", "Date", "Location", "Ticket Price", "Tickets Sold", "Capacity", "Attendance %"].map((h) => (
-                <th key={h} scope="col" style={TH}>{h}</th>
+              {["Event", "Date", "Location", "Ticket Price", "Tickets Sold", "Capacity", "Attendance %"].map((heading) => (
+                <th key={heading} scope="col" style={TH}>{heading}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {events.map((e) => (
-              <tr key={e.id}>
-                <td style={TD}><strong>{e.name}</strong></td>
-                <td style={TD}>{e.date ? new Date(e.date).toLocaleString() : "—"}</td>
-                <td style={TD}>{e.location || "—"}</td>
-                <td style={TD}>${Number(e.ticket_price || 0).toFixed(2)}</td>
-                <td style={TD}>{e.tickets_sold}</td>
-                <td style={TD}>{e.capacity || "∞"}</td>
+            {events.map((item) => (
+              <tr key={item.id}>
+                <td style={TD}><strong>{item.name}</strong></td>
+                <td style={TD}>{item.date ? new Date(item.date).toLocaleString() : "-"}</td>
+                <td style={TD}>{item.location || "-"}</td>
+                <td style={TD}>${Number(item.ticket_price || 0).toFixed(2)}</td>
+                <td style={TD}>{item.tickets_sold}</td>
+                <td style={TD}>{item.capacity || "8"}</td>
                 <td style={TD}>
-                  <span style={{ fontWeight: 600, color: Number(e.attendance_percent) > 80 ? "#16a34a" : "#0f172a" }}>
-                    {e.attendance_percent}%
+                  <span style={{ fontWeight: 600, color: Number(item.attendance_percent) > 80 ? "#16a34a" : "#0f172a" }}>
+                    {item.attendance_percent}%
                   </span>
                 </td>
               </tr>
@@ -123,20 +170,6 @@ export default function EventsPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", required = false }) {
-  return (
-    <div>
-      <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" }}
-      />
-    </div>
-  );
-}
-
+const INPUT_STYLE = { width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6, boxSizing: "border-box" };
 const TH = { padding: "8px 12px", textAlign: "left", borderBottom: "2px solid #e2e8f0", fontSize: 13, color: "#475569" };
 const TD = { padding: "8px 12px", borderBottom: "1px solid #f1f5f9", fontSize: 14 };

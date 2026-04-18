@@ -32,11 +32,11 @@ export default function Step1Configure({ context, setContext, goNext, stepIndex,
     <div>
       <CrownWizardStepHeader title="Configure" subtitle="Set the academic year and source application status." stepIndex={stepIndex} totalSteps={totalSteps} steps={steps} />
       <div className="crown-wizard-field">
-        <label>Academic Year</label>
+        <div>Academic Year</div>
         <input className="crown-input" value={academicYearLabel} onChange={e => setAcademicYearLabel(e.target.value)} placeholder="e.g. 2026-2027" />
       </div>
       <div className="crown-wizard-field">
-        <label>Convert From Status</label>
+        <div>Convert From Status</div>
         <select className="crown-input" value={fromStatus} onChange={e => setFromStatus(e.target.value)}>
           {FROM_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
         </select>

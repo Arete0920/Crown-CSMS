@@ -9,6 +9,8 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from households.scoping import get_request_school_id
 
@@ -148,6 +150,7 @@ def _blocks_from_json(stored_blocks):
 # 1. Create
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -166,6 +169,7 @@ def create_session(request):
 # 2. Configure
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -214,6 +218,7 @@ def configure_session(request, session_id):
 # 3. Set Blocks
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -299,6 +304,7 @@ def set_blocks(request, session_id):
 # 4. Commit
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -419,6 +425,7 @@ def commit_session(request, session_id):
 # 5. Verify
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

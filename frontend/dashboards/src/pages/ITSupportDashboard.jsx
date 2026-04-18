@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import ITSupportSnapshotCard from '../components/dashboard/itsupport/ITSupportSnapshotCard';
 import ITSupportAlertsPanel from '../components/dashboard/itsupport/ITSupportAlertsPanel';

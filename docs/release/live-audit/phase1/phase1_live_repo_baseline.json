@@ -1,0 +1,37 @@
+{
+    "generated_at_utc":  "2026-04-11T08:50:46.6462271Z",
+    "repo":  {
+                 "name":  "tcmegahan/Crown2026",
+                 "repo_root":  "C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr",
+                 "origin_url":  "https://github.com/tcmegahan/Crown2026.git",
+                 "current_branch":  "fix/frontend-audit",
+                 "head_sha":  "3d3812d66d2799e6034ac08661222ab4c8151559",
+                 "head_short_sha":  "3d3812d6",
+                 "commit_count":  1036,
+                 "dirty_working_tree":  true
+             },
+    "inventories":  {
+                        "local_branch_count":  9,
+                        "workflow_count":  53,
+                        "backend_module_count":  85,
+                        "frontend_surface_count":  2,
+                        "release_doc_count":  7,
+                        "root_ruleset_count":  3
+                    },
+    "github_public":  {
+                          "default_branch":  "main",
+                          "open_pull_requests":  0,
+                          "open_issues":  0,
+                          "release_count":  2,
+                          "pushed_at":  "2026-04-11T01:16:22Z",
+                          "updated_at":  "2026-04-04T15:37:37Z",
+                          "watchers_count":  0,
+                          "forks_count":  0
+                      },
+    "workflow_triggers":  {
+                              "workflow_dispatch":  30,
+                              "push":  30,
+                              "pull_request":  35,
+                              "schedule":  5
+                          }
+}

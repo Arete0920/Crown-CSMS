@@ -1,5 +1,5 @@
-"""
-finance/api_views.py — Finance & Tuition module API endpoints.
+﻿"""
+finance/api_views.py â€” Finance & Tuition module API endpoints.
 
 Tenant isolation: every view calls get_request_school_id(request, required=True),
 which raises MissingSchoolContext (HTTP 400) or NotFound (HTTP 404) on failure.
@@ -7,12 +7,13 @@ which raises MissingSchoolContext (HTTP 400) or NotFound (HTTP 404) on failure.
 Auth: IsAuthenticated guards all endpoints.
 Admin-only routes additionally check request.user.is_staff.
 
-Ledger posting: explicit via services.py — no signals, no side-effects in views.
+Ledger posting: explicit via services.py â€” no signals, no side-effects in views.
 """
 from __future__ import annotations
 
 import logging
 
+from django.core import signing
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -40,6 +41,8 @@ from finance.serializers import (
     PaymentSerializer,
     RefundSerializer,
 )
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 from finance.services import (
     OverRefundError,
     create_invoice_from_obligations,
@@ -51,33 +54,47 @@ from finance.services import (
 
 logger = logging.getLogger(__name__)
 
+DETAIL_ADMIN_REQUIRED = "Admin required."
+DETAIL_SCHOOL_NOT_FOUND = "School not found."
+DETAIL_AMOUNT_NOT_INT = "amount_cents must be an integer."
+DETAIL_AMOUNT_POSITIVE = "amount_cents must be > 0."
+
 
 def _is_staff(request) -> bool:
     return bool(getattr(request, "user", None) and request.user.is_authenticated and request.user.is_staff)
 
 
+def _build_client_secret(payment: FinancePayment) -> str | None:
+    """Return a signed client secret for processor-backed intents."""
+    if payment.processor == Processor.MANUAL:
+        return None
+    signer = signing.TimestampSigner(salt="finance-payment-intent")
+    return signer.sign(str(payment.id))
+
+
 # ---------------------------------------------------------------------------
-# Obligations — admin: create/list; parent: read own
+# Obligations â€” admin: create/list; parent: read own
 # ---------------------------------------------------------------------------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def obligations(request):
     """
-    GET  — Admin: list all obligations for school.
-    POST — Admin: create a single obligation.
+    GET  â€” Admin: list all obligations for school.
+    POST â€” Admin: create a single obligation.
     """
     school = get_request_school_id(request, required=True)
 
     if request.method == "GET":
         if not _is_staff(request):
-            return Response({"detail": "Admin required."}, status=403)
+            return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
         qs = FinanceObligation.objects.filter(school_id=school).order_by("due_date")
         return Response(ObligationSerializer(qs, many=True).data)
 
-    # POST — create
+    # POST â€” create
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     required = ["payer_user_id", "obligation_type", "description", "due_date", "amount_cents"]
     for field in required:
@@ -95,7 +112,7 @@ def obligations(request):
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
 
     from core.models import UserAccount
     try:
@@ -122,14 +139,15 @@ def obligations(request):
 
 
 # ---------------------------------------------------------------------------
-# Invoices — admin only
+# Invoices â€” admin only
 # ---------------------------------------------------------------------------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def invoice_create_from_obligations(request):
     """
-    POST — Create an invoice by grouping existing obligations.
+    POST â€” Create an invoice by grouping existing obligations.
 
     Body:
       payer_user_id   int  (required)
@@ -139,7 +157,7 @@ def invoice_create_from_obligations(request):
       obligation_ids  list[int]   (required)
     """
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     school = get_request_school_id(request, required=True)
 
@@ -156,7 +174,7 @@ def invoice_create_from_obligations(request):
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
     try:
         payer = UserAccount.objects.get(pk=payer_user_id)
     except (UserAccount.DoesNotExist, ValueError, TypeError):
@@ -181,26 +199,28 @@ def invoice_create_from_obligations(request):
     return Response(InvoiceSerializer(inv).data, status=201)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def invoice_list(request):
-    """GET — Admin: list invoices for school."""
+    """GET â€” Admin: list invoices for school."""
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school = get_request_school_id(request, required=True)
     qs = FinanceInvoice.objects.prefetch_related("lines").filter(school_id=school).order_by("due_date")
     return Response(InvoiceSerializer(qs, many=True).data)
 
 
 # ---------------------------------------------------------------------------
-# Parent balance (family portal) — authenticated, own school only
+# Parent balance (family portal) â€” authenticated, own school only
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def parent_balance(request):
     """
-    GET — Return balance summary for the authenticated payer.
+    GET â€” Return balance summary for the authenticated payer.
     total_due_cents:  sum of all non-void obligation amounts
     paid_cents:       sum of allocations applied to those obligations
     balance_cents:    max(total_due - paid, 0)
@@ -226,21 +246,22 @@ def parent_balance(request):
 
 
 # ---------------------------------------------------------------------------
-# Payments — intent creation (any auth); settle (admin)
+# Payments â€” intent creation (any auth); settle (admin)
 # ---------------------------------------------------------------------------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def payment_intent_create(request):
     """
-    POST — Create a pending FinancePayment record (intent before processor settlement).
+    POST â€” Create a pending FinancePayment record (intent before processor settlement).
     Body: amount_cents, processor (optional), idempotency_key (optional)
 
     Requires an explicit X-School-ID header. Falls back to user.school_id are
     intentionally NOT accepted here to prevent payment creation without an
     explicit tenant context assertion.
     """
-    # Require the school header to be explicitly present — never fall back to
+    # Require the school header to be explicitly present â€” never fall back to
     # user.school_id for payment operations (tenant isolation requirement).
     if "HTTP_X_SCHOOL_ID" not in request.META and "HTTP_X_CROWN_SCHOOL_ID" not in request.META:
         return Response(
@@ -252,16 +273,16 @@ def payment_intent_create(request):
     try:
         amount_cents = int(request.data.get("amount_cents", 0))
     except (ValueError, TypeError):
-        return Response({"detail": "amount_cents must be an integer."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_NOT_INT}, status=400)
 
     if amount_cents <= 0:
-        return Response({"detail": "amount_cents must be > 0."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_POSITIVE}, status=400)
 
     from core.models import School as SchoolModel
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
 
     idempotency_key = request.data.get("idempotency_key", "")
 
@@ -284,20 +305,22 @@ def payment_intent_create(request):
         idempotency_key=idempotency_key,
         created_by=request.user,
     )
-    # TODO: create processor intent (Stripe/Compuwerx) and return client_secret
-    return Response(PaymentSerializer(pay).data, status=201)
+    payload = PaymentSerializer(pay).data
+    payload["client_secret"] = _build_client_secret(pay)
+    return Response(payload, status=201)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def payment_settle(request, payment_id: int):
     """
-    POST — Admin: settle a payment and allocate to obligations.
+    POST â€” Admin: settle a payment and allocate to obligations.
     Body: allocations = [{"obligation_id": int, "amount_cents": int}, ...]
     Idempotent: already-settled payments return 200.
     """
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     school = get_request_school_id(request, required=True)
 
@@ -322,19 +345,20 @@ def payment_settle(request, payment_id: int):
 
 
 # ---------------------------------------------------------------------------
-# Refunds — admin only
+# Refunds â€” admin only
 # ---------------------------------------------------------------------------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def refund_create(request, payment_id: int):
     """
-    POST — Admin: initiate a refund against a settled payment.
+    POST â€” Admin: initiate a refund against a settled payment.
     Body: amount_cents, idempotency_key (optional)
     Raises 409 if refund would exceed original payment amount.
     """
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
 
     school = get_request_school_id(request, required=True)
 
@@ -346,10 +370,10 @@ def refund_create(request, payment_id: int):
     try:
         amount_cents = int(request.data.get("amount_cents", 0))
     except (ValueError, TypeError):
-        return Response({"detail": "amount_cents must be an integer."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_NOT_INT}, status=400)
 
     if amount_cents <= 0:
-        return Response({"detail": "amount_cents must be > 0."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_POSITIVE}, status=400)
 
     try:
         refund = initiate_refund(
@@ -366,14 +390,15 @@ def refund_create(request, payment_id: int):
 
 
 # ---------------------------------------------------------------------------
-# Donations — authenticated users
+# Donations â€” authenticated users
 # ---------------------------------------------------------------------------
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def donation_create(request):
     """
-    POST — Any authenticated user: record a donation intent.
+    POST â€” Any authenticated user: record a donation intent.
     Body: amount_cents, fund_code, memo, is_recurring, recurring_rule, next_run_at
     """
     school = get_request_school_id(request, required=True)
@@ -381,16 +406,16 @@ def donation_create(request):
     try:
         amount_cents = int(request.data.get("amount_cents", 0))
     except (ValueError, TypeError):
-        return Response({"detail": "amount_cents must be an integer."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_NOT_INT}, status=400)
 
     if amount_cents <= 0:
-        return Response({"detail": "amount_cents must be > 0."}, status=400)
+        return Response({"detail": DETAIL_AMOUNT_POSITIVE}, status=400)
 
     from core.models import School as SchoolModel
     try:
         school_obj = SchoolModel.objects.get(pk=school)
     except SchoolModel.DoesNotExist:
-        return Response({"detail": "School not found."}, status=404)
+        return Response({"detail": DETAIL_SCHOOL_NOT_FOUND}, status=404)
 
     donation = FinanceDonation.objects.create(
         school=school_obj,
@@ -407,12 +432,18 @@ def donation_create(request):
     return Response(DonationSerializer(donation).data, status=201)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def donation_list(request):
-    """GET — Admin: list donations for school."""
+    """GET â€” Admin: list donations for school."""
     if not _is_staff(request):
-        return Response({"detail": "Admin required."}, status=403)
+        return Response({"detail": DETAIL_ADMIN_REQUIRED}, status=403)
     school = get_request_school_id(request, required=True)
     qs = FinanceDonation.objects.filter(school_id=school).order_by("-created_at")
     return Response(DonationSerializer(qs, many=True).data)
+
+
+
+
+

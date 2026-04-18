@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { crownApiClient } from "../../api/client";
 import {
   Drawer,
   Box,
@@ -14,40 +15,16 @@ import {
   TableBody,
   TableCell,
   TableHead,
-  TableRow
+  TableRow,
 } from "@mui/material";
 
-function normalizeBaseUrl(url) {
-  if (!url) return "";
-  return url.endsWith("/") ? url.slice(0, -1) : url;
-}
-
-function getAuthHeaders() {
-  const token = sessionStorage.getItem("crown.jwt.access") || "";
-  const schoolId = sessionStorage.getItem("crown.school.id") || "";
-
-  const h = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) h["Authorization"] = `Bearer ${token}`;
-  if (schoolId) h["X-School-Id"] = schoolId;
-
-  return h;
-}
-
 export default function GraduationBreakdownDrawer({ open, onClose, studentUuid }) {
-  const API_BASE = useMemo(
-    () => normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL || ""),
-    []
-  );
-
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    if (!open || !studentUuid) return;
+    if (!open || !studentUuid) return undefined;
 
     const controller = new AbortController();
 
@@ -57,22 +34,17 @@ export default function GraduationBreakdownDrawer({ open, onClose, studentUuid }
       setData(null);
 
       try {
-        const url = `${API_BASE}/api/v1/graduation/audit/${studentUuid}/breakdown/`;
-        const res = await fetch(url, {
+        const response = await crownApiClient.request({
+          url: `/api/v1/graduation/audit/${studentUuid}/breakdown/`,
           method: "GET",
-          headers: getAuthHeaders(),
           signal: controller.signal,
         });
 
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw new Error(`Breakdown failed: ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`);
+        setData(response.data);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setErr(error.message || String(error));
         }
-
-        const json = await res.json();
-        setData(json);
-      } catch (e) {
-        if (e.name !== "AbortError") setErr(e.message || String(e));
       } finally {
         setLoading(false);
       }
@@ -80,7 +52,7 @@ export default function GraduationBreakdownDrawer({ open, onClose, studentUuid }
 
     load();
     return () => controller.abort();
-  }, [open, studentUuid, API_BASE]);
+  }, [open, studentUuid]);
 
   const creditsLine = data?.credits
     ? `${data.credits.earned} / ${data.credits.required}`
@@ -107,23 +79,23 @@ export default function GraduationBreakdownDrawer({ open, onClose, studentUuid }
       ["credits_required", data.credits?.required],
       [],
       ["Requirement", "Required", "Earned", "Met"],
-      ...(data.requirements || []).map(r => [r.name, r.required, r.earned, r.met]),
+      ...(data.requirements || []).map((requirement) => [requirement.name, requirement.required, requirement.earned, requirement.met]),
       [],
       ["Notes"],
-      ...(data.notes || []).map(n => [n]),
+      ...(data.notes || []).map((note) => [note]),
     ];
 
-    const csv = rows.map(r => r.map(v => {
-      const s = String(v ?? "");
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    const csv = rows.map((row) => row.map((value) => {
+      const stringValue = String(value ?? "");
+      return /[",\n]/.test(stringValue) ? `"${stringValue.replace(/"/g, '""')}"` : stringValue;
     }).join(",")).join("\n");
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `graduation-breakdown-${data.student_id}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const anchor = document.createElement("a");
+    anchor.href = URL.createObjectURL(blob);
+    anchor.download = `graduation-breakdown-${data.student_id}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(anchor.href);
   };
 
   return (
@@ -132,7 +104,7 @@ export default function GraduationBreakdownDrawer({ open, onClose, studentUuid }
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Typography variant="h6">Graduation Requirement Breakdown</Typography>
           <IconButton onClick={onClose} aria-label="Close">
-            ✕
+            X
           </IconButton>
         </Box>
 
@@ -174,12 +146,12 @@ export default function GraduationBreakdownDrawer({ open, onClose, studentUuid }
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(data.requirements || []).map((r, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{r.name}</TableCell>
-                      <TableCell align="right">{r.required}</TableCell>
-                      <TableCell align="right">{r.earned}</TableCell>
-                      <TableCell align="center">{r.met ? "✅" : "—"}</TableCell>
+                  {(data.requirements || []).map((requirement, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{requirement.name}</TableCell>
+                      <TableCell align="right">{requirement.required}</TableCell>
+                      <TableCell align="right">{requirement.earned}</TableCell>
+                      <TableCell align="center">{requirement.met ? "Yes" : "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -190,8 +162,8 @@ export default function GraduationBreakdownDrawer({ open, onClose, studentUuid }
               <Box>
                 <Typography variant="subtitle1" sx={{ mb: 1 }}>Notes</Typography>
                 <Stack spacing={1}>
-                  {data.notes.map((n, i) => (
-                    <Alert key={i} severity="info">{n}</Alert>
+                  {data.notes.map((note, index) => (
+                    <Alert key={index} severity="info">{note}</Alert>
                   ))}
                 </Stack>
               </Box>

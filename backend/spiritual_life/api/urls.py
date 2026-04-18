@@ -71,7 +71,7 @@ urlpatterns = [
         PrayerRequestDetail.as_view(),
         name="prayer_request_detail",
     ),
-    # Pastoral Notes — staff only
+    # Pastoral Notes Ã¢â‚¬â€ staff only
     path("pastoral-notes/", PastoralNoteListCreate.as_view(), name="pastoral_notes"),
     path(
         "pastoral-notes/<uuid:note_id>/",

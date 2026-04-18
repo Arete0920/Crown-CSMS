@@ -1,0 +1,12 @@
+﻿{
+    "generated_at_utc":  "2026-04-11T11:58:01.5764841Z",
+    "summary":  {
+                    "generated_at_utc":  "2026-04-11T11:58:01.5764841Z",
+                    "stale_doc_count":  0,
+                    "remote_delete_count":  0,
+                    "local_delete_count":  0,
+                    "archived_doc_count":  0,
+                    "executed_command_count":  0,
+                    "apply_script_path":  "scripts/release/generated/phase12_apply_repo_hygiene.ps1"
+                }
+}

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import IntegrationsAutomationSnapshotCard from '../components/dashboard/integrationsautomation/IntegrationsAutomationSnapshotCard';
 import IntegrationsAutomationAlertsPanel from '../components/dashboard/integrationsautomation/IntegrationsAutomationAlertsPanel';

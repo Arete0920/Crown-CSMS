@@ -1,4 +1,4 @@
-name: Proof — Gradebook (UI + API)
+name: Proof â€” Gradebook (UI + API)
 
 on:
   workflow_dispatch:
@@ -36,11 +36,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 0
 
-      - name: Guardrail — print versions
+      - name: Guardrail â€” print versions
         run: |
           set -euo pipefail
           echo "Node: $(node -v || true)"
@@ -63,7 +63,7 @@ jobs:
         run: |
           python manage.py migrate --noinput
 
-      - name: Guardrail — required env
+      - name: Guardrail â€” required env
         env:
           CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
         run: |
@@ -192,7 +192,7 @@ jobs:
               echo "Gradebook API ready (HTTP ${HTTP})."
               exit 0
             fi
-            echo "Attempt ${i}: HTTP ${HTTP} — waiting 2s..."
+            echo "Attempt ${i}: HTTP ${HTTP} â€” waiting 2s..."
             cat /tmp/gb_ready.json || true
             sleep 2
           done
@@ -244,3 +244,4 @@ jobs:
             backend/django.log
           if-no-files-found: warn
           retention-days: 14
+

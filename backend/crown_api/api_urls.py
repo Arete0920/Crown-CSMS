@@ -51,6 +51,7 @@ from academics import api as academics_api
 from billing import api as billing_api
 from onboarding import api_onboarding
 from board_oversight import api_governance
+from governance import views as governance_views
 from support import api_support
 from analytics import api_health
 
@@ -222,8 +223,16 @@ urlpatterns = [
     path("v1/onboarding/<str:school_id>/tasks/<int:task_id>/complete/", api_onboarding.mark_task_complete, name="onboarding-task-complete"),
     path("v1/onboarding/<str:school_id>/can-activate/", api_onboarding.activation_gate, name="onboarding-activation-gate"),
     path("v1/help/<slug:slug>/", api_onboarding.help_article, name="help-article"),
+    path("v1/solomon/articles/", api_onboarding.solomon_articles, name="solomon-articles"),
+    path("v1/solomon/articles/<slug:slug>/", api_onboarding.solomon_article_detail, name="solomon-article-detail"),
+    path("v1/solomon/context/", api_onboarding.solomon_context, name="solomon-context"),
+    path("v1/solomon/categories/", api_onboarding.solomon_categories, name="solomon-categories"),
+    path("v1/solomon/playbooks/", api_onboarding.solomon_playbooks, name="solomon-playbooks"),
+    path("v1/solomon/search/", api_onboarding.solomon_search, name="solomon-search"),
 
     # ── Stage 4: Board Intelligence ──────────────────────────────────────
+    path("v1/governance/", include("governance.urls")),
+    path("v1/dashboards/school-board/summary/", governance_views.governance_dashboard, name="dashboard-school-board-summary"),
     path("v1/board/packet/download/", api_governance.download_board_packet, name="board-packet-download"),
     path("v1/board/compass/", api_governance.compass_executive, name="board-compass"),
     path("v1/board/initiatives/", api_governance.initiative_summary, name="board-initiatives"),

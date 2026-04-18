@@ -81,7 +81,145 @@ def release_reliability_sample_payload(_school_id):
     )
 
 
+def school_board_sample_payload(school_id):
+    try:
+        from governance.services import build_board_dashboard_payload
+
+        dashboard = build_board_dashboard_payload(school_id=school_id)
+        enrollment = dashboard.get('enrollment', {})
+        spiritual_life = dashboard.get('spiritual_life', {})
+        crown_compass = dashboard.get('crown_compass', {})
+        compliance = dashboard.get('compliance', {})
+        watchlist = list(crown_compass.get('watchlist') or [])
+
+        alerts = [
+            alert(item, 'Medium', 'Board watchlist item')
+            for item in watchlist[:3]
+        ]
+        if not alerts:
+            alerts = [
+                alert(
+                    'No high-risk governance alerts are currently flagged',
+                    'Low',
+                    'Board-facing health signals are stable right now.',
+                )
+            ]
+
+        return build_dashboard_payload(
+            dashboard_key='school-board',
+            metrics=[
+                metric('Current enrollment', enrollment.get('current_enrollment', 0)),
+                metric('Waitlist total', enrollment.get('waitlist_total', 0)),
+                metric('Service hours YTD', spiritual_life.get('service_hours_ytd', 0)),
+                metric('Overall health score', crown_compass.get('overall_score', 0)),
+            ],
+            alerts=alerts,
+            queue=[
+                queue_item('Review governance dashboard'),
+                queue_item('Confirm board packet agenda'),
+                queue_item(f"Open audit items: {compliance.get('open_audit_items', 0)}"),
+            ],
+            meta={
+                'school_id': str(school_id),
+                'served_from': 'live_db',
+                'certification_candidate': 'live',
+            },
+        )
+    except Exception:
+        return build_dashboard_payload(
+            dashboard_key='school-board',
+            metrics=[
+                metric('Current enrollment', '0'),
+                metric('Waitlist total', '0'),
+                metric('Service hours YTD', '0.0'),
+                metric('Overall health score', '0'),
+            ],
+            alerts=[
+                alert(
+                    'School board dashboard is using the safe fallback contract',
+                    'Low',
+                    'Live governance metrics were unavailable during this request.',
+                )
+            ],
+            queue=[
+                queue_item('Review governance dashboard'),
+                queue_item('Confirm board packet agenda'),
+            ],
+            meta={
+                'school_id': str(school_id),
+                'served_from': 'sample',
+                'certification_candidate': 'hybrid',
+            },
+        )
+
+
+def portrait_service_sample_payload(school_id):
+    try:
+        from core.models import School
+        from spiritual_life.services import build_mission_metrics_dashboard
+
+        school = School.objects.get(pk=school_id)
+        detail_metrics = build_mission_metrics_dashboard(school)
+        queue = [
+            queue_item(item.get('label') or item.get('secondary') or 'Review mission metrics')
+            for item in (detail_metrics.get('approval_queue') or [])[:2]
+        ]
+        queue.extend(
+            queue_item(item.get('label') or 'Review portrait record')
+            for item in (detail_metrics.get('portrait_review_queue') or [])[:2]
+        )
+        if not queue:
+            queue = [queue_item('Review mission readiness dashboard')]
+
+        payload = build_dashboard_payload(
+            dashboard_key='portrait-service',
+            metrics=[
+                metric('Mission readiness', detail_metrics.get('mission_readiness_pct', 0)),
+                metric('Approved service hours', detail_metrics.get('approved_service_hours', 0)),
+                metric('Pending service hours', detail_metrics.get('pending_service_hours', 0)),
+                metric('Portrait completion', detail_metrics.get('portrait_completion_pct', 0)),
+            ],
+            alerts=detail_metrics.get('alerts', []),
+            queue=queue,
+            meta={
+                'school_id': str(school_id),
+                'served_from': detail_metrics.get('source', 'live_db'),
+                'certification_candidate': 'live',
+            },
+        )
+        payload['detail_metrics'] = detail_metrics
+        return payload
+    except Exception:
+        payload = build_dashboard_payload(
+            dashboard_key='portrait-service',
+            metrics=[metric('Mission readiness', '0')],
+            alerts=[
+                alert(
+                    'Mission metrics are temporarily using the safe fallback contract',
+                    'Low',
+                    'Live portrait or spiritual-life data was unavailable during this request.',
+                )
+            ],
+            queue=[queue_item('Review mission readiness dashboard')],
+            meta={
+                'school_id': str(school_id),
+                'served_from': 'sample',
+                'certification_candidate': 'hybrid',
+            },
+        )
+        payload['detail_metrics'] = {
+            'approved_service_hours': 0.0,
+            'pending_service_hours': 0.0,
+            'portrait_completion_pct': 0.0,
+            'mission_readiness_pct': 0.0,
+            'source': 'sample',
+        }
+        return payload
+
+
 SAMPLE_PAYLOAD_BUILDERS = {
     'attendance': attendance_sample_payload,
     'release-reliability': release_reliability_sample_payload,
+    'school-board': school_board_sample_payload,
+    'portrait-service': portrait_service_sample_payload,
 }

@@ -2,21 +2,21 @@
  * useCrownDashboardMetrics
  *
  * Fetches KPI summary data for Finance and Admissions dashboards.
- * Falls back to "—" for any missing field — never breaks the UI.
+ * Falls back to "" for any missing field  never breaks the UI.
  *
  * Note on actual endpoint paths (as discovered from this codebase):
- *   - Financial Aid summary: /api/v1/financial-aid/summary/  ← this exists
- *   - Finance/billing summary: /api/v1/finance/summary/      ← graceful 404
- *   - Admissions summary:      /api/v1/admissions/summary/   ← graceful 404
+ *   - Financial Aid summary: /api/v1/financial-aid/summary/   this exists
+ *   - Finance/billing summary: /api/v1/finance/summary/       graceful 404
+ *   - Admissions summary:      /api/v1/admissions/summary/    graceful 404
  *
  * Reads auth from sessionStorage (matches authClient.js pattern):
- *   crown.jwt.access  → Authorization: Bearer <token>
- *   crown.school.id   → X-School-Id
+ *   crown.jwt.access   Authorization: Bearer <token>
+ *   crown.school.id    X-School-Id
  */
 import { useEffect, useMemo, useState } from 'react';
 
 function fmtMoney(n) {
-  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '';
   try {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
@@ -29,7 +29,7 @@ function fmtMoney(n) {
 }
 
 function fmtInt(n) {
-  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '';
   try {
     return new Intl.NumberFormat().format(Number(n));
   } catch {
@@ -61,7 +61,7 @@ async function fetchJson(path) {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id'] = schoolId;
 
-  const res = await fetch(url, { method: 'GET', headers });
+  const res = await globalThis.fetch(url, { method: 'GET', headers });
   const text = await res.text();
   let data = null;
   try {
@@ -76,8 +76,8 @@ const INITIAL = { loaded: false, ok: false, status: 0, data: null };
 
 /**
  * Returns:
- *   financeCards    – 4 KPI tiles for the Finance dashboard
- *   admissionsCards – 4 KPI tiles for the Admissions dashboard
+ *   financeCards     4 KPI tiles for the Finance dashboard
+ *   admissionsCards  4 KPI tiles for the Admissions dashboard
  *
  * Each tile: { label: string, value: string, hint: string }
  */
@@ -121,7 +121,7 @@ export default function useCrownDashboardMetrics() {
       ? finance.ok
         ? 'Finance summary'
         : `Unavailable (${finance.status || 'err'})`
-      : 'Loading…';
+      : 'Loading';
 
     return [
       { label: 'Total Due',     value: fmtMoney(totalDue),    hint },
@@ -141,7 +141,7 @@ export default function useCrownDashboardMetrics() {
       ? admissions.ok
         ? 'Admissions summary'
         : `Unavailable (${admissions.status || 'err'})`
-      : 'Loading…';
+      : 'Loading';
 
     return [
       { label: 'Inquiries',  value: fmtInt(inquiries),  hint },

@@ -1,97 +1,72 @@
-﻿/**
+/**
  * api/comms_wizard.js
  *
- * Follows the billing_wizard.js pattern exactly:
- *  - getToken / getSchoolId from ../lib/api
- *  - raw fetch() with Authorization + X-School-Id headers
- *  - checkResponse with 204 guard
+ * Uses the shared crownApiClient and preserves the existing JSON/null/error
+ * behavior for the communications wizard flow.
  */
-import { getToken, getSchoolId } from "../lib/api";
+import { crownApiClient } from "./client";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
-function headers(extra = {}) {
-  return {
-    Authorization: `Bearer ${getToken()}`,
-    "X-School-Id": getSchoolId(),
-    ...extra,
-  };
-}
+async function requestJson(url, { method = "GET", data } = {}) {
+  const response = await crownApiClient.request({
+    method,
+    url,
+    data,
+    validateStatus: () => true,
+  });
 
-async function checkResponse(res, url) {
-  if (!res.ok) {
-    let body = null;
-    try { body = await res.json(); } catch { /* ignore */ }
-    const err = new Error(`HTTP ${res.status}`);
-    err.status = res.status;
-    err.body = body;
+  if (response.status < 200 || response.status >= 300) {
+    const err = new Error(`HTTP ${response.status}`);
+    err.status = response.status;
+    err.body = response.data ?? null;
     err.url = url;
     throw err;
   }
-  const ct = res.headers.get("content-type") || "";
-  if (res.status === 204 || !ct.includes("application/json")) return null;
-  return res.json();
+  return response.data ?? null;
 }
 
 /** Step 1: create a CommsWizardSession */
 export async function createCommsWizardSession() {
-  const url = `${API_BASE}/api/v1/comms-wizard/sessions/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/comms-wizard/sessions/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({}),
+    data: {},
   });
-  return checkResponse(res, url);
 }
 
 /** Step 1: configure session (purpose + channels) */
 export async function configureCommsSession(sessionId, purpose, channels) {
-  const url = `${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/configure/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/configure/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ purpose, channels }),
+    data: { purpose, channels },
   });
-  return checkResponse(res, url);
 }
 
 /** Step 2: draft message (subject + body) */
 export async function draftCommsMessage(sessionId, subject, body) {
-  const url = `${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/message/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/message/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ subject, body }),
+    data: { subject, body },
   });
-  return checkResponse(res, url);
 }
 
 /** Step 3: stage recipients */
 export async function stageCommsRecipients(sessionId, recipients) {
-  const url = `${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/recipients/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/recipients/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ recipients }),
+    data: { recipients },
   });
-  return checkResponse(res, url);
 }
 
 /** Step 5: commit session */
 export async function commitCommsSetup(sessionId) {
-  const url = `${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/commit/`;
-  const res = await fetch(url, {
+  return requestJson(`${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/commit/`, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ confirm: true }),
+    data: { confirm: true },
   });
-  return checkResponse(res, url);
 }
 
 /** Step 6: verify session */
 export async function verifyCommsSetup(sessionId) {
-  const url = `${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/verify/`;
-  const res = await fetch(url, { headers: headers() });
-  return checkResponse(res, url);
+  return requestJson(`${API_BASE}/api/v1/comms-wizard/sessions/${sessionId}/verify/`);
 }
-

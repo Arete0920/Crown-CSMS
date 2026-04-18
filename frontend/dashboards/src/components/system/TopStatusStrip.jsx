@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Chip, Stack } from '@mui/material';
 import { getBuildInfo } from '../../utils/buildInfo';
 

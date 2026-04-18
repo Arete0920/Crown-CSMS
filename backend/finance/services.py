@@ -1,8 +1,8 @@
-"""
-finance/services.py — Crown Finance & Tuition service layer.
+﻿"""
+finance/services.py â€” Crown Finance & Tuition service layer.
 
 Rules:
-  - All money movement posts ledger entries (TODO stubs replaced when ledger wiring is done).
+  - All money movement posts ledger entries (HOOK stubs replaced when ledger wiring is done).
   - Atomic: every multi-step operation runs inside @transaction.atomic.
   - Idempotent: settle_payment_and_allocate guards on SETTLED status; webhook callers
     must check processor_payment_id uniqueness before calling.
@@ -295,9 +295,9 @@ def initiate_refund(
     )
     if existing_refunds_total + amount_cents > payment.amount_cents:
         raise OverRefundError(
-            f"Refund of {amount_cents}¢ would exceed payment {payment.id} "
-            f"amount {payment.amount_cents}¢ "
-            f"(already refunded: {existing_refunds_total}¢)"
+            f"Refund of {amount_cents}Â¢ would exceed payment {payment.id} "
+            f"amount {payment.amount_cents}Â¢ "
+            f"(already refunded: {existing_refunds_total}Â¢)"
         )
 
     refund = FinanceRefund.objects.create(
@@ -314,3 +314,4 @@ def initiate_refund(
     if not post_result.ok:
         raise ValueError(f"Ledger refund posting failed: {post_result.reference}")
     return refund
+

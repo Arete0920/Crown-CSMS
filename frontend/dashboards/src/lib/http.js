@@ -17,7 +17,7 @@ function pickCorrelationId(headers) {
 export async function httpJson(url, options = {}) {
   let res;
   try {
-    res = await fetch(url, options);
+    res = await globalThis.fetch(url, options);
   } catch (e) {
     return {
       ok: false,

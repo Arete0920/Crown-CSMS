@@ -9,6 +9,9 @@ from core.models import School
 from finance.models import FinanceInvoice, FinanceObligation, MoneyStatus
 from invoice_run_wizard.models import InvoiceRunWizardSession
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/invoice-run-wizard/sessions/"
@@ -19,7 +22,7 @@ def _make_school():
 
 
 def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password="pw")
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):

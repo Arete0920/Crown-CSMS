@@ -1,16 +1,7 @@
-"""
-Stage 2 — CFO Finance API
+﻿"""
+Stage 2 - CFO Finance API
 
-Read-only endpoints for the Finance & Revenue Integrity dashboard.
-
-Endpoints:
-    GET /api/v1/finance/kpis/              — reconciliation + revenue summary
-    GET /api/v1/finance/chargebacks/       — open dispute metrics
-    GET /api/v1/finance/monthly-summary/   — CFO monthly rollup
-    GET /api/v1/finance/payout-audit/      — recent daily payout audits
-
-All endpoints require authentication.
-School scoping: uses X-School-Id header (same pattern as rest of spine).
+Read-only endpoints for the Finance and Revenue Integrity dashboard.
 """
 from __future__ import annotations
 
@@ -19,12 +10,11 @@ from decimal import Decimal
 
 from django.db.models import Sum
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
 from households.scoping import get_request_school_id
+from ledger.models import Payment
 from ledger.models_dunning import Chargeback, DailyPayoutAudit, DunningRecord
 from ledger.services_reconciliation import build_monthly_summary, reconcile_processor
 
@@ -41,22 +31,25 @@ def _school_id_or_400(request):
         )
 
 
+def _processor_transactions_for_school(school_id):
+    """Build deterministic reconciliation transactions from ledger payments."""
+    return [
+        {"amount": p.amount, "reference": p.reference, "source": p.source}
+        for p in Payment.objects.filter(school_id=school_id, is_void=False).only(
+            "amount", "reference", "source"
+        )
+    ]
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def finance_kpis(request):
-    """
-    GET /api/v1/finance/kpis/
-
-    Returns reconciliation summary and revenue totals.
-    Processor transactions are stubbed — wire real processor API here.
-    """
+    """Return reconciliation summary and revenue totals for the school."""
     school_id, err = _school_id_or_400(request)
     if err:
         return err
 
-    # TODO: replace empty list with real processor API call
-    processor_transactions: list[dict] = []
-
+    processor_transactions = _processor_transactions_for_school(school_id)
     recon = reconcile_processor(processor_transactions, school_id=school_id)
     summary = build_monthly_summary(school_id=school_id)
 
@@ -73,11 +66,7 @@ def finance_kpis(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def chargeback_metrics(request):
-    """
-    GET /api/v1/finance/chargebacks/
-
-    Returns open chargeback count and total disputed amount.
-    """
+    """Return open chargeback count and disputed totals."""
     school_id, err = _school_id_or_400(request)
     if err:
         return err
@@ -103,36 +92,24 @@ def chargeback_metrics(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def monthly_financial_summary(request):
-    """
-    GET /api/v1/finance/monthly-summary/
-
-    CFO-grade monthly rollup: revenue, chargebacks, net.
-    """
+    """Return monthly rollup: revenue, chargebacks, net."""
     school_id, err = _school_id_or_400(request)
     if err:
         return err
 
     summary = build_monthly_summary(school_id=school_id)
-
     return JsonResponse({"ok": True, **summary})
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def payout_audit_list(request):
-    """
-    GET /api/v1/finance/payout-audit/
-
-    Returns the 30 most recent daily payout audit records for this school.
-    """
+    """Return up to 30 most recent daily payout audit records."""
     school_id, err = _school_id_or_400(request)
     if err:
         return err
 
-    audits = (
-        DailyPayoutAudit.objects.filter(school_id=school_id)
-        .order_by("-audit_date")[:30]
-    )
+    audits = DailyPayoutAudit.objects.filter(school_id=school_id).order_by("-audit_date")[:30]
 
     return JsonResponse(
         {
@@ -154,11 +131,7 @@ def payout_audit_list(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def dunning_status(request):
-    """
-    GET /api/v1/finance/dunning/
-
-    Returns count of records by dunning status for the school.
-    """
+    """Return count of dunning records by status."""
     school_id, err = _school_id_or_400(request)
     if err:
         return err

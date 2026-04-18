@@ -1,30 +1,16 @@
-from django.http import Http404
-from django.shortcuts import get_object_or_404
+﻿from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from crown_api.access_households import resolve_person_for_user, resolve_household_access
-from crown_api.models import HouseholdMember
+from crown_api.access_households import resolve_household_access
 from core.models import Student
-from crown_api.models_households import GUARDIAN_ROLES
 from crown_api.serializers_students import StudentReadSerializer
 
 
-def _guardian_household_ids_for_user(request) -> set:
-    access = resolve_household_access(request)
-    if access.is_staff:
-        return set()
-
-    person = resolve_person_for_user(getattr(request, "user", None))
-    if not person:
-        return set()
-
-    return set(
-        HouseholdMember.objects.filter(person=person, role__in=GUARDIAN_ROLES).values_list(
-            "household_id", flat=True
-        )
-    )
+def _guardian_family_id(user):
+    guardian = getattr(user, "guardian", None)
+    return getattr(guardian, "family_id", None)
 
 
 @api_view(["GET"])
@@ -36,13 +22,13 @@ def students_list(request):
         )
 
     access = resolve_household_access(request)
-
-    qs = Student.objects.select_related("school")
+    qs = Student.objects.select_related("school", "family")
 
     if not access.is_staff:
-        # TODO: Implement family-based filtering after core.Student migration
-        # core.Student uses family FK, not household
-        pass
+        family_id = _guardian_family_id(request.user)
+        if family_id is None:
+            return Response([], status=200)
+        qs = qs.filter(family_id=family_id)
 
     qs = qs.order_by("last_name", "first_name")
     return Response(StudentReadSerializer(qs, many=True).data)
@@ -57,13 +43,13 @@ def student_detail(request, student_id):
         )
 
     access = resolve_household_access(request)
-
-    qs = Student.objects.select_related("school")
+    qs = Student.objects.select_related("school", "family")
 
     if not access.is_staff:
-        # TODO: Implement family-based access control after core.Student migration
-        # For now, allow all authenticated users (parent scoping needs family→household link)
-        pass
+        family_id = _guardian_family_id(request.user)
+        if family_id is None:
+            return Response({"detail": "Not found."}, status=404)
+        qs = qs.filter(family_id=family_id)
 
     obj = get_object_or_404(qs, id=student_id)
     return Response(StudentReadSerializer(obj).data)

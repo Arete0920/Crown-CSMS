@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import ImplementationSuccessSnapshotCard from '../components/dashboard/implementationsuccess/ImplementationSuccessSnapshotCard';
 import ImplementationSuccessAlertsPanel from '../components/dashboard/implementationsuccess/ImplementationSuccessAlertsPanel';

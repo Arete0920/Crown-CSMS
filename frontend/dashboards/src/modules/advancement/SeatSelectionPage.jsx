@@ -1,19 +1,15 @@
 /**
- * SeatSelectionPage – buyer-facing ticket seat picker.
+ * SeatSelectionPage - buyer-facing ticket seat picker.
  *
  * Flow:
- *   1. Load availability grid (GET /api/v1/advancement/seating/availability/?event_id=…)
- *   2. Buyer clicks seats to toggle selection
- *   3. "Reserve Seats" → POST /api/v1/advancement/seating/hold-strict/  (10-min hold)
- *   4. "Pay Now"       → POST /api/v1/advancement/seating/checkout/     → redirect to Stripe
+ *   1. Load availability grid.
+ *   2. Buyer clicks seats to toggle selection.
+ *   3. Reserve seats with a 10-minute hold.
+ *   4. Start checkout and redirect to Stripe.
  *
- * Auto-refreshes grid every 30 s to show real-time availability.
- * Displays a countdown timer once seats are held.
- *
- * Usage:
- *   <SeatSelectionPage eventId="<uuid>" />
+ * Auto-refreshes the grid every 30 seconds.
  */
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || "").trim();
@@ -51,7 +47,7 @@ function SeatButton({ seat, selected, onToggle }) {
   const cursor = seat.status === "available" || selected ? "pointer" : "not-allowed";
   return (
     <button
-      title={`${seat.label} – ${seat.status}`}
+      title={`${seat.label}  ${seat.status}`}
       onClick={() => seat.status === "available" || selected ? onToggle(seat.seat_id) : null}
       style={{
         width: 36, height: 36, margin: 2, borderRadius: 4,
@@ -107,10 +103,9 @@ export default function SeatSelectionPage({ eventId }) {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
-  // Stage 3.4 – sponsor tiles
+  // Stage 3.4  sponsor tiles
   const [sponsors, setSponsors] = useState([]);
 
-  const timerRef = useRef(null);
 
   // ---------------------------------------------------------------------------
   // Load / refresh grid
@@ -118,7 +113,7 @@ export default function SeatSelectionPage({ eventId }) {
   const loadGrid = useCallback(async () => {
     if (!eventId) return;
     try {
-      const r = await fetch(
+      const r = await globalThis.fetch(
         `${apiBase()}/api/v1/advancement/seating/availability/?event_id=${eventId}`,
         { headers: authHeaders() }
       );
@@ -138,10 +133,10 @@ export default function SeatSelectionPage({ eventId }) {
     return () => clearInterval(id);
   }, [loadGrid]);
 
-  // Stage 3.4 – load sponsors for this event
+  // Stage 3.4  load sponsors for this event
   useEffect(() => {
     if (!eventId) return;
-    fetch(
+    globalThis.fetch(
       `${apiBase()}/api/v1/advancement/events/${eventId}/sponsors/`,
       { headers: authHeaders() }
     )
@@ -173,7 +168,7 @@ export default function SeatSelectionPage({ eventId }) {
     setHoldLoading(true);
     setHoldError("");
     try {
-      const r = await fetch(`${apiBase()}/api/v1/advancement/seating/hold-strict/`, {
+      const r = await globalThis.fetch(`${apiBase()}/api/v1/advancement/seating/hold-strict/`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
@@ -208,7 +203,7 @@ export default function SeatSelectionPage({ eventId }) {
     setCheckoutLoading(true);
     setCheckoutError("");
     try {
-      const r = await fetch(`${apiBase()}/api/v1/advancement/seating/checkout/`, {
+      const r = await globalThis.fetch(`${apiBase()}/api/v1/advancement/seating/checkout/`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
@@ -222,7 +217,7 @@ export default function SeatSelectionPage({ eventId }) {
       const data = await r.json();
       if (!r.ok) throw new Error(data.detail || "Checkout failed");
       if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+        globalThis.location.href = data.checkout_url;
       }
     } catch (e) {
       setCheckoutError(e.message);
@@ -234,7 +229,7 @@ export default function SeatSelectionPage({ eventId }) {
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
-  if (loading) return <div style={{ padding: 24 }}>Loading seat map…</div>;
+  if (loading) return <div style={{ padding: 24 }}>Loading seat map</div>;
   if (error) return <div style={{ padding: 24, color: "#ef4444" }}>Error: {error}</div>;
   if (!grid || !grid.sections) return <div style={{ padding: 24 }}>No seating configured for this event.</div>;
 
@@ -263,7 +258,7 @@ export default function SeatSelectionPage({ eventId }) {
       </div>
 
       {/* Seat map */}
-      {/* Stage 3.4 – Sponsor tiles */}
+      {/* Stage 3.4  Sponsor tiles */}
       {sponsors.length > 0 && (
         <div style={{ marginBottom: 20, padding: "12px 16px", background: "#f8fafc",
                       border: "1px solid #e2e8f0", borderRadius: 8 }}>
@@ -367,7 +362,7 @@ export default function SeatSelectionPage({ eventId }) {
               opacity: holdLoading || selected.size === 0 ? 0.5 : 1,
             }}
           >
-            {holdLoading ? "Reserving…" : `Reserve ${selected.size} Seat${selected.size !== 1 ? "s" : ""}`}
+            {holdLoading ? "Reserving" : `Reserve ${selected.size} Seat${selected.size !== 1 ? "s" : ""}`}
           </button>
         ) : (
           <button
@@ -379,7 +374,7 @@ export default function SeatSelectionPage({ eventId }) {
               opacity: checkoutLoading ? 0.5 : 1,
             }}
           >
-            {checkoutLoading ? "Redirecting…" : "Pay Now →"}
+            {checkoutLoading ? "Redirecting" : "Pay Now "}
           </button>
         )}
 

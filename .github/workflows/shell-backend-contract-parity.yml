@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -56,7 +56,7 @@ jobs:
         working-directory: frontend/dashboards
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
@@ -73,3 +73,4 @@ jobs:
             echo "| Frontend manifest parity | enforced |";
             echo "| Backend registry parity | enforced |";
           } >> "$GITHUB_STEP_SUMMARY"
+

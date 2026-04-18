@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner";
@@ -42,12 +42,12 @@ export default function TeacherAttendancePage() {
         const r = await fetchJson(`/api/v1/academics/sections/${sectionId}/roster/`);
         const items = r?.students || r?.results || r?.items || r || [];
         setRoster(items);
-        const m = {};
+        const nextMap = {};
         for (const s of items) {
           const sid = s.student_id || s.id || s.student?.id;
-          if (sid) m[sid] = "present";
+          if (sid) nextMap[sid] = "present";
         }
-        setStatusMap(m);
+        setStatusMap(nextMap);
       } catch {
         setMsg("Failed to load roster.");
       }
@@ -77,8 +77,8 @@ export default function TeacherAttendancePage() {
       <h1 className="text-2xl font-semibold tracking-tight">Attendance Dashboard</h1>
 
       <div style={{ marginBottom: 12 }}>
-        <label>Section: </label>
-        <select value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
+        <label htmlFor="teacher-attendance-section">Section: </label>
+        <select id="teacher-attendance-section" value={sectionId} onChange={(e) => setSectionId(e.target.value)}>
           <option value="">-- select --</option>
           {sections.map((s) => (
             <option key={s.id} value={s.id}>
@@ -107,7 +107,7 @@ export default function TeacherAttendancePage() {
           title="No students in this section"
           message="If this is unexpected, check that the section has enrolled students."
           actionLabel="Reload"
-          onAction={() => window.location.reload()}
+          onAction={() => globalThis.location.reload()}
         />
       )}
 
@@ -119,12 +119,12 @@ export default function TeacherAttendancePage() {
           </tr>
         </thead>
         <tbody>
-          {roster.map((r) => {
+          {roster.map((r, index) => {
             const sid = r.student_id || r.id || r.student?.id;
-            const name =
-              r.name || r.student_name || r.full_name || r.student?.name || sid;
+            const name = r.name || r.student_name || r.full_name || r.student?.name || sid || `student-${index}`;
+            const rowKey = sid || `${name}-${index}`;
             return (
-              <tr key={sid || Math.random()}>
+              <tr key={rowKey}>
                 <td>{name}</td>
                 <td>
                   <select

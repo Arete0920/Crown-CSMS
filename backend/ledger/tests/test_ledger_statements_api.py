@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 import pytest
 from decimal import Decimal
 from django.contrib.auth import get_user_model
@@ -11,10 +11,12 @@ from ledger.models import Allocation as PaymentAllocation
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 
 def _mk_user_with_school(school: School):
     User = get_user_model()
-    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password="pass12345!")
+    u = User.objects.create_user(username=f"user-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -51,3 +53,4 @@ def test_account_statement_running_balance():
     # Entries exist and have running_balance
     assert len(data["entries"]) >= 4
     assert "running_balance" in data["entries"][-1]
+

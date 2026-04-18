@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4.1.1
 
       - name: Set defaults
         shell: pwsh
@@ -63,16 +63,16 @@ jobs:
           SHA="$(echo "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build_sha',''))")"
           
           if [ -z "$SHA" ] || [ "$SHA" = "MISSING" ]; then
-            echo "❌ FAILED: build_sha missing from /health/"
+            echo "âŒ FAILED: build_sha missing from /health/"
             exit 1
           fi
           
           if [ ${#SHA} -ne 40 ]; then
-            echo "❌ FAILED: build_sha must be 40 chars (got ${#SHA})"
+            echo "âŒ FAILED: build_sha must be 40 chars (got ${#SHA})"
             exit 1
           fi
           
-          echo "✅ P0.3 Gate: BUILD_SHA verified ($SHA)"
+          echo "âœ… P0.3 Gate: BUILD_SHA verified ($SHA)"
 
       - name: Health check DEV (bounded)
         shell: pwsh
@@ -131,3 +131,4 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "DEV smoke completed. (Success/failure shown above.)"
+

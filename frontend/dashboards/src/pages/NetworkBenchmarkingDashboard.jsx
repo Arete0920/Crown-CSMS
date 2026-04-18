@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import NetworkBenchmarkSnapshotCard from '../components/dashboard/networkbenchmarking/NetworkBenchmarkSnapshotCard';
 import NetworkBenchmarkAlertsPanel from '../components/dashboard/networkbenchmarking/NetworkBenchmarkAlertsPanel';

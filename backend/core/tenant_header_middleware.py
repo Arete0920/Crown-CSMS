@@ -14,16 +14,16 @@ class TenantHeaderRequiredMiddleware:
     Enforces tenant resolution for /api/* calls.
 
     Policy (in priority order):
-    1. X-School-Id header — used when present (primary)
-    2. Authenticated user.school_id — fallback for session/JWT users without a header
-    3. Missing tenant → 400
+    1. X-School-Id header  used when present (primary)
+    2. Authenticated user.school_id  fallback for session/JWT users without a header
+    3. Missing tenant  400
 
     IMPORTANT: This middleware MUST run after AuthenticationMiddleware and
     JwtAuthMiddleware so request.user is populated and the user.school_id
     fallback path works correctly.
 
     Exempted paths: /api/auth/*, /api/v1/auth/*, /api/health/*, /api/v1/health/*,
-    /api/schema/*, /api/docs/*
+    /api/integrity/*, /api/schema/*, /api/docs/*
 
     Attaches request.school (School instance) and request.school_id (str UUID)
     for downstream view usage, and sets the thread-local tenant context so audit
@@ -34,9 +34,14 @@ class TenantHeaderRequiredMiddleware:
         "/api/health",
         "/api/v1/health",
         "/api/v1/system/health",
+        "/api/integrity",
         "/api/auth",
         "/api/v1/auth",
-        "/api/dev/token",   # dev token endpoint returns school_id — no tenant context needed
+        "/api/help",
+        "/api/v1/help",
+        "/api/solomon",
+        "/api/v1/solomon",
+        "/api/dev/token",   # dev token endpoint returns school_id  no tenant context needed
         "/api/payments/webhooks/",
         "/api/v1/payments/webhooks/",
         "/api/schema",
@@ -49,7 +54,7 @@ class TenantHeaderRequiredMiddleware:
 
     def __call__(self, request):
         try:
-            # CORS preflight — pass through so CORS middleware adds headers
+            # CORS preflight  pass through so CORS middleware adds headers
             if request.method == "OPTIONS":
                 return self.get_response(request)
 

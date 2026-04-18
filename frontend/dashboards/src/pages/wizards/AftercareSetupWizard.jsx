@@ -4,16 +4,7 @@ import CrownWizardStepper from "../../components/wizard/CrownWizardStepper.jsx";
 import { fetchWizardConfig, submitWizardConfig } from "../../api/aftercareApi.js";
 import { useEffect } from "react";
 
-function getSession() {
-  try {
-    return {
-      token: sessionStorage.getItem("crown.jwt.access") || "",
-      schoolId: sessionStorage.getItem("crown.school.id") || "",
-    };
-  } catch {
-    return { token: "", schoolId: "" };
-  }
-}
+
 
 const STEPS = [
   "Program Hours & Fees",
