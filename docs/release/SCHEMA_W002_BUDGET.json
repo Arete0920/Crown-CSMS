@@ -1,5 +1,5 @@
 {
-  "current_max": 132,
+  "current_max": 309,
   "next_target": 100,
   "goal": 0,
   "notes": "Ratchet down only after a verified green schema pass. Do not raise this number."

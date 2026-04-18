@@ -2,8 +2,7 @@ name: crown-magus0-gate
 permissions:
   contents: read
 
-
-# Crown Magus 0 â€” Trust-Nothing Audit Gate
+# Crown Magus 0â€” Trust-Nothing Audit Gate
 # Runs on every PR and every push to main.
 # Blocks merge on: compile errors, Django check failures, migration drift,
 #   tenant tripwire violations, URL collisions, secret pattern hits,
@@ -43,7 +42,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
-      SECRET_KEY: ${{ github.sha }}
+      SECRET_KEY: ci-audit-not-a-real-secret
       DEBUG: "0"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
@@ -285,7 +284,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
-      SECRET_KEY: ${{ github.sha }}
+      SECRET_KEY: ci-audit-not-a-real-secret
       DEBUG: "0"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
       DATABASE_URL: "sqlite:///./ci_audit.sqlite3"

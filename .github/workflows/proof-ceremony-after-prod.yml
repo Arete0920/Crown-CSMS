@@ -1,9 +1,9 @@
 name: proof-ceremony-after-prod
 permissions:
   contents: read
+  id-token: write
 
-
-# Phase 7C â€” Auto Proof Ceremony
+# Phase 7Câ€” Auto Proof Ceremony
 #
 # Runs automatically after either prod deploy workflow succeeds.
 # Resolves the deployed tag from head_branch (tag-triggered deploys) or from

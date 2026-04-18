@@ -38,7 +38,15 @@ FONT_FAMILY_RE = re.compile(r"fontFamily.*system.ui", re.IGNORECASE)
 
 def check_file(path):
     """Return list of violation strings for a single file."""
-    text = path.read_text(encoding="utf-8")
+    raw = path.read_bytes()
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        # Some legacy files may contain cp1252/latin1 bytes; do not crash the gate.
+        try:
+            text = raw.decode("cp1252")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1", errors="replace")
     lines = text.splitlines()
     violations = []
 

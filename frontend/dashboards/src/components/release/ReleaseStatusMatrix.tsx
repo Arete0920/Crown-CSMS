@@ -39,7 +39,10 @@ export default function ReleaseStatusMatrix() {
   useEffect(() => {
     releaseApi.get("/api/v1/release-closeout/status/")
       .then((res) => setPayload(res.data))
-      .catch(() => setPayload(null));
+      .catch((err) => {
+        console.error("ReleaseStatusMatrix failed to load release status", err);
+        setPayload(null);
+      });
   }, []);
 
   return (

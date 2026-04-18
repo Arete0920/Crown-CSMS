@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, Chip, Grid, Typography } from "@mui/material";
-import releaseApi from "../../lib/releaseApi";
 
 type Payload = {
   total_w002: number;
@@ -16,7 +15,10 @@ export default function SchemaStatusWidget() {
     fetch("/audit-artifacts/release-verify/schema_w002_summary.json")
       .then((res) => res.json())
       .then((data) => setPayload(data))
-      .catch(() => setPayload(null));
+      .catch((err) => {
+        console.error("SchemaStatusWidget failed to load schema summary", err);
+        setPayload(null);
+      });
   }, []);
 
   return (

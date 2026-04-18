@@ -1,4 +1,4 @@
-﻿"""Customer health scoring engine."""
+"""Customer health scoring engine."""
 from __future__ import annotations
 
 from django.db.models import Count, Q
@@ -21,13 +21,14 @@ def _clamp(score: int | float | None) -> int:
 
 def _login_frequency_score(school_id) -> int:
     horizon = timezone.now() - timezone.timedelta(days=30)
-    active_users = UserAccount.objects.filter(school_id=school_id).count()
+    totals = UserAccount.objects.filter(school_id=school_id).aggregate(
+        total=Count("id"),
+        logged_in=Count("id", filter=Q(last_login__gte=horizon)),
+    )
+    active_users = totals["total"] or 0
     if active_users == 0:
         return 0
-    logged_in_users = UserAccount.objects.filter(
-        school_id=school_id,
-        last_login__gte=horizon,
-    ).count()
+    logged_in_users = totals["logged_in"] or 0
     return _clamp(round((logged_in_users / active_users) * 100))
 
 
@@ -54,19 +55,24 @@ def _support_ticket_score(school_id) -> int:
     return _clamp(100 - (open_high * 10))
 
 
+def _compute_scores(school_id) -> tuple[int, int, int]:
+    """Return (login_frequency_score, payment_failure_score, support_ticket_score) for school_id."""
+    return (
+        _login_frequency_score(school_id),
+        _payment_failure_score(school_id),
+        _support_ticket_score(school_id),
+    )
+
+
 def calculate_health(school_id) -> int:
     """Return overall health score 0-100 for school_id."""
-    login_score = _login_frequency_score(school_id)
-    payment_score = _payment_failure_score(school_id)
-    support_score = _support_ticket_score(school_id)
+    login_score, payment_score, support_score = _compute_scores(school_id)
     return _clamp(round((login_score + payment_score + support_score) / 3))
 
 
 def upsert_customer_health(school_id) -> CustomerHealth:
     """Compute and persist the health record for a school."""
-    login_score = _login_frequency_score(school_id)
-    payment_score = _payment_failure_score(school_id)
-    support_score = _support_ticket_score(school_id)
+    login_score, payment_score, support_score = _compute_scores(school_id)
     overall = _clamp(round((login_score + payment_score + support_score) / 3))
 
     record, _ = CustomerHealth.objects.update_or_create(

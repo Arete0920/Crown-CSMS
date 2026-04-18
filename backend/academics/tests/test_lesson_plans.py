@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tests for LessonPlan and LessonResource API endpoints.
 
 Covers:
@@ -146,7 +146,7 @@ class TestLessonPlanTenantScoping:
         section_b = _seed_section(school_b)
 
         c = _client_auth(user_a, school_a)
-        # Section belongs to school_b, but header is school_a â†’ 404
+        # Section belongs to school_b, but header is school_a → 404
         r = c.get(f"/api/academics/sections/{section_b.id}/lesson-plans/")
         assert r.status_code == 404
 

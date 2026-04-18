@@ -28,7 +28,7 @@ jobs:
           elif [ -f requirements.txt ]; then
             pip install -r requirements.txt
           fi
-          pip install drf-spectacular drf-spectacular-sidecar reportlab pytest-django
+          pip install drf-spectacular==0.27.2 drf-spectacular-sidecar==2025.3.1 reportlab==4.2.0 pytest-django==4.7.0
 
       - name: W002 inventory
         run: python scripts/release/schema_w002_inventory.py
