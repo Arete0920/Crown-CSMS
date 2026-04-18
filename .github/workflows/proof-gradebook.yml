@@ -1,4 +1,7 @@
 name: Proof â€” Gradebook (UI + API)
+permissions:
+  contents: read
+
 
 on:
   workflow_dispatch:

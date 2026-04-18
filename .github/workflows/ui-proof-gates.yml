@@ -1,4 +1,7 @@
 name: UI Proof â€” Dashboard Gates (Student Â· Parent Â· Executive)
+permissions:
+  contents: read
+
 
 on:
   workflow_dispatch:

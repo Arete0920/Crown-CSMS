@@ -1,4 +1,7 @@
 name: Phase4 Gradebook Demo Proof
+permissions:
+  contents: read
+
 
 on:
   workflow_dispatch:

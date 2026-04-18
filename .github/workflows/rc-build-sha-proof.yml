@@ -1,4 +1,8 @@
 name: RC Build-SHA Health Proof
+permissions:
+  contents: read
+  id-token: write
+
 
 on:
   push:
