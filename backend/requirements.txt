@@ -2,6 +2,7 @@
 # Keep in sync with root requirements.txt where applicable.
 Django==5.2.13
 djangorestframework==3.15.2
+django-extensions==4.1
 python-dotenv==1.0.0
 gunicorn==22.0.0
 dj-database-url==2.3.0
@@ -9,7 +10,7 @@ dj-database-url==2.3.0
 # psycopg (v3) supports Python 3.14; psycopg2-binary is EOL for 3.14+
 psycopg[binary]==3.3.2
 # Testing
-pytest==7.4.3
+pytest==9.0.3
 pytest-django==4.7.0
 # JWT auth (alongside sessions)
 djangorestframework-simplejwt>=5.3.1
