@@ -2,13 +2,13 @@ name: proof-ceremony-prod
 permissions:
   contents: read
 
-# Phase 7Câ€” Crown Proof Ceremony (Production)
+# Phase 7C— Crown Proof Ceremony (Production)
 #
 # Manual dispatch only. Run this after any prod deploy to prove that:
 #   1. The backend /api/health/ reports the expected build_sha and prod_deploy_tag
 #   2. The frontend /build.json reports the same SHA and tag (if DashBase provided)
 #
-# Exits non-zero if any assertion fails â€” visible in the workflow run status.
+# Exits non-zero if any assertion fails — visible in the workflow run status.
 
 on:
   workflow_dispatch:
@@ -30,7 +30,7 @@ on:
 
 jobs:
   ceremony:
-    name: "Proof â€” ${{ inputs.tag }}"
+    name: "Proof — ${{ inputs.tag }}"
     runs-on: ubuntu-latest
     permissions:
       contents: read

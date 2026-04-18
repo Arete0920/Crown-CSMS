@@ -270,28 +270,22 @@ jobs:
           pytest --cov=. --cov-report=xml --ignore-glob='test_*.py'
 
       - name: Upload coverage
-        if: always() && hashFiles('coverage.xml') != ''
+        if: always() && hashFiles('backend/coverage.xml') != ''
         continue-on-error: true
         uses: codecov/codecov-action@v3
         with:
-          files: ./coverage.xml
+          files: ./backend/coverage.xml
           flags: unittests
 
       - name: Coverage artifact status
         if: ${{ always() }}
         shell: bash
         run: |
-          if [ -f "coverage.xml" ]; then
-            echo "Found coverage.xml, upload step executed."
+          if [ -f "backend/coverage.xml" ]; then
+            echo "Found backend/coverage.xml, upload step executed."
           else
-            echo "No coverage.xml found, coverage upload skipped by condition."
+            echo "No backend/coverage.xml found, coverage upload skipped by condition."
           fi
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.WEBAPP_NAME }}
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
       - name: Verify deployed build SHA and tenant-aware integrity
         shell: pwsh
