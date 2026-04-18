@@ -15,6 +15,8 @@ from billing.models import InstallmentPlan
 from households.scoping import get_request_school_id
 
 from .models import BillingWizardSession
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
@@ -98,6 +100,7 @@ def _validate_fee(fee, idx):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -115,6 +118,7 @@ def create_session(request):
     )
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -143,6 +147,7 @@ def configure_session(request, session_id):
     return Response({"session_id": str(session.id), "status": session.status})
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -177,6 +182,7 @@ def save_plans(request, session_id):
     return Response({"session_id": str(session.id), "status": session.status, "plans_count": len(normalised)})
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -210,6 +216,7 @@ def save_fees(request, session_id):
     return Response({"session_id": str(session.id), "status": session.status, "fees_count": len(normalised)})
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -273,6 +280,7 @@ def commit_session(request, session_id):
     return Response({"session_id": str(session.id), "status": session.status, "result": commit_result})
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

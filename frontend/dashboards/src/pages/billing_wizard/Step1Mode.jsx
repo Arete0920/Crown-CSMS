@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { createBillingWizardSession, configureWizardSession } from "../../api/billing_wizard.js";
 import "../../styles/crown-wizard.css";
@@ -57,10 +57,11 @@ export default function Step1Mode({ context, setContext, goNext, stepIndex, tota
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 18 }}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
+          <label htmlFor="billing-term" style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 4 }}>
             Billing Term *
           </label>
           <input
+            id="billing-term"
             className="crown-input"
             type="text"
             placeholder="e.g. 2026-FALL"
@@ -72,41 +73,41 @@ export default function Step1Mode({ context, setContext, goNext, stepIndex, tota
           <span style={{ fontSize: 11, color: "var(--crown-muted)" }}>Max 24 characters. Used as the term key on billing records.</span>
         </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--crown-muted)", marginBottom: 8 }}>
+        <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
+          <legend style={{ fontSize: 12, color: "var(--crown-muted)", marginBottom: 8 }}>
             Billing Mode *
-          </label>
+          </legend>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {BILLING_MODES.map((m) => (
-              <label
-                key={m.value}
+            {BILLING_MODES.map((billingModeOption) => (
+              <div
+                key={billingModeOption.value}
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
                   gap: 10,
                   padding: "10px 12px",
-                  border: `1px solid ${mode === m.value ? "var(--crown-primary)" : "var(--crown-border)"}`,
+                  border: `1px solid ${mode === billingModeOption.value ? "var(--crown-primary)" : "var(--crown-border)"}`,
                   borderRadius: 6,
-                  cursor: "pointer",
-                  background: mode === m.value ? "var(--crown-surface-2)" : "transparent",
+                  background: mode === billingModeOption.value ? "var(--crown-surface-2)" : "transparent",
                 }}
               >
                 <input
+                  id={`billing-mode-${billingModeOption.value}`}
                   type="radio"
                   name="billing_mode"
-                  value={m.value}
-                  checked={mode === m.value}
-                  onChange={() => setMode(m.value)}
+                  value={billingModeOption.value}
+                  checked={mode === billingModeOption.value}
+                  onChange={() => setMode(billingModeOption.value)}
                   style={{ marginTop: 2 }}
                 />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{m.label}</div>
-                  <div style={{ fontSize: 12, color: "var(--crown-muted)", marginTop: 2 }}>{m.desc}</div>
-                </div>
-              </label>
+                <label htmlFor={`billing-mode-${billingModeOption.value}`} style={{ cursor: "pointer" }}>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>{billingModeOption.label}</div>
+                  <div style={{ fontSize: 12, color: "var(--crown-muted)", marginTop: 2 }}>{billingModeOption.desc}</div>
+                </label>
+              </div>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         {error && <div className="crown-alert">{error}</div>}
       </div>
@@ -115,7 +116,7 @@ export default function Step1Mode({ context, setContext, goNext, stepIndex, tota
         <span className="crown-muted" style={{ fontSize: 12 }}>Step {stepIndex + 1} of {totalSteps}</span>
         <div className="crown-wizard-actions-right">
           <button className="crown-btn crown-btn-primary" onClick={handleContinue} disabled={loading}>
-            {loading ? "Saving…" : "Continue →"}
+            {loading ? "Saving..." : "Continue"}
           </button>
         </div>
       </div>

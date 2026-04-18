@@ -1,5 +1,5 @@
 /**
- * TicketsPage — list tickets, check in attendees, purchase new tickets.
+ * TicketsPage  list tickets, check in attendees, purchase new tickets.
  * Calls GET  /api/v1/advancement/tickets/
  *       POST /api/v1/advancement/purchase/ticket/
  *       POST /api/v1/advancement/tickets/{id}/check-in/
@@ -37,13 +37,13 @@ export default function TicketsPage() {
   function loadTickets(eventId = "") {
     let url = `${apiBase()}/api/v1/advancement/tickets/`;
     if (eventId) url += `?event_id=${eventId}`;
-    return fetch(url, { headers: authHeaders() })
+    return globalThis.fetch(url, { headers: authHeaders() })
       .then((r) => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
       .then((d) => setTickets(d.results ?? d));
   }
 
   function loadEvents() {
-    return fetch(`${apiBase()}/api/v1/advancement/events/?active=true`, { headers: authHeaders() })
+    return globalThis.fetch(`${apiBase()}/api/v1/advancement/events/?active=true`, { headers: authHeaders() })
       .then((r) => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
       .then((d) => setEvents(d.results ?? d));
   }
@@ -62,7 +62,7 @@ export default function TicketsPage() {
   function handlePurchase(e) {
     e.preventDefault();
     setPurchasing(true);
-    fetch(`${apiBase()}/api/v1/advancement/purchase/ticket/`, {
+    globalThis.fetch(`${apiBase()}/api/v1/advancement/purchase/ticket/`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify(form),
@@ -79,7 +79,7 @@ export default function TicketsPage() {
 
   function handleCheckIn(ticketId) {
     setCheckingIn(ticketId);
-    fetch(`${apiBase()}/api/v1/advancement/tickets/${ticketId}/check-in/`, {
+    globalThis.fetch(`${apiBase()}/api/v1/advancement/tickets/${ticketId}/check-in/`, {
       method: "POST",
       headers: authHeaders(),
     })
@@ -89,7 +89,7 @@ export default function TicketsPage() {
       .finally(() => setCheckingIn(null));
   }
 
-  if (loading) return <p aria-busy="true">Loading tickets…</p>;
+  if (loading) return <p aria-busy="true">Loading tickets</p>;
   if (error)   return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
 
   return (
@@ -119,10 +119,10 @@ export default function TicketsPage() {
           <h3 style={{ margin: "0 0 12px" }}>Purchase Ticket</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Event *</label>
-              <select required value={form.event_id} onChange={(e) => setForm({ ...form, event_id: e.target.value })}
+              <label htmlFor="ticket-purchase-event" style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Event *</label>
+              <select id="ticket-purchase-event" required value={form.event_id} onChange={(e) => setForm({ ...form, event_id: e.target.value })}
                 style={{ width: "100%", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: 6 }}>
-                <option value="">Select event…</option>
+                <option value="">Select event</option>
                 {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
               </select>
             </div>
@@ -130,7 +130,7 @@ export default function TicketsPage() {
             <Field label="Purchaser Email *" type="email" value={form.purchaser_email} onChange={(v) => setForm({ ...form, purchaser_email: v })} required />
           </div>
           <div style={{ marginTop: 12 }}>
-            <button type="submit" disabled={purchasing}>{purchasing ? "Processing…" : "Purchase"}</button>
+            <button type="submit" disabled={purchasing}>{purchasing ? "Processing" : "Purchase"}</button>
             <button type="button" onClick={() => setShowPurchase(false)} style={{ marginLeft: 8 }}>Cancel</button>
           </div>
         </form>
@@ -153,7 +153,7 @@ export default function TicketsPage() {
               <td style={TD}>{t.event_name || t.event}</td>
               <td style={TD}>{t.purchaser_name}</td>
               <td style={TD}>{t.purchaser_email}</td>
-              <td style={TD}>{t.purchased_at ? new Date(t.purchased_at).toLocaleDateString() : "—"}</td>
+              <td style={TD}>{t.purchased_at ? new Date(t.purchased_at).toLocaleDateString() : ""}</td>
               <td style={TD}>
                 <span style={{
                   display: "inline-block", padding: "2px 8px", borderRadius: 12, fontSize: 12, fontWeight: 600,
@@ -171,7 +171,7 @@ export default function TicketsPage() {
                     style={{ fontSize: 12, padding: "4px 10px" }}
                     aria-label={`Check in ${t.purchaser_name}`}
                   >
-                    {checkingIn === t.id ? "…" : "Check In"}
+                    {checkingIn === t.id ? "" : "Check In"}
                   </button>
                 )}
               </td>

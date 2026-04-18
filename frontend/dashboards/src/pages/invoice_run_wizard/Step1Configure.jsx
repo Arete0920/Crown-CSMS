@@ -33,15 +33,15 @@ export default function Step1Configure({ context, setContext, goNext, stepIndex,
     <div>
       <CrownWizardStepHeader title="Configure Period" subtitle="Set billing period dates and invoice due date." stepIndex={stepIndex} totalSteps={totalSteps} steps={steps} />
       <div className="crown-wizard-field">
-        <label>Period Start</label>
+        <div>Period Start</div>
         <input className="crown-input" type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} />
       </div>
       <div className="crown-wizard-field">
-        <label>Period End</label>
+        <div>Period End</div>
         <input className="crown-input" type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} />
       </div>
       <div className="crown-wizard-field">
-        <label>Due Date</label>
+        <div>Due Date</div>
         <input className="crown-input" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
       </div>
       {error && <p className="crown-error">{error}</p>}

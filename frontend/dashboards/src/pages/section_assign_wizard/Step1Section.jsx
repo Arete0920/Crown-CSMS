@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
 import { createSectionAssignSession, configureSectionAssignSession } from "../../api/section_assign_wizard.js";
@@ -42,18 +43,18 @@ export default function Step1Section({ context, setContext, goNext, stepIndex, t
 
       <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14, maxWidth: 480 }}>
         <div>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Section ID (UUID)</label>
+          <div style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Section ID (UUID)</div>
           <input
             className="crown-input"
             type="text"
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            placeholder="00000000-0000-0000-0000-000000000000"
             value={sectionId}
             onChange={(e) => setSectionId(e.target.value)}
             style={{ width: "100%" }}
           />
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Term (optional — inherited from section if blank)</label>
+          <div style={{ display: "block", fontSize: 13, marginBottom: 4 }}>Term (optional - inherited from section if blank)</div>
           <input
             className="crown-input"
             type="text"
@@ -72,10 +73,23 @@ export default function Step1Section({ context, setContext, goNext, stepIndex, t
             onClick={handleNext}
             disabled={loading}
           >
-            {loading ? "Configuring…" : "Next →"}
+            {loading ? "Configuring..." : "Next ->"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+Step1Section.propTypes = {
+  context: PropTypes.shape({
+    section_id: PropTypes.string,
+    term: PropTypes.string,
+    sessionId: PropTypes.string,
+  }).isRequired,
+  setContext: PropTypes.func.isRequired,
+  goNext: PropTypes.func.isRequired,
+  stepIndex: PropTypes.number.isRequired,
+  totalSteps: PropTypes.number.isRequired,
+  steps: PropTypes.arrayOf(PropTypes.object).isRequired,
+};

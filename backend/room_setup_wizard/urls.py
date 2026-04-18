@@ -1,4 +1,4 @@
-﻿from django.urls import path
+from django.urls import path
 from room_setup_wizard import views
 
 urlpatterns = [
@@ -7,4 +7,3 @@ urlpatterns = [
     path("<uuid:session_id>/commit/", views.commit),
     path("<uuid:session_id>/verify/", views.verify),
 ]
-

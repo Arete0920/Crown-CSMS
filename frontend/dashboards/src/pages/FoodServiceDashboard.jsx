@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import FoodServiceSnapshotCard from '../components/dashboard/foodservice/FoodServiceSnapshotCard';
 import FoodServiceAlertsPanel from '../components/dashboard/foodservice/FoodServiceAlertsPanel';

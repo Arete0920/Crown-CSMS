@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import {
@@ -14,6 +14,7 @@ import { CurriculumPacingCard } from '../components/CurriculumPacingCard.jsx';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import ErrorBanner from '../components/ui/ErrorBanner.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+import { getCurrentUserRoles } from '../auth/roleAdapter.js';
 
 /* ── Academics KPI flip cards ──────────────────────────────── */
 const ACADEMICS_KPI = [
@@ -56,6 +57,11 @@ export function AcademicsDashboard() {
   const [assignmentsError, setAssignmentsError] = useState('');
   const [assignments, setAssignments] = useState(null);
 
+  const roles = getCurrentUserRoles();
+  const canViewParentStudents = roles.some((role) =>
+    ['parent', 'school_admin', 'super_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'staff', 'admin'].includes(role)
+  );
+
   // Initialize schoolId from authClient (which checks sessionStorage first, then localStorage)
   useEffect(() => {
     const id = getSelectedSchoolId();
@@ -65,10 +71,17 @@ export function AcademicsDashboard() {
   useEffect(() => {
     fetchSections()
       .then((data) => setSections(data.results || []))
-      .catch((err) => setSectionsError(err.message));
+      .catch((err) => setSectionsError(err?.message ?? 'Failed to load sections.'));
   }, []);
 
   useEffect(() => {
+    if (!canViewParentStudents) {
+      setParentStudents([]);
+      setStudentSchedules({});
+      setParentError('');
+      return;
+    }
+
     fetchParentStudents()
       .then((students) => {
         setParentStudents(students || []);
@@ -89,8 +102,8 @@ export function AcademicsDashboard() {
         });
         setStudentSchedules(next);
       })
-      .catch((err) => setParentError(err.message));
-  }, []);
+      .catch((err) => setParentError(err?.message ?? 'Failed to load parent students.'));
+  }, [canViewParentStudents]);
 
   const handleLookup = () => {
     setLookupError('');
@@ -281,6 +294,12 @@ export function AcademicsDashboard() {
                     <Link to={`/gradebook/${row.section_id}`}>
                       {row.roster_count ?? 0} students
                     </Link>
+                    <button
+                      onClick={() => handleOpenRoster(row.section_id)}
+                      style={{ marginLeft: 8 }}
+                    >
+                      View roster
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -296,7 +315,9 @@ export function AcademicsDashboard() {
 
       <section style={{ marginBottom: 32 }}>
         <h2>Parent Students</h2>
-        {parentError ? (
+        {!canViewParentStudents ? (
+          <div>Parent-linked students are only available for parent/family and staff roles.</div>
+        ) : parentError ? (
           <ErrorBanner title="Failed to load parent students" message={parentError} />
         ) : (
           <div>
@@ -720,22 +741,8 @@ export function AcademicsDashboard() {
                         ) : (
                           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                             {(rosterData?.students ?? []).map((student) => (
-                              <li
-                                key={student.student_id}
-                                onClick={() => handleOpenStudent(student)}
-                                role="button"
-                                tabIndex={0}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') handleOpenStudent(student);
-                                }}
-                                style={{
-                                  padding: '8px',
-                                  borderBottom: '1px solid var(--crown-border)',
-                                  fontSize: 13,
-                                  cursor: 'pointer',
-                                }}
-                                title="Open student snapshot"
-                              >
+                              <li key={student.student_id} style={{ borderBottom: '1px solid var(--crown-border)' }}>
+                                <button type="button" onClick={() => handleOpenStudent(student)} style={{ width: '100%', textAlign: 'left', padding: '8px', border: 'none', background: 'transparent', fontSize: 13, cursor: 'pointer' }} title="Open student snapshot">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                                   <div>
                                     <div>{student.name}</div>
@@ -747,6 +754,7 @@ export function AcademicsDashboard() {
                                     ›
                                   </div>
                                 </div>
+                                </button>
                               </li>
                             ))}
                           </ul>

@@ -1,0 +1,3 @@
+﻿COMPUWERX sandbox URL not provided.
+Set COMPUWERX_SANDBOX_URL and rerun.
+This artifact is a hard evidence placeholder until sandbox verification is supplied.

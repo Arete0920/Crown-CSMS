@@ -1,6 +1,6 @@
-﻿/**
+/**
  * api/enrollment_conversion_wizard.js
- * Enrollment Conversion Wizard â€” API layer
+ * Enrollment Conversion Wizard  API layer
  */
 import { getToken, getSchoolId } from "../lib/api";
 
@@ -31,7 +31,7 @@ async function checkResponse(res, url) {
 }
 
 export async function createEnrollmentConversionSession() {
-  const res = await fetch(SESSIONS, {
+  const res = await globalThis.fetch(SESSIONS, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({}),
@@ -41,7 +41,7 @@ export async function createEnrollmentConversionSession() {
 
 export async function configureEnrollmentConversionSession(sessionId, academic_year_label, from_status) {
   const url = `${SESSIONS}${sessionId}/configure/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ academic_year_label, from_status }),
@@ -51,7 +51,7 @@ export async function configureEnrollmentConversionSession(sessionId, academic_y
 
 export async function loadApplicants(sessionId) {
   const url = `${SESSIONS}${sessionId}/load/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({}),
@@ -61,7 +61,7 @@ export async function loadApplicants(sessionId) {
 
 export async function commitEnrollmentConversionSession(sessionId) {
   const url = `${SESSIONS}${sessionId}/commit/`;
-  const res = await fetch(url, {
+  const res = await globalThis.fetch(url, {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ confirm: true }),
@@ -71,7 +71,7 @@ export async function commitEnrollmentConversionSession(sessionId) {
 
 export async function verifyEnrollmentConversionSession(sessionId) {
   const url = `${SESSIONS}${sessionId}/verify/`;
-  const res = await fetch(url, { method: "GET", headers: headers() });
+  const res = await globalThis.fetch(url, { method: "GET", headers: headers() });
   return checkResponse(res, url);
 }
 

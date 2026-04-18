@@ -33,10 +33,10 @@ jobs:
       CROWN_DEMO_MODE: "true"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4.1.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
@@ -79,3 +79,4 @@ jobs:
         run: |
           echo "---- django.log (last 200 lines) ----"
           tail -200 /tmp/django.log || true
+

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from core.models import AcademicYear
 from households.models import Student
+from .curriculum_publishers import normalize_curriculum_publisher, is_supported_curriculum_publisher
 from .models import (
     Course, Section, Term, Enrollment, Assignment, AssignmentCategory,
     CurriculumSource, Unit, Lesson, PublisherObjective,
@@ -177,10 +178,27 @@ class SectionRosterStudentSerializer(serializers.Serializer):
 
 class CurriculumSourceSerializer(serializers.ModelSerializer):
     source_id = serializers.UUIDField(source="id", read_only=True)
+    canonical_publisher = serializers.SerializerMethodField()
+    is_supported_publisher = serializers.SerializerMethodField()
 
     class Meta:
         model = CurriculumSource
-        fields = ["source_id", "school_id", "name", "source_type", "reference_link", "description"]
+        fields = [
+            "source_id",
+            "school_id",
+            "name",
+            "source_type",
+            "reference_link",
+            "description",
+            "canonical_publisher",
+            "is_supported_publisher",
+        ]
+
+    def get_canonical_publisher(self, obj):
+        return normalize_curriculum_publisher(obj.name)
+
+    def get_is_supported_publisher(self, obj):
+        return is_supported_curriculum_publisher(obj.name)
 
 
 class UnitSerializer(serializers.ModelSerializer):

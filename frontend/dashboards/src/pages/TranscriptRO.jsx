@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchStudents, fetchTranscript } from "../api/academics";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner.jsx";
@@ -7,20 +7,18 @@ export function TranscriptRO() {
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [transcript, setTranscript] = useState(null);
-  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(true);
   const [loadingTranscript, setLoadingTranscript] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load students on mount
   useEffect(() => {
-    setLoadingStudents(true);
     fetchStudents({ limit: 200 })
       .then((data) => {
         const results = data?.results || [];
         setStudents(results);
-        // Auto-select first student if available
-        if (results.length > 0 && !selectedStudentId) {
-          setSelectedStudentId(results[0].id);
+        if (results.length > 0) {
+          setSelectedStudentId((currentId) => currentId || results[0].id);
+          setLoadingTranscript(true);
         }
       })
       .catch((err) => {
@@ -30,18 +28,15 @@ export function TranscriptRO() {
       .finally(() => setLoadingStudents(false));
   }, []);
 
-  // Load transcript when student selected
   useEffect(() => {
     if (!selectedStudentId) {
-      setTranscript(null);
       return;
     }
 
-    setLoadingTranscript(true);
-    setError(null);
     fetchTranscript(selectedStudentId)
       .then((data) => {
         setTranscript(data);
+        setError(null);
       })
       .catch((err) => {
         console.error("Failed to load transcript:", err);
@@ -51,39 +46,44 @@ export function TranscriptRO() {
       .finally(() => setLoadingTranscript(false));
   }, [selectedStudentId]);
 
+  const handleStudentChange = (event) => {
+    setLoadingTranscript(true);
+    setSelectedStudentId(event.target.value);
+  };
+
   const handlePrint = () => {
     window.print();
   };
 
   return (
     <CrownLayout title="Transcript" subtitle="Read Only">
-      {/* Header - hidden in print */}
       <div className="no-print" style={{ marginBottom: 24 }}>
         <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
-          <label style={{ fontWeight: 500 }}>
+          <label htmlFor="transcript-student-select" style={{ fontWeight: 500 }}>
             Student:
-            <select
-              value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              disabled={loadingStudents}
-              style={{
-                marginLeft: 8,
-                padding: "6px 12px",
-                fontSize: 14,
-                borderRadius: 4,
-                border: "1px solid var(--crown-border)",
-                minWidth: 300,
-              }}
-            >
-              {loadingStudents && <option>Loading students...</option>}
-              {!loadingStudents && students.length === 0 && <option>No students found</option>}
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.last_name}, {s.first_name} {s.middle_name || ""} - Grade {s.grade_level || "?"}
-                </option>
-              ))}
-            </select>
           </label>
+          <select
+            id="transcript-student-select"
+            value={selectedStudentId}
+            onChange={handleStudentChange}
+            disabled={loadingStudents}
+            aria-label="Student"
+            style={{
+              padding: "6px 12px",
+              fontSize: 14,
+              borderRadius: 4,
+              border: "1px solid var(--crown-border)",
+              minWidth: 300,
+            }}
+          >
+            {loadingStudents ? <option>Loading students...</option> : null}
+            {!loadingStudents && students.length === 0 ? <option>No students found</option> : null}
+            {students.map((student) => (
+              <option key={student.id} value={student.id}>
+                {student.last_name}, {student.first_name} {student.middle_name || ""} - Grade {student.grade_level || "?"}
+              </option>
+            ))}
+          </select>
 
           <button
             className="crown-btn crown-btn-primary"
@@ -94,20 +94,17 @@ export function TranscriptRO() {
           </button>
         </div>
 
-        {error && <ErrorBanner title="Transcript error" message={error} />}
+        {error ? <ErrorBanner title="Transcript error" message={error} /> : null}
       </div>
 
-      {/* Loading state */}
-      {loadingTranscript && (
+      {loadingTranscript ? (
         <div style={{ textAlign: "center", padding: 40, color: "var(--crown-muted)" }}>
           <p>Loading transcript...</p>
         </div>
-      )}
+      ) : null}
 
-      {/* Transcript content */}
-      {!loadingTranscript && transcript && (
+      {!loadingTranscript && transcript ? (
         <div className="transcript-content">
-          {/* Student header */}
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ marginTop: 0, marginBottom: 8 }}>Academic Transcript</h2>
             <table style={{ fontSize: 14, borderCollapse: "collapse" }}>
@@ -126,13 +123,12 @@ export function TranscriptRO() {
                 </tr>
                 <tr>
                   <td style={{ paddingRight: 16, fontWeight: 500 }}>Grade Level:</td>
-                  <td>{transcript.student.grade_level || "—"}</td>
+                  <td>{transcript.student.grade_level || "-"}</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Terms and courses */}
           {transcript.terms && transcript.terms.length > 0 ? (
             <div>
               {transcript.terms.map((term, idx) => (
@@ -146,11 +142,11 @@ export function TranscriptRO() {
                     }}
                   >
                     {term.term_code}
-                    {term.term_gpa_mvp !== null && term.term_gpa_mvp !== undefined && (
+                    {term.term_gpa_mvp !== null && term.term_gpa_mvp !== undefined ? (
                       <span style={{ float: "right", fontSize: 14, fontWeight: 400, color: "var(--crown-muted)" }}>
                         Term GPA (MVP): {Number(term.term_gpa_mvp).toFixed(2)}
                       </span>
-                    )}
+                    ) : null}
                   </h3>
 
                   {term.courses && term.courses.length > 0 ? (
@@ -173,32 +169,26 @@ export function TranscriptRO() {
                         </tr>
                       </thead>
                       <tbody>
-                        {term.courses.map((course, cIdx) => (
+                        {term.courses.map((course, courseIdx) => (
                           <tr
-                            key={course.section_id || cIdx}
+                            key={course.section_id || courseIdx}
                             style={{ borderBottom: "1px solid var(--crown-border)" }}
                           >
                             <td style={{ padding: "8px 12px" }}>{course.course_code}</td>
                             <td style={{ padding: "8px 12px" }}>{course.course_name}</td>
-                            <td style={{ padding: "8px 12px" }}>{course.teacher_name || "—"}</td>
+                            <td style={{ padding: "8px 12px" }}>{course.teacher_name || "-"}</td>
                             <td style={{ textAlign: "center", padding: "8px 12px" }}>
                               {course.final_percent !== null && course.final_percent !== undefined
                                 ? `${Math.round(course.final_percent)}%`
-                                : "—"}
+                                : "-"}
                             </td>
-                            <td
-                              style={{
-                                textAlign: "center",
-                                padding: "8px 12px",
-                                fontWeight: 600,
-                              }}
-                            >
-                              {course.final_letter || "—"}
+                            <td style={{ textAlign: "center", padding: "8px 12px", fontWeight: 600 }}>
+                              {course.final_letter || "-"}
                             </td>
                             <td style={{ textAlign: "center", padding: "8px 12px" }}>
                               {course.credits !== null && course.credits !== undefined
                                 ? Number(course.credits).toFixed(1)
-                                : "—"}
+                                : "-"}
                             </td>
                           </tr>
                         ))}
@@ -216,8 +206,7 @@ export function TranscriptRO() {
             </p>
           )}
 
-          {/* Cumulative GPA */}
-          {transcript.cumulative_gpa_mvp !== null && transcript.cumulative_gpa_mvp !== undefined && (
+          {transcript.cumulative_gpa_mvp !== null && transcript.cumulative_gpa_mvp !== undefined ? (
             <div
               style={{
                 marginTop: 32,
@@ -234,21 +223,14 @@ export function TranscriptRO() {
                     This is a placeholder calculation pending grade weighting and official credit values.
                   </p>
                 </div>
-                <div
-                  style={{
-                    fontSize: 32,
-                    fontWeight: 700,
-                    color: "var(--crown-ink)",
-                  }}
-                >
+                <div style={{ fontSize: 32, fontWeight: 700, color: "var(--crown-ink)" }}>
                   {Number(transcript.cumulative_gpa_mvp).toFixed(2)}
                 </div>
               </div>
             </div>
-          )}
+          ) : null}
 
-          {/* Notes */}
-          {transcript.notes && transcript.notes.length > 0 && (
+          {transcript.notes && transcript.notes.length > 0 ? (
             <div style={{ marginTop: 24, fontSize: 12, color: "var(--crown-muted)", borderTop: "1px solid var(--crown-border)", paddingTop: 16 }}>
               <p style={{ margin: 0, marginBottom: 8, fontWeight: 500 }}>Notes:</p>
               <ul style={{ margin: 0, paddingLeft: 20 }}>
@@ -259,11 +241,10 @@ export function TranscriptRO() {
                 ))}
               </ul>
             </div>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
 
-      {/* Print styles */}
       <style>{`
         @media print {
           .no-print, .crown-sidebar, .crown-pagehead {

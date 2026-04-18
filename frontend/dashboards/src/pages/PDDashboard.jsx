@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
@@ -21,7 +21,7 @@ const DEMO = {
   snapshot_date: 'Feb 26, 2026',
   upcoming_sessions: [
     { title: 'Google Classroom Deep Dive', date: 'Mar 4',  facilitator: 'T. Hughes',    registered: 18, status: 'upcoming'    },
-    { title: 'Differentiated Instruction', date: 'Mar 11', facilitator: 'Guest — CASEL',registered: 22, status: 'upcoming'    },
+    { title: 'Differentiated Instruction', date: 'Mar 11', facilitator: 'Guest  CASEL',registered: 22, status: 'upcoming'    },
     { title: 'Crisis Response Refresher',  date: 'Mar 18', facilitator: 'Admin Team',    registered: 34, status: 'upcoming'    },
     { title: 'Gradebook & Rubric Best Practices', date: 'Feb 20', facilitator: 'L. Park', registered: 28, status: 'completed' },
   ],
@@ -52,7 +52,7 @@ async function fetchPDMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch { return { ok: false, data: DEMO }; }
@@ -78,7 +78,7 @@ function Pill({ color = 'gray', children }) {
 const TH = { padding: '7px 10px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 };
 const TD = { padding: '8px 10px', color: 'var(--crown-ink)', fontSize: 13, borderBottom: '1px solid var(--crown-border)' };
 
-/* â”€â”€ Professional Development KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Professional Development KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Trainings This Mo",  value: "5",   trend: null,              trendUp: null,
     definition: "Professional development sessions scheduled or completed this month.",
@@ -113,7 +113,7 @@ export default function PDDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>

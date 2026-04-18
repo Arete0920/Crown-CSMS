@@ -14,6 +14,8 @@ from crown_api.models import (
 )
 from crown_api.models_households import ROLE_GUARDIAN
 
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 def _dt(y, m, d, hh, mm) -> datetime:
     return datetime(y, m, d, hh, mm, tzinfo=timezone.utc)
@@ -28,7 +30,7 @@ class CommsApiTests(TestCase):
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=True,
             school=self.school,
         )
@@ -36,7 +38,7 @@ class CommsApiTests(TestCase):
         self.parent_user = UserAccount.objects.create_user(
             username="parentuser",
             email="parent@example.com",
-            password="testpass",
+            password=TEST_AUTH_SECRET,
             is_staff=False,
             school=self.school,
         )
@@ -198,3 +200,8 @@ class CommsApiTests(TestCase):
         # IsAuthenticated + JWT configured → DRF emits 401 (not 403) for unauthenticated
         resp = self.client.get("/api/threads/", HTTP_X_SCHOOL_ID=str(self.school.id))
         self.assertEqual(resp.status_code, 401)
+
+
+
+
+

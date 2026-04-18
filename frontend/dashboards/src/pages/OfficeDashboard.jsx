@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -6,7 +6,7 @@ import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection   from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
-/* ── Auth helpers ─────────────────────────────────────────────────────── */
+/*  Auth helpers  */
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
   return base.endsWith('/') ? base.slice(0, -1) : base;
@@ -20,7 +20,7 @@ function getSession() {
   } catch { return { token: '', schoolId: '' }; }
 }
 
-/* ── Static demo fallback ─────────────────────────────────────────────── */
+/*  Static demo fallback  */
 const DEMO = {
   staff_absent_today:       3,
   coverage_gaps:            1,
@@ -28,22 +28,22 @@ const DEMO = {
   hr_tasks_due:             4,
   compliance_items_due:     2,
   recent_requests: [
-    { label: 'Facility repair — gym HVAC',      status: 'open',       priority: 'high'   },
-    { label: 'Supply order — classroom consumables', status: 'pending', priority: 'normal' },
-    { label: 'Background check — new hire',     status: 'in_review',  priority: 'high'   },
-    { label: 'Leave request — T. Williams',     status: 'approved',   priority: 'normal' },
-    { label: 'Vendor invoice — janitorial svc', status: 'pending',    priority: 'normal' },
+    { label: 'Facility repair  gym HVAC',      status: 'open',       priority: 'high'   },
+    { label: 'Supply order  classroom consumables', status: 'pending', priority: 'normal' },
+    { label: 'Background check  new hire',     status: 'in_review',  priority: 'high'   },
+    { label: 'Leave request  T. Williams',     status: 'approved',   priority: 'normal' },
+    { label: 'Vendor invoice  janitorial svc', status: 'pending',    priority: 'normal' },
   ],
   hr_tasks: [
-    { label: 'Annual TB test due — 2 staff',      due: 'Feb 28' },
-    { label: 'I-9 reverification — 1 staff',      due: 'Mar 5'  },
-    { label: 'Handbook acknowledgment — 4 staff', due: 'Mar 10' },
+    { label: 'Annual TB test due  2 staff',      due: 'Feb 28' },
+    { label: 'I-9 reverification  1 staff',      due: 'Mar 5'  },
+    { label: 'Handbook acknowledgment  4 staff', due: 'Mar 10' },
     { label: 'Emergency contact update',           due: 'Mar 15' },
   ],
   alerts: [
-    { label: '1 coverage gap today — Period 3 sub needed', severity: 'red'    },
+    { label: '1 coverage gap today  Period 3 sub needed', severity: 'red'    },
     { label: '2 compliance items due this week',           severity: 'yellow' },
-    { label: '3 staff absent — substitutes placed',        severity: 'gray'   },
+    { label: '3 staff absent  substitutes placed',        severity: 'gray'   },
   ],
 };
 
@@ -54,7 +54,7 @@ async function fetchOfficeMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch {
@@ -62,7 +62,7 @@ async function fetchOfficeMetrics() {
   }
 }
 
-/* ── Helpers ──────────────────────────────────────────────────────────── */
+/*  Helpers  */
 function Pill({ color = 'gray', children }) {
   const map = {
     red:    { bg: 'var(--crown-danger-bg)', fg: 'var(--crown-danger)'  },
@@ -85,8 +85,8 @@ const STATUS_COLOR = {
   closed:    'gray',
 };
 
-/* ── Main component ───────────────────────────────────────────────────── */
-/* â”€â”€ Office KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Main component  */
+/*  Office KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Front Desk Visitors", value: "14", trend: null,               trendUp: null,
     definition: "Visitors who have checked in at the main office today.",
@@ -122,7 +122,7 @@ export default function OfficeDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
@@ -180,7 +180,7 @@ export default function OfficeDashboard() {
             <CrownCard title="Alerts &amp; Compliance">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {alerts.length === 0
-                  ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No active alerts — operations normal.</p>
+                  ? <p style={{ fontSize: 13, color: 'var(--crown-ok)' }}>No active alerts  operations normal.</p>
                   : alerts.map((a, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 6,
                         background: a.severity === 'red' ? 'var(--crown-danger-bg)' : a.severity === 'yellow' ? 'var(--crown-warn-bg)' : 'var(--crown-surface-2)',

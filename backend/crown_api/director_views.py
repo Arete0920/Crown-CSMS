@@ -1,8 +1,10 @@
-from django.conf import settings
+﻿from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Sum, Q
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -161,6 +163,7 @@ def build_director_priority_snapshot(school_id, academic_year):
         }
     }
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def aid_summary(request):
@@ -214,6 +217,7 @@ def aid_summary(request):
     return Response(data)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def finance_summary(request):
@@ -271,6 +275,7 @@ def finance_summary(request):
     return Response(data)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def registrar_summary(request):
@@ -319,6 +324,7 @@ def registrar_summary(request):
     return Response(data)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def director_dashboard(request):
@@ -458,6 +464,7 @@ def director_dashboard(request):
         )
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def director_priority(request):
@@ -769,6 +776,7 @@ def _post_award_to_new_ledger_pipeline(*, award, school_id, actor_user):
     )
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def director_actions(request):
@@ -1063,6 +1071,7 @@ Crown Financial Aid Office
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def director_timeline(request):
@@ -1251,6 +1260,7 @@ def _is_dev_env() -> bool:
     return env == "dev"
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @authentication_classes([])       # prevent DRF from requiring JWT automatically
@@ -1307,3 +1317,6 @@ def force_seed_user(request):
             {"ok": False, "message": "Seed operation failed."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+

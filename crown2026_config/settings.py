@@ -165,3 +165,17 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+INSTALLED_APPS += ['drf_spectacular', 'drf_spectacular_sidecar']
+REST_FRAMEWORK = globals().get('REST_FRAMEWORK', {})
+REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Crown API',
+    'DESCRIPTION': 'Public integration surface for Crown2026',
+    'VERSION': '0.9.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+INSTALLED_APPS = globals().get("INSTALLED_APPS", INSTALLED_APPS if "INSTALLED_APPS" in globals() else [])
+if "django_extensions" not in INSTALLED_APPS:
+    INSTALLED_APPS.append("django_extensions")

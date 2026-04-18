@@ -4,6 +4,8 @@ import logging
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from django.contrib.auth import get_user_model
 from core.models import School

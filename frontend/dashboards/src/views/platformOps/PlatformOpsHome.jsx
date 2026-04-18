@@ -12,7 +12,7 @@
  * Dependencies: @mui/material, @mui/x-data-grid, axios (all already in use
  * elsewhere in the Crown2026 frontend).
  */
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Button,
@@ -228,7 +228,7 @@ export default function PlatformOpsHome() {
         data.results.map((r) => ({ id: r.school_id, ...r }))
       );
       setTotal(data.total);
-    } catch (err) {
+    } catch {
       setError("Failed to load schools. Make sure you have super-admin access.");
     } finally {
       setLoading(false);

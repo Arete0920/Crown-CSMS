@@ -2,7 +2,6 @@
  * WidgetDispatcher — routes a DashboardWidget to the right component.
  * This is the single place to add new widget type mappings.
  */
-import React from "react";
 import StatWidget from "./StatWidget.jsx";
 import FlipWidget from "./FlipWidget.jsx";
 import TableWidget from "./TableWidget.jsx";

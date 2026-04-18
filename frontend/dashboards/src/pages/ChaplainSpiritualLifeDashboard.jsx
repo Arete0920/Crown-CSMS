@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import ChaplainSnapshotCard from '../components/dashboard/chaplain/ChaplainSnapshotCard';
 import ChaplainAlertsPanel from '../components/dashboard/chaplain/ChaplainAlertsPanel';

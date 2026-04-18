@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import LibraryMediaSnapshotCard from '../components/dashboard/librarymedia/LibraryMediaSnapshotCard';
 import LibraryMediaAlertsPanel from '../components/dashboard/librarymedia/LibraryMediaAlertsPanel';

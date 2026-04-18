@@ -1,0 +1,432 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications",
+  "value": [
+    {
+      "addIns": [],
+      "api": {
+        "acceptMappedClaims": null,
+        "knownClientApplications": [],
+        "oauth2PermissionScopes": [],
+        "preAuthorizedApplications": [],
+        "requestedAccessTokenVersion": null
+      },
+      "appId": "1aeac264-1b1a-44da-89b7-71af904f5c40",
+      "appRoles": [],
+      "applicationTemplateId": null,
+      "certification": null,
+      "createdByAppId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+      "createdDateTime": "2025-12-21T19:24:31Z",
+      "defaultRedirectUri": null,
+      "deletedDateTime": null,
+      "description": null,
+      "disabledByMicrosoftStatus": null,
+      "displayName": "Crown Christian Academy API",
+      "groupMembershipClaims": null,
+      "id": "1596f8c6-16df-4b27-bc28-055255d175fb",
+      "identifierUris": [],
+      "info": {
+        "logoUrl": null,
+        "marketingUrl": null,
+        "privacyStatementUrl": null,
+        "supportUrl": null,
+        "termsOfServiceUrl": null
+      },
+      "isDeviceOnlyAuthSupported": null,
+      "isDisabled": null,
+      "isFallbackPublicClient": null,
+      "keyCredentials": [],
+      "nativeAuthenticationApisEnabled": null,
+      "notes": null,
+      "optionalClaims": null,
+      "parentalControlSettings": {
+        "countriesBlockedForMinors": [],
+        "legalAgeGroupRule": "Allow"
+      },
+      "passwordCredentials": [
+        {
+          "customKeyIdentifier": null,
+          "displayName": "Crown M365 Integration",
+          "endDateTime": "2027-01-11T17:12:51Z",
+          "hint": "WhG",
+          "keyId": "3c978262-2636-4078-aad2-56546083ec40",
+          "secretText": null,
+          "startDateTime": "2026-01-11T17:12:51Z"
+        }
+      ],
+      "publicClient": {
+        "redirectUris": []
+      },
+      "publisherDomain": "JMegahanmsn.onmicrosoft.com",
+      "requestSignatureVerification": null,
+      "requiredResourceAccess": [
+        {
+          "resourceAccess": [
+            {
+              "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+              "type": "Scope"
+            },
+            {
+              "id": "37f7f235-527c-4136-accd-4a02b2c68476",
+              "type": "Scope"
+            },
+            {
+              "id": "14dad69e-099b-42c9-810b-bb8db04996d9",
+              "type": "Scope"
+            },
+            {
+              "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+              "type": "Scope"
+            },
+            {
+              "id": "37f7f235-527c-4136-accd-4a02b2c68476",
+              "type": "Scope"
+            },
+            {
+              "id": "14dad69e-099b-42c9-810b-bb8db04996d9",
+              "type": "Scope"
+            },
+            {
+              "id": "3b55498e-47ec-4b83-b5e5-ff4de22ad4be",
+              "type": "Scope"
+            },
+            {
+              "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+              "type": "Scope"
+            },
+            {
+              "id": "b633e1c5-b582-4048-a93e-9f11b44c7e96",
+              "type": "Scope"
+            },
+            {
+              "id": "465a38f9-76ea-45b9-9f34-9e8b0d4b0b70",
+              "type": "Scope"
+            },
+            {
+              "id": "2f9ee017-59c1-4f1d-9472-bd5529a7b311",
+              "type": "Scope"
+            }
+          ],
+          "resourceAppId": "00000003-0000-0000-c000-000000000000"
+        }
+      ],
+      "samlMetadataUrl": null,
+      "serviceManagementReference": null,
+      "servicePrincipalLockConfiguration": null,
+      "signInAudience": "AzureADMyOrg",
+      "spa": {
+        "redirectUris": []
+      },
+      "tags": [],
+      "tokenEncryptionKeyId": null,
+      "uniqueName": null,
+      "verifiedPublisher": {
+        "addedDateTime": null,
+        "displayName": null,
+        "verifiedPublisherId": null
+      },
+      "web": {
+        "homePageUrl": null,
+        "implicitGrantSettings": {
+          "enableAccessTokenIssuance": false,
+          "enableIdTokenIssuance": false
+        },
+        "logoutUrl": null,
+        "redirectUriSettings": [
+          {
+            "index": null,
+            "uri": "http://localhost:8000/m365/callback/"
+          }
+        ],
+        "redirectUris": [
+          "http://localhost:8000/m365/callback/"
+        ]
+      }
+    },
+    {
+      "addIns": [],
+      "api": {
+        "acceptMappedClaims": null,
+        "knownClientApplications": [],
+        "oauth2PermissionScopes": [
+          {
+            "adminConsentDescription": "Allows access to Crown API",
+            "adminConsentDisplayName": "Access Crown API",
+            "id": "a31a60b0-9b20-49a2-9e00-c10d0a3f9ed0",
+            "isEnabled": true,
+            "type": "User",
+            "userConsentDescription": "Allow the application to access Crown API on your behalf",
+            "userConsentDisplayName": "Access Crown API",
+            "value": "user_impersonation"
+          }
+        ],
+        "preAuthorizedApplications": [
+          {
+            "appId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+            "delegatedPermissionIds": [
+              "a31a60b0-9b20-49a2-9e00-c10d0a3f9ed0"
+            ]
+          }
+        ],
+        "requestedAccessTokenVersion": 2
+      },
+      "appId": "e4bd22b8-70b6-4fee-994e-ff513836fa93",
+      "appRoles": [],
+      "applicationTemplateId": null,
+      "certification": null,
+      "createdByAppId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+      "createdDateTime": "2026-03-29T16:17:05Z",
+      "defaultRedirectUri": null,
+      "deletedDateTime": null,
+      "description": null,
+      "disabledByMicrosoftStatus": null,
+      "displayName": "crown-api-dev",
+      "groupMembershipClaims": null,
+      "id": "bc0bf78b-ef98-4a00-b737-d12761cf8a00",
+      "identifierUris": [
+        "api://e4bd22b8-70b6-4fee-994e-ff513836fa93"
+      ],
+      "info": {
+        "logoUrl": null,
+        "marketingUrl": null,
+        "privacyStatementUrl": null,
+        "supportUrl": null,
+        "termsOfServiceUrl": null
+      },
+      "isDeviceOnlyAuthSupported": null,
+      "isDisabled": null,
+      "isFallbackPublicClient": null,
+      "keyCredentials": [],
+      "nativeAuthenticationApisEnabled": null,
+      "notes": null,
+      "optionalClaims": null,
+      "parentalControlSettings": {
+        "countriesBlockedForMinors": [],
+        "legalAgeGroupRule": "Allow"
+      },
+      "passwordCredentials": [],
+      "publicClient": {
+        "redirectUris": []
+      },
+      "publisherDomain": "JMegahanmsn.onmicrosoft.com",
+      "requestSignatureVerification": null,
+      "requiredResourceAccess": [],
+      "samlMetadataUrl": null,
+      "serviceManagementReference": null,
+      "servicePrincipalLockConfiguration": null,
+      "signInAudience": "AzureADMyOrg",
+      "spa": {
+        "redirectUris": []
+      },
+      "tags": [],
+      "tokenEncryptionKeyId": null,
+      "uniqueName": null,
+      "verifiedPublisher": {
+        "addedDateTime": null,
+        "displayName": null,
+        "verifiedPublisherId": null
+      },
+      "web": {
+        "homePageUrl": null,
+        "implicitGrantSettings": {
+          "enableAccessTokenIssuance": false,
+          "enableIdTokenIssuance": false
+        },
+        "logoutUrl": null,
+        "redirectUriSettings": [],
+        "redirectUris": []
+      }
+    },
+    {
+      "addIns": [],
+      "api": {
+        "acceptMappedClaims": null,
+        "knownClientApplications": [],
+        "oauth2PermissionScopes": [],
+        "preAuthorizedApplications": [],
+        "requestedAccessTokenVersion": null
+      },
+      "appId": "1dfb6c55-c746-4761-9e48-bfe2511b8181",
+      "appRoles": [],
+      "applicationTemplateId": null,
+      "certification": null,
+      "createdByAppId": "04b07795-8ddb-461a-bbee-02f9e1bf7b46",
+      "createdDateTime": "2026-01-24T18:55:27Z",
+      "defaultRedirectUri": null,
+      "deletedDateTime": null,
+      "description": null,
+      "disabledByMicrosoftStatus": null,
+      "displayName": "crown2026-gh-actions",
+      "groupMembershipClaims": null,
+      "id": "c758ecbf-ce32-4005-a888-281448112cbf",
+      "identifierUris": [],
+      "info": {
+        "logoUrl": null,
+        "marketingUrl": null,
+        "privacyStatementUrl": null,
+        "supportUrl": null,
+        "termsOfServiceUrl": null
+      },
+      "isDeviceOnlyAuthSupported": null,
+      "isDisabled": null,
+      "isFallbackPublicClient": null,
+      "keyCredentials": [],
+      "nativeAuthenticationApisEnabled": null,
+      "notes": null,
+      "optionalClaims": null,
+      "parentalControlSettings": {
+        "countriesBlockedForMinors": [],
+        "legalAgeGroupRule": "Allow"
+      },
+      "passwordCredentials": [
+        {
+          "customKeyIdentifier": null,
+          "displayName": "gh-actions-20260124-1947-stdin",
+          "endDateTime": "2027-01-25T00:47:26Z",
+          "hint": "Hgu",
+          "keyId": "c6099301-4d7d-4594-bf23-5e8d0b21916b",
+          "secretText": null,
+          "startDateTime": "2026-01-25T00:47:26Z"
+        }
+      ],
+      "publicClient": {
+        "redirectUris": []
+      },
+      "publisherDomain": "JMegahanmsn.onmicrosoft.com",
+      "requestSignatureVerification": null,
+      "requiredResourceAccess": [],
+      "samlMetadataUrl": null,
+      "serviceManagementReference": null,
+      "servicePrincipalLockConfiguration": null,
+      "signInAudience": "AzureADMyOrg",
+      "spa": {
+        "redirectUris": []
+      },
+      "tags": [],
+      "tokenEncryptionKeyId": null,
+      "uniqueName": null,
+      "verifiedPublisher": {
+        "addedDateTime": null,
+        "displayName": null,
+        "verifiedPublisherId": null
+      },
+      "web": {
+        "homePageUrl": null,
+        "implicitGrantSettings": {
+          "enableAccessTokenIssuance": false,
+          "enableIdTokenIssuance": false
+        },
+        "logoutUrl": null,
+        "redirectUriSettings": [],
+        "redirectUris": []
+      }
+    },
+    {
+      "addIns": [],
+      "api": {
+        "acceptMappedClaims": null,
+        "knownClientApplications": [],
+        "oauth2PermissionScopes": [],
+        "preAuthorizedApplications": [],
+        "requestedAccessTokenVersion": null
+      },
+      "appId": "782eaf17-baf7-4924-88ac-fe08b136ccdf",
+      "appRoles": [],
+      "applicationTemplateId": null,
+      "certification": null,
+      "createdByAppId": "18ed3507-a475-4ccb-b669-d66bc9f2a36e",
+      "createdDateTime": "2026-01-11T17:24:32Z",
+      "defaultRedirectUri": null,
+      "deletedDateTime": null,
+      "description": null,
+      "disabledByMicrosoftStatus": null,
+      "displayName": "Crown Christian School Management (Dev)",
+      "groupMembershipClaims": null,
+      "id": "d5e9e0ef-e7db-43bd-9c9c-6d58372edaf6",
+      "identifierUris": [],
+      "info": {
+        "logoUrl": null,
+        "marketingUrl": null,
+        "privacyStatementUrl": null,
+        "supportUrl": null,
+        "termsOfServiceUrl": null
+      },
+      "isDeviceOnlyAuthSupported": null,
+      "isDisabled": null,
+      "isFallbackPublicClient": null,
+      "keyCredentials": [],
+      "nativeAuthenticationApisEnabled": null,
+      "notes": null,
+      "optionalClaims": null,
+      "parentalControlSettings": {
+        "countriesBlockedForMinors": [],
+        "legalAgeGroupRule": "Allow"
+      },
+      "passwordCredentials": [
+        {
+          "customKeyIdentifier": null,
+          "displayName": null,
+          "endDateTime": "2027-02-28T22:34:21Z",
+          "hint": "4Qq",
+          "keyId": "0306d43c-2ae4-4bcb-bd5b-07165abd4391",
+          "secretText": null,
+          "startDateTime": "2026-02-28T22:34:21Z"
+        }
+      ],
+      "publicClient": {
+        "redirectUris": []
+      },
+      "publisherDomain": "JMegahanmsn.onmicrosoft.com",
+      "requestSignatureVerification": null,
+      "requiredResourceAccess": [
+        {
+          "resourceAccess": [
+            {
+              "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+              "type": "Scope"
+            }
+          ],
+          "resourceAppId": "00000003-0000-0000-c000-000000000000"
+        }
+      ],
+      "samlMetadataUrl": null,
+      "serviceManagementReference": null,
+      "servicePrincipalLockConfiguration": {
+        "allProperties": true,
+        "credentialsWithUsageSign": true,
+        "credentialsWithUsageVerify": true,
+        "identifierUris": false,
+        "isEnabled": true,
+        "tokenEncryptionKeyId": true
+      },
+      "signInAudience": "AzureADMyOrg",
+      "spa": {
+        "redirectUris": []
+      },
+      "tags": [],
+      "tokenEncryptionKeyId": null,
+      "uniqueName": null,
+      "verifiedPublisher": {
+        "addedDateTime": null,
+        "displayName": null,
+        "verifiedPublisherId": null
+      },
+      "web": {
+        "homePageUrl": null,
+        "implicitGrantSettings": {
+          "enableAccessTokenIssuance": false,
+          "enableIdTokenIssuance": false
+        },
+        "logoutUrl": null,
+        "redirectUriSettings": [
+          {
+            "index": null,
+            "uri": "http://localhost:8000/m365/callback/"
+          }
+        ],
+        "redirectUris": [
+          "http://localhost:8000/m365/callback/"
+        ]
+      }
+    }
+  ]
+}

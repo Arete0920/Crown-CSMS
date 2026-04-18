@@ -1,5 +1,5 @@
 /**
- * authGuard.js — session-based auth probe for Crown2026.
+ * authGuard.js  session-based auth probe for Crown2026.
  *
  * Calls /auth/me/ with credentials: "include" so the browser sends the
  * session cookie that /auth/microsoft/callback/ set on login.
@@ -47,19 +47,19 @@ function _demoPayload() {
  * @returns {object|null}      - session payload { email, role, school_id } or null
  */
 export async function requireAuth(navigate) {
-  // Demo / Playwright mode — skip backend probe entirely.
+  // Demo / Playwright mode  skip backend probe entirely.
   const demo = _demoPayload();
   if (demo) return demo;
 
   let res;
 
   try {
-    res = await fetch(AUTH_ME_URL, {
+    res = await globalThis.fetch(AUTH_ME_URL, {
       credentials: "include",
       headers: { Accept: "application/json" },
     });
   } catch {
-    // Network failure — treat as unauthenticated
+    // Network failure  treat as unauthenticated
     navigate("/login");
     return null;
   }
@@ -73,18 +73,18 @@ export async function requireAuth(navigate) {
 }
 
 /**
- * Lightweight authenticated-user probe — does NOT redirect.
+ * Lightweight authenticated-user probe  does NOT redirect.
  * Returns null when unauthenticated.
  *
  * @returns {object|null}
  */
 export async function getSession() {
-  // Demo / Playwright mode — skip backend probe entirely.
+  // Demo / Playwright mode  skip backend probe entirely.
   const demo = _demoPayload();
   if (demo) return demo;
 
   try {
-    const res = await fetch(AUTH_ME_URL, {
+    const res = await globalThis.fetch(AUTH_ME_URL, {
       credentials: "include",
       headers: { Accept: "application/json" },
     });

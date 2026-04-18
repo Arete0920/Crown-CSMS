@@ -1,7 +1,7 @@
 name: Dev Deploy (rc/**)
 
 on:
-  # Automatically deploy whenever rc/** is pushed — keeps dev in sync with RC
+  # Automatically deploy whenever rc/** is pushed â€” keeps dev in sync with RC
   push:
     branches:
       - "rc/**"
@@ -30,14 +30,14 @@ env:
 
 jobs:
   build-and-deploy:
-    name: "Build & Deploy → crown-api-dev"
+    name: "Build & Deploy â†’ crown-api-dev"
     environment: dev
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
           fetch-depth: 0
@@ -93,19 +93,19 @@ jobs:
             --settings '@appsettings.dev.json' `
             --output none `
             --only-show-errors
-          echo "✓ BUILD_SHA=${{ env.DEPLOY_SHA }} set (before image deploy)"
+          echo "âœ“ BUILD_SHA=${{ env.DEPLOY_SHA }} set (before image deploy)"
 
       - name: Bake BUILD_SHA into artifact
         run: |
           echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
-          echo "✓ build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
+          echo "âœ“ build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          # Explicitly target linux/amd64 — multi-platform OCI index manifests
+          # Explicitly target linux/amd64 â€” multi-platform OCI index manifests
           # (produced without this setting) cause ContainerCreateFailure on
           # Azure App Service because it cannot resolve the platform from an
           # OCI index containing unknown/unknown cache entries.
@@ -120,7 +120,7 @@ jobs:
       - name: Deploy to Azure Web App (managed identity pull)
         run: |
           # ACR admin is disabled. The App Service system-assigned managed identity
-          # holds AcrPull on crownregistry — no credentials needed here.
+          # holds AcrPull on crownregistry â€” no credentials needed here.
           az webapp config container set \
             --name ${{ env.WEBAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
@@ -128,14 +128,14 @@ jobs:
             --docker-custom-image-name ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }} \
             --output none \
             --only-show-errors
-          echo "✓ Container image set: dev-${{ env.DEPLOY_SHA_SHORT }} (managed identity pull)"
+          echo "âœ“ Container image set: dev-${{ env.DEPLOY_SHA_SHORT }} (managed identity pull)"
 
           # Restart the app so it picks up the new image immediately
           az webapp restart \
             --name ${{ env.WEBAPP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
             --only-show-errors
-          echo "✓ App restarted"
+          echo "âœ“ App restarted"
 
       - name: Health check (waits for startup + migrations + ensure_ci_user)
         run: |
@@ -144,13 +144,13 @@ jobs:
           for i in $(seq 1 36); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ || true)
             if [ "$STATUS" = "200" ]; then
-              echo "✅ Health check passed (attempt $i)"
+              echo "âœ… Health check passed (attempt $i)"
               break
             fi
-            echo "  attempt $i: HTTP $STATUS — waiting 10s..."
+            echo "  attempt $i: HTTP $STATUS â€” waiting 10s..."
             sleep 10
             if [ "$i" = "36" ]; then
-              echo "❌ Health check timed out after 360s"
+              echo "âŒ Health check timed out after 360s"
               exit 1
             fi
           done
@@ -164,23 +164,24 @@ jobs:
             BODY=$(curl -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ 2>/dev/null || true)
             GOT=$(echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)
             if [ -z "$GOT" ] || [ "$GOT" = "local-dev" ] || [ "$GOT" = "unknown" ]; then
-              echo "  attempt $i: SHA not ready yet (got: ${GOT:-empty}) — waiting 15s..."
+              echo "  attempt $i: SHA not ready yet (got: ${GOT:-empty}) â€” waiting 15s..."
               sleep 15
               continue
             fi
             if [[ "$GOT" == "$WANT"* ]] || [[ "$WANT" == "$GOT"* ]]; then
-              echo "✅ build_sha verified: $GOT"
+              echo "âœ… build_sha verified: $GOT"
               exit 0
             fi
-            echo "  attempt $i: mismatch — deployed=$GOT expected=$WANT — waiting 15s..."
+            echo "  attempt $i: mismatch â€” deployed=$GOT expected=$WANT â€” waiting 15s..."
             sleep 15
           done
-          echo "❌ build_sha did not converge to expected SHA after retries"
+          echo "âŒ build_sha did not converge to expected SHA after retries"
           echo "   deployed=$GOT  expected=$WANT"
           exit 1
 
       - name: Summary
         run: |
-          echo "✅ crown-api-dev deployed successfully"
+          echo "âœ… crown-api-dev deployed successfully"
           echo "   SHA: ${{ env.DEPLOY_SHA }}"
           echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+

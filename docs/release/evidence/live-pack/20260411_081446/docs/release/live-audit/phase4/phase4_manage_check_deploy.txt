@@ -1,0 +1,2264 @@
+﻿COMMAND: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Scripts\python.exe backend/manage.py check --deploy
+WORKDIR: C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr
+EXIT_CODE: 0
+python.exe : C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-
+packages\rest_framework\fields.py:990: UserWarning: max_value should be a 
+Decimal instance.
+At C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\scripts\release\phase4_ba
+ckend_verification_and_django_proof.ps1:33 char:17
++         $text = & $Exe @Args 2>&1 | Out-String
++                 ~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\JMega\...cimal instance. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  warnings.warn("max_value should be a Decimal instance.")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\rest
+_framework\fields.py:992: UserWarning: min_value should be a Decimal instance.
+  warnings.warn("min_value should be a Decimal instance.")
+System check identified some issues:
+
+WARNINGS:
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [AlumniCohortMemberViewSet]: could not derive type of path parameter 
+"id" because it is untyped and obtaining queryset from the viewset failed. 
+Consider adding a type to the path (e.g. <int:id>) or annotating the parameter 
+type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [AlumniCohortViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [CampaignViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [DonorViewSet]: could not derive type of path parameter "id" because 
+it is untyped and obtaining queryset from the viewset failed. Consider adding 
+a type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [EventSeatingViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [EventViewSet]: could not derive type of path parameter "id" because 
+it is untyped and obtaining queryset from the viewset failed. Consider adding 
+a type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [GiftViewSet]: could not derive type of path parameter "id" because it 
+is untyped and obtaining queryset from the viewset failed. Consider adding a 
+type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [MembershipTierViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [MembershipViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [MoveViewSet]: could not derive type of path parameter "id" because it 
+is untyped and obtaining queryset from the viewset failed. Consider adding a 
+type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [PledgeViewSet]: could not derive type of path parameter "id" because 
+it is untyped and obtaining queryset from the viewset failed. Consider adding 
+a type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [ProspectViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [RelationshipViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [SeatHoldViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [SeatViewSet]: could not derive type of path parameter "id" because it 
+is untyped and obtaining queryset from the viewset failed. Consider adding a 
+type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [SeatingMapViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [SponsorImpressionViewSet]: could not derive type of path parameter 
+"id" because it is untyped and obtaining queryset from the viewset failed. 
+Consider adding a type to the path (e.g. <int:id>) or annotating the parameter 
+type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [SponsorshipAgreementViewSet]: could not derive type of path parameter 
+"id" because it is untyped and obtaining queryset from the viewset failed. 
+Consider adding a type to the path (e.g. <int:id>) or annotating the parameter 
+type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [SponsorshipDeliverableViewSet]: could not derive type of path 
+parameter "id" because it is untyped and obtaining queryset from the viewset 
+failed. Consider adding a type to the path (e.g. <int:id>) or annotating the 
+parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [SponsorshipPackageViewSet]: could not derive type of path parameter 
+"id" because it is untyped and obtaining queryset from the viewset failed. 
+Consider adding a type to the path (e.g. <int:id>) or annotating the parameter 
+type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [StoreItemViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [TicketViewSet]: could not derive type of path parameter "id" because 
+it is untyped and obtaining queryset from the viewset failed. Consider adding 
+a type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Warning [VenueViewSet]: could not derive type of path parameter "id" because 
+it is untyped and obtaining queryset from the viewset failed. Consider adding 
+a type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\advancement\serializers.py: Warning [CampaignViewSet > 
+CampaignSerializer]: unable to resolve type hint for function 
+"get_progress_percent". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\advancement\serializers.py: Warning [EventViewSet > EventSerializer]: 
+unable to resolve type hint for function "get_attendance_percent". Consider 
+using a type hint or @extend_schema_field. Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\advancement\serializers.py: Warning [EventViewSet > EventSerializer]: 
+unable to resolve type hint for function "get_seats_remaining". Consider using 
+a type hint or @extend_schema_field. Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\advancement\serializers_stage3.py: Warning [AlumniCohortViewSet > 
+AlumniCohortSerializer]: unable to resolve type hint for function 
+"get_member_count". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\advancement\serializers_stage3.py: Warning [SeatingMapViewSet > 
+SeatingMapSerializer]: unable to resolve type hint for function 
+"get_seat_count". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\advancement\serializers_stage3.py: Warning 
+[SponsorshipDeliverableViewSet > SponsorshipDeliverableSerializer]: unable to 
+resolve type hint for function "get_impression_count". Consider using a type 
+hint or @extend_schema_field. Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\serializers.py: Warning [EventViewSet > EventSerializer]: 
+Encountered 2 components with identical names "Event" and different identities 
+<class 'athletics.api.serializers.EventSerializer'> and <class 
+'advancement.serializers.EventSerializer'>. This will very likely result in an 
+incorrect schema. Try renaming one.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\serializers.py: Warning [EventViewSet > EventSerializer]: 
+Encountered 2 components with identical names "EventRequest" and different 
+identities <class 'athletics.api.serializers.EventSerializer'> and <class 
+'advancement.serializers.EventSerializer'>. This will very likely result in an 
+incorrect schema. Try renaming one.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\serializers.py: Warning [EventViewSet > EventSerializer]: 
+Encountered 2 components with identical names "PatchedEventRequest" and 
+different identities <class 'athletics.api.serializers.EventSerializer'> and 
+<class 'advancement.serializers.EventSerializer'>. This will very likely 
+result in an incorrect schema. Try renaming one.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [AthleteClearanceViewSet]: could not 
+derive type of path parameter "id" because it is untyped and obtaining 
+queryset from the viewset failed. Consider adding a type to the path (e.g. 
+<int:id>) or annotating the parameter type with @extend_schema. Defaulting to 
+"string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [EventViewSet]: could not derive type of 
+path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [FacilityViewSet]: could not derive type 
+of path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [SeasonViewSet]: could not derive type 
+of path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [SportViewSet]: could not derive type of 
+path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [TeamCoachViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [TeamRosterViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\athletics\api\views.py: Warning [TeamViewSet]: could not derive type of 
+path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\classroom\serializers.py: Warning [ClassroomViewSet > 
+ClassroomDetailSerializer]: unable to resolve type hint for function 
+"get_homeroom_teacher_name". Consider using a type hint or 
+@extend_schema_field. Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\classroom\serializers.py: Warning [ClassroomViewSet > 
+ClassroomDetailSerializer]: unable to resolve type hint for function 
+"get_students". Consider using a type hint or @extend_schema_field. Defaulting 
+to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\classroom\serializers.py: Warning [ClassroomViewSet > 
+ClassroomListSerializer]: unable to resolve type hint for function 
+"get_homeroom_teacher_name". Consider using a type hint or 
+@extend_schema_field. Defaulting to string.
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\classroom\views.py: 
+Warning [ClassroomViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\serializers_students.py: Warning [student_detail > 
+StudentReadSerializer]: Encountered 2 components with identical names 
+"StudentRead" and different identities <class 
+'crown_api.serializers_students.StudentReadSerializer'> and <class 
+'crown_api.serializers_households.StudentReadSerializer'>. This will very 
+likely result in an incorrect schema. Try renaming one.
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\curricula\views.py: 
+Warning [CurriculumMapViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\curricula\views.py: 
+Warning [LessonViewSet]: could not derive type of path parameter "id" because 
+it is untyped and obtaining queryset from the viewset failed. Consider adding 
+a type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\curricula\views.py: 
+Warning [UnitViewSet]: could not derive type of path parameter "id" because it 
+is untyped and obtaining queryset from the viewset failed. Consider adding a 
+type to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\curriculum\views.py: Warning [CurriculumCourseViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Warning [AlertViewSet]: could not derive type of 
+path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Warning [AssetViewSet]: could not derive type of 
+path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Warning [DrillViewSet]: could not derive type of 
+path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Warning [LocationViewSet]: could not derive type of 
+path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Warning [SafetyIncidentViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Warning [VisitorLogViewSet]: could not derive type 
+of path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Warning [WorkOrderViewSet]: could not derive type 
+of path parameter "id" because it is untyped and obtaining queryset from the 
+viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\hr\api.py: Warning 
+[EmployeeViewSet]: could not derive type of path parameter "id" because it is 
+untyped and obtaining queryset from the viewset failed. Consider adding a type 
+to the path (e.g. <int:id>) or annotating the parameter type with 
+@extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\outreach\api\serializers.py: Warning [BadgeAwardViewSet > 
+BadgeAwardSerializer]: unable to resolve type hint for function 
+"get_student_name". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\outreach\api\serializers.py: Warning [ServiceLogViewSet > 
+ServiceLogSerializer]: unable to resolve type hint for function 
+"get_student_name". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\pdhub\api.py: 
+Warning [PDResourceViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\pdhub\api.py: 
+Warning [PDSessionViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\safety\api.py: 
+Warning [IncidentViewSet]: could not derive type of path parameter "id" 
+because it is untyped and obtaining queryset from the viewset failed. Consider 
+adding a type to the path (e.g. <int:id>) or annotating the parameter type 
+with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\serializers.py: Warning [FERPAExportLogViewSet > 
+FERPAExportLogSerializer]: unable to resolve type hint for function 
+"get_exported_by_name". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\serializers.py: Warning [FERPARequestViewSet > 
+FERPARequestSerializer]: unable to resolve type hint for function 
+"get_is_overdue". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\serializers.py: Warning [StudentDocumentViewSet > 
+StudentDocumentSerializer]: unable to resolve type hint for function 
+"get_download_url". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\serializers.py: Warning [StudentPhotoViewSet > 
+StudentPhotoSerializer]: unable to resolve type hint for function 
+"get_photo_url". Consider using a type hint or @extend_schema_field. 
+Defaulting to string.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Warning [AssignmentViewSet]: could not 
+derive type of path parameter "id" because it is untyped and obtaining 
+queryset from the viewset failed. Consider adding a type to the path (e.g. 
+<int:id>) or annotating the parameter type with @extend_schema. Defaulting to 
+"string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Warning [DriverViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Warning [RideEventViewSet]: could not 
+derive type of path parameter "id" because it is untyped and obtaining 
+queryset from the viewset failed. Consider adding a type to the path (e.g. 
+<int:id>) or annotating the parameter type with @extend_schema. Defaulting to 
+"string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Warning [RouteViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Warning [StopViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Warning [StudentRiderViewSet]: could not 
+derive type of path parameter "id" because it is untyped and obtaining 
+queryset from the viewset failed. Consider adding a type to the path (e.g. 
+<int:id>) or annotating the parameter type with @extend_schema. Defaulting to 
+"string".
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Warning [VehicleViewSet]: could not derive 
+type of path parameter "id" because it is untyped and obtaining queryset from 
+the viewset failed. Consider adding a type to the path (e.g. <int:id>) or 
+annotating the parameter type with @extend_schema. Defaulting to "string".
+?: (drf_spectacular.W001) Warning: encountered multiple names for the same 
+choice set (PriorityE88Enum). This may be unwanted even though the generated 
+schema is technically correct. Add an entry to ENUM_NAME_OVERRIDES to fix the 
+naming.
+?: (drf_spectacular.W001) Warning: encountered multiple names for the same 
+choice set (ScoreEnum). This may be unwanted even though the generated schema 
+is technically correct. Add an entry to ENUM_NAME_OVERRIDES to fix the naming.
+?: (drf_spectacular.W001) Warning: enum naming encountered a non-optimally 
+resolvable collision for fields named "level". The same name has been used for 
+multiple choice sets in multiple components. The collision was resolved with 
+"Level203Enum". add an entry to ENUM_NAME_OVERRIDES to fix the naming.
+?: (drf_spectacular.W001) Warning: enum naming encountered a non-optimally 
+resolvable collision for fields named "priority". The same name has been used 
+for multiple choice sets in multiple components. The collision was resolved 
+with "PriorityE88Enum". add an entry to ENUM_NAME_OVERRIDES to fix the naming.
+?: (drf_spectacular.W001) Warning: enum naming encountered a non-optimally 
+resolvable collision for fields named "severity". The same name has been used 
+for multiple choice sets in multiple components. The collision was resolved 
+with "SeverityE88Enum". add an entry to ENUM_NAME_OVERRIDES to fix the naming.
+?: (drf_spectacular.W001) Warning: enum naming encountered a non-optimally 
+resolvable collision for fields named "status". The same name has been used 
+for multiple choice sets in multiple components. The collision was resolved 
+with "Status61cEnum". add an entry to ENUM_NAME_OVERRIDES to fix the naming.
+?: (drf_spectacular.W001) Warning: operationId "aftercare_enrollments" has 
+collisions [('/api/v1/aftercare/enrollments/', 'get'), 
+('/api/v1/aftercare/enrollments/', 'post')]. resolving with numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "governance_dashboard" has 
+collisions [('/api/v1/dashboards/school-board/summary', 'get'), 
+('/api/v1/governance/dashboard/', 'get')]. resolving with numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "m365_flow_callback" has 
+collisions [('/api/v1/m365/callbacks/flow/', 'post'), 
+('/api/v1/m365/callbacks/sharepoint/', 'post'), 
+('/api/v1/m365/callbacks/signature/', 'post')]. resolving with numeral 
+suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_academics_sections_roster_retrieve" has collisions 
+[('/api/v1/academics/sections/{id}/roster/', 'get'), 
+('/api/v1/academics/sections/{section_id}/roster/', 'get')]. resolving with 
+numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_billing_runs_retrieve" has 
+collisions [('/api/v1/billing/runs/', 'get'), 
+('/api/v1/billing/runs/{billing_run_id}/', 'get')]. resolving with numeral 
+suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_board_packets_retrieve" has 
+collisions [('/api/v1/board/packets/', 'get'), 
+('/api/v1/board/packets/{packet_id}/', 'get')]. resolving with numeral 
+suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_comms_threads_retrieve" has 
+collisions [('/api/v1/comms/threads/', 'get'), 
+('/api/v1/comms/threads/{thread_id}/', 'get')]. resolving with numeral 
+suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_dashboards_summary_retrieve" has collisions 
+[('/api/v1/dashboards/{dashboard_key}/summary', 'get'), 
+('/api/v1/dashboards/summary/', 'get')]. resolving with numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_discipline_incidents_retrieve" has collisions 
+[('/api/v1/discipline/incidents/', 'get'), 
+('/api/v1/discipline/incidents/{incident_id}/', 'get')]. resolving with 
+numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_households_retrieve" has 
+collisions [('/api/v1/households/{household_id}/', 'get'), 
+('/api/v1/households/{id}/', 'get')]. resolving with numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_payments_disputes_retrieve" 
+has collisions [('/api/v1/payments/disputes/', 'get'), 
+('/api/v1/payments/disputes/{dispute_id}/', 'get')]. resolving with numeral 
+suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_payments_payout_batches_retrieve" has collisions 
+[('/api/v1/payments/payout-batches/', 'get'), 
+('/api/v1/payments/payout-batches/{batch_id}/', 'get')]. resolving with 
+numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_solomon_articles_retrieve" 
+has collisions [('/api/v1/solomon/articles/', 'get'), 
+('/api/v1/solomon/articles/{slug}/', 'get')]. resolving with numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_spiritual_life_chapel_events_retrieve" has collisions 
+[('/api/v1/spiritual-life/chapel-events/', 'get'), 
+('/api/v1/spiritual-life/chapel-events/{event_id}/', 'get')]. resolving with 
+numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_spiritual_life_pastoral_notes_retrieve" has collisions 
+[('/api/v1/spiritual-life/pastoral-notes/', 'get'), 
+('/api/v1/spiritual-life/pastoral-notes/{note_id}/', 'get')]. resolving with 
+numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_spiritual_life_prayer_requests_retrieve" has collisions 
+[('/api/v1/spiritual-life/prayer-requests/', 'get'), 
+('/api/v1/spiritual-life/prayer-requests/{pr_id}/', 'get')]. resolving with 
+numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId 
+"v1_spiritual_life_profiles_retrieve" has collisions 
+[('/api/v1/spiritual-life/profiles/', 'get'), 
+('/api/v1/spiritual-life/profiles/{profile_id}/', 'get')]. resolving with 
+numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_students_retrieve" has 
+collisions [('/api/v1/students/{id}/', 'get'), 
+('/api/v1/students/{student_id}/', 'get')]. resolving with numeral suffixes.
+?: (drf_spectacular.W001) Warning: operationId "v1_threads_retrieve" has 
+collisions [('/api/v1/threads/', 'get'), ('/api/v1/threads/{thread_id}/', 
+'get')]. resolving with numeral suffixes.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\academic_year_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\academic_year_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\academic_year_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\academic_year_wizard\views.py: Error [set_terms]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\academic_year_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [advancement_summary]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [apple_wallet_pass]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [event_section_prices]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [event_sponsors]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [gift_checkout]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [gift_mark_paid]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [google_wallet_link]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [moves_transition]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [order_status]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [pledge_cancel]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [pledge_create]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [purchase_store_item]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [purchase_ticket]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [qr_checkin]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_assign]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_availability]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_best_available_checkout]: unable to guess serializer. This is 
+graceful fallback handling for APIViews. Consider using GenericAPIView as view 
+base class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_checkout]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_hold]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_hold_strict]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_purchase_held]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [seating_set_layout]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [sponsorship_checkout]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [sponsorship_log_impressions]: unable to guess serializer. This is 
+graceful fallback handling for APIViews. Consider using GenericAPIView as view 
+base class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\advancement\api.py: 
+Error [sponsorship_mark_paid]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [board_summary]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [checkin]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [checkout]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [incidents]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [parent_view]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [pickup_contacts]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [program_config]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aftercare\api.py: 
+Error [roster_today]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\aftercare\wizard_api.py: Error [aftercare_setup_wizard]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aid\api_views.py: 
+Error [admin_aid_overview]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aid\api_views.py: 
+Error [admin_approve_award]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aid\api_views.py: 
+Error [admin_recommend_award]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aid\api_views.py: 
+Error [aid_metrics]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aid\api_views.py: 
+Error [aid_priority_queue]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aid\api_views.py: 
+Error [aid_timeline]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\aid\api_views.py: 
+Error [family_aid_status]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\analytics\api_health.py: Error [customer_health]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\analytics\api_health.py: Error [export_school]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\analytics\api_health.py: Error [public_status]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_codes_wizard\views.py: Error [commit_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_codes_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_codes_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_codes_wizard\views.py: Error [stage_codes]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_codes_wizard\views.py: Error [verify_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_rules_wizard\views.py: Error [commit_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_rules_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_rules_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_rules_wizard\views.py: Error [define_codes]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\attendance_rules_wizard\views.py: Error [verify_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\bell_schedule_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\bell_schedule_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\bell_schedule_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\bell_schedule_wizard\views.py: Error [set_blocks]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\bell_schedule_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\billing\api.py: 
+Error [billing_run_detail]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\billing\api.py: 
+Error [billing_run_summary_view]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\billing\api.py: 
+Error [billing_runs]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\billing\api.py: 
+Error [installment_plans]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\billing\api.py: 
+Error [invoices]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\billing_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\billing_wizard\views.py: Error [configure_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\billing_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\billing_wizard\views.py: Error [save_fees]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\billing_wizard\views.py: Error [save_plans]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\billing_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\api_governance.py: Error [board_trends]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\api_governance.py: Error [compass_executive]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\api_governance.py: Error [download_board_packet]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\api_governance.py: Error [initiative_summary]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\api_governance.py: Error [public_roadmap]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\api_governance.py: Error [release_notes]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\views.py: Error [board_dashboard]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\views.py: Error [board_metrics]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\views.py: Error [get_packet]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\views.py: Error [list_packets]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\board_oversight\views.py: Error [list_snapshots]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\comms\api\views.py: 
+Error [ComposeThread]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\comms\api\views.py: 
+Error [SendTestEmail]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\comms\api\views.py: 
+Error [ThreadDetail]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\comms\api\views.py: 
+Error [ThreadPostMessage]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\comms\api\views.py: 
+Error [ThreadsList]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\comms_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\comms_wizard\views.py: Error [configure_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\comms_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\comms_wizard\views.py: Error [draft_message]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\comms_wizard\views.py: Error [stage_recipients]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\comms_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\core\auth\views.py: 
+Error [health_auth]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\core\auth\views.py: 
+Error [me]: unable to guess serializer. This is graceful fallback handling for 
+APIViews. Consider using GenericAPIView as view base class, if view is under 
+your control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\course_catalog_wizard\views.py: Error [commit]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\course_catalog_wizard\views.py: Error [configure]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\course_catalog_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\course_catalog_wizard\views.py: Error [verify]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\api\wizards.py: Error [wizard_discovery]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\billing_api\drf_views.py: Error [BillingRunCreateApiView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\billing_api\views.py: Error [OpenInvoicesView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\billing_api\views.py: Error [PaymentsApplyView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\billing_api\views.py: Error [PaymentsCreateView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\billing_api\views.py: Error [PaymentsRecordView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\dashboards\finance.py: Error [FinanceSummaryDashboard]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\dashboards\views.py: Error [DashboardSummaryView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\dashboards\views.py: Error [dashboard_alerts]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\dashboards\views.py: Error [dashboard_drilldown]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\dashboards\views.py: Error [dashboard_me]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\dashboards\views.py: Error [dashboard_summary]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [aid_summary]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [director_actions]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [director_dashboard]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [director_priority]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [director_timeline]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [finance_summary]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [force_seed_user]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\director_views.py: Error [registrar_summary]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [HouseholdsCSVExportView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [InstallmentScheduleCSVExportView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [InvoicesCSVExportView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [LedgerAllocationsCSVExportView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [LedgerChargesCSVExportView]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [PaymentsCSVExportView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [PaymentsQuickBooksCSVExportView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [StaffCSVExportView]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [StatementLinesCSVExportView]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [StatementsCSVExportView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [StudentsCSVExportView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\exports\views.py: Error [YearEndTuitionPaidCSVExportView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\ops_views.py: Error [ensure_ci_user]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\system_views.py: Error [SeedStatusView]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\system_views.py: Error [whoami]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\views_comms.py: Error [thread_detail]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\views_comms.py: Error [threads_list]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\discipline\api\views.py: Error [DisciplineIncidentActions]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\discipline\api\views.py: Error [DisciplineIncidentDetail]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\discipline\api\views.py: Error [DisciplineIncidentsListCreate]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\discipline\api\views.py: Error [DisciplineMetrics]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\enrollment_conversion_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\enrollment_conversion_wizard\views.py: Error [load_applicants]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\enrollment_period_wizard\views.py: Error [commit_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\enrollment_period_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Error [facilities_summary]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\facops\api\views.py: Error [security_summary]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\fee_schedule_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\fee_schedule_wizard\views.py: Error [configure_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\fee_schedule_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\fee_schedule_wizard\views.py: Error [set_lines]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\fee_schedule_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [donation_create]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [donation_list]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [invoice_create_from_obligations]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [invoice_list]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [obligations]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [parent_balance]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [payment_intent_create]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [payment_settle]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\finance\api_views.py: Error [refund_create]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid\api.py: Error [aid_applications]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid\api.py: Error [aid_awards]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid\api.py: Error [disburse_to_billing_run]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid\api.py: Error [process_application_review]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid\views.py: Error [FinancialAidDrilldownView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid\views.py: Error [FinancialAidSummaryView]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid_wizard\views.py: Error [save_buckets]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid_wizard\views.py: Error [stage_awards]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\financial_aid_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\governance\views.py: Error [crown_compass_history]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_scale_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_scale_wizard\views.py: Error [configure_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_scale_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_scale_wizard\views.py: Error [set_bands]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_scale_wizard\views.py: Error [set_weights]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_scale_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_weights_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_weights_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_weights_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_weights_wizard\views.py: Error [stage_categories]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\grade_weights_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\gradebook_setup_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\graduation\views.py: Error [GraduationAuditView]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\graduation\views_breakdown.py: Error [GraduationAuditBreakdownView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\guardian_household_wizard\views.py: Error [add_guardians]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\guardian_household_wizard\views.py: Error [commit_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\guardian_household_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\guardian_household_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\guardian_household_wizard\views.py: Error [link_students]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\guardian_household_wizard\views.py: Error [verify_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\hr\api.py: Error 
+[hr_metrics]: unable to guess serializer. This is graceful fallback handling 
+for APIViews. Consider using GenericAPIView as view base class, if view is 
+under your control. Either way you may want to add a serializer_class (or 
+method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\integrations\oneroster.py: Error [oneroster_export_bundle]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\integrations_real\api.py: Error [connectors_health]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\integrations_real\api.py: Error [connectors_status]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\invoice_run_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\invoice_run_wizard\views.py: Error [configure_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\invoice_run_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\invoice_run_wizard\views.py: Error [load_obligations]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\invoice_run_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\ledger\api.py: 
+Error [void_charge]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\ledger\api.py: 
+Error [void_payment]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\ledger\api_finance.py: Error [chargeback_metrics]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\ledger\api_finance.py: Error [dunning_status]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\ledger\api_finance.py: Error [finance_kpis]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\ledger\api_finance.py: Error [monthly_financial_summary]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\ledger\api_finance.py: Error [payout_audit_list]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [activation_gate]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [help_article]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [mark_task_complete]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [onboarding_progress]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [solomon_article_detail]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [solomon_articles]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [solomon_categories]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [solomon_context]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [solomon_playbooks]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\api_onboarding.py: Error [solomon_search]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\views.py: Error [commit_session]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\views.py: Error [create_session]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\views.py: Error [preview_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\views.py: Error [upload_file]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\views.py: Error [validate_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\onboarding\views.py: Error [verify_session]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\account_api.py: Error [household_finance_summary]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\account_api.py: Error [household_payment_history]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\api_views.py: Error [create_payment_intent]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\api_views.py: Error [payment_intent_status]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\bank_recon_api.py: Error [auto_match_payouts]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\bank_recon_api.py: Error [bank_statement_imports_list]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\bank_recon_api.py: Error [manual_match_payout]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\bank_recon_api.py: Error [payout_bank_matches_list]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\bank_recon_api.py: Error [unmatched_bank_entries_list]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\bank_recon_api.py: Error [upload_bank_statement_csv]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\disputes_api.py: Error [dispute_action_create]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\disputes_api.py: Error [dispute_detail]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\exceptions_api.py: Error [payment_exception_ignore]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\exceptions_api.py: Error [payment_exception_retry]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\exceptions_api.py: Error [payment_exceptions_list]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\export_api.py: Error [household_statement_csv]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\export_api.py: Error [payment_receipt_html]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\methods_api.py: Error [create_payment_method_setup]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\methods_api.py: Error [detach_payment_method]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\methods_api.py: Error [list_saved_payment_methods]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\methods_api.py: Error [set_default_payment_method]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\ops_api.py: Error [disputes_list]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\ops_api.py: Error [payout_batch_detail]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\payments\ops_api.py: Error [payout_batches_list]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\platform_ops\views.py: Error [platform_create_school]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\platform_ops\views.py: Error [platform_list_schools]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\platform_ops\views.py: Error [platform_provisioning_status]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\promotion_wizard\views.py: Error [commit]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\promotion_wizard\views.py: Error [configure]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\promotion_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\promotion_wizard\views.py: Error [verify]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\reenrollment\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\room_setup_wizard\views.py: Error [commit]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\room_setup_wizard\views.py: Error [configure]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\room_setup_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\room_setup_wizard\views.py: Error [verify]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\safety\api.py: 
+Error [safety_metrics]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\scheduling_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_assign_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_scheduler_wizard\views.py: Error [commit]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_scheduler_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_staffing_wizard\views.py: Error [commit_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_staffing_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_staffing_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_staffing_wizard\views.py: Error [load_sections]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_staffing_wizard\views.py: Error [stage_assignments]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\section_staffing_wizard\views.py: Error [verify_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\servicehours\api\views.py: Error [ServiceApprovalQueue]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\servicehours\api\views.py: Error [ServiceApproveReject]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\servicehours\api\views.py: Error [ServiceEntriesListCreate]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\servicehours\api\views.py: Error [ServiceStudentSummary]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\signals\api.py: 
+Error [board_compass_summary]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\signals\api.py: 
+Error [board_risk_counts]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\signals\api.py: 
+Error [intervention_actions]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\signals\api.py: 
+Error [intervention_cases]: unable to guess serializer. This is graceful 
+fallback handling for APIViews. Consider using GenericAPIView as view base 
+class, if view is under your control. Either way you may want to add a 
+serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) 
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\signals\api.py: 
+Error [student_signals]: unable to guess serializer. This is graceful fallback 
+handling for APIViews. Consider using GenericAPIView as view base class, if 
+view is under your control. Either way you may want to add a serializer_class 
+(or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [ChapelAttendanceListCreate]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [ChapelEventDetail]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [ChapelEventListCreate]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [PastoralNoteDetail]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [PastoralNoteListCreate]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [PrayerRequestDetail]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [PrayerRequestListCreate]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [SmallGroupListCreate]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [SmallGroupMemberListCreate]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [SmallGroupSessionAttendanceView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [SmallGroupSessionListCreate]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [SpiritualAssessmentListCreate]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [SpiritualProfileDetailView]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\spiritual_life\api\views.py: Error [SpiritualProfileView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_onboarding_wizard\views.py: Error [commit_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_onboarding_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_onboarding_wizard\views.py: Error [create_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_onboarding_wizard\views.py: Error [preview_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_onboarding_wizard\views.py: Error [verify_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_setup_wizard\views.py: Error [commit]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_setup_wizard\views.py: Error [configure]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_setup_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\staff_setup_wizard\views.py: Error [verify]: unable to guess serializer. 
+This is graceful fallback handling for APIViews. Consider using GenericAPIView 
+as view base class, if view is under your control. Either way you may want to 
+add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_import_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_import_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_import_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_import_wizard\views.py: Error [preview_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_import_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\views.py: Error [FERPAQuickExportView]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\views.py: Error [HealthRecordView]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\views.py: Error [StudentIdCardView]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\student_records\views.py: Error [StudentRecordsSummaryView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\subscriptions\api\views.py: Error [feature_list]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\subscriptions\api\views.py: Error [me_entitlements]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\subscriptions\api\views.py: Error [ops_school_subscription]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\subscriptions\api\views.py: Error [plan_list]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\support\api_support.py: Error [resolve_ticket]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\support\api_support.py: Error [run_escalation]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\term_structure_wizard\views.py: Error [commit_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\term_structure_wizard\views.py: Error [configure_session]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\term_structure_wizard\views.py: Error [create_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\term_structure_wizard\views.py: Error [set_periods]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\term_structure_wizard\views.py: Error [verify_session]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\transportation\api\views.py: Error [DispatchViewSet]: unable to guess 
+serializer. This is graceful fallback handling for APIViews. Consider using 
+GenericAPIView as view base class, if view is under your control. Either way 
+you may want to add a serializer_class (or method). Ignoring view for now.
+?: (security.W004) You have not set a value for the SECURE_HSTS_SECONDS 
+setting. If your entire site is served only over SSL, you may want to consider 
+setting a value and enabling HTTP Strict Transport Security. Be sure to read 
+the documentation first; enabling HSTS carelessly can cause serious, 
+irreversible problems.
+?: (security.W008) Your SECURE_SSL_REDIRECT setting is not set to True. Unless 
+your site should be available over both SSL and non-SSL connections, you may 
+want to either set this setting True or configure a load balancer or 
+reverse-proxy server to redirect all connections to HTTPS.
+?: (security.W009) Your SECRET_KEY has less than 50 characters, less than 5 
+unique characters, or it's prefixed with 'django-insecure-' indicating that it 
+was generated automatically by Django. Please generate a long and random 
+value, otherwise many of Django's security-critical features will be 
+vulnerable to attack.
+?: (security.W012) SESSION_COOKIE_SECURE is not set to True. Using a 
+secure-only session cookie makes it more difficult for network traffic 
+sniffers to hijack user sessions.
+?: (security.W016) You have 'django.middleware.csrf.CsrfViewMiddleware' in 
+your MIDDLEWARE, but you have not set CSRF_COOKIE_SECURE to True. Using a 
+secure-only CSRF cookie makes it more difficult for network traffic sniffers 
+to steal the CSRF token.
+?: (security.W018) You should not have DEBUG set to True in deployment.
+
+System check identified 433 issues (0 silenced).
+

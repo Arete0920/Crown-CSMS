@@ -7,6 +7,9 @@ from rest_framework.test import APIClient
 from attendance_rules_wizard.models import AttendanceRulesWizardSession
 from core.models import School
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/attendance-rules-wizard/sessions/"
@@ -17,7 +20,7 @@ def _make_school():
 
 
 def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password="pw")
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):

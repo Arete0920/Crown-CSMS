@@ -1,25 +1,26 @@
 /**
- * StorePage — list items, purchase, manage inventory.
+ * StorePage - list items, purchase, manage inventory.
  * Calls GET  /api/v1/advancement/store/
  *       POST /api/v1/advancement/purchase/store/
  */
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { authenticatedFetch } from "../../utils/authClient.js";
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || "").trim();
   return base.endsWith("/") ? base.slice(0, -1) : base;
 }
-function getSession() {
-  try {
-    return { token: sessionStorage.getItem("crown.jwt.access") || "", schoolId: sessionStorage.getItem("crown.school.id") || "" };
-  } catch { return { token: "", schoolId: "" }; }
-}
-function authHeaders() {
-  const { token, schoolId } = getSession();
-  const h = { Accept: "application/json", "Content-Type": "application/json" };
-  if (token)    h["Authorization"] = `Bearer ${token}`;
-  if (schoolId) h["X-School-Id"] = schoolId;
-  return h;
+
+async function apiJson(path, opts = {}) {
+  const response = await authenticatedFetch(`${apiBase()}${path}`, {
+    ...opts,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(opts.headers || {}),
+    },
+  });
+  return response.json();
 }
 
 export default function StorePage() {
@@ -29,33 +30,62 @@ export default function StorePage() {
   const [purchasing, setPurchasing] = useState(null);
   const [quantities, setQuantities] = useState({});
 
-  function load() {
+  async function load() {
     setLoading(true);
-    fetch(`${apiBase()}/api/v1/advancement/store/?active=true`, { headers: authHeaders() })
-      .then((r) => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
-      .then((d) => { setItems(d.results ?? d); setLoading(false); })
-      .catch((e) => { setError(String(e)); setLoading(false); });
+    setError(null);
+    try {
+      const data = await apiJson("/api/v1/advancement/store/?active=true");
+      setItems(data.results ?? data);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initialize() {
+      try {
+        const data = await apiJson("/api/v1/advancement/store/?active=true");
+        if (!cancelled) {
+          setItems(data.results ?? data);
+          setError(null);
+          setLoading(false);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(String(e.message || e));
+          setLoading(false);
+        }
+      }
+    }
+
+    void initialize();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function handlePurchase(item) {
-    const qty = parseInt(quantities[item.id] || 1);
-    if (isNaN(qty) || qty < 1) return alert("Quantity must be at least 1.");
+    const qty = parseInt(quantities[item.id] || 1, 10);
+    if (Number.isNaN(qty) || qty < 1) return alert("Quantity must be at least 1.");
     setPurchasing(item.id);
-    fetch(`${apiBase()}/api/v1/advancement/purchase/store/`, {
+    apiJson("/api/v1/advancement/purchase/store/", {
       method: "POST",
-      headers: authHeaders(),
       body: JSON.stringify({ item_id: item.id, quantity: qty }),
     })
-      .then((r) => r.ok ? r.json() : r.json().then((d) => Promise.reject(d.detail || `HTTP ${r.status}`)))
-      .then(() => { alert(`Purchased ${qty}x ${item.name}`); load(); })
-      .catch((e) => alert(`Purchase failed: ${e}`))
+      .then(() => {
+        alert(`Purchased ${qty}x ${item.name}`);
+        void load();
+      })
+      .catch((e) => alert(`Purchase failed: ${e.message || e}`))
       .finally(() => setPurchasing(null));
   }
 
-  if (loading) return <p aria-busy="true">Loading store…</p>;
-  if (error)   return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
+  if (loading) return <p aria-busy="true">Loading store...</p>;
+  if (error) return <p role="alert" style={{ color: "red" }}>Error: {error}</p>;
 
   return (
     <div aria-label="Spirit Store">
@@ -97,7 +127,7 @@ export default function StorePage() {
                     disabled={purchasing === item.id}
                     style={{ flex: 1, padding: "7px 0" }}
                   >
-                    {purchasing === item.id ? "…" : "Purchase"}
+                    {purchasing === item.id ? "..." : "Purchase"}
                   </button>
                 </div>
               ) : (

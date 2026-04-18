@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
@@ -14,7 +14,7 @@ async function fetchIntegrity() {
     const token = sessionStorage.getItem('crown.jwt.access') || '';
     const headers = { Accept: 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${apiBase()}/api/integrity/`, { headers });
+    const res = await globalThis.fetch(`${apiBase()}/api/integrity/`, { headers });
     const data = await res.json();
     return { ok: res.ok, data };
   } catch {
@@ -41,7 +41,7 @@ function CheckRow({ label, ok = true }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid var(--crown-border)' }}>
       <span style={{ fontSize: 16, color: ok ? 'var(--crown-ok)' : 'var(--crown-danger)' }}>
-        {ok ? '?' : '?'}
+        {ok ? '[ok]' : '[x]'}
       </span>
       <span style={{ fontSize: 13, fontFamily: 'monospace', color: 'var(--crown-ink)' }}>{label}</span>
     </div>
@@ -92,7 +92,7 @@ function ShaLink({ sha, url }) {
           rel="noreferrer"
           style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--crown-brand)', textDecoration: 'none', fontWeight: 600 }}
         >
-          {short} ?
+          {short}
         </a>
       ) : (
         <code style={{ fontSize: 13, color: 'var(--crown-muted)' }}>{short}</code>
@@ -136,20 +136,20 @@ function CopyProofButton({ data }) {
         transition: 'all 0.15s',
       }}
     >
-      {copied ? '? copied!' : 'copy proof'}
+      {copied ? 'copied!' : 'copy proof'}
     </button>
   );
 }
 
-/* â”€â”€ Integrity / Audit KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Integrity / Audit KPI flip cards  */
 const ADMIN_KPI = [
-  { label: "Audit Events Today", value: "—",   trend: null,              trendUp: null,
+  { label: "Audit Events Today", value: "",   trend: null,              trendUp: null,
     definition: "Total system audit log entries recorded in the last 24 hours.",
     dataSource: "Audit Log API", dataHref: "/integrity" },
-  { label: "Failed Logins",      value: "—",   trend: null,              trendUp: null,
+  { label: "Failed Logins",      value: "",   trend: null,              trendUp: null,
     definition: "Number of failed authentication attempts in the monitoring window.",
     dataSource: "Security Module", dataHref: "/security" },
-  { label: "Data Changes",       value: "—",   trend: null,              trendUp: null,
+  { label: "Data Changes",       value: "",   trend: null,              trendUp: null,
     definition: "Number of create/update/delete operations on sensitive data records today.",
     dataSource: "Audit Log API", dataHref: "/integrity" },
   { label: "Compliance Score",   value: "96%", trend: "+1% vs last wk",  trendUp: true,
@@ -171,10 +171,10 @@ export default function IntegrityDashboard() {
 
   const timestamp = data?.timestamp
     ? new Date(data.timestamp).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-    : '�';
+    : '';
 
   return (
-    <CrownLayout title="Crown Integrity" subtitle="System verification � live">
+    <CrownLayout title="Crown Integrity" subtitle="System verification - live">
       <KpiStrip cards={ADMIN_KPI} />
       <CrownGrid>
 
@@ -184,7 +184,7 @@ export default function IntegrityDashboard() {
             <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--crown-ink)' }}>Crown Integrity Dashboard</span>
             {!loading && !error && <Pill color="green">LIVE</Pill>}
             {error && <Pill color="yellow">UNAVAILABLE</Pill>}
-            {loading && <Pill color="gray">Loading�</Pill>}
+            {loading && <Pill color="gray">Loading</Pill>}
             {!loading && !error && data && <CopyProofButton data={data} />}
           </div>
         </Col>
@@ -192,7 +192,7 @@ export default function IntegrityDashboard() {
         {/* Build info */}
         <Col span={6}>
           <CrownCard title="Deployment">
-            {loading && <p style={{ color: 'var(--crown-muted)', fontSize: 13 }}>Fetching�</p>}
+            {loading && <p style={{ color: 'var(--crown-muted)', fontSize: 13 }}>Fetching</p>}
             {error && <p style={{ color: 'var(--crown-danger)', fontSize: 13 }}>Could not reach /api/integrity/</p>}
             {data && (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -224,7 +224,7 @@ export default function IntegrityDashboard() {
                           rel="noreferrer"
                           style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--crown-brand)', textDecoration: 'none' }}
                         >
-                          {data.prod_deploy_tag} ?
+                          {data.prod_deploy_tag}
                         </a>
                       ) : (
                         <code style={{ fontSize: 12, color: 'var(--crown-muted)' }}>{data.prod_deploy_tag}</code>
@@ -241,7 +241,7 @@ export default function IntegrityDashboard() {
                         rel="noreferrer"
                         style={{ color: 'var(--crown-brand)', fontSize: 13, textDecoration: 'none' }}
                       >
-                        {data.github_repo} ?
+                        {data.github_repo}
                       </a>
                     </td>
                   </tr>
@@ -254,7 +254,7 @@ export default function IntegrityDashboard() {
         {/* Meta-gates */}
         <Col span={6}>
           <CrownCard title="Authoring Gates" right={data ? <Pill color="green">{data.meta_gates?.length ?? 0} active</Pill> : null}>
-            {loading && <p style={{ color: 'var(--crown-muted)', fontSize: 13 }}>Fetching�</p>}
+            {loading && <p style={{ color: 'var(--crown-muted)', fontSize: 13 }}>Fetching</p>}
             {error && <p style={{ color: 'var(--crown-danger)', fontSize: 13 }}>Unavailable</p>}
             {data?.meta_gates?.map((gate) => (
               <div key={gate.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--crown-border)' }}>
@@ -273,9 +273,9 @@ export default function IntegrityDashboard() {
         <Col span={12}>
           <CrownCard
             title="Known CI Checks"
-            right={data ? <Pill color="green">{data.required_checks?.length ?? 0} listed � 7 enforced</Pill> : null}
+            right={data ? <Pill color="green">{data.required_checks?.length ?? 0} listed - 7 enforced</Pill> : null}
           >
-            {loading && <p style={{ color: 'var(--crown-muted)', fontSize: 13 }}>Fetching�</p>}
+            {loading && <p style={{ color: 'var(--crown-muted)', fontSize: 13 }}>Fetching</p>}
             {error && <p style={{ color: 'var(--crown-danger)', fontSize: 13 }}>Unavailable</p>}
             {data?.required_checks && (
               <div style={{ columns: 2, columnGap: 32 }}>

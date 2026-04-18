@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
@@ -47,8 +47,8 @@ async function fetchHRData() {
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
     const [metricsRes, listRes] = await Promise.all([
-      fetch(`${apiBase()}/api/v1/hr/metrics/`, { headers }),
-      fetch(`${apiBase()}/api/v1/hr/employees/`, { headers }),
+      globalThis.fetch(`${apiBase()}/api/v1/hr/metrics/`, { headers }),
+      globalThis.fetch(`${apiBase()}/api/v1/hr/employees/`, { headers }),
     ]);
     if (!metricsRes.ok || !listRes.ok) throw new Error('non-ok');
     const metrics = await metricsRes.json();
@@ -74,7 +74,7 @@ function Pill({ color = 'gray', children }) {
   );
 }
 
-/* â”€â”€ HR / Staff KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  HR / Staff KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Staff Active",         value: "84",   trend: null,              trendUp: null,
     definition: "Total full-time and part-time staff with active employment records.",
@@ -103,7 +103,7 @@ export default function HumanResources() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>
@@ -151,7 +151,7 @@ export default function HumanResources() {
                     <tr key={e.id || i} style={{ borderTop: '1px solid var(--crown-border)' }}>
                       <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{e.first_name} {e.last_name}</td>
                       <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{e.role}</td>
-                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{e.department || '—'}</td>
+                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)' }}>{e.department || ''}</td>
                       <td style={{ padding: '6px 8px', textAlign: 'center' }}>
                         <Pill color={e.active ? 'green' : 'red'}>{e.active ? 'Active' : 'Inactive'}</Pill>
                       </td>

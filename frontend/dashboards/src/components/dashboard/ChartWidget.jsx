@@ -1,41 +1,46 @@
-﻿/**
- * ChartWidget — sparkline/donut stub for Phase A.
+/**
+ * ChartWidget - sparkline/donut stub for Phase A.
  * Phase B: replace with recharts or similar.
  */
-import React from "react";
 
-// Simple inline donut using SVG — no external chart library needed for Phase A.
+// Simple inline donut using SVG - no external chart library needed for Phase A.
 function DonutChart({ segments }) {
   if (!segments?.length) return <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>No data</div>;
 
   const COLOR_MAP = { good: "var(--crown-ok)", warn: "var(--crown-warn)", bad: "var(--crown-danger)" };
   const total = segments.reduce((s, seg) => s + (seg.value ?? 0), 0) || 1;
-
-  let angle = -90; // start at top
   const cx = 60, cy = 60, r = 42, stroke = 16;
 
-  const arcs = segments.map((seg) => {
-    const pct = seg.value / total;
-    const sweep = pct * 360;
-    const startAngle = angle;
-    angle += sweep;
-    const endAngle = angle;
+  const arcs = segments.reduce(
+    (acc, seg) => {
+      const pct = seg.value / total;
+      const sweep = pct * 360;
+      const startAngle = acc.angle;
+      const endAngle = startAngle + sweep;
 
-    const toRad = (d) => (d * Math.PI) / 180;
-    const x1 = cx + r * Math.cos(toRad(startAngle));
-    const y1 = cy + r * Math.sin(toRad(startAngle));
-    const x2 = cx + r * Math.cos(toRad(endAngle));
-    const y2 = cy + r * Math.sin(toRad(endAngle));
-    const large = sweep > 180 ? 1 : 0;
+      const toRad = (d) => (d * Math.PI) / 180;
+      const x1 = cx + r * Math.cos(toRad(startAngle));
+      const y1 = cy + r * Math.sin(toRad(startAngle));
+      const x2 = cx + r * Math.cos(toRad(endAngle));
+      const y2 = cy + r * Math.sin(toRad(endAngle));
+      const large = sweep > 180 ? 1 : 0;
 
-    return {
-      d: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,
-      color: COLOR_MAP[seg.color] ?? "var(--crown-muted)",
-      label: seg.label,
-      value: seg.value,
-      pct: Math.round(pct * 100),
-    };
-  });
+      return {
+        angle: endAngle,
+        arcs: [
+          ...acc.arcs,
+          {
+            d: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,
+            color: COLOR_MAP[seg.color] ?? "var(--crown-muted)",
+            label: seg.label,
+            value: seg.value,
+            pct: Math.round(pct * 100),
+          },
+        ],
+      };
+    },
+    { angle: -90, arcs: [] }
+  ).arcs;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
@@ -128,7 +133,7 @@ export default function ChartWidget({ widget, onExpand }) {
             aria-label={`Expand ${title}`}
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--crown-muted)", fontSize: 16, padding: 2 }}
           >
-            ⤢
+            []
           </button>
         )}
       </div>

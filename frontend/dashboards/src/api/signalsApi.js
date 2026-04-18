@@ -1,12 +1,13 @@
 /**
- * signals API helpers — Crown Signal Engine + Intervention Workflow
+ * signals API helpers - Crown Signal Engine + Intervention Workflow
  *
- * Auth pattern: sessionStorage JWT + X-School-Id header (matches all Crown dashboards).
- * All fetches are GET-only for board endpoints; staff endpoints support POST.
+ * Auth pattern: shared apiFetch with optional explicit token + school header
+ * overrides for board/staff endpoints.
  */
+import { apiFetch } from "../lib/api";
 
-async function safeJson(res) {
-  const text = await res.text();
+async function safeJson(response) {
+  const text = await response.text();
   try {
     return JSON.parse(text);
   } catch {
@@ -15,49 +16,47 @@ async function safeJson(res) {
 }
 
 function makeHeaders({ token, schoolId }) {
-  const h = { "Content-Type": "application/json" };
-  if (token)    h.Authorization = `Bearer ${token}`;
-  if (schoolId) h["X-School-Id"] = String(schoolId);
-  return h;
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (schoolId) headers["X-School-Id"] = String(schoolId);
+  return headers;
 }
 
-// ── Board read-only ─────────────────────────────────────────────────────────
-
+// Board read-only
 export async function fetchBoardCompass({ token, schoolId }) {
-  const res = await fetch("/api/v1/signals/board/compass/", {
+  const response = await apiFetch("/api/v1/signals/board/compass/", {
     headers: makeHeaders({ token, schoolId }),
   });
-  return res.ok ? await safeJson(res) : null;
+  return safeJson(response);
 }
 
 export async function fetchBoardRiskCounts({ token, schoolId }) {
-  const res = await fetch("/api/v1/signals/board/risk-counts/", {
+  const response = await apiFetch("/api/v1/signals/board/risk-counts/", {
     headers: makeHeaders({ token, schoolId }),
   });
-  return res.ok ? await safeJson(res) : null;
+  return safeJson(response);
 }
 
-// ── Staff endpoints ─────────────────────────────────────────────────────────
-
+// Staff endpoints
 export async function fetchStudentSignals({ token, schoolId, studentId }) {
-  const res = await fetch(`/api/v1/signals/students/${studentId}/signals/`, {
+  const response = await apiFetch(`/api/v1/signals/students/${studentId}/signals/`, {
     headers: makeHeaders({ token, schoolId }),
   });
-  return res.ok ? await safeJson(res) : null;
+  return safeJson(response);
 }
 
 export async function fetchInterventionCases({ token, schoolId }) {
-  const res = await fetch("/api/v1/signals/interventions/cases/", {
+  const response = await apiFetch("/api/v1/signals/interventions/cases/", {
     headers: makeHeaders({ token, schoolId }),
   });
-  return res.ok ? await safeJson(res) : [];
+  return (await safeJson(response)) ?? [];
 }
 
 export async function postInterventionAction({ token, schoolId, caseId, payload }) {
-  const res = await fetch(`/api/v1/signals/interventions/cases/${caseId}/actions/`, {
+  const response = await apiFetch(`/api/v1/signals/interventions/cases/${caseId}/actions/`, {
     method: "POST",
     headers: makeHeaders({ token, schoolId }),
     body: JSON.stringify(payload),
   });
-  return res.ok ? await safeJson(res) : null;
+  return safeJson(response);
 }

@@ -1,0 +1,8 @@
+﻿Risk,Severity,Probability,Owner,Mitigation,NextReview,Status
+Conflicting release standards,HIGH,HIGH,TC,Freeze language and use canonical directive only,2026-04-15,OPEN
+Undocumented product gaps,HIGH,MEDIUM,Dev 5,Use release truth matrix and gate every area,2026-04-15,OPEN
+Route contract defects,HIGH,MEDIUM,Dev 1,Controlled route audit and proof run,2026-04-15,OPEN
+Deploy proof incomplete,HIGH,MEDIUM,Dev 5,Run full release verification and archive artifacts,2026-04-15,OPEN
+Admissions path not fully proven,HIGH,MEDIUM,Dev 3,Run end-to-end proof and attach artifacts,2026-04-15,OPEN
+Billing / payments not fully proven,HIGH,MEDIUM,Dev 3,Run end-to-end billing proof and attach artifacts,2026-04-15,OPEN
+Docs outrun engineering truth,HIGH,MEDIUM,Docs,Retire softer docs and align all language,2026-04-15,OPEN

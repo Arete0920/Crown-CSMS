@@ -1,5 +1,4 @@
-import React from 'react';
-import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack } from '@mui/material';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import SchedulingSnapshotCard from '../components/dashboard/scheduling/SchedulingSnapshotCard.jsx';
 import SchedulingConflictsPanel from '../components/dashboard/scheduling/SchedulingConflictsPanel.jsx';

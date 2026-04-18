@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import FineArtsSnapshotCard from '../components/dashboard/finearts/FineArtsSnapshotCard';
 import FineArtsAlertsPanel from '../components/dashboard/finearts/FineArtsAlertsPanel';

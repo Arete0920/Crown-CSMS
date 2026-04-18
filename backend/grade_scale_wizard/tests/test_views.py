@@ -23,11 +23,14 @@ from rest_framework.test import APIClient
 
 from core.models import AcademicYear, School
 from grade_scale_wizard.models import (
+
     GradeScale,
     GradeScaleBand,
     GradeScaleWizardSession,
     TermWeight,
 )
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 
 User = get_user_model()
 
@@ -44,7 +47,7 @@ def _make_school(suffix=""):
 
 
 def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password="pw")
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):

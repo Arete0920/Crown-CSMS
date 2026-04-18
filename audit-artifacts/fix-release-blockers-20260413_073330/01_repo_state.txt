@@ -1,0 +1,108 @@
+repo_root=C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr
+branch=audit/pr-overlap-reconcile
+head=c1b090e73d37afd6cda5384abc009a415182c6e2
+
+git_status:
+ M backend/core/tenant_header_middleware.py
+ M backend/crown_api/tests/test_health.py
+ M frontend/dashboards/src/api/attendance_codes_wizard.js
+ M frontend/dashboards/src/api/attendance_rules_wizard.js
+ M frontend/dashboards/src/api/bell_schedule_wizard.js
+ M frontend/dashboards/src/api/enrollment_conversion_wizard.js
+ M frontend/dashboards/src/auth/roleAdapter.js
+ M frontend/dashboards/src/components/CurriculumPacingCard.jsx
+ M frontend/dashboards/src/components/DevJwtPanel.jsx
+ M frontend/dashboards/src/components/Drawer.jsx
+ M frontend/dashboards/src/components/SetupProgress.jsx
+ M frontend/dashboards/src/components/crown/CrownLayout.jsx
+ M frontend/dashboards/src/components/crown/CrownWizardStepHeader.jsx
+ M frontend/dashboards/src/components/crown/useCrownDashboardMetrics.js
+ M frontend/dashboards/src/components/dashboard/DrilldownDrawer.jsx
+ M frontend/dashboards/src/components/dashboard/FlipWidget.jsx
+ M frontend/dashboards/src/hooks/useBoardExecutiveData.js
+ M frontend/dashboards/src/lib/api.js
+ M frontend/dashboards/src/lib/authGuard.js
+ M frontend/dashboards/src/lib/http.js
+ M frontend/dashboards/src/modules/advancement/AdvancementDashboard.jsx
+ M frontend/dashboards/src/modules/advancement/BestAvailableCheckout.jsx
+ M frontend/dashboards/src/modules/advancement/GivePage.jsx
+ M frontend/dashboards/src/modules/advancement/MovesPipelinePage.jsx
+ M frontend/dashboards/src/modules/advancement/SeatSelectionPage.jsx
+ M frontend/dashboards/src/modules/advancement/SeatingAdminPage.jsx
+ M frontend/dashboards/src/modules/advancement/TicketCheckInPage.jsx
+ M frontend/dashboards/src/modules/advancement/TicketSuccessPage.jsx
+ M frontend/dashboards/src/modules/advancement/TicketsPage.jsx
+ M frontend/dashboards/src/pages/AcademicSupportDashboard.jsx
+ M frontend/dashboards/src/pages/AdminDashboard.jsx
+ M frontend/dashboards/src/pages/AdmissionsDashboard.jsx
+ M frontend/dashboards/src/pages/AthleticsDashboard.jsx
+ M frontend/dashboards/src/pages/BellScheduleWizard.jsx
+ M frontend/dashboards/src/pages/BillingDashboard.jsx
+ M frontend/dashboards/src/pages/CommunicationsDirectorDashboard.jsx
+ M frontend/dashboards/src/pages/CounselingDashboard.jsx
+ M frontend/dashboards/src/pages/FinancialAidDashboard.jsx
+ M frontend/dashboards/src/pages/FoodDashboard.jsx
+ M frontend/dashboards/src/pages/GradebookRO.jsx
+ M frontend/dashboards/src/pages/HealthDashboard.jsx
+ M frontend/dashboards/src/pages/HumanResources.jsx
+ M frontend/dashboards/src/pages/ITDashboard.jsx
+ M frontend/dashboards/src/pages/IntegrityDashboard.jsx
+ M frontend/dashboards/src/pages/LibraryDashboard.jsx
+ M frontend/dashboards/src/pages/LoginPage.jsx
+ M frontend/dashboards/src/pages/MarketingDashboard.jsx
+ M frontend/dashboards/src/pages/OfficeDashboard.jsx
+ M frontend/dashboards/src/pages/PDDashboard.jsx
+ M frontend/dashboards/src/pages/ParentAttendancePage.jsx
+ M frontend/dashboards/src/pages/ParentStudent360Page.jsx
+ M frontend/dashboards/src/pages/RegistrarDashboard.jsx
+ M frontend/dashboards/src/pages/SafetyDashboard.jsx
+ M frontend/dashboards/src/pages/SchedulingDashboard.jsx
+ M frontend/dashboards/src/pages/SecurityDashboard.jsx
+ M frontend/dashboards/src/pages/StaffSetupWizard.jsx
+ M frontend/dashboards/src/pages/StudentServicesDashboard.jsx
+ M frontend/dashboards/src/pages/TeacherAttendancePage.jsx
+ M frontend/dashboards/src/pages/TermStructureWizard.jsx
+ M frontend/dashboards/src/pages/attendance_rules_wizard/Step1Configure.jsx
+ M frontend/dashboards/src/pages/bell_schedule_wizard/Step1Configure.jsx
+ M frontend/dashboards/src/pages/billing_wizard/Step1Mode.jsx
+ M frontend/dashboards/src/pages/billing_wizard/Step2Plans.jsx
+ M frontend/dashboards/src/pages/billing_wizard/Step3Fees.jsx
+ M frontend/dashboards/src/pages/billing_wizard/Step6Verify.jsx
+ M frontend/dashboards/src/pages/comms_wizard/Step1Purpose.jsx
+ M frontend/dashboards/src/pages/comms_wizard/Step2Message.jsx
+ M frontend/dashboards/src/pages/comms_wizard/Step6Verify.jsx
+ M frontend/dashboards/src/pages/enrollment_conversion_wizard/Step1Configure.jsx
+ M frontend/dashboards/src/pages/financial_aid_wizard/Step1Year.jsx
+ M frontend/dashboards/src/pages/financial_aid_wizard/Step2Buckets.jsx
+ M frontend/dashboards/src/pages/financial_aid_wizard/Step3Awards.jsx
+ M frontend/dashboards/src/pages/gradebook_setup_wizard/Step1Configure.jsx
+ M frontend/dashboards/src/pages/invoice_run_wizard/Step1Configure.jsx
+ M frontend/dashboards/src/pages/onboarding/Step1ChooseMode.jsx
+ M frontend/dashboards/src/pages/onboarding/Step2Upload.jsx
+ M frontend/dashboards/src/pages/reenrollment/Step1Config.jsx
+ M frontend/dashboards/src/pages/scheduling_wizard/Step1Term.jsx
+ M frontend/dashboards/src/pages/section_assign_wizard/Step1Section.jsx
+ M frontend/dashboards/src/pages/section_assign_wizard/Step2LoadStudents.jsx
+ M frontend/dashboards/src/pages/wizards/AftercareSetupWizard.jsx
+ M frontend/dashboards/src/pages/wizards/FinanceSetupWizard.jsx
+ M frontend/dashboards/src/utils/authClient.js
+ M frontend/dashboards/src/views/platformOps/PlatformOpsHome.jsx
+?? audit-artifacts/fic-app-scan.json
+?? audit-artifacts/maximum-proof-20260413_031159/
+?? audit-artifacts/revised-48h-20260413_023927/
+?? audit-artifacts/revised-48h-20260413_024145/
+?? audit-artifacts/revised-48h-20260413_024257/
+?? audit-artifacts/revised-48h-20260413_031159/
+?? scripts/recovery/
+
+recent_commits:
+c1b090e7 fix: align deploy-prod health checks to api health endpoint
+9aaae492 chore: checkpoint stabilization pack and verification artifacts
+810b3989 fix: clean classroom and student360 drawer lint
+37103a19 fix: clean shared dashboard component lint
+477f35b2 fix: clean dashboard widget lint cluster
+4637be07 fix: tighten frontend auth and routing guards
+2838333a fix: align dashboard pages with shared api client
+c3e7e35a fix: normalize remaining wizard api helpers
+78e24325 fix: normalize frontend api helpers to shared clients
+8ded6061 fix: stabilize student360/parent360 overview routes and scoping

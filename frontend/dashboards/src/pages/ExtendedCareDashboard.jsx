@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import ExtendedCareSnapshotCard from '../components/dashboard/extendedcare/ExtendedCareSnapshotCard';
 import ExtendedCareAlertsPanel from '../components/dashboard/extendedcare/ExtendedCareAlertsPanel';

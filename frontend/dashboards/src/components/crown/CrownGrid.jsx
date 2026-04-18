@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * CrownGrid – 12-column grid wrapper.

@@ -8,6 +8,9 @@ from academics.models import AssignmentCategory, Course, Section
 from core.models import School
 from gradebook_setup_wizard.models import GradebookSetupWizardSession
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/gradebook-setup-wizard/sessions/"
@@ -18,7 +21,7 @@ def _make_school():
 
 
 def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password="pw")
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):

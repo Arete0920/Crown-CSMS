@@ -1,13 +1,13 @@
 import { useState } from "react";
 
-/* ─── Config ─────────────────────────────────────────────── */
+/*  Config  */
 const API_BASE    = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const DEMO_KEY    = import.meta.env.VITE_DEMO_KEY    || "CrownDemoKey!2026";
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_USER   = "head@crown-demo.local";
 const DEMO_PASS   = "Crown2026!";
 
-/* ─── Roles ──────────────────────────────────────────────── */
+/*  Roles  */
 const ROLES = [
   { label: "Head of School",      desc: "School-wide oversight & executive KPIs",   route: "/admin",         color: "#0F2C4C" },
   { label: "Financial Aid",       desc: "Aid awards, applications & packaging",      route: "/financial-aid-dashboard", color: "#1C4E80" },
@@ -19,7 +19,7 @@ const ROLES = [
   { label: "Board Member",        desc: "Governance, financials & strategic data",  route: "/board",         color: "#5B3D8A" },
 ];
 
-/* ─── SVGs ───────────────────────────────────────────────── */
+/*  SVGs  */
 function CrownSVG({ size = 52 }) {
   return (
     <svg viewBox="0 0 120 90" width={size} height={Math.round(size * 0.75)} aria-hidden="true">
@@ -74,7 +74,7 @@ function Spin() {
   );
 }
 
-/* ─── Role card ──────────────────────────────────────────── */
+/*  Role card  */
 function RoleCard({ role, busy, onLogin }) {
   const isBusy = busy === role.label;
   const isDim  = !!busy && !isBusy;
@@ -131,7 +131,7 @@ function RoleCard({ role, busy, onLogin }) {
   );
 }
 
-/* ─── Page ───────────────────────────────────────────────── */
+/*  Page  */
 export default function LoginPage() {
   const [busy,  setBusy]  = useState("");
   const [error, setError] = useState("");
@@ -143,7 +143,7 @@ export default function LoginPage() {
     try {
       let access = null, schoolId = DEMO_SCHOOL;
 
-      const dev = await fetch("/api/dev/token/", {
+      const dev = await globalThis.fetch("/api/dev/token/", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Demo-Key": DEMO_KEY },
         body: "{}",
@@ -154,7 +154,7 @@ export default function LoginPage() {
         access   = d.access;
         schoolId = d.school_id || DEMO_SCHOOL;
       } else {
-        const r = await fetch("/api/v1/auth/token/", {
+        const r = await globalThis.fetch("/api/v1/auth/token/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: DEMO_USER, password: DEMO_PASS }),
@@ -170,9 +170,9 @@ export default function LoginPage() {
 
       sessionStorage.setItem("crown.jwt.access", access);
       sessionStorage.setItem("crown.school.id",  schoolId);
-      window.location.href = role.route;
+      globalThis.location.href = role.route;
     } catch (e) {
-      setError(e.message || "Login failed — is the backend running?");
+      setError(e.message || "Login failed  is the backend running?");
       setBusy("");
     }
   }
@@ -189,7 +189,7 @@ export default function LoginPage() {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
-        /* ─── Brand column ─── */
+        /*  Brand column  */
         .lp-brand {
           width: 400px;
           flex-shrink: 0;
@@ -296,7 +296,7 @@ export default function LoginPage() {
           font-weight: 600;
         }
 
-        /* ─── Login column ─── */
+        /*  Login column  */
         .lp-panel {
           flex: 1;
           display: flex;
@@ -430,7 +430,7 @@ export default function LoginPage() {
               <strong>Every stakeholder.</strong>
             </h1>
             <p className="lp-body-copy">
-              Purpose-built for independent schools — financial aid,
+              Purpose-built for independent schools  financial aid,
               admissions, governance, and academics in a single
               integrated system.
             </p>
@@ -466,7 +466,7 @@ export default function LoginPage() {
 
             <button
               className="lp-ms"
-              onClick={() => { window.location.href = API_BASE + "/auth/microsoft/login/"; }}
+              onClick={() => { globalThis.location.href = API_BASE + "/auth/microsoft/login/"; }}
             >
               <MsIcon />
               Continue with Microsoft 365

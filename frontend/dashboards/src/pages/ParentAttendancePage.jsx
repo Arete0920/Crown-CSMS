@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { authenticatedFetch } from "../utils/authClient";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import ErrorBanner from "../components/ui/ErrorBanner";
@@ -46,7 +46,7 @@ export default function ParentAttendancePage() {
   return (
     <CrownLayout title="Parent Attendance" subtitle="View your student's attendance record">
       <div style={{ marginBottom: 12 }}>
-        <label>Student: </label>
+        <div>Student: </div>
         <select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
           <option value="">-- select --</option>
           {students.map((s) => (
@@ -88,3 +88,4 @@ export default function ParentAttendancePage() {
     </CrownLayout>
   );
 }
+

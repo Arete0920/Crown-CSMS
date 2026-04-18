@@ -112,7 +112,7 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <div>
-                <label style={{ fontSize: 11, color: "var(--crown-muted)" }}>Application ID *</label>
+                <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Application ID *</div>
                 <input
                   className="crown-input"
                   type="text"
@@ -123,7 +123,7 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
                 />
               </div>
               <div>
-                <label style={{ fontSize: 11, color: "var(--crown-muted)" }}>Bucket *</label>
+                <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Bucket *</div>
                 <select
                   className="crown-input"
                   value={row.bucket}
@@ -136,7 +136,7 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 11, color: "var(--crown-muted)" }}>Amount ($) *</label>
+                <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Amount ($) *</div>
                 <input
                   className="crown-input"
                   type="number"
@@ -149,7 +149,7 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
                 />
               </div>
               <div>
-                <label style={{ fontSize: 11, color: "var(--crown-muted)" }}>Rationale</label>
+                <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Rationale</div>
                 <input
                   className="crown-input"
                   type="text"

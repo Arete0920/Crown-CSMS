@@ -21,6 +21,8 @@ from rest_framework import status
 from households.scoping import get_request_school_id
 
 from .models import GuardianHouseholdWizardSession
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
@@ -37,6 +39,7 @@ def _get_session(session_id, school_id):
 # Step 1: Create session
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -55,6 +58,7 @@ def create_session(request):
 # Step 2: Configure household
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -80,6 +84,7 @@ def configure_session(request, session_id):
 # Step 3: Add guardians
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -122,6 +127,7 @@ def add_guardians(request, session_id):
 # Step 4: Link students
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -164,6 +170,7 @@ def link_students(request, session_id):
 # Step 5: Commit
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -231,6 +238,7 @@ def commit_session(request, session_id):
 # Step 6: Verify
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

@@ -22,6 +22,9 @@ from rest_framework.test import APIClient
 from core.models import School
 from fee_schedule_wizard.models import FeeSchedule, FeeLine, FeeScheduleWizardSession
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/fee-schedule-wizard/sessions/"
@@ -37,7 +40,7 @@ def _make_school(suffix=""):
 
 
 def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password="pw")
+    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
 
 
 def _headers(school_id):

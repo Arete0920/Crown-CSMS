@@ -50,6 +50,11 @@ urlpatterns = [
     path("pd/", include("pdhub.urls")),
     path("safety/", include("safety.urls")),
     path("connectors/", include("integrations_real.urls")),
+    path("student-records/", include("student_records.urls")),
+    # Parent360 explicit v1 route
+    path("parent360/", include("parent360.api.urls")),
+
     # Legacy api_urls catch-all (must come AFTER specific module includes above)
     path("", include("crown_api.api_urls")),
 ]
+

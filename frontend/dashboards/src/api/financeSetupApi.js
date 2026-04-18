@@ -1,29 +1,29 @@
 /**
  * financeSetupApi.js
  * ==================
- * Crown Finance Setup Wizard — API helpers.
- *
- * Base URL: /api/v1/finance-setup/
- * Auth:     sessionStorage("crown.jwt.access") + X-School-ID header
+ * Crown Finance Setup Wizard - API helpers.
  */
+import { crownApiClient } from "./client";
 
 const BASE = "/api/v1/finance-setup";
 
-function getToken() {
-  return sessionStorage.getItem("crown.jwt.access") || "";
+async function request(config) {
+  return crownApiClient.request({
+    validateStatus: () => true,
+    ...config,
+  });
 }
 
-function getSchoolId() {
-  return sessionStorage.getItem("crown.school.id") || "1";
+function responseData(response) {
+  return response.data ?? null;
 }
 
-function headers(extra = {}) {
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${getToken()}`,
-    "X-School-ID": getSchoolId(),
-    ...extra,
-  };
+function responseError(response, fallbackMessage) {
+  const err = new Error(response.data?.error || fallbackMessage);
+  err.status = response.status;
+  err.body = response.data ?? null;
+  err.url = response.config?.url || "";
+  return err;
 }
 
 /**
@@ -31,14 +31,16 @@ function headers(extra = {}) {
  * Returns null (not 404 throw) if no policy exists yet.
  */
 export async function fetchFinanceStatus(year) {
-  const resp = await fetch(`${BASE}/wizard/status/?year=${encodeURIComponent(year)}`, {
+  const response = await request({
     method: "GET",
-    headers: headers(),
+    url: `${BASE}/wizard/status/?year=${encodeURIComponent(year)}`,
   });
 
-  if (resp.status === 404) return null;
-  if (!resp.ok) throw new Error(`Finance status fetch failed: ${resp.status}`);
-  return resp.json();
+  if (response.status === 404) return null;
+  if (response.status < 200 || response.status >= 300) {
+    throw responseError(response, `Finance status fetch failed: ${response.status}`);
+  }
+  return responseData(response);
 }
 
 /**
@@ -46,50 +48,53 @@ export async function fetchFinanceStatus(year) {
  * Throws with {status: 409} if the policy is already locked.
  */
 export async function saveFinancePolicy(payload) {
-  const resp = await fetch(`${BASE}/wizard/configure/`, {
+  const response = await request({
     method: "POST",
-    headers: headers(),
-    body: JSON.stringify(payload),
+    url: `${BASE}/wizard/configure/`,
+    data: payload,
   });
 
-  if (resp.status === 409) {
+  if (response.status === 409) {
     const err = new Error("Policy is locked and cannot be edited.");
     err.status = 409;
+    err.body = response.data ?? null;
+    err.url = response.config?.url || "";
     throw err;
   }
-  if (!resp.ok) {
-    const body = await resp.json().catch(() => ({}));
-    throw new Error(body?.error || `Configure failed: ${resp.status}`);
+  if (response.status < 200 || response.status >= 300) {
+    throw responseError(response, `Configure failed: ${response.status}`);
   }
-  return resp.json();
+  return responseData(response);
 }
 
 /**
  * Permanently lock the finance policy for a given academic year.
  */
 export async function lockFinancePolicy(year, lockedBy = "") {
-  const resp = await fetch(`${BASE}/wizard/lock/`, {
+  const response = await request({
     method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ academic_year: year, locked_by: lockedBy }),
+    url: `${BASE}/wizard/lock/`,
+    data: { academic_year: year, locked_by: lockedBy },
   });
 
-  if (!resp.ok) {
-    const body = await resp.json().catch(() => ({}));
-    throw new Error(body?.error || `Lock failed: ${resp.status}`);
+  if (response.status < 200 || response.status >= 300) {
+    throw responseError(response, `Lock failed: ${response.status}`);
   }
-  return resp.json();
+  return responseData(response);
 }
 
 /**
  * Fetch the read-only snapshot (same data as status, different presentation intent).
  */
 export async function fetchSnapshot(year) {
-  const resp = await fetch(`${BASE}/wizard/snapshot/?year=${encodeURIComponent(year)}`, {
+  const response = await request({
     method: "GET",
-    headers: headers(),
+    url: `${BASE}/wizard/snapshot/?year=${encodeURIComponent(year)}`,
   });
-  if (resp.status === 404) return null;
-  if (!resp.ok) throw new Error(`Snapshot fetch failed: ${resp.status}`);
-  return resp.json();
+
+  if (response.status === 404) return null;
+  if (response.status < 200 || response.status >= 300) {
+    throw responseError(response, `Snapshot fetch failed: ${response.status}`);
+  }
+  return responseData(response);
 }

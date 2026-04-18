@@ -9,10 +9,11 @@ jobs:
   phase1-contract:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4.1.1
 
       - name: Contract check (static)
         shell: pwsh
         run: |
           $ErrorActionPreference="Stop"
           pwsh -File scripts/phase1/phase1_contract.ps1
+

@@ -1,0 +1,49 @@
+﻿[
+    "Created release-closeout pack.",
+    "Next run:",
+    " powershell -ExecutionPolicy Bypass -File scripts\\release\\20_release_verify.ps1",
+    "Then commit only after fixing any failing output in audit-artifacts\\release-verify and audit-artifacts\\verify-high-risk.",
+    {
+        "status":  "pass",
+        "name":  "Fix 15",
+        "log":  "audit-artifacts\\release-verify\\50_fix_15_to_green.txt"
+    },
+    "Created priorities 16-31 closeout pack.",
+    "Next run in order:",
+    "  powershell -ExecutionPolicy Bypass -File scripts\\release\\fix_16_31_to_green.ps1",
+    "  powershell -ExecutionPolicy Bypass -File scripts\\release\\25_build_ship_candidate.ps1",
+    {
+        "status":  "pass",
+        "name":  "Fix 16-31",
+        "log":  "audit-artifacts\\release-verify\\51_fix_16_31_to_green.txt"
+    },
+    "Created priorities 32-46 issue-fix pack.",
+    "Next run:",
+    " powershell -ExecutionPolicy Bypass -File scripts\\release\\fix_32_46_to_green.ps1",
+    " powershell -ExecutionPolicy Bypass -File scripts\\release\\26_release_doctor.ps1",
+    {
+        "status":  "pass",
+        "name":  "Fix 32-46",
+        "log":  "audit-artifacts\\release-verify\\52_fix_32_46_to_green.txt"
+    },
+    "Created priorities 47-61 schema closeout pack.",
+    "Next run:",
+    " powershell -ExecutionPolicy Bypass -File scripts\\release\\fix_47_61_to_green.ps1",
+    " powershell -ExecutionPolicy Bypass -File scripts\\release\\27_schema_green_pass.ps1",
+    {
+        "status":  "pass",
+        "name":  "Fix 47-61",
+        "log":  "audit-artifacts\\release-verify\\53_fix_47_61_to_green.txt"
+    },
+    "=== SCHEMA INVENTORY BASELINE ===",
+    "=== FUNCTION VIEW AUTO-PATCH ===",
+    "=== APIVIEW METHOD AUTO-PATCH ===",
+    "=== PY COMPILE PATCHED FILES ===",
+    "=== DEPLOY CHECK AFTER PATCH ===",
+    {
+        "status":  "fail",
+        "error":  "python : Traceback (most recent call last):",
+        "name":  "Schema Green Pass",
+        "log":  "audit-artifacts\\release-verify\\54_schema_green_pass.txt"
+    }
+]

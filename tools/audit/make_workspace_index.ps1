@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Continue"
+﻿$ErrorActionPreference = "Continue"
 
 # tools/audit/make_workspace_index.ps1
 # Generates an evidence-based workspace index pack for Crown2026.
@@ -62,7 +62,7 @@ else {
   Write-File (Join-Path $pack "02_WORKFLOWS_INDEX.txt") "No .github/workflows directory found."
 }
 
-# 03 Workflow triggers (raw grep — name only, no secret lines)
+# 03 Workflow triggers (raw grep â€” name only, no secret lines)
 if (Test-Path $wfDir) {
   Select-String "$wfDir\*.yml" -Pattern '^(name:\s|on:\s)|pull_request:|push:|workflow_dispatch:|schedule:' |
   ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" } |
@@ -123,7 +123,7 @@ catch {
   Write-File $pyDeps "pip freeze failed."
 }
 
-# 09 Node deps (names only — no lockfile content)
+# 09 Node deps (names only â€” no lockfile content)
 $nodeDeps = Join-Path $pack "09_NODE_DEPS.txt"
 $pkg = Join-Path $PWD "frontend\dashboards\package.json"
 if (Test-Path $pkg) {
@@ -146,7 +146,7 @@ else {
   Write-File $nodeDeps "No frontend/dashboards/package.json found."
 }
 
-# 10 Secrets scan — metadata ONLY, never print values
+# 10 Secrets scan â€” metadata ONLY, never print values
 $secOut = Join-Path $pack "10_SECRET_SCAN_FINDINGS.txt"
 Write-File $secOut "Secret scan findings (metadata-only). No matched values are included.`n"
 
@@ -172,7 +172,7 @@ foreach ($p in $patterns) {
       if ($m) {
         foreach ($h in $m) {
           $rel = $h.Path.Substring($PWD.Path.Length + 1)
-          # File + line + rule ONLY — no matched string, no line content
+          # File + line + rule ONLY â€” no matched string, no line content
           Add-File $secOut ("- rule={0} file={1} line={2}" -f $p.name, $rel, $h.LineNumber)
           $hits++
         }
@@ -184,7 +184,7 @@ foreach ($p in $patterns) {
   Add-File $secOut ""
 }
 
-# gitleaks (if installed) → pipe through redact_gitleaks.py
+# gitleaks (if installed) â†’ pipe through redact_gitleaks.py
 $glCmd = Get-Command gitleaks -ErrorAction SilentlyContinue
 Add-File $secOut "--- gitleaks ---"
 if ($null -ne $glCmd) {
@@ -217,7 +217,7 @@ else {
   Write-File $binOut "git ls-files failed or empty."
 }
 
-# 12 Untracked artifacts (porcelain — no content, paths only)
+# 12 Untracked artifacts (porcelain â€” no content, paths only)
 $untrackedOut = Join-Path $pack "12_UNTRACKED_ARTIFACTS.txt"
 try { git status --porcelain 2>&1 | Out-File $untrackedOut -Encoding UTF8 }
 catch { Write-File $untrackedOut "git status --porcelain failed." }
@@ -253,7 +253,7 @@ Write-File $deployOut "Recent deploy-prod.yml runs (metadata only).`n"
 try {
   $env:GH_PAGER = "cat"
   $runs = gh run list --repo tcmegahan/Crown2026 --workflow deploy-prod.yml --limit 20 `
-    --json databaseId, status, conclusion, headSha, createdAt, displayTitle 2>&1
+    --json databaseId,status,conclusion,headSha,createdAt,displayTitle --status completed 2>&1
   Add-File $deployOut $runs
 }
 catch {
@@ -267,3 +267,4 @@ Get-ChildItem $pack | ForEach-Object { Write-Host "  $($_.Name)" }
 Write-Host ""
 Write-Host "Next: open Copilot Chat and paste:" -ForegroundColor Yellow
 Write-Host "  Create a comprehensive NON-FIXING audit report using ONLY the evidence in $pack" -ForegroundColor Yellow
+

@@ -1,13 +1,13 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 /**
- * CrownLayout – app shell with permission-derived sidebar + main content area.
+ * CrownLayout  app shell with permission-derived sidebar + main content area.
  *
  * Props:
- *   title    – page heading (h2)
- *   subtitle – secondary line under heading (muted)
- *   right    – JSX slotted to the top-right of the page header
- *   children – page body
+ *   title     page heading (h2)
+ *   subtitle  secondary line under heading (muted)
+ *   right     JSX slotted to the top-right of the page header
+ *   children  page body
  */
 
 function getSchoolId() {
@@ -65,7 +65,7 @@ async function fetchNav() {
   if (schoolId) headers["X-School-Id"]    = schoolId;
   if (token)    headers["Authorization"]  = `Bearer ${token}`;
 
-  const res = await fetch("/api/v1/nav/", { headers });
+  const res = await globalThis.fetch("/api/v1/nav/", { headers });
   if (!res.ok) throw new Error(`nav ${res.status}`);
   return res.json();
 }
@@ -165,15 +165,12 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
   const activeNav = nav
     ? mergeNavGroupsWithContract(nav)
     : (navError ? FALLBACK_NAV : null);
-  const pathname  = typeof window !== "undefined" ? window.location.pathname : "";
+  const pathname  = typeof window !== "undefined" ? globalThis.location.pathname : "";
   const breadcrumbs = useMemo(() => buildBreadcrumb(pathname), [pathname]);
   const navGroups = activeNav?.groups || [];
   const hasNavItems = navGroups.some((group) => (group.items || []).length > 0);
   const profile = getProfile();
 
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
 
   return (
     <div className="crown-app">
@@ -317,7 +314,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
         </div>
 
         <div style={{ marginTop: 28, paddingTop: 10, borderTop: "1px solid var(--crown-border)", fontSize: 11, color: "var(--crown-muted)", textAlign: "right" }}>
-          Build: {BUILD_SHA}{DEPLOY_TAG ? ` · ${DEPLOY_TAG}` : ""}
+          Build: {BUILD_SHA}{DEPLOY_TAG ? `  ${DEPLOY_TAG}` : ""}
         </div>
       </main>
     </div>

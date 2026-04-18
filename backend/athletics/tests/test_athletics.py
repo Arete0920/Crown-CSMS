@@ -28,6 +28,7 @@ from athletics.models import (
 )
 
 User = get_user_model()
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 pytestmark = pytest.mark.django_db
 
 
@@ -42,7 +43,7 @@ def _mk_school(name="Crown Academy"):
 def _mk_staff(school):
     u = User.objects.create_user(
         username=f"staff_{uuid.uuid4().hex[:8]}",
-        password="x",
+        password=TEST_AUTH_SECRET,
         is_staff=True,
     )
     return u
@@ -51,7 +52,7 @@ def _mk_staff(school):
 def _mk_user(role="coach"):
     return User.objects.create_user(
         username=f"{role}_{uuid.uuid4().hex[:8]}",
-        password="x",
+        password=TEST_AUTH_SECRET,
         is_staff=False,
     )
 
@@ -585,3 +586,6 @@ class TestCoachScoping:
         r = client_ad.get("/api/athletics/events/")
         assert r.status_code == 200
         assert len(r.data) == 2
+
+
+

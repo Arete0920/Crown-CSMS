@@ -3,13 +3,12 @@ import "../../styles/crown-wizard.css";
 /**
  * CrownWizardStepHeader
  *
- * @param {string}   title
- * @param {string}   subtitle
- * @param {number}   stepIndex   0-based current step
- * @param {number}   totalSteps
- * @param {string[]} steps       labels for each step
+ * @param {string} title
+ * @param {string} subtitle
+ * @param {number} stepIndex 0-based current step
+ * @param {string[]} steps labels for each step
  */
-export default function CrownWizardStepHeader({ title, subtitle, stepIndex, totalSteps, steps = [] }) {
+export default function CrownWizardStepHeader({ title, subtitle, stepIndex, steps = [] }) {
   return (
     <div className="crown-wizard-header" style={{ flexDirection: "column" }}>
       <div>
@@ -18,14 +17,14 @@ export default function CrownWizardStepHeader({ title, subtitle, stepIndex, tota
       </div>
       {steps.length > 0 && (
         <div className="crown-wizard-steps">
-          {steps.map((label, i) => {
+          {steps.map((label, index) => {
             const cls =
-              i < stepIndex ? "crown-wizard-step-pill done"
-              : i === stepIndex ? "crown-wizard-step-pill active"
+              index < stepIndex ? "crown-wizard-step-pill done"
+              : index === stepIndex ? "crown-wizard-step-pill active"
               : "crown-wizard-step-pill";
             return (
-              <span key={i} className={cls}>
-                {i + 1}. {label}
+              <span key={index} className={cls}>
+                {index + 1}. {label}
               </span>
             );
           })}

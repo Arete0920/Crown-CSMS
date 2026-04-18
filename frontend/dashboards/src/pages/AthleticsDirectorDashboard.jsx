@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import AthleticsDirectorSnapshotCard from '../components/dashboard/athleticsdirector/AthleticsDirectorSnapshotCard';
 import AthleticsDirectorAlertsPanel from '../components/dashboard/athleticsdirector/AthleticsDirectorAlertsPanel';

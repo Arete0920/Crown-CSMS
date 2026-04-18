@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid, Stack, Typography } from '@mui/material';
 import BoardSnapshotCard from '../components/dashboard/board/BoardSnapshotCard';
 import BoardKpiPanel from '../components/dashboard/board/BoardKpiPanel';

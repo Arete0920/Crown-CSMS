@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
@@ -7,7 +7,7 @@ import DashboardSection from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 // NOTE: This dashboard lives at /communications-director to avoid conflicting
 // with the existing /communications comms-inbox route (CommunicationsThreadsList).
-// Token: communications_director → /communications-director
+// Token: communications_director  /communications-director
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -25,8 +25,8 @@ const DEMO = {
   campaigns: [
     { name: 'Spring Enrollment Drive',  sent: 1240, open_rate: '68%', status: 'sent'      },
     { name: 'Family Night Invite',       sent:  430, open_rate: '71%', status: 'sent'      },
-    { name: 'Tuition Reminder Q2',       sent:    0, open_rate: '—',   status: 'scheduled' },
-    { name: 'Summer Program Preview',    sent:    0, open_rate: '—',   status: 'draft'     },
+    { name: 'Tuition Reminder Q2',       sent:    0, open_rate: '',   status: 'scheduled' },
+    { name: 'Summer Program Preview',    sent:    0, open_rate: '',   status: 'draft'     },
   ],
   channel_engagement: [
     { channel: 'Email',       open_rate: '68%', pct: 68 },
@@ -35,11 +35,11 @@ const DEMO = {
   ],
   upcoming_announcements: [
     { subject: 'Spring Field Day Details',  audience: 'All Families',  scheduled: '2026-03-05', status: 'scheduled' },
-    { subject: 'Tuition Portal Open — Q2',  audience: 'All Families',  scheduled: '2026-03-10', status: 'scheduled' },
+    { subject: 'Tuition Portal Open  Q2',  audience: 'All Families',  scheduled: '2026-03-10', status: 'scheduled' },
     { subject: 'Board Meeting Summary',     audience: 'Staff',         scheduled: '2026-03-12', status: 'draft'     },
   ],
   alerts: [
-    { label: '3 unsubscribes this week — review list hygiene', severity: 'yellow' },
+    { label: '3 unsubscribes this week  review list hygiene', severity: 'yellow' },
     { label: 'SMS delivery rate dropped to 91% (was 97%)',       severity: 'red'    },
   ],
 };
@@ -51,7 +51,7 @@ async function fetchCommunicationsMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch { return { ok: false, data: DEMO }; }
@@ -74,7 +74,7 @@ function Pill({ color = 'gray', children }) {
   );
 }
 
-/* â”€â”€ Communications KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*  Communications KPI flip cards  */
 const ADMIN_KPI = [
   { label: "Messages Today",     value: "14",  trend: null,              trendUp: null,
     definition: "Total messages sent through the Crown platform today (email, SMS, in-app).",
@@ -102,7 +102,7 @@ export default function CommunicationsDirectorDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={ADMIN_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>

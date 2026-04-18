@@ -12,6 +12,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from households.scoping import get_request_school_id
 from core.models import School
 from room_setup_wizard.models import Room, RoomSetupWizardSession
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
@@ -21,6 +23,7 @@ def _get_session(session_id, school_id):
     return get_object_or_404(RoomSetupWizardSession, id=session_id, school__id=school_id)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -31,6 +34,7 @@ def create_session(request):
     return Response({"session_id": str(sess.id), "status": sess.status}, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -67,6 +71,7 @@ def configure(request, session_id):
     return Response({"status": sess.status, "count": len(normalized)})
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -96,6 +101,7 @@ def commit(request, session_id):
     return Response({"status": sess.status, **sess.commit_result})
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

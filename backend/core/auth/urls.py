@@ -1,5 +1,5 @@
 """
-core/auth/urls.py — URL patterns for AAD-backed identity endpoints.
+core/auth/urls.py - URL patterns for AAD-backed identity endpoints.
 
 Mounted at /api/iam/ in crown_api/urls.py to avoid collision with the
 legacy Crown JWT routes already registered at /api/auth/.

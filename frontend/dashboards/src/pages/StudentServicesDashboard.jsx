@@ -40,22 +40,22 @@ const DEMO = {
     { service_type: 'Counseling Services',  count: 1, oldest_days: 5  },
   ],
   alerts: [
-    { label: '31 student lunch balances below $5 — parent notifications pending', severity: 'red'    },
+    { label: '31 student lunch balances below $5  parent notifications pending', severity: 'red'    },
     { label: '7 unresolved service applications older than 5 days',               severity: 'yellow' },
-    { label: 'Free & Reduced Lunch deadline — Mar 31',                             severity: 'yellow' },
+    { label: 'Free & Reduced Lunch deadline  Mar 31',                             severity: 'yellow' },
   ],
 };
 
-/* ── Student Services KPI flip cards ────────────────────────────────── */
+/*  Student Services KPI flip cards  */
 const SS_KPI = [
   { label: "Balance Alerts",  value: "31",     trend: "needs action",   trendUp: false,
-    definition: "Students with a lunch account balance below $5 — parent notifications are pending.",
+    definition: "Students with a lunch account balance below $5  parent notifications are pending.",
     dataSource: "Student Services", dataHref: "/student-services" },
   { label: "Services Active", value: "89",     trend: null,             trendUp: null,
     definition: "Students currently enrolled in at least one school support service this term.",
     dataSource: "Student Services", dataHref: "/student-services" },
   { label: "Apps Pending",    value: "7",      trend: "5+ days old",    trendUp: false,
-    definition: "Service applications awaiting review — oldest is 14 days, action required.",
+    definition: "Service applications awaiting review  oldest is 14 days, action required.",
     dataSource: "Student Services", dataHref: "/student-services" },
   { label: "Unpaid Balances", value: "$1,140", trend: null,             trendUp: null,
     definition: "Total outstanding unpaid obligations across all student service accounts.",
@@ -69,7 +69,7 @@ async function fetchStudentServicesMetrics() {
   if (token)    headers['Authorization'] = `Bearer ${token}`;
   if (schoolId) headers['X-School-Id']   = schoolId;
   try {
-    const res = await fetch(url, { headers });
+    const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
   } catch { return { ok: false, data: DEMO }; }
@@ -116,7 +116,7 @@ export default function StudentServicesDashboard() {
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
       <KpiStrip cards={SS_KPI} />
-      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading…</p>}
+      {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading</p>}
 
       <DashboardSection title="Overview">
         <CrownGrid>

@@ -1,0 +1,478 @@
+[
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/release-closeout/graduation/<str:student_ref>/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/release-closeout/discipline/<str:student_ref>/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/reports/transcript/<str:student_ref>/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/reports/report-card/<str:student_ref>/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/reports/discipline/<str:student_ref>/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": "release_closeout\\urls.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": "tests\\test_release_closeout_phase2.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": "tests\\test_release_closeout_phase2.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": "tests\\test_release_closeout_phase2.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_closeout_phase2.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_closeout_phase2.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_closeout_phase2.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": "tests\\test_release_closeout_phase2.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/release-closeout/graduation/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/release-closeout/discipline/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": "tests\\test_release_route_contracts.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": "tools\\verify_build_sha.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "tools\\verify_contract_gate.py",
+    "route": "api/health/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411215914.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411215914.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411215914.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411215914.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411215914.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411215914.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411215914.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411220112.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411220112.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411220112.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411220112.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411220112.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411220112.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260411220112.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_closeout_phase2_20260412010022.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/release-closeout/graduation/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/release-closeout/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411215906.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/release-closeout/graduation/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/release-closeout/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260411220106.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/status/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/metrics/live/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/graduation/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/release-closeout/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/transcript/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/report-card/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/discipline/DEMO-001/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/reports/board/"
+  },
+  {
+    "file": ".history\\tests\\test_release_route_contracts_20260412010022.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": "backend\\core\\middleware.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "backend\\core\\tenant_header_middleware.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "backend\\crown_api\\urls.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "backend\\crown_api\\urls.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "backend\\tenants\\middleware.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "backend\\tenants\\middleware.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "backend\\tests\\test_health_demo_mode.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "backend\\crown_api\\tests\\test_api_version_alias.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "backend\\crown_api\\tests\\test_rbac_matrix_readonly.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "backend\\crown_api\\tests\\test_seed_edge_cases.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410055042.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410055045.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410074405.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410174135.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410221657.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410224114.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410230348.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260410234347.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\core\\tenant_header_middleware_20260411020422.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\urls_20260411023333.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\urls_20260411023333.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\urls_20260411023345.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\urls_20260411023345.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410213202.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410214013.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410230136.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410230136.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410231010.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410231010.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410231511.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410231511.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410232314.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260410232314.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260411020423.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "docs\\release\\archive-cleanup\\20260411_081314\\.history\\backend\\crown_api\\tests\\test_api_version_alias_20260411020423.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "scripts\\load\\locustfile.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "scripts\\release\\route_catalog.py",
+    "route": "api/v1/release-closeout/[^\\"
+  },
+  {
+    "file": "scripts\\release\\route_catalog.py",
+    "route": "api/v1/reports/[^\\"
+  },
+  {
+    "file": "scripts\\release\\route_catalog.py",
+    "route": "api/v1/notifications/sms/status/"
+  },
+  {
+    "file": "scripts\\release\\route_catalog.py",
+    "route": "api/health/"
+  },
+  {
+    "file": "scripts\\release\\route_catalog.py",
+    "route": "api/integrity/"
+  },
+  {
+    "file": "scripts\\release\\route_catalog_release.py",
+    "route": "api/v1/release-closeout/[^\\"
+  },
+  {
+    "file": "scripts\\release\\route_catalog_release.py",
+    "route": "api/v1/reports/[^\\"
+  },
+  {
+    "file": "scripts\\release\\route_catalog_release.py",
+    "route": "api/v1/notifications/sms/status/"
+  }
+]

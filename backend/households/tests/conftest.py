@@ -1,13 +1,14 @@
-"""
+﻿"""
 Pytest configuration for households spine module tests.
-Override settings to disable guardian scoping (spine is school-level only).
+Disable guardian scoping for most households tests, but allow explicit
+contract tests to opt in to real guardian scoping behavior.
 """
 import pytest
-from django.conf import settings
 
 
-@pytest.fixture(scope="session", autouse=True)
-def disable_guardian_scoping():
-    """Override guardian scoping for spine tests."""
-    # Spine module contract: school-level scoping only
+@pytest.fixture(autouse=True)
+def disable_guardian_scoping(settings, request):
+    """Default spine behavior is school-level only unless a test opts in."""
+    if request.node.fspath and request.node.fspath.basename == "test_guardian_scoping.py":
+        return
     settings.HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED = False

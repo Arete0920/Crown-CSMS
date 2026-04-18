@@ -1,23 +1,19 @@
-﻿/**
- * FlipWidget — front (Crown Blue) shows count summary; back (Crown Gold) shows next-step items.
- * CSS-only flip, no external dependencies.
- *
- * Front: var(--crown-brand) blue — status counts (Good / Watch / Action)
- * Back:  var(--crown-gold)  gold — action items with severity markers
+/**
+ * FlipWidget - front shows summary, back shows next-step items.
  */
-import React, { useState } from "react";
+import { useState } from "react";
 
 const LEVEL_COLOR = {
-  good: "#86efac",   /* green tint readable on gold/blue */
+  good: "#86efac",
   warn: "#fde68a",
-  bad:  "#fca5a5",
+  bad: "#fca5a5",
   info: "#bfdbfe",
 };
 
 const LEVEL_LABEL = {
-  good: "●",
-  warn: "◆",
-  bad:  "▲",
+  good: "o",
+  warn: "!",
+  bad: "x",
 };
 
 export default function FlipWidget({ widget, onExpand }) {
@@ -25,6 +21,14 @@ export default function FlipWidget({ widget, onExpand }) {
   const { title, subtitle, data } = widget;
   const front = data?.front ?? { good: 0, warn: 0, bad: 0 };
   const backItems = data?.back?.items ?? [];
+
+  const toggleFlipped = () => setFlipped((value) => !value);
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleFlipped();
+    }
+  };
 
   return (
     <div
@@ -35,7 +39,12 @@ export default function FlipWidget({ widget, onExpand }) {
         cursor: "pointer",
         userSelect: "none",
       }}
-      onClick={() => setFlipped(v => !v)}
+      onClick={toggleFlipped}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-pressed={flipped}
+      aria-label={`Flip ${title} widget`}
     >
       <div
         style={{
@@ -47,8 +56,6 @@ export default function FlipWidget({ widget, onExpand }) {
           transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
         }}
       >
-
-        {/* ── FRONT — Crown Blue ─────────────────────────────────────── */}
         <div
           aria-hidden={flipped}
           style={{
@@ -65,7 +72,6 @@ export default function FlipWidget({ widget, onExpand }) {
             boxShadow: "0 2px 8px rgba(15,23,42,0.18)",
           }}
         >
-          {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: 0.9 }}>
@@ -77,29 +83,30 @@ export default function FlipWidget({ widget, onExpand }) {
             </div>
             {onExpand && (
               <button
-                onClick={(e) => { e.stopPropagation(); onExpand(); }}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onExpand();
+                }}
                 aria-label={`Expand ${title}`}
                 style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.5)", fontSize: 16, padding: 2 }}
               >
-                ⤢
+                []
               </button>
             )}
           </div>
 
-          {/* Status counts */}
           <div style={{ display: "flex", gap: 18, justifyContent: "center", padding: "12px 0 8px" }}>
-            <Metric label="Good"   value={front.good} color={LEVEL_COLOR.good} />
-            <Metric label="Watch"  value={front.warn} color={LEVEL_COLOR.warn} />
-            <Metric label="Action" value={front.bad}  color={LEVEL_COLOR.bad}  />
+            <Metric label="Good" value={front.good} color={LEVEL_COLOR.good} />
+            <Metric label="Watch" value={front.warn} color={LEVEL_COLOR.warn} />
+            <Metric label="Action" value={front.bad} color={LEVEL_COLOR.bad} />
           </div>
 
-          {/* Flip hint */}
           <div style={{ textAlign: "right", fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: 0.6 }}>
-            TAP FOR DETAILS ◑
+            TAP FOR DETAILS
           </div>
         </div>
 
-        {/* ── BACK — Crown Gold ──────────────────────────────────────── */}
         <div
           aria-hidden={!flipped}
           style={{
@@ -118,25 +125,24 @@ export default function FlipWidget({ widget, onExpand }) {
           }}
         >
           <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.8)", textTransform: "uppercase", letterSpacing: 0.9, marginBottom: 10 }}>
-            {title} — Action Items
+            {title} - Action Items
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 7, flex: 1, overflow: "hidden" }}>
             {backItems.length === 0 ? (
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontStyle: "italic" }}>No action items</div>
-            ) : backItems.slice(0, 5).map((item, i) => (
-              <div key={i} style={{ fontSize: 12, display: "flex", gap: 7, alignItems: "flex-start", color: "#fff" }}>
+            ) : backItems.slice(0, 5).map((item, index) => (
+              <div key={index} style={{ fontSize: 12, display: "flex", gap: 7, alignItems: "flex-start", color: "#fff" }}>
                 <span style={{ color: LEVEL_COLOR[item.level] ?? "rgba(255,255,255,0.6)", flexShrink: 0, marginTop: 1, fontSize: 11 }}>
-                  {LEVEL_LABEL[item.level] ?? "•"}
+                  {LEVEL_LABEL[item.level] ?? "-"}
                 </span>
                 <span style={{ lineHeight: 1.4 }}>{item.text}</span>
               </div>
             ))}
           </div>
           <div style={{ textAlign: "right", fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 0.6, marginTop: 8 }}>
-            TAP TO FLIP BACK ◑
+            TAP TO FLIP BACK
           </div>
         </div>
-
       </div>
     </div>
   );

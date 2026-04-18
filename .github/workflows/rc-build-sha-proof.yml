@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4.1.1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
@@ -60,7 +60,7 @@ jobs:
         run: |
           if [ -z "$RC_BASE_URL" ] || [ -z "$RC_EXPECT_BUILD_SHA" ]; then
             echo "SKIP=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::RC_BASE_URL or RC_EXPECT_BUILD_SHA not set — skipping deployed SHA check"
+            echo "::warning::RC_BASE_URL or RC_EXPECT_BUILD_SHA not set â€” skipping deployed SHA check"
           else
             echo "SKIP=false" >> "$GITHUB_OUTPUT"
           fi
@@ -72,3 +72,4 @@ jobs:
           RC_EXPECT_BUILD_SHA: ${{ secrets.RC_EXPECT_BUILD_SHA }}
           RC_TIMEOUT: "30"
         run: python tools/verify_build_sha.py
+

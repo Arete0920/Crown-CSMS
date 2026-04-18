@@ -1,4 +1,3 @@
-import React from "react";
 
 /**
  * CrownCard – surface card with optional title + right slot.

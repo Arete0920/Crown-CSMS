@@ -14,6 +14,8 @@ from academics.models import Enrollment, Section
 from households.scoping import get_request_school_id
 
 from .models import SectionAssignWizardSession
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
@@ -41,6 +43,7 @@ def _parse_uuid(value, field_name):
 # Step 1: Create session
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -59,6 +62,7 @@ def create_session(request):
 # Step 2: Configure (section + term)
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -102,6 +106,7 @@ def configure_session(request, session_id):
 # Step 3: Load student pool
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -149,6 +154,7 @@ def load_students(request, session_id):
 # Step 4: Stage roster changes
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -202,6 +208,7 @@ def stage_roster(request, session_id):
 # Step 5: Commit
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
@@ -265,6 +272,7 @@ def commit_session(request, session_id):
 # Step 6: Verify
 # ---------------------------------------------------------------------------
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)

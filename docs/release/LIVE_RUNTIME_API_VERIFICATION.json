@@ -1,0 +1,75 @@
+{
+    "summary":  {
+                    "generated_at_utc":  "2026-04-11T11:57:36.9879080Z",
+                    "base_url":  "http://127.0.0.1:8000",
+                    "endpoint_count":  6,
+                    "endpoint_success_count":  6,
+                    "runtime_any_success":  true,
+                    "contracts_file_count":  1,
+                    "openapi_file_count":  8,
+                    "url_hit_count":  976
+                },
+    "generated_at_utc":  "2026-04-11T11:57:36.9879080Z",
+    "endpoints":  [
+                      {
+                          "label":  "health",
+                          "url":  "http://127.0.0.1:8000/api/health/",
+                          "success":  true,
+                          "status_code":  200,
+                          "content_type":  "application/json",
+                          "content_length":  247,
+                          "elapsed_ms":  25,
+                          "error_message":  null
+                      },
+                      {
+                          "label":  "integrity",
+                          "url":  "http://127.0.0.1:8000/api/integrity/",
+                          "success":  true,
+                          "status_code":  200,
+                          "content_type":  "application/json",
+                          "content_length":  1233,
+                          "elapsed_ms":  14,
+                          "error_message":  null
+                      },
+                      {
+                          "label":  "schema",
+                          "url":  "http://127.0.0.1:8000/api/schema/",
+                          "success":  true,
+                          "status_code":  200,
+                          "content_type":  "application/vnd.oai.openapi; charset=utf-8",
+                          "content_length":  846204,
+                          "elapsed_ms":  3183,
+                          "error_message":  null
+                      },
+                      {
+                          "label":  "openapi_json",
+                          "url":  "http://127.0.0.1:8000/api/schema/?format=json",
+                          "success":  true,
+                          "status_code":  200,
+                          "content_type":  "application/vnd.oai.openapi+json",
+                          "content_length":  1853406,
+                          "elapsed_ms":  3030,
+                          "error_message":  null
+                      },
+                      {
+                          "label":  "swagger",
+                          "url":  "http://127.0.0.1:8000/api/docs/",
+                          "success":  true,
+                          "status_code":  200,
+                          "content_type":  "text/html; charset=utf-8",
+                          "content_length":  4642,
+                          "elapsed_ms":  409,
+                          "error_message":  null
+                      },
+                      {
+                          "label":  "redoc",
+                          "url":  "http://127.0.0.1:8000/api/redoc/",
+                          "success":  true,
+                          "status_code":  200,
+                          "content_type":  "text/html; charset=utf-8",
+                          "content_length":  725,
+                          "elapsed_ms":  19,
+                          "error_message":  null
+                      }
+                  ]
+}

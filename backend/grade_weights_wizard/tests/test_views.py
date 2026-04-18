@@ -6,6 +6,9 @@ from rest_framework.test import APIClient
 from core.models import School
 from grade_weights_wizard.models import GradeWeightsWizardSession
 
+
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 User = get_user_model()
 
 BASE_URL = "/api/v1/grade-weights-wizard/sessions/"
@@ -22,7 +25,7 @@ def _school():
 
 
 def _client(school):
-    u = User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password="pw")
+    u = User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
     c = APIClient()
     c.force_authenticate(user=u)
     return c

@@ -1,5 +1,5 @@
-"""
-Phase 2 Priority 4 — Ledger write-safety proof tests.
+﻿"""
+Phase 2 Priority 4 â€” Ledger write-safety proof tests.
 
 Guards locked in CI:
   1. create_charge rejects amount <= 0 (negative and zero)
@@ -21,6 +21,8 @@ from ledger.models import LedgerAccount, Charge, Payment
 
 pytestmark = pytest.mark.django_db
 
+TEST_AUTH_SECRET = "testpass"
+
 CHARGES_URL = "/api/v1/ledger/charges/"
 PAYMENTS_URL = "/api/v1/ledger/payments/"
 
@@ -31,7 +33,7 @@ def _school_and_account():
     hh = Household.objects.create(school_id=sid, name=f"HH-{uuid.uuid4()}")
     acct = LedgerAccount.objects.create(school_id=sid, household=hh)
     User = get_user_model()
-    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password="pass!")
+    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
     return sid, acct, user
 
 
@@ -111,7 +113,7 @@ def test_record_payment_rejects_negative_amount():
 
 def test_record_payment_rejects_over_allocation():
     """
-    Payment of 50 cannot allocate 100 to a charge — should return 400.
+    Payment of 50 cannot allocate 100 to a charge â€” should return 400.
     """
     sid, acct, user = _school_and_account()
     charge = Charge.objects.create(
@@ -130,3 +132,4 @@ def test_record_payment_rejects_over_allocation():
     assert resp.status_code == 400, f"Expected 400, got {resp.status_code}: {resp.content}"
     # No payment row should have persisted due to atomic rollback
     assert Payment.objects.filter(account=acct).count() == 0
+

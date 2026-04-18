@@ -41,9 +41,9 @@ export default function Step2Upload({ context, setContext, goBack, goNext, stepI
       />
 
       <div style={{ marginTop: 14 }}>
-        <label style={{ display: "block", fontSize: 13, color: "var(--crown-muted)", marginBottom: 6 }}>
+        <div style={{ display: "block", fontSize: 13, color: "var(--crown-muted)", marginBottom: 6 }}>
           CSV file (UTF-8, with header row)
-        </label>
+        </div>
         <input
           type="file"
           accept=".csv,text/csv"

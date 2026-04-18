@@ -1,0 +1,337 @@
+ D .pre-commit-config.yaml
+ D .prettierignore
+ D .prettierrc
+ D 19_targeted_migration_fix_and_check.ps1
+ D 20_apply_pending_migrations_and_recertify.ps1
+ D 21_package_verified_closure_and_push.ps1
+ D 22_post_merge_main_certification.ps1
+ D 23_final_release_certification_audit.ps1
+ D APPLY_APR08_PRIORITY_BUNDLE_VERIFIED.ps1
+ D BASELINE_REALITY.md
+ D BUYER_POSITIONING_NOTES.md
+ D CHECKLIST.md
+ D CHECKPOINTS.md
+ D CI_USER_PROVISIONING.md
+ D CODE_QUALITY_SETUP.md
+ D CONTINGENCY_CURRICULUM_DEMO.md
+ D COPILOT_GUARDRAILS.md
+ D COPILOT_TASK_PROTOCOL.md
+ D CROWN2026_Investor_Release_Readiness_Sprint.txt
+ D CROWN_DEV_CANON.md
+ D CROWN_MAGUS_COVERAGE_MATRIX.md
+ D CROWN_MAGUS_SPRINT_MAP.md
+ D DASHBOARDS_PHASE_A_SPEC.md
+ D DEEP_DIVE_ANALYSIS.md
+ D DELIVERABLES.md
+ D DEMO_CHECKLIST.md
+ D DEMO_FLOW.md
+ D DEMO_PROOF_REHEARSAL.ps1
+ D DEMO_SCRIPT.md
+ D DEMO_SCRIPT_CURRICULUM_SEGMENT.md
+ D DEMO_SURFACE_WIRING_SPEC.md
+ D DEPLOYMENT_PREP_COMPLETE.md
+ D DIRECTOR_FRAMEWORK_CONTRACT.md
+ D DJANGO_CRASHES_ANALYSIS.md
+ D FILE_INDEX.md
+ D FINAL_CURRICULUM_PROOF.txt
+ D GRADES_PAYLOAD_SPEC.md
+ D IMPLEMENTATION_COMPLETE.md
+ D IMPLEMENTATION_SUMMARY.md
+ D INTEGRATION_GUIDE.md
+ D IP_SCAN_20260228_1440.txt
+ D LANE2_BILLING_MAP.txt
+ D LANE3_ATTENDANCE_MAP.txt
+ D MASTER_SUMMARY.md
+ D NIGHT_HANDOFF_20260328.md
+ D PASS4_AAD_INTEGRATION_FINDINGS.md
+ D PASS4_COMPLETION_REPORT.md
+ D PASS4_DELIVERABLES_INDEX.md
+ D PASS4_EXECUTIVE_SUMMARY.md
+ D PASS4_STATUS_REPORT.md
+ D PHASE1_BUILD_ORDER.md
+ D PHASE5_BACKEND_CERTIFICATION.md
+ D PHASE5_DELIVERY_SUMMARY.md
+ D PHASE5_IMPLEMENTATION_MANIFEST.md
+ D PHASE5_TEST_REFERENCE.txt
+ D PRE_DEMO_RESET_AND_SEED.ps1
+ D PRE_DEMO_VERIFICATION.md
+ D PRE_DEMO_VERIFICATION.ps1
+ D PRIVATIZATION_HANDOFF_README.md
+ D PROJECT_COMPLETE.md
+ D PROOF_ACADEMICS_ROSTER.md
+ D PROOF_DEMO_SMOKE_FEB16.md
+ D PROOF_DEV_SMOKE_SUCCESS_20260209.md
+ D PROOF_UI_ACADEMICS_ROSTER_DRAWER.md
+ D QUICK_REFERENCE.md
+ D README_CURRICULUM_DEMO_PREP.md
+ D README_DIRECTOR_ACTIONS.md
+ D README_GOLDEN_PATH.md
+ D RELEASE_PACKET_v0.4.0-rc1.commands.txt
+ D RELEASE_PACKET_v0.4.0-rc1.md
+ D ROTATE_SECRETS.md
+ D RUNSHEET_CURRICULUM_DEMO.md
+ D RUN_PROOF_NO_MANUAL_CLEANUP.ps1
+ D RUN_RESET_AND_BOOT_TWICE.ps1
+ D SETUP_COMPLETE_SUMMARY.md
+ D SPINE_DEFINITION_OF_DONE.md
+ D TENANT_ISOLATION_CANON.md
+ D TEST_LOCAL_API.txt
+ D VERIFICATION_REPORT.md
+ D __api_body.json
+ D __api_v1_push_body.json
+ D __push_body.json
+ D _azure_endpoint_probe.ps1
+ D _code_alerts.json
+ D _dashboard_lint_after_fetch_fix.json
+ D _dashboard_lint_after_fix.json
+ D _dashboard_lint_latest.json
+ D _dashboard_lint_round2.json
+ D _dashboard_lint_round3.json
+ D _heritage_admissions_funnel_verification.json
+ D _list_urls.py
+ D _live_schema.yaml
+ D _pr_runs_after_api_urls.json
+ D _pr_runs_check_api_v1_push.json
+ D _remote_api_v1_urls.py
+ D _required_check_mapping.json
+ D _required_check_mapping_after.json
+ D _required_check_mapping_clean.json
+ D academics_weights.xml
+ D admissions_closeout_pytest_latest.txt
+ D backend/_pr_runs_latest.json
+ D backend/_pr_runs_now.json
+ D backend/_remote_api_urls.py
+ M backend/academics/assignments_views.py
+ M backend/academics/lesson_plan_views.py
+ D backend/academics/management/commands/seed_academics.py
+ D backend/academics/release_models.py
+ D backend/academics/release_serializers.py
+ D backend/academics/release_services.py
+ D backend/academics/release_views.py
+ M backend/academics/serializers.py
+ M backend/academics/tests/test_assignments_weights.py
+ D backend/academics/tests/test_release_module_api.py
+ M backend/academics/transcript_views.py
+ M backend/academics/views.py
+ D backend/academics_curriculum/__init__.py
+ M backend/academics_ro/views.py
+ M backend/admissions/api_views.py
+ D backend/admissions/funnel_service.py
+ D backend/admissions/serializers_funnel.py
+ D backend/admissions/tests/__init__.py
+ D backend/admissions/tests/test_api_closeout.py
+ D backend/admissions/tests/test_funnel_metrics.py
+ D backend/admissions/tests/test_funnel_reconciliation.py
+ D backend/admissions/tests/test_funnel_school_scoping.py
+ M backend/admissions/views_admissions_links.py
+ M backend/admissions/views_enroll.py
+ D backend/admissions/views_metrics.py
+ M backend/aftercare/api.py
+ D backend/aid/services/bucket_policy_service.py
+ D backend/aid/services/metrics_service.py
+ D backend/aid/services/renewal_service.py
+ D backend/aid/services/verification_service.py
+ D backend/aid/tasks.py
+ D backend/aid/tests/test_api_closeout.py
+ M backend/analytics/predictors.py
+ M backend/applications/views_admissions.py
+ D backend/attendance/__init__.py
+ D backend/attendance/apps.py
+ D backend/attendance/migrations/0001_initial.py
+ D backend/attendance/migrations/__init__.py
+ D backend/attendance/models.py
+ D backend/attendance/serializers.py
+ D backend/attendance/services/__init__.py
+ D backend/attendance/services/excuse_document_service.py
+ D backend/attendance/services/excuse_service.py
+ D backend/attendance/services/metrics_service.py
+ D backend/attendance/services/notification_service.py
+ D backend/attendance/services/report_service.py
+ D backend/attendance/services/threshold_service.py
+ D backend/attendance/tasks.py
+ D backend/attendance/tests/__init__.py
+ D backend/attendance/tests/test_attendance_golden_path.py
+ D backend/attendance/tests/test_attendance_metrics.py
+ D backend/attendance/tests/test_attendance_notifications.py
+ D backend/attendance/tests/test_attendance_parent_excuses.py
+ D backend/attendance/tests/test_attendance_pdf_reports.py
+ D backend/attendance/tests/test_attendance_tenant_isolation.py
+ D backend/attendance/tests/test_attendance_threshold_alerts.py
+ D backend/attendance/urls.py
+ D backend/attendance/views.py
+ D backend/billing/autopay_service.py
+ D backend/billing/late_fee_service.py
+ D backend/billing/metrics_service.py
+ D backend/billing/receipt_service.py
+ D backend/billing/rollover_service.py
+ D backend/billing/serializers.py
+ D backend/billing/tax_document_service.py
+ D backend/billing/tests/test_annual_rollover.py
+ D backend/billing/tests/test_autopay.py
+ D backend/billing/tests/test_late_fee_automation.py
+ D backend/billing/tests/test_parent_financial_view.py
+ D backend/billing/tests/test_tax_documents.py
+ D backend/billing/urls.py
+ D backend/board/__init__.py
+ D backend/board/urls.py
+ D backend/board/views.py
+ M backend/comms/outbox_service.py
+ M backend/comms/tasks.py
+ D backend/comms/tests/__init__.py
+ M backend/core/permissions.py
+ M backend/core/scoping.py
+ M backend/core/tenant_header_middleware.py
+ M backend/core/tests/test_scoping.py
+ M backend/crown_api/api_urls.py
+ M backend/crown_api/dashboards/academics.py
+ M backend/crown_api/dashboards/admissions.py
+ M backend/crown_api/dashboards/views.py
+ M backend/crown_api/serializers_academics.py
+ M backend/crown_api/serializers_scheduling.py
+ M backend/crown_api/settings.py
+ M backend/crown_api/tests/test_api_version_alias.py
+ M backend/crown_api/tests/test_mission_metrics_dashboard.py
+ M backend/crown_api/urls.py
+ M backend/crown_api/views_academics.py
+ M backend/crown_api/views_billing.py
+ M backend/crown_api/views_households.py
+ M backend/crown_api/views_integrity.py
+ M backend/crown_api/views_scheduling.py
+ M backend/crown_api/views_students.py
+ M backend/enrollment_conversion_wizard/views.py
+ M backend/enrollment_period_wizard/views.py
+ M backend/executive360/api/urls.py
+ M backend/executive360/api/views.py
+ M backend/financial_aid/api.py
+ M backend/financial_aid/tests/test_financial_aid_endpoints.py
+ M backend/financial_aid/urls.py
+ M backend/financial_aid/views.py
+ M backend/governance/services.py
+ M backend/gradebook/serializers.py
+ M backend/gradebook/views.py
+ M backend/gradebook/views_parent.py
+ M backend/gradebook_setup_wizard/views.py
+ M backend/households/serializers.py
+ M backend/integrations/api/views.py
+ M backend/integrations/graph_client.py
+ M backend/integrations/m365/graph_client.py
+ M backend/integrations/m365/views.py
+ M backend/ledger/api.py
+ M backend/onboarding/api_onboarding.py
+ M backend/parent360/api/views.py
+ M backend/portrait/models.py
+ M backend/portrait/serializers.py
+ M backend/portrait/services.py
+ M backend/portrait/tests/test_portrait_api.py
+ M backend/portrait/views.py
+ M backend/reenrollment/views.py
+ M backend/requirements.txt
+ M backend/scheduling_wizard/views.py
+ M backend/section_assign_wizard/views.py
+ M backend/section_scheduler_wizard/views.py
+ M backend/spiritual_life/services.py
+ M backend/student360/api/views.py
+ M backend/support/api_support.py
+ M branch_protection.json
+ D docs/CROWN_MASTER.md.docx
+ D docs/Crown2026_48_Hour_Recovery_Plan.docx
+ D "docs/New Microsoft Word Document.docx"
+ M docs/release/BRANCH_PROTECTION_EVIDENCE.md
+ M docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md
+ M docs/release/FINAL_RELEASE_GATE.md
+ M docs/release/KNOWN_GAPS_AND_DEFERRED_ITEMS.md
+ M docs/release/SECURITY_GATES_EVIDENCE.md
+ M docs/release/branch-protection-export.json
+ M frontend/dashboards/package-lock.json
+ M frontend/dashboards/package.json
+ D schools_prod.txt
+?? .env.release
+?? .history/
+?? APPLY_DEMO_PROOF_FIXES.ps1
+?? APPLY_WIRING_VERIFICATION_PACK.ps1
+?? WIRING_VERIFICATION_README.txt
+?? _tmp_admissions_schema.yaml
+?? _tmp_admissions_schema_v3.yaml
+?? _tmp_admissions_triplecheck.yaml
+?? _tmp_admissions_triplecheck_after.yaml
+?? _tmp_enrollment_audit.yaml
+?? _tmp_enrollment_audit_after.yaml
+?? _tmp_openapi_audit_after_priority_fix.yaml
+?? _tmp_openapi_audit_after_settings_fix.yaml
+?? _tmp_openapi_speedpass.yaml
+?? _tmp_openapi_speedpass2.yaml
+?? _tmp_scheduling_audit.yaml
+?? _tmp_scheduling_audit_after.yaml
+?? _tmp_scheduling_audit_final.yaml
+?? backend/core/demo/heritage_demo_credentials.json
+?? backend/financial_aid/need_index.py
+?? backend/financial_aid/tests/test_workflows.py
+?? backend/financial_aid/workflows.py
+?? backend/parent360/tests/
+?? backend/student360/tests/test_overview_api.py
+?? backend/tests/test_microsoft_integration_readiness.py
+?? docs/release/FINAL_15_PHASE_VERIFICATION.json
+?? docs/release/FINAL_15_PHASE_VERIFICATION.md
+?? docs/release/LIVE_15_PHASE_COMPLETION.json
+?? docs/release/LIVE_15_PHASE_COMPLETION.md
+?? docs/release/LIVE_ACTION_REGISTER.json
+?? docs/release/LIVE_ACTION_REGISTER.md
+?? docs/release/LIVE_BACKEND_VERIFICATION.json
+?? docs/release/LIVE_BACKEND_VERIFICATION.md
+?? docs/release/LIVE_EVIDENCE_INDEX.json
+?? docs/release/LIVE_EVIDENCE_INDEX.md
+?? docs/release/LIVE_EVIDENCE_PACKET.json
+?? docs/release/LIVE_EVIDENCE_PACKET.md
+?? docs/release/LIVE_FINAL_RELEASE_GATE.json
+?? docs/release/LIVE_FINAL_RELEASE_GATE.md
+?? docs/release/LIVE_FINAL_SIGNOFF_CHECKLIST.json
+?? docs/release/LIVE_FINAL_SIGNOFF_CHECKLIST.md
+?? docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json
+?? docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.md
+?? docs/release/LIVE_MODULE_PROOF_MATRIX.json
+?? docs/release/LIVE_MODULE_PROOF_MATRIX.md
+?? docs/release/LIVE_MODULE_STATUS_SUMMARY.json
+?? docs/release/LIVE_MODULE_STATUS_SUMMARY.md
+?? docs/release/LIVE_PROFESSIONAL_REPO_CLEANUP.json
+?? docs/release/LIVE_PROFESSIONAL_REPO_CLEANUP.md
+?? docs/release/LIVE_RELEASE_GATE_STATUS.json
+?? docs/release/LIVE_RELEASE_GATE_STATUS.md
+?? docs/release/LIVE_RELEASE_TRUTH.json
+?? docs/release/LIVE_RELEASE_TRUTH.md
+?? docs/release/LIVE_REPORTING_EXPORT_AUDIT.json
+?? docs/release/LIVE_REPORTING_EXPORT_AUDIT.md
+?? docs/release/LIVE_REPO_HYGIENE_PLAN.json
+?? docs/release/LIVE_REPO_HYGIENE_PLAN.md
+?? docs/release/LIVE_RUNTIME_API_VERIFICATION.json
+?? docs/release/LIVE_RUNTIME_API_VERIFICATION.md
+?? docs/release/LIVE_SHIP_DECISION.json
+?? docs/release/LIVE_SHIP_DECISION.md
+?? docs/release/LIVE_WORKFLOW_CANONICALIZATION_PLAN.json
+?? docs/release/LIVE_WORKFLOW_CANONICALIZATION_PLAN.md
+?? docs/release/evidence/
+?? docs/release/live-audit/
+?? docs/release/security-gate-evidence/
+?? frontend/dashboards/public/demo/
+?? frontend/dashboards/tests/wiring-proof.spec.ts
+?? login.json
+?? scripts/release/generated/
+?? scripts/release/phase10_live_release_gate_synthesis.ps1
+?? scripts/release/phase11_live_release_docs_refresh.ps1
+?? scripts/release/phase12_repo_hygiene_execution_pack.ps1
+?? scripts/release/phase13_workflow_canonicalization_plan.ps1
+?? scripts/release/phase14_live_evidence_pack_builder.ps1
+?? scripts/release/phase15_final_ship_decision_and_completion.ps1
+?? scripts/release/phase16_professional_repo_cleanup.ps1
+?? scripts/release/phase1_live_repo_baseline.ps1
+?? scripts/release/phase2_release_truth_reconciliation.ps1
+?? scripts/release/phase3_workflow_branch_rationalization.ps1
+?? scripts/release/phase4_backend_verification_and_django_proof.ps1
+?? scripts/release/phase5_module_proof_matrix.ps1
+?? scripts/release/phase6_evidence_index_and_action_register.ps1
+?? scripts/release/phase7_runtime_and_api_surface_verification.ps1
+?? scripts/release/phase8_frontend_and_dashboard_proof.ps1
+?? scripts/release/phase9_reporting_export_pdf_transcript_gap_audit.ps1
+?? scripts/release/verify_all_15_phases.ps1
+?? scripts/verify/
+?? test_login.json
+?? tools/verify/

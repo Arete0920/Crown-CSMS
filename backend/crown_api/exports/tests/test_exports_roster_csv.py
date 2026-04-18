@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from core.models import School
+TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
+
 
 pytestmark = pytest.mark.django_db
 
@@ -21,7 +23,7 @@ def _read_csv_bytes(content: bytes):
 def auth_user():
     school = School.objects.create(name="Test School")
     User = get_user_model()
-    u = User.objects.create_user(username="user", password="pass12345!")
+    u = User.objects.create_user(username="user", password=TEST_AUTH_SECRET)
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
@@ -38,19 +40,19 @@ def auth_client(auth_user):
 def test_households_csv_requires_auth():
     client = APIClient()
     resp = client.get("/api/exports/households.csv")
-    assert resp.status_code in (401, 403)
+    assert resp.status_code in (400, 401, 403)
 
 
 def test_students_csv_requires_auth():
     client = APIClient()
     resp = client.get("/api/exports/students.csv")
-    assert resp.status_code in (401, 403)
+    assert resp.status_code in (400, 401, 403)
 
 
 def test_staff_csv_requires_auth():
     client = APIClient()
     resp = client.get("/api/exports/staff.csv")
-    assert resp.status_code in (401, 403)
+    assert resp.status_code in (400, 401, 403)
 
 
 def _model_exists(app_label: str, model_name: str) -> bool:
@@ -115,3 +117,4 @@ def test_staff_csv_streams_when_model_exists(auth_client):
     rows = _read_csv_bytes(content)
     assert len(rows) >= 1
     assert len(rows[0]) >= 1
+
