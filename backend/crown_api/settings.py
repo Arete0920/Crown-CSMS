@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import timedelta
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 from corsheaders.defaults import default_headers
 from crown_api.wizard_registry import WIZARD_INSTALLED_APPS  # single source of truth
 
@@ -33,6 +34,13 @@ def _env_list(name: str) -> list[str]:
     parts = [p.strip() for p in value.replace(";", ",").split(",")]
     return [p for p in parts if p]
 
+
+def required_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise ImproperlyConfigured(f"Missing required environment variable: {name}")
+    return value
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,12 +53,7 @@ CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=not _is_azure)
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Prefer env vars; fall back to the existing value for local/dev only.
-SECRET_KEY = (
-    os.getenv("DJANGO_SECRET_KEY")
-    or os.getenv("SECRET_KEY")
-    or "django-insecure-77tws%k1#a!#aio14%6=4z6wn@_nrnu1d$(bur5-!2$-8+l$d2"
-)
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY") or required_env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _env_bool(
@@ -272,6 +275,8 @@ if DATABASE_URL:
             conn_max_age=60,
         )
     }
+elif not DEBUG:
+    raise ImproperlyConfigured("Missing required environment variable: DATABASE_URL")
 else:
     DATABASES = {
         "default": {

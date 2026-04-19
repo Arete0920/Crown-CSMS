@@ -43,7 +43,7 @@ catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git log failed" }
 
 # 01 Tree (exclude big/generated dirs)
 Add-File (Join-Path $pack "01_TREE.txt") "Repo tree (excluding .git, .venv, node_modules, dist/build/coverage):"
-$exclude = @('\\\.git\\', '\\\.venv\\', '\\node_modules\\', '\\dist\\', '\\build\\', '\\coverage\\')
+$exclude = @('\\\.git\\', '\\\.venv\\', '\\venv\\', '\\node_modules\\', '\\dist\\', '\\build\\', '\\coverage\\')
 Get-ChildItem -Recurse -File | Where-Object {
   $p = $_.FullName
   foreach ($x in $exclude) { if ($p -match $x) { return $false } }
@@ -90,9 +90,18 @@ catch {
 # 06 Backend URLs
 $urlsOut = Join-Path $pack "06_BACKEND_URLS.txt"
 try {
+  $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
+  $env:SECRET_KEY = "audit-local-secret-key"
+  $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
   $urlCmdOutput = & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-String
   if ($urlCmdOutput -match "Unknown command:\s*'show_urls'" -or $urlCmdOutput -match "django-extensions") {
-    Write-File $urlsOut "show_urls unavailable: django-extensions is not installed in the active venv."
+    $fallbackOutput = & ".venv\Scripts\python.exe" backend/manage.py shell -c "from django.urls import get_resolver; print('\n'.join(sorted(str(p.pattern) for p in get_resolver().url_patterns)))" 2>&1 | Out-String
+    if ([string]::IsNullOrWhiteSpace($fallbackOutput)) {
+      Write-File $urlsOut "show_urls unavailable and fallback URL export produced no output."
+    }
+    else {
+      Write-File $urlsOut $fallbackOutput
+    }
   }
   elseif ([string]::IsNullOrWhiteSpace($urlCmdOutput)) {
     Write-File $urlsOut "show_urls produced no output."
@@ -108,6 +117,9 @@ catch {
 # 07 Migrations
 $migOut = Join-Path $pack "07_MIGRATIONS.txt"
 try {
+  $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
+  $env:SECRET_KEY = "audit-local-secret-key"
+  $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
   & ".\.venv\Scripts\python.exe" backend/manage.py showmigrations --list 2>&1 | Out-File $migOut -Encoding UTF8
 }
 catch {
@@ -159,7 +171,7 @@ $patterns = @(
   @{ name = "TokenLike"; re = "(token|jwt)\s*=\s*['""]" }
 )
 
-$scanExclude = '[/\\](\.git|\.venv|node_modules|dist|build|coverage|AUDIT_PACK_)[/\\]'
+$scanExclude = '[/\\](\.git|\.venv|venv|node_modules|dist|build|coverage|AUDIT_PACK_)[/\\]'
 $textExts = @('.py', '.js', '.jsx', '.ts', '.tsx', '.json', '.yml', '.yaml', '.env', '.cfg', '.ini', '.toml', '.txt', '.md', '.sh', '.ps1', '.conf', '.html', '.css')
 $allFiles = Get-ChildItem -Recurse -File -ErrorAction SilentlyContinue |
 Where-Object { $_.FullName -notmatch $scanExclude -and $textExts -contains $_.Extension.ToLower() }
@@ -253,7 +265,7 @@ Write-File $deployOut "Recent deploy-prod.yml runs (metadata only).`n"
 try {
   $env:GH_PAGER = "cat"
   $runs = gh run list --repo tcmegahan/Crown2026 --workflow deploy-prod.yml --limit 20 `
-    --json databaseId,status,conclusion,headSha,createdAt,displayTitle --status completed 2>&1
+    --json databaseId, status, conclusion, headSha, createdAt, displayTitle --status completed 2>&1
   Add-File $deployOut $runs
 }
 catch {
@@ -267,4 +279,3 @@ Get-ChildItem $pack | ForEach-Object { Write-Host "  $($_.Name)" }
 Write-Host ""
 Write-Host "Next: open Copilot Chat and paste:" -ForegroundColor Yellow
 Write-Host "  Create a comprehensive NON-FIXING audit report using ONLY the evidence in $pack" -ForegroundColor Yellow
-

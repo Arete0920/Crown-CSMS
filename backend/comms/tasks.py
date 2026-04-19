@@ -1,4 +1,4 @@
-"""
+﻿"""
 Celery tasks for Crown2026 communications.
 
 The outbox drain task runs every 10 seconds (see settings.CELERY_BEAT_SCHEDULE)
@@ -6,6 +6,7 @@ and sends up to 25 messages per tick using exponential backoff on failure.
 """
 from __future__ import annotations
 
+import json
 import logging
 
 from celery import shared_task
@@ -38,7 +39,26 @@ def _send(msg: OutboxMessage) -> None:
                 "(e.g. no-reply@yourdomain.com) before starting the Celery worker."
             )
         send_mail(from_user=from_user, to=msg.to, subject=msg.subject, body_html=msg.body)
-    elif msg.channel in ("SMS", "PUSH", "TEAMS"):
+    elif msg.channel == "TEAMS":
+        from comms.teams_service import post_to_teams_channel  # noqa: PLC0415
+
+        try:
+            payload = json.loads(msg.to or "{}")
+        except json.JSONDecodeError as exc:
+            raise ValueError("TEAMS channel requires JSON payload in OutboxMessage.to") from exc
+
+        team_id = (payload.get("team_id") or "").strip()
+        channel_id = (payload.get("channel_id") or "").strip()
+        if not team_id or not channel_id:
+            raise ValueError("TEAMS payload must include team_id and channel_id")
+
+        post_to_teams_channel(
+            sender=None,
+            team_id=team_id,
+            channel_id=channel_id,
+            message=msg.body,
+        )
+    elif msg.channel in ("SMS", "PUSH"):
         # Phase B: wire additional channel handlers here
         raise NotImplementedError(f"Channel {msg.channel!r} not yet implemented")
     else:
@@ -69,8 +89,8 @@ def drain_outbox(self, batch_size: int = 25) -> dict:
 
             _send(msg)
 
-            msg.status   = OutboxMessage.STATUS_SENT
-            msg.sent_at  = timezone.now()
+            msg.status = OutboxMessage.STATUS_SENT
+            msg.sent_at = timezone.now()
             msg.last_error = ""
             msg.save(update_fields=["status", "sent_at", "last_error"])
             sent += 1

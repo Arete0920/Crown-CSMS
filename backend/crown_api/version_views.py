@@ -2,6 +2,9 @@
 Lightweight version endpoint for quick deployment verification.
 No DB checks, faster than /health.
 """
+import os
+from pathlib import Path
+
 from django.http import JsonResponse
 from django.utils import timezone
 
@@ -15,6 +18,22 @@ try:
     from crown_api.build_info import BUILD_TIME
 except ImportError:
     BUILD_TIME = None
+
+
+def _resolve_app_version() -> str:
+    configured = os.getenv("APP_VERSION", "").strip()
+    if configured:
+        return configured
+
+    try:
+        version_path = Path(__file__).resolve().parents[2] / "VERSION"
+        from_file = version_path.read_text(encoding="utf-8").strip()
+        if from_file:
+            return from_file
+    except OSError:
+        pass
+
+    return "crown-unknown"
 
 
 def version(request):
@@ -31,7 +50,7 @@ def version(request):
     }
     """
     return JsonResponse({
-        "version": "1.0.0",
+        "version": _resolve_app_version(),
         "build_sha": BUILD_SHA,
         "build_time": BUILD_TIME,
         "server_time": timezone.now().isoformat(),

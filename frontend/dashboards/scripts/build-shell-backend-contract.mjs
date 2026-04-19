@@ -1,4 +1,3 @@
-/* eslint-env node */
 /* global console */
 
 import fs from "node:fs";

@@ -2,13 +2,13 @@
 
 ## Overall Status
 - Overall board status: **RED**
-- Total inventoried assets: **105875**
+- Total inventoried assets: **106327**
 - UI assets reviewed by inventory: **18924**
 - API / route assets inventoried: **224**
 - Model / service assets inventoried: **174**
-- Test / CI / doc assets inventoried: **12077**
-- Proof checks passed: **8**
-- Proof checks failed: **3**
+- Test / CI / doc assets inventoried: **12081**
+- Proof checks passed: **11**
+- Proof checks failed: **0**
 - Modules GREEN: **0**
 - Modules YELLOW: **0**
 - Modules RED: **23**
@@ -22,7 +22,7 @@
 
 | Rank | Severity | Category | Title | Owner | Source | Count |
 |---:|---|---|---|---|---|---:|
-| 1 | CRITICAL | API / Routing | Route contract risk and duplicate-path risk | Dev 1 | ROUTE_RISK_SCAN.csv | 15434 |
+| 1 | CRITICAL | API / Routing | Route contract risk and duplicate-path risk | Dev 1 | ROUTE_RISK_SCAN.csv | 15472 |
 | 2 | CRITICAL | Module Completion | Module not complete: Activities / Events | Dev 3 | MODULE_COMPLETION_MATRIX.csv | 1 |
 | 3 | CRITICAL | Module Completion | Module not complete: Administrator Portal | Dev 4 | MODULE_COMPLETION_MATRIX.csv | 1 |
 | 4 | CRITICAL | Module Completion | Module not complete: Admissions | Dev 3 | MODULE_COMPLETION_MATRIX.csv | 1 |
@@ -46,7 +46,7 @@
 | 22 | CRITICAL | Module Completion | Module not complete: Teacher Portal | Dev 4 | MODULE_COMPLETION_MATRIX.csv | 1 |
 | 23 | CRITICAL | Module Completion | Module not complete: Transportation | Dev 3 | MODULE_COMPLETION_MATRIX.csv | 1 |
 | 24 | CRITICAL | Module Completion | Module not complete: Volunteer / Family Engagement | Dev 3 | MODULE_COMPLETION_MATRIX.csv | 1 |
-| 25 | CRITICAL | Proof | Proof failure: FULL_BACKEND_REGRESSION | Dev 5 | PROOF_SUMMARY.csv | 1 |
+| 25 | HIGH | API Inventory | API and route surface requires contract-level verification | Dev 1 / Dev 5 | API_ROUTE_CONTRACT_INVENTORY.csv | 224 |
 
 ## Immediate Actions
 1. Fix all proof failures first.

@@ -56,6 +56,7 @@ $repoRoot   = Split-Path -Parent $PSScriptRoot
 $backendDir = Join-Path $repoRoot "backend"
 $venvPy     = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $py         = if (Test-Path $venvPy) { $venvPy } else { "python" }
+. (Join-Path $repoRoot "scripts\Get-RequiredEnv.ps1")
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 function Step([string]$name, [scriptblock]$body) {
@@ -133,8 +134,8 @@ if (-not $SkipServerStart) {
         Push-Location $backendDir
         try {
             if (-not $env:DJANGO_SETTINGS_MODULE) { $env:DJANGO_SETTINGS_MODULE = "crown_api.settings" }
-            if (-not $env:DATABASE_URL)            { $env:DATABASE_URL            = "sqlite:///./rc.sqlite3" }
-            if (-not $env:SECRET_KEY)              { $env:SECRET_KEY              = "rc-not-secret" }
+            $env:DATABASE_URL = Get-RequiredEnv "DATABASE_URL"
+            $env:SECRET_KEY = Get-RequiredEnv "DJANGO_SECRET_KEY"
             if (-not $env:DEBUG)                   { $env:DEBUG                   = "1" }
             if (-not $env:ALLOWED_HOSTS)           { $env:ALLOWED_HOSTS           = "127.0.0.1,localhost" }
 

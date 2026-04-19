@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD060 -->
+
 # Security Gates Evidence
 
 Generated: 2026-04-11

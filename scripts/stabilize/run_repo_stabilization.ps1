@@ -21,10 +21,11 @@ Write-Host "=== DJANGO CHECK ===" -ForegroundColor Cyan
 Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue
 Remove-Item Env:PYTHONHOME -ErrorAction SilentlyContinue
 Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+. "$PSScriptRoot\..\Get-RequiredEnv.ps1"
 $env:DJANGO_DEBUG = "0"
 $env:DJANGO_ENV = "production"
 $env:CROWN_ENV = "prod"
-$env:DJANGO_SECRET_KEY = "schema-local-check-only"
+$env:DJANGO_SECRET_KEY = Get-RequiredEnv "DJANGO_SECRET_KEY"
 
 & $python backend\manage.py check 2>&1 | Tee-Object -FilePath audit-artifacts\stabilization\04_django_check.txt
 

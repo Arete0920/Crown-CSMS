@@ -1,0 +1,7 @@
+﻿"ItemID","Item","Lane","Category","Owner","CurrentState","CoreModuleAddon","KeepRewriteDrop","FinalDecision","Priority","Notes"
+"I-003","Admissions Module","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P0","backend/admissions;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
+"I-009","Re-enrollment Module","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P0","backend/reenrollment;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
+"I-010","Billing, Tuition, and Payments","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P0","backend/billing;backend/payments;backend/finance;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
+"I-011","Communications and Portals","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P1","backend/comms;backend/messaging;backend/notifications;backend/parent360;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
+"I-014","Transportation Module","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P2","backend/transportation;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
+"I-015","Food Service Module","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P2","backend/aftercare;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
