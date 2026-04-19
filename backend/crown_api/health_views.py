@@ -4,6 +4,7 @@ from django.db import connection
 import logging
 import os
 import socket
+from pathlib import Path
 from datetime import datetime, timezone
 
 # --- CROWN_ENV_BOOL_HELPER ---
@@ -18,6 +19,22 @@ def _crown_env_true(name: str, default: bool = False) -> bool:
     return v in ("1","true","t","yes","y","on")
 
 
+def _resolve_app_version() -> str:
+    configured = os.getenv("APP_VERSION", "").strip()
+    if configured:
+        return configured
+
+    try:
+        version_path = Path(__file__).resolve().parents[2] / "VERSION"
+        from_file = version_path.read_text(encoding="utf-8").strip()
+        if from_file:
+            return from_file
+    except OSError:
+        pass
+
+    return "crown-unknown"
+
+
 
 def health(request):
     """
@@ -28,7 +45,7 @@ def health(request):
     prod_deploy_tag = os.getenv("PROD_DEPLOY_TAG", "")
     env_name = os.getenv("CROWN_ENV", "dev")
     build_time = datetime.now(timezone.utc).isoformat()
-    version = os.getenv("APP_VERSION", "crown-0.3.0")
+    version = _resolve_app_version()
     deploy_run_id = os.getenv("DEPLOY_RUN_ID", "")
     deploy_workflow = os.getenv("DEPLOY_WORKFLOW", "")
     

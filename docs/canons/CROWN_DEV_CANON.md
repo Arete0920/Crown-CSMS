@@ -1,6 +1,6 @@
 # CROWN_DEV_CANON.md
 **Crown2026 Local Dev Golden Path (VS Code + GitHub)**
-Last updated: 2026-02-04  
+Last updated: 2026-04-16  
 Owner: TC / Crown Team
 
 ---
@@ -25,22 +25,22 @@ If you follow this exactly, you will not spend hours repeating the same problems
 ## Repo Location (Canonical)
 Repo root:
 ```
-C:\Users\JMega\OneDrive\Desktop\Crown2026
+C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr
 ```
 
 Backend:
 ```
-C:\Users\JMega\OneDrive\Desktop\Crown2026\backend
+C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\backend
 ```
 
 Frontend (dashboards):
 ```
-C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards
+C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\frontend\dashboards
 ```
 
 Python (canonical):
 ```
-C:\Users\JMega\OneDrive\Desktop\Crown2026\venv\Scripts\python.exe
+C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\venv\Scripts\python.exe
 ```
 
 ---
@@ -56,7 +56,7 @@ C:\Users\JMega\OneDrive\Desktop\Crown2026\venv\Scripts\python.exe
 
 ## VS Code Setup (Do Once)
 1. Open VS Code → **File → Open Folder…**
-   - Select: `C:\Users\JMega\OneDrive\Desktop\Crown2026`
+   - Select: `C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr`
 2. Open Terminal → New Terminal twice.
 3. Rename terminals:
    - `BACKEND`
@@ -67,9 +67,9 @@ C:\Users\JMega\OneDrive\Desktop\Crown2026\venv\Scripts\python.exe
 ## Golden Path: Start Backend (Always the Same)
 **BACKEND terminal:**
 ```powershell
-cd C:\Users\JMega\OneDrive\Desktop\Crown2026\backend
+cd C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\backend
 $env:DJANGO_SETTINGS_MODULE="crown_api.settings"
-C:\Users\JMega\OneDrive\Desktop\Crown2026\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
+C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
 ### Backend Health Check (Required)
@@ -89,7 +89,7 @@ Expected:
 ## Golden Path: Start Frontend (Always the Same)
 **FRONTEND terminal:**
 ```powershell
-cd C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards
+cd C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\frontend\dashboards
 npm run dev -- --host 127.0.0.1 --port 3000
 ```
 
@@ -114,10 +114,10 @@ Open:
 ### Dev JWT Panel (Dev Only)
 In development, you may need to login after a restart. That is normal.
 
-Canonical demo credentials:
-- username: `head@crown-demo.local`
-- password: `crown2026`
-- school_id: `b45b8c5a-6708-4597-aad9-a226627b2962`
+Credential handling:
+- Do not store credentials in this canon.
+- Load local dev credentials from `local.secrets.ps1` (not committed), then authenticate via the Dev JWT panel.
+- Keep demo usernames, passwords, and tenant identifiers in local secret storage only.
 
 Canonical storage keys:
 - `auth_token`
@@ -195,7 +195,7 @@ taskkill /PID <PID> /F
 ### Always branch for changes
 From repo root:
 ```powershell
-cd C:\Users\JMega\OneDrive\Desktop\Crown2026
+cd C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr
 git checkout -b fix/<short-name>
 ```
 
@@ -271,19 +271,19 @@ git revert <commit_hash>
 
 Create a folder (if missing):
 ```
-C:\Users\JMega\OneDrive\Desktop\Crown2026\scripts
+C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\scripts
 ```
 
 ### scripts/dev-backend.ps1
 ```powershell
-cd C:\Users\JMega\OneDrive\Desktop\Crown2026\backend
+cd C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\backend
 $env:DJANGO_SETTINGS_MODULE="crown_api.settings"
-C:\Users\JMega\OneDrive\Desktop\Crown2026\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
+C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
 ### scripts/dev-frontend.ps1
 ```powershell
-cd C:\Users\JMega\OneDrive\Desktop\Crown2026\frontend\dashboards
+cd C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\frontend\dashboards
 npm run dev -- --host 127.0.0.1 --port 3000
 ```
 

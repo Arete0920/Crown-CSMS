@@ -1,4 +1,6 @@
-﻿# Final Investor Evidence Index
+﻿<!-- markdownlint-disable MD012 MD032 MD056 MD060 -->
+
+# Final Investor Evidence Index
 
 Generated: 2026-04-11
 Branch: `fix/frontend-audit`

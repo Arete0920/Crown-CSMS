@@ -35,8 +35,13 @@ class TenantHeaderRequiredMiddleware:
         "/api/v1/health",
         "/api/v1/system/health",
         "/api/integrity",
+        "/api/ops",
+        "/api/system/",
         "/api/auth",
         "/api/v1/auth",
+        "/api/billing/",
+        "/api/director/",
+        "/api/v1/gradebook/",
         "/api/help",
         "/api/v1/help",
         "/api/solomon",
@@ -71,6 +76,17 @@ class TenantHeaderRequiredMiddleware:
             # Exempt auth, health, schema, docs
             for prefix in self.EXEMPT_PREFIXES:
                 if path.startswith(prefix):
+                    # Preserve header validation semantics when callers explicitly
+                    # provide X-School-Id on exempt routes.
+                    resolved = resolve_tenant_school_id(request)
+                    if resolved.source == "header_invalid":
+                        return JsonResponse(
+                            {
+                                "detail": "Invalid X-School-Id (must be UUID).",
+                                "code": "invalid_tenant_header",
+                            },
+                            status=400,
+                        )
                     return self.get_response(request)
 
             # Resolve tenant: header wins over user.school_id fallback.

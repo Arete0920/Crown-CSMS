@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchFinancialAidSummary, fetchFinancialAidDrilldown } from "../api/financialAid.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownCard from "../components/crown/CrownCard.jsx";
@@ -23,16 +23,16 @@ function formatMoney(x) {
 
 /* ── Financial Aid KPI flip cards ───────────────────────────────────── */
 const ADMIN_KPI = [
-  { label: "Applications",      value: "�",    trend: null,          trendUp: null,
+  { label: "Applications",      value: "�",    trend: null,          trendUp: null,
     definition: "Total financial aid applications submitted for the selected academic year.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Awards Active",     value: "�",    trend: null,          trendUp: null,
+  { label: "Awards Active",     value: "�",    trend: null,          trendUp: null,
     definition: "Number of approved aid awards currently disbursed to students.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Total Awarded",     value: "�",    trend: null,          trendUp: null,
+  { label: "Total Awarded",     value: "�",    trend: null,          trendUp: null,
     definition: "Sum of all aid amounts granted this academic year across all buckets.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Avg Award",         value: "�",    trend: null,          trendUp: null,
+  { label: "Avg Award",         value: "�",    trend: null,          trendUp: null,
     definition: "Mean aid amount per household awarded this term.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
   { label: "Budget Utilization", value: "73%", trend: "+5% vs plan",  trendUp: true,
@@ -55,17 +55,7 @@ export function FinancialAidDashboard() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  useEffect(() => {
-    loadSummary();
-  }, [academicYear]);
-
-  useEffect(() => {
-    if (drawerOpen) {
-      loadDrilldown();
-    }
-  }, [drawerOpen, selectedBucket, offset]);
-
-  async function loadSummary() {
+  const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
     setSummaryError("");
     try {
@@ -76,9 +66,9 @@ export function FinancialAidDashboard() {
     } finally {
       setSummaryLoading(false);
     }
-  }
+  }, [academicYear]);
 
-  async function loadDrilldown() {
+  const loadDrilldown = useCallback(async () => {
     setDrilldownLoading(true);
     setDrilldownError("");
     try {
@@ -94,7 +84,17 @@ export function FinancialAidDashboard() {
     } finally {
       setDrilldownLoading(false);
     }
-  }
+  }, [academicYear, selectedBucket, limit, offset]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
+
+  useEffect(() => {
+    if (drawerOpen) {
+      loadDrilldown();
+    }
+  }, [drawerOpen, loadDrilldown]);
 
   const handleBucketClick = (bucket) => {
     setSelectedBucket(bucket);

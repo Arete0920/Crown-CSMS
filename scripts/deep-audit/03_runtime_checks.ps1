@@ -77,6 +77,57 @@ function Run-Capture {
 $results = @()
 $python = Get-PythonExe
 
+if (-not $env:DJANGO_SECRET_KEY) {
+  $env:DJANGO_SECRET_KEY = "deep-audit-local-secret-key"
+}
+if (-not $env:DATABASE_URL) {
+  $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
+}
+
+$script:localServerProcess = $null
+
+function Start-LocalServerIfNeeded {
+  param(
+    [string]$ProbeUrl
+  )
+
+  if ($script:localServerProcess -and -not $script:localServerProcess.HasExited) {
+    return $true
+  }
+
+  if (-not (Test-Path "backend\manage.py")) {
+    return $false
+  }
+
+  $stdout = "$logs\LOCAL_SERVER.stdout"
+  $stderr = "$logs\LOCAL_SERVER.stderr"
+  Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
+
+  $script:localServerProcess = Start-Process -FilePath $python -ArgumentList @("backend\manage.py","runserver","127.0.0.1:8000","--noreload") -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+
+  for ($i = 0; $i -lt 20; $i++) {
+    Start-Sleep -Seconds 1
+    try {
+      $probe = Invoke-WebRequest -Uri $ProbeUrl -UseBasicParsing -TimeoutSec 3
+      if ($probe.StatusCode -ge 200 -and $probe.StatusCode -lt 500) {
+        return $true
+      }
+    } catch {
+      if ($script:localServerProcess.HasExited) {
+        break
+      }
+    }
+  }
+
+  return $false
+}
+
+function Stop-LocalServer {
+  if ($script:localServerProcess -and -not $script:localServerProcess.HasExited) {
+    Stop-Process -Id $script:localServerProcess.Id -Force -ErrorAction SilentlyContinue
+  }
+}
+
 if (Test-Path "backend\manage.py") {
   Run-Capture -Check "DJANGO_CHECK" -Command $python -CommandArgs @("backend\manage.py","check") -LogPath "$logs\DJANGO_CHECK.txt"
   Run-Capture -Check "SHOW_MIGRATIONS" -Command $python -CommandArgs @("backend\manage.py","showmigrations") -LogPath "$logs\SHOW_MIGRATIONS.txt"
@@ -175,8 +226,20 @@ try {
   $health.Content | Set-Content "$evidence\health.json" -Encoding UTF8
   Add-Result -Check "HEALTH_ENDPOINT" -Status "PASS" -Artifact "$evidence\health.json" -Notes ""
 } catch {
-  $_ | Out-String | Set-Content "$logs\HEALTH_ENDPOINT.txt" -Encoding UTF8
-  Add-Result -Check "HEALTH_ENDPOINT" -Status "FAIL" -Artifact "$logs\HEALTH_ENDPOINT.txt" -Notes "health endpoint unavailable"
+  $started = Start-LocalServerIfNeeded -ProbeUrl "$BaseUrl/api/health/"
+  if ($started) {
+    try {
+      $health = Invoke-WebRequest -Uri "$BaseUrl/api/health/" -UseBasicParsing -TimeoutSec 20
+      $health.Content | Set-Content "$evidence\health.json" -Encoding UTF8
+      Add-Result -Check "HEALTH_ENDPOINT" -Status "PASS" -Artifact "$evidence\health.json" -Notes "started local backend"
+    } catch {
+      $_ | Out-String | Set-Content "$logs\HEALTH_ENDPOINT.txt" -Encoding UTF8
+      Add-Result -Check "HEALTH_ENDPOINT" -Status "FAIL" -Artifact "$logs\HEALTH_ENDPOINT.txt" -Notes "health endpoint unavailable"
+    }
+  } else {
+    $_ | Out-String | Set-Content "$logs\HEALTH_ENDPOINT.txt" -Encoding UTF8
+    Add-Result -Check "HEALTH_ENDPOINT" -Status "FAIL" -Artifact "$logs\HEALTH_ENDPOINT.txt" -Notes "health endpoint unavailable"
+  }
 }
 
 try {
@@ -184,8 +247,20 @@ try {
   $integrity.Content | Set-Content "$evidence\integrity.json" -Encoding UTF8
   Add-Result -Check "INTEGRITY_ENDPOINT" -Status "PASS" -Artifact "$evidence\integrity.json" -Notes ""
 } catch {
-  $_ | Out-String | Set-Content "$logs\INTEGRITY_ENDPOINT.txt" -Encoding UTF8
-  Add-Result -Check "INTEGRITY_ENDPOINT" -Status "FAIL" -Artifact "$logs\INTEGRITY_ENDPOINT.txt" -Notes "integrity endpoint unavailable"
+  $started = Start-LocalServerIfNeeded -ProbeUrl "$BaseUrl/api/health/"
+  if ($started) {
+    try {
+      $integrity = Invoke-WebRequest -Uri "$BaseUrl/api/integrity/" -UseBasicParsing -TimeoutSec 20
+      $integrity.Content | Set-Content "$evidence\integrity.json" -Encoding UTF8
+      Add-Result -Check "INTEGRITY_ENDPOINT" -Status "PASS" -Artifact "$evidence\integrity.json" -Notes "started local backend"
+    } catch {
+      $_ | Out-String | Set-Content "$logs\INTEGRITY_ENDPOINT.txt" -Encoding UTF8
+      Add-Result -Check "INTEGRITY_ENDPOINT" -Status "FAIL" -Artifact "$logs\INTEGRITY_ENDPOINT.txt" -Notes "integrity endpoint unavailable"
+    }
+  } else {
+    $_ | Out-String | Set-Content "$logs\INTEGRITY_ENDPOINT.txt" -Encoding UTF8
+    Add-Result -Check "INTEGRITY_ENDPOINT" -Status "FAIL" -Artifact "$logs\INTEGRITY_ENDPOINT.txt" -Notes "integrity endpoint unavailable"
+  }
 }
 
 $gh = Get-Command gh -ErrorAction SilentlyContinue
@@ -216,6 +291,8 @@ foreach ($r in $results) {
   $md += "| $($r.Check) | $($r.Status) | $($r.Artifact) | $($r.Notes) |"
 }
 $md | Set-Content "$evidence\PROOF_SUMMARY.md" -Encoding UTF8
+
+Stop-LocalServer
 
 Write-Host "Runtime checks complete."
 Write-Host "Open docs\audit\evidence\PROOF_SUMMARY.csv"

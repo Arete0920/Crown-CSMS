@@ -9,17 +9,17 @@
 - Which proof checks passed and failed
 
 ## Current Counts
-- Total assets: 105875
+- Total assets: 106327
 - UI assets: 18924
 - API / route assets: 224
 - Model / service assets: 174
-- Test / CI / doc assets: 12077
-- TODO-like hits: 14118
-- Placeholder hits: 15794
-- Route risk hits: 15434
-- Workflow risk hits: 386
-- Proof pass rows: 4
-- Proof fail rows: 3
+- Test / CI / doc assets: 12081
+- TODO-like hits: 14125
+- Placeholder hits: 15807
+- Route risk hits: 15472
+- Workflow risk hits: 400
+- Proof pass rows: 11
+- Proof fail rows: 0
 
 ## Required Human Review
 1. Fill MODULE_COMPLETION_MATRIX.csv
