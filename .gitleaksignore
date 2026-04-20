@@ -58,3 +58,6 @@ d2b0c11d4fe9d9a92989cda1d41bba0914f5955f:gitleaks.json:postgres-connection-strin
 d2b0c11d4fe9d9a92989cda1d41bba0914f5955f:gitleaks.json:postgres-connection-string:421
 89048929a08c82412c88968e1cd062b6557fa540:AZURE_OPERATIONS_GUIDE.md:postgres-connection-string:31
 89048929a08c82412c88968e1cd062b6557fa540:SYSTEM_VERIFICATION_COMPLETE.md:postgres-connection-string:143
+# Recovery script in d3319c1d used Azure client/tenant/subscription IDs as hardcoded placeholders;
+# values replaced with <placeholder> strings in current HEAD. Historical commit suppressed.
+d3319c1d676797846cefddc2080562f1ea029032:scripts/recovery/fix_release_blockers_now.ps1:generic-api-key:17
