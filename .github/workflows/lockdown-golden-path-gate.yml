@@ -61,6 +61,7 @@ jobs:
 
     env:
       ENVIRONMENT: dev
+      DJANGO_SECRET_KEY: ci-test-secret-key
       CROWN_DEMO_MODE: "true"
       BUILD_SHA: ${{ github.sha }}
       DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}

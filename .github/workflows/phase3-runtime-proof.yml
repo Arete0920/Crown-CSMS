@@ -29,6 +29,7 @@ jobs:
 
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
+      DJANGO_SECRET_KEY: ci-test-secret-key
       DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
       CROWN_DEMO_MODE: "true"
       CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"

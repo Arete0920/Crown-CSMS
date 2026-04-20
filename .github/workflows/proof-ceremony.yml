@@ -36,6 +36,7 @@ jobs:
     
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
+      DJANGO_SECRET_KEY: ci-test-secret-key
       DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
       CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
     
