@@ -2,10 +2,13 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from governance.microsoft_graph import build_board_delivery_channels
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def governance_dashboard(request):
@@ -13,6 +16,7 @@ def governance_dashboard(request):
     return Response({}, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def m365_services_status(request):
