@@ -14,5 +14,6 @@ paths = [
   '''(^|/)AUDIT_PACK_[^/]+($|/)''',
   '''(^|/)audit-artifacts($|/)''',
   '''(^|/)\.pytest_cache($|/)''',
-  '''(^|/)htmlcov($|/)'''
+  '''(^|/)htmlcov($|/)''',
+  '''(^|/)docs/audit/scans($|/)'''
 ]
