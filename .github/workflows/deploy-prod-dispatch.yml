@@ -299,6 +299,12 @@ jobs:
             echo "No backend/coverage.xml found, coverage upload skipped by condition."
           fi
 
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.WEBAPP_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
+
       - name: Verify deployed build SHA and tenant-aware integrity
         shell: pwsh
         env:
