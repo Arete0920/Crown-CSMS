@@ -1301,6 +1301,30 @@ authenticator <class 'core.auth.authentication.AADBearerAuthentication'>.
 There was no OpenApiAuthenticationExtension registered for that class. Try 
 creating one by subclassing it. Ignoring for now.
 ?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Warning [ExportsIndexView]: could not 
+resolve authenticator <class 
+'core.auth.authentication.AADBearerAuthentication'>. There was no 
+OpenApiAuthenticationExtension registered for that class. Try creating one by 
+subclassing it. Ignoring for now.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Warning [ReportsExportFacadeView]: 
+could not resolve authenticator <class 
+'core.auth.authentication.AADBearerAuthentication'>. There was no 
+OpenApiAuthenticationExtension registered for that class. Try creating one by 
+subclassing it. Ignoring for now.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Warning [TranscriptGenerateProbeView]: 
+could not resolve authenticator <class 
+'core.auth.authentication.AADBearerAuthentication'>. There was no 
+OpenApiAuthenticationExtension registered for that class. Try creating one by 
+subclassing it. Ignoring for now.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Warning [TranscriptRouteProbeView]: 
+could not resolve authenticator <class 
+'core.auth.authentication.AADBearerAuthentication'>. There was no 
+OpenApiAuthenticationExtension registered for that class. Try creating one by 
+subclassing it. Ignoring for now.
+?: (drf_spectacular.W001) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
 ckend\crown_api\system_views.py: Warning [SeedStatusView]: could not resolve 
 authenticator <class 'core.auth.authentication.AADBearerAuthentication'>. 
 There was no OpenApiAuthenticationExtension registered for that class. Try 
@@ -3164,6 +3188,28 @@ serializer. This is graceful fallback handling for APIViews. Consider using
 GenericAPIView as view base class, if view is under your control. Either way 
 you may want to add a serializer_class (or method). Ignoring view for now.
 ?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Error [ExportsIndexView]: unable to 
+guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Error [ReportsExportFacadeView]: unable 
+to guess serializer. This is graceful fallback handling for APIViews. Consider 
+using GenericAPIView as view base class, if view is under your control. Either 
+way you may want to add a serializer_class (or method). Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Error [TranscriptGenerateProbeView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
+ckend\crown_api\release_gate_views.py: Error [TranscriptRouteProbeView]: 
+unable to guess serializer. This is graceful fallback handling for APIViews. 
+Consider using GenericAPIView as view base class, if view is under your 
+control. Either way you may want to add a serializer_class (or method). 
+Ignoring view for now.
+?: (drf_spectacular.W002) C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\ba
 ckend\crown_api\system_views.py: Error [SeedStatusView]: unable to guess 
 serializer. This is graceful fallback handling for APIViews. Consider using 
 GenericAPIView as view base class, if view is under your control. Either way 
@@ -4186,5 +4232,5 @@ secure-only CSRF cookie makes it more difficult for network traffic sniffers
 to steal the CSRF token.
 ?: (security.W018) You should not have DEBUG set to True in deployment.
 
-System check identified 769 issues (0 silenced).
+System check identified 777 issues (0 silenced).
 

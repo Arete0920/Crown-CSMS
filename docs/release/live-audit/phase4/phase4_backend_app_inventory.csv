@@ -26,7 +26,7 @@
 "comms_wizard","backend/comms_wizard","True","True","True","True","False","True","True","5","19","2026-04-13T20:35:54-04:00"
 "core","backend/core","True","True","True","False","True","True","True","14","128","2026-04-19T00:53:56-04:00"
 "course_catalog_wizard","backend/course_catalog_wizard","True","True","True","True","False","True","True","5","19","2026-04-13T20:35:54-04:00"
-"crown_api","backend/crown_api","False","True","True","True","True","True","True","111","436","2026-04-20T09:22:17Z"
+"crown_api","backend/crown_api","False","True","True","True","True","True","True","111","438","2026-04-20T09:22:17Z"
 "curricula","backend/curricula","True","True","True","True","True","True","True","5","31","2026-04-12T05:59:58Z"
 "curriculum","backend/curriculum","True","True","True","True","True","True","False","0","22","2026-04-12T05:59:58Z"
 "discipline","backend/discipline","True","True","True","False","True","True","True","0","33","2026-04-12T05:59:58Z"

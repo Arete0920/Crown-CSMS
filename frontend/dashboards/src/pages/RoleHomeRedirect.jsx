@@ -8,7 +8,7 @@ function safeParseJwt(token) {
   try {
     const payload = token.split('.')[1];
     if (!payload) return {};
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const normalized = payload.replaceAll('-', '+').replaceAll('_', '/');
     const pad = normalized.length % 4;
     const base64 = normalized + (pad ? '='.repeat(4 - pad) : '');
     return JSON.parse(atob(base64));
@@ -101,9 +101,9 @@ const ROLE_ROUTE_MAP = new Map([
   ['office_manager',    '/office'],
   ['hr',                '/office'],
   // Admin
-  ['admin',             '/admin'],
-  ['director',          '/admin'],
-  ['principal',         '/admin'],
+  ['admin',             '/school-admin-dashboard'],
+  ['director',          '/school-admin-dashboard'],
+  ['principal',         '/school-admin-dashboard'],
   // Academic Support / SPED
   ['academic_support',          '/academic-support'],
   ['sped',                      '/academic-support'],
@@ -143,6 +143,13 @@ function resolveDashboardPath() {
 export default function RoleHomeRedirect() {
   const navigate = useNavigate();
   const token = getAccessToken();
+
+  // Hard redirect for sandbox admins
+  const isSandbox = Boolean(import.meta.env.VITE_SANDBOX_MODE === "1");
+  const role = getStoredRole();
+  useEffect(() => {
+    if (isSandbox && role === "school_admin") navigate("/school-admin-dashboard");
+  }, [isSandbox, role, navigate]);
 
   useEffect(() => {
     if (!token) return;

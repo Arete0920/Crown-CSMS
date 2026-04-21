@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /*  Config  */
 const API_BASE    = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
-const DEMO_KEY    = import.meta.env.VITE_DEMO_KEY    || "CrownDemoKey!2026";
+const DEMO_USER = "demo@crown.example.org";
+const DEMO_PASS = "DemoPassword2026!";
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
-const DEMO_USER   = "head@crown-demo.local";
-const DEMO_PASS   = "Crown2026!";
+const IS_SANDBOX  = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
 
-/*  Roles  */
-const ROLES = [
+// Default sandbox credentials (fallback)
+const SANDBOX_DEFAULT_EMAIL = "admin@heritage.example.org";
+const SANDBOX_DEFAULT_PASS = import.meta.env.VITE_DEMO_PASS || "Crown2026!";
+
+// Only show sandbox login in sandbox mode
+const ROLES = IS_SANDBOX ? [
+  { label: "School Sandbox", desc: "Login to your sandbox environment.", route: "/sandbox", color: "#0F2C4C" }
+] : [
   { label: "Head of School",      desc: "School-wide oversight & executive KPIs",   route: "/admin",         color: "#0F2C4C" },
   { label: "Financial Aid",       desc: "Aid awards, applications & packaging",      route: "/financial-aid-dashboard", color: "#1C4E80" },
   { label: "Finance Director",    desc: "AR, billing, aging & collections",          route: "/finance",       color: "#1A6FA8" },
@@ -18,6 +24,9 @@ const ROLES = [
   { label: "Student",             desc: "Assignments, schedule & academics",         route: "/student",       color: "#1B6B4A" },
   { label: "Board Member",        desc: "Governance, financials & strategic data",  route: "/board",         color: "#5B3D8A" },
 ];
+
+// Define constant for sandbox admin home
+const SANDBOX_ADMIN_HOME = "/school-admin-dashboard";
 
 /*  SVGs  */
 function CrownSVG({ size = 52 }) {
@@ -50,17 +59,6 @@ function MsIcon() {
   );
 }
 
-function Arrow() {
-  return (
-    <svg viewBox="0 0 20 20" width="13" height="13" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-      style={{ flexShrink: 0 }}>
-      <line x1="4" y1="10" x2="16" y2="10" />
-      <polyline points="11 5 16 10 11 15" />
-    </svg>
-  );
-}
-
 function Spin() {
   return (
     <span style={{
@@ -74,11 +72,42 @@ function Spin() {
   );
 }
 
-/*  Role card  */
+// Further simplify RoleCard by extracting subcomponents
 function RoleCard({ role, busy, onLogin }) {
   const isBusy = busy === role.label;
-  const isDim  = !!busy && !isBusy;
+  const isDim = !!busy && !isBusy;
   const [hov, setHov] = useState(false);
+
+  // Simplify buttonCursor logic
+  const buttonCursor = (() => {
+    if (isBusy) return "wait";
+    if (isDim) return "default";
+    return "pointer";
+  })();
+
+  const buttonStyle = {
+    display: "flex",
+    alignItems: "center",
+    width: "100%",
+    gap: 0,
+    padding: 0,
+    border: "1px solid",
+    borderColor: hov && !busy ? role.color : "#E4ECF5",
+    borderLeft: `3px solid ${role.color}`,
+    borderRadius: "7px",
+    background: hov && !busy ? "#F6F9FF" : "#FFFFFF",
+    cursor: buttonCursor,
+    opacity: isDim ? 0.28 : 1,
+    outline: "none",
+    fontFamily: "inherit",
+    textAlign: "left",
+    overflow: "hidden",
+    boxShadow: hov && !busy
+      ? "0 2px 14px rgba(15,44,76,0.1)"
+      : "0 1px 3px rgba(15,44,76,0.04)",
+    transform: hov && !busy ? "translateY(-1px)" : "none",
+    transition: "all 0.13s ease",
+  };
 
   return (
     <button
@@ -86,55 +115,95 @@ function RoleCard({ role, busy, onLogin }) {
       disabled={!!busy}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        width: "100%",
-        gap: 0,
-        padding: 0,
-        border: "1px solid",
-        borderColor: hov && !busy ? role.color : "#E4ECF5",
-        borderLeft: `3px solid ${role.color}`,
-        borderRadius: "7px",
-        background: hov && !busy ? "#F6F9FF" : "#FFFFFF",
-        cursor: isBusy ? "wait" : isDim ? "default" : "pointer",
-        opacity: isDim ? 0.28 : 1,
-        outline: "none",
-        fontFamily: "inherit",
-        textAlign: "left",
-        overflow: "hidden",
-        boxShadow: hov && !busy
-          ? "0 2px 14px rgba(15,44,76,0.1)"
-          : "0 1px 3px rgba(15,44,76,0.04)",
-        transform: hov && !busy ? "translateY(-1px)" : "none",
-        transition: "all 0.13s ease",
-      }}
+      style={buttonStyle}
     >
-      <div style={{ flex: 1, padding: "10px 11px" }}>
-        <div style={{ fontWeight: 600, fontSize: "13px", color: "#0D1F35", lineHeight: 1.25, marginBottom: isBusy ? 0 : "2px" }}>
-          {isBusy
-            ? <span style={{ display: "flex", alignItems: "center", gap: 7, color: "#0D1F35" }}><Spin />Signing in...</span>
-            : role.label}
-        </div>
-        {!isBusy && (
-          <div style={{ fontWeight: 400, fontSize: "11px", color: "#7B93AC", lineHeight: 1.4 }}>
-            {role.desc}
-          </div>
-        )}
-      </div>
-      {!isBusy && (
-        <div style={{ paddingRight: 11, color: hov && !busy ? role.color : "#C8D9E8" }}>
-          <Arrow />
-        </div>
-      )}
+      <RoleCardContent role={role} isBusy={isBusy} />
     </button>
   );
 }
 
+function RoleCardContent({ role, isBusy }) {
+  return (
+    <div style={{ flex: 1, padding: "10px 11px" }}>
+      <div
+        style={{
+          fontWeight: 600,
+          fontSize: "13px",
+          color: "#0D1F35",
+          lineHeight: 1.25,
+          marginBottom: isBusy ? 0 : "2px",
+        }}
+      >
+        {isBusy ? (
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              color: "#0D1F35",
+            }}
+          >
+            <Spin />Signing in...
+          </span>
+        ) : (
+          role.label
+        )}
+      </div>
+      {!isBusy && (
+        <div
+          style={{
+            fontWeight: 400,
+            fontSize: "11px",
+            color: "#7B93AC",
+            lineHeight: 1.4,
+          }}
+        >
+          {role.desc}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Replace fetch with axios for better error handling
+import axios from "axios";
+
+async function fetchSandboxCredentials() {
+  try {
+    const res = await axios.get("/demo/heritage_demo_credentials.json");
+    const data = res.data;
+    const persona = data.required_personas?.find(p => p.key === "school_admin") || data.required_personas?.[0];
+    return {
+      email: persona?.email || SANDBOX_DEFAULT_EMAIL,
+      pass: SANDBOX_DEFAULT_PASS,
+    };
+  } catch {
+    return {
+      email: SANDBOX_DEFAULT_EMAIL,
+      pass: SANDBOX_DEFAULT_PASS,
+    };
+  }
+}
+
 /*  Page  */
 export default function LoginPage() {
-  const [busy,  setBusy]  = useState("");
+  const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [sandboxEmail, setSandboxEmail] = useState("");
+  const [sandboxPass, setSandboxPass] = useState("");
+
+  // Prefill sandbox credentials from JSON if in sandbox mode
+  useEffect(() => {
+    if (IS_SANDBOX) {
+      fetchSandboxCredentials().then((credentials) => {
+        setSandboxEmail(credentials.email);
+        setSandboxPass(credentials.pass);
+      }).catch(() => {
+        setSandboxEmail(SANDBOX_DEFAULT_EMAIL);
+        setSandboxPass(SANDBOX_DEFAULT_PASS);
+      });
+    }
+  }, []);
 
   async function login(role) {
     if (busy) return;
@@ -142,41 +211,82 @@ export default function LoginPage() {
     setBusy(role.label);
     try {
       let access = null, schoolId = DEMO_SCHOOL;
-
-      const dev = await globalThis.fetch("/api/dev/token/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Demo-Key": DEMO_KEY },
-        body: "{}",
-      }).catch(() => null);
-
-      if (dev && dev.ok) {
-        const d = await dev.json();
-        access   = d.access;
-        schoolId = d.school_id || DEMO_SCHOOL;
-      } else {
-        const r = await globalThis.fetch("/api/v1/auth/token/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: DEMO_USER, password: DEMO_PASS }),
-        });
-        if (!r.ok) {
-          const b = await r.json().catch(() => ({}));
-          throw new Error(b.detail || `Auth failed (${r.status})`);
-        }
-        const d  = await r.json();
-        access   = d.access;
-        schoolId = d.school_id || DEMO_SCHOOL;
+      let username = sandboxEmail;
+      let password = sandboxPass;
+      if (!IS_SANDBOX) {
+        username = DEMO_USER;
+        password = DEMO_PASS;
       }
-
+      // Only allow sandbox login in sandbox mode
+      const r = await globalThis.fetch("/api/v1/auth/token/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!r.ok) {
+        const b = await r.json().catch(() => ({}));
+        throw new Error(b.detail || `Auth failed (${r.status})`);
+      }
+      const d = await r.json();
+      access = d.access;
+      schoolId = d.school_id || DEMO_SCHOOL;
       sessionStorage.setItem("crown.jwt.access", access);
-      sessionStorage.setItem("crown.school.id",  schoolId);
-      globalThis.location.href = role.route;
+      sessionStorage.setItem("crown.school.id", schoolId);
+
+      // Redirect sandbox admins to the redesigned admin dashboard
+      if (IS_SANDBOX && role.label === "School Sandbox") {
+        globalThis.location.href = SANDBOX_ADMIN_HOME;
+      } else {
+        globalThis.location.href = role.route;
+      }
     } catch (e) {
-      setError(e.message || "Login failed  is the backend running?");
+      setError(e.message || "Login failed. Is the backend running?");
       setBusy("");
     }
   }
 
+  // Only show sandbox login form in sandbox mode
+  if (IS_SANDBOX) {
+    return (
+      <div className="lp-root">
+        <div className="lp-brand">
+          <div className="lp-brand-top">
+            <div className="lp-mark">
+              <CrownSVG size={50} />
+              <div>
+                <div className="lp-mark-name">Crown</div>
+                <div className="lp-mark-tag">School Management Platform</div>
+              </div>
+            </div>
+            <div className="lp-gold-rule" />
+            <h1 className="lp-headline">Sandbox Login</h1>
+            <p className="lp-body-copy">Sign in to your sandbox environment using the prefilled credentials below. Only sandbox logins are permitted in this environment.</p>
+          </div>
+          <div className="lp-brand-bottom">
+            <div className="lp-school-label">Institution</div>
+            <div className="lp-school-name">Heritage Christian Academy</div>
+          </div>
+        </div>
+        <div className="lp-panel">
+          <div className="lp-form">
+            <h1 className="lp-welcome">Sandbox Login</h1>
+            <p className="lp-prompt">Use the prefilled credentials below to access your sandbox.</p>
+            {error && <div className="lp-err">{error}</div>}
+            <form onSubmit={e => { e.preventDefault(); login(ROLES[0]); }}>
+              <label htmlFor="sandbox-email" style={{ fontWeight: 600, fontSize: 13 }}>Email</label>
+              <input id="sandbox-email" type="email" value={sandboxEmail} readOnly style={{ width: "100%", marginBottom: 12, padding: 8, borderRadius: 6, border: "1px solid #D5E0EC" }} />
+              <label htmlFor="sandbox-pass" style={{ fontWeight: 600, fontSize: 13 }}>Password</label>
+              <input id="sandbox-pass" type="password" value={sandboxPass} readOnly style={{ width: "100%", marginBottom: 18, padding: 8, borderRadius: 6, border: "1px solid #D5E0EC" }} />
+              <div style={{ fontSize: 12, color: "#6C88A2", marginBottom: 18 }}>These credentials are valid only for your sandbox. Platform admin and demo/global accounts are not available here.</div>
+              <button type="submit" disabled={busy} style={{ width: "100%", padding: 12, borderRadius: 7, background: "#0F2C4C", color: "#fff", fontWeight: 700, fontSize: 15, border: "none", cursor: busy ? "wait" : "pointer" }}>{busy ? "Signing in..." : "Sign in to Sandbox"}</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ...existing code for non-sandbox environments...
   return (
     <>
       <style>{`

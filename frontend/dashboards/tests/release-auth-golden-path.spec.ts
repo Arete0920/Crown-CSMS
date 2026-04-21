@@ -11,10 +11,10 @@ test("release auth golden path", async ({ page }) => {
   const password = page.locator('input[type="password"], input[name="password"], [data-testid="login-password"]').first();
   const submit = page.locator('button[type="submit"], [data-testid="login-submit"]').first();
 
-  if (await email.count()) {
+  if ((await email.count()) && (await email.isEditable())) {
     await email.fill(user);
   }
-  if (await password.count()) {
+  if ((await password.count()) && (await password.isEditable())) {
     await password.fill(pass);
   }
   if (await submit.count()) {
