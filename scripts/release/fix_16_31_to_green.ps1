@@ -780,7 +780,8 @@ $ProgressPreference = "SilentlyContinue"
 if ($null -ne (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue)) {
   $PSNativeCommandUseErrorActionPreference = $false
 }
-if (-not $env:DJANGO_SECRET_KEY) { $env:DJANGO_SECRET_KEY = "copilot-local-check-only" }
+. "$PSScriptRoot\..\Get-RequiredEnv.ps1"
+$env:DJANGO_SECRET_KEY = Get-RequiredEnv "DJANGO_SECRET_KEY"
 if (-not $env:DJANGO_DEBUG) { $env:DJANGO_DEBUG = "0" }
 if (-not $env:DJANGO_ENV) { $env:DJANGO_ENV = "production" }
 if (-not $env:CROWN_ENV) { $env:CROWN_ENV = "prod" }

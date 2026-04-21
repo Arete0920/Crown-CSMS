@@ -4,8 +4,6 @@ import os
 
 from django.utils import timezone
 
-from integrations.m365.graph_client import GraphClient
-
 
 def _configured(*names: str) -> bool:
     return all(bool(os.getenv(name, "").strip()) for name in names)
@@ -21,23 +19,14 @@ def build_board_delivery_channels(school_id, *, packet_id: int | None = None, me
     meeting_label = str(meeting_date or timezone.localdate())
     folder_path = f"BoardPackets/{meeting_label}"
 
-    try:
-        client = GraphClient(school_id)
-    except Exception:
-        client = None
+    # Keep this helper import-free from optional M365 client classes so URL loading
+    # remains stable in local/test environments without extra integration modules.
+    sharepoint_url = ""
 
-    try:
-        sharepoint_url = client.sharepoint_deeplink(folder_path) if client else ""
-    except Exception:
-        sharepoint_url = ""
-
-    teams_configured = bool(
-        client
-        and client.tenant_id
-        and client.client_id
-        and (os.getenv("M365_CLIENT_SECRET") or os.getenv("GRAPH_CLIENT_SECRET"))
+    teams_configured = _configured("M365_DEFAULT_TENANT_ID", "M365_DEFAULT_CLIENT_ID", "M365_CLIENT_SECRET") or _configured(
+        "GRAPH_TENANT_ID", "GRAPH_CLIENT_ID", "GRAPH_CLIENT_SECRET"
     )
-    sharepoint_configured = bool(client and (client.site_id or client.drive_id))
+    sharepoint_configured = bool(os.getenv("M365_SHAREPOINT_SITE_ID") or os.getenv("M365_DEFAULT_DRIVE_ID"))
     email_configured = _configured("AZURE_TENANT_ID", "AZURE_CLIENT_ID", "AZURE_CLIENT_SECRET") or _configured(
         "M365_DEFAULT_TENANT_ID", "M365_DEFAULT_CLIENT_ID", "M365_CLIENT_SECRET"
     )

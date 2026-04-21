@@ -1,4 +1,7 @@
 name: phase1-gate
+permissions:
+  contents: read
+
 
 on:
   pull_request:

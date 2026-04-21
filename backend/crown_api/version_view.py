@@ -7,6 +7,23 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.conf import settings
 import os
+from pathlib import Path
+
+
+def _resolve_app_version() -> str:
+    configured = os.getenv("APP_VERSION", "").strip()
+    if configured:
+        return configured
+
+    try:
+        version_path = Path(__file__).resolve().parents[2] / "VERSION"
+        from_file = version_path.read_text(encoding="utf-8").strip()
+        if from_file:
+            return from_file
+    except OSError:
+        pass
+
+    return "crown-unknown"
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -29,7 +46,7 @@ def version(request):
     
     return Response({
         "service": "crown-api",
-        "version": "1.0.0",
+        "version": _resolve_app_version(),
         "commit": build_sha,
         "environment": environment,
         "django_version": settings.VERSION if hasattr(settings, 'VERSION') else "unknown"

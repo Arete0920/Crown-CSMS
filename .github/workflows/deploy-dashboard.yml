@@ -1,6 +1,9 @@
 name: Deploy Dashboard (Production)
+permissions:
+  contents: read
+  id-token: write
 
-# Phase 8 â€” Frontend proof leg.
+# Phase 8— Frontend proof leg.
 #
 # Triggers on the same prod-deploy-* tags as the backend deploy so both
 # services are stamped from the same SHA and tag on every production push.
@@ -10,12 +13,12 @@ name: Deploy Dashboard (Production)
 #     and tag name at build time, then shipped inside dist/ to Azure SWA
 #   - After this workflow succeeds, proof-ceremony-after-prod.yml will fetch
 #     $PROD_DASH_BASE/build.json and assert build_sha and deploy_tag match the
-#     backend health response â€” completing the "both proved" chain
+#     backend health response — completing the "both proved" chain
 #
 # Secrets required:
-#   AZURE_SWA_TOKEN â€” deployment token from the Azure Static Web Apps resource
+#   AZURE_SWA_TOKEN — deployment token from the Azure Static Web Apps resource
 #                     (Portal â†’ SWA resource â†’ Settings â†’ Deployment token)
-#   PROD_DASH_BASE  â€” set this after confirming the SWA URL, e.g.
+#   PROD_DASH_BASE  — set this after confirming the SWA URL, e.g.
 #                     https://crown-dash.azurestaticapps.net
 
 on:
@@ -33,7 +36,7 @@ permissions:
 
 jobs:
   build-and-deploy:
-    name: "Build + deploy dashboard â€” ${{ github.ref_name }}"
+    name: "Build + deploy dashboard — ${{ github.ref_name }}"
     runs-on: ubuntu-latest
 
     steps:
@@ -99,7 +102,7 @@ jobs:
           set -euo pipefail
           FILE="frontend/dashboards/dist/build.json"
           if [[ ! -f "$FILE" ]]; then
-            echo "ERROR: dist/build.json not found â€” Vite did not copy public/build.json"
+            echo "ERROR: dist/build.json not found — Vite did not copy public/build.json"
             exit 1
           fi
           echo "dist/build.json contents:"

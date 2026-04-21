@@ -12,6 +12,7 @@ Rules (applied only to files NOT importing CrownLayout):
 
 MUI pages and pages with non-standard styling paradigms are skipped via SKIP.
 """
+
 import re
 import sys
 from pathlib import Path
@@ -20,14 +21,14 @@ PAGES_DIR = Path("frontend/dashboards/src/pages")
 
 # Pages intentionally excluded from this gate
 SKIP = {
-    "LoginPage.jsx",                # auth surface, standalone by design
-    "TeacherDashboard.jsx",         # MUI
-    "ClassroomsDashboard.jsx",      # MUI
+    "LoginPage.jsx",  # auth surface, standalone by design
+    "TeacherDashboard.jsx",  # MUI
+    "ClassroomsDashboard.jsx",  # MUI
     "AcademicsTeacherGrading.jsx",  # MUI
-    "AcademicsStudentWork.jsx",     # MUI
+    "AcademicsStudentWork.jsx",  # MUI
     "AcademicsParentSnapshot.jsx",  # MUI
-    "ParentStudent360Page.jsx",     # MUI
-    "ServiceHoursPage.jsx",         # Tailwind/shadcn paradigm (separate concern)
+    "ParentStudent360Page.jsx",  # MUI
+    "ServiceHoursPage.jsx",  # Tailwind/shadcn paradigm (separate concern)
 }
 
 CROWN_IMPORT_RE = re.compile(r"import\s+CrownLayout\b")
@@ -65,8 +66,7 @@ def check_file(path):
             )
         if H1_RE.search(line):
             violations.append(
-                f"  L{i}: [root-h1] <h1> without CrownLayout: "
-                f"{line.strip()[:120]}"
+                f"  L{i}: [root-h1] <h1> without CrownLayout: {line.strip()[:120]}"
             )
         if RAW_PADDING_RE.search(line):
             violations.append(

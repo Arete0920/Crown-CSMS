@@ -28,6 +28,8 @@ jobs:
   write-proof:
     name: write-proof
     runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-test-secret-key
 
     steps:
       - name: Checkout
@@ -73,6 +75,8 @@ jobs:
   lifecycle-proof:
     name: lifecycle-proof
     runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-test-secret-key
 
     steps:
       - name: Checkout

@@ -51,11 +51,12 @@ export default function AcademicsStudentWork() {
         const list = Array.isArray(data) ? data : data.results || [];
         setStudents(list);
         // Auto-select first student if none stored
-        if (!studentId && list.length > 0) {
+        setStudentId((current) => {
+          if (current || list.length === 0) return current;
           const firstId = list[0].student_id || list[0].id;
-          setStudentId(firstId);
           sessionStorage.setItem("crown.student.id", firstId);
-        }
+          return firstId;
+        });
       } catch (e) {
         setErr(e.message || String(e));
       }

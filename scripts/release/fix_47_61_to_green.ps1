@@ -99,7 +99,9 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 import re
+import secrets
 import subprocess
 import sys
 from pathlib import Path
@@ -128,14 +130,15 @@ def run_deploy_check() -> str:
         "DJANGO_DEBUG": "0",
         "DJANGO_ENV": "production",
         "CROWN_ENV": "prod",
-        "DJANGO_SECRET_KEY": "schema-local-check-only",
+      "DJANGO_SECRET_KEY": os.getenv("DJANGO_SECRET_KEY") or os.getenv("SECRET_KEY") or secrets.token_urlsafe(32),
+      "DATABASE_URL": os.getenv("DATABASE_URL", "sqlite:///./ci.sqlite3"),
     }
     result = subprocess.run(
         cmd,
         cwd=ROOT,
         text=True,
         capture_output=True,
-        env={**env, **dict()},
+        env={**os.environ, **env},
     )
     output = (result.stdout or "") + ("\n" + result.stderr if result.stderr else "")
     CHECK_OUTPUT.write_text(output, encoding="utf-8")

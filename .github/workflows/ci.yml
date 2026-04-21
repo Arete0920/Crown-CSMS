@@ -1,4 +1,6 @@
 name: CI - Tests and Checks
+permissions:
+  contents: read
 
 on:
   pull_request:

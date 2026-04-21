@@ -1,4 +1,7 @@
 name: Demo Reset + Smoke (runtime proof)
+permissions:
+  contents: read
+
 
 on:
   workflow_dispatch: {}

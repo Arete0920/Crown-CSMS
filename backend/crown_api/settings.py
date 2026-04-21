@@ -15,6 +15,7 @@ import json
 import logging
 from datetime import timedelta
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 from corsheaders.defaults import default_headers
 from crown_api.wizard_registry import WIZARD_INSTALLED_APPS  # single source of truth
 
@@ -33,6 +34,13 @@ def _env_list(name: str) -> list[str]:
     parts = [p.strip() for p in value.replace(";", ",").split(",")]
     return [p for p in parts if p]
 
+
+def required_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise ImproperlyConfigured(f"Missing required environment variable: {name}")
+    return value
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,7 +53,6 @@ CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=not _is_azure)
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Prefer env vars; fall back to the existing value for local/dev only.
 SECRET_KEY = (
     os.getenv("DJANGO_SECRET_KEY")
     or os.getenv("SECRET_KEY")
@@ -272,6 +279,8 @@ if DATABASE_URL:
             conn_max_age=60,
         )
     }
+elif not DEBUG:
+    raise ImproperlyConfigured("Missing required environment variable: DATABASE_URL")
 else:
     DATABASES = {
         "default": {

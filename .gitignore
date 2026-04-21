@@ -1,14 +1,14 @@
 
-# ── Prod logs (never commit) ──
+# â”€â”€ Prod logs (never commit) â”€â”€
 prod_logs/
 prod_logs_latest/
 prod_logs_now/
 app_logs.zip
 
-# ── Secrets (never commit) ──
+# â”€â”€ Secrets (never commit) â”€â”€
 secrets/
 
-# ── Audit/phase snapshot folders ──
+# â”€â”€ Audit/phase snapshot folders â”€â”€
 MEDIUM_STRIKE_*/
 _PHASE*_INVENTORY_*/
 _PHASE*_TRIAGE_*/
@@ -16,7 +16,7 @@ _PHASE*_APPLY_*/
 _PHASE*_VERIFY_*/
 _workflow_audit/
 
-# ── OS noise ──
+# â”€â”€ OS noise â”€â”€
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -51,6 +51,7 @@ docs/demo-proof/**/tmp/
 
 # Local generated artifacts
 db.sqlite3
+ci.sqlite3
 backend/db.sqlite3
 backend/ci.sqlite3
 backend/ci_audit.sqlite3
@@ -59,7 +60,7 @@ _local_proofs/
 app_logs/
 media/
 
-# Local secrets (never commit — contains rotated credentials)
+# Local secrets (never commit â€” contains rotated credentials)
 local.secrets.ps1
 local.secrets.sh
 *.local.secrets
@@ -67,6 +68,12 @@ local.secrets.sh
 # Audit runner output (attach to PRs/tags manually)
 artifacts/
 audit-logs/
+docs/audit/evidence/GH_RUNS_LATEST.json
+docs/audit/evidence/OPEN_PRS_LATEST.json
+docs/audit/evidence/OPEN_PR_BLOCKERS.csv
+docs/audit/evidence/OPEN_PR_HEALTH.csv
+docs/audit/evidence/health.json
+docs/audit/evidence/integrity.json
 
 # Editor/OS
 .vscode/
@@ -137,3 +144,43 @@ webapp_logs.zip
 .env*.local
 **/.env*.local
 !*.example
+
+# >>> Crown VS Code hardening block >>>
+.vscode/*.log
+.vscode/*.tmp
+
+# Python
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# Node / frontend
+node_modules/
+dist/
+build/
+coverage/
+
+# Local databases / temp runtime files
+ci.sqlite3
+*.sqlite3
+_tmp_*/
+_PHASE*/
+*.pid
+*.seed
+
+# Audit / evidence / generated artifacts
+AUDIT_PACK_*/
+audit-artifacts/
+artifacts/
+docs/audit/evidence/
+docs/audit/reports/
+docs/status/
+
+# OS noise
+.DS_Store
+Thumbs.db
+# <<< Crown VS Code hardening block <<<

@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from django.http import JsonResponse
 from django.utils import timezone
@@ -51,10 +52,26 @@ GITHUB_REPO = "tcmegahan/Crown2026"
 _FALLBACK_DEPLOY_TAG = "prod-deploy-2026-02-22-1315"
 
 
+def _resolve_app_version() -> str:
+    configured = os.getenv("APP_VERSION", "").strip()
+    if configured:
+        return configured
+
+    try:
+        version_path = Path(__file__).resolve().parents[2] / "VERSION"
+        from_file = version_path.read_text(encoding="utf-8").strip()
+        if from_file:
+            return from_file
+    except OSError:
+        pass
+
+    return "crown-unknown"
+
+
 def integrity(request):
     build_sha = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"
     env_name = os.getenv("CROWN_ENV", "dev")
-    version = os.getenv("APP_VERSION", "crown-0.3.0")
+    version = _resolve_app_version()
     prod_deploy_tag = os.getenv("PROD_DEPLOY_TAG") or _FALLBACK_DEPLOY_TAG
 
     is_real_sha = build_sha not in ("local-dev", "unknown")

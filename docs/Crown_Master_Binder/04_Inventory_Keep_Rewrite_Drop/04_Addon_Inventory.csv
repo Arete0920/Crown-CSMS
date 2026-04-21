@@ -1,0 +1,4 @@
+﻿"ItemID","Item","Lane","Category","Owner","CurrentState","CoreModuleAddon","KeepRewriteDrop","FinalDecision","Priority","Notes"
+"I-016","Spiritual Life Add-on","Addons","Addon","Dev 3","Inventory Needed","Addon","Keep","Keep","P3","backend/spiritual_life;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
+"I-017","Service and Outreach Add-on","Addons","Addon","Dev 3","Inventory Needed","Addon","Keep","Keep","P3","backend/servicehours;backend/outreach;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
+"I-018","PD Hub Add-on","Addons","Addon","Dev 3","Inventory Needed","Addon","Keep","Keep","P3","backend/pdhub;AutoCloseKRD:Keep;AutoCloseDecision:Keep"

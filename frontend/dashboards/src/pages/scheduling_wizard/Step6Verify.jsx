@@ -15,7 +15,7 @@ export default function Step6Verify({ context, stepIndex, totalSteps, steps }) {
     verifySchedulingSetup(context.sessionId)
       .then((data) => { setResult(data); setLoading(false); })
       .catch((e) => { setError(e.body?.error || e.message || "Verification failed."); setLoading(false); });
-  }, []);
+  }, [context.verify, context.sessionId]);
 
   function handleReset() {
     try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }

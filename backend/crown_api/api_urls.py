@@ -231,7 +231,8 @@ urlpatterns = [
     path("v1/solomon/search/", api_onboarding.solomon_search, name="solomon-search"),
 
     # ── Stage 4: Board Intelligence ──────────────────────────────────────
-    path("v1/governance/", include("governance.urls")),
+    # governance.urls is registered at m365/ in api_v1_urls.py; removing v1/governance/ here
+    # prevents the double-prefix /api/v1/v1/governance/ route when api_v1_urls is mounted at /api/v1/.
     path("v1/dashboards/school-board/summary/", governance_views.governance_dashboard, name="dashboard-school-board-summary"),
     path("v1/board/packet/download/", api_governance.download_board_packet, name="board-packet-download"),
     path("v1/board/compass/", api_governance.compass_executive, name="board-compass"),

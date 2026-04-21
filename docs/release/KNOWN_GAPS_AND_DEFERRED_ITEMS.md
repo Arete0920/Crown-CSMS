@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD032 MD060 -->
+
 # Known Gaps and Deferred Items
 
 Generated: 2026-04-02

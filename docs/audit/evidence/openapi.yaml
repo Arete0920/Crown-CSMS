@@ -9314,6 +9314,31 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/m365/dashboard/:
+    get:
+      operationId: m365_dashboard_retrieve
+      description: School-board governance dashboard summary.
+      tags:
+      - m365
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/m365/services-status/:
+    get:
+      operationId: m365_services_status_retrieve
+      description: Return fail-closed Microsoft service readiness booleans for UI/proof
+        checks.
+      tags:
+      - m365
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/outreach/badge-awards/:
     get:
       operationId: outreach_badge_awards_list
@@ -23905,6 +23930,19 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/governance/services-status/:
+    get:
+      operationId: v1_governance_services_status_retrieve
+      description: Return fail-closed Microsoft service readiness booleans for UI/proof
+        checks.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/grade-scale-wizard/sessions/:
     post:
       operationId: v1_grade_scale_wizard_sessions_create
@@ -25330,6 +25368,31 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/m365/dashboard/:
+    get:
+      operationId: v1_m365_dashboard_retrieve
+      description: School-board governance dashboard summary.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/m365/services-status/:
+    get:
+      operationId: v1_m365_services_status_retrieve
+      description: Return fail-closed Microsoft service readiness booleans for UI/proof
+        checks.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/onboarding/{school_id}/can-activate/:
     get:
       operationId: v1_onboarding_can_activate_retrieve
@@ -32165,6 +32228,19 @@ paths:
     get:
       operationId: v1_v1_governance_dashboard_retrieve
       description: School-board governance dashboard summary.
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/v1/governance/services-status/:
+    get:
+      operationId: v1_v1_governance_services_status_retrieve
+      description: Return fail-closed Microsoft service readiness booleans for UI/proof
+        checks.
       tags:
       - v1
       security:

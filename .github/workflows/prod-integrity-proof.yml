@@ -1,4 +1,7 @@
 name: prod-integrity-proof
+permissions:
+  contents: read
+
 
 on:
   schedule:

@@ -28,6 +28,8 @@ jobs:
   seeded-proof:
     name: seeded-proof
     runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-test-secret-key
 
     steps:
       - name: Checkout
