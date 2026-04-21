@@ -16,9 +16,55 @@ function Add-File($path, $content) {
   $content | Add-Content -Path $path -Encoding UTF8
 }
 
+function Get-PythonExe {
+  $candidates = @(
+    (Join-Path $PWD ".venv/bin/python"),
+    (Join-Path $PWD ".venv/Scripts/python.exe")
+  )
+
+  foreach ($c in $candidates) {
+    if (Test-Path $c) { return $c }
+  }
+
+  $cmd = Get-Command python3 -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+
+  $cmd = Get-Command python -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+
+  return $null
+}
+
+function ConvertFrom-JsonSafe([string]$raw) {
+  try {
+    return $raw | ConvertFrom-Json -ErrorAction Stop
+  }
+  catch {
+    return $null
+  }
+}
+
+function Invoke-CurlText([string]$url, [hashtable]$headers) {
+  $curlCmd = Get-Command curl -ErrorAction SilentlyContinue
+  if (-not $curlCmd) {
+    $curlCmd = Get-Command curl.exe -ErrorAction SilentlyContinue
+  }
+  if (-not $curlCmd) {
+    return "curl unavailable"
+  }
+
+  $curlParams = @("-sS", "--max-time", "20", $url)
+  foreach ($k in $headers.Keys) {
+    $curlParams += @("-H", "${k}: $($headers[$k])")
+  }
+  return (& $curlCmd.Source @curlParams 2>&1 | Out-String)
+}
+
 $ts = Get-Date -Format "yyyyMMdd_HHmmss"
 $pack = Join-Path $PWD ("AUDIT_PACK_{0}" -f $ts)
 New-Item -ItemType Directory -Force -Path $pack | Out-Null
+
+$pythonExe = Get-PythonExe
 
 # 00 Overview
 Write-File (Join-Path $pack "00_OVERVIEW.txt") @"
@@ -42,18 +88,15 @@ try { Add-File (Join-Path $pack "00_OVERVIEW.txt") (git --no-pager log --oneline
 catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git log failed" }
 
 # 01 Tree (exclude big/generated dirs)
-Add-File (Join-Path $pack "01_TREE.txt") "Repo tree (excluding .git, .venv, node_modules, dist/build/coverage):"
-$exclude = @('\\\.git\\', '\\\.venv\\', '\\venv\\', '\\node_modules\\', '\\dist\\', '\\build\\', '\\coverage\\')
+$exclude = '[/\\](\.git|\.venv|venv|node_modules|dist|build|coverage)[/\\]'
 Get-ChildItem -Recurse -File | Where-Object {
-  $p = $_.FullName
-  foreach ($x in $exclude) { if ($p -match $x) { return $false } }
-  return $true
+  $_.FullName -notmatch $exclude
 } | Sort-Object FullName | ForEach-Object {
   $_.FullName.Substring($PWD.Path.Length + 1)
 } | Out-File (Join-Path $pack "01_TREE.txt") -Encoding UTF8
 
 # 02 Workflows index
-$wfDir = Join-Path $PWD ".github\workflows"
+$wfDir = Join-Path $PWD ".github/workflows"
 if (Test-Path $wfDir) {
   Get-ChildItem $wfDir -Filter "*.yml" | Sort-Object Name |
   ForEach-Object { $_.Name } | Out-File (Join-Path $pack "02_WORKFLOWS_INDEX.txt") -Encoding UTF8
@@ -62,94 +105,175 @@ else {
   Write-File (Join-Path $pack "02_WORKFLOWS_INDEX.txt") "No .github/workflows directory found."
 }
 
-# 03 Workflow triggers (raw grep â€” name only, no secret lines)
+# 03 Workflow triggers (name only, no secret lines)
 if (Test-Path $wfDir) {
-  Select-String "$wfDir\*.yml" -Pattern '^(name:\s|on:\s)|pull_request:|push:|workflow_dispatch:|schedule:' |
+  Select-String "$wfDir/*.yml" -Pattern '^(name:\s|on:\s)|pull_request:|push:|workflow_dispatch:|schedule:|repository_dispatch:|workflow_run:' |
   ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" } |
   Out-File (Join-Path $pack "03_WORKFLOWS_TRIGGERS.txt") -Encoding UTF8
 }
 
 # 04 Job-level IF (potential skip-neutral hazards)
 if (Test-Path $wfDir) {
-  Select-String "$wfDir\*.yml" -Pattern '^\s{4}if:\s' |
+  Select-String "$wfDir/*.yml" -Pattern '^\s{2,}if:\s' |
   ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" } |
   Out-File (Join-Path $pack "04_JOB_LEVEL_IF.txt") -Encoding UTF8
 }
 
-# 05 Branch protection (main) via GitHub API
+# 05 Branch protection and required checks mapping
 $bp = Join-Path $pack "05_BRANCH_PROTECTION_MAIN.json"
+$bpMap = Join-Path $pack "05_REQUIRED_CHECKS_MAPPING.txt"
 $env:GH_PAGER = "cat"
+
+$branchPolicy = $null
+$source = $null
+
 try {
-  $json = gh api repos/tcmegahan/Crown2026/branches/main/protection 2>&1
-  Write-File $bp $json
+  $raw = gh api repos/tcmegahan/Crown2026/branches/main/protection 2>&1 | Out-String
+  $parsed = ConvertFrom-JsonSafe $raw
+  if ($parsed -and -not $parsed.error -and -not $parsed.message) {
+    $branchPolicy = $parsed
+    $source = "branch-protection"
+  }
 }
-catch {
-  Write-File $bp "gh api branch protection failed."
+catch { }
+
+if (-not $branchPolicy) {
+  try {
+    $raw = gh api repos/tcmegahan/Crown2026/rules/branches/main 2>&1 | Out-String
+    $parsed = ConvertFrom-JsonSafe $raw
+    if ($parsed) {
+      $branchPolicy = [pscustomobject]@{
+        source = "rules-branches-main"
+        generated_at = (Get-Date).ToString("o")
+        rules = $parsed
+      }
+      $source = "rules-branches-main"
+    }
+    else {
+      Write-File $bp $raw
+    }
+  }
+  catch {
+    Write-File $bp "gh api branch/rules lookup failed."
+  }
+}
+
+if ($branchPolicy) {
+  $branchPolicy | ConvertTo-Json -Depth 50 | Out-File $bp -Encoding UTF8
+
+  $contexts = @()
+  if ($source -eq "branch-protection" -and $branchPolicy.required_status_checks -and $branchPolicy.required_status_checks.contexts) {
+    $contexts = @($branchPolicy.required_status_checks.contexts)
+  }
+  elseif ($source -eq "rules-branches-main" -and $branchPolicy.rules) {
+    foreach ($r in $branchPolicy.rules) {
+      if ($r.type -eq "required_status_checks" -and $r.parameters.required_status_checks) {
+        $contexts += @($r.parameters.required_status_checks | ForEach-Object { $_.context })
+      }
+    }
+  }
+
+  $wfNames = @()
+  if (Test-Path $wfDir) {
+    $wfNames = Get-ChildItem $wfDir -Filter "*.yml" | ForEach-Object { $_.BaseName }
+  }
+
+  Write-File $bpMap "Required checks mapping against workflow base names"
+  Add-File $bpMap "Policy source: $source"
+  Add-File $bpMap ""
+  if ($contexts.Count -eq 0) {
+    Add-File $bpMap "No required status check contexts found in policy export."
+  }
+  else {
+    foreach ($ctx in ($contexts | Sort-Object -Unique)) {
+      $mapped = if ($wfNames -contains $ctx) { "mapped" } else { "unmapped" }
+      Add-File $bpMap ("context={0} status={1}" -f $ctx, $mapped)
+    }
+  }
+}
+elseif (-not (Test-Path $bpMap)) {
+  Write-File $bpMap "No policy export available; mapping not possible."
 }
 
 # 06 Backend URLs
 $urlsOut = Join-Path $pack "06_BACKEND_URLS.txt"
-try {
-  $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
-  $env:SECRET_KEY = "audit-local-secret-key"
-  $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
-  $urlCmdOutput = & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-String
-  if ($urlCmdOutput -match "Unknown command:\s*'show_urls'" -or $urlCmdOutput -match "django-extensions") {
-    $fallbackOutput = & ".venv\Scripts\python.exe" backend/manage.py shell -c "from django.urls import get_resolver; print('\n'.join(sorted(str(p.pattern) for p in get_resolver().url_patterns)))" 2>&1 | Out-String
-    if ([string]::IsNullOrWhiteSpace($fallbackOutput)) {
-      Write-File $urlsOut "show_urls unavailable and fallback URL export produced no output."
+if (-not $pythonExe) {
+  Write-File $urlsOut "No Python executable found (.venv/bin/python or .venv/Scripts/python.exe)."
+}
+else {
+  try {
+    $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
+    $env:SECRET_KEY = "audit-local-secret-key"
+    $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
+
+    $urlCmdOutput = & $pythonExe backend/manage.py show_urls 2>&1 | Out-String
+    if ($urlCmdOutput -match "Unknown command:\s*'show_urls'" -or $urlCmdOutput -match "django-extensions") {
+      $fallbackOutput = & $pythonExe backend/manage.py shell -c "from django.urls import get_resolver; print('\n'.join(sorted(str(p.pattern) for p in get_resolver().url_patterns)))" 2>&1 | Out-String
+      if ([string]::IsNullOrWhiteSpace($fallbackOutput)) {
+        Write-File $urlsOut "show_urls unavailable and fallback URL export produced no output."
+      }
+      else {
+        Write-File $urlsOut $fallbackOutput
+      }
+    }
+    elseif ([string]::IsNullOrWhiteSpace($urlCmdOutput)) {
+      Write-File $urlsOut "show_urls produced no output."
     }
     else {
-      Write-File $urlsOut $fallbackOutput
+      Write-File $urlsOut $urlCmdOutput
     }
   }
-  elseif ([string]::IsNullOrWhiteSpace($urlCmdOutput)) {
-    Write-File $urlsOut "show_urls produced no output."
+  catch {
+    Write-File $urlsOut "backend/manage.py show_urls failed."
   }
-  else {
-    Write-File $urlsOut $urlCmdOutput
-  }
-}
-catch {
-  Write-File $urlsOut "backend/manage.py show_urls failed (django-extensions may not be installed)."
 }
 
 # 07 Migrations
 $migOut = Join-Path $pack "07_MIGRATIONS.txt"
-try {
-  $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
-  $env:SECRET_KEY = "audit-local-secret-key"
-  $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
-  & ".\.venv\Scripts\python.exe" backend/manage.py showmigrations --list 2>&1 | Out-File $migOut -Encoding UTF8
+if (-not $pythonExe) {
+  Write-File $migOut "No Python executable found (.venv/bin/python or .venv/Scripts/python.exe)."
 }
-catch {
-  Write-File $migOut "showmigrations failed."
+else {
+  try {
+    $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
+    $env:SECRET_KEY = "audit-local-secret-key"
+    $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
+    & $pythonExe backend/manage.py showmigrations --list 2>&1 | Out-File $migOut -Encoding UTF8
+  }
+  catch {
+    Write-File $migOut "showmigrations failed."
+  }
 }
 
 # 08 Python deps
 $pyDeps = Join-Path $pack "08_PY_DEPS.txt"
-try {
-  & ".\.venv\Scripts\python.exe" -m pip freeze 2>&1 | Out-File $pyDeps -Encoding UTF8
+if (-not $pythonExe) {
+  Write-File $pyDeps "No Python executable found (.venv/bin/python or .venv/Scripts/python.exe)."
 }
-catch {
-  Write-File $pyDeps "pip freeze failed."
+else {
+  try {
+    & $pythonExe -m pip freeze 2>&1 | Out-File $pyDeps -Encoding UTF8
+  }
+  catch {
+    Write-File $pyDeps "pip freeze failed."
+  }
 }
 
-# 09 Node deps (names only â€” no lockfile content)
+# 09 Node deps (names only - no lockfile content)
 $nodeDeps = Join-Path $pack "09_NODE_DEPS.txt"
-$pkg = Join-Path $PWD "frontend\dashboards\package.json"
+$pkg = Join-Path $PWD "frontend/dashboards/package.json"
 if (Test-Path $pkg) {
   Add-File $nodeDeps "--- package.json path ---"
   Add-File $nodeDeps $pkg
   Add-File $nodeDeps "`n--- lockfiles present ---"
   @("package-lock.json", "pnpm-lock.yaml", "yarn.lock") | ForEach-Object {
-    $lf = Join-Path "frontend\dashboards" $_
+    $lf = Join-Path "frontend/dashboards" $_
     if (Test-Path $lf) { Add-File $nodeDeps $lf }
   }
   Add-File $nodeDeps "`n--- dependencies (names only) ---"
   try {
     $j = Get-Content $pkg -Raw | ConvertFrom-Json
-    ($j.dependencies.PSObject.Properties.Name    | Sort-Object) | ForEach-Object { "dep:    $_" } | Add-Content $nodeDeps
+    ($j.dependencies.PSObject.Properties.Name | Sort-Object) | ForEach-Object { "dep:    $_" } | Add-Content $nodeDeps
     ($j.devDependencies.PSObject.Properties.Name | Sort-Object) | ForEach-Object { "devDep: $_" } | Add-Content $nodeDeps
   }
   catch { Add-File $nodeDeps "Failed to parse package.json" }
@@ -158,17 +282,17 @@ else {
   Write-File $nodeDeps "No frontend/dashboards/package.json found."
 }
 
-# 10 Secrets scan â€” metadata ONLY, never print values
+# 10 Secrets scan - metadata only, never print values
 $secOut = Join-Path $pack "10_SECRET_SCAN_FINDINGS.txt"
 Write-File $secOut "Secret scan findings (metadata-only). No matched values are included.`n"
 
 $patterns = @(
   @{ name = "PrivateKeyHeader"; re = "BEGIN (RSA|OPENSSH|EC|DSA|PRIVATE) KEY" },
-  @{ name = "DjangoSecretKeyLiteral"; re = "SECRET_KEY\s*=\s*['""]" },
+  @{ name = "DjangoSecretKeyLiteral"; re = "SECRET_KEY\s*=\s*['\""]" },
   @{ name = "DatabaseUrl"; re = "DATABASE_URL\s*=" },
-  @{ name = "PasswordAssignment"; re = "password\s*=\s*['""]" },
-  @{ name = "ApiKeyLike"; re = "api[_-]?key\s*=\s*['""]" },
-  @{ name = "TokenLike"; re = "(token|jwt)\s*=\s*['""]" }
+  @{ name = "PasswordAssignment"; re = "password\s*=\s*['\""]" },
+  @{ name = "ApiKeyLike"; re = "api[_-]?key\s*=\s*['\""]" },
+  @{ name = "TokenLike"; re = "(token|jwt)\s*=\s*['\""]" }
 )
 
 $scanExclude = '[/\\](\.git|\.venv|venv|node_modules|dist|build|coverage|AUDIT_PACK_)[/\\]'
@@ -184,7 +308,6 @@ foreach ($p in $patterns) {
       if ($m) {
         foreach ($h in $m) {
           $rel = $h.Path.Substring($PWD.Path.Length + 1)
-          # File + line + rule ONLY â€” no matched string, no line content
           Add-File $secOut ("- rule={0} file={1} line={2}" -f $p.name, $rel, $h.LineNumber)
           $hits++
         }
@@ -196,15 +319,20 @@ foreach ($p in $patterns) {
   Add-File $secOut ""
 }
 
-# gitleaks (if installed) â†’ pipe through redact_gitleaks.py
+# gitleaks (if installed) -> pipe through redact_gitleaks.py
 $glCmd = Get-Command gitleaks -ErrorAction SilentlyContinue
 Add-File $secOut "--- gitleaks ---"
 if ($null -ne $glCmd) {
   $tmp = Join-Path $pack "gitleaks_raw.json"
   try {
-    & gitleaks detect --source . --report-format json --report-path $tmp --no-git 2>$null | Out-Null
-    $red = Get-Content $tmp -Raw | & ".\.venv\Scripts\python.exe" tools/audit/redact_gitleaks.py 2>&1
-    Add-File $secOut $red
+    & $glCmd.Source detect --source . --report-format json --report-path $tmp --no-git 2>$null | Out-Null
+    if ($pythonExe) {
+      $red = Get-Content $tmp -Raw | & $pythonExe tools/audit/redact_gitleaks.py 2>&1
+      Add-File $secOut $red
+    }
+    else {
+      Add-File $secOut "gitleaks ran, but Python redactor is unavailable."
+    }
   }
   catch {
     Add-File $secOut "gitleaks installed but execution failed."
@@ -229,31 +357,39 @@ else {
   Write-File $binOut "git ls-files failed or empty."
 }
 
-# 12 Untracked artifacts (porcelain â€” no content, paths only)
+# 12 Untracked artifacts (porcelain - no content, paths only)
 $untrackedOut = Join-Path $pack "12_UNTRACKED_ARTIFACTS.txt"
 try { git status --porcelain 2>&1 | Out-File $untrackedOut -Encoding UTF8 }
 catch { Write-File $untrackedOut "git status --porcelain failed." }
 
-# 13 Health probe (prod endpoint)
+# 13 Health + integrity probes (with tenant header)
 $healthOut = Join-Path $pack "13_HEALTH_PROBE.txt"
 $healthUrl = "https://crown-api-prod.azurewebsites.net/api/health/"
-Write-File $healthOut "Health probe: $healthUrl`n"
+$integrityUrl = "https://crown-api-prod.azurewebsites.net/api/integrity/"
+$schoolId = if ($env:RC_SCHOOL_ID) { $env:RC_SCHOOL_ID } elseif ($env:CROWN_SCHOOL_ID) { $env:CROWN_SCHOOL_ID } elseif ($env:SCHOOL_ID) { $env:SCHOOL_ID } else { "19801b59-8c05-4c84-9312-5d792e4e839d" }
+
+Write-File $healthOut "Health probe: $healthUrl"
+Add-File $healthOut "Tenant header school id used: $schoolId"
+
 try {
   $ts2 = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-  $resp = & curl.exe -sS --max-time 10 "$healthUrl`?nocache=$ts2" 2>&1
-  Add-File $healthOut $resp
+  $healthNoHeader = Invoke-CurlText "$healthUrl`?nocache=$ts2" @{}
+  Add-File $healthOut "`n--- /api/health without header ---"
+  Add-File $healthOut $healthNoHeader
+
+  $healthWithHeader = Invoke-CurlText "$healthUrl`?nocache=$ts2" @{ "X-School-Id" = $schoolId }
+  Add-File $healthOut "`n--- /api/health with header ---"
+  Add-File $healthOut $healthWithHeader
 }
 catch {
   Add-File $healthOut "curl health probe failed."
 }
 
-# Also probe /api/integrity/ while we're here
-$integrityUrl = "https://crown-api-prod.azurewebsites.net/api/integrity/"
 Add-File $healthOut "`n--- integrity probe: $integrityUrl ---"
 try {
   $ts3 = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-  $resp = & curl.exe -sS --max-time 10 "$integrityUrl`?nocache=$ts3" 2>&1
-  Add-File $healthOut $resp
+  $integrityWithHeader = Invoke-CurlText "$integrityUrl`?nocache=$ts3" @{ "X-School-Id" = $schoolId }
+  Add-File $healthOut $integrityWithHeader
 }
 catch {
   Add-File $healthOut "curl integrity probe failed."
@@ -264,8 +400,7 @@ $deployOut = Join-Path $pack "14_DEPLOY_PROD_RECENT.txt"
 Write-File $deployOut "Recent deploy-prod.yml runs (metadata only).`n"
 try {
   $env:GH_PAGER = "cat"
-  $runs = gh run list --repo tcmegahan/Crown2026 --workflow deploy-prod.yml --limit 20 `
-    --json databaseId, status, conclusion, headSha, createdAt, displayTitle --status completed 2>&1
+  $runs = gh run list --repo tcmegahan/Crown2026 --workflow deploy-prod.yml --limit 20 --status completed --json databaseId,status,conclusion,headSha,createdAt,updatedAt,displayTitle 2>&1
   Add-File $deployOut $runs
 }
 catch {
