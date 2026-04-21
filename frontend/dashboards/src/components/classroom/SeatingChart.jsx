@@ -11,13 +11,12 @@ export default function SeatingChart({ seatingChart, students }) {
   const layout = seatingChart?.layout || {};
   const rows = layout.rows || 0;
   const cols = layout.cols || 0;
-  const seats = layout.seats || [];
 
   const seatMap = React.useMemo(() => {
     const m = new Map();
-    seats.forEach((s) => m.set(`${s.r}:${s.c}`, s.student_id));
+    (layout.seats || []).forEach((s) => m.set(`${s.r}:${s.c}`, s.student_id));
     return m;
-  }, [seats]);
+  }, [layout.seats]);
 
   if (!rows || !cols) {
     return <Typography variant="body2" sx={{ opacity: 0.8 }}>No seating chart.</Typography>;

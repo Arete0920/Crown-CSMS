@@ -50,7 +50,76 @@ jobs:
         run: |
           ./tools/require_tag_input.ps1 -Tag "${{ github.ref_name }}"
 
-      - name: Azure Login
+      - name: "Guard: Azure auth secrets present"
+        id: auth_guard
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "$AZURE_CREDENTIALS" ]; then
+            echo "Using AZURE_CREDENTIALS service principal auth path."
+            export AZURE_CREDENTIALS
+            python3 - <<'PY'
+            import json
+            import os
+            import re
+            import sys
+
+            raw = os.environ.get("AZURE_CREDENTIALS", "")
+            try:
+              data = json.loads(raw)
+            except Exception:
+              print("ERROR: AZURE_CREDENTIALS is not valid JSON")
+              sys.exit(1)
+
+            required = ["clientId", "clientSecret", "tenantId", "subscriptionId"]
+            missing = [k for k in required if not str(data.get(k, "")).strip()]
+            if missing:
+              print(f"ERROR: AZURE_CREDENTIALS missing required keys: {', '.join(missing)}")
+              sys.exit(1)
+
+            guid_re = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+            for key in ("clientId", "tenantId", "subscriptionId"):
+              if not guid_re.match(str(data.get(key, ""))):
+                print(f"ERROR: AZURE_CREDENTIALS key '{key}' is not a valid GUID format")
+                sys.exit(1)
+            PY
+            echo "login_mode=sp" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          guid_re='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+          [ -n "$AZURE_CLIENT_ID" ] || { echo "ERROR: Missing required secret AZURE_CLIENT_ID"; exit 1; }
+          [ -n "$AZURE_TENANT_ID" ] || { echo "ERROR: Missing required secret AZURE_TENANT_ID"; exit 1; }
+          [ -n "$AZURE_SUBSCRIPTION_ID" ] || { echo "ERROR: Missing required secret AZURE_SUBSCRIPTION_ID"; exit 1; }
+          [[ "$AZURE_CLIENT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_CLIENT_ID is not a valid GUID format"; exit 1; }
+          [[ "$AZURE_TENANT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_TENANT_ID is not a valid GUID format"; exit 1; }
+          [[ "$AZURE_SUBSCRIPTION_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_SUBSCRIPTION_ID is not a valid GUID format"; exit 1; }
+          echo "login_mode=oidc" >> "$GITHUB_OUTPUT"
+          echo "oidc_subject=repo:${{ github.repository }}:environment:production" >> "$GITHUB_OUTPUT"
+
+      - name: "Guard: OIDC federation diagnostics"
+        if: steps.auth_guard.outputs.login_mode == 'oidc'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUBJECT="${{ steps.auth_guard.outputs.oidc_subject }}"
+          echo "OIDC subject used by this job: $SUBJECT"
+          echo "OIDC audience used by this job: api://AzureADTokenExchange"
+          echo "If Azure login fails with AADSTS700213, ensure Azure federated credential subject exactly matches this value."
+
+      - name: Azure Login (Service Principal JSON)
+        if: steps.auth_guard.outputs.login_mode == 'sp'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: steps.auth_guard.outputs.login_mode == 'oidc'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -90,6 +159,7 @@ jobs:
 
       - name: Verify AcrPull Identity (Guardrail)
         run: |
+          set -euo pipefail
           echo "Verifying Managed Identity has AcrPull on registry..."
           PRINCIPAL_ID=$(az webapp identity show -g ${{ env.RESOURCE_GROUP }} -n ${{ env.WEBAPP_NAME }} --query principalId -o tsv)
           ACR_ID=$(az acr show -n crownregistry --query id -o tsv)
@@ -97,7 +167,19 @@ jobs:
             echo "ERROR: App Service has no managed identity assigned"
             exit 1
           fi
-          if ! az role assignment list --assignee $PRINCIPAL_ID --scope $ACR_ID | grep -q AcrPull; then
+          HAS_ACRPULL=0
+          for attempt in 1 2 3; do
+            echo "Checking AcrPull assignment (attempt $attempt/3)..."
+            count=$(az role assignment list --assignee "$PRINCIPAL_ID" --scope "$ACR_ID" --query "[?roleDefinitionName=='AcrPull'] | length(@)" -o tsv 2>/dev/null || echo 0)
+            if [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
+              HAS_ACRPULL=1
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep 5
+            fi
+          done
+          if [ "$HAS_ACRPULL" -ne 1 ]; then
             echo "ERROR: Managed Identity does not have AcrPull role on ACR"
             echo "Principal: $PRINCIPAL_ID"
             echo "ACR: $ACR_ID"
@@ -162,12 +244,18 @@ jobs:
 
       - name: Preflight gate (Django deploy checks)
         run: |
-          export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          export DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')
+          export DATABASE_URL=sqlite:///./ci.sqlite3
           cd backend
           python manage.py check --deploy
 
       - name: Run tests
+        env:
+          DJANGO_SECRET_KEY: ${{ github.sha }}
+          DATABASE_URL: sqlite:///./ci.sqlite3
+          DJANGO_SETTINGS_MODULE: crown_api.settings
         run: |
+          cd backend
           python manage.py test \
             crown_api.tests.test_households_api \
             crown_api.tests.test_students_api \
@@ -179,14 +267,25 @@ jobs:
             crown_api.tests.test_comms_api \
             crown_api.tests.test_scheduling_api \
             -v 2
-          export DJANGO_SETTINGS_MODULE=crown_api.settings
           pytest --cov=. --cov-report=xml --ignore-glob='test_*.py'
 
       - name: Upload coverage
+        if: always() && hashFiles('backend/coverage.xml') != ''
+        continue-on-error: true
         uses: codecov/codecov-action@v3
         with:
-          files: ./coverage.xml
+          files: ./backend/coverage.xml
           flags: unittests
+
+      - name: Coverage artifact status
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ -f "backend/coverage.xml" ]; then
+            echo "Found backend/coverage.xml, upload step executed."
+          else
+            echo "No backend/coverage.xml found, coverage upload skipped by condition."
+          fi
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
@@ -194,12 +293,105 @@ jobs:
           app-name: ${{ env.WEBAPP_NAME }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
+      - name: Verify deployed build SHA and tenant-aware integrity
+        shell: pwsh
+        env:
+          PROD_BASE_URL: ${{ secrets.PROD_BASE_URL }}
+          PROBE_TENANT_ID: ${{ secrets.PROBE_TENANT_ID }}
+          EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $baseUrl = if ([string]::IsNullOrWhiteSpace($env:PROD_BASE_URL)) {
+            "https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+          } else {
+            $env:PROD_BASE_URL
+          }
+
+          function Get-Json([string]$Url, [hashtable]$Headers) {
+            $resp = Invoke-WebRequest -Uri $Url -Headers $Headers -UseBasicParsing
+            return ($resp.Content | ConvertFrom-Json)
+          }
+
+          function Test-ShaMatch([string]$Actual, [string]$Expected) {
+            if ([string]::IsNullOrWhiteSpace($Actual) -or [string]::IsNullOrWhiteSpace($Expected)) {
+              return $false
+            }
+
+            $a = $Actual.Trim().ToLowerInvariant()
+            $e = $Expected.Trim().ToLowerInvariant()
+
+            if ($a -eq $e) {
+              return $true
+            }
+
+            $aLen = [Math]::Min(7, $a.Length)
+            $eLen = [Math]::Min(7, $e.Length)
+            return $a.StartsWith($e.Substring(0, $eLen)) -or $e.StartsWith($a.Substring(0, $aLen))
+          }
+
+          $healthPath = "/api/health/"
+          $integrityPath = "/api/integrity/"
+
+          $maxAttempts = 20
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            try {
+              Write-Host "Verification attempt $attempt/$maxAttempts..."
+              $health = Get-Json "$baseUrl$healthPath" @{ Accept = "application/json" }
+              $actualSha = if ($null -ne $health.build_sha) { "$($health.build_sha)" } else { "" }
+
+              if (-not (Test-ShaMatch -Actual $actualSha -Expected $env:EXPECTED_SHA)) {
+                throw "build_sha mismatch. expected=$env:EXPECTED_SHA actual=$actualSha"
+              }
+
+              if ([string]::IsNullOrWhiteSpace($env:PROBE_TENANT_ID)) {
+                $integrity = Get-Json "$baseUrl$integrityPath" @{ Accept = "application/json" }
+                $code = if ($null -ne $integrity.code) { "$($integrity.code)".ToLowerInvariant() } else { "" }
+                if ($code -ne "missing_tenant") {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe without tenant header expected code=missing_tenant. Payload: $payload"
+                }
+              }
+              else {
+                $integrity = Get-Json "$baseUrl$integrityPath" @{
+                  Accept = "application/json"
+                  "X-School-Id" = $env:PROBE_TENANT_ID
+                }
+
+                $status =
+                  if ($null -ne $integrity.status) { "$($integrity.status)".ToLowerInvariant() }
+                  elseif ($null -ne $integrity.ok) { "$($integrity.ok)".ToLowerInvariant() }
+                  else { "" }
+
+                if ($status -notin @("ok", "true")) {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe did not return ok/true. Payload: $payload"
+                }
+              }
+
+              Write-Host "Post-deploy verification passed."
+              break
+            }
+            catch {
+              if ($attempt -eq $maxAttempts) {
+                throw
+              }
+              Write-Host "Verification attempt $attempt failed: $($_.Exception.Message)"
+              Start-Sleep -Seconds 15
+            }
+          }
+
       - name: Build allowed appsettings JSON
         shell: pwsh
         run: |
+          $appVersion = (Get-Content VERSION -Raw).Trim()
+          if ([string]::IsNullOrWhiteSpace($appVersion)) {
+            throw "VERSION file is empty; cannot set APP_VERSION app setting."
+          }
           $settings = @{
             "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
             "PROD_DEPLOY_TAG" = "${{ github.ref_name }}"
+            "APP_VERSION"     = $appVersion
             "RUN_MIGRATIONS"  = "true"
             "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
             "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
@@ -213,6 +405,7 @@ jobs:
           $allowed = @(
             "BUILD_SHA",
             "PROD_DEPLOY_TAG",
+            "APP_VERSION",
             "RUN_MIGRATIONS",
             "DEPLOY_RUN_ID",
             "DEPLOY_WORKFLOW"

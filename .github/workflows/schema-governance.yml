@@ -13,6 +13,8 @@ jobs:
   schema-governance:
     name: schema-governance
     runs-on: ubuntu-latest
+    env:
+      DJANGO_SECRET_KEY: ci-test-secret-key
     steps:
       - uses: actions/checkout@v4.1.1
 

@@ -2,18 +2,18 @@
 
 | Area | Count |
 |---|---:|
-| Total assets | 105875 |
+| Total assets | 106327 |
 | UI assets | 18924 |
 | API / route assets | 224 |
 | Model / service assets | 174 |
-| Test / CI / doc assets | 12077 |
-| TODO / FIXME / HACK / XXX hits | 14118 |
-| Placeholder / dummy / mock hits | 15794 |
-| Route risk hits | 15434 |
-| Workflow risk hits | 386 |
+| Test / CI / doc assets | 12081 |
+| TODO / FIXME / HACK / XXX hits | 14125 |
+| Placeholder / dummy / mock hits | 15807 |
+| Route risk hits | 15472 |
+| Workflow risk hits | 400 |
 | Doc claim risk hits | 2074 |
-| Proof PASS rows | 4 |
-| Proof FAIL rows | 3 |
+| Proof PASS rows | 11 |
+| Proof FAIL rows | 0 |
 
 ## Immediate Review Files
 - reports/MODULE_COMPLETION_MATRIX.csv

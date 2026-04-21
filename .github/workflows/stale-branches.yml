@@ -1,4 +1,7 @@
 name: Stale Branch Cleanup
+permissions:
+  contents: read
+
 
 # Runs weekly. Reports branches with no push activity for 60+ days.
 # Protected branch names and prefixes are excluded from reporting.

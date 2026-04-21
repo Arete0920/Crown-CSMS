@@ -1,16 +1,19 @@
 name: proof-ceremony-after-prod
+permissions:
+  contents: read
+  id-token: write
 
-# Phase 7C â€” Auto Proof Ceremony
+# Phase 7C— Auto Proof Ceremony
 #
 # Runs automatically after either prod deploy workflow succeeds.
 # Resolves the deployed tag from head_branch (tag-triggered deploys) or from
 # git tag --points-at head_sha (dispatch-triggered deploys where head_branch
 # is the source branch rather than the tag). Fails the run if no prod-deploy-*
-# tag can be resolved â€” this surfaces stale or tagless deploys immediately.
+# tag can be resolved — this surfaces stale or tagless deploys immediately.
 #
 # Secrets required:
-#   PROD_API_BASE  â€” e.g. https://crown-api-prod.azurewebsites.net
-#   PROD_DASH_BASE â€” e.g. https://crown-dash.azurewebsites.net  (optional; skip UI check if absent)
+#   PROD_API_BASE  — e.g. https://crown-api-prod.azurewebsites.net
+#   PROD_DASH_BASE — e.g. https://crown-dash.azurewebsites.net  (optional; skip UI check if absent)
 
 on:
   workflow_run:
@@ -21,7 +24,7 @@ on:
 
 jobs:
   proof:
-    name: "Auto proof â€” ${{ github.event.workflow_run.head_branch }}"
+    name: "Auto proof — ${{ github.event.workflow_run.head_branch }}"
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
@@ -48,7 +51,7 @@ jobs:
             DEPLOY_TAG="$HEAD_BRANCH"
             echo "Resolved from head_branch: $DEPLOY_TAG"
           else
-            # Dispatch deploys: head_branch is the source branch â€” resolve via SHA
+            # Dispatch deploys: head_branch is the source branch — resolve via SHA
             git fetch --tags --quiet
             DEPLOY_TAG="$(git tag --points-at "$HEAD_SHA" | grep '^prod-deploy-' | head -1 || true)"
             if [[ -z "$DEPLOY_TAG" ]]; then

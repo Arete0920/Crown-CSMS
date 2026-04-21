@@ -14,9 +14,9 @@ $Branch = "audit/pr-overlap-reconcile"
 $EnvironmentName = "production"
 $ProductionBaseUrl = "https://crown-api-prod.azurewebsites.net"
 
-$AZURE_CLIENT_ID = "1dfb6c55-c746-4761-9e48-bfe2511b8181"
-$AZURE_TENANT_ID = "08597807-7a79-490b-87e5-83ae3e9d4b15"
-$AZURE_SUBSCRIPTION_ID = "4ef0ba4b-4810-48d4-b3fe-953a9708953a"
+$AZURE_CLIENT_ID = "<your-azure-client-id>"
+$AZURE_TENANT_ID = "<your-azure-tenant-id>"
+$AZURE_SUBSCRIPTION_ID = "<your-azure-subscription-id>"
 
 # Name for the Entra federated credential record
 $FederatedCredentialName = "github-production-environment"

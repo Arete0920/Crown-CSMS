@@ -102,6 +102,7 @@ function Out-Artifact {
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $backend  = Join-Path $repoRoot "backend"
 $frontend = Join-Path $repoRoot "frontend\dashboards"
+. (Join-Path $repoRoot "scripts\Get-RequiredEnv.ps1")
 
 # Crown2026 venv is at REPO ROOT -- not inside backend/
 $py = Join-Path $repoRoot ".venv\Scripts\python.exe"
@@ -241,10 +242,10 @@ if (-not $NoSecrets) {
 
 # Set deterministic CI env vars
 $env:DJANGO_SETTINGS_MODULE = "crown_api.settings"
-$env:SECRET_KEY             = "ci-audit-not-a-real-secret"
+$env:SECRET_KEY             = Get-RequiredEnv "DJANGO_SECRET_KEY"
 $env:DEBUG                  = "0"
 $env:ALLOWED_HOSTS          = "localhost,127.0.0.1"
-$env:DATABASE_URL           = "sqlite:///./ci_audit.sqlite3"
+$env:DATABASE_URL           = Get-RequiredEnv "DATABASE_URL"
 
 Step "C1: Backend -- compile all Python (syntax check)" {
     $res = & $py -m compileall -q (Join-Path $repoRoot "backend") 2>&1

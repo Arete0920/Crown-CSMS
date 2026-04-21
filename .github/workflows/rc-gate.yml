@@ -1,4 +1,8 @@
 name: rc-gate
+permissions:
+  contents: read
+  id-token: write
+
 
 on:
   push:

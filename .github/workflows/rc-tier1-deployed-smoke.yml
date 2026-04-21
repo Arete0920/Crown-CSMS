@@ -1,4 +1,8 @@
 name: rc-tier1-deployed-smoke
+permissions:
+  contents: read
+  id-token: write
+
 
 on:
   workflow_dispatch:

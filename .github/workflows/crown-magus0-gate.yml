@@ -1,6 +1,8 @@
 name: crown-magus0-gate
+permissions:
+  contents: read
 
-# Crown Magus 0 â€” Trust-Nothing Audit Gate
+# Crown Magus 0— Trust-Nothing Audit Gate
 # Runs on every PR and every push to main.
 # Blocks merge on: compile errors, Django check failures, migration drift,
 #   tenant tripwire violations, URL collisions, secret pattern hits,
@@ -104,7 +106,7 @@ jobs:
 
           # Hard fail on CORS_ALLOW_ALL_ORIGINS = True
           if grep -qE "CORS_ALLOW_ALL_ORIGINS\s*=\s*True" "$SETTINGS_FILE"; then
-            echo "FAIL: CORS_ALLOW_ALL_ORIGINS = True in settings â€” hard security failure"
+            echo "FAIL: CORS_ALLOW_ALL_ORIGINS = True in settings — hard security failure"
             exit 1
           fi
           echo "PASS: CORS_ALLOW_ALL_ORIGINS safe"
@@ -132,7 +134,7 @@ jobs:
         with:
           fetch-depth: 0  # full history for git grep
 
-      - name: "B1: Secret pattern scan (metadata only â€” values not logged)"
+      - name: "B1: Secret pattern scan (metadata only — values not logged)"
         run: |
           FAIL=0
           declare -a PATTERNS=(
@@ -155,7 +157,7 @@ jobs:
               ':!.github/workflows/**' ':!tools/audit/**' \
               ':!scripts/README.md' 2>/dev/null || true)
             if [ -n "$HITS" ]; then
-              echo "::error::Secret pattern hit: $p â€” files: $HITS"
+              echo "::error::Secret pattern hit: $p — files: $HITS"
               FAIL=1
             fi
           done
@@ -167,7 +169,7 @@ jobs:
               ':!.github/workflows/**' ':!tools/audit/**' \
               ':!scripts/README.md' 2>/dev/null || true)
             if [ -n "$HITS" ]; then
-              echo "::error::Secret regex pattern hit: $p â€” in files: $HITS"
+              echo "::error::Secret regex pattern hit: $p — in files: $HITS"
               FAIL=1
             fi
           done
@@ -305,7 +307,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
-      - name: "C9: pytest â€” subscriptions + contracts + permissions"
+      - name: "C9: pytest — subscriptions + contracts + permissions"
         run: |
           python -m pytest \
             backend/subscriptions/tests/ \

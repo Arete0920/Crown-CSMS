@@ -1,4 +1,7 @@
 name: dashboards-build-gate
+permissions:
+  contents: read
+
 # No-op change to trigger required check context on backend-only PRs.
 
 on:

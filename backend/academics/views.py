@@ -548,7 +548,7 @@ class CurriculumSourceViewSet(PaginatedReadOnlyViewSet):
             name_query = Q()
             for term in search_terms:
                 name_query |= Q(name__icontains=term)
-            if name_query:
+            if name_query.children:
                 qs = qs.filter(name_query)
 
         supported_only = (self.request.query_params.get("supported_only") or "").strip().lower()

@@ -1,19 +1,24 @@
 
 Traceback (most recent call last):
-  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\manage.py", line 22, in <module>
+  File "/workspaces/Crown2026/backend/manage.py", line 22, in <module>
     main()
-  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\manage.py", line 11, in main
-    from django.core.management import execute_from_command_line
-  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\django\core\management\__init__.py", line 17, in <module>
-    from django.conf import settings
-  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\django\conf\__init__.py", line 19, in <module>
-    from django.utils.deprecation import RemovedInDjango60Warning
-  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\django\utils\deprecation.py", line 4, in <module>
-    from asgiref.sync import iscoroutinefunction, markcoroutinefunction, sync_to_async
-  File "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\asgiref\sync.py", line 1, in <module>
-    import asyncio
-  File "C:\Users\JMega\AppData\Local\Programs\Python\Python312\Lib\asyncio\__init__.py", line 43, in <module>
-    from .windows_events import *
-  File "C:\Users\JMega\AppData\Local\Programs\Python\Python312\Lib\asyncio\windows_events.py", line 8, in <module>
-    import _overlapped
-OSError: [WinError 10106] The requested service provider could not be loaded or initialized
+  File "/workspaces/Crown2026/backend/manage.py", line 18, in main
+    execute_from_command_line(sys.argv)
+  File "/workspaces/Crown2026/.venv/lib/python3.12/site-packages/django/core/management/__init__.py", line 442, in execute_from_command_line
+    utility.execute()
+  File "/workspaces/Crown2026/.venv/lib/python3.12/site-packages/django/core/management/__init__.py", line 416, in execute
+    django.setup()
+  File "/workspaces/Crown2026/.venv/lib/python3.12/site-packages/django/__init__.py", line 24, in setup
+    apps.populate(settings.INSTALLED_APPS)
+  File "/workspaces/Crown2026/.venv/lib/python3.12/site-packages/django/apps/registry.py", line 91, in populate
+    app_config = AppConfig.create(entry)
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspaces/Crown2026/.venv/lib/python3.12/site-packages/django/apps/config.py", line 193, in create
+    import_module(entry)
+  File "/home/codespace/.python/current/lib/python3.12/importlib/__init__.py", line 90, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1324, in _find_and_load_unlocked
+ModuleNotFoundError: No module named 'django_extensions'

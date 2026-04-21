@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD032 MD060 -->
+
 # Final Release Gate
 
 Generated: 2026-04-11

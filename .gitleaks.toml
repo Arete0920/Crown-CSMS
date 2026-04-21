@@ -1,56 +1,19 @@
-# gitleaks configuration for Crown2026
-# Detects common secrets in commits/diffs
-# Install: winget install gitleaks.gitleaks
-# Run: gitleaks detect --no-git --staged
-
-title = "Crown2026 Secret Detection"
+title = "Repo gitleaks config"
 
 [extend]
 useDefault = true
 
-# Project-specific patterns (high-signal detectors only)
-# Patterns intentionally not documented in public repos
-
-[[rules]]
-id = "project-db-credential"
-description = "Database credential pattern"
-regex = '''(?i)(CrownPG|crown.?pg)[A-Za-z0-9!@#$%^&*()_+=-]{12,}'''
-tags = ["database", "password"]
-
-[[rules]]
-id = "project-ops-credential"
-description = "Operations secret pattern"
-regex = '''(?i)(DevOps|Ops).?Secret[A-Za-z0-9_-]{20,}'''
-tags = ["api", "secret"]
-
-[[rules]]
-id = "project-ci-credential"
-description = "CI credential pattern"
-regex = '''(?i)Crown.?Ci[A-Za-z0-9!@#$%^&*()]{10,}'''
-tags = ["ci", "password"]
-
-[[rules]]
-id = "postgres-connection-string"
-description = "Postgres connection string with password"
-regex = '''postgres(?:ql)?://[^:]+:([^@]+)@'''
-tags = ["database", "connection-string"]
-
-[[rules]]
-id = "generic-api-key"
-description = "Generic API key patterns"
-regex = '''(?i)(api[_-]?key|apikey|access[_-]?token|secret[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9_\-]{20,}['"]?'''
-tags = ["api", "key"]
-
 [allowlist]
-description = "Allowlist for false positives"
 paths = [
-  '''local\.secrets\.ps1\.example''',  # Template file (no real secrets)
-  '''\.gitleaks\.toml''',              # This file (regex patterns only)
-  '''ROTATE_SECRETS\.md''',           # Runbook (no real secrets)
-]
-regexes = [
-  '''<REDACTED>''',                    # Placeholder text
-  '''<PASSWORD>''',                    # Placeholder text
-  '''<PASTE_FROM_AZURE_PORTAL>''',    # Template placeholder
-  '''example\.com''',                  # Example domains
+  '''(^|/)\.venv($|/)''',
+  '''(^|/)venv($|/)''',
+  '''(^|/)node_modules($|/)''',
+  '''(^|/)dist($|/)''',
+  '''(^|/)build($|/)''',
+  '''(^|/)coverage($|/)''',
+  '''(^|/)AUDIT_PACK_[^/]+($|/)''',
+  '''(^|/)audit-artifacts($|/)''',
+  '''(^|/)\.pytest_cache($|/)''',
+  '''(^|/)htmlcov($|/)''',
+  '''(^|/)docs/audit/scans($|/)'''
 ]

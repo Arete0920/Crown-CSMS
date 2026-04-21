@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD032 MD060 -->
+
 # Branch Protection Evidence
 
 Generated: 2026-04-11

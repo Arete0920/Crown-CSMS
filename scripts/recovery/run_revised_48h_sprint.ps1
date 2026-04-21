@@ -368,11 +368,15 @@ $tenantPytestFile = Join-Path $Artifacts "07_pytest_tenant.txt"
 $deploySubsetFile = Join-Path $Artifacts "08_deploy_subset_tests.txt"
 $localIntegrityShellFile = Join-Path $Artifacts "09_local_integrity_shell.txt"
 
-$EnvPrefix = 'set DJANGO_DEBUG=0 && set DJANGO_ENV=production && set CROWN_ENV=prod && set DJANGO_SECRET_KEY=schema-local-check-only && '
+if (-not $env:DJANGO_SECRET_KEY) {
+    $env:DJANGO_SECRET_KEY = [guid]::NewGuid().ToString("N")
+}
+
+$EnvPrefix = 'set DJANGO_DEBUG=0 && set DJANGO_ENV=production && set CROWN_ENV=prod && set DJANGO_SECRET_KEY=%DJANGO_SECRET_KEY% && '
 $djangoRes = Run-Cmd -Command ($EnvPrefix + "$Python backend\manage.py check") -OutFile $djangoCheckFile -WorkingDirectory $Worktree
 Add-Result "django_check" $(if ($djangoRes.ExitCode -eq 0) { "PASS" } else { "FAIL" })
 
-$LocalIntegrityEnvPrefix = "set DJANGO_DEBUG=0 && set DJANGO_SECRET_KEY=schema-local-check-only && set CROWN_ENV=local && "
+$LocalIntegrityEnvPrefix = "set DJANGO_DEBUG=0 && set DJANGO_SECRET_KEY=%DJANGO_SECRET_KEY% && set CROWN_ENV=local && "
 $localIntegrityCmd = $LocalIntegrityEnvPrefix + "$Python backend\manage.py shell -c ""from django.test import Client; c=Client(); r1=c.get('/api/integrity/', follow=True); print('NOHDR', r1.status_code); print(r1.content.decode()); r2=c.get('/api/integrity/', HTTP_X_CROWN_INTEGRITY_KEY='dummy', follow=True); print('HDR', r2.status_code); print(r2.content.decode())"""
 $localIntegrityRes = Run-Cmd -Command $localIntegrityCmd -OutFile $localIntegrityShellFile -WorkingDirectory $Worktree
 if (($localIntegrityRes.Output -join "`n") -notmatch 'NOHDR 200') { Fail-Step "Local integrity endpoint still not 200 without header" }

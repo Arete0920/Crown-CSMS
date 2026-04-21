@@ -1,4 +1,7 @@
 name: Phase3 Demo Proof Pack Gate
+permissions:
+  contents: read
+
 
 on:
   pull_request:
