@@ -1,6 +1,6 @@
 ﻿{
     "summary":  {
-                    "generated_at_utc":  "2026-04-21T05:14:59.9422682Z",
+                    "generated_at_utc":  "2026-04-21T11:30:56.9394005Z",
                     "repo_root":  "C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr",
                     "backend_root":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\backend",
                     "manage_py_exists":  true,
@@ -15,7 +15,7 @@
                     "backend_apps_with_tests":  58,
                     "backend_test_file_count":  222
                 },
-    "generated_at_utc":  "2026-04-21T05:14:59.9422682Z",
+    "generated_at_utc":  "2026-04-21T11:30:56.9394005Z",
     "app_inventory":  [
                           {
                               "module_name":  "academic_year_wizard",
@@ -406,7 +406,7 @@
                               "has_migrations":  true,
                               "has_tests_dir":  true,
                               "test_file_count":  111,
-                              "total_file_count":  436,
+                              "total_file_count":  438,
                               "last_commit_iso":  "2026-04-20T09:22:17Z"
                           },
                           {

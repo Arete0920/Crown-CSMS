@@ -1,15 +1,15 @@
 ﻿{
     "summary":  {
-                    "generated_at_utc":  "2026-04-21T05:19:59.0627183Z",
+                    "generated_at_utc":  "2026-04-21T11:32:24.5073094Z",
                     "node_available":  true,
                     "package_count":  1,
                     "packages_with_build":  1,
                     "build_attempt_count":  1,
                     "build_success_count":  1,
-                    "dashboard_file_count":  623,
-                    "route_file_count":  212,
+                    "dashboard_file_count":  625,
+                    "route_file_count":  213,
                     "component_file_count":  252,
-                    "portal_file_count":  48
+                    "portal_file_count":  49
                 },
     "builds":  [
                    {
@@ -20,7 +20,7 @@
                        "build_log_path":  "docs/release/live-audit/phase8/phase8_build_frontend_dashboards.txt"
                    }
                ],
-    "generated_at_utc":  "2026-04-21T05:19:59.0627183Z",
+    "generated_at_utc":  "2026-04-21T11:32:24.5073094Z",
     "packages":  [
                      {
                          "package_name":  "crown-dashboards",
@@ -2567,7 +2567,7 @@
                   {
                       "path":  "frontend/dashboards/src/pages/LoginPage.jsx",
                       "category":  "dashboard",
-                      "size_bytes":  15478
+                      "size_bytes":  19089
                   },
                   {
                       "path":  "frontend/dashboards/src/pages/MarketingDashboard.jsx",
@@ -2622,7 +2622,7 @@
                   {
                       "path":  "frontend/dashboards/src/pages/PDDashboard.jsx",
                       "category":  "dashboard",
-                      "size_bytes":  10693
+                      "size_bytes":  10838
                   },
                   {
                       "path":  "frontend/dashboards/src/pages/PortraitServiceHoursDashboard.jsx",
@@ -2667,7 +2667,7 @@
                   {
                       "path":  "frontend/dashboards/src/pages/RoleHomeRedirect.jsx",
                       "category":  "dashboard",
-                      "size_bytes":  5083
+                      "size_bytes":  5263
                   },
                   {
                       "path":  "frontend/dashboards/src/pages/RoomSetupWizard.jsx",
@@ -2862,7 +2862,7 @@
                   {
                       "path":  "frontend/dashboards/src/routes/router.jsx",
                       "category":  "dashboard",
-                      "size_bytes":  16697
+                      "size_bytes":  16487
                   },
                   {
                       "path":  "frontend/dashboards/src/routes/wizard-manifest.js",
@@ -3025,6 +3025,16 @@
                       "size_bytes":  4624
                   },
                   {
+                      "path":  "frontend/dashboards/tests/e2e/sandbox-admin-dashboard-cert.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  3346
+                  },
+                  {
+                      "path":  "frontend/dashboards/tests/e2e/sandbox-role-route-regression.spec.ts",
+                      "category":  "dashboard",
+                      "size_bytes":  3794
+                  },
+                  {
                       "path":  "frontend/dashboards/tests/ui/dashboard-proof.spec.ts",
                       "category":  "dashboard",
                       "size_bytes":  2454
@@ -3062,7 +3072,7 @@
                   {
                       "path":  "frontend/dashboards/tests/ui/nav-role-routing.spec.ts",
                       "category":  "dashboard",
-                      "size_bytes":  5047
+                      "size_bytes":  5670
                   },
                   {
                       "path":  "frontend/dashboards/tests/ui/parent-dashboard-v1.spec.ts",
@@ -3077,7 +3087,7 @@
                   {
                       "path":  "frontend/dashboards/tests/ui/role-dashboard-matrix-pack-3.spec.ts",
                       "category":  "dashboard",
-                      "size_bytes":  8343
+                      "size_bytes":  8855
                   },
                   {
                       "path":  "frontend/dashboards/tests/ui/role-dashboard-matrix.spec.ts",
@@ -3102,7 +3112,7 @@
                   {
                       "path":  "frontend/dashboards/tests/proof-smoke.spec.ts",
                       "category":  "dashboard",
-                      "size_bytes":  7298
+                      "size_bytes":  7506
                   },
                   {
                       "path":  "frontend/dashboards/tests/release-accessibility.spec.ts",
@@ -3112,7 +3122,7 @@
                   {
                       "path":  "frontend/dashboards/tests/release-auth-golden-path.spec.ts",
                       "category":  "dashboard",
-                      "size_bytes":  1008
+                      "size_bytes":  1051
                   },
                   {
                       "path":  "frontend/dashboards/tests/release-closeout-routes.spec.ts",
@@ -3132,7 +3142,7 @@
                   {
                       "path":  "frontend/dashboards/tests/wiring-proof.spec.ts",
                       "category":  "dashboard",
-                      "size_bytes":  2898
+                      "size_bytes":  3060
                   },
                   {
                       "path":  "frontend/dashboards/eslint.config.js",

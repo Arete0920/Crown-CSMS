@@ -1,6 +1,6 @@
 ﻿{
     "summary":  {
-                    "generated_at_utc":  "2026-04-21T05:15:51.0622335Z",
+                    "generated_at_utc":  "2026-04-21T11:31:40.2271403Z",
                     "module_count":  9,
                     "strong_count":  8,
                     "good_count":  1,
@@ -61,6 +61,18 @@
                       "path_type":  "release_doc",
                       "path":  "docs/release/BUYER_POSITIONING_NOTES.md",
                       "last_commit_iso":  "2026-04-03T17:38:43Z"
+                  },
+                  {
+                      "module_key":  "platform_core",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "platform_core",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "platform_core",
@@ -126,31 +138,31 @@
                       "module_key":  "platform_core",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "platform_core",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "platform_core",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "platform_core",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "platform_core",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "platform_core",
@@ -223,6 +235,12 @@
                       "path_type":  "release_doc",
                       "path":  "docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md",
                       "last_commit_iso":  "2026-04-14T01:44:23-04:00"
+                  },
+                  {
+                      "module_key":  "platform_core",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/PHASE2_REPORTING_EXPORT_TRANSCRIPT_REPAIR_BLOCK.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "platform_core",
@@ -563,6 +581,12 @@
                   {
                       "module_key":  "admissions_enrollment",
                       "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "admissions_enrollment",
+                      "path_type":  "release_doc",
                       "path":  "docs/release/CROWN_MARKET_DECISION_MATRIX.md",
                       "last_commit_iso":  "2026-04-14T01:46:45-04:00"
                   },
@@ -600,31 +624,31 @@
                       "module_key":  "admissions_enrollment",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "admissions_enrollment",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "admissions_enrollment",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "admissions_enrollment",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "admissions_enrollment",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "admissions_enrollment",
@@ -1049,6 +1073,12 @@
                   {
                       "module_key":  "finance_ledger",
                       "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "finance_ledger",
+                      "path_type":  "release_doc",
                       "path":  "docs/release/CROWN_MARKET_DECISION_MATRIX.md",
                       "last_commit_iso":  "2026-04-14T01:46:45-04:00"
                   },
@@ -1086,31 +1116,31 @@
                       "module_key":  "finance_ledger",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "finance_ledger",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "finance_ledger",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "finance_ledger",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "finance_ledger",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "finance_ledger",
@@ -1571,6 +1601,18 @@
                   {
                       "module_key":  "academics_gradebook",
                       "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "academics_gradebook",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "academics_gradebook",
+                      "path_type":  "release_doc",
                       "path":  "docs/release/CROWN_MARKET_DECISION_MATRIX.md",
                       "last_commit_iso":  "2026-04-14T01:46:45-04:00"
                   },
@@ -1608,31 +1650,31 @@
                       "module_key":  "academics_gradebook",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "academics_gradebook",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "academics_gradebook",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "academics_gradebook",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "academics_gradebook",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "academics_gradebook",
@@ -1699,6 +1741,12 @@
                       "path_type":  "release_doc",
                       "path":  "docs/release/MODULE_INVENTORY.md",
                       "last_commit_iso":  "2026-04-14T02:26:47-04:00"
+                  },
+                  {
+                      "module_key":  "academics_gradebook",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/PHASE2_REPORTING_EXPORT_TRANSCRIPT_REPAIR_BLOCK.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "academics_gradebook",
@@ -2081,8 +2129,26 @@
                   {
                       "module_key":  "dashboards_portals",
                       "path_type":  "release_doc",
+                      "path":  "docs/release/branch-protection-export.json",
+                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                  },
+                  {
+                      "module_key":  "dashboards_portals",
+                      "path_type":  "release_doc",
                       "path":  "docs/release/BUYER_POSITIONING_NOTES.md",
                       "last_commit_iso":  "2026-04-03T17:38:43Z"
+                  },
+                  {
+                      "module_key":  "dashboards_portals",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "dashboards_portals",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "dashboards_portals",
@@ -2136,13 +2202,13 @@
                       "module_key":  "dashboards_portals",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "dashboards_portals",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "dashboards_portals",
@@ -2178,25 +2244,25 @@
                       "module_key":  "dashboards_portals",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "dashboards_portals",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "dashboards_portals",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "dashboards_portals",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "dashboards_portals",
@@ -2269,6 +2335,12 @@
                       "path_type":  "release_doc",
                       "path":  "docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md",
                       "last_commit_iso":  "2026-04-14T01:44:23-04:00"
+                  },
+                  {
+                      "module_key":  "dashboards_portals",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/PHASE2_REPORTING_EXPORT_TRANSCRIPT_REPAIR_BLOCK.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "dashboards_portals",
@@ -2688,31 +2760,31 @@
                       "module_key":  "communications_discipline",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "communications_discipline",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "communications_discipline",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "communications_discipline",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "communications_discipline",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "communications_discipline",
@@ -3216,31 +3288,31 @@
                       "module_key":  "extended_operations",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "extended_operations",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "extended_operations",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "extended_operations",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "extended_operations",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "extended_operations",
@@ -3695,8 +3767,26 @@
                   {
                       "module_key":  "mission_addons",
                       "path_type":  "release_doc",
+                      "path":  "docs/release/branch-protection-export.json",
+                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                  },
+                  {
+                      "module_key":  "mission_addons",
+                      "path_type":  "release_doc",
                       "path":  "docs/release/BUYER_POSITIONING_NOTES.md",
                       "last_commit_iso":  "2026-04-03T17:38:43Z"
+                  },
+                  {
+                      "module_key":  "mission_addons",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "mission_addons",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "mission_addons",
@@ -3750,13 +3840,13 @@
                       "module_key":  "mission_addons",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "mission_addons",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "mission_addons",
@@ -3792,25 +3882,25 @@
                       "module_key":  "mission_addons",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "mission_addons",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "mission_addons",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "mission_addons",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "mission_addons",
@@ -3895,6 +3985,12 @@
                       "path_type":  "release_doc",
                       "path":  "docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md",
                       "last_commit_iso":  "2026-04-14T01:44:23-04:00"
+                  },
+                  {
+                      "module_key":  "mission_addons",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/PHASE2_REPORTING_EXPORT_TRANSCRIPT_REPAIR_BLOCK.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "mission_addons",
@@ -4289,6 +4385,12 @@
                   {
                       "module_key":  "release_controls",
                       "path_type":  "release_doc",
+                      "path":  "docs/release/branch-rulesets-export.json",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "release_controls",
+                      "path_type":  "release_doc",
                       "path":  "docs/release/BRANCH_PROTECTION_EVIDENCE.md",
                       "last_commit_iso":  "2026-04-19T00:53:56-04:00"
                   },
@@ -4303,6 +4405,18 @@
                       "path_type":  "release_doc",
                       "path":  "docs/release/BUYER_POSITIONING_NOTES.md",
                       "last_commit_iso":  "2026-04-03T17:38:43Z"
+                  },
+                  {
+                      "module_key":  "release_controls",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md",
+                      "last_commit_iso":  ""
+                  },
+                  {
+                      "module_key":  "release_controls",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "release_controls",
@@ -4410,13 +4524,13 @@
                       "module_key":  "release_controls",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "release_controls",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_BACKEND_VERIFICATION.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "release_controls",
@@ -4470,25 +4584,25 @@
                       "module_key":  "release_controls",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "release_controls",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_FRONTEND_DASHBOARD_PROOF.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "release_controls",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.json",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "release_controls",
                       "path_type":  "release_doc",
                       "path":  "docs/release/LIVE_MODULE_PROOF_MATRIX.md",
-                      "last_commit_iso":  "2026-04-11T08:25:37-04:00"
+                      "last_commit_iso":  "2026-04-21T01:35:28-04:00"
                   },
                   {
                       "module_key":  "release_controls",
@@ -4627,6 +4741,12 @@
                       "path_type":  "release_doc",
                       "path":  "docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md",
                       "last_commit_iso":  "2026-04-14T01:44:23-04:00"
+                  },
+                  {
+                      "module_key":  "release_controls",
+                      "path_type":  "release_doc",
+                      "path":  "docs/release/PHASE2_REPORTING_EXPORT_TRANSCRIPT_REPAIR_BLOCK.md",
+                      "last_commit_iso":  ""
                   },
                   {
                       "module_key":  "release_controls",
@@ -4959,7 +5079,7 @@
                       "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                   }
               ],
-    "generated_at_utc":  "2026-04-21T05:15:51.0622335Z",
+    "generated_at_utc":  "2026-04-21T11:31:40.2271403Z",
     "modules":  [
                     {
                         "module_key":  "platform_core",
@@ -4967,11 +5087,11 @@
                         "backend_path_count":  5,
                         "backend_test_count":  9,
                         "frontend_path_count":  2,
-                        "release_doc_hit_count":  44,
+                        "release_doc_hit_count":  47,
                         "workflow_hit_count":  32,
                         "proof_score":  100,
                         "proof_status":  "STRONG",
-                        "representative_paths":  "backend/core, backend/tenants, backend/platform_ops, backend/integrations, backend/notifications, frontend/src, frontend/dashboards, docs/release/AUDIT_PREREQUISITES.md, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md, docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md"
+                        "representative_paths":  "backend/core, backend/tenants, backend/platform_ops, backend/integrations, backend/notifications, frontend/src, frontend/dashboards, docs/release/AUDIT_PREREQUISITES.md, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md, docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md"
                     },
                     {
                         "module_key":  "admissions_enrollment",
@@ -4979,11 +5099,11 @@
                         "backend_path_count":  6,
                         "backend_test_count":  13,
                         "frontend_path_count":  2,
-                        "release_doc_hit_count":  26,
+                        "release_doc_hit_count":  27,
                         "workflow_hit_count":  42,
                         "proof_score":  100,
                         "proof_status":  "STRONG",
-                        "representative_paths":  "backend/admissions, backend/applications, backend/reenrollment, backend/guardian_household_wizard, backend/enrollment_conversion_wizard, backend/enrollment_period_wizard, frontend/src, frontend/dashboards, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md, docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md"
+                        "representative_paths":  "backend/admissions, backend/applications, backend/reenrollment, backend/guardian_household_wizard, backend/enrollment_conversion_wizard, backend/enrollment_period_wizard, frontend/src, frontend/dashboards, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md"
                     },
                     {
                         "module_key":  "finance_ledger",
@@ -4991,7 +5111,7 @@
                         "backend_path_count":  11,
                         "backend_test_count":  53,
                         "frontend_path_count":  2,
-                        "release_doc_hit_count":  28,
+                        "release_doc_hit_count":  29,
                         "workflow_hit_count":  41,
                         "proof_score":  100,
                         "proof_status":  "STRONG",
@@ -5003,7 +5123,7 @@
                         "backend_path_count":  16,
                         "backend_test_count":  47,
                         "frontend_path_count":  2,
-                        "release_doc_hit_count":  29,
+                        "release_doc_hit_count":  32,
                         "workflow_hit_count":  52,
                         "proof_score":  100,
                         "proof_status":  "STRONG",
@@ -5015,11 +5135,11 @@
                         "backend_path_count":  3,
                         "backend_test_count":  3,
                         "frontend_path_count":  2,
-                        "release_doc_hit_count":  40,
+                        "release_doc_hit_count":  44,
                         "workflow_hit_count":  51,
                         "proof_score":  100,
                         "proof_status":  "STRONG",
-                        "representative_paths":  "backend/student360, backend/parent360, backend/executive360, frontend/dashboards, frontend/src, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md, docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md, docs/release/CROWN_PACKAGING_TIER_CANON.md, docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md, docs/release/INVESTOR_DEMO_RUNBOOK.md"
+                        "representative_paths":  "backend/student360, backend/parent360, backend/executive360, frontend/dashboards, frontend/src, docs/release/branch-protection-export.json, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md, docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md, docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md"
                     },
                     {
                         "module_key":  "communications_discipline",
@@ -5051,11 +5171,11 @@
                         "backend_path_count":  6,
                         "backend_test_count":  15,
                         "frontend_path_count":  2,
-                        "release_doc_hit_count":  46,
+                        "release_doc_hit_count":  50,
                         "workflow_hit_count":  52,
                         "proof_score":  100,
                         "proof_status":  "STRONG",
-                        "representative_paths":  "backend/advancement, backend/board_oversight, backend/outreach, backend/pdhub, backend/servicehours, backend/spiritual_life, frontend/src, frontend/dashboards, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md, docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md"
+                        "representative_paths":  "backend/advancement, backend/board_oversight, backend/outreach, backend/pdhub, backend/servicehours, backend/spiritual_life, frontend/src, frontend/dashboards, docs/release/branch-protection-export.json, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md, docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md"
                     },
                     {
                         "module_key":  "release_controls",
@@ -5063,11 +5183,11 @@
                         "backend_path_count":  0,
                         "backend_test_count":  0,
                         "frontend_path_count":  0,
-                        "release_doc_hit_count":  81,
+                        "release_doc_hit_count":  85,
                         "workflow_hit_count":  32,
                         "proof_score":  100,
                         "proof_status":  "STRONG",
-                        "representative_paths":  "docs/release/AUDIT_PREREQUISITES.md, docs/release/BRANCH_PROTECTION_EVIDENCE.md, docs/release/BRANCH_PROTECTION_REQUIRED_CHECKS.md, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md, docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md, docs/release/CROWN_PACKAGING_TIER_CANON.md, docs/release/FINAL_15_PHASE_VERIFICATION.json, docs/release/FINAL_15_PHASE_VERIFICATION.md, docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md, docs/release/FINAL_RELEASE_GATE.md"
+                        "representative_paths":  "docs/release/AUDIT_PREREQUISITES.md, docs/release/branch-rulesets-export.json, docs/release/BRANCH_PROTECTION_EVIDENCE.md, docs/release/BRANCH_PROTECTION_REQUIRED_CHECKS.md, docs/release/BUYER_POSITIONING_NOTES.md, docs/release/CROWN2026_FINAL_RELEASE_SIGNOFF_TEMPLATE.md, docs/release/CROWN2026_RELEASE_CERTIFICATION_CHECKLIST.md, docs/release/CROWN_MARKET_DECISION_MATRIX.md, docs/release/CROWN_MASTER_BINDER.md, docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md, docs/release/CROWN_PACKAGING_TIER_CANON.md, docs/release/FINAL_15_PHASE_VERIFICATION.json"
                     }
                 ]
 }
