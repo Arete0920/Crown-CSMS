@@ -298,7 +298,8 @@ if (Test-Path $releaseRoot) {
 
         if (Test-Path $releaseInfo.SummaryFile) {
             $summaryText = Get-Content -Path $releaseInfo.SummaryFile -Raw
-            $finalMatch = [regex]::Match($summaryText, 'FINAL\s*=\s*(PASS|FAIL)', 'IgnoreCase')
+            # Accept both "FINAL: PASS" and "FINAL = PASS" summary styles.
+            $finalMatch = [regex]::Match($summaryText, 'FINAL\s*[:=]\s*(PASS|FAIL)', 'IgnoreCase')
             if ($finalMatch.Success) {
                 $releaseInfo.FinalStatus = $finalMatch.Groups[1].Value.ToUpperInvariant()
             }
