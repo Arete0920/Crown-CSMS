@@ -94,13 +94,36 @@ jobs:
 
           data = json.loads(body)
 
-          # Try common keys (adjust if your /api/health/ uses a different field name)
-          candidates = ["build_sha", "BUILD_SHA", "sha", "git_sha", "commit", "commit_sha"]
+          # Try common top-level keys first.
+          candidates = [
+            "build_sha", "BUILD_SHA", "sha", "git_sha", "commit", "commit_sha",
+            "build", "revision", "version", "release_sha"
+          ]
           found = None
           for k in candidates:
             if k in data and isinstance(data[k], str) and data[k].strip():
               found = data[k].strip()
               break
+
+          # Fallback: recursively scan nested objects for sha-like fields.
+          def walk(node):
+            if isinstance(node, dict):
+              for key, value in node.items():
+                key_l = str(key).lower()
+                if isinstance(value, str) and value.strip() and ("sha" in key_l or key_l in {"commit", "revision", "version"}):
+                  return value.strip()
+                child = walk(value)
+                if child:
+                  return child
+            elif isinstance(node, list):
+              for item in node:
+                child = walk(item)
+                if child:
+                  return child
+            return None
+
+          if not found:
+            found = walk(data)
 
           if not found:
             print("ERROR: Health JSON did not include a recognized SHA field.")
