@@ -88,7 +88,8 @@ try { Add-File (Join-Path $pack "00_OVERVIEW.txt") (git --no-pager log --oneline
 catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git log failed" }
 
 # 01 Tree (exclude big/generated dirs)
-$exclude = '[/\\](\.git|\.venv|venv|node_modules|dist|build|coverage)[/\\]'
+Add-File (Join-Path $pack "01_TREE.txt") "Repo tree (excluding .git, .venv, node_modules, dist/build/coverage):"
+$exclude = @('\\\.git\\', '\\\.venv\\', '\\venv\\', '\\node_modules\\', '\\dist\\', '\\build\\', '\\coverage\\')
 Get-ChildItem -Recurse -File | Where-Object {
   $_.FullName -notmatch $exclude
 } | Sort-Object FullName | ForEach-Object {
@@ -197,8 +198,26 @@ elseif (-not (Test-Path $bpMap)) {
 
 # 06 Backend URLs
 $urlsOut = Join-Path $pack "06_BACKEND_URLS.txt"
-if (-not $pythonExe) {
-  Write-File $urlsOut "No Python executable found (.venv/bin/python or .venv/Scripts/python.exe)."
+try {
+  $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
+  $env:SECRET_KEY = "audit-local-secret-key"
+  $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
+  $urlCmdOutput = & ".venv\Scripts\python.exe" backend/manage.py show_urls 2>&1 | Out-String
+  if ($urlCmdOutput -match "Unknown command:\s*'show_urls'" -or $urlCmdOutput -match "django-extensions") {
+    $fallbackOutput = & ".venv\Scripts\python.exe" backend/manage.py shell -c "from django.urls import get_resolver; print('\n'.join(sorted(str(p.pattern) for p in get_resolver().url_patterns)))" 2>&1 | Out-String
+    if ([string]::IsNullOrWhiteSpace($fallbackOutput)) {
+      Write-File $urlsOut "show_urls unavailable and fallback URL export produced no output."
+    }
+    else {
+      Write-File $urlsOut $fallbackOutput
+    }
+  }
+  elseif ([string]::IsNullOrWhiteSpace($urlCmdOutput)) {
+    Write-File $urlsOut "show_urls produced no output."
+  }
+  else {
+    Write-File $urlsOut $urlCmdOutput
+  }
 }
 else {
   try {
@@ -230,8 +249,11 @@ else {
 
 # 07 Migrations
 $migOut = Join-Path $pack "07_MIGRATIONS.txt"
-if (-not $pythonExe) {
-  Write-File $migOut "No Python executable found (.venv/bin/python or .venv/Scripts/python.exe)."
+try {
+  $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
+  $env:SECRET_KEY = "audit-local-secret-key"
+  $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
+  & ".\.venv\Scripts\python.exe" backend/manage.py showmigrations --list 2>&1 | Out-File $migOut -Encoding UTF8
 }
 else {
   try {
@@ -400,7 +422,8 @@ $deployOut = Join-Path $pack "14_DEPLOY_PROD_RECENT.txt"
 Write-File $deployOut "Recent deploy-prod.yml runs (metadata only).`n"
 try {
   $env:GH_PAGER = "cat"
-  $runs = gh run list --repo tcmegahan/Crown2026 --workflow deploy-prod.yml --limit 20 --status completed --json databaseId,status,conclusion,headSha,createdAt,updatedAt,displayTitle 2>&1
+  $runs = gh run list --repo tcmegahan/Crown2026 --workflow deploy-prod.yml --limit 20 `
+    --json databaseId, status, conclusion, headSha, createdAt, displayTitle --status completed 2>&1
   Add-File $deployOut $runs
 }
 catch {
