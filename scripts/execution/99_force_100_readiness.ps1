@@ -77,7 +77,17 @@ function Invoke-LoggedCommand {
             ""
         )
         $global:LASTEXITCODE = 0
-        & $Exe @CmdArgs *>&1 | Tee-Object -FilePath $logPath -Append | Out-Null
+        $oldEAP = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            & $Exe @CmdArgs *>&1 | Tee-Object -FilePath $logPath -Append | Out-Null
+        }
+        catch {
+            Add-Content -Path $logPath -Value ("[Invoke-LoggedCommand caught] " + $_.Exception.Message) -Encoding UTF8
+        }
+        finally {
+            $ErrorActionPreference = $oldEAP
+        }
         $exitCode = $LASTEXITCODE
         if ($null -eq $exitCode) { $exitCode = 0 }
 
