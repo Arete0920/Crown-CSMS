@@ -29,9 +29,9 @@ async function seedDemoSession(page, role: string) {
 //    Every role that maps to a persona dashboard must land there when hitting /.
 
 const REDIRECT_CASES = [
-  { role: IS_SANDBOX ? "school_admin" : "admin", expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/not-authorized" },
-  { role: "director",   expectPath: "/not-authorized" },
-  { role: "principal",  expectPath: "/not-authorized" },
+  { role: IS_SANDBOX ? "school_admin" : "admin", expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/admin" },
+  { role: "director",   expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/admin" },
+  { role: "principal",  expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/admin" },
   { role: "board",      expectPath: "/board"   },
   { role: "governor",   expectPath: "/board"   },
   { role: "finance",    expectPath: "/finance" },
