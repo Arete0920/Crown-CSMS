@@ -26,7 +26,19 @@ import { listStudentSubmissions, listTranscript, listStudents } from "../lib/aca
 function statusChip(status) {
   const s = (status || "").toLowerCase();
   if (s === "missing") return <Chip label="Missing" size="small" color="error" />;
-  if (s === "late") return <Chip label="Late" size="small" color="warning" />;
+  if (s === "late") {
+    return (
+      <Chip
+        label="Late"
+        size="small"
+        color="warning"
+        sx={{
+          "& .MuiChip-label": { color: "#4d3200", fontWeight: 600 },
+          bgcolor: "#f8d58a",
+        }}
+      />
+    );
+  }
   return <Chip label="OK" size="small" color="success" />;
 }
 

@@ -58,7 +58,7 @@
 .crown-alert {
   border: 1px solid rgba(255,93,93,0.35);
   background: rgba(255,93,93,0.10);
-  color: var(--crown-text, #e7eefc);
+  color: #6b1f1f;
   padding: 10px 12px;
   border-radius: 10px;
   margin: 10px 0;
@@ -68,6 +68,7 @@
 .crown-alert.success {
   border-color: rgba(78,225,138,0.40);
   background: rgba(78,225,138,0.09);
+  color: #14532d;
 }
 
 /* Table variants used inside wizard steps */

@@ -16,6 +16,15 @@ for (const route of routes) {
     if (serious.length > 0) {
       // Keep serious violations visible in CI logs while gating release on critical failures.
       console.warn(`[a11y][serious] ${route}: ${serious.length} serious violations`);
+      for (const v of serious) {
+        const targets = v.nodes.flatMap((n) => n.target || []).join(", ");
+        console.warn(`[a11y][serious] ${route} :: ${v.id} :: ${targets}`);
+        for (const n of v.nodes) {
+          if (n.failureSummary) {
+            console.warn(`[a11y][serious-detail] ${route} :: ${v.id} :: ${(n.target || []).join(' | ')} :: ${n.failureSummary.replace(/\s+/g, ' ').trim()}`);
+          }
+        }
+      }
     }
 
     expect(critical, `Critical accessibility violations on ${route}`).toEqual([]);

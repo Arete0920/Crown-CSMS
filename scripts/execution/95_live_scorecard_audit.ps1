@@ -1,0 +1,584 @@
+param(
+    [switch]$Deep
+)
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+function Invoke-Capture {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$WorkingDirectory,
+        [Parameter(Mandatory = $true)][string]$LogFile,
+        [Parameter(Mandatory = $true)][string]$Exe,
+        [string[]]$Args = @(),
+        [hashtable]$Env = @{}
+    )
+
+    $fullLog = Join-Path $script:OutDir $LogFile
+    $saved = @{}
+
+    foreach ($k in $Env.Keys) {
+        $saved[$k] = [Environment]::GetEnvironmentVariable($k, "Process")
+        [Environment]::SetEnvironmentVariable($k, [string]$Env[$k], "Process")
+    }
+
+    # If CI mode is requested, ensure port 4173 is free before starting
+    if ($Env.ContainsKey("CI")) {
+        Wait-Port4173Free
+    }
+
+    Push-Location $WorkingDirectory
+    try {
+        "=== $Name ===" | Set-Content -Path $fullLog -Encoding UTF8
+        "PWD: $(Get-Location)" | Add-Content -Path $fullLog -Encoding UTF8
+        "CMD: $Exe $($Args -join ' ')" | Add-Content -Path $fullLog -Encoding UTF8
+        "" | Add-Content -Path $fullLog -Encoding UTF8
+
+        $global:LASTEXITCODE = 0
+        try {
+            & $Exe @Args *>&1 | Tee-Object -FilePath $fullLog -Append | Out-Null
+            $exitCode = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+        } catch {
+            "ERROR: $_" | Add-Content -Path $fullLog -Encoding UTF8
+            $exitCode = 1
+        }
+
+        return [pscustomobject]@{
+            Name      = $Name
+            Passed    = ($exitCode -eq 0)
+            ExitCode  = $exitCode
+            LogFile   = $fullLog
+            LogRel    = $LogFile
+        }
+    }
+    finally {
+        Pop-Location
+        foreach ($k in $Env.Keys) {
+            [Environment]::SetEnvironmentVariable($k, $saved[$k], "Process")
+        }
+        # Kill any lingering preview server on port 4173 after CI suite completes
+        if ($Env.ContainsKey("CI")) {
+            $tcpConns = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue
+            foreach ($conn in $tcpConns) {
+                Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+}
+
+function Get-Score {
+    param([double]$Value)
+    return [math]::Round([math]::Max(0, [math]::Min(10, $Value)), 1)
+}
+
+function Get-StatusFromScore {
+    param([double]$Value)
+    if ($Value -ge 9.0) { return "Strong" }
+    if ($Value -ge 8.0) { return "Good" }
+    if ($Value -ge 7.0) { return "Mixed" }
+    return "Weak"
+}
+
+function Wait-Port4173Free {
+    # Kill any LISTEN process on 4173, then wait until the port is truly free
+    for ($i = 0; $i -lt 3; $i++) {
+        $netstatLines = (netstat -ano 2>$null) | Where-Object { $_ -match ":4173\s.*LISTENING" }
+        if (-not $netstatLines) { break }
+        foreach ($line in $netstatLines) {
+            $pidStr = ($line.Trim() -split '\s+')[-1]
+            if ($pidStr -match '^\d+$' -and $pidStr -ne '0') {
+                taskkill /F /PID $pidStr 2>$null | Out-Null
+            }
+        }
+        Start-Sleep -Seconds 2
+    }
+    # Wait up to 10s for port to clear (LISTEN state only)
+    $deadline = (Get-Date).AddSeconds(10)
+    while ((Get-Date) -lt $deadline) {
+        $still = (netstat -ano 2>$null) | Where-Object { $_ -match ":4173\s.*LISTENING" }
+        if (-not $still) { return }
+        Start-Sleep -Milliseconds 500
+    }
+}
+
+function Add-Note {
+    param(
+        [string[]]$Existing,
+        [string]$Text
+    )
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $Existing }
+    return @($Existing + $Text)
+}
+
+$repoRoot = (git rev-parse --show-toplevel).Trim()
+if ([string]::IsNullOrWhiteSpace($repoRoot)) {
+    throw "Not inside a git repository."
+}
+
+Set-Location $repoRoot
+
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$script:OutDir = Join-Path $repoRoot "audit-artifacts\live-scorecard\$timestamp"
+$latestDir = Join-Path $repoRoot "audit-artifacts\live-scorecard\latest"
+
+New-Item -ItemType Directory -Force -Path $script:OutDir | Out-Null
+New-Item -ItemType Directory -Force -Path $latestDir | Out-Null
+
+$repoState = [ordered]@{}
+$repoState.Branch = (git branch --show-current).Trim()
+$repoState.Head = (git rev-parse HEAD).Trim()
+$repoState.CommitCount = [int]((git rev-list --count HEAD).Trim())
+$repoState.StatusLines = @(git status --porcelain)
+$repoState.DirtyCount = @($repoState.StatusLines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count
+
+$trackedFiles = @(git ls-files)
+$tmpTrackedCount = @(
+    $trackedFiles | Where-Object {
+        $_ -match '(^|/)(_tmp_|tmp_|temp_|backup_|scratch_)' -or
+        $_ -match '(^|/).*\.tmp$'
+    }
+).Count
+
+$ghAvailable = $null -ne (Get-Command gh -ErrorAction SilentlyContinue)
+$github = [ordered]@{
+    Available = $ghAvailable
+    RepoSlug = $null
+    OpenPRCount = $null
+    OpenIssueCount = $null
+    OpenPRs = @()
+    OpenIssues = @()
+}
+
+if ($ghAvailable) {
+    try {
+        $github.RepoSlug = (gh repo view --json nameWithOwner --jq .nameWithOwner).Trim()
+    } catch {
+        $github.RepoSlug = $null
+    }
+
+    try {
+        $prJson = gh pr list --state open --limit 100 --json number,title,isDraft,mergeStateStatus,headRefName
+        if (-not [string]::IsNullOrWhiteSpace($prJson)) {
+            $github.OpenPRs = @($prJson | ConvertFrom-Json)
+            $github.OpenPRCount = $github.OpenPRs.Count
+        }
+    } catch {
+        $github.OpenPRCount = $null
+    }
+
+    try {
+        $issueJson = gh issue list --state open --limit 200 --json number,title
+        if (-not [string]::IsNullOrWhiteSpace($issueJson)) {
+            $github.OpenIssues = @($issueJson | ConvertFrom-Json)
+            $github.OpenIssueCount = $github.OpenIssues.Count
+        }
+    } catch {
+        $github.OpenIssueCount = $null
+    }
+}
+
+$frontendDir = Join-Path $repoRoot "frontend\dashboards"
+$backendDir = Join-Path $repoRoot "backend"
+
+# Ensure port 4173 is free before starting any Playwright/CI suites
+Wait-Port4173Free
+
+$results = @()
+
+if (Test-Path (Join-Path $frontendDir "package.json")) {
+    $results += Invoke-Capture -Name "frontend_check_shell_contracts" -WorkingDirectory $frontendDir -LogFile "frontend_check_shell_contracts.txt" -Exe "npm.cmd" -Args @("run", "check:shell-contracts")
+    $results += Invoke-Capture -Name "frontend_unit" -WorkingDirectory $frontendDir -LogFile "frontend_unit.txt" -Exe "npm.cmd" -Args @("run", "test:unit")
+
+    # Build once and start a single shared preview server for all Playwright suites.
+    # This avoids the Windows issue where per-suite CI builds leave orphaned node processes
+    # on port 4173, causing reuseExistingServer:false to reject subsequent suite startups.
+    $buildLog = Join-Path $script:OutDir "frontend_build.txt"
+    Push-Location $frontendDir
+    "=== frontend_build ===" | Set-Content -Path $buildLog -Encoding UTF8
+    try {
+        $global:LASTEXITCODE = 0
+        npm.cmd run build *>&1 | Tee-Object -FilePath $buildLog -Append | Out-Null
+        $buildExit = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+    } catch {
+        "ERROR: $_" | Add-Content -Path $buildLog -Encoding UTF8
+        $buildExit = 1
+    } finally {
+        Pop-Location
+    }
+
+    if ($buildExit -eq 0) {
+        # Ensure port is clear, then start the preview server as a background job
+        Wait-Port4173Free
+        $previewJob = Start-Job -ScriptBlock {
+            param($dir)
+            Set-Location $dir
+            npm.cmd run preview -- --port 4173 --strictPort 2>&1
+        } -ArgumentList $frontendDir
+
+        # Wait until port 4173 is accepting connections (up to 60s)
+        $ready = $false
+        $deadline = (Get-Date).AddSeconds(60)
+        while ((Get-Date) -lt $deadline) {
+            try {
+                $r = Invoke-WebRequest -Uri "http://localhost:4173" -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop
+                $ready = $true
+                break
+            } catch { Start-Sleep -Milliseconds 800 }
+        }
+
+        if ($ready) {
+            # All Playwright suites reuse the running preview server (no CI=1 means reuseExistingServer:true)
+            # VITE_DEV_BASE_URL is already the default; set retries via PLAYWRIGHT_RETRIES if needed
+            $results += Invoke-Capture -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -LogFile "frontend_release_a11y.txt" -Exe "npm.cmd" -Args @("run", "test:release:a11y") -Env @{ PLAYWRIGHT_RETRIES = "2" }
+            $results += Invoke-Capture -Name "frontend_nav"           -WorkingDirectory $frontendDir -LogFile "frontend_nav.txt"           -Exe "npm.cmd" -Args @("run", "ui:proof:nav")
+            $results += Invoke-Capture -Name "frontend_release_routes" -WorkingDirectory $frontendDir -LogFile "frontend_release_routes.txt" -Exe "npm.cmd" -Args @("run", "test:release:routes")
+
+            if ($Deep) {
+                $results += Invoke-Capture -Name "frontend_matrix_1" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_1.txt" -Exe "npm.cmd" -Args @("run", "ui:proof:matrix")
+                $results += Invoke-Capture -Name "frontend_matrix_2" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_2.txt" -Exe "npm.cmd" -Args @("run", "ui:proof:matrix-pack-2")
+                $results += Invoke-Capture -Name "frontend_matrix_3" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_3.txt" -Exe "npm.cmd" -Args @("run", "ui:proof:matrix-pack-3")
+            }
+        } else {
+            "Preview server did not become ready within 60s" | Set-Content -Path (Join-Path $script:OutDir "frontend_preview_timeout.txt") -Encoding UTF8
+            $results += [pscustomobject]@{ Name = "frontend_release_a11y"; Passed = $false; ExitCode = 1; LogFile = ""; LogRel = "" }
+            $results += [pscustomobject]@{ Name = "frontend_nav";           Passed = $false; ExitCode = 1; LogFile = ""; LogRel = "" }
+            $results += [pscustomobject]@{ Name = "frontend_release_routes"; Passed = $false; ExitCode = 1; LogFile = ""; LogRel = "" }
+        }
+
+        # Kill the preview server job and any leftover node process on port 4173
+        if ($previewJob) { Stop-Job $previewJob -ErrorAction SilentlyContinue; Remove-Job $previewJob -Force -ErrorAction SilentlyContinue }
+        Wait-Port4173Free
+    } else {
+        "Build failed (exit $buildExit) - skipping Playwright suites" | Set-Content -Path (Join-Path $script:OutDir "frontend_playwright_skipped.txt") -Encoding UTF8
+        $results += [pscustomobject]@{ Name = "frontend_release_a11y"; Passed = $false; ExitCode = 1; LogFile = ""; LogRel = "" }
+        $results += [pscustomobject]@{ Name = "frontend_nav";           Passed = $false; ExitCode = 1; LogFile = ""; LogRel = "" }
+        $results += [pscustomobject]@{ Name = "frontend_release_routes"; Passed = $false; ExitCode = 1; LogFile = ""; LogRel = "" }
+    }
+}
+
+if (Test-Path (Join-Path $repoRoot "backend\tests\test_reporting_exports_gate.py")) {
+    $results += Invoke-Capture -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -LogFile "backend_reporting_exports_gate.txt" -Exe "python" -Args @("-m", "pytest", "backend/tests/test_reporting_exports_gate.py", "-q")
+}
+
+if (Test-Path (Join-Path $repoRoot "backend\manage.py")) {
+    $results += Invoke-Capture -Name "backend_django_check" -WorkingDirectory (Join-Path $repoRoot "backend") -LogFile "backend_django_check.txt" -Exe "python" -Args @("manage.py", "check")
+}
+
+$releaseRoot = Join-Path $repoRoot "audit-artifacts\release-certification"
+$releaseInfo = [ordered]@{
+    Directory = $null
+    SummaryFile = $null
+    CsvFile = $null
+    FinalStatus = "UNKNOWN"
+    Green = $null
+    Amber = $null
+    Red = $null
+    PerformanceLane = $null
+}
+
+if (Test-Path $releaseRoot) {
+    $latestRelease = Get-ChildItem -Path $releaseRoot -Directory |
+        Where-Object { Test-Path (Join-Path $_.FullName "00_release_gate_results.csv") } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+
+    if ($null -ne $latestRelease) {
+        $releaseInfo.Directory = $latestRelease.FullName
+        $releaseInfo.CsvFile = Join-Path $latestRelease.FullName "00_release_gate_results.csv"
+        $releaseInfo.SummaryFile = Join-Path $latestRelease.FullName "SUMMARY.md"
+
+        $csv = Import-Csv -Path $releaseInfo.CsvFile
+        $statusColumn = @("Status", "status") | Where-Object { $csv[0].PSObject.Properties.Name -contains $_ } | Select-Object -First 1
+        if ($null -ne $statusColumn) {
+            $releaseInfo.Green = @($csv | Where-Object { $_.$statusColumn -match '^GREEN$' }).Count
+            $releaseInfo.Amber = @($csv | Where-Object { $_.$statusColumn -match '^AMBER$' }).Count
+            $releaseInfo.Red = @($csv | Where-Object { $_.$statusColumn -match '^RED$' }).Count
+        }
+
+        if (Test-Path $releaseInfo.SummaryFile) {
+            $summaryText = Get-Content -Path $releaseInfo.SummaryFile -Raw
+            $finalMatch = [regex]::Match($summaryText, 'FINAL\s*=\s*(PASS|FAIL)', 'IgnoreCase')
+            if ($finalMatch.Success) {
+                $releaseInfo.FinalStatus = $finalMatch.Groups[1].Value.ToUpperInvariant()
+            }
+
+            $perfBlock = [regex]::Match($summaryText, 'Performance/Resilience.*?(GREEN|AMBER|RED)', 'IgnoreCase,Singleline')
+            if ($perfBlock.Success) {
+                $releaseInfo.PerformanceLane = $perfBlock.Groups[1].Value.ToUpperInvariant()
+            }
+        }
+    }
+}
+
+function Find-Result {
+    param([string]$Name)
+    return $results | Where-Object { $_.Name -eq $Name } | Select-Object -First 1
+}
+
+$frontendScore = 10.0
+$frontendNotes = @()
+
+$frontendChecks = @(@(
+    Find-Result "frontend_check_shell_contracts",
+    Find-Result "frontend_unit",
+    Find-Result "frontend_release_a11y",
+    Find-Result "frontend_nav",
+    Find-Result "frontend_release_routes"
+) | Where-Object { $null -ne $_ })
+
+foreach ($r in $frontendChecks) {
+    if (-not $r.Passed) {
+        switch ($r.Name) {
+            "frontend_check_shell_contracts" { $frontendScore -= 2.0; $frontendNotes = Add-Note $frontendNotes "shell contracts failed" }
+            "frontend_unit"                  { $frontendScore -= 2.0; $frontendNotes = Add-Note $frontendNotes "unit tests failed" }
+            "frontend_release_a11y"         { $frontendScore -= 2.0; $frontendNotes = Add-Note $frontendNotes "release a11y failed" }
+            "frontend_nav"                  { $frontendScore -= 1.5; $frontendNotes = Add-Note $frontendNotes "nav proof failed" }
+            "frontend_release_routes"       { $frontendScore -= 1.5; $frontendNotes = Add-Note $frontendNotes "release routes failed" }
+        }
+    }
+}
+
+if ($Deep) {
+    foreach ($n in @("frontend_matrix_1", "frontend_matrix_2", "frontend_matrix_3")) {
+        $r = Find-Result $n
+        if ($null -ne $r -and -not $r.Passed) {
+            $frontendScore -= 0.8
+            $frontendNotes = Add-Note $frontendNotes "$n failed"
+        }
+    }
+}
+
+if ($frontendChecks.Count -gt 0 -and @($frontendChecks | Where-Object { $_.Passed }).Count -eq $frontendChecks.Count) {
+    $frontendNotes = Add-Note $frontendNotes "all high-signal frontend checks passed"
+}
+$frontendScore = Get-Score $frontendScore
+
+$backendScore = 10.0
+$backendNotes = @()
+$backendGate = Find-Result "backend_reporting_exports_gate"
+$backendDjango = Find-Result "backend_django_check"
+
+if ($null -ne $backendGate) {
+    if ($backendGate.Passed) {
+        $backendNotes = Add-Note $backendNotes "reporting/export/transcript gate passed"
+    } else {
+        $backendScore -= 3.0
+        $backendNotes = Add-Note $backendNotes "reporting/export/transcript gate failed"
+    }
+}
+if ($null -ne $backendDjango) {
+    if ($backendDjango.Passed) {
+        $backendNotes = Add-Note $backendNotes "django check passed"
+    } else {
+        $backendScore -= 1.5
+        $backendNotes = Add-Note $backendNotes "django check failed"
+    }
+}
+$backendScore = Get-Score $backendScore
+
+$releaseScore = 6.0
+$releaseNotes = @()
+if ($null -ne $releaseInfo.Green) {
+    if (($releaseInfo.Red -eq 0) -and ($releaseInfo.Amber -eq 0) -and ($releaseInfo.FinalStatus -eq "PASS")) {
+        $releaseScore = 10.0
+    } elseif (($releaseInfo.Red -eq 0) -and ($releaseInfo.Amber -eq 1)) {
+        $releaseScore = 8.8
+    } elseif (($releaseInfo.Red -eq 0) -and ($releaseInfo.Amber -eq 2)) {
+        $releaseScore = 7.8
+    } else {
+        $releaseScore = 5.5 - ($releaseInfo.Red * 1.0) - ($releaseInfo.Amber * 0.3)
+    }
+
+    $releaseNotes = Add-Note $releaseNotes "GREEN $($releaseInfo.Green) / AMBER $($releaseInfo.Amber) / RED $($releaseInfo.Red)"
+    if ($releaseInfo.FinalStatus -ne "UNKNOWN") {
+        $releaseNotes = Add-Note $releaseNotes "final $($releaseInfo.FinalStatus)"
+    }
+    if ($null -ne $releaseInfo.PerformanceLane) {
+        $releaseNotes = Add-Note $releaseNotes "performance lane $($releaseInfo.PerformanceLane)"
+    }
+}
+$releaseScore = Get-Score $releaseScore
+
+$repoScore = 9.5
+$repoNotes = @()
+if ($repoState.DirtyCount -gt 0) {
+    $repoScore -= [math]::Min(2.5, ($repoState.DirtyCount * 0.15))
+    $repoNotes = Add-Note $repoNotes "$($repoState.DirtyCount) dirty worktree entries"
+} else {
+    $repoNotes = Add-Note $repoNotes "clean worktree"
+}
+if ($tmpTrackedCount -gt 0) {
+    $repoScore -= [math]::Min(1.5, ($tmpTrackedCount * 0.1))
+    $repoNotes = Add-Note $repoNotes "$tmpTrackedCount tracked temp-like files"
+}
+if ($null -ne $github.OpenPRCount) {
+    if ($github.OpenPRCount -gt 1) {
+        $repoScore -= [math]::Min(1.5, ($github.OpenPRCount - 1) * 0.3)
+    }
+    $repoNotes = Add-Note $repoNotes "$($github.OpenPRCount) open PRs"
+}
+if ($null -ne $github.OpenIssueCount) {
+    $repoNotes = Add-Note $repoNotes "$($github.OpenIssueCount) open issues"
+}
+$repoScore = Get-Score $repoScore
+
+$governanceScore = 7.5
+$governanceNotes = @()
+foreach ($f in @(".github\CODEOWNERS", "SECURITY.md", "CONTRIBUTING.md", "README.md")) {
+    if (Test-Path (Join-Path $repoRoot $f)) {
+        $governanceScore += 0.5
+        $governanceNotes = Add-Note $governanceNotes "$f present"
+    } else {
+        $governanceNotes = Add-Note $governanceNotes "$f missing"
+    }
+}
+$governanceScore = Get-Score $governanceScore
+
+$overallScore = Get-Score (
+    ($releaseScore * 0.30) +
+    ($frontendScore * 0.20) +
+    ($backendScore * 0.20) +
+    ($repoScore * 0.15) +
+    ($governanceScore * 0.15)
+)
+
+$areas = @(
+    [pscustomobject]@{
+        Area   = "Release certification"
+        Score  = $releaseScore
+        Status = Get-StatusFromScore $releaseScore
+        Note   = ($releaseNotes -join "; ")
+    },
+    [pscustomobject]@{
+        Area   = "Frontend dashboard and wizard integrity"
+        Score  = $frontendScore
+        Status = Get-StatusFromScore $frontendScore
+        Note   = ($frontendNotes -join "; ")
+    },
+    [pscustomobject]@{
+        Area   = "Backend reporting exports transcripts"
+        Score  = $backendScore
+        Status = Get-StatusFromScore $backendScore
+        Note   = ($backendNotes -join "; ")
+    },
+    [pscustomobject]@{
+        Area   = "Repo hygiene and merge posture"
+        Score  = $repoScore
+        Status = Get-StatusFromScore $repoScore
+        Note   = ($repoNotes -join "; ")
+    },
+    [pscustomobject]@{
+        Area   = "Governance and controls"
+        Score  = $governanceScore
+        Status = Get-StatusFromScore $governanceScore
+        Note   = ($governanceNotes -join "; ")
+    }
+)
+
+$topBlockers = @()
+if ($releaseInfo.PerformanceLane -eq "AMBER") {
+    $topBlockers += "Performance/Resilience lane still AMBER"
+}
+if ($repoState.DirtyCount -gt 0) {
+    $topBlockers += "Worktree is dirty"
+}
+foreach ($r in $results | Where-Object { -not $_.Passed }) {
+    $topBlockers += "$($r.Name) failed"
+}
+if ($topBlockers.Count -eq 0) {
+    $topBlockers += "No immediate blockers detected in the executed audit scope"
+}
+
+$payload = [ordered]@{
+    generated_at = (Get-Date).ToString("s")
+    repo = [ordered]@{
+        root = $repoRoot
+        branch = $repoState.Branch
+        head = $repoState.Head
+        commit_count = $repoState.CommitCount
+        dirty_count = $repoState.DirtyCount
+        temp_like_tracked_files = $tmpTrackedCount
+    }
+    github = $github
+    release = $releaseInfo
+    checks = $results
+    scorecard = [ordered]@{
+        overall_score = $overallScore
+        areas = $areas
+        top_blockers = $topBlockers
+    }
+}
+
+$md = New-Object System.Collections.Generic.List[string]
+$md.Add("# Crown2026 Live Scorecard Audit")
+$md.Add("")
+$md.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
+$md.Add("- Repo: $repoRoot")
+$md.Add("- Branch: $($repoState.Branch)")
+$md.Add("- Head: $($repoState.Head)")
+$md.Add("- Commits: $($repoState.CommitCount)")
+$md.Add("- Dirty entries: $($repoState.DirtyCount)")
+if ($github.RepoSlug) { $md.Add("- GitHub repo: $($github.RepoSlug)") }
+if ($null -ne $github.OpenPRCount) { $md.Add("- Open PRs: $($github.OpenPRCount)") }
+if ($null -ne $github.OpenIssueCount) { $md.Add("- Open issues: $($github.OpenIssueCount)") }
+$md.Add("")
+$md.Add("## Overall")
+$md.Add("")
+$md.Add("- Overall score: **$overallScore / 10**")
+$md.Add("")
+$md.Add("## Scorecard")
+$md.Add("")
+$md.Add("| Area | Score | Status | Note |")
+$md.Add("|---|---:|---|---|")
+foreach ($a in $areas) {
+    $note = ($a.Note -replace '\|', '/')
+    $md.Add("| $($a.Area) | $($a.Score) | $($a.Status) | $note |")
+}
+$md.Add("")
+$md.Add("## Top blockers")
+$md.Add("")
+foreach ($b in $topBlockers) {
+    $md.Add("- $b")
+}
+$md.Add("")
+$md.Add("## Executed checks")
+$md.Add("")
+$md.Add("| Check | Passed | Exit | Log |")
+$md.Add("|---|---|---:|---|")
+foreach ($r in $results) {
+    $md.Add("| $($r.Name) | $($r.Passed) | $($r.ExitCode) | $($r.LogRel) |")
+}
+$md.Add("")
+$md.Add("## Release artifact source")
+$md.Add("")
+$md.Add("- Release dir: $($releaseInfo.Directory)")
+$md.Add("- Release summary: $($releaseInfo.SummaryFile)")
+$md.Add("- Release csv: $($releaseInfo.CsvFile)")
+
+$scorecardMd = Join-Path $script:OutDir "SCORECARD.md"
+$scorecardJson = Join-Path $script:OutDir "SCORECARD.json"
+$runSummary = Join-Path $script:OutDir "RUN_SUMMARY.txt"
+
+$md | Set-Content -Path $scorecardMd -Encoding UTF8
+($payload | ConvertTo-Json -Depth 8) | Set-Content -Path $scorecardJson -Encoding UTF8
+
+@(
+    "OVERALL SCORE: $overallScore / 10"
+    "BRANCH: $($repoState.Branch)"
+    "HEAD: $($repoState.Head)"
+    "DIRTY COUNT: $($repoState.DirtyCount)"
+    "OPEN PRs: $($github.OpenPRCount)"
+    "OPEN ISSUES: $($github.OpenIssueCount)"
+    "RELEASE: GREEN=$($releaseInfo.Green) AMBER=$($releaseInfo.Amber) RED=$($releaseInfo.Red) FINAL=$($releaseInfo.FinalStatus) PERF=$($releaseInfo.PerformanceLane)"
+    ""
+    "TOP BLOCKERS:"
+) + $topBlockers | Set-Content -Path $runSummary -Encoding UTF8
+
+Copy-Item -Path (Join-Path $script:OutDir "*") -Destination $latestDir -Recurse -Force
+
+Write-Host ""
+Write-Host "DONE"
+Write-Host "SCORECARD: $scorecardMd"
+Write-Host "JSON:      $scorecardJson"
+Write-Host "SUMMARY:   $runSummary"

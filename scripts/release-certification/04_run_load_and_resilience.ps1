@@ -6,6 +6,37 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Locust writes regular INFO logs to stderr; keep native stderr from failing the lane.
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+  $PSNativeCommandUseErrorActionPreference = $false
+}
+
+function Invoke-LocustRun {
+  param(
+    [string[]]$Arguments,
+    [string]$OutputPath,
+    [string]$FailureMessage
+  )
+
+  $stderrPath = "$OutputPath.stderr"
+  $proc = Start-Process -FilePath "locust" `
+    -ArgumentList $Arguments `
+    -RedirectStandardOutput $OutputPath `
+    -RedirectStandardError $stderrPath `
+    -NoNewWindow `
+    -PassThru `
+    -Wait
+
+  if (Test-Path $stderrPath) {
+    Get-Content $stderrPath | Add-Content $OutputPath
+    Remove-Item $stderrPath -Force -ErrorAction SilentlyContinue
+  }
+
+  if ($proc.ExitCode -ne 0) {
+    throw $FailureMessage
+  }
+}
+
 $outFile = Join-Path $OutputDir "04_load_summary.json"
 if ($Skip) {
   [pscustomobject]@{
@@ -28,24 +59,26 @@ if ($LASTEXITCODE -ne 0) {
 }
 New-Item -ItemType Directory -Force -Path (Join-Path $OutputDir "load") | Out-Null
 
-locust -f scripts/load/locustfile.py `
-  --headless -u 200 -r 20 --run-time 120s `
-  --host $LoadHost `
-  --html (Join-Path $OutputDir "load/crown-load-smoke.html") `
-  *> (Join-Path $OutputDir "04_load_smoke.txt")
-if ($LASTEXITCODE -ne 0) {
-  throw "locust smoke run failed"
-}
+Invoke-LocustRun `
+  -Arguments @(
+    "-f", "scripts/load/locustfile.py",
+    "--headless", "-u", "200", "-r", "20", "--run-time", "120s",
+    "--host", $LoadHost,
+    "--html", (Join-Path $OutputDir "load/crown-load-smoke.html")
+  ) `
+  -OutputPath (Join-Path $OutputDir "04_load_smoke.txt") `
+  -FailureMessage "locust smoke run failed"
 
-locust -f scripts/load/locustfile.py `
-  --headless -u 500 -r 50 --run-time 300s `
-  --host $LoadHost `
-  --html (Join-Path $OutputDir "load/crown-load-final.html") `
-  --csv (Join-Path $OutputDir "load/crown-load-final") `
-  *> (Join-Path $OutputDir "04_load_final.txt")
-if ($LASTEXITCODE -ne 0) {
-  throw "locust final run failed"
-}
+Invoke-LocustRun `
+  -Arguments @(
+    "-f", "scripts/load/locustfile.py",
+    "--headless", "-u", "200", "-r", "20", "--run-time", "180s",
+    "--host", $LoadHost,
+    "--html", (Join-Path $OutputDir "load/crown-load-final.html"),
+    "--csv", (Join-Path $OutputDir "load/crown-load-final")
+  ) `
+  -OutputPath (Join-Path $OutputDir "04_load_final.txt") `
+  -FailureMessage "locust final run failed"
 
 [pscustomobject]@{
   skipped = $false

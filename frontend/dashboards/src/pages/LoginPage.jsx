@@ -432,7 +432,7 @@ export default function LoginPage() {
 
         .lp-prompt {
           font-size: 13.5px;
-          color: #6C88A2;
+          color: #2f4358;
           font-weight: 400;
           margin-bottom: 22px;
         }
@@ -468,7 +468,7 @@ export default function LoginPage() {
 
         .lp-sep-text {
           font-size: 11px;
-          color: #9AAFC5;
+          color: #3d5268;
           font-weight: 500;
           white-space: nowrap;
         }
@@ -502,7 +502,7 @@ export default function LoginPage() {
 
         .lp-foot {
           font-size: 11px;
-          color: #9AAFC5;
+          color: #3d5268;
           text-align: center;
           line-height: 1.55;
         }
