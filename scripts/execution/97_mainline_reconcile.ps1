@@ -169,7 +169,7 @@ $repoSlug = (& gh repo view --json nameWithOwner --jq .nameWithOwner).Trim()
 $currentBranch = (git branch --show-current).Trim()
 $currentHead = (git rev-parse HEAD).Trim()
 
-git fetch --all --prune | Out-Null
+git fetch --all | Out-Null
 
 git show-ref --verify --quiet refs/heads/main
 $mainExists = $LASTEXITCODE
