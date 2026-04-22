@@ -1,4 +1,4 @@
-COMMAND: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Scripts\python.exe backend/manage.py showmigrations
+﻿COMMAND: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Scripts\python.exe backend/manage.py showmigrations
 WORKDIR: C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr
 EXIT_CODE: 0
 academic_year_wizard
@@ -196,7 +196,7 @@ pdhub
 platform_ops
  [X] 0001_initial
 portrait
- [X] 0001_initial
+ (no migrations)
 promotion_wizard
  [X] 0001_initial
 reenrollment
@@ -233,7 +233,7 @@ student360
 student_import_wizard
  [X] 0001_initial
 student_records
- [X] 0001_initial
+ (no migrations)
 subscriptions
  [X] 0001_initial
  [X] 0002_remove_tenant_subscription_school_id_unique
@@ -246,3 +246,4 @@ term_structure_wizard
  [X] 0001_initial
 transportation
  [X] 0001_initial
+

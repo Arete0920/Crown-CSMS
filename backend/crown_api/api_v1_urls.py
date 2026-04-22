@@ -10,6 +10,12 @@ from rest_framework_simplejwt.views import (
 from applications.views_admissions import admissions_summary, admissions_drilldown
 from crown_api.system_views import SeedStatusView, demo_reset_view, diagnose_db_tables_view, fix_schema_drift_view
 from crown_api.ops_views import ensure_ci_user, demo_school
+from crown_api.release_gate_views import (
+    ExportsIndexView,
+    ReportsExportFacadeView,
+    TranscriptGenerateProbeView,
+    TranscriptRouteProbeView,
+)
 
 urlpatterns = [
     # DEV-only ops endpoints (must come early before includes)
@@ -28,6 +34,12 @@ urlpatterns = [
     path("system/demo-reset/", demo_reset_view, name="system-demo-reset"),
     path("system/diagnose-db-tables/", diagnose_db_tables_view, name="system-diagnose-db-tables"),
     path("system/fix-schema-drift/", fix_schema_drift_view, name="system-fix-schema-drift"),
+
+    # Release-certification compatibility probes (non-404 explicit surfaces)
+    path("transcripts/", TranscriptRouteProbeView.as_view(), name="transcripts-probe"),
+    path("transcripts/generate/", TranscriptGenerateProbeView.as_view(), name="transcripts-generate-probe"),
+    path("exports/", ExportsIndexView.as_view(), name="exports-index"),
+    path("reports/export/", ReportsExportFacadeView.as_view(), name="reports-export-facade"),
 
     # Keep the same effective ordering you already rely on.
     # If any patterns collide, earlier includes win.

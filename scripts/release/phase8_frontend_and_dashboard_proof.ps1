@@ -137,7 +137,8 @@ foreach ($pkg in $packageFiles) {
     if (-not $SkipBuild -and $hasBuild) {
         $safeDirName = ((Get-RepoRelativePath -FullPath $pkgDir -RepoRoot $script:RepoRoot) -replace '[^A-Za-z0-9\-_]', '_')
         $buildLog = Join-Path $outDir ("phase8_build_{0}.txt" -f $safeDirName)
-        $result = Invoke-ExternalCapture -FilePath $buildLog -Exe "npm" -Args @("run", "--if-present", "build") -WorkingDirectory $pkgDir
+        $npmExe = if ($env:OS -eq 'Windows_NT') { "npm.cmd" } else { "npm" }
+        $result = Invoke-ExternalCapture -FilePath $buildLog -Exe $npmExe -Args @("run", "build") -WorkingDirectory $pkgDir
         $buildRows.Add([pscustomobject]@{
             package_name    = $packageName
             package_dir     = Get-RepoRelativePath -FullPath $pkgDir -RepoRoot $script:RepoRoot

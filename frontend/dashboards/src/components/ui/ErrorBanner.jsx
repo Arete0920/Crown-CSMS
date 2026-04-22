@@ -3,7 +3,16 @@ export default function ErrorBanner({ title = "Something went wrong", message, c
   if (!message) return null;
 
   return (
-    <div className="crown-alert crown-alert-danger" role="alert" style={{ marginBottom: 12 }}>
+    <div
+      className="crown-alert crown-alert-danger"
+      role="alert"
+      style={{
+        marginBottom: 12,
+        background: "#fde8e8",
+        border: "1px solid #dc2626",
+        color: "#4a1111",
+      }}
+    >
       <div style={{ fontWeight: 700, marginBottom: 6 }}>{title}</div>
       <div style={{ whiteSpace: "pre-wrap" }}>{message}</div>
       {correlationId ? (

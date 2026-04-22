@@ -138,7 +138,11 @@ export default function StudentDashboard() {
 
       <DashboardSection title="Quick Links">
         <CrownGrid>
-          <Col span={12}><a href="/gradebook">Open Gradebook</a></Col>
+          <Col span={12}>
+            <a href="/gradebook" style={{ color: "#f8fafc", background: "#0f2c4c", padding: "4px 10px", borderRadius: 6, display: "inline-block", fontWeight: 700 }}>
+              Open Gradebook
+            </a>
+          </Col>
         </CrownGrid>
       </DashboardSection>
     </CrownLayout>

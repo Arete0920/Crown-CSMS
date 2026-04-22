@@ -1,4 +1,5 @@
-COMMAND: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Scripts\python.exe --version
+﻿COMMAND: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Scripts\python.exe --version
 WORKDIR: C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr
 EXIT_CODE: 0
 Python 3.12.10
+

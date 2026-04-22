@@ -277,7 +277,17 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
                   {isLast ? (
                     <span>{crumb.label}</span>
                   ) : (
-                    <a href={crumb.href}>{crumb.label}</a>
+                    <a
+                      href={crumb.href}
+                      style={{
+                        color: "#f5d27f",
+                        fontWeight: 700,
+                        textDecoration: "underline",
+                        textUnderlineOffset: "2px",
+                      }}
+                    >
+                      {crumb.label}
+                    </a>
                   )}
                   {!isLast ? <span className="crown-breadcrumb-sep">/</span> : null}
                 </span>

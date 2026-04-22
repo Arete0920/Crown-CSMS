@@ -35,6 +35,7 @@ class TenantHeaderRequiredMiddleware:
         "/api/v1/health",
         "/api/v1/system/health",
         "/api/integrity",
+        "/api/v1/integrity",
         "/api/ops",
         "/api/system/",
         "/api/auth",
@@ -68,14 +69,15 @@ class TenantHeaderRequiredMiddleware:
                 return self.get_response(request)
 
             path = getattr(request, "path", "") or ""
+            normalized_path = path.rstrip("/") or "/"
 
             # Only enforce on /api/* paths
-            if not path.startswith("/api/"):
+            if not normalized_path.startswith("/api/"):
                 return self.get_response(request)
 
             # Exempt auth, health, schema, docs
             for prefix in self.EXEMPT_PREFIXES:
-                if path.startswith(prefix):
+                if normalized_path.startswith(prefix):
                     # Preserve header validation semantics when callers explicitly
                     # provide X-School-Id on exempt routes.
                     resolved = resolve_tenant_school_id(request)
