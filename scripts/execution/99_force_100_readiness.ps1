@@ -305,13 +305,17 @@ $runs = Invoke-GhJson -GhArgs @(
     "--json","databaseId,workflowName,status,conclusion,createdAt,url,displayTitle,event"
 )
 
-$failedBefore = @(
+$latestPerWorkflow = @(
     $runs |
-    Where-Object {
-        $_.status -eq "completed" -and $_.conclusion -in @("failure","cancelled","timed_out","action_required","startup_failure")
-    } |
     Group-Object workflowName |
     ForEach-Object { $_.Group | Sort-Object createdAt -Descending | Select-Object -First 1 }
+)
+
+$failedBefore = @(
+    $latestPerWorkflow |
+    Where-Object {
+        $_.status -eq "completed" -and $_.conclusion -in @("failure","cancelled","timed_out","action_required","startup_failure")
+    }
 )
 
 Write-CsvSafe -Path (Join-Path $script:OutDir "20_failed_runs_before.csv") -Rows $failedBefore
