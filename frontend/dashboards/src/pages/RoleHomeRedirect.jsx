@@ -145,7 +145,7 @@ export default function RoleHomeRedirect() {
   const token = getAccessToken();
 
   // Hard redirect for sandbox admins
-  const isSandbox = Boolean(import.meta.env.VITE_SANDBOX_MODE === "1");
+  const isSandbox = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
   const role = getStoredRole();
   useEffect(() => {
     if (isSandbox && role === "school_admin") navigate("/school-admin-dashboard");
