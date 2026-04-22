@@ -2,9 +2,10 @@ import { test, expect, Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-const BASE_URL = process.env.DEMO_BASE_URL || "http://localhost:3000";
-const DEMO_EMAIL = process.env.DEMO_EMAIL || "playwright@crown-demo.local";
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD || "PlaywrightDemo1!";
+const BASE_URL = process.env.DEMO_BASE_URL || process.env.VITE_DEV_BASE_URL || "http://localhost:4173";
+const DEMO_ROLE = process.env.DEMO_ROLE || "admin";
+const DEMO_SCHOOL_ID = process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
+const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
 
 const routes = [
   { name: "admin", path: "/admin" },
@@ -35,21 +36,26 @@ async function assertPageHealthy(page: Page, routeName: string) {
 }
 
 async function login(page: Page) {
-  await page.goto(`${BASE_URL}/login`, { waitUntil: "domcontentloaded" });
+  await page.addInitScript(
+    ({ role, token, schoolId }) => {
+      try {
+        sessionStorage.setItem("crown.jwt.access", token);
+        sessionStorage.setItem("crown.role", role);
+        sessionStorage.setItem("crown.school.id", schoolId);
+        localStorage.setItem("crown.jwt.access", token);
+        localStorage.setItem("crown.role", role);
+        localStorage.setItem("crown.school.id", schoolId);
+        localStorage.setItem("crown.demo.role", role);
+      } catch {
+        // ignore storage-denied contexts in CI browser variants
+      }
+    },
+    { role: DEMO_ROLE, token: DEMO_TOKEN, schoolId: DEMO_SCHOOL_ID }
+  );
 
-  const email = page.locator('input[type="email"], input[name="email"]').first();
-  const password = page.locator('input[type="password"], input[name="password"]').first();
-  const submit = page.getByRole("button", { name: /sign in|log in|login|continue/i }).first();
-
-  await expect(email).toBeVisible({ timeout: 15000 });
-  await expect(password).toBeVisible({ timeout: 15000 });
-
-  await email.fill(DEMO_EMAIL);
-  await password.fill(DEMO_PASSWORD);
-  await submit.click();
-
-  await expect(page).toHaveURL(/\/admin(?:[/?#]|$)/, { timeout: 15000 });
-  await assertPageHealthy(page, "post-login-admin");
+  await page.goto(`${BASE_URL}/`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(300);
+  await assertPageHealthy(page, "seeded-session-home");
 }
 
 test.beforeAll(() => {

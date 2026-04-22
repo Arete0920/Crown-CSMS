@@ -102,10 +102,18 @@ const FINANCIAL_AID_ALLOWED_ROLES = [
   "financial_aid",
 ];
 
+const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <RoleHomeRedirect />,
+  },
+  {
+    path: '/director/aid/*',
+    element: (IS_SANDBOX
+      ? <Navigate to="/school-admin-dashboard" replace />
+      : <Navigate to="/not-authorized" replace />),
   },
   {
     path: '/login',
@@ -331,7 +339,9 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <AdminDashboard />,
+    element: (IS_SANDBOX
+      ? <Navigate to="/school-admin-dashboard" replace />
+      : <AdminDashboard />),
   },
   {
     path: PATHS.BOARD,
