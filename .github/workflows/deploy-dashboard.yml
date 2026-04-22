@@ -3,7 +3,7 @@ permissions:
   contents: read
   id-token: write
 
-# Phase 8— Frontend proof leg.
+# Phase 8 Frontend proof leg.
 #
 # Triggers on the same prod-deploy-* tags as the backend deploy so both
 # services are stamped from the same SHA and tag on every production push.
@@ -13,12 +13,12 @@ permissions:
 #     and tag name at build time, then shipped inside dist/ to Azure SWA
 #   - After this workflow succeeds, proof-ceremony-after-prod.yml will fetch
 #     $PROD_DASH_BASE/build.json and assert build_sha and deploy_tag match the
-#     backend health response — completing the "both proved" chain
+#     backend health response  completing the "both proved" chain
 #
 # Secrets required:
-#   AZURE_SWA_TOKEN — deployment token from the Azure Static Web Apps resource
-#                     (Portal â†’ SWA resource â†’ Settings â†’ Deployment token)
-#   PROD_DASH_BASE  — set this after confirming the SWA URL, e.g.
+#   AZURE_SWA_TOKEN  deployment token from the Azure Static Web Apps resource
+#                     (Portal  SWA resource  Settings  Deployment token)
+#   PROD_DASH_BASE   set this after confirming the SWA URL, e.g.
 #                     https://crown-dash.azurestaticapps.net
 
 on:
@@ -30,13 +30,9 @@ concurrency:
   group: crown-dashboard-prod-deploy
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  id-token: write
-
 jobs:
   build-and-deploy:
-    name: "Build + deploy dashboard — ${{ github.ref_name }}"
+    name: "Build + deploy dashboard  ${{ github.ref_name }}"
     runs-on: ubuntu-latest
 
     steps:
@@ -64,7 +60,7 @@ jobs:
 
           echo "DEPLOY_SHA=$SHA"  >> "$GITHUB_ENV"
           echo "DEPLOY_TAG=$TAG"  >> "$GITHUB_ENV"
-          echo "âœ“ Deploy contract: TAG=$TAG SHA=${SHA:0:7}"
+          echo " Deploy contract: TAG=$TAG SHA=${SHA:0:7}"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -102,7 +98,7 @@ jobs:
           set -euo pipefail
           FILE="frontend/dashboards/dist/build.json"
           if [[ ! -f "$FILE" ]]; then
-            echo "ERROR: dist/build.json not found — Vite did not copy public/build.json"
+            echo "ERROR: dist/build.json not found  Vite did not copy public/build.json"
             exit 1
           fi
           echo "dist/build.json contents:"

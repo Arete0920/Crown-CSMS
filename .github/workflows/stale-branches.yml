@@ -11,9 +11,6 @@ on:
     - cron: "0 9 * * 1" # Every Monday at 09:00 UTC
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   report-stale-branches:
     name: Report stale branches (no push in 60 days)
