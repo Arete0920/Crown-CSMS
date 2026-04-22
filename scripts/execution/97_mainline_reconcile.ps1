@@ -169,18 +169,8 @@ $repoSlug = (& gh repo view --json nameWithOwner --jq .nameWithOwner).Trim()
 $currentBranch = (git branch --show-current).Trim()
 $currentHead = (git rev-parse HEAD).Trim()
 
-git fetch --all | Out-Null
-
-git show-ref --verify --quiet refs/heads/main
-$mainExists = $LASTEXITCODE
-if ($mainExists -ne 0) {
-    git checkout -b main origin/main | Out-Null
-} else {
-    git checkout main | Out-Null
-}
-git pull --ff-only origin main | Out-Null
-
-$mainHead = (git rev-parse HEAD).Trim()
+git fetch origin main | Out-Null
+$mainHead = (git rev-parse origin/main).Trim()
 
 $pr = Invoke-GhJson -Args @("pr","view",$TargetPR.ToString(),"--json","number,title,state,isDraft,mergeStateStatus,headRefName,baseRefName,url,reviewDecision")
 Write-JsonFile -Path (Join-Path $script:OutDir "10_pr_status.json") -Object $pr
