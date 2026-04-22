@@ -84,9 +84,14 @@ function Invoke-LoggedCommand {
             ""
         )
         $global:LASTEXITCODE = 0
-        & $Exe @CmdArgs *>&1 | Tee-Object -FilePath $logPath -Append | Out-Null
-        $exitCode = $LASTEXITCODE
-        if ($null -eq $exitCode) { $exitCode = 0 }
+        try {
+            & $Exe @CmdArgs *>&1 | Tee-Object -FilePath $logPath -Append | Out-Null
+            $exitCode = $LASTEXITCODE
+            if ($null -eq $exitCode) { $exitCode = 0 }
+        } catch {
+            $exitCode = 1
+            "ERROR: $_" | Add-Content -Path $logPath -Encoding UTF8
+        }
 
         return [pscustomobject]@{
             Name     = $Name
