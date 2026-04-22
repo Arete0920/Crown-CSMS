@@ -45,9 +45,14 @@ function ConvertFrom-JsonSafe([string]$raw) {
 }
 
 function Invoke-CurlText([string]$url, [hashtable]$headers) {
-  $curlCmd = Get-Command curl -ErrorAction SilentlyContinue
+  # Prefer curl.exe explicitly to avoid the Invoke-WebRequest alias that
+  # PowerShell exposes as "curl" on Windows; the alias does not accept
+  # curl-style flags and would fail silently.
+  $curlCmd = Get-Command curl.exe -ErrorAction SilentlyContinue
   if (-not $curlCmd) {
-    $curlCmd = Get-Command curl.exe -ErrorAction SilentlyContinue
+    $curlCmd = Get-Command curl -ErrorAction SilentlyContinue |
+      Where-Object { $_.CommandType -eq 'Application' } |
+      Select-Object -First 1
   }
   if (-not $curlCmd) {
     return "curl unavailable"
