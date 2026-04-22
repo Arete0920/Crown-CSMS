@@ -42,10 +42,10 @@ function Require-Tool {
 }
 
 function Invoke-GhJson {
-    param([string[]]$Args)
-    $raw = & gh @Args
+    param([string[]]$GhArgs)
+    $raw = & gh @GhArgs
     if ($LASTEXITCODE -ne 0) {
-        throw "gh command failed: gh $($Args -join ' ')"
+        throw "gh command failed: gh $($GhArgs -join ' ')"
     }
     if ([string]::IsNullOrWhiteSpace(($raw | Out-String))) {
         return $null
@@ -54,7 +54,7 @@ function Invoke-GhJson {
     try {
         return ($raw | ConvertFrom-Json)
     } catch {
-        throw "gh JSON parse failed for args: gh $($Args -join ' ')"
+        throw "gh JSON parse failed for args: gh $($GhArgs -join ' ')"
     }
 }
 
@@ -172,10 +172,10 @@ $currentHead = (git rev-parse HEAD).Trim()
 git fetch origin main | Out-Null
 $mainHead = (git rev-parse origin/main).Trim()
 
-$pr = Invoke-GhJson -Args @("pr","view",$TargetPR.ToString(),"--json","number,title,state,isDraft,mergeStateStatus,headRefName,baseRefName,url,reviewDecision")
+$pr = Invoke-GhJson -GhArgs @("pr","view",$TargetPR.ToString(),"--json","number,title,state,isDraft,mergeStateStatus,headRefName,baseRefName,url,reviewDecision")
 Write-JsonFile -Path (Join-Path $script:OutDir "10_pr_status.json") -Object $pr
 
-$runList = Invoke-GhJson -Args @(
+$runList = Invoke-GhJson -GhArgs @(
     "run","list",
     "--branch","main",
     "--limit","60",
@@ -218,7 +218,7 @@ if ($RerunFailed) {
 
         while ((Get-Date) -lt $deadline) {
             Start-Sleep -Seconds $PollSeconds
-            $view = Invoke-GhJson -Args @("run","view",$run.databaseId.ToString(),"--json","databaseId,workflowName,status,conclusion,url")
+            $view = Invoke-GhJson -GhArgs @("run","view",$run.databaseId.ToString(),"--json","databaseId,workflowName,status,conclusion,url")
             if ($view.status -eq "completed") {
                 $final = $view
                 break
@@ -226,7 +226,7 @@ if ($RerunFailed) {
         }
 
         if ($null -eq $final) {
-            $final = Invoke-GhJson -Args @("run","view",$run.databaseId.ToString(),"--json","databaseId,workflowName,status,conclusion,url")
+            $final = Invoke-GhJson -GhArgs @("run","view",$run.databaseId.ToString(),"--json","databaseId,workflowName,status,conclusion,url")
         }
 
         $rerunResults += [pscustomobject]@{
