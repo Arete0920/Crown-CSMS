@@ -63,7 +63,7 @@ function Invoke-LoggedCommand {
         [string]$Name,
         [string]$WorkingDirectory,
         [string]$Exe,
-        [string[]]$Args = @(),
+        [string[]]$CmdArgs = @(),
         [hashtable]$Env = @{}
     )
 
@@ -80,11 +80,11 @@ function Invoke-LoggedCommand {
         Write-Utf8 $logPath @(
             "=== $Name ==="
             "PWD: $(Get-Location)"
-            "CMD: $Exe $($Args -join ' ')"
+            "CMD: $Exe $($CmdArgs -join ' ')"
             ""
         )
         $global:LASTEXITCODE = 0
-        & $Exe @Args *>&1 | Tee-Object -FilePath $logPath -Append | Out-Null
+        & $Exe @CmdArgs *>&1 | Tee-Object -FilePath $logPath -Append | Out-Null
         $exitCode = $LASTEXITCODE
         if ($null -eq $exitCode) { $exitCode = 0 }
 
@@ -246,27 +246,27 @@ $checks = @()
 
 $scorecardScript = Join-Path $repoRoot "scripts\execution\95_live_scorecard_audit.ps1"
 if (Test-Path $scorecardScript) {
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe "powershell" -Args @("-ExecutionPolicy","Bypass","-File",$scorecardScript)
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe "powershell" -Args @("-ExecutionPolicy","Bypass","-File",$scorecardScript,"-Deep")
+    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",$scorecardScript)
+    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",$scorecardScript,"-Deep")
 }
 
 $frontendDir = Join-Path $repoRoot "frontend\dashboards"
 if (Test-Path (Join-Path $frontendDir "package.json")) {
-    $checks += Invoke-LoggedCommand -Name "frontend_shell_contracts" -WorkingDirectory $frontendDir -Exe "npm.cmd" -Args @("run","check:shell-contracts")
-    $checks += Invoke-LoggedCommand -Name "frontend_unit" -WorkingDirectory $frontendDir -Exe "npm.cmd" -Args @("run","test:unit")
-    $checks += Invoke-LoggedCommand -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -Exe "npm.cmd" -Args @("run","test:release:a11y") -Env @{ CI = "1" }
-    $checks += Invoke-LoggedCommand -Name "frontend_nav" -WorkingDirectory $frontendDir -Exe "npm.cmd" -Args @("run","ui:proof:nav") -Env @{ CI = "1" }
-    $checks += Invoke-LoggedCommand -Name "frontend_release_routes" -WorkingDirectory $frontendDir -Exe "npm.cmd" -Args @("run","test:release:routes") -Env @{ CI = "1" }
+    $checks += Invoke-LoggedCommand -Name "frontend_shell_contracts" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","check:shell-contracts")
+    $checks += Invoke-LoggedCommand -Name "frontend_unit" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:unit")
+    $checks += Invoke-LoggedCommand -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:release:a11y") -Env @{ CI = "1" }
+    $checks += Invoke-LoggedCommand -Name "frontend_nav" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","ui:proof:nav") -Env @{ CI = "1" }
+    $checks += Invoke-LoggedCommand -Name "frontend_release_routes" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:release:routes") -Env @{ CI = "1" }
 }
 
 $backendGate = Join-Path $repoRoot "backend\tests\test_reporting_exports_gate.py"
 if (Test-Path $backendGate) {
-    $checks += Invoke-LoggedCommand -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -Exe "python" -Args @("-m","pytest","backend/tests/test_reporting_exports_gate.py","-q")
+    $checks += Invoke-LoggedCommand -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -Exe "python" -CmdArgs @("-m","pytest","backend/tests/test_reporting_exports_gate.py","-q")
 }
 
 $backendManage = Join-Path $repoRoot "backend\manage.py"
 if (Test-Path $backendManage) {
-    $checks += Invoke-LoggedCommand -Name "backend_django_check" -WorkingDirectory (Join-Path $repoRoot "backend") -Exe "python" -Args @("manage.py","check")
+    $checks += Invoke-LoggedCommand -Name "backend_django_check" -WorkingDirectory (Join-Path $repoRoot "backend") -Exe "python" -CmdArgs @("manage.py","check")
 }
 
 Write-CsvSafe -Path (Join-Path $script:OutDir "30_check_results.csv") -Rows $checks
