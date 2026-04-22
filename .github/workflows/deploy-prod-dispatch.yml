@@ -74,20 +74,32 @@ jobs:
           set -euo pipefail
           if [ -n "$AZURE_CREDENTIALS" ]; then
             echo "Using AZURE_CREDENTIALS service principal auth path."
-            printf '%s' "$AZURE_CREDENTIALS" | jq -e . >/dev/null || { echo "ERROR: AZURE_CREDENTIALS is not valid JSON"; exit 1; }
-            client_id="$(printf '%s' "$AZURE_CREDENTIALS" | jq -r '.clientId // empty')"
-            client_secret="$(printf '%s' "$AZURE_CREDENTIALS" | jq -r '.clientSecret // empty')"
-            tenant_id="$(printf '%s' "$AZURE_CREDENTIALS" | jq -r '.tenantId // empty')"
-            subscription_id="$(printf '%s' "$AZURE_CREDENTIALS" | jq -r '.subscriptionId // empty')"
-            [ -n "$client_id" ] || { echo "ERROR: AZURE_CREDENTIALS missing required key: clientId"; exit 1; }
-            [ -n "$client_secret" ] || { echo "ERROR: AZURE_CREDENTIALS missing required key: clientSecret"; exit 1; }
-            [ -n "$tenant_id" ] || { echo "ERROR: AZURE_CREDENTIALS missing required key: tenantId"; exit 1; }
-            [ -n "$subscription_id" ] || { echo "ERROR: AZURE_CREDENTIALS missing required key: subscriptionId"; exit 1; }
+            export AZURE_CREDENTIALS
+            python3 - <<'PY'
+            import json
+            import os
+            import re
+            import sys
 
-            guid_re='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-            [[ "$client_id" =~ $guid_re ]] || { echo "ERROR: AZURE_CREDENTIALS key 'clientId' is not a valid GUID format"; exit 1; }
-            [[ "$tenant_id" =~ $guid_re ]] || { echo "ERROR: AZURE_CREDENTIALS key 'tenantId' is not a valid GUID format"; exit 1; }
-            [[ "$subscription_id" =~ $guid_re ]] || { echo "ERROR: AZURE_CREDENTIALS key 'subscriptionId' is not a valid GUID format"; exit 1; }
+            raw = os.environ.get("AZURE_CREDENTIALS", "")
+            try:
+              data = json.loads(raw)
+            except Exception:
+              print("ERROR: AZURE_CREDENTIALS is not valid JSON")
+              sys.exit(1)
+
+            required = ["clientId", "clientSecret", "tenantId", "subscriptionId"]
+            missing = [k for k in required if not str(data.get(k, "")).strip()]
+            if missing:
+              print(f"ERROR: AZURE_CREDENTIALS missing required keys: {', '.join(missing)}")
+              sys.exit(1)
+
+            guid_re = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+            for key in ("clientId", "tenantId", "subscriptionId"):
+              if not guid_re.match(str(data.get(key, ""))):
+                print(f"ERROR: AZURE_CREDENTIALS key '{key}' is not a valid GUID format")
+                sys.exit(1)
+            PY
             echo "login_mode=sp" >> "$GITHUB_OUTPUT"
             exit 0
           fi
