@@ -31,12 +31,12 @@ jobs:
           echo "Validating registry format..."
           while IFS= read -r sha; do
             if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "âŒ CRITICAL: Invalid SHA format in registry: $sha"
+              echo " CRITICAL: Invalid SHA format in registry: $sha"
               echo "   Registry must contain full 40-character commit SHAs only"
               exit 1
             fi
           done < <(jq -r '.[]' docs/RELEASE_TAGS.json)
-          echo "âœ… Registry format valid (all full SHAs)"
+          echo " Registry format valid (all full SHAs)"
           echo ""
           
           # Read all expected tags from RELEASE_TAGS.json
@@ -47,7 +47,7 @@ jobs:
             expected_sha=$(jq -r ".[\"$tag\"]" docs/RELEASE_TAGS.json)
             # Explicitly resolve to commit (not tag object)
             if ! git show-ref --verify --quiet "refs/tags/$tag"; then
-              echo "âŒ CRITICAL: Tag $tag not found in repository"
+              echo " CRITICAL: Tag $tag not found in repository"
               failed=1
               continue
             fi
@@ -59,23 +59,23 @@ jobs:
             echo "  Actual:   $actual_sha"
             
             if [[ "$actual_sha" != "$expected_sha" ]]; then
-              echo "  âŒ CRITICAL: Tag $tag has been moved!"
+              echo "   CRITICAL: Tag $tag has been moved!"
               echo "     Expected commit: $expected_sha"
               echo "     Current commit:  $actual_sha"
               echo ""
               failed=1
             else
-              echo "  âœ… Verified"
+              echo "   Verified"
             fi
             echo ""
           done
           
           if [[ $failed -eq 1 ]]; then
-            echo "âŒ Tag immutability violated. Create new tags instead of moving existing ones."
+            echo " Tag immutability violated. Create new tags instead of moving existing ones."
             exit 1
           fi
           
-          echo "âœ… All release tags verified immutable"
+          echo " All release tags verified immutable"
 
   test:
     runs-on: ubuntu-latest
@@ -96,18 +96,18 @@ jobs:
           for pattern in "${FORBIDDEN[@]}"; do
             matches=$(grep -rn "$pattern" frontend/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" || true)
             if [ -n "$matches" ]; then
-              echo "âŒ Forbidden import found: $pattern"
+              echo " Forbidden import found: $pattern"
               echo "$matches"
               failed=1
             fi
           done
           if [ $failed -eq 1 ]; then
             echo ""
-            echo "âŒ Forbidden imports detected. These packages are not in dependencies."
+            echo " Forbidden imports detected. These packages are not in dependencies."
             echo "   Use Unicode characters or inline SVG instead."
             exit 1
           fi
-          echo "âœ… No forbidden imports found"
+          echo " No forbidden imports found"
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
@@ -157,17 +157,17 @@ jobs:
           
           # Check response
           if [[ "$response" == "FAILED" ]]; then
-            echo "âŒ Health endpoint failed"
+            echo " Health endpoint failed"
             exit 1
           fi
           
-          echo "âœ… Health endpoint responding: $response"
+          echo " Health endpoint responding: $response"
         continue-on-error: false
 
       - name: Fail fast summary
         if: failure()
         run: |
-          echo "âŒ CI failed - check logs above"
+          echo " CI failed - check logs above"
           echo "Possible causes:"
           echo "  - Missing migrations (run: python manage.py makemigrations)"
           echo "  - Test failures (run: python manage.py test)"
