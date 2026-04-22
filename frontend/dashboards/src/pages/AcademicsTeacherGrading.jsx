@@ -34,7 +34,19 @@ import {
 function statusChip(status) {
   const s = (status || "").toLowerCase();
   if (s === "graded") return <Chip label="Graded" size="small" color="success" />;
-  if (s === "late") return <Chip label="Late" size="small" color="warning" />;
+  if (s === "late") {
+    return (
+      <Chip
+        label="Late"
+        size="small"
+        color="warning"
+        sx={{
+          "& .MuiChip-label": { color: "#4d3200", fontWeight: 600 },
+          bgcolor: "#f8d58a",
+        }}
+      />
+    );
+  }
   if (s === "missing") return <Chip label="Missing" size="small" color="error" />;
   if (s === "submitted") return <Chip label="Submitted" size="small" color="info" />;
   return <Chip label="Assigned" size="small" />;

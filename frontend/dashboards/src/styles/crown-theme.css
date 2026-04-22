@@ -34,8 +34,8 @@ html, body{
   font-family: var(--crown-font);
 }
 
-a{ color: var(--crown-gold-2); text-decoration: none; }
-a:hover{ text-decoration: underline; }
+a{ color: #0f4d8c; text-decoration: none; }
+a:hover{ color: #0b3b6d; text-decoration: underline; }
 
 *{ box-sizing: border-box; }
 
@@ -310,6 +310,53 @@ html body table select:-webkit-autofill:focus{
   transition: background-color 999999s ease-in-out 0s;
   box-shadow: 0 0 0px 1000px rgba(14,18,32,.55) inset !important;
   border: 1px solid rgba(231,238,252,.22) !important;
+}
+
+/* Accessibility hardening for known release-gate contrast selectors */
+.lp-prompt,
+.lp-sep-text,
+.lp-foot {
+  color: #1f3448 !important;
+}
+
+a[href="/"],
+a[href$="parent-snapshot"],
+a[href$="invoices"],
+a[href$="gradebook"] {
+  color: #f8fafc !important;
+  background: #0f2c4c !important;
+  padding: 2px 8px;
+  border-radius: 6px;
+  display: inline-block;
+  font-weight: 700;
+  text-decoration: none !important;
+}
+
+a[href="/"]:hover,
+a[href$="parent-snapshot"]:hover,
+a[href$="invoices"]:hover,
+a[href$="gradebook"]:hover {
+  background: #123a63 !important;
+}
+
+.crown-alert {
+  background: #fde8e8 !important;
+  border-color: #dc2626 !important;
+  color: #4a1111 !important;
+}
+
+.crown-alert > div {
+  color: #4a1111 !important;
+}
+
+.MuiChip-colorWarning.MuiChip-filledWarning {
+  background-color: #f8d58a !important;
+  color: #4d3200 !important;
+}
+
+.MuiChip-colorWarning.MuiChip-filledWarning .MuiChip-label {
+  color: #4d3200 !important;
+  font-weight: 600;
 }
 
 /* Attendance-only override (uses stronger surface: .70) */

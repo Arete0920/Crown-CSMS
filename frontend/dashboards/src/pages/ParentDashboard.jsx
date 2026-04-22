@@ -138,8 +138,16 @@ export default function ParentDashboard() {
 
       <DashboardSection title="Quick Links">
         <CrownGrid>
-          <Col span={6}><a href="/academics/parent-snapshot">Academics Snapshot</a></Col>
-          <Col span={6}><a href="/finance/invoices">Finance Invoices</a></Col>
+          <Col span={6}>
+            <a href="/academics/parent-snapshot" style={{ color: "#f8fafc", background: "#0f2c4c", padding: "4px 10px", borderRadius: 6, display: "inline-block", fontWeight: 700 }}>
+              Academics Snapshot
+            </a>
+          </Col>
+          <Col span={6}>
+            <a href="/finance/invoices" style={{ color: "#f8fafc", background: "#0f2c4c", padding: "4px 10px", borderRadius: 6, display: "inline-block", fontWeight: 700 }}>
+              Finance Invoices
+            </a>
+          </Col>
         </CrownGrid>
       </DashboardSection>
     </CrownLayout>

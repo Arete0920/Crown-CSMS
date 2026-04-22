@@ -8,11 +8,19 @@ import {
   Chip,
 } from '@mui/material';
 
-function getChipColor(level) {
+function getChipProps(level) {
   const normalized = String(level || '').toLowerCase();
-  if (normalized === 'high') return 'error';
-  if (normalized === 'medium') return 'warning';
-  return 'default';
+  if (normalized === 'high') return { color: 'error' };
+  if (normalized === 'medium') {
+    return {
+      color: 'warning',
+      sx: {
+        '& .MuiChip-label': { color: '#4d3200', fontWeight: 600 },
+        bgcolor: '#f8d58a',
+      },
+    };
+  }
+  return { color: 'default' };
 }
 
 export default function AlertListCard({ title, items = [] }) {
@@ -25,6 +33,10 @@ export default function AlertListCard({ title, items = [] }) {
 
         <List disablePadding>
           {items.map((item, index) => (
+            // Keep chip props computed once for each item so warning color gets readable foreground.
+            (() => {
+              const chipProps = getChipProps(item.level);
+              return (
             <ListItem
               key={`${item.title}-${index}`}
               disableGutters
@@ -32,7 +44,8 @@ export default function AlertListCard({ title, items = [] }) {
                 <Chip
                   size="small"
                   label={item.level || 'Low'}
-                  color={getChipColor(item.level)}
+                  color={chipProps.color}
+                  sx={chipProps.sx}
                 />
               }
             >
@@ -41,6 +54,8 @@ export default function AlertListCard({ title, items = [] }) {
                 secondary={item.secondary || ''}
               />
             </ListItem>
+              );
+            })()
           ))}
         </List>
       </CardContent>
