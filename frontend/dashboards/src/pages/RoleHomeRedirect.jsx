@@ -100,10 +100,10 @@ const ROLE_ROUTE_MAP = new Map([
   // Office / HR
   ['office_manager',    '/office'],
   ['hr',                '/office'],
-  // Admin
-  ['admin',             '/school-admin-dashboard'],
-  ['director',          '/school-admin-dashboard'],
-  ['principal',         '/school-admin-dashboard'],
+  // Admin — route to /admin; router.jsx redirects /admin → /school-admin-dashboard in sandbox mode
+  ['admin',             '/admin'],
+  ['director',          '/admin'],
+  ['principal',         '/admin'],
   // Academic Support / SPED
   ['academic_support',          '/academic-support'],
   ['sped',                      '/academic-support'],

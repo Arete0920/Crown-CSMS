@@ -89,7 +89,7 @@ catch { Add-File (Join-Path $pack "00_OVERVIEW.txt") "git log failed" }
 
 # 01 Tree (exclude big/generated dirs)
 Add-File (Join-Path $pack "01_TREE.txt") "Repo tree (excluding .git, .venv, node_modules, dist/build/coverage):"
-$exclude = @('\\\.git\\', '\\\.venv\\', '\\venv\\', '\\node_modules\\', '\\dist\\', '\\build\\', '\\coverage\\')
+$exclude = '\\\.git\\|\\\.venv\\|\\venv\\|\\node_modules\\|\\dist\\|\\build\\|\\coverage\\'
 Get-ChildItem -Recurse -File | Where-Object {
   $_.FullName -notmatch $exclude
 } | Sort-Object FullName | ForEach-Object {
@@ -219,7 +219,7 @@ try {
     Write-File $urlsOut $urlCmdOutput
   }
 }
-else {
+catch {
   try {
     $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
     $env:SECRET_KEY = "audit-local-secret-key"
@@ -255,7 +255,7 @@ try {
   $env:DATABASE_URL = "sqlite:///./ci.sqlite3"
   & ".\.venv\Scripts\python.exe" backend/manage.py showmigrations --list 2>&1 | Out-File $migOut -Encoding UTF8
 }
-else {
+catch {
   try {
     $env:DJANGO_SECRET_KEY = "audit-local-secret-key"
     $env:SECRET_KEY = "audit-local-secret-key"

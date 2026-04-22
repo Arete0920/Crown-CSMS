@@ -189,8 +189,8 @@ async function fetchSandboxCredentials() {
 export default function LoginPage() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [sandboxEmail, setSandboxEmail] = useState("");
-  const [sandboxPass, setSandboxPass] = useState("");
+  const [sandboxEmail, setSandboxEmail] = useState(SANDBOX_DEFAULT_EMAIL);
+  const [sandboxPass, setSandboxPass] = useState(SANDBOX_DEFAULT_PASS);
 
   // Prefill sandbox credentials from JSON if in sandbox mode
   useEffect(() => {
