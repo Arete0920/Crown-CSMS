@@ -88,7 +88,7 @@ function Wait-Port4173Free {
         foreach ($line in $netstatLines) {
             $pidStr = ($line.Trim() -split '\s+')[-1]
             if ($pidStr -match '^\d+$' -and $pidStr -ne '0') {
-                taskkill /F /PID $pidStr 2>$null | Out-Null
+                Stop-Process -Id ([int]$pidStr) -Force -ErrorAction SilentlyContinue
             }
         }
         Start-Sleep -Seconds 2
