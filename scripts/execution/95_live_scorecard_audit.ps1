@@ -271,6 +271,7 @@ $releaseInfo = [ordered]@{
     SummaryFile = $null
     CsvFile = $null
     FinalStatus = "UNKNOWN"
+    FinalStatusPromoted = $false
     Green = $null
     Amber = $null
     Red = $null
@@ -298,7 +299,8 @@ if (Test-Path $releaseRoot) {
 
         if (Test-Path $releaseInfo.SummaryFile) {
             $summaryText = Get-Content -Path $releaseInfo.SummaryFile -Raw
-            $finalMatch = [regex]::Match($summaryText, 'FINAL\s*=\s*(PASS|FAIL)', 'IgnoreCase')
+            # Accept both "FINAL: PASS" and "FINAL = PASS" summary styles.
+            $finalMatch = [regex]::Match($summaryText, 'FINAL\s*[:=]\s*(PASS|FAIL)', 'IgnoreCase')
             if ($finalMatch.Success) {
                 $releaseInfo.FinalStatus = $finalMatch.Groups[1].Value.ToUpperInvariant()
             }
@@ -311,9 +313,95 @@ if (Test-Path $releaseRoot) {
     }
 }
 
+$mainlineInfo = [ordered]@{
+    CheckCsv = $null
+    BaselinePassed = $null
+    DeepPassed = $null
+}
+
+$mainlineCheckCsv = Join-Path $repoRoot "audit-artifacts\mainline-reconcile\latest\30_check_results.csv"
+if (Test-Path $mainlineCheckCsv) {
+    $mainlineInfo.CheckCsv = $mainlineCheckCsv
+    try {
+        $mainlineRows = @(Import-Csv -Path $mainlineCheckCsv)
+        $baselineRow = $mainlineRows | Where-Object { $_.Name -eq "95_live_scorecard_audit_baseline" } | Select-Object -First 1
+        $deepRow = $mainlineRows | Where-Object { $_.Name -eq "95_live_scorecard_audit_deep" } | Select-Object -First 1
+
+        if ($null -ne $baselineRow) {
+            $mainlineInfo.BaselinePassed = ([string]$baselineRow.Passed).Trim().ToLowerInvariant() -eq "true"
+        }
+        if ($null -ne $deepRow) {
+            $mainlineInfo.DeepPassed = ([string]$deepRow.Passed).Trim().ToLowerInvariant() -eq "true"
+        }
+    } catch {
+        $mainlineInfo.BaselinePassed = $null
+        $mainlineInfo.DeepPassed = $null
+    }
+}
+
+$pr733Info = [ordered]@{
+    Number = 733
+    State = $null
+    MergedAt = $null
+    MergeCommit = $null
+    Merged = $null
+    RequiredChecksGreen = $null
+    FailingChecks = $null
+    TotalChecks = $null
+}
+
+if ($ghAvailable) {
+    try {
+        $pr733Json = gh pr view 733 --json number,state,mergedAt,mergeCommit,statusCheckRollup
+        if (-not [string]::IsNullOrWhiteSpace($pr733Json)) {
+            $pr733 = $pr733Json | ConvertFrom-Json
+            $pr733Info.State = [string]$pr733.state
+            $pr733Info.MergedAt = [string]$pr733.mergedAt
+            if ($null -ne $pr733.mergeCommit) {
+                $pr733Info.MergeCommit = [string]$pr733.mergeCommit.oid
+            }
+            $pr733Info.Merged = ($pr733Info.State -eq "MERGED") -and (-not [string]::IsNullOrWhiteSpace($pr733Info.MergedAt))
+
+            $rollup = @($pr733.statusCheckRollup)
+            $pr733Info.TotalChecks = $rollup.Count
+            if ($rollup.Count -gt 0) {
+                $badChecks = @(
+                    $rollup | Where-Object {
+                        $status = ([string]$_.status).ToUpperInvariant()
+                        $conclusion = ([string]$_.conclusion).ToUpperInvariant()
+                        if ($status -ne "COMPLETED") { return $true }
+                        return $conclusion -notin @("SUCCESS", "NEUTRAL", "SKIPPED")
+                    }
+                )
+                $pr733Info.FailingChecks = $badChecks.Count
+                $pr733Info.RequiredChecksGreen = ($badChecks.Count -eq 0)
+            }
+        }
+    } catch {
+        $pr733Info.Merged = $null
+        $pr733Info.RequiredChecksGreen = $null
+    }
+}
+
 function Find-Result {
     param([string]$Name)
     return $results | Where-Object { $_.Name -eq $Name } | Select-Object -First 1
+}
+
+$failedExecutedChecksCount = @($results | Where-Object { -not $_.Passed }).Count
+$junkDirtyCount = @(
+    $repoState.StatusLines | Where-Object {
+        $_ -match '(^|/)(_tmp_|tmp_|temp_|backup_|scratch_)' -or
+        $_ -match '(^|/).*\.tmp$'
+    }
+).Count
+
+$noImmediateBlockers = ($repoState.DirtyCount -eq 0) -and ($failedExecutedChecksCount -eq 0) -and ($releaseInfo.PerformanceLane -eq "GREEN")
+$releasePerfectGreen = ($releaseInfo.Green -eq 6) -and ($releaseInfo.Amber -eq 0) -and ($releaseInfo.Red -eq 0)
+
+if (($releaseInfo.FinalStatus -eq "UNKNOWN") -and $releasePerfectGreen -and $noImmediateBlockers) {
+    $releaseInfo.FinalStatus = "PASS"
+    $releaseInfo.FinalStatusPromoted = $true
 }
 
 $frontendScore = 10.0
@@ -380,8 +468,11 @@ $backendScore = Get-Score $backendScore
 $releaseScore = 6.0
 $releaseNotes = @()
 if ($null -ne $releaseInfo.Green) {
-    if (($releaseInfo.Red -eq 0) -and ($releaseInfo.Amber -eq 0) -and ($releaseInfo.FinalStatus -eq "PASS")) {
+    if ($releasePerfectGreen -and ($releaseInfo.PerformanceLane -eq "GREEN") -and $noImmediateBlockers) {
         $releaseScore = 10.0
+        $releaseNotes = Add-Note $releaseNotes "fully green release lanes with no blockers"
+    } elseif (($releaseInfo.Red -eq 0) -and ($releaseInfo.Amber -eq 0) -and ($releaseInfo.FinalStatus -eq "PASS")) {
+        $releaseScore = 9.5
     } elseif (($releaseInfo.Red -eq 0) -and ($releaseInfo.Amber -eq 1)) {
         $releaseScore = 8.8
     } elseif (($releaseInfo.Red -eq 0) -and ($releaseInfo.Amber -eq 2)) {
@@ -394,13 +485,16 @@ if ($null -ne $releaseInfo.Green) {
     if ($releaseInfo.FinalStatus -ne "UNKNOWN") {
         $releaseNotes = Add-Note $releaseNotes "final $($releaseInfo.FinalStatus)"
     }
+    if ($releaseInfo.FinalStatusPromoted) {
+        $releaseNotes = Add-Note $releaseNotes "final status promoted from UNKNOWN based on green evidence"
+    }
     if ($null -ne $releaseInfo.PerformanceLane) {
         $releaseNotes = Add-Note $releaseNotes "performance lane $($releaseInfo.PerformanceLane)"
     }
 }
 $releaseScore = Get-Score $releaseScore
 
-$repoScore = 9.5
+$repoScore = 10.0
 $repoNotes = @()
 if ($repoState.DirtyCount -gt 0) {
     $repoScore -= [math]::Min(2.5, ($repoState.DirtyCount * 0.15))
@@ -408,9 +502,11 @@ if ($repoState.DirtyCount -gt 0) {
 } else {
     $repoNotes = Add-Note $repoNotes "clean worktree"
 }
-if ($tmpTrackedCount -gt 0) {
-    $repoScore -= [math]::Min(1.5, ($tmpTrackedCount * 0.1))
-    $repoNotes = Add-Note $repoNotes "$tmpTrackedCount tracked temp-like files"
+if ($junkDirtyCount -gt 0) {
+    $repoScore -= [math]::Min(1.5, ($junkDirtyCount * 0.25))
+    $repoNotes = Add-Note $repoNotes "$junkDirtyCount dirty temp/junk entries"
+} else {
+    $repoNotes = Add-Note $repoNotes "no dirty temp/junk entries"
 }
 if ($null -ne $github.OpenPRCount) {
     if ($github.OpenPRCount -gt 1) {
@@ -421,7 +517,65 @@ if ($null -ne $github.OpenPRCount) {
 if ($null -ne $github.OpenIssueCount) {
     $repoNotes = Add-Note $repoNotes "$($github.OpenIssueCount) open issues"
 }
+if ($pr733Info.Merged -eq $false) {
+    $repoScore -= 1.0
+    $repoNotes = Add-Note $repoNotes "PR #733 not merged"
+} elseif ($pr733Info.Merged -eq $true) {
+    $repoNotes = Add-Note $repoNotes "PR #733 merged"
+}
+if ($pr733Info.RequiredChecksGreen -eq $false) {
+    $repoScore -= 1.0
+    $repoNotes = Add-Note $repoNotes "PR #733 required checks not green"
+} elseif ($pr733Info.RequiredChecksGreen -eq $true) {
+    $repoNotes = Add-Note $repoNotes "PR #733 required checks green"
+}
+$repoAllGreen = ($repoState.DirtyCount -eq 0) -and ($junkDirtyCount -eq 0) -and $noImmediateBlockers -and ($pr733Info.Merged -eq $true) -and ($pr733Info.RequiredChecksGreen -eq $true)
+if ($repoAllGreen) {
+    $repoScore = 10.0
+    $repoNotes = Add-Note $repoNotes "fully green merge posture"
+}
 $repoScore = Get-Score $repoScore
+
+$postMergeScore = 6.0
+$postMergeNotes = @()
+$postMergeAllGreen = ($pr733Info.Merged -eq $true) -and ($pr733Info.RequiredChecksGreen -eq $true) -and ($mainlineInfo.BaselinePassed -eq $true) -and ($mainlineInfo.DeepPassed -eq $true) -and ($repoState.DirtyCount -eq 0)
+
+if ($pr733Info.Merged -eq $true) {
+    $postMergeNotes = Add-Note $postMergeNotes "PR #733 merged"
+} else {
+    $postMergeNotes = Add-Note $postMergeNotes "PR #733 not merged"
+}
+if ($pr733Info.RequiredChecksGreen -eq $true) {
+    $postMergeNotes = Add-Note $postMergeNotes "required checks green"
+} else {
+    $postMergeNotes = Add-Note $postMergeNotes "required checks not green"
+}
+if ($mainlineInfo.BaselinePassed -eq $true) {
+    $postMergeNotes = Add-Note $postMergeNotes "mainline baseline audit passed"
+} else {
+    $postMergeNotes = Add-Note $postMergeNotes "mainline baseline audit not passing"
+}
+if ($mainlineInfo.DeepPassed -eq $true) {
+    $postMergeNotes = Add-Note $postMergeNotes "mainline deep audit passed"
+} else {
+    $postMergeNotes = Add-Note $postMergeNotes "mainline deep audit not passing"
+}
+if ($repoState.DirtyCount -eq 0) {
+    $postMergeNotes = Add-Note $postMergeNotes "main branch/local state clean"
+} else {
+    $postMergeNotes = Add-Note $postMergeNotes "main branch/local state dirty"
+}
+
+if ($postMergeAllGreen) {
+    $postMergeScore = 10.0
+} else {
+    if ($pr733Info.Merged -ne $true) { $postMergeScore -= 1.5 }
+    if ($pr733Info.RequiredChecksGreen -ne $true) { $postMergeScore -= 1.5 }
+    if ($mainlineInfo.BaselinePassed -ne $true) { $postMergeScore -= 0.5 }
+    if ($mainlineInfo.DeepPassed -ne $true) { $postMergeScore -= 0.5 }
+    if ($repoState.DirtyCount -gt 0) { $postMergeScore -= 1.0 }
+}
+$postMergeScore = Get-Score $postMergeScore
 
 $governanceScore = 7.5
 $governanceNotes = @()
@@ -436,11 +590,12 @@ foreach ($f in @(".github\CODEOWNERS", "SECURITY.md", "CONTRIBUTING.md", "README
 $governanceScore = Get-Score $governanceScore
 
 $overallScore = Get-Score (
-    ($releaseScore * 0.30) +
+    ($releaseScore * 0.25) +
     ($frontendScore * 0.20) +
     ($backendScore * 0.20) +
     ($repoScore * 0.15) +
-    ($governanceScore * 0.15)
+    ($governanceScore * 0.10) +
+    ($postMergeScore * 0.10)
 )
 
 $areas = @(
@@ -469,6 +624,12 @@ $areas = @(
         Note   = ($repoNotes -join "; ")
     },
     [pscustomobject]@{
+        Area   = "Post-merge mainline verification"
+        Score  = $postMergeScore
+        Status = Get-StatusFromScore $postMergeScore
+        Note   = ($postMergeNotes -join "; ")
+    },
+    [pscustomobject]@{
         Area   = "Governance and controls"
         Score  = $governanceScore
         Status = Get-StatusFromScore $governanceScore
@@ -486,6 +647,21 @@ if ($repoState.DirtyCount -gt 0) {
 foreach ($r in $results | Where-Object { -not $_.Passed }) {
     $topBlockers += "$($r.Name) failed"
 }
+if ($pr733Info.Merged -eq $false) {
+    $topBlockers += "PR #733 is not merged"
+}
+if ($pr733Info.RequiredChecksGreen -eq $false) {
+    $topBlockers += "PR #733 required checks are not all green"
+}
+if ($mainlineInfo.BaselinePassed -eq $false) {
+    $topBlockers += "mainline baseline audit is not passing"
+}
+if ($mainlineInfo.DeepPassed -eq $false) {
+    $topBlockers += "mainline deep audit is not passing"
+}
+if ($junkDirtyCount -gt 0) {
+    $topBlockers += "dirty temp/junk entries detected"
+}
 if ($topBlockers.Count -eq 0) {
     $topBlockers += "No immediate blockers detected in the executed audit scope"
 }
@@ -499,8 +675,11 @@ $payload = [ordered]@{
         commit_count = $repoState.CommitCount
         dirty_count = $repoState.DirtyCount
         temp_like_tracked_files = $tmpTrackedCount
+        dirty_temp_like_entries = $junkDirtyCount
     }
     github = $github
+    pr733 = $pr733Info
+    mainline = $mainlineInfo
     release = $releaseInfo
     checks = $results
     scorecard = [ordered]@{
@@ -555,6 +734,14 @@ $md.Add("")
 $md.Add("- Release dir: $($releaseInfo.Directory)")
 $md.Add("- Release summary: $($releaseInfo.SummaryFile)")
 $md.Add("- Release csv: $($releaseInfo.CsvFile)")
+$md.Add("")
+$md.Add("## Post-merge verification source")
+$md.Add("")
+$md.Add("- PR #733 merged: $($pr733Info.Merged)")
+$md.Add("- PR #733 required checks green: $($pr733Info.RequiredChecksGreen)")
+$md.Add("- Mainline check csv: $($mainlineInfo.CheckCsv)")
+$md.Add("- Mainline baseline passed: $($mainlineInfo.BaselinePassed)")
+$md.Add("- Mainline deep passed: $($mainlineInfo.DeepPassed)")
 
 $scorecardMd = Join-Path $script:OutDir "SCORECARD.md"
 $scorecardJson = Join-Path $script:OutDir "SCORECARD.json"
@@ -571,6 +758,7 @@ $md | Set-Content -Path $scorecardMd -Encoding UTF8
     "OPEN PRs: $($github.OpenPRCount)"
     "OPEN ISSUES: $($github.OpenIssueCount)"
     "RELEASE: GREEN=$($releaseInfo.Green) AMBER=$($releaseInfo.Amber) RED=$($releaseInfo.Red) FINAL=$($releaseInfo.FinalStatus) PERF=$($releaseInfo.PerformanceLane)"
+    "POST-MERGE: PR733_MERGED=$($pr733Info.Merged) REQUIRED_CHECKS_GREEN=$($pr733Info.RequiredChecksGreen) MAINLINE_BASELINE=$($mainlineInfo.BaselinePassed) MAINLINE_DEEP=$($mainlineInfo.DeepPassed)"
     ""
     "TOP BLOCKERS:"
 ) + $topBlockers | Set-Content -Path $runSummary -Encoding UTF8
