@@ -184,3 +184,10 @@ docs/status/
 .DS_Store
 Thumbs.db
 # <<< Crown VS Code hardening block <<<
+# Crown2026 remediation ignore rules
+contracts/
+login.json
+test_login.json
+schools_prod.txt
+.env.release
+local.secrets.ps1.example

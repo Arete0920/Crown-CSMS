@@ -60,6 +60,9 @@ if ([string]::IsNullOrWhiteSpace($repoRoot)) {
 
 Set-Location $repoRoot
 
+$repoSlug = (& gh repo view --json nameWithOwner --jq .nameWithOwner).Trim()
+$mainHeadSha = (& gh api "repos/$repoSlug/commits/main" --jq .sha).Trim()
+
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\clear-main-failures\$timestamp"
 $latestDir = Join-Path $repoRoot ".crown-audit\clear-main-failures\latest"
@@ -73,6 +76,10 @@ $runs = Invoke-GhJson -GhArgs @(
     "--json","databaseId,workflowName,status,conclusion,createdAt,url,displayTitle,event,headSha"
 )
 
+$runs = @(
+    $runs | Where-Object { $_.headSha -eq $mainHeadSha }
+)
+
 $latestPerWorkflow = @(
     $runs |
     Group-Object workflowName |
@@ -83,8 +90,9 @@ $failed = @(
     $latestPerWorkflow |
     Where-Object {
         $_.status -eq "completed" -and $_.conclusion -in @("failure","cancelled","timed_out","action_required","startup_failure")
-    }
-) | Sort-Object workflowName
+    } |
+    Sort-Object workflowName
+)
 
 Write-CsvSafe -Path (Join-Path $outDir "10_failed_runs.csv") -Rows $failed
 
@@ -186,6 +194,7 @@ $summary = @()
 $summary += "# Clear Main Failures Summary"
 $summary += ""
 $summary += "- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+$summary += "- Main HEAD SHA: $mainHeadSha"
 $summary += "- Failed workflows before rerun: $($failed.Count)"
 $summary += "- Failed workflows after rerun: $($stillFailing.Count)"
 $summary += ""
@@ -212,6 +221,7 @@ Write-Utf8 (Join-Path $outDir "00_SUMMARY.md") $summary
 
 $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
+    main_head_sha = $mainHeadSha
     failed_before = $failed
     rerun_results = $rerunResults
     still_failing = $stillFailing

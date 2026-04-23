@@ -192,6 +192,7 @@ $currentBranch = (git branch --show-current).Trim()
 if ($currentBranch -ne "main") {
     Write-Warning "Running from non-main branch: $currentBranch"
 }
+$skipLocalChecks = ($currentBranch -ne "main")
 
 Ensure-InfoExcludePattern -RepoRoot $repoRoot -Pattern ".crown-audit/"
 Ensure-InfoExcludePattern -RepoRoot $repoRoot -Pattern "docs/investor-audit/public-10of10/"
@@ -302,7 +303,13 @@ $runs = Invoke-GhJson -GhArgs @(
     "run","list",
     "--branch","main",
     "--limit","80",
-    "--json","databaseId,workflowName,status,conclusion,createdAt,url,displayTitle,event"
+    "--json","databaseId,workflowName,status,conclusion,createdAt,url,displayTitle,event,headSha"
+)
+
+$repoSlugForHead = (& gh repo view --json nameWithOwner --jq .nameWithOwner).Trim()
+$mainHeadSha = (& gh api "repos/$repoSlugForHead/commits/main" --jq .sha).Trim()
+$runs = @(
+    $runs | Where-Object { $_.headSha -eq $mainHeadSha }
 )
 
 $latestPerWorkflow = @(
@@ -363,30 +370,31 @@ foreach ($run in $failedBefore) {
 Write-CsvSafe -Path (Join-Path $script:OutDir "21_failed_runs_after.csv") -Rows $failedAfter
 
 $checks = @()
+if (-not $skipLocalChecks) {
+    $scoreScript = Join-Path $repoRoot "scripts\execution\95_live_scorecard_audit.ps1"
+    if (Test-Path $scoreScript) {
+        $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",$scoreScript)
+        $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",$scoreScript,"-Deep")
+    }
 
-$scoreScript = Join-Path $repoRoot "scripts\execution\95_live_scorecard_audit.ps1"
-if (Test-Path $scoreScript) {
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",$scoreScript)
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",$scoreScript,"-Deep")
-}
+    $frontendDir = Join-Path $repoRoot "frontend\dashboards"
+    if (Test-Path (Join-Path $frontendDir "package.json")) {
+        $checks += Invoke-LoggedCommand -Name "frontend_shell_contracts" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","check:shell-contracts")
+        $checks += Invoke-LoggedCommand -Name "frontend_unit" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:unit")
+        $checks += Invoke-LoggedCommand -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:release:a11y") -Env @{ CI = "1" }
+        $checks += Invoke-LoggedCommand -Name "frontend_nav" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","ui:proof:nav") -Env @{ CI = "1" }
+        $checks += Invoke-LoggedCommand -Name "frontend_release_routes" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:release:routes") -Env @{ CI = "1" }
+    }
 
-$frontendDir = Join-Path $repoRoot "frontend\dashboards"
-if (Test-Path (Join-Path $frontendDir "package.json")) {
-    $checks += Invoke-LoggedCommand -Name "frontend_shell_contracts" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","check:shell-contracts")
-    $checks += Invoke-LoggedCommand -Name "frontend_unit" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:unit")
-    $checks += Invoke-LoggedCommand -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:release:a11y") -Env @{ CI = "1" }
-    $checks += Invoke-LoggedCommand -Name "frontend_nav" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","ui:proof:nav") -Env @{ CI = "1" }
-    $checks += Invoke-LoggedCommand -Name "frontend_release_routes" -WorkingDirectory $frontendDir -Exe "npm.cmd" -CmdArgs @("run","test:release:routes") -Env @{ CI = "1" }
-}
+    $backendGate = Join-Path $repoRoot "backend\tests\test_reporting_exports_gate.py"
+    if (Test-Path $backendGate) {
+        $checks += Invoke-LoggedCommand -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -Exe "python" -CmdArgs @("-m","pytest","backend/tests/test_reporting_exports_gate.py","-q")
+    }
 
-$backendGate = Join-Path $repoRoot "backend\tests\test_reporting_exports_gate.py"
-if (Test-Path $backendGate) {
-    $checks += Invoke-LoggedCommand -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -Exe "python" -CmdArgs @("-m","pytest","backend/tests/test_reporting_exports_gate.py","-q")
-}
-
-$backendManage = Join-Path $repoRoot "backend\manage.py"
-if (Test-Path $backendManage) {
-    $checks += Invoke-LoggedCommand -Name "backend_django_check" -WorkingDirectory (Join-Path $repoRoot "backend") -Exe "python" -CmdArgs @("manage.py","check")
+    $backendManage = Join-Path $repoRoot "backend\manage.py"
+    if (Test-Path $backendManage) {
+        $checks += Invoke-LoggedCommand -Name "backend_django_check" -WorkingDirectory (Join-Path $repoRoot "backend") -Exe "python" -CmdArgs @("manage.py","check")
+    }
 }
 
 Write-CsvSafe -Path (Join-Path $script:OutDir "30_local_checks.csv") -Rows $checks
@@ -426,6 +434,7 @@ $summaryLines.Add("# 100 Percent Readiness Summary")
 $summaryLines.Add("")
 $summaryLines.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 $summaryLines.Add("- Repo: $repoSlug")
+$summaryLines.Add("- Main HEAD SHA: $mainHeadSha")
 $summaryLines.Add("- Open PRs: $openPRs")
 $summaryLines.Add("- Open issues: $openIssues")
 $summaryLines.Add("- Dirty count: $dirtyCount")
@@ -433,6 +442,7 @@ $summaryLines.Add("- Root cleanup actions: $($cleanupActions.Count)")
 $summaryLines.Add("- Failed main workflows before rerun: $($failedBefore.Count)")
 $summaryLines.Add("- Failed main workflows after rerun: $failedAfterCount")
 $summaryLines.Add("- Local verification failures: $localFailedCount")
+$summaryLines.Add("- Local checks skipped (non-main branch): $skipLocalChecks")
 $summaryLines.Add("- Local scorecard overall: $($runSummary.OverallScore)")
 $summaryLines.Add("- Local release line: $($runSummary.ReleaseLine)")
 $summaryLines.Add("")
@@ -449,6 +459,7 @@ Write-Utf8 (Join-Path $script:OutDir "00_SUMMARY.md") $summaryLines
 $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
     repo = $repoSlug
+    main_head_sha = $mainHeadSha
     open_prs = $openPRs
     open_issues = $openIssues
     dirty_count = $dirtyCount
@@ -456,6 +467,7 @@ $status = [ordered]@{
     failed_before = $failedBefore
     failed_after = $failedAfter
     local_checks = $checks
+    local_checks_skipped = $skipLocalChecks
     local_scorecard = $runSummary
     pass = $pass
 }
