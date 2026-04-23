@@ -11,7 +11,7 @@ function Invoke-Capture {
         [Parameter(Mandatory = $true)][string]$WorkingDirectory,
         [Parameter(Mandatory = $true)][string]$LogFile,
         [Parameter(Mandatory = $true)][string]$Exe,
-        [string[]]$Args = @(),
+        [string[]]$CmdParts = @(),
         [hashtable]$Env = @{}
     )
 
@@ -32,16 +32,47 @@ function Invoke-Capture {
     try {
         "=== $Name ===" | Set-Content -Path $fullLog -Encoding UTF8
         "PWD: $(Get-Location)" | Add-Content -Path $fullLog -Encoding UTF8
-        "CMD: $Exe $($Args -join ' ')" | Add-Content -Path $fullLog -Encoding UTF8
+        "CMD: $Exe $($CmdParts -join ' ')" | Add-Content -Path $fullLog -Encoding UTF8
         "" | Add-Content -Path $fullLog -Encoding UTF8
 
-        $global:LASTEXITCODE = 0
+        $outTmp = Join-Path $script:OutDir ("$Name.stdout.tmp")
+        $errTmp = Join-Path $script:OutDir ("$Name.stderr.tmp")
+        $timeoutSec = 900
+        $exitCode = 1
+        if ($env:CROWN_95_CMD_TIMEOUT_SEC -and $env:CROWN_95_CMD_TIMEOUT_SEC -match '^\d+$') {
+            $timeoutSec = [int]$env:CROWN_95_CMD_TIMEOUT_SEC
+        }
+
         try {
-            & $Exe @Args *>&1 | Tee-Object -FilePath $fullLog -Append | Out-Null
-            $exitCode = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
+            $quotedExe = if ($Exe -match '[\s"]') { '"' + ($Exe -replace '"', '\\"') + '"' } else { $Exe }
+            $quotedArgs = @($CmdParts | ForEach-Object {
+                if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\\"') + '"' } else { $_ }
+            })
+            $cmdLine = @($quotedExe) + $quotedArgs -join ' '
+
+            $proc = Start-Process -FilePath "cmd.exe" -ArgumentList @('/d', '/s', '/c', $cmdLine) -WorkingDirectory (Get-Location).Path -NoNewWindow -PassThru -RedirectStandardOutput $outTmp -RedirectStandardError $errTmp
+            $finished = $proc.WaitForExit($timeoutSec * 1000)
+
+            if (-not $finished) {
+                Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+                "TIMEOUT: command exceeded ${timeoutSec}s and was terminated." | Add-Content -Path $fullLog -Encoding UTF8
+                $exitCode = 124
+            } else {
+                $exitCode = [int]$proc.ExitCode
+            }
+
+            if (Test-Path $outTmp) {
+                Get-Content $outTmp -ErrorAction SilentlyContinue | Add-Content -Path $fullLog -Encoding UTF8
+            }
+            if (Test-Path $errTmp) {
+                Get-Content $errTmp -ErrorAction SilentlyContinue | Add-Content -Path $fullLog -Encoding UTF8
+            }
         } catch {
             "ERROR: $_" | Add-Content -Path $fullLog -Encoding UTF8
             $exitCode = 1
+        } finally {
+            Remove-Item $outTmp -Force -ErrorAction SilentlyContinue
+            Remove-Item $errTmp -Force -ErrorAction SilentlyContinue
         }
 
         return [pscustomobject]@{
@@ -179,7 +210,6 @@ if ($ghAvailable) {
 }
 
 $frontendDir = Join-Path $repoRoot "frontend\dashboards"
-$backendDir = Join-Path $repoRoot "backend"
 
 # Ensure port 4173 is free before starting any Playwright/CI suites
 Wait-Port4173Free
@@ -187,25 +217,15 @@ Wait-Port4173Free
 $results = @()
 
 if (Test-Path (Join-Path $frontendDir "package.json")) {
-    $results += Invoke-Capture -Name "frontend_check_shell_contracts" -WorkingDirectory $frontendDir -LogFile "frontend_check_shell_contracts.txt" -Exe "npm.cmd" -Args @("run", "check:shell-contracts")
-    $results += Invoke-Capture -Name "frontend_unit" -WorkingDirectory $frontendDir -LogFile "frontend_unit.txt" -Exe "npm.cmd" -Args @("run", "test:unit")
+    $results += Invoke-Capture -Name "frontend_check_shell_contracts" -WorkingDirectory $frontendDir -LogFile "frontend_check_shell_contracts.txt" -Exe "npm.cmd" -CmdParts @("run", "check:shell-contracts")
+    $results += Invoke-Capture -Name "frontend_unit" -WorkingDirectory $frontendDir -LogFile "frontend_unit.txt" -Exe "npm.cmd" -CmdParts @("run", "test:unit") -Env @{ CI = "1" }
 
     # Build once and start a single shared preview server for all Playwright suites.
     # This avoids the Windows issue where per-suite CI builds leave orphaned node processes
     # on port 4173, causing reuseExistingServer:false to reject subsequent suite startups.
-    $buildLog = Join-Path $script:OutDir "frontend_build.txt"
-    Push-Location $frontendDir
-    "=== frontend_build ===" | Set-Content -Path $buildLog -Encoding UTF8
-    try {
-        $global:LASTEXITCODE = 0
-        npm.cmd run build *>&1 | Tee-Object -FilePath $buildLog -Append | Out-Null
-        $buildExit = if ($null -ne $LASTEXITCODE) { $LASTEXITCODE } else { 0 }
-    } catch {
-        "ERROR: $_" | Add-Content -Path $buildLog -Encoding UTF8
-        $buildExit = 1
-    } finally {
-        Pop-Location
-    }
+    $buildResult = Invoke-Capture -Name "frontend_build" -WorkingDirectory $frontendDir -LogFile "frontend_build.txt" -Exe "npm.cmd" -CmdParts @("run", "build")
+    $buildRecord = @($buildResult | Where-Object { $_ -and $_.PSObject.Properties.Name -contains "ExitCode" } | Select-Object -Last 1)
+    $buildExit = if ($buildRecord.Count -gt 0 -and $null -ne $buildRecord[0].ExitCode) { [int]$buildRecord[0].ExitCode } else { 1 }
 
     if ($buildExit -eq 0) {
         # Ensure port is clear, then start the preview server as a background job
@@ -230,14 +250,14 @@ if (Test-Path (Join-Path $frontendDir "package.json")) {
         if ($ready) {
             # All Playwright suites reuse the running preview server (no CI=1 means reuseExistingServer:true)
             # VITE_DEV_BASE_URL is already the default; set retries via PLAYWRIGHT_RETRIES if needed
-            $results += Invoke-Capture -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -LogFile "frontend_release_a11y.txt" -Exe "npm.cmd" -Args @("run", "test:release:a11y") -Env @{ PLAYWRIGHT_RETRIES = "2" }
-            $results += Invoke-Capture -Name "frontend_nav"           -WorkingDirectory $frontendDir -LogFile "frontend_nav.txt"           -Exe "npm.cmd" -Args @("run", "ui:proof:nav")
-            $results += Invoke-Capture -Name "frontend_release_routes" -WorkingDirectory $frontendDir -LogFile "frontend_release_routes.txt" -Exe "npm.cmd" -Args @("run", "test:release:routes")
+            $results += Invoke-Capture -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -LogFile "frontend_release_a11y.txt" -Exe "npm.cmd" -CmdParts @("run", "test:release:a11y") -Env @{ PLAYWRIGHT_RETRIES = "2" }
+            $results += Invoke-Capture -Name "frontend_nav"           -WorkingDirectory $frontendDir -LogFile "frontend_nav.txt"           -Exe "npm.cmd" -CmdParts @("run", "ui:proof:nav")
+            $results += Invoke-Capture -Name "frontend_release_routes" -WorkingDirectory $frontendDir -LogFile "frontend_release_routes.txt" -Exe "npm.cmd" -CmdParts @("run", "test:release:routes")
 
             if ($Deep) {
-                $results += Invoke-Capture -Name "frontend_matrix_1" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_1.txt" -Exe "npm.cmd" -Args @("run", "ui:proof:matrix")
-                $results += Invoke-Capture -Name "frontend_matrix_2" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_2.txt" -Exe "npm.cmd" -Args @("run", "ui:proof:matrix-pack-2")
-                $results += Invoke-Capture -Name "frontend_matrix_3" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_3.txt" -Exe "npm.cmd" -Args @("run", "ui:proof:matrix-pack-3")
+                $results += Invoke-Capture -Name "frontend_matrix_1" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_1.txt" -Exe "npm.cmd" -CmdParts @("run", "ui:proof:matrix")
+                $results += Invoke-Capture -Name "frontend_matrix_2" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_2.txt" -Exe "npm.cmd" -CmdParts @("run", "ui:proof:matrix-pack-2")
+                $results += Invoke-Capture -Name "frontend_matrix_3" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_3.txt" -Exe "npm.cmd" -CmdParts @("run", "ui:proof:matrix-pack-3")
             }
         } else {
             "Preview server did not become ready within 60s" | Set-Content -Path (Join-Path $script:OutDir "frontend_preview_timeout.txt") -Encoding UTF8
@@ -258,11 +278,11 @@ if (Test-Path (Join-Path $frontendDir "package.json")) {
 }
 
 if (Test-Path (Join-Path $repoRoot "backend\tests\test_reporting_exports_gate.py")) {
-    $results += Invoke-Capture -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -LogFile "backend_reporting_exports_gate.txt" -Exe "python" -Args @("-m", "pytest", "backend/tests/test_reporting_exports_gate.py", "-q")
+    $results += Invoke-Capture -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -LogFile "backend_reporting_exports_gate.txt" -Exe "python" -CmdParts @("-m", "pytest", "backend/tests/test_reporting_exports_gate.py", "-q")
 }
 
 if (Test-Path (Join-Path $repoRoot "backend\manage.py")) {
-    $results += Invoke-Capture -Name "backend_django_check" -WorkingDirectory (Join-Path $repoRoot "backend") -LogFile "backend_django_check.txt" -Exe "python" -Args @("manage.py", "check")
+    $results += Invoke-Capture -Name "backend_django_check" -WorkingDirectory (Join-Path $repoRoot "backend") -LogFile "backend_django_check.txt" -Exe "python" -CmdParts @("manage.py", "check")
 }
 
 $releaseRoot = Join-Path $repoRoot "audit-artifacts\release-certification"
