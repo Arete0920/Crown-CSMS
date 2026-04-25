@@ -1,0 +1,2 @@
+﻿Release packet consistency check: PASS
+Gate totals: PASS=12 FAIL=0
