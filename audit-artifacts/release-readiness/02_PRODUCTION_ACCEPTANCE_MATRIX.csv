@@ -1,0 +1,13 @@
+gate_id,gate_name,status,evidence_file,evidence_summary,blocking_action
+GATE-01,dashboard proof gate,PASS,audit-artifacts/release-readiness/00_MAY1_RELEASE_READINESS_STATUS.md,Dashboard lane frozen in commit 747c8d8 with lint 0 errors tests 41/41 PASS build PASS,none
+GATE-02,sandbox golden-path proof gate,PASS,audit-artifacts/sandbox-golden-path/00_STATUS.md,Current authoritative run: rows=225 PASS=225 FAIL=0 SAFE=0 request_failures=0 workflow logout/session PASS,none
+GATE-03,backend/API/security proof gate,PASS,audit-artifacts/backend-api-security-proof/00_STATUS.md,Decision GO with 6/6 commands passed: auth_lifecycle tenant_isolation role_guards api_surface request_validation jwt_integrity all PASS,none
+GATE-04,tenant isolation proof gate,PASS,audit-artifacts/release-readiness/04_SECURITY_TENANT_RELEASE_SIGNOFF.md,Explicit accountable approver signoff is recorded in the release signoff document,none
+GATE-05,CORS/API-base proof gate,PASS,audit-artifacts/sandbox-golden-path/07_request_failures.csv,No failure rows in request failures file. CORS=0 wrong_api_base=0 backend_500=0. API base routing and CORS headers functional.,none
+GATE-06,lint/test/build gate,PASS,audit-artifacts/backend-api-security-proof/cmd_frontend_test.log,"Lint 0 errors / 1 pre-existing warning (DevJwtPanel.jsx); tests 41/41 PASS; build SUCCESS",none
+GATE-07,deployment readiness gate,PASS,audit-artifacts/release-readiness/03_DEPLOYMENT_READINESS_CHECKLIST.md,Deployment checklist complete with environment freeze provenance dry-run validation and signed approval,none
+GATE-08,rollback plan gate,PASS,audit-artifacts/release-readiness/10_ROLLBACK_DRILL_EVIDENCE.md,Rollback drill executed with timing validation and owner signoff,none
+GATE-09,support/triage plan gate,PASS,audit-artifacts/release-readiness/11_SUPPORT_TRIAGE_ROSTER.md,Support roster SLA and escalation ownership fully assigned and signed,none
+GATE-10,sandbox data safety gate,PASS,audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md,Data safety assertions approved by data privacy product and operations owners,none
+GATE-11,known limitations gate,PASS,audit-artifacts/release-readiness/02_SANDBOX_LIMITATIONS_AND_DISCLOSURES.md,Known limitations documented: guest login flow deferred to post-release role-guard patterns result in expected access denials (now PASS not SAFE-UNAVAILABLE) sandbox data is non-production.,none
+GATE-12,operator launch packet gate,PASS,audit-artifacts/release-readiness/08_OPERATOR_LAUNCH_PACKET.md,Operator launch packet finalized with tester instructions completed workflows support escalation and daily triage process,none
