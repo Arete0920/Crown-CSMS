@@ -88,10 +88,6 @@ h2{
 }
 .crown-btn:active{ transform: translateY(1px); }
 
-.crown-btn-primary{
-  border-color: rgba(212,175,55,.45);
-  background: linear-gradient(180deg, rgba(212,175,55,.25), rgba(212,175,55,.12));
-}
 .crown-btn-primary:hover{
   background: linear-gradient(180deg, rgba(212,175,55,.32), rgba(212,175,55,.16));
 }
