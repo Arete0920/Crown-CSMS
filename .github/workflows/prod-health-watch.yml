@@ -43,18 +43,18 @@ jobs:
 
           STATUS=$(
             python3 - <<'PY'
-import json
-try:
-  with open('/tmp/health_response.json','r',encoding='utf-8') as f:
-    d=json.load(f)
-except Exception:
-  print('unhealthy')
-  raise SystemExit(0)
-if d.get('status') == 'healthy' or d.get('ok') is True:
-  print('healthy')
-else:
-  print(d.get('status','unhealthy'))
-PY
+            import json
+            try:
+              with open('/tmp/health_response.json','r',encoding='utf-8') as f:
+                d=json.load(f)
+            except Exception:
+              print('unhealthy')
+              raise SystemExit(0)
+            if d.get('status') == 'healthy' or d.get('ok') is True:
+              print('healthy')
+            else:
+              print(d.get('status','unhealthy'))
+            PY
           )
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
