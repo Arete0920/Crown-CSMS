@@ -5,18 +5,10 @@ permissions:
 
 on:
   pull_request:
-    paths:
-      - "backend/**"
-      - "requirements.txt"
-      - ".github/workflows/tests.yml"
   push:
     branches:
       - main
       - spine/**
-    paths:
-      - "backend/**"
-      - "requirements.txt"
-      - ".github/workflows/tests.yml"
 
 jobs:
   pytest:
