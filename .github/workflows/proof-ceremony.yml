@@ -5,6 +5,11 @@ permissions:
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+      - 'stabilize/**'
   push:
     branches:
       - 'release/**'
