@@ -6,14 +6,20 @@ on:
       - main
     paths:
       - "contracts/shell_backend_contract.json"
-      - "backend/**"
+      - "backend/**/print_shell_backend_write_proof*"
+      - "backend/**/print_shell_backend_lifecycle_proof*"
+      - "backend/**/test_shell_backend_write_contract*"
+      - "backend/**/test_shell_backend_lifecycle_contract*"
       - ".github/workflows/backend-shell-write-and-lifecycle-proof.yml"
   push:
     branches:
       - main
     paths:
       - "contracts/shell_backend_contract.json"
-      - "backend/**"
+      - "backend/**/print_shell_backend_write_proof*"
+      - "backend/**/print_shell_backend_lifecycle_proof*"
+      - "backend/**/test_shell_backend_write_contract*"
+      - "backend/**/test_shell_backend_lifecycle_contract*"
       - ".github/workflows/backend-shell-write-and-lifecycle-proof.yml"
   workflow_dispatch:
 

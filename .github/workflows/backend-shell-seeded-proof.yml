@@ -6,14 +6,16 @@ on:
       - main
     paths:
       - "contracts/shell_backend_contract.json"
-      - "backend/**"
+      - "backend/**/print_shell_backend_seeded_proof*"
+      - "backend/**/test_shell_backend_seeded_contract*"
       - ".github/workflows/backend-shell-seeded-proof.yml"
   push:
     branches:
       - main
     paths:
       - "contracts/shell_backend_contract.json"
-      - "backend/**"
+      - "backend/**/print_shell_backend_seeded_proof*"
+      - "backend/**/test_shell_backend_seeded_contract*"
       - ".github/workflows/backend-shell-seeded-proof.yml"
   workflow_dispatch:
 
