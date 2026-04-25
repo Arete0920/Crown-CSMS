@@ -38,7 +38,7 @@ C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:287: SE
 C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:289: ALLOWED_HOSTS: "localhost,127.0.0.1"
 C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:290: DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
 C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset-smoke.yml:29: DJANGO_SETTINGS_MODULE: crown_api.settings
-C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset-smoke.yml:30: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset-smoke.yml:30: DATABASE_URL: postgresql://<db-user>:<db-password>@localhost:5432/crown_test
 C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset.yml:22: API_BASE: https://crown-api-dev.azurewebsites.net
 C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset.yml:42: API_BASE: https://crown-api-dev.azurewebsites.net
 C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:1: name: Deploy Dashboard (Production)
@@ -204,9 +204,9 @@ C:\w\crown_main_postmerge_verify\.github\workflows\migration-lock-gate.yml:46: D
 C:\w\crown_main_postmerge_verify\.github\workflows\ops-reset-dev.yml:25: API_BASE: https://crown-api-dev.azurewebsites.net
 C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:31: DJANGO_SETTINGS_MODULE: crown_api.settings
 C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:32: DJANGO_SECRET_KEY: ci-test-secret-key
-C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:33: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:33: DATABASE_URL: postgresql://<db-user>:<db-password>@localhost:5432/crown_test
 C:\w\crown_main_postmerge_verify\.github\workflows\phase4-gradebook-demo-proof.yml:35: DJANGO_SECRET_KEY: ci-test-secret-key
-C:\w\crown_main_postmerge_verify\.github\workflows\phase4-gradebook-demo-proof.yml:36: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\phase4-gradebook-demo-proof.yml:36: DATABASE_URL: postgresql://<db-user>:<db-password>@localhost:5432/crown_test
 C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:1: name: Production Health Watch
 C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:9: group: production-health-watch
 C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:18: name: Production Health Monitor
@@ -232,7 +232,7 @@ C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-prod.yml:5: # 
 C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-prod.yml:24: default: "https://crown-api-prod.azurewebsites.net"
 C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony.yml:38: DJANGO_SETTINGS_MODULE: crown_api.settings
 C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony.yml:39: DJANGO_SECRET_KEY: ci-test-secret-key
-C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony.yml:40: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony.yml:40: DATABASE_URL: postgresql://<db-user>:<db-password>@localhost:5432/crown_test
 C:\w\crown_main_postmerge_verify\.github\workflows\proof-gradebook.yml:33: DJANGO_SETTINGS_MODULE: "crown_api.settings"
 C:\w\crown_main_postmerge_verify\.github\workflows\proof-gradebook.yml:34: DJANGO_SECRET_KEY: "ci-test-secret-key"
 C:\w\crown_main_postmerge_verify\.github\workflows\pytest-gate.yml:39: DJANGO_SETTINGS_MODULE: crown_api.settings
