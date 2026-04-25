@@ -1,0 +1,29 @@
+﻿Frontend discovery
+Date/time: 2026-04-25 11:49:27 -04:00
+C:\w\crown_main_postmerge_verify\frontend\dashboards\package.json
+C:\w\crown_main_postmerge_verify\services\wallet\apple-pass-service\package.json
+SPEC_FILES=24
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\api\gradebook-api-proof.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\api\wizard-contract.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-admin-dashboard-cert.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-role-route-regression.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\dashboard-proof.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\dashboard-smoke.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\demo-audit.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\executive-dashboard-v1.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\gradebook-ui-proof.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\home-redirect-proof.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\nav-permissions.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\nav-role-routing.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\parent-dashboard-v1.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\role-dashboard-matrix-pack-2.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\role-dashboard-matrix-pack-3.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\role-dashboard-matrix.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\student-dashboard-v2.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\investor-golden-path.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\magus-verification-smoke.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\proof-smoke.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\release-accessibility.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\release-auth-golden-path.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\release-closeout-routes.spec.ts
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\wiring-proof.spec.ts
