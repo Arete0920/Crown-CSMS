@@ -5,6 +5,10 @@ permissions:
 
 on:
   pull_request:
+    paths:
+      - "backend/**"
+      - "tools/verify_backend_gate.py"
+      - ".github/workflows/backend-gate.yml"
   push:
     branches: [ "main" ]
     paths:
