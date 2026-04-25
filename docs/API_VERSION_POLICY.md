@@ -1,7 +1,7 @@
 # Crown2026 — API Version & Deprecation Policy
 
-**Version:** 1.0  
-**Effective:** 2026-02-28  
+**Version:** 1.0
+**Effective:** 2026-02-28
 **Owner:** Engineering
 
 ---

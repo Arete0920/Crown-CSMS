@@ -1,8 +1,8 @@
 # Checkpoint: Gradebook Demo Ready
 
-**Date:** 2026-02-06  
-**Branch:** spine/resume-morning-0205  
-**Status:** ✅ PRODUCTION READY  
+**Date:** 2026-02-06
+**Branch:** spine/resume-morning-0205
+**Status:** ✅ PRODUCTION READY
 **Test Suite:** 202 passing (200 baseline + 2 gradebook smoke tests)
 
 ---
@@ -340,9 +340,9 @@ python manage.py shell -c "from gradebook.models import GradeEntry; GradeEntry.o
 
 ## Contact / Ownership
 
-**Module:** Academics / Gradebook  
-**Primary Branch:** spine/resume-morning-0205  
-**Checkpoint Date:** 2026-02-06  
+**Module:** Academics / Gradebook
+**Primary Branch:** spine/resume-morning-0205
+**Checkpoint Date:** 2026-02-06
 **Test Coverage:** 202 tests (100% of gradebook smoke contracts locked)
 
 **For questions or "why did we do X?" context, see:**

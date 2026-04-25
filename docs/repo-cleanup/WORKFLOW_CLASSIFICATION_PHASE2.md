@@ -1,7 +1,7 @@
 # Workflow Classification — Phase 2
 
-Generated: Phase 2 cleanup pass  
-Branch: `chore/github-cleanup-phase2-workflows-prs`  
+Generated: Phase 2 cleanup pass
+Branch: `chore/github-cleanup-phase2-workflows-prs`
 Total workflows surveyed: 54
 
 ## Classification Labels

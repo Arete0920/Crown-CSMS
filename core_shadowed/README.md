@@ -7,7 +7,7 @@ This folder contains a legacy Django app that was renamed to resolve module shad
 ## Why it's here
 
 In early development, there were two `core` packages on the import path:
-- `Crown2026/core/` (repo root) 
+- `Crown2026/core/` (repo root)
 - `Crown2026/backend/core/` (canonical)
 
 When pytest ran, Python would resolve `import core` to the repo-root version, causing the migration loader to fail with `NodeNotFoundError`.

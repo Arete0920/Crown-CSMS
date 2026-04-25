@@ -12,9 +12,9 @@
 ---
 
 # Crown2026 — PROOF LOG FINAL
-**Certification Date:** 2026-02-24  
-**Certified HEAD SHA:** d671749e94a605bb116da76b9f687dc33f143841  
-**Lock Tag:** `prod-certified-2026-02-24`  
+**Certification Date:** 2026-02-24
+**Certified HEAD SHA:** d671749e94a605bb116da76b9f687dc33f143841
+**Lock Tag:** `prod-certified-2026-02-24`
 **Certifier:** Automated certification pipeline (MASTER EXECUTION SHEET)
 
 ---
@@ -178,8 +178,8 @@ Key proven modules:
 
 ## SECTION 7 — Final Lock ✅
 
-**Lock tag:** `prod-certified-2026-02-24`  
-**Tagged SHA:** `d671749e94a605bb116da76b9f687dc33f143841`  
+**Lock tag:** `prod-certified-2026-02-24`
+**Tagged SHA:** `d671749e94a605bb116da76b9f687dc33f143841`
 **Certification timestamp:** 2026-02-24
 
 ---
@@ -202,7 +202,7 @@ Crown2026 is **certified production-ready** at SHA `d671749e` as of 2026-02-24.
 
 ## SECTION 8 — Phase 4B: Ledger-Integrated Financial Aid ✅
 
-**Merged:** PR #412 → SHA `6fd7a657` (2026-02-24)  
+**Merged:** PR #412 → SHA `6fd7a657` (2026-02-24)
 **Branch deleted:** `feat/phase4b-ledger-aid-integration`
 
 ### Problem Fixed

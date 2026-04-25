@@ -1,6 +1,6 @@
 # Final Signoff Checklist
 
-Generated: 2026-04-02  
+Generated: 2026-04-02
 Approver: TC (final approval authority)
 
 Use this checklist for final investor-readiness and release-control signoff.
@@ -66,19 +66,19 @@ Evidence pointer:
 
 ## 6. Explicit Approval Lines
 
-Technical Approval (Engineering Lead):  
-Name: __________________________  
-Date: __________________________  
+Technical Approval (Engineering Lead):
+Name: __________________________
+Date: __________________________
 Decision: APPROVE / CONDITIONAL / REJECT
 
-Security/Governance Approval:  
-Name: __________________________  
-Date: __________________________  
+Security/Governance Approval:
+Name: __________________________
+Date: __________________________
 Decision: APPROVE / CONDITIONAL / REJECT
 
-Final TC Approval:  
-Name: __________________________  
-Date: __________________________  
+Final TC Approval:
+Name: __________________________
+Date: __________________________
 Decision: APPROVE / CONDITIONAL / REJECT
 
 ## Signoff Rule

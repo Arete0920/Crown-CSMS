@@ -1,6 +1,6 @@
 # DIRECTOR ROUTER IMPLEMENTATION
 
-**Date:** 2026-01-04  
+**Date:** 2026-01-04
 **Pattern:** Unified Dashboard with Persona-Based Filtering
 
 ---
@@ -175,7 +175,7 @@ Template receives context and can:
 2. Pass filter config to JavaScript:
    ```javascript
    const filterConfig = {{ filter_config|json_script:"filter-config" }};
-   
+
    // When rendering worklist:
    items.forEach(item => {
        if (filterConfig.highlight_types.includes(item.type)) {
@@ -404,6 +404,6 @@ git commit -m "Implement Director Router (unified dashboard pattern)
 
 ---
 
-**Maintained by:** Crown 2026 Team  
-**Pattern:** Unified Dashboard with Persona-Based Filtering  
+**Maintained by:** Crown 2026 Team
+**Pattern:** Unified Dashboard with Persona-Based Filtering
 **Live URL:** `/director/` (single, persona-agnostic)

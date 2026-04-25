@@ -1,15 +1,15 @@
 # Required Checks Map — Phase 2
 
-Generated: Phase 2 cleanup pass  
-Branch: `chore/github-cleanup-phase2-workflows-prs`  
+Generated: Phase 2 cleanup pass
+Branch: `chore/github-cleanup-phase2-workflows-prs`
 Evidence source: `ruleset_main.json`, `.github/workflows/`
 
 ---
 
 ## Current Branch Protection Configuration
 
-Ruleset: `protect-main`  
-Target: `refs/heads/main`  
+Ruleset: `protect-main`
+Target: `refs/heads/main`
 Enforcement: `active`
 
 ### Rules Active

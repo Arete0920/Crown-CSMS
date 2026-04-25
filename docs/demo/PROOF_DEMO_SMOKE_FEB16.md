@@ -1,11 +1,11 @@
-﻿# Demo Smoke Proof (Feb 16) - Read-Only Endpoint Verification
+# Demo Smoke Proof (Feb 16) - Read-Only Endpoint Verification
 
-**Date:** 2026-02-10  
-**Time:** 2026-02-10 02:48:39  
-**API Base:** ` http://127.0.0.1:8000 `  
-**School (X-School-Id):** ` b45b8c5a-6708-4597-aad9-a226627b2962 `  
-**Section:** ` 044882e0-3405-4542-a237-32f1adf4f047 `  
-**Student (expected row):** ` da6e706b-ea3f-4047-aa0b-0dbcc0e4aac5 `  
+**Date:** 2026-02-10
+**Time:** 2026-02-10 02:48:39
+**API Base:** ` http://127.0.0.1:8000 `
+**School (X-School-Id):** ` b45b8c5a-6708-4597-aad9-a226627b2962 `
+**Section:** ` 044882e0-3405-4542-a237-32f1adf4f047 `
+**Student (expected row):** ` da6e706b-ea3f-4047-aa0b-0dbcc0e4aac5 `
 
 ---
 

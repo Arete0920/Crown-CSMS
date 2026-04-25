@@ -6,8 +6,8 @@ Official canon.
 ## Product Classification
 Crown Compass is a **Crown Add-on** in the **Leadership & Strategy** category.
 
-It is **not** part of Crown Core.  
-It is **not** a first-wave operational module.  
+It is **not** part of Crown Core.
+It is **not** a first-wave operational module.
 It must integrate with Crown through approved APIs, services, events, and permission-scoped data access only.
 
 ## Purpose
@@ -46,7 +46,7 @@ Crown Compass is not:
 ## Relationship to Crown Discernment
 Crown Discernment is the predictive analytics and scenario engine **inside Crown Compass**.
 
-Crown Compass is the visible leadership product.  
+Crown Compass is the visible leadership product.
 Discernment is the explanatory and forecasting engine that powers it.
 
 Approved language:
@@ -61,8 +61,8 @@ Disallowed positioning:
 ## Relationship to Crown Solomon
 Crown Solomon is the mission-aware knowledge, implementation, governance-template, interpretation, and action-guidance layer that supports Crown Compass.
 
-Compass shows leadership insight.  
-Discernment explains projections and patterns.  
+Compass shows leadership insight.
+Discernment explains projections and patterns.
 Solomon helps leaders configure, interpret, and act wisely.
 
 ## Data and Boundary Rules
@@ -86,7 +86,7 @@ Compass must not become the canonical owner of:
 - billing truth
 - operational workflow state
 
-Core owns truth.  
+Core owns truth.
 Compass consumes governed truth.
 
 ## UI Position

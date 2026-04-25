@@ -210,6 +210,6 @@ When starting a new grid (Admissions Pipeline, Finance invoices, etc.):
 
 ---
 
-**Last Updated:** 2026-02-04  
-**Status:** Frozen / Reference  
+**Last Updated:** 2026-02-04
+**Status:** Frozen / Reference
 **Associated Code:** `frontend/dashboards/src/pages/GradebookRO.jsx`

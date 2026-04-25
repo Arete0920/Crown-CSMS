@@ -1,8 +1,8 @@
 # Financial Aid API Contract (Frozen)
 
-**Last Updated:** 2026-01-31  
-**Status:** FROZEN – No breaking changes without major version bump  
-**Base URL (DEV):** `https://crown-api-dev.azurewebsites.net`  
+**Last Updated:** 2026-01-31
+**Status:** FROZEN – No breaking changes without major version bump
+**Base URL (DEV):** `https://crown-api-dev.azurewebsites.net`
 **Base URL (PROD):** TBD (not yet deployed)
 
 ---
@@ -445,7 +445,7 @@ $drilldown = Invoke-RestMethod -Uri "$API/api/v1/financial-aid/drilldown/?bucket
 
 ## Contract Tests
 
-This contract is **automatically enforced** by:  
+This contract is **automatically enforced** by:
 **`backend/financial_aid/tests/test_financial_aid_endpoints.py`**
 
 - **11 automated tests** validate every response shape, field type, and status code

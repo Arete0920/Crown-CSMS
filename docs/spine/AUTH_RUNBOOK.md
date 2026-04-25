@@ -7,8 +7,8 @@
 > Do **not** copy/paste this content into canonical checklists. Canonical gates live in:
 > - `docs/spine/DAILY_EXECUTION_CHECKLIST.md`
 
-**Last verified:** 2026-02-05  
-**Repo anchor commit:** `2094b884`  
+**Last verified:** 2026-02-05
+**Repo anchor commit:** `2094b884`
 **Backend auth primitives:** SimpleJWT `TokenObtainPairView` + `TokenRefreshView`
 
 ---

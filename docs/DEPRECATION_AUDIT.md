@@ -1,6 +1,6 @@
 # GitHub Actions Version Audit
 
-**Date**: January 27, 2026  
+**Date**: January 27, 2026
 **Status**: 3 deprecations found in deploy-prod.yml
 
 ---
@@ -139,9 +139,9 @@ slackapi/slack-github-action@v1.24.0  # ✅ Pinned version
 
 ## Other Infrastructure Versions
 
-**Python**: 3.12 (current, stable)  
-**Django**: 5.2.8 (current LTS-track)  
-**Docker Base**: python:3.12-slim (current)  
+**Python**: 3.12 (current, stable)
+**Django**: 5.2.8 (current LTS-track)
+**Docker Base**: python:3.12-slim (current)
 **Azure App Service Runtime**: Python 3.12 Linux (current)
 
 No immediate concerns with infrastructure versions.

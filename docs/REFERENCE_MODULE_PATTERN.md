@@ -1,7 +1,7 @@
 # REFERENCE MODULE PATTERN
 
-**Last Updated:** 2026-01-04  
-**Gold Standard:** Financial Aid Director  
+**Last Updated:** 2026-01-04
+**Gold Standard:** Financial Aid Director
 **Clone Target:** Admissions Director
 
 ## Philosophy: Copy-Paste-Modify, Not Recreate
@@ -32,7 +32,7 @@ When adding a new director module to Crown 2026, **CLONE the working Aid pattern
 
 ### Phase 2: Integrate into Unified Director APIs
 
-**DO NOT** create separate `admissions/views.py` with its own dashboard.  
+**DO NOT** create separate `admissions/views.py` with its own dashboard.
 **DO** augment the existing unified director APIs in `crown_api/director_views.py`.
 
 #### 2.1 Add Import
@@ -197,12 +197,12 @@ After cloning:
 
 ## Anti-Patterns to Avoid
 
-❌ **DON'T** create `admissions/views.py` with separate dashboard  
-❌ **DON'T** create `admissions/templates/admissions/dashboard.html`  
-❌ **DON'T** add `path('admissions/', ...)` to URLs  
+❌ **DON'T** create `admissions/views.py` with separate dashboard
+❌ **DON'T** create `admissions/templates/admissions/dashboard.html`
+❌ **DON'T** add `path('admissions/', ...)` to URLs
 
-✅ **DO** use the shared `director_dashboard.html` template  
-✅ **DO** augment the unified `/api/director/*` endpoints  
+✅ **DO** use the shared `director_dashboard.html` template
+✅ **DO** augment the unified `/api/director/*` endpoints
 ✅ **DO** follow the exact Aid scoring pattern
 
 ---
@@ -255,5 +255,5 @@ When adding Registrar director:
 
 ---
 
-**Maintained by:** Crown 2026 Team  
+**Maintained by:** Crown 2026 Team
 **Questions?** See `director_views.py` lines 413-660 for complete implementation.

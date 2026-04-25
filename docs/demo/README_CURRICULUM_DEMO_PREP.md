@@ -1,6 +1,6 @@
 # Curriculum Segment Demo – Complete Prep Package
-**Demo Date: Feb 28, 2026**  
-**Segment Lead: [Your name]**  
+**Demo Date: Feb 28, 2026**
+**Segment Lead: [Your name]**
 **Duration: 10 minutes + Q&A**
 
 ---
@@ -46,7 +46,7 @@ npm run build
 # You should see dashboard with curriculum card loaded
 ```
 
-✅ If all green: Clear to proceed with investors  
+✅ If all green: Clear to proceed with investors
 ❌ If any red: Fix using [CONTINGENCY_CURRICULUM_DEMO.md](CONTINGENCY_CURRICULUM_DEMO.md)
 
 ---
@@ -131,12 +131,12 @@ Quick reference:
 
 ## 🔒 Locked Behaviors (Don't Break These)
 
-✅ **Reset is non-interactive** (no prompts with `-Force`)  
-✅ **Seed is deterministic** (same data every run)  
-✅ **Scoping works** (wrong school gets 0 or 404)  
-✅ **Frontend guard works** (missing schoolId shows error card)  
-✅ **Pytest locked** (both scoping tests enforce structure)  
-✅ **Pacing is realistic** (never 100%)  
+✅ **Reset is non-interactive** (no prompts with `-Force`)
+✅ **Seed is deterministic** (same data every run)
+✅ **Scoping works** (wrong school gets 0 or 404)
+✅ **Frontend guard works** (missing schoolId shows error card)
+✅ **Pytest locked** (both scoping tests enforce structure)
+✅ **Pacing is realistic** (never 100%)
 
 If you change anything:
 ```
@@ -185,14 +185,14 @@ If live demo breaks badly:
 
 Demo is **LOCKED AND READY** when:
 
-✅ Reset completes with exit code 0  
-✅ Smoke test shows "All 5 checks passed"  
-✅ You can navigate to `/academics` and see card within 3 seconds  
-✅ Card shows 4 courses with progress bars in 55–70% range  
-✅ You can click a course and see units/lessons expand  
-✅ You can say the 6 script segments without stumbling  
-✅ You have screenshot backup ready  
-✅ You've rehearsed twice (10 min for timing, 20 min for expansion)  
+✅ Reset completes with exit code 0
+✅ Smoke test shows "All 5 checks passed"
+✅ You can navigate to `/academics` and see card within 3 seconds
+✅ Card shows 4 courses with progress bars in 55–70% range
+✅ You can click a course and see units/lessons expand
+✅ You can say the 6 script segments without stumbling
+✅ You have screenshot backup ready
+✅ You've rehearsed twice (10 min for timing, 20 min for expansion)
 
 If all ✅: You're locked. Demo will go smoothly.
 
@@ -205,7 +205,7 @@ If all ✅: You're locked. Demo will go smoothly.
 - New failure mode? → Add to [CONTINGENCY_CURRICULUM_DEMO.md](CONTINGENCY_CURRICULUM_DEMO.md)
 - Timing changes? → Update [RUNSHEET_CURRICULUM_DEMO.md](RUNSHEET_CURRICULUM_DEMO.md)
 
-**Day-of:** 
+**Day-of:**
 - Stuck? Use [CONTINGENCY_CURRICULUM_DEMO.md](CONTINGENCY_CURRICULUM_DEMO.md)
 - Need help? Check [DEMO_SCRIPT_CURRICULUM_SEGMENT.md](DEMO_SCRIPT_CURRICULUM_SEGMENT.md) section "FALLBACK PATHS"
 
