@@ -6,6 +6,7 @@ const DEMO_USER = "demo@crown.example.org";
 const DEMO_PASS = "DemoPassword2026!";
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const IS_SANDBOX  = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.example.org";
 
 // Default sandbox credentials (fallback)
 const SANDBOX_DEFAULT_EMAIL = "admin@heritage.example.org";
@@ -185,12 +186,31 @@ async function fetchSandboxCredentials() {
   }
 }
 
+async function fetchSchoolOptions() {
+  try {
+    const res = await axios.get("/demo/schools_manifest.json");
+    const schools = Array.isArray(res.data?.schools) ? res.data.schools : [];
+    const normalized = schools
+      .map((s) => ({
+        id: s?.id || s?.school_id,
+        name: s?.name || s?.school_name,
+      }))
+      .filter((s) => s.id && s.name);
+    if (normalized.length > 0) return normalized;
+  } catch {
+    // Fallback to env/default school when manifest is unavailable.
+  }
+  return [{ id: DEMO_SCHOOL, name: "Heritage Christian Academy" }];
+}
+
 /*  Page  */
 export default function LoginPage() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [sandboxEmail, setSandboxEmail] = useState(SANDBOX_DEFAULT_EMAIL);
   const [sandboxPass, setSandboxPass] = useState(SANDBOX_DEFAULT_PASS);
+  const [schools, setSchools] = useState([{ id: DEMO_SCHOOL, name: "Heritage Christian Academy" }]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState(DEMO_SCHOOL);
 
   // Prefill sandbox credentials from JSON if in sandbox mode
   useEffect(() => {
@@ -205,12 +225,24 @@ export default function LoginPage() {
     }
   }, []);
 
+  useEffect(() => {
+    fetchSchoolOptions().then((items) => {
+      setSchools(items);
+      if (!items.some((s) => s.id === selectedSchoolId)) {
+        setSelectedSchoolId(items[0]?.id || DEMO_SCHOOL);
+      }
+    }).catch(() => {
+      setSchools([{ id: DEMO_SCHOOL, name: "Heritage Christian Academy" }]);
+      setSelectedSchoolId(DEMO_SCHOOL);
+    });
+  }, []);
+
   async function login(role) {
     if (busy) return;
     setError("");
     setBusy(role.label);
     try {
-      let access = null, schoolId = DEMO_SCHOOL;
+      let access = null, schoolId = selectedSchoolId || DEMO_SCHOOL;
       let username = sandboxEmail;
       let password = sandboxPass;
       if (!IS_SANDBOX) {
@@ -229,7 +261,7 @@ export default function LoginPage() {
       }
       const d = await r.json();
       access = d.access;
-      schoolId = d.school_id || DEMO_SCHOOL;
+      schoolId = d.school_id || selectedSchoolId || DEMO_SCHOOL;
       sessionStorage.setItem("crown.jwt.access", access);
       sessionStorage.setItem("crown.school.id", schoolId);
 
@@ -273,10 +305,25 @@ export default function LoginPage() {
             <p className="lp-prompt">Use the prefilled credentials below to access your sandbox.</p>
             {error && <div className="lp-err">{error}</div>}
             <form onSubmit={e => { e.preventDefault(); login(ROLES[0]); }}>
+              <label htmlFor="sandbox-school" style={{ fontWeight: 600, fontSize: 13 }}>School</label>
+              <select
+                id="sandbox-school"
+                value={selectedSchoolId}
+                onChange={(e) => setSelectedSchoolId(e.target.value)}
+                className="lp-input"
+                style={{ marginBottom: 12 }}
+              >
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>{school.name}</option>
+                ))}
+              </select>
               <label htmlFor="sandbox-email" style={{ fontWeight: 600, fontSize: 13 }}>Email</label>
-              <input id="sandbox-email" type="email" value={sandboxEmail} readOnly style={{ width: "100%", marginBottom: 12, padding: 8, borderRadius: 6, border: "1px solid #D5E0EC" }} />
+              <input id="sandbox-email" type="email" value={sandboxEmail} readOnly className="lp-input" style={{ marginBottom: 12 }} />
               <label htmlFor="sandbox-pass" style={{ fontWeight: 600, fontSize: 13 }}>Password</label>
-              <input id="sandbox-pass" type="password" value={sandboxPass} readOnly style={{ width: "100%", marginBottom: 18, padding: 8, borderRadius: 6, border: "1px solid #D5E0EC" }} />
+              <input id="sandbox-pass" type="password" value={sandboxPass} readOnly className="lp-input" style={{ marginBottom: 10 }} />
+              <div className="lp-notice" style={{ marginBottom: 12 }}>
+                Sandbox only. No production records are available from this sign-in.
+              </div>
               <div style={{ fontSize: 12, color: "#6C88A2", marginBottom: 18 }}>These credentials are valid only for your sandbox. Platform admin and demo/global accounts are not available here.</div>
               <button type="submit" disabled={busy} style={{ width: "100%", padding: 12, borderRadius: 7, background: "#0F2C4C", color: "#fff", fontWeight: 700, fontSize: 15, border: "none", cursor: busy ? "wait" : "pointer" }}>{busy ? "Signing in..." : "Sign in to Sandbox"}</button>
             </form>
@@ -422,6 +469,21 @@ export default function LoginPage() {
           max-width: 456px;
         }
 
+        .lp-input {
+          width: 100%;
+          padding: 9px 10px;
+          border: 1px solid #D5E0EC;
+          border-radius: 6px;
+          font-size: 13px;
+          color: #0D1F35;
+          background: #fff;
+        }
+
+        .lp-input:focus {
+          outline: 2px solid rgba(26, 111, 168, 0.25);
+          border-color: #1A6FA8;
+        }
+
         .lp-welcome {
           font-size: 22px;
           font-weight: 700;
@@ -454,6 +516,38 @@ export default function LoginPage() {
           color: #991B1B;
           font-size: 12.5px;
           font-weight: 500;
+          line-height: 1.5;
+        }
+
+        .lp-notice {
+          padding: 9px 11px;
+          border-radius: 6px;
+          border: 1px solid #FCD34D;
+          background: #FFFBEB;
+          color: #92400E;
+          font-size: 12px;
+          line-height: 1.4;
+          font-weight: 600;
+        }
+
+        .lp-credentials {
+          margin-bottom: 12px;
+          padding: 11px 12px;
+          background: #F7FAFE;
+          border: 1px solid #DCE7F2;
+          border-radius: 7px;
+        }
+
+        .lp-credentials strong {
+          display: block;
+          color: #113457;
+          font-size: 12px;
+          margin-bottom: 6px;
+        }
+
+        .lp-credentials-row {
+          font-size: 12px;
+          color: #274766;
           line-height: 1.5;
         }
 
@@ -515,8 +609,16 @@ export default function LoginPage() {
           .lp-headline { font-size: 22px; }
           .lp-body-copy { display: none; }
           .lp-brand-bottom { display: none; }
-          .lp-panel { padding: 28px 16px; align-items: flex-start; }
+          .lp-panel { padding: 24px 14px 28px; align-items: flex-start; }
+          .lp-form { max-width: 100%; }
           .lp-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 480px) {
+          .lp-mark-name { font-size: 21px; }
+          .lp-welcome { font-size: 19px; }
+          .lp-prompt { font-size: 12.5px; margin-bottom: 16px; }
+          .lp-ms { margin-bottom: 16px; }
         }
       `}</style>
 
@@ -558,7 +660,30 @@ export default function LoginPage() {
 
             <h1 className="lp-welcome">Login</h1>
             <h2 className="lp-welcome">Welcome back</h2>
-            <p className="lp-prompt">Select your role to access your dashboard</p>
+            <p className="lp-prompt">Select your role to access the correct dashboard and permissions scope.</p>
+
+            <label htmlFor="login-school" style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>School</label>
+            <select
+              id="login-school"
+              value={selectedSchoolId}
+              onChange={(e) => setSelectedSchoolId(e.target.value)}
+              className="lp-input"
+              style={{ marginBottom: 12 }}
+            >
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>{school.name}</option>
+              ))}
+            </select>
+
+            <div className="lp-notice" style={{ marginBottom: 12 }}>
+              Training/demo environment only. No real student or family data is exposed.
+            </div>
+
+            <div className="lp-credentials">
+              <strong>Prefilled Operator Credentials</strong>
+              <div className="lp-credentials-row">Email: {DEMO_USER}</div>
+              <div className="lp-credentials-row">Password: {DEMO_PASS}</div>
+            </div>
 
             {error && <div className="lp-err">{error}</div>}
 
@@ -584,7 +709,7 @@ export default function LoginPage() {
 
             <p className="lp-foot">
               Access is restricted to provisioned accounts.
-              Contact your administrator for access.
+              Contact your administrator or {SUPPORT_EMAIL} for support.
             </p>
 
           </div>
