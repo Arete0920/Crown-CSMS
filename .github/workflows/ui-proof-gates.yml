@@ -39,6 +39,54 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          SECRET_KEY: ci-not-secret
+          DEBUG: "0"
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DATABASE_URL: sqlite:///./ci_ui.sqlite3
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          fi
+
+      - name: Start backend API for dashboard proof
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          SECRET_KEY: ci-not-secret
+          DEBUG: "0"
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DATABASE_URL: sqlite:///./ci_ui.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          nohup python manage.py runserver 127.0.0.1:8000 > ../backend-ui-proof.log 2>&1 &
+
+      - name: Wait for backend API
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8000/api/v1/health/ >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/health/ >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/ >/dev/null 2>&1; then
+              echo "Backend API is up."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend API never became ready" >&2
+          exit 1
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -86,5 +134,13 @@ jobs:
         with:
           name: playwright-dashboard-report
           path: frontend/dashboards/playwright-report/
+          retention-days: 7
+
+      - name: Upload backend proof log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-ui-proof-log
+          path: backend-ui-proof.log
           retention-days: 7
 

@@ -5,6 +5,10 @@ on:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
+concurrency:
+  group: production-health-watch
+  cancel-in-progress: true
+
 permissions:
   contents: read
   issues: write
@@ -13,6 +17,7 @@ jobs:
   health-check:
     name: Production Health Monitor
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - name: Check production health endpoint
@@ -92,3 +97,34 @@ PY
       - name: Log healthy status
         if: steps.health.outputs.status == 'healthy'
         run: echo "Production health OK - HTTP ${{ steps.health.outputs.http_code }}"
+
+      - name: Close recovered alert
+        if: steps.health.outputs.status == 'healthy'
+        uses: actions/github-script@v7.1.0
+        with:
+          script: |
+            const titlePrefix = '[ALERT] Production health check failed';
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'production-alert',
+              per_page: 100,
+            });
+
+            for (const issue of openIssues.filter((candidate) => candidate.title.startsWith(titlePrefix))) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: 'Production health recovered. Closing alert automatically.',
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+              });
+            }
