@@ -149,7 +149,7 @@ export default {
 
 ### Issue: Database lock/transaction timeout
 **Cause:** Many awards or slow ledger posting
-**Solution:** 
+**Solution:**
 - Post awards in batches (10-20 at a time)
 - Check `post_award_to_ledger()` performance
 - Verify database connection pool size

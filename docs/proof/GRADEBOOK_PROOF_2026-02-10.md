@@ -38,7 +38,7 @@ Fixes:
 - Assertion of token + tenant headers on all outbound API requests
 - Added: `frontend/dashboards/tests/api/gradebook-api-proof.spec.ts`
 
-**Merged:** 2026-02-11T06:58:14Z  
+**Merged:** 2026-02-11T06:58:14Z
 **Merge Strategy:** Merge commit (admin override)
 
 ### Tag: `proof-gradebook-2026-02-10`
@@ -179,7 +179,7 @@ frontend/dashboards/src/pages/AcademicsDashboard.jsx
 ## Verification Checklist
 
 - [x] UI test runs without errors
-- [x] API test runs without errors  
+- [x] API test runs without errors
 - [x] Token deterministically fetched from sessionStorage
 - [x] API requests include token + tenant headers
 - [x] Response payloads validated against schema

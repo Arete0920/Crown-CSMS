@@ -1,8 +1,8 @@
 # Crown2026 — Dashboards & Reporting Module: Phase A Specification
 
-**Date**: 2026-02-25  
-**Branch**: `feature/phase-10-dashboards-module`  
-**PR**: [#442](https://github.com/tcmegahan/Crown2026/pull/442)  
+**Date**: 2026-02-25
+**Branch**: `feature/phase-10-dashboards-module`
+**PR**: [#442](https://github.com/tcmegahan/Crown2026/pull/442)
 **Status**: Committed. 25/25 contract tests pass. All 6 roles smoke-verified.
 
 ---
@@ -280,7 +280,7 @@ Authorization: Bearer <jwt>
 }
 ```
 
-> Phase A: returns stub rows with `"coming": "Phase B"` shape.  
+> Phase A: returns stub rows with `"coming": "Phase B"` shape.
 > Phase B: replace `DashboardDrilldownView.get()` with real paginated ORM queries per widget key.
 
 ---
@@ -545,7 +545,7 @@ await expect(page.getByText("Admin Dashboard")).toBeVisible({ timeout: 8000 });
 
 ## 12. Contract Tests
 
-**File**: `backend/crown_api/tests/test_dashboards_role_contract.py`  
+**File**: `backend/crown_api/tests/test_dashboards_role_contract.py`
 **Count**: 25 tests, all passing as of `dd3f8822`
 
 ### Test matrix
@@ -595,7 +595,7 @@ at_risk_students = AttendanceRisk.objects.filter(school_id=school_id, level__in=
 missing_grades   = GradeEntry.objects.filter(school_id=school_id, score__isnull=True).count()
 ```
 
-#### 2. `missing_work` widget — real assignment data  
+#### 2. `missing_work` widget — real assignment data
 ```python
 # File: backend/crown_api/dashboards/summary.py → _missing_work_table()
 from academics.models import Assignment, Submission
@@ -673,9 +673,9 @@ rows, has_more = handler(school_id, page=int(request.GET.get("page", 1)))
 
 These rules apply to everything in `crown_api/dashboards/`:
 
-1. **Never rename a widget key** after the feature is in prod — frontend components and tests target `data-widget-key` attributes.  
-2. **Never remove the legacy endpoints** (`dashboards/admissions/funnel/`, `dashboards/finance/summary/`, `dashboards/academics/enrollment/`) — existing consumers depend on them.  
-3. **Always scope DB queries to `school_id`** in `summary.py` — every query must include `.filter(school_id=school_id, ...)`.  
-4. **Use `get_dashboard_school_id(request)`** (not `get_request_school_id`) for all dashboard views — it uses `CANONICAL_SCHOOL_HEADER` and has the dashboard-specific cross-tenant logic.  
-5. **`_resolve_role()` reads `user.role` first** — do not change this order; the demo header fallback is opt-in via env var.  
+1. **Never rename a widget key** after the feature is in prod — frontend components and tests target `data-widget-key` attributes.
+2. **Never remove the legacy endpoints** (`dashboards/admissions/funnel/`, `dashboards/finance/summary/`, `dashboards/academics/enrollment/`) — existing consumers depend on them.
+3. **Always scope DB queries to `school_id`** in `summary.py` — every query must include `.filter(school_id=school_id, ...)`.
+4. **Use `get_dashboard_school_id(request)`** (not `get_request_school_id`) for all dashboard views — it uses `CANONICAL_SCHOOL_HEADER` and has the dashboard-specific cross-tenant logic.
+5. **`_resolve_role()` reads `user.role` first** — do not change this order; the demo header fallback is opt-in via env var.
 6. **New widget types must be added to `DashboardWidgetSerializer.type` ChoiceField** before shipping — the contract test validates this.

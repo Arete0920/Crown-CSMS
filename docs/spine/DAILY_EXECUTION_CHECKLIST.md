@@ -1,10 +1,10 @@
-ï»¿# Crown2026 â€” Daily Execution Checklist (Printable)
-**Sprint Window:** Feb 2â€“Feb 16, 2026  
+# Crown2026 — Daily Execution Checklist (Printable)
+**Sprint Window:** Feb 2–Feb 16, 2026
 **Rule:** If Golden Path is not green, nothing else matters.
 
 ---
 
-## DAILY STARTUP (15â€“20 minutes)
+## DAILY STARTUP (15–20 minutes)
 - [ ] Open repo in VS Code
 - [ ] `git pull`
 - [ ] Confirm branch: `main` (or `release/feb16-freeze` if still in pre-merge)
@@ -15,7 +15,7 @@
 
 **CI Proof Ceremony (Step 19 Canon):**
 - Runs on every PR and push to release/* branches
-- Verifies: Health âœ… | Auth âœ… | Migrations âœ… | Pytest 7/7 âœ…
+- Verifies: Health ? | Auth ? | Migrations ? | Pytest 7/7 ?
 - Python: 3.13 | Driver: psycopg v3 | Seed: --wipe | Tests: backend/tests/test_director_actions.py
 - Must pass before merging to main (required going forward)
 - Local proof_step16.ps1 may fail; ignore if CI proof is GREEN
@@ -23,7 +23,7 @@
 ---
 
 ## AZURE DEV SMOKE TEST (5 minutes)
-**Goal:** Prove Azure DEV is running the correct build with all spine endpoints live.  
+**Goal:** Prove Azure DEV is running the correct build with all spine endpoints live.
 **Note:** Use `curl.exe` (not `curl`) in PowerShell to avoid alias behavior.
 
 **Quick setup (copy/paste these variables):**
@@ -32,7 +32,7 @@ $BASE="https://crown-api-dev.azurewebsites.net"
 $TOKEN="PASTE_VALID_JWT"  # obtain via standard login flow (see Check 3)
 ```
 
-### Check 1 â€” Build SHA is correct
+### Check 1 — Build SHA is correct
 ```powershell
 $BASE="https://crown-api-dev.azurewebsites.net"
 curl.exe -sS "$BASE/api/health/" | ConvertFrom-Json | Format-List
@@ -41,7 +41,7 @@ curl.exe -sS "$BASE/api/health/" | ConvertFrom-Json | Format-List
 
 ---
 
-### Check 2 â€” Unauth tenant guard works (should be 403 + message)
+### Check 2 — Unauth tenant guard works (should be 403 + message)
 ```powershell
 curl.exe -sS -i "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 25
 ```
@@ -51,7 +51,7 @@ curl.exe -sS -i "$BASE/api/billing/invoices/" 2>&1 | Select-Object -First 25
 
 ---
 
-### Check 3 â€” Authenticated invoices returns 200
+### Check 3 — Authenticated invoices returns 200
 ```powershell
 # Get a valid JWT via the standard login flow (DevJwtPanel or /api/v1/auth/login/).
 # Use a user authorized for the target school/tenant.
@@ -89,9 +89,9 @@ curl.exe -sS -i -H "Authorization: Bearer $TOKEN" "$BASE/api/billing/invoices/" 
    ```
 
 4. **Escalation (if 409 persists):**
-   - Portal â†’ crown-api-dev â†’ Advanced Tools â†’ Go (Kudu)
-   - Kudu â†’ Process Explorer (check for stuck deployment process)
-   - App Service â†’ Deployment Center â†’ Logs (check for locked deployments)
+   - Portal ? crown-api-dev ? Advanced Tools ? Go (Kudu)
+   - Kudu ? Process Explorer (check for stuck deployment process)
+   - App Service ? Deployment Center ? Logs (check for locked deployments)
 
 **Stop condition:** All 3 smoke checks pass, or documented blocker exists.
 
@@ -99,7 +99,7 @@ curl.exe -sS -i -H "Authorization: Bearer $TOKEN" "$BASE/api/billing/invoices/" 
 
 ## WORK BLOCKS (Weekdays: 8 hours)
 
-### BLOCK 1 â€” Stability First (2 hours)
+### BLOCK 1 — Stability First (2 hours)
 Allowed:
 - [ ] Golden Path failures only
 - [ ] Environment variable fixes (documented)
@@ -114,7 +114,7 @@ Not allowed:
 
 ---
 
-### BLOCK 2 â€” Core Build / Hardening (3 hours)
+### BLOCK 2 — Core Build / Hardening (3 hours)
 Only tasks tied directly to Feb 16 buyer readiness:
 - [ ] Admissions reliability (demo path)
 - [ ] Financial Aid reliability (demo path)
@@ -127,7 +127,7 @@ Only tasks tied directly to Feb 16 buyer readiness:
 
 ---
 
-### BLOCK 3 â€” Docs & Proof (1.5 hours)
+### BLOCK 3 — Docs & Proof (1.5 hours)
 - [ ] Update spine docs
 - [ ] Update recovery notes
 - [ ] Update buyer positioning notes (if reality changed)
@@ -137,7 +137,7 @@ Only tasks tied directly to Feb 16 buyer readiness:
 
 ---
 
-### BLOCK 4 â€” Cost & Control Check (30 minutes)
+### BLOCK 4 — Cost & Control Check (30 minutes)
 - [ ] Confirm scheduled workflows are OFF
 - [ ] Cancel any stuck runs
 - [ ] Avoid rerunning CI more than needed
@@ -146,15 +146,15 @@ Only tasks tied directly to Feb 16 buyer readiness:
 
 ---
 
-### BLOCK 5 â€” End-of-Day Lock (1 hour)
+### BLOCK 5 — End-of-Day Lock (1 hour)
 - [ ] `git status` clean (ignore-only untracked artifacts)
 - [ ] Commit only working changes
 - [ ] Push once
 - [ ] Confirm CI results (if triggered) are green
 - [ ] Write 3-line daily note:
   - What changed
-  - Whatâ€™s stable now
-  - Whatâ€™s next
+  - What’s stable now
+  - What’s next
 
 **Stop condition:** You can stop without anxiety.
 

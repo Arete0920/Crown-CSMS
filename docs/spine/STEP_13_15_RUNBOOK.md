@@ -1,7 +1,7 @@
 # Steps 13-15 — Golden Path Runbook (Locked)
 
-**Purpose:** Deterministic read-only proof of core spine health  
-**Date locked:** 2026-02-02  
+**Purpose:** Deterministic read-only proof of core spine health
+**Date locked:** 2026-02-02
 **Status:** ✅ GREEN (all steps verified)
 
 ---

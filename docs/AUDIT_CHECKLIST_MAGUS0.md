@@ -1,8 +1,8 @@
 # Crown Magus 0 — Trust-Nothing Audit Checklist
 
-> **Purpose:** Pre-merge / pre-demo / pre-release human gate.  
-> **Automated companion:** `tools/audit/CROWN_MAGUS0_AUDIT.ps1`  
-> **Gate workflow:** `.github/workflows/crown-magus0-gate.yml`  
+> **Purpose:** Pre-merge / pre-demo / pre-release human gate.
+> **Automated companion:** `tools/audit/CROWN_MAGUS0_AUDIT.ps1`
+> **Gate workflow:** `.github/workflows/crown-magus0-gate.yml`
 > **Last updated:** 2026-02-28 — secret scan gate fixed (PRs #488 #489); tag `magus0-gate-green-2026-02-28` @ `5041c574`
 
 Mark every item `[x]` before signing off. Any unchecked `[ ]` = BLOCK.

@@ -1,6 +1,6 @@
 # Day 2 Dashboard Endpoints
 
-**Status**: Read-only dashboard APIs with tenant isolation  
+**Status**: Read-only dashboard APIs with tenant isolation
 **Date**: January 27, 2026
 
 ---

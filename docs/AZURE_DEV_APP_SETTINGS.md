@@ -1,6 +1,6 @@
 # Azure DEV Environment - App Settings Canon
 
-**Last Updated:** 2026-02-07  
+**Last Updated:** 2026-02-07
 **Purpose:** Single source of truth for critical Azure App Service settings in DEV environment
 
 ## Critical Settings for CI/Smoke Tests
@@ -76,16 +76,16 @@ az webapp restart -g crown-rg -n crown-api-dev
 
 ## Troubleshooting
 
-**Symptom:** Azure DEV Smoke fails with "Server misconfigured: missing CI_SMOKE_*"  
+**Symptom:** Azure DEV Smoke fails with "Server misconfigured: missing CI_SMOKE_*"
 **Fix:** Verify all three CI_SMOKE_* settings are present via Azure CLI or Portal
 
-**Symptom:** OPS reset returns "Forbidden"  
+**Symptom:** OPS reset returns "Forbidden"
 **Fix:** Ensure CROWN_OPS_SECRET matches GitHub Secret DEV_OPS_SECRET
 
-**Symptom:** "School not found" even after OPS reset  
+**Symptom:** "School not found" even after OPS reset
 **Fix:** Verify CI_SMOKE_SCHOOL_ID matches the canonical UUID (a5351136...)
 
-**Symptom:** Azure behaving weirdly / endpoints returning unexpected data  
+**Symptom:** Azure behaving weirdly / endpoints returning unexpected data
 **Fix:** **ALWAYS CHECK BUILD_SHA FIRST** before debugging anything else:
 ```powershell
 curl.exe -s https://crown-api-dev.azurewebsites.net/api/health/ | python -m json.tool

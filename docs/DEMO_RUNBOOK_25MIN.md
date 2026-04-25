@@ -1,9 +1,9 @@
 # Crown2026 Demo Runbook — 25-Minute Scripted Walkthrough
 
-**Audience:** Mixed stakeholders — Investor, Head of School, Board member  
-**Duration:** ~25 minutes (with Q&A headroom)  
-**Last validated:** 2026-03-01  
-**Demo user:** `playwright@crown-demo.local`  
+**Audience:** Mixed stakeholders — Investor, Head of School, Board member
+**Duration:** ~25 minutes (with Q&A headroom)
+**Last validated:** 2026-03-01
+**Demo user:** `playwright@crown-demo.local`
 **Demo school:** Heritage Christian Academy
 
 ---
@@ -54,9 +54,9 @@ npm run dev
 
 > "What you're about to see is a unified school operating platform — one login, every persona, every workflow. No switching tools, no spreadsheets, no emailed reports."
 
-**Action:** Log in  
-URL: `http://localhost:3000/login`  
-Fill email + password → Submit  
+**Action:** Log in
+URL: `http://localhost:3000/login`
+Fill email + password → Submit
 **Expected:** Redirects to `/admin` within 3 seconds.
 
 ---
@@ -75,7 +75,7 @@ Fill email + password → Submit
 
 > "Every number here is live — pulled from our production database right now."
 
-**If a widget shows a spinner longer than 5 seconds → move on, say:**  
+**If a widget shows a spinner longer than 5 seconds → move on, say:**
 > "The data loads asynchronously — it's querying the production API in real time."
 
 ---
@@ -98,7 +98,7 @@ Fill email + password → Submit
 - Role-based access (admissions staff vs head of school vs board)
 - Enrollment decisions link directly to billing obligations
 
-**If list is empty:**  
+**If list is empty:**
 > "This is our production school — we can see the admissions pipeline for Heritage Christian Academy. The data is school-scoped."
 
 ---
@@ -132,7 +132,7 @@ http://localhost:3000/financial-aid
 
 > "Financial aid is fully integrated — when an award is applied, the family balance updates instantly."
 
-**If finance shows blank widgets:**  
+**If finance shows blank widgets:**
 > "The financial module is live-connected to our production ledger. The numbers you'd see in a full deployment reflect that school's real financial picture."
 
 ---
@@ -196,7 +196,7 @@ http://localhost:3000/financial-aid
 
 > "The average school uses 6–12 disconnected tools to do what Crown does in one login."
 
-**Leave up:** `http://localhost:3000/board/executive`  
+**Leave up:** `http://localhost:3000/board/executive`
 (Board view is the strongest visual to leave on during Q&A)
 
 ---
@@ -251,10 +251,10 @@ Both must return `ok=True / db=ok` and `HTTP 200`.
 
 ## Hard Stop Criteria (abort demo if any of these are true)
 
-- [ ] API health returns `ok=False` or `db=error`  
-- [ ] `http://localhost:3000/login` returns ERR_CONNECTION_REFUSED  
-- [ ] Login with demo credentials returns 401 or 500  
-- [ ] DevJwtPanel debug overlay is visible on any page  
+- [ ] API health returns `ok=False` or `db=error`
+- [ ] `http://localhost:3000/login` returns ERR_CONNECTION_REFUSED
+- [ ] Login with demo credentials returns 401 or 500
+- [ ] DevJwtPanel debug overlay is visible on any page
 - [ ] More than 2 dashboard pages show "Application Error"
 
 If any hard stop is true → delay the demo. Do not proceed.

@@ -1,7 +1,7 @@
 # Prod Bootstrap, ACR Pin, and Credential Rotation
-**Date:** 2026-03-02  
-**Branch:** `fix/system-wiring-and-test-fixes` (PR #502)  
-**HEAD at close:** `4807c9916edcfc7522578a5d5a98f450e44cb398`  
+**Date:** 2026-03-02
+**Branch:** `fix/system-wiring-and-test-fixes` (PR #502)
+**HEAD at close:** `4807c9916edcfc7522578a5d5a98f450e44cb398`
 **Author:** ops session (GitHub Copilot / Claude Sonnet 4.6)
 
 ---
@@ -80,19 +80,19 @@ az webapp restart -g crown-rg -n crown2026web
 
 ### `"env": "dev"` in health response while `ENVIRONMENT=prod` was set
 
-**Root cause (confirmed by code inspection):**  
+**Root cause (confirmed by code inspection):**
 [`backend/crown_api/health_views.py` line 26](../../backend/crown_api/health_views.py#L26):
 ```python
 env_name = os.getenv("CROWN_ENV", "dev")
 ```
-The health view reads **`CROWN_ENV`** (not `ENVIRONMENT`).  
+The health view reads **`CROWN_ENV`** (not `ENVIRONMENT`).
 App Service had `ENVIRONMENT=prod` but **no `CROWN_ENV`** set → fell through to default `"dev"`.
 
-**Fix applied this session:**  
-`CROWN_ENV=prod` added to App Service settings (see section B above).  
+**Fix applied this session:**
+`CROWN_ENV=prod` added to App Service settings (see section B above).
 No code change required — config-only fix.
 
-**Related settings.py function** (uses a different set of env vars, consistent with itself):  
+**Related settings.py function** (uses a different set of env vars, consistent with itself):
 [`backend/crown_api/settings.py` line 289–296](../../backend/crown_api/settings.py#L289):
 ```python
 def _env_is_prod() -> bool:
@@ -114,18 +114,18 @@ def _env_is_prod() -> bool:
 ### 1. Least-privilege DB role gap (known exception — not fixed this session)
 - Current state: `crownapp` is the **Postgres Flexible Server admin account** (server-level role)
 - Risk: app connects as admin → any SQL injection or ORM bug has server-wide blast radius
-- Recommended (not MVP-blocking): create a separate `crown_app_user` role with schema-limited  
+- Recommended (not MVP-blocking): create a separate `crown_app_user` role with schema-limited
   `CONNECT`, `SELECT`, `INSERT`, `UPDATE`, `DELETE` on `crown_db` only; migrate `DATABASE_URL` to that user
 - Migrations (which need DDL rights) should run as admin; app runtime should not
 
 ### 2. `BUILD_SHA` was `"local-dev"` in health response
 - Image was built via `az acr build` which does not bake `GITHUB_SHA` into the image
 - Fix applied: `BUILD_SHA` set explicitly in App Service settings to current HEAD SHA
-- Long-term fix: CI/CD pipeline should pass `--build-arg BUILD_SHA=$GITHUB_SHA` to `az acr build`  
+- Long-term fix: CI/CD pipeline should pass `--build-arg BUILD_SHA=$GITHUB_SHA` to `az acr build`
   and `ENV BUILD_SHA` in Dockerfile
 
 ### 3. Hardcoded insecure `SECRET_KEY` fallback in settings.py
-- [`settings.py` line 50](../../backend/crown_api/settings.py#L50) has a hardcoded fallback:  
+- [`settings.py` line 50](../../backend/crown_api/settings.py#L50) has a hardcoded fallback:
   `"django-insecure-77tws%k1#a!#aio14%6=4z6wn@_nrnu1d$(bur5-!2$-8+l$d2"`
 - On Azure, `DJANGO_SECRET_KEY` is set as an App Service setting → fallback should not be reached
 - Verify: `az webapp config appsettings list --query "[?name=='DJANGO_SECRET_KEY']"`

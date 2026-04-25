@@ -12,8 +12,8 @@ Explainable predictive analytics and scenario-modeling engine inside Crown Compa
 Mission-aware knowledge, interpretation, onboarding, implementation, governance-template, and action-guidance layer supporting both.
 
 ## Canonical Formula
-Crown Compass = leadership-facing strategic product  
-Discernment Engine = predictive and explanatory engine inside Compass  
+Crown Compass = leadership-facing strategic product
+Discernment Engine = predictive and explanatory engine inside Compass
 Crown Solomon = guidance and implementation support around Compass and Discernment
 
 ## Safe Product Sentence
@@ -28,15 +28,15 @@ Crown Compass, powered by the Discernment Engine and supported by Crown Solomon.
 - Crown Solomon: support/guidance layer for adoption and use
 
 ## Data Boundary
-Core owns truth.  
-Modules extend truth through defined workflows.  
-Compass consumes governed truth.  
-Discernment analyzes governed truth.  
+Core owns truth.
+Modules extend truth through defined workflows.
+Compass consumes governed truth.
+Discernment analyzes governed truth.
 Solomon guides interpretation and action.
 
 ## UX Boundary
-Core and modules handle daily operations.  
-Compass handles leadership intelligence and governance-facing visibility.  
+Core and modules handle daily operations.
+Compass handles leadership intelligence and governance-facing visibility.
 Solomon handles guidance, templates, interpretation, and playbooks.
 
 ## Messaging Boundary

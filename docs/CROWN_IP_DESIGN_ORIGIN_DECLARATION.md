@@ -1,10 +1,10 @@
 # Crown2026™ — Intellectual Property Design Origin Declaration
 
-**Document Class:** Legal / Intellectual Property  
-**Organization:** Crown Christian School Management Solutions  
-**Prepared by:** Engineering Leadership  
-**Effective Date:** 2026-02-28  
-**Repository:** tcmegahan/Crown2026  
+**Document Class:** Legal / Intellectual Property
+**Organization:** Crown Christian School Management Solutions
+**Prepared by:** Engineering Leadership
+**Effective Date:** 2026-02-28
+**Repository:** tcmegahan/Crown2026
 **HEAD SHA at declaration:** 61e67163 (pre-Gate 4, post-finance-setup-wizard-freeze-2026-02-28)
 
 ---
@@ -56,8 +56,8 @@ The following architectural components were independently designed:
 
 ## III. Mechanical IP Scan Results
 
-**Scan executed:** 2026-02-28  
-**Scan method:** PowerShell `Select-String` with regex alternation across all `.py`, `.md`, `.txt`, `.sh`, `.json`, `.yaml`, `.yml`, `.js`, `.ts`, `.html`, `.css` files  
+**Scan executed:** 2026-02-28
+**Scan method:** PowerShell `Select-String` with regex alternation across all `.py`, `.md`, `.txt`, `.sh`, `.json`, `.yaml`, `.yml`, `.js`, `.ts`, `.html`, `.css` files
 **Exclusions:** `.git/`, `.venv/`, `node_modules/`, `dist/`, `build/`
 
 **Keywords scanned:**
@@ -147,15 +147,15 @@ The following characteristics make Crown2026 architecturally distinct from any k
 
 This declaration is made to the best of the knowledge of the Crown2026 engineering leadership as of the date stated above.
 
-> All code in this repository was written in-house.  
-> No proprietary competitor code was used.  
-> No reverse engineering was performed.  
-> Competitive analysis was used only for abstract market awareness.  
-> All workflows were independently designed.  
+> All code in this repository was written in-house.
+> No proprietary competitor code was used.
+> No reverse engineering was performed.
+> Competitive analysis was used only for abstract market awareness.
+> All workflows were independently designed.
 > This system is an original work.
 
-**Signed by:** Engineering Leadership, Crown Christian School Management Solutions  
-**Date:** 2026-02-28  
+**Signed by:** Engineering Leadership, Crown Christian School Management Solutions
+**Date:** 2026-02-28
 **Version:** 1.0 — Initial Declaration (Gate 3 Complete / Gate 4 Prep)
 
 ---

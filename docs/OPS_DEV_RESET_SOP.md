@@ -3,8 +3,8 @@
 ## Purpose
 Standard operating procedure for resetting DEV environment and verifying gradebook data is populated.
 
-**Owner**: Operations / DevOps  
-**Last Updated**: 2026-02-10  
+**Owner**: Operations / DevOps
+**Last Updated**: 2026-02-10
 **Canon Tag**: `proof-dev-gradebook-v1`
 
 ---
@@ -234,19 +234,19 @@ jobs:
 
 ## FAQ
 
-**Q: Do I need to manually delete the old data?**  
+**Q: Do I need to manually delete the old data?**
 A: No, ops reset includes `wipe=True` for gradebook entries, so it cleans up before reseeding.
 
-**Q: How long does the full reset take?**  
+**Q: How long does the full reset take?**
 A: 15-20 minutes total (5 min reset workflow + 10 min deploy + 1 min proof).
 
-**Q: Can I re-run the proof script multiple times?**  
+**Q: Can I re-run the proof script multiple times?**
 A: Yes, it's read-only and deterministic. No side effects.
 
-**Q: What if I want to reset a different school?**  
+**Q: What if I want to reset a different school?**
 A: Modify the `school_id` parameter in Step 1. Current default is the demo school.
 
-**Q: Is the proof script safe for CI/CD?**  
+**Q: Is the proof script safe for CI/CD?**
 A: Yes. No secrets printed, exit codes are deterministic, handles errors gracefully.
 
 ---
@@ -264,5 +264,5 @@ A: Yes. No secrets printed, exit codes are deterministic, handles errors gracefu
 
 ## Sign-Off
 
-**This procedure verified operationally on:** 2026-02-10  
+**This procedure verified operationally on:** 2026-02-10
 **Next review date:** TBD (after first team execution)

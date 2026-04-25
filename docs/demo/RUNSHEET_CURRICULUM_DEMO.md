@@ -1,5 +1,5 @@
 # Curriculum Segment Runsheet
-**Investor Demo – Feb 28, 2026**  
+**Investor Demo – Feb 28, 2026**
 **Segment Length: 10 minutes**
 
 ---
@@ -15,7 +15,7 @@
 5. Verify: "2 passed"
 ```
 
-✅ If both green: Clear to proceed  
+✅ If both green: Clear to proceed
 ❌ If either fails: Fix before continuing (see CONTINGENCIES below)
 
 ---
@@ -117,13 +117,13 @@ Read from script (DEMO_SCRIPT_CURRICULUM_SEGMENT.md line 180):
 
 ## SUCCESS= INVESTOR SEES
 
-✅ 4 courses listed  
-✅ Each with progress bar (green)  
-✅ Percentages 50–70% (not 100%, not 0%)  
-✅ Dates are sensible (Feb 2–27)  
-✅ Card says "As of [today]"  
-✅ Narrator explains pacing matters  
-✅ (Optional) Expands to show units/lessons  
+✅ 4 courses listed
+✅ Each with progress bar (green)
+✅ Percentages 50–70% (not 100%, not 0%)
+✅ Dates are sensible (Feb 2–27)
+✅ Card says "As of [today]"
+✅ Narrator explains pacing matters
+✅ (Optional) Expands to show units/lessons
 
 ---
 
