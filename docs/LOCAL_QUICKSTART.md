@@ -105,16 +105,16 @@ curl.exe -s 'http://127.0.0.1:8000/api/v1/academics/sections/<section_id>/catego
 ## Troubleshooting
 
 ### "No sections found"
-**Cause:** Bootstrap didn't create sections with enrollments.  
+**Cause:** Bootstrap didn't create sections with enrollments.
 **Fix:** Check that golden_path_bootstrap completed successfully. Look for sections in Django admin.
 
 ### "Weights don't sum to 100"
-**Cause:** seed_category_weights creates 20% + 30% + 25% + 25% = 100% by default.  
+**Cause:** seed_category_weights creates 20% + 30% + 25% + 25% = 100% by default.
 **Fix:** This is expected! It's the MVP state. Use the UI to edit weights.
 
 ### "Admin login fails"
-**Cause:** Bootstrap didn't run or password is wrong.  
-**Fix:** 
+**Cause:** Bootstrap didn't run or password is wrong.
+**Fix:**
 ```powershell
 python manage.py shell
 >>> from core.models import CustomUser
@@ -124,7 +124,7 @@ python manage.py shell
 ```
 
 ### Frontend can't connect to backend
-**Cause:** CORS or backend not running.  
+**Cause:** CORS or backend not running.
 **Fix:** Ensure backend is running on port 8000. Check `crown_api/settings.py` has `CORS_ALLOWED_ORIGINS` including `http://localhost:3000`.
 
 ## Resetting Demo Data

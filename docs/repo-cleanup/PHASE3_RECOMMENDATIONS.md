@@ -1,6 +1,6 @@
 # Phase 3 Recommendations
 
-Generated: Phase 2 cleanup pass output  
+Generated: Phase 2 cleanup pass output
 Branch: `chore/github-cleanup-phase2-workflows-prs`
 
 These recommendations are direct outputs of the Phase 2 governance audit.

@@ -1,13 +1,13 @@
 # Phase 7.2 / 7.2B — Tenant Isolation Audit Certification
 
-**Audit Phase:** 7.2 (audit) + 7.2B (discipline remediation) + 7.2B.2 (financial aid remediation) + 7.2B.3 (admissions remediation)  
-**Branch:** `phase/7.2-tenant-isolation-audit`  
-**Base SHA (main at branch point):** `869d64e3ca01d16cb3a29e885bbdc08f131a9bb0`  
-**Phase 7.2B remediation SHA:** see PR #428 merged to main  
-**Phase 7.2B.2 remediation SHA:** see PR merged to main  
-**Phase 7.2B.3 remediation SHA:** see PR #429  
-**Test file:** `backend/tests/test_phase72_tenant_isolation.py`  
-**Test result:** 25 tests, 0 failures, 0 errors  
+**Audit Phase:** 7.2 (audit) + 7.2B (discipline remediation) + 7.2B.2 (financial aid remediation) + 7.2B.3 (admissions remediation)
+**Branch:** `phase/7.2-tenant-isolation-audit`
+**Base SHA (main at branch point):** `869d64e3ca01d16cb3a29e885bbdc08f131a9bb0`
+**Phase 7.2B remediation SHA:** see PR #428 merged to main
+**Phase 7.2B.2 remediation SHA:** see PR merged to main
+**Phase 7.2B.3 remediation SHA:** see PR #429
+**Test file:** `backend/tests/test_phase72_tenant_isolation.py`
+**Test result:** 25 tests, 0 failures, 0 errors
 **Status:** CERTIFIED ✓
 
 ---
@@ -152,8 +152,8 @@ FK will need to be added and a migration written.
 
 ## 5. Test Coverage
 
-**File:** `backend/tests/test_phase72_tenant_isolation.py`  
-**Total tests:** 25  
+**File:** `backend/tests/test_phase72_tenant_isolation.py`
+**Total tests:** 25
 **Result:** All pass
 
 | Class | Tests | Coverage |

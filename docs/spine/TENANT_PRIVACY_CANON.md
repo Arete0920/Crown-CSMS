@@ -3,7 +3,7 @@
 ## 1. Tenant context is mandatory
 All tenant-scoped requests MUST include school context.
 
-**Canonical tenant key:** `X-School-Id` (UUID)  
+**Canonical tenant key:** `X-School-Id` (UUID)
 **Legacy alias (deprecated):** `X-Crown-School-Id` (supported for backward compatibility)
 
 If tenant context is missing or invalid:

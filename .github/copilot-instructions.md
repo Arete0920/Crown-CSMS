@@ -32,16 +32,16 @@ This alone dramatically reduces “creative” damage.
 
 ## 🚦 Critical Developer Workflows
 
-- **Build/Run:**  
+- **Build/Run:**
   - The venv lives at the **repo root** (`.venv/`), not inside `backend/`:
     ```
     & ".venv\Scripts\python.exe" "backend\manage.py" runserver 127.0.0.1:8000 --noreload
     ```
-- **Testing:**  
+- **Testing:**
   - Automated: `python test_director_actions.py`
   - Manual: `source curl_examples_director_actions.sh` (see examples in file)
-- **Git Discipline:**  
-  - After any change:  
+- **Git Discipline:**
+  - After any change:
     ```
     git status
     git diff --name-only
@@ -54,13 +54,13 @@ This alone dramatically reduces “creative” damage.
 ## 📚 Project-Specific Conventions & Patterns
 
 - **No changes to auth, roles, finance, or core Django files without explicit approval.**
-- **Views and API endpoints use atomic transactions and per-award error handling.**  
+- **Views and API endpoints use atomic transactions and per-award error handling.**
   - Example: [director_actions() in backend/crown_api/director_views.py](backend/crown_api/director_views.py#L462)
-- **Extensible by gold standard cloning:**  
+- **Extensible by gold standard cloning:**
   - New persona APIs should copy the Financial Aid pattern exactly—see [docs/REFERENCE_MODULE_PATTERN.md](docs/REFERENCE_MODULE_PATTERN.md).
-- **Documentation-first:**  
+- **Documentation-first:**
   - Key guides: [README_DIRECTOR_ACTIONS.md](docs/ops/README_DIRECTOR_ACTIONS.md), [IMPLEMENTATION_SUMMARY.md](docs/status/IMPLEMENTATION_SUMMARY.md), [INTEGRATION_GUIDE.md](docs/ops/INTEGRATION_GUIDE.md), [CHECKLIST.md](CHECKLIST.md), [MASTER_SUMMARY.md](docs/status/MASTER_SUMMARY.md), [FILE_INDEX.md](docs/maps/FILE_INDEX.md).
-- **Quick lookup for any task:**  
+- **Quick lookup for any task:**
   - Find code/tests/examples in [FILE_INDEX.md](docs/maps/FILE_INDEX.md)
   - API specs/examples: [docs/DIRECTOR_ACTIONS_API.md](docs/DIRECTOR_ACTIONS_API.md)
   - Automated/manual testing: [test_director_actions.py](test_director_actions.py), [curl_examples_director_actions.sh](curl_examples_director_actions.sh)
@@ -73,7 +73,7 @@ This alone dramatically reduces “creative” damage.
 ## 🛡️ Guardrails
 
 - **NEVER modify root-level files (`manage.py`, `venv`, etc.)**
-- **NO speculative refactors or new dependencies.**  
+- **NO speculative refactors or new dependencies.**
 - **Always verify changes in dev before pushing to prod.**
 - **Do NOT add endpoints under `crown_api/api_urls.py` for modules that have their own app URLs.** Use app `urls.py` only (e.g., `financial_aid/urls.py`, `admissions/urls.py`). Legacy routes in `crown_api/api_urls.py` shadow and block new app endpoints.
 

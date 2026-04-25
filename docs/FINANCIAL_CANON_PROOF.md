@@ -1,7 +1,7 @@
 # Financial Canon Proof – Crown2026
 
-**Stage 2: Financial Invariant Lock**  
-Branch: `stage2/financial-invariant-lock`  
+**Stage 2: Financial Invariant Lock**
+Branch: `stage2/financial-invariant-lock`
 
 ---
 

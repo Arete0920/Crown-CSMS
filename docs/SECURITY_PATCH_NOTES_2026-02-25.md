@@ -26,8 +26,8 @@ Together: authenticated attacker (any school, any role) could mark attendance fo
 
 ### Why Section + Student, not AttendanceRecord
 
-`AttendanceRecord` has no `school_id` field by design — tenant isolation is model-driven:  
-attendance is scoped to a student (who has `school_id`) belonging to a section (which has `school_id`).  
+`AttendanceRecord` has no `school_id` field by design — tenant isolation is model-driven:
+attendance is scoped to a student (who has `school_id`) belonging to a section (which has `school_id`).
 Enforcing both foreign keys is the correct and complete defense.
 
 ### Invariant tests added
@@ -102,7 +102,7 @@ Added conditional tenant filter: when `X-School-Id` header is present, scope res
 
 ### Policy note
 
-Current behavior: filter when header is present; unscoped when absent (subject to role gate). This preserves backwards compatibility for any cross-school admin tooling.  
+Current behavior: filter when header is present; unscoped when absent (subject to role gate). This preserves backwards compatibility for any cross-school admin tooling.
 If policy shifts to always-tenant-required for non-global roles, tighten to `required=True` in a follow-up patch.
 
 ---

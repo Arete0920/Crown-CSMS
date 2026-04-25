@@ -1,8 +1,8 @@
 # Crown2026™ — Developer IP Compliance Policy
 
-**Document Class:** Engineering Policy / Developer Onboarding  
-**Effective Date:** 2026-02-28  
-**Owner:** Engineering Leadership  
+**Document Class:** Engineering Policy / Developer Onboarding
+**Effective Date:** 2026-02-28
+**Owner:** Engineering Leadership
 **Applies to:** All engineers, contractors, interns, and contributors to the Crown2026 repository
 
 ---
@@ -65,7 +65,7 @@ If a commit message contains a competitor name, the branch will be rejected at c
 - Do not describe Crown UI in terms of "make it look like X but for Christians"
 - UI design must start from Crown's mission, information architecture, and user roles — not from competitor wireframes
 
-**Allowed:** General UI/UX pattern research from publicly available design system libraries (Material, Tailwind, etc.)  
+**Allowed:** General UI/UX pattern research from publicly available design system libraries (Material, Tailwind, etc.)
 **Not allowed:** Layout replication from a specific competitor's interface
 
 ---

@@ -1,12 +1,12 @@
 # CROWN_DEV_CANON.md
 **Crown2026 Local Dev Golden Path (VS Code + GitHub)**
-Last updated: 2026-04-16  
+Last updated: 2026-04-16
 Owner: TC / Crown Team
 
 ---
 
 ## Purpose
-This document is the single source of truth for starting, validating, troubleshooting, and committing Crown2026 local development.  
+This document is the single source of truth for starting, validating, troubleshooting, and committing Crown2026 local development.
 If you follow this exactly, you will not spend hours repeating the same problems.
 
 ---

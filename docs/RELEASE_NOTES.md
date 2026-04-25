@@ -1,7 +1,7 @@
 # Release Notes
 
 ## crown-0.3.1-prod-pipeline-fix (2026-01-27)
-**Commit**: `8241bfe`  
+**Commit**: `8241bfe`
 **Status**: Deployed to DEV and PROD
 
 ### Changes
@@ -42,21 +42,21 @@ These settings control DRF renderer policy:
 ---
 
 ## crown-0.3.0-spine-complete (2026-01-27)
-**Commit**: `6a86f74`  
+**Commit**: `6a86f74`
 **Status**: Reference milestone (not deployed)
 
 ### Changes
 - **Tenant isolation canon**: Created `docs/TENANT_PRIVACY_CANON.md` defining mandatory tenant context rules
-- **Tenant isolation framework**: 
+- **Tenant isolation framework**:
   - `MissingSchoolContext` exception (400 error for missing tenant)
   - `get_request_school_id(required=True)` helper in `backend/households/scoping.py`
   - Cross-tenant queries return 404 (not 403) to prevent tenant enumeration
 - **Test coverage**: 8/8 tenant isolation tests passing (`backend/households/tests/test_tenant_isolation.py`)
-- **CI discipline**: 
+- **CI discipline**:
   - Created `.github/workflows/ci.yml` with fail-fast checks for migrations, tests, and health endpoint
   - Migration checks prevent silent schema drift
   - Test failures block PR merges
-- **SHA verification**: 
+- **SHA verification**:
   - `backend/crown_api/build_info.py` stores deployment SHA as artifact-level constant
   - `backend/crown_api/health_views.py` exposes SHA via `/api/health/` endpoint
   - DEV workflow updated to bake SHA (PROD workflow updated in 0.3.1)

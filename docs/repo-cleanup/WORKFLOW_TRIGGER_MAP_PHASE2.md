@@ -1,6 +1,6 @@
 # Workflow Trigger Map — Phase 2
 
-Generated: Phase 2 cleanup pass  
+Generated: Phase 2 cleanup pass
 Branch: `chore/github-cleanup-phase2-workflows-prs`
 
 This table maps every workflow to its triggers, affected branches, environment coupling,
@@ -9,7 +9,7 @@ which workflows block merges to `main`.
 
 Legend — Trigger abbreviations:
 - `PR` = pull_request
-- `PUSH` = push  
+- `PUSH` = push
 - `DISP` = workflow_dispatch
 - `SCHED` = schedule (cron)
 - `CALL` = workflow_call
