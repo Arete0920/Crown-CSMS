@@ -1,721 +1,648 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 
-/*  Config  */
-const API_BASE    = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
-const DEMO_USER = "demo@crown.example.org";
-const DEMO_PASS = "DemoPassword2026!";
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
-const IS_SANDBOX  = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
-const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.example.org";
-
-// Default sandbox credentials (fallback)
+const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
+const ENABLE_SANDBOX_STUDENT = import.meta.env.VITE_SANDBOX_ENABLE_STUDENT !== "0";
 const SANDBOX_DEFAULT_EMAIL = "admin@heritage.example.org";
 const SANDBOX_DEFAULT_PASS = import.meta.env.VITE_DEMO_PASS || "Crown2026!";
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.local";
 
-// Only show sandbox login in sandbox mode
-const ROLES = IS_SANDBOX ? [
-  { label: "School Sandbox", desc: "Login to your sandbox environment.", route: "/sandbox", color: "#0F2C4C" }
-] : [
-  { label: "Head of School",      desc: "School-wide oversight & executive KPIs",   route: "/admin",         color: "#0F2C4C" },
-  { label: "Financial Aid",       desc: "Aid awards, applications & packaging",      route: "/financial-aid-dashboard", color: "#1C4E80" },
-  { label: "Finance Director",    desc: "AR, billing, aging & collections",          route: "/finance",       color: "#1A6FA8" },
-  { label: "Admissions Director", desc: "Pipeline, enrollment & yield analytics",   route: "/admissions-dashboard",    color: "#2E7D62" },
-  { label: "Teacher",             desc: "Gradebook, attendance & curriculum",        route: "/teacher",       color: "#7A5C14" },
-  { label: "Parent",              desc: "Student progress, grades & messages",       route: "/parent",        color: "#3D5A80" },
-  { label: "Student",             desc: "Assignments, schedule & academics",         route: "/student",       color: "#1B6B4A" },
-  { label: "Board Member",        desc: "Governance, financials & strategic data",  route: "/board",         color: "#5B3D8A" },
+const SANDBOX_ROLES = [
+  { value: "school_admin", label: "School Admin", route: "/school-admin-dashboard" },
+  { value: "teacher", label: "Teacher", route: "/teacher" },
+  { value: "parent", label: "Parent", route: "/parent" },
+  ...(ENABLE_SANDBOX_STUDENT ? [{ value: "student", label: "Student/Learner", route: "/student" }] : []),
 ];
 
-// Define constant for sandbox admin home
-const SANDBOX_ADMIN_HOME = "/school-admin-dashboard";
+const PROD_ROLES = [
+  { value: "head_of_school", label: "Head of School", route: "/admin" },
+  { value: "finance_director", label: "Finance Director", route: "/finance" },
+  { value: "admissions_director", label: "Admissions Director", route: "/admissions-dashboard" },
+  { value: "teacher", label: "Teacher", route: "/teacher" },
+  { value: "parent", label: "Parent", route: "/parent" },
+  { value: "student", label: "Student/Learner", route: "/student" },
+];
 
-/*  SVGs  */
-function CrownSVG({ size = 52 }) {
-  return (
-    <svg viewBox="0 0 120 90" width={size} height={Math.round(size * 0.75)} aria-hidden="true">
-      <defs>
-        <linearGradient id="lpCg" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%"   stopColor="#ffffff" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.88)" />
-        </linearGradient>
-      </defs>
-      <rect x="6" y="64" width="108" height="20" rx="5" fill="url(#lpCg)" />
-      <polygon points="6,64 6,28 35,52 60,4 85,52 114,28 114,64" fill="url(#lpCg)" />
-      <rect x="6" y="66" width="108" height="3" rx="1.5" fill="#C6A54A" />
-      <circle cx="60"  cy="4"  r="8"   fill="#C6A54A" />
-      <circle cx="6"   cy="28" r="6.5" fill="#C6A54A" />
-      <circle cx="114" cy="28" r="6.5" fill="#C6A54A" />
-    </svg>
-  );
+const SANDBOX_SCHOOL_NAMES = [
+  "Heritage Christian Academy",
+  "Harvest Christian School",
+  "Faith Christian Academy",
+  "Calvary Christian School",
+  "St. Anne Christian Academy",
+  "Grace Covenant School",
+  "Providence Christian Academy",
+  "Trinity Classical School",
+  "Redeemer Christian School",
+  "Cornerstone Christian Academy",
+  "New Hope Christian School",
+  "Legacy Christian Academy",
+  "Emmanuel Christian School",
+  "King's Way Christian Academy",
+  "Bethel Christian School",
+  "Veritas Christian Academy",
+  "Crossroads Christian School",
+  "Shepherd's Gate Academy",
+  "Lighthouse Christian School",
+  "Covenant Preparatory School",
+];
+
+function normalizeSchoolId(name, index) {
+  if (index === 0) return DEMO_SCHOOL;
+  return `sandbox-school-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
 }
 
-function MsIcon() {
-  return (
-    <svg viewBox="0 0 21 21" width="17" height="17" aria-hidden="true" style={{ flexShrink: 0 }}>
-      <rect x="0"  y="0"  width="10" height="10" fill="#f25022" />
-      <rect x="11" y="0"  width="10" height="10" fill="#7fba00" />
-      <rect x="0"  y="11" width="10" height="10" fill="#00a4ef" />
-      <rect x="11" y="11" width="10" height="10" fill="#ffb900" />
-    </svg>
-  );
+function fallbackSandboxSchools() {
+  return SANDBOX_SCHOOL_NAMES.map((name, index) => ({
+    id: normalizeSchoolId(name, index),
+    name,
+  }));
 }
 
-function Spin() {
-  return (
-    <span style={{
-      display: "inline-block", width: 13, height: 13,
-      border: "2px solid rgba(255,255,255,0.25)",
-      borderTopColor: "#fff",
-      borderRadius: "50%",
-      animation: "lp-spin 0.6s linear infinite",
-      flexShrink: 0,
-    }} />
-  );
+function buildSchoolList(manifestSchools, sandboxMode) {
+  const normalizedManifest = manifestSchools
+    .map((school) => ({
+      id: school?.id || school?.school_id,
+      name: school?.name || school?.school_name,
+    }))
+    .filter((school) => school.id && school.name);
+
+  if (!sandboxMode) {
+    return normalizedManifest.length > 0
+      ? normalizedManifest
+      : [{ id: DEMO_SCHOOL, name: "Heritage Christian Academy" }];
+  }
+
+  const required = fallbackSandboxSchools();
+  const byName = new Map(normalizedManifest.map((school) => [school.name.toLowerCase(), school]));
+  return required.map((school) => {
+    const existing = byName.get(school.name.toLowerCase());
+    return existing ? { ...existing } : school;
+  });
 }
-
-// Further simplify RoleCard by extracting subcomponents
-function RoleCard({ role, busy, onLogin }) {
-  const isBusy = busy === role.label;
-  const isDim = !!busy && !isBusy;
-  const [hov, setHov] = useState(false);
-
-  // Simplify buttonCursor logic
-  const buttonCursor = (() => {
-    if (isBusy) return "wait";
-    if (isDim) return "default";
-    return "pointer";
-  })();
-
-  const buttonStyle = {
-    display: "flex",
-    alignItems: "center",
-    width: "100%",
-    gap: 0,
-    padding: 0,
-    border: "1px solid",
-    borderColor: hov && !busy ? role.color : "#E4ECF5",
-    borderLeft: `3px solid ${role.color}`,
-    borderRadius: "7px",
-    background: hov && !busy ? "#F6F9FF" : "#FFFFFF",
-    cursor: buttonCursor,
-    opacity: isDim ? 0.28 : 1,
-    outline: "none",
-    fontFamily: "inherit",
-    textAlign: "left",
-    overflow: "hidden",
-    boxShadow: hov && !busy
-      ? "0 2px 14px rgba(15,44,76,0.1)"
-      : "0 1px 3px rgba(15,44,76,0.04)",
-    transform: hov && !busy ? "translateY(-1px)" : "none",
-    transition: "all 0.13s ease",
-  };
-
-  return (
-    <button
-      onClick={() => onLogin(role)}
-      disabled={!!busy}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={buttonStyle}
-    >
-      <RoleCardContent role={role} isBusy={isBusy} />
-    </button>
-  );
-}
-
-function RoleCardContent({ role, isBusy }) {
-  return (
-    <div style={{ flex: 1, padding: "10px 11px" }}>
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: "13px",
-          color: "#0D1F35",
-          lineHeight: 1.25,
-          marginBottom: isBusy ? 0 : "2px",
-        }}
-      >
-        {isBusy ? (
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 7,
-              color: "#0D1F35",
-            }}
-          >
-            <Spin />Signing in...
-          </span>
-        ) : (
-          role.label
-        )}
-      </div>
-      {!isBusy && (
-        <div
-          style={{
-            fontWeight: 400,
-            fontSize: "11px",
-            color: "#7B93AC",
-            lineHeight: 1.4,
-          }}
-        >
-          {role.desc}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Replace fetch with axios for better error handling
-import axios from "axios";
 
 async function fetchSandboxCredentials() {
   try {
-    const res = await axios.get("/demo/heritage_demo_credentials.json");
-    const data = res.data;
-    const persona = data.required_personas?.find(p => p.key === "school_admin") || data.required_personas?.[0];
+    const response = await axios.get("/demo/heritage_demo_credentials.json");
+    const personas = Array.isArray(response.data?.required_personas) ? response.data.required_personas : [];
+    const adminPersona = personas.find((persona) => persona.key === "school_admin") || personas[0];
     return {
-      email: persona?.email || SANDBOX_DEFAULT_EMAIL,
-      pass: SANDBOX_DEFAULT_PASS,
+      email: adminPersona?.email || SANDBOX_DEFAULT_EMAIL,
+      password: SANDBOX_DEFAULT_PASS,
     };
   } catch {
     return {
       email: SANDBOX_DEFAULT_EMAIL,
-      pass: SANDBOX_DEFAULT_PASS,
+      password: SANDBOX_DEFAULT_PASS,
     };
   }
 }
 
-async function fetchSchoolOptions() {
+async function fetchSchools(sandboxMode) {
   try {
-    const res = await axios.get("/demo/schools_manifest.json");
-    const schools = Array.isArray(res.data?.schools) ? res.data.schools : [];
-    const normalized = schools
-      .map((s) => ({
-        id: s?.id || s?.school_id,
-        name: s?.name || s?.school_name,
-      }))
-      .filter((s) => s.id && s.name);
-    if (normalized.length > 0) return normalized;
+    const response = await axios.get("/demo/schools_manifest.json");
+    const manifestSchools = Array.isArray(response.data?.schools) ? response.data.schools : [];
+    return buildSchoolList(manifestSchools, sandboxMode);
   } catch {
-    // Fallback to env/default school when manifest is unavailable.
+    return buildSchoolList([], sandboxMode);
   }
-  return [{ id: DEMO_SCHOOL, name: "Heritage Christian Academy" }];
 }
 
-/*  Page  */
+function CrownMark() {
+  return (
+    <svg viewBox="0 0 120 92" width="42" height="32" aria-hidden="true">
+      <defs>
+        <linearGradient id="crownFill" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.88)" />
+        </linearGradient>
+      </defs>
+      <rect x="7" y="66" width="106" height="18" rx="5" fill="url(#crownFill)" />
+      <polygon points="7,66 7,30 35,52 60,5 85,52 113,30 113,66" fill="url(#crownFill)" />
+      <rect x="7" y="68" width="106" height="3" rx="1.5" fill="#C6A54A" />
+      <circle cx="60" cy="5" r="8" fill="#C6A54A" />
+      <circle cx="7" cy="30" r="6" fill="#C6A54A" />
+      <circle cx="113" cy="30" r="6" fill="#C6A54A" />
+    </svg>
+  );
+}
+
 export default function LoginPage() {
-  const [busy, setBusy] = useState("");
-  const [error, setError] = useState("");
-  const [sandboxEmail, setSandboxEmail] = useState(SANDBOX_DEFAULT_EMAIL);
-  const [sandboxPass, setSandboxPass] = useState(SANDBOX_DEFAULT_PASS);
-  const [schools, setSchools] = useState([{ id: DEMO_SCHOOL, name: "Heritage Christian Academy" }]);
+  const roles = useMemo(() => (IS_SANDBOX ? SANDBOX_ROLES : PROD_ROLES), []);
+  const [schools, setSchools] = useState(fallbackSandboxSchools());
   const [selectedSchoolId, setSelectedSchoolId] = useState(DEMO_SCHOOL);
-
-  // Prefill sandbox credentials from JSON if in sandbox mode
-  useEffect(() => {
-    if (IS_SANDBOX) {
-      fetchSandboxCredentials().then((credentials) => {
-        setSandboxEmail(credentials.email);
-        setSandboxPass(credentials.pass);
-      }).catch(() => {
-        setSandboxEmail(SANDBOX_DEFAULT_EMAIL);
-        setSandboxPass(SANDBOX_DEFAULT_PASS);
-      });
-    }
-  }, []);
+  const [selectedRole, setSelectedRole] = useState(roles[0]?.value || "school_admin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isBusy, setIsBusy] = useState(false);
 
   useEffect(() => {
-    fetchSchoolOptions().then((items) => {
-      setSchools(items);
-      if (!items.some((s) => s.id === selectedSchoolId)) {
-        setSelectedSchoolId(items[0]?.id || DEMO_SCHOOL);
+    fetchSchools(IS_SANDBOX).then((loadedSchools) => {
+      setSchools(loadedSchools);
+      if (!loadedSchools.some((school) => school.id === selectedSchoolId)) {
+        setSelectedSchoolId(loadedSchools[0]?.id || DEMO_SCHOOL);
       }
-    }).catch(() => {
-      setSchools([{ id: DEMO_SCHOOL, name: "Heritage Christian Academy" }]);
-      setSelectedSchoolId(DEMO_SCHOOL);
+    });
+  }, [selectedSchoolId]);
+
+  useEffect(() => {
+    if (!IS_SANDBOX) return;
+    fetchSandboxCredentials().then((credentials) => {
+      setEmail(credentials.email);
+      setPassword(credentials.password);
     });
   }, []);
 
-  async function login(role) {
-    if (busy) return;
+  function fillSandboxCredentials() {
+    setEmail(SANDBOX_DEFAULT_EMAIL);
+    setPassword(SANDBOX_DEFAULT_PASS);
+  }
+
+  async function handleSignIn(event) {
+    event.preventDefault();
+    if (isBusy) return;
+
     setError("");
-    setBusy(role.label);
+    setIsBusy(true);
+
+    const role = roles.find((entry) => entry.value === selectedRole) || roles[0];
+
     try {
-      let access = null, schoolId = selectedSchoolId || DEMO_SCHOOL;
-      let username = sandboxEmail;
-      let password = sandboxPass;
-      if (!IS_SANDBOX) {
-        username = DEMO_USER;
-        password = DEMO_PASS;
-      }
-      // Only allow sandbox login in sandbox mode
-      const r = await globalThis.fetch("/api/v1/auth/token/", {
+      const username = IS_SANDBOX ? email : (email || "demo@crown.example.org");
+      const pass = IS_SANDBOX ? password : (password || "DemoPassword2026!");
+      const response = await globalThis.fetch("/api/v1/auth/token/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password: pass }),
       });
-      if (!r.ok) {
-        const b = await r.json().catch(() => ({}));
-        throw new Error(b.detail || `Auth failed (${r.status})`);
-      }
-      const d = await r.json();
-      access = d.access;
-      schoolId = d.school_id || selectedSchoolId || DEMO_SCHOOL;
-      sessionStorage.setItem("crown.jwt.access", access);
-      sessionStorage.setItem("crown.school.id", schoolId);
 
-      // Redirect sandbox admins to the redesigned admin dashboard
-      if (IS_SANDBOX && role.label === "School Sandbox") {
-        globalThis.location.href = SANDBOX_ADMIN_HOME;
-      } else {
-        globalThis.location.href = role.route;
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.detail || `Auth failed (${response.status})`);
       }
-    } catch (e) {
-      setError(e.message || "Login failed. Is the backend running?");
-      setBusy("");
+
+      const payload = await response.json();
+      sessionStorage.setItem("crown.jwt.access", payload.access);
+      sessionStorage.setItem("crown.school.id", payload.school_id || selectedSchoolId || DEMO_SCHOOL);
+
+      globalThis.location.href = role.route;
+    } catch (authError) {
+      setError(authError.message || "Login failed. Is the backend running?");
+      setIsBusy(false);
     }
   }
 
-  // Only show sandbox login form in sandbox mode
-  if (IS_SANDBOX) {
-    return (
-      <div className="lp-root">
-        <div className="lp-brand">
-          <div className="lp-brand-top">
-            <div className="lp-mark">
-              <CrownSVG size={50} />
-              <div>
-                <div className="lp-mark-name">Crown</div>
-                <div className="lp-mark-tag">School Management Platform</div>
-              </div>
-            </div>
-            <div className="lp-gold-rule" />
-            <h1 className="lp-headline">Sandbox Login</h1>
-            <p className="lp-body-copy">Sign in to your sandbox environment using the prefilled credentials below. Only sandbox logins are permitted in this environment.</p>
-          </div>
-          <div className="lp-brand-bottom">
-            <div className="lp-school-label">Institution</div>
-            <div className="lp-school-name">Heritage Christian Academy</div>
-          </div>
-        </div>
-        <div className="lp-panel">
-          <div className="lp-form">
-            <h1 className="lp-welcome">Sandbox Login</h1>
-            <p className="lp-prompt">Use the prefilled credentials below to access your sandbox.</p>
-            {error && <div className="lp-err">{error}</div>}
-            <form onSubmit={e => { e.preventDefault(); login(ROLES[0]); }}>
-              <label htmlFor="sandbox-school" style={{ fontWeight: 600, fontSize: 13 }}>School</label>
-              <select
-                id="sandbox-school"
-                value={selectedSchoolId}
-                onChange={(e) => setSelectedSchoolId(e.target.value)}
-                className="lp-input"
-                style={{ marginBottom: 12 }}
-              >
-                {schools.map((school) => (
-                  <option key={school.id} value={school.id}>{school.name}</option>
-                ))}
-              </select>
-              <label htmlFor="sandbox-email" style={{ fontWeight: 600, fontSize: 13 }}>Email</label>
-              <input id="sandbox-email" type="email" value={sandboxEmail} readOnly className="lp-input" style={{ marginBottom: 12 }} />
-              <label htmlFor="sandbox-pass" style={{ fontWeight: 600, fontSize: 13 }}>Password</label>
-              <input id="sandbox-pass" type="password" value={sandboxPass} readOnly className="lp-input" style={{ marginBottom: 10 }} />
-              <div className="lp-notice" style={{ marginBottom: 12 }}>
-                Sandbox only. No production records are available from this sign-in.
-              </div>
-              <div style={{ fontSize: 12, color: "#6C88A2", marginBottom: 18 }}>These credentials are valid only for your sandbox. Platform admin and demo/global accounts are not available here.</div>
-              <button type="submit" disabled={busy} style={{ width: "100%", padding: 12, borderRadius: 7, background: "#0F2C4C", color: "#fff", fontWeight: 700, fontSize: 15, border: "none", cursor: busy ? "wait" : "pointer" }}>{busy ? "Signing in..." : "Sign in to Sandbox"}</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ...existing code for non-sandbox environments...
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Spectral:wght@500;600&display=swap');
 
-        .lp-root {
-          display: flex;
-          min-height: 100vh;
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        :root {
+          --lp-navy-900: #0C223C;
+          --lp-navy-700: #183A63;
+          --lp-slate-100: #F4F7FB;
+          --lp-slate-200: #E3EAF3;
+          --lp-slate-500: #5B6E83;
+          --lp-gold-500: #C6A54A;
+          --lp-gold-100: #FBF6E8;
+          --lp-danger-100: #FEF2F2;
+          --lp-danger-600: #B42318;
+          --lp-white: #FFFFFF;
         }
 
-        /*  Brand column  */
-        .lp-brand {
-          width: 400px;
-          flex-shrink: 0;
-          background: linear-gradient(160deg, #071A2E 0%, #0F2C4C 45%, #0D3660 100%);
+        *, *::before, *::after { box-sizing: border-box; }
+
+        .login-root {
+          min-height: 100vh;
+          display: grid;
+          grid-template-columns: minmax(280px, 42%) minmax(320px, 58%);
+          font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: linear-gradient(150deg, #EFF4FB 0%, #F8FBFF 70%);
+          color: #0E1D30;
+        }
+
+        .login-brand {
+          background: radial-gradient(130% 130% at 10% 20%, #1E4A7A 0%, var(--lp-navy-900) 72%);
+          color: var(--lp-white);
+          padding: 42px 38px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 52px 44px;
           position: relative;
           overflow: hidden;
         }
 
-        .lp-brand::before {
+        .login-brand::after {
           content: '';
           position: absolute;
-          top: -140px; right: -140px;
-          width: 420px; height: 420px;
+          right: -120px;
+          bottom: -120px;
+          width: 300px;
+          height: 300px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(28,78,128,0.5) 0%, transparent 68%);
+          background: radial-gradient(circle, rgba(198,165,74,0.2) 0%, rgba(198,165,74,0) 72%);
           pointer-events: none;
         }
 
-        .lp-brand::after {
-          content: '';
-          position: absolute;
-          bottom: -120px; left: -100px;
-          width: 360px; height: 360px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(198,165,74,0.07) 0%, transparent 70%);
-          pointer-events: none;
-        }
+        .brand-top { position: relative; z-index: 1; }
 
-        .lp-brand-top { position: relative; z-index: 1; }
-
-        .lp-mark {
+        .brand-mark {
           display: flex;
           align-items: center;
-          gap: 14px;
-          margin-bottom: 44px;
+          gap: 10px;
+          margin-bottom: 30px;
         }
 
-        .lp-mark-name {
-          color: #fff;
+        .brand-title {
+          font-family: 'Spectral', Georgia, serif;
+          font-weight: 600;
           font-size: 24px;
-          font-weight: 700;
-          letter-spacing: -0.3px;
           line-height: 1;
         }
 
-        .lp-mark-tag {
-          color: rgba(255,255,255,0.42);
-          font-size: 10.5px;
-          font-weight: 500;
+        .brand-subtitle {
+          opacity: 0.78;
+          font-size: 12px;
           letter-spacing: 0.2px;
-          margin-top: 4px;
         }
 
-        .lp-gold-rule {
-          width: 32px; height: 2px;
-          background: #C6A54A;
-          border-radius: 2px;
-          margin-bottom: 22px;
+        .brand-heading {
+          font-family: 'Spectral', Georgia, serif;
+          font-size: 33px;
+          line-height: 1.2;
+          margin: 0 0 12px;
         }
 
-        .lp-headline {
-          color: #fff;
-          font-size: 28px;
-          font-weight: 300;
-          line-height: 1.38;
-          letter-spacing: -0.2px;
-          margin-bottom: 14px;
+        .brand-trust {
+          margin: 0 0 18px;
+          color: rgba(255,255,255,0.88);
+          font-size: 15px;
+          line-height: 1.5;
         }
 
-        .lp-headline strong {
-          font-weight: 700;
+        .brand-guidance {
+          margin: 0 0 14px;
+          color: rgba(255,255,255,0.72);
+          font-size: 14px;
+          line-height: 1.5;
         }
 
-        .lp-body-copy {
-          color: rgba(255,255,255,0.46);
-          font-size: 13px;
-          font-weight: 400;
-          line-height: 1.65;
+        .brand-bullets {
+          margin: 0;
+          padding-left: 18px;
+          display: grid;
+          gap: 8px;
+          color: rgba(255,255,255,0.9);
+          font-size: 14px;
         }
 
-        .lp-brand-bottom {
+        .brand-footer {
           position: relative;
           z-index: 1;
-          padding-top: 20px;
-          border-top: 1px solid rgba(255,255,255,0.09);
+          margin-top: 24px;
+          padding-top: 16px;
+          border-top: 1px solid rgba(255,255,255,0.15);
+          color: rgba(255,255,255,0.82);
+          font-size: 12px;
         }
 
-        .lp-school-label {
-          color: rgba(255,255,255,0.32);
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 1.4px;
-          text-transform: uppercase;
-          margin-bottom: 4px;
-        }
-
-        .lp-school-name {
-          color: rgba(255,255,255,0.6);
-          font-size: 13px;
-          font-weight: 600;
-        }
-
-        /*  Login column  */
-        .lp-panel {
-          flex: 1;
+        .login-panel {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #F1F5FA;
-          padding: 40px 32px;
-          overflow-y: auto;
+          padding: 34px 22px;
         }
 
-        .lp-form {
+        .login-card {
           width: 100%;
-          max-width: 456px;
+          max-width: 500px;
+          background: var(--lp-white);
+          border-radius: 16px;
+          box-shadow: 0 10px 32px rgba(11, 29, 49, 0.14);
+          border: 1px solid var(--lp-slate-200);
+          padding: 24px;
         }
 
-        .lp-input {
-          width: 100%;
-          padding: 9px 10px;
-          border: 1px solid #D5E0EC;
-          border-radius: 6px;
+        .sandbox-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          border-radius: 999px;
+          background: #EDF4FF;
+          border: 1px solid #C8DAF5;
+          color: var(--lp-navy-700);
+          padding: 5px 11px;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.2px;
+          margin-bottom: 12px;
+        }
+
+        .login-title {
+          margin: 0;
+          font-family: 'Spectral', Georgia, serif;
+          font-size: 31px;
+          color: #112A46;
+          line-height: 1.15;
+        }
+
+        .login-subtitle {
+          margin: 8px 0 12px;
+          color: #304A63;
+          font-size: 15px;
+          line-height: 1.45;
+        }
+
+        .warning-banner {
+          border: 1px solid var(--lp-gold-500);
+          background: var(--lp-gold-100);
+          color: #7A5317;
+          padding: 10px 12px;
+          border-radius: 10px;
           font-size: 13px;
-          color: #0D1F35;
-          background: #fff;
+          font-weight: 700;
+          line-height: 1.45;
+          margin-bottom: 14px;
         }
 
-        .lp-input:focus {
-          outline: 2px solid rgba(26, 111, 168, 0.25);
+        .field-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .field-label {
+          display: block;
+          margin-bottom: 5px;
+          font-size: 13px;
+          color: #1C3550;
+          font-weight: 700;
+        }
+
+        .field-input,
+        .field-select {
+          width: 100%;
+          border: 1px solid #CBD8E6;
+          border-radius: 9px;
+          padding: 10px 11px;
+          font-size: 14px;
+          color: #102843;
+          background: var(--lp-white);
+        }
+
+        .field-input:focus,
+        .field-select:focus,
+        .btn-signin:focus,
+        .btn-fill:focus,
+        .btn-microsoft:focus {
+          outline: 2px solid rgba(26, 111, 168, 0.35);
+          outline-offset: 2px;
           border-color: #1A6FA8;
         }
 
-        .lp-welcome {
-          font-size: 22px;
-          font-weight: 700;
-          color: #0D1F35;
-          letter-spacing: -0.3px;
-          margin-bottom: 3px;
-        }
-
-        .lp-prompt {
-          font-size: 13.5px;
-          color: #2f4358;
-          font-weight: 400;
-          margin-bottom: 22px;
-        }
-
-        .lp-grid {
+        .inline-row {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 7px;
-          margin-bottom: 18px;
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+          align-items: end;
         }
 
-        .lp-err {
-          margin-bottom: 14px;
-          padding: 10px 13px;
-          background: #FEF2F2;
-          border: 1px solid #FECACA;
-          border-left: 3px solid #DC2626;
-          border-radius: 6px;
-          color: #991B1B;
-          font-size: 12.5px;
-          font-weight: 500;
-          line-height: 1.5;
-        }
-
-        .lp-notice {
-          padding: 9px 11px;
-          border-radius: 6px;
-          border: 1px solid #FCD34D;
-          background: #FFFBEB;
-          color: #92400E;
-          font-size: 12px;
-          line-height: 1.4;
-          font-weight: 600;
-        }
-
-        .lp-credentials {
-          margin-bottom: 12px;
-          padding: 11px 12px;
-          background: #F7FAFE;
-          border: 1px solid #DCE7F2;
-          border-radius: 7px;
-        }
-
-        .lp-credentials strong {
-          display: block;
-          color: #113457;
-          font-size: 12px;
-          margin-bottom: 6px;
-        }
-
-        .lp-credentials-row {
-          font-size: 12px;
-          color: #274766;
-          line-height: 1.5;
-        }
-
-        .lp-sep {
-          display: flex;
-          align-items: center;
-          gap: 11px;
-          margin-bottom: 13px;
-        }
-
-        .lp-sep-line { flex: 1; height: 1px; background: #D5E0EC; }
-
-        .lp-sep-text {
-          font-size: 11px;
-          color: #3d5268;
-          font-weight: 500;
+        .btn-fill {
+          border: 1px solid #B8CBE0;
+          background: #F2F7FD;
+          color: #1F4467;
+          border-radius: 9px;
+          padding: 10px 12px;
+          font-weight: 700;
+          cursor: pointer;
           white-space: nowrap;
         }
 
-        .lp-ms {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 9px;
+        .btn-signin {
+          margin-top: 4px;
           width: 100%;
-          padding: 11px 16px;
-          background: #fff;
-          border: 1px solid #D2DFEE;
-          border-radius: 7px;
+          border: 0;
+          border-radius: 10px;
+          background: linear-gradient(120deg, #12345A 0%, #1E4A7A 100%);
+          color: #FFFFFF;
+          padding: 12px 14px;
+          font-size: 15px;
+          font-weight: 700;
           cursor: pointer;
-          font-family: inherit;
+        }
+
+        .btn-signin[disabled] {
+          opacity: 0.65;
+          cursor: wait;
+        }
+
+        .btn-microsoft {
+          margin-top: 10px;
+          width: 100%;
+          border: 1px solid #C9D7E6;
+          border-radius: 10px;
+          background: #FFFFFF;
+          color: #183556;
+          padding: 10px 12px;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .error-banner {
+          border: 1px solid #F7B7B7;
+          background: var(--lp-danger-100);
+          color: var(--lp-danger-600);
+          border-radius: 9px;
+          padding: 9px 11px;
           font-size: 13px;
-          font-weight: 600;
-          color: #1A3050;
-          box-shadow: 0 1px 3px rgba(15,44,76,0.05);
-          outline: none;
-          transition: all 0.14s ease;
-          margin-bottom: 22px;
+          font-weight: 700;
         }
 
-        .lp-ms:hover {
-          border-color: #0F2C4C;
-          background: #F5F8FF;
-          box-shadow: 0 2px 12px rgba(15,44,76,0.1);
+        .support-note {
+          margin: 10px 0 2px;
+          color: var(--lp-slate-500);
+          font-size: 12px;
+          line-height: 1.5;
         }
 
-        .lp-foot {
-          font-size: 11px;
-          color: #3d5268;
+        .product-footer {
+          margin: 13px 0 0;
+          color: #3B526A;
+          font-size: 12px;
           text-align: center;
-          line-height: 1.55;
+          font-weight: 600;
         }
 
-        @keyframes lp-spin { to { transform: rotate(360deg); } }
+        @media (max-width: 980px) {
+          .login-root {
+            grid-template-columns: 1fr;
+          }
 
-        @media (max-width: 800px) {
-          .lp-root { flex-direction: column; }
-          .lp-brand { width: 100%; padding: 28px 24px 24px; }
-          .lp-headline { font-size: 22px; }
-          .lp-body-copy { display: none; }
-          .lp-brand-bottom { display: none; }
-          .lp-panel { padding: 24px 14px 28px; align-items: flex-start; }
-          .lp-form { max-width: 100%; }
-          .lp-grid { grid-template-columns: 1fr; }
+          .login-brand {
+            padding: 28px 22px;
+          }
+
+          .login-panel {
+            align-items: flex-start;
+            padding-top: 16px;
+          }
         }
 
-        @media (max-width: 480px) {
-          .lp-mark-name { font-size: 21px; }
-          .lp-welcome { font-size: 19px; }
-          .lp-prompt { font-size: 12.5px; margin-bottom: 16px; }
-          .lp-ms { margin-bottom: 16px; }
+        @media (max-width: 520px) {
+          .login-card {
+            padding: 18px;
+          }
+
+          .login-title {
+            font-size: 27px;
+          }
+
+          .brand-heading {
+            font-size: 27px;
+          }
+
+          .inline-row {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
 
-      <div className="lp-root">
-
-        {/* Brand panel */}
-        <div className="lp-brand">
-          <div className="lp-brand-top">
-            <div className="lp-mark">
-              <CrownSVG size={50} />
+      <main className="login-root">
+        <section className="login-brand" aria-label="Crown guidance">
+          <div className="brand-top">
+            <div className="brand-mark">
+              <CrownMark />
               <div>
-                <div className="lp-mark-name">Crown</div>
-                <div className="lp-mark-tag">School Management Platform</div>
+                <div className="brand-title">Crown2026</div>
+                <div className="brand-subtitle">Christian school operations platform</div>
               </div>
             </div>
 
-            <div className="lp-gold-rule" />
-
-            <h1 className="lp-headline">
-              One platform.<br />
-              <strong>Every stakeholder.</strong>
-            </h1>
-            <p className="lp-body-copy">
-              Purpose-built for independent schools  financial aid,
-              admissions, governance, and academics in a single
-              integrated system.
+            <h1 className="brand-heading">{IS_SANDBOX ? "Crown2026 Sandbox Access" : "Crown2026 Access"}</h1>
+            <p className="brand-trust">
+              A calm and secure sign-in experience for school teams and families.
             </p>
+            <p className="brand-guidance">
+              Choose your school, choose your role, and continue with the correct context before entering any records.
+            </p>
+            <ul className="brand-bullets">
+              <li>Clear school and role context on every login.</li>
+              <li>Sandbox-safe workflows for tester and operator training.</li>
+              <li>Permission-scoped access for each stakeholder role.</li>
+            </ul>
           </div>
 
-          <div className="lp-brand-bottom">
-            <div className="lp-school-label">Institution</div>
-            <div className="lp-school-name">Heritage Christian Academy</div>
-          </div>
-        </div>
+          <p className="brand-footer">Crown2026 - Christian school operations platform</p>
+        </section>
 
-        {/* Login panel */}
-        <div className="lp-panel">
-          <div className="lp-form">
+        <section className="login-panel" aria-label="Login form panel">
+          <form className="login-card" onSubmit={handleSignIn}>
+            {IS_SANDBOX && <div className="sandbox-badge">Sandbox Environment</div>}
 
-            <h1 className="lp-welcome">Login</h1>
-            <h2 className="lp-welcome">Welcome back</h2>
-            <p className="lp-prompt">Select your role to access the correct dashboard and permissions scope.</p>
-
-            <label htmlFor="login-school" style={{ fontWeight: 600, fontSize: 13, display: "block", marginBottom: 6 }}>School</label>
-            <select
-              id="login-school"
-              value={selectedSchoolId}
-              onChange={(e) => setSelectedSchoolId(e.target.value)}
-              className="lp-input"
-              style={{ marginBottom: 12 }}
-            >
-              {schools.map((school) => (
-                <option key={school.id} value={school.id}>{school.name}</option>
-              ))}
-            </select>
-
-            <div className="lp-notice" style={{ marginBottom: 12 }}>
-              Training/demo environment only. No real student or family data is exposed.
-            </div>
-
-            <div className="lp-credentials">
-              <strong>Prefilled Operator Credentials</strong>
-              <div className="lp-credentials-row">Email: {DEMO_USER}</div>
-              <div className="lp-credentials-row">Password: {DEMO_PASS}</div>
-            </div>
-
-            {error && <div className="lp-err">{error}</div>}
-
-            <div className="lp-grid">
-              {ROLES.map((role) => (
-                <RoleCard key={role.label} role={role} busy={busy} onLogin={login} />
-              ))}
-            </div>
-
-            <div className="lp-sep">
-              <div className="lp-sep-line" />
-              <span className="lp-sep-text">or sign in with your school account</span>
-              <div className="lp-sep-line" />
-            </div>
-
-            <button
-              className="lp-ms"
-              onClick={() => { globalThis.location.href = API_BASE + "/auth/microsoft/login/"; }}
-            >
-              <MsIcon />
-              Continue with Microsoft 365
-            </button>
-
-            <p className="lp-foot">
-              Access is restricted to provisioned accounts.
-              Contact your administrator or {SUPPORT_EMAIL} for support.
+            <h2 className="login-title">Sign In</h2>
+            <p className="login-subtitle">
+              {IS_SANDBOX
+                ? "Choose your sandbox school and role, then continue with sandbox credentials."
+                : "Use your authorized role and account to access Crown2026."}
             </p>
 
-          </div>
-        </div>
+            {IS_SANDBOX && (
+              <div className="warning-banner">Use demo data only. Do not enter real school records.</div>
+            )}
 
-      </div>
+            {error && <div className="error-banner" role="alert">{error}</div>}
+
+            <div className="field-grid">
+              <div>
+                <label className="field-label" htmlFor="login-school">School</label>
+                <select
+                  id="login-school"
+                  className="field-select"
+                  value={selectedSchoolId}
+                  onChange={(event) => setSelectedSchoolId(event.target.value)}
+                >
+                  {schools.map((school) => (
+                    <option key={school.id} value={school.id}>{school.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="field-label" htmlFor="login-role">Role</label>
+                <select
+                  id="login-role"
+                  className="field-select"
+                  value={selectedRole}
+                  onChange={(event) => setSelectedRole(event.target.value)}
+                >
+                  {roles.map((role) => (
+                    <option key={role.value} value={role.value}>{role.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="field-label" htmlFor="login-email">Email</label>
+                <input
+                  id="login-email"
+                  className="field-input"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="username"
+                  placeholder={IS_SANDBOX ? "sandbox operator email" : "name@school.org"}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="field-label" htmlFor="login-password">Password</label>
+                <div className="inline-row">
+                  <input
+                    id="login-password"
+                    className="field-input"
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete="current-password"
+                    placeholder={IS_SANDBOX ? "sandbox password" : "enter your password"}
+                    required
+                  />
+                  {IS_SANDBOX && (
+                    <button type="button" className="btn-fill" onClick={fillSandboxCredentials}>
+                      Use Sandbox Credentials
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <button type="submit" className="btn-signin" disabled={isBusy}>
+                {isBusy ? "Signing in..." : "Sign In"}
+              </button>
+
+              {!IS_SANDBOX && (
+                <button
+                  type="button"
+                  className="btn-microsoft"
+                  onClick={() => {
+                    globalThis.location.href = API_BASE + "/auth/microsoft/login/";
+                  }}
+                >
+                  Continue with Microsoft 365
+                </button>
+              )}
+            </div>
+
+            <p className="support-note">
+              Need help? Contact your school administrator or {SUPPORT_EMAIL}.
+            </p>
+            <p className="product-footer">Crown2026 - Christian school operations platform</p>
+          </form>
+        </section>
+      </main>
     </>
   );
 }
