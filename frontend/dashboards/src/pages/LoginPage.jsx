@@ -171,7 +171,7 @@ export default function LoginPage() {
 
     try {
       const username = IS_SANDBOX ? email : (email || "demo@crown.example.org");
-      const pass = IS_SANDBOX ? password : (password || "DemoPassword2026!");
+        const pass = IS_SANDBOX ? password : (password || "demo-password");
       const response = await globalThis.fetch("/api/v1/auth/token/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
