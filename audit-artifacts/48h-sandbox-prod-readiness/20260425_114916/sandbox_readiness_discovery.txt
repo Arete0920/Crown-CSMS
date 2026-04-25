@@ -1,0 +1,531 @@
+﻿Sandbox readiness discovery
+Date/time: 2026-04-25 11:50:05 -04:00
+
+Search terms:
+- sandbox
+- demo school
+- school_admin
+- login
+- prefill
+- Heritage
+- Harvest
+- Faith
+- Calvary
+- St. Anne
+
+===== sandbox =====
+C:\w\crown_main_postmerge_verify\debug_auth.py:12: email = 'admissions@bethesda-christian-school.sandbox.example.org'
+C:\w\crown_main_postmerge_verify\debug_auth.py:13: password = 'SandboxPassword2026!'
+C:\w\crown_main_postmerge_verify\test_custom_login.py:10: email = 'admissions@bethesda-christian-school.sandbox.example.org'
+C:\w\crown_main_postmerge_verify\test_custom_login.py:11: password = 'SandboxPassword2026!'
+C:\w\crown_main_postmerge_verify\audit-artifacts\GATE4_FINAL_APPROVAL_SUMMARY.md:16: - sandbox golden-path proof
+C:\w\crown_main_postmerge_verify\audit-artifacts\GATE4_FINAL_APPROVAL_SUMMARY.md:23: I have reviewed the backend/API/security proof, tenant isolation proof, sandbox golden-path proof, and release-readiness packet. Based on the evidence available at the time of review, I approve Gate 4 Security/Tenant Release Signoff for the May 1 Crown2026 sandbox/release readiness packet.
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\frontend_discovery.txt:8: C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-admin-dashboard-cert.spec.ts
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\frontend_discovery.txt:9: C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-role-route-regression.spec.ts
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:1: Sandbox readiness discovery
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:5: - sandbox
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:16: ===== sandbox =====
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:17: C:\w\crown_main_postmerge_verify\debug_auth.py:12: email = 'admissions@bethesda-christian-school.sandbox.example.org'
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:18: C:\w\crown_main_postmerge_verify\debug_auth.py:13: password = 'SandboxPassword2026!'
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:19: C:\w\crown_main_postmerge_verify\test_custom_login.py:10: email = 'admissions@bethesda-christian-school.sandbox.example.org'
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:20: C:\w\crown_main_postmerge_verify\test_custom_login.py:11: password = 'SandboxPassword2026!'
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:21: C:\w\crown_main_postmerge_verify\audit-artifacts\GATE4_FINAL_APPROVAL_SUMMARY.md:16: - sandbox golden-path proof
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:22: C:\w\crown_main_postmerge_verify\audit-artifacts\GATE4_FINAL_APPROVAL_SUMMARY.md:23: I have reviewed the backend/API/security proof, tenant isolation proof, sandbox golden-path proof, and release-readiness packet. Based on the evidence available at the time of review, I approve Gate 4 Security/Tenant Release Signoff for the May 1 Crown2026 sandbox/release readiness packet.
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:23: C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\frontend_discovery.txt:8: C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-admin-dashboard-cert.spec.ts
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:24: C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\frontend_discovery.txt:9: C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-role-route-regression.spec.ts
+C:\w\crown_main_postmerge_verify\audit-artifacts\freeze-reconcile\01_expected_file_inventory.csv:24: "scripts/release/compuwerx_sandbox_capture.ps1","True","869","2026-04-11T21:33:45"
+C:\w\crown_main_postmerge_verify\audit-artifacts\freeze-reconcile\03_present_files.csv:24: "scripts/release/compuwerx_sandbox_capture.ps1","True","869","2026-04-11T21:33:45"
+C:\w\crown_main_postmerge_verify\audit-artifacts\freeze-reconcile\04_git_status.txt:199: ?? scripts/release/compuwerx_sandbox_capture.ps1
+C:\w\crown_main_postmerge_verify\audit-artifacts\freeze-reconcile\07_release_script_presence.txt:28: scripts/release/compuwerx_sandbox_capture.ps1             True   869 2026-04...
+C:\w\crown_main_postmerge_verify\audit-artifacts\gate4-security-tenant-signoff\GATE4_APPROVAL_RECORDED.md:19: - sandbox golden-path proof
+C:\w\crown_main_postmerge_verify\audit-artifacts\gate4-security-tenant-signoff\GATE4_APPROVAL_RECORDED.md:26: I have reviewed the backend/API/security proof, tenant isolation proof, sandbox golden-path proof, and release-readiness packet. Based on the evidence available at the time of review, I approve Gate 4 Security/Tenant Release Signoff for the May 1 Crown2026 sandbox/release readiness packet.
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\04_local_changed_files.txt:312: audit-artifacts/release-verify/compuwerx_sandbox_capture.txt
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\04_local_changed_files.txt:2611: scripts/release/compuwerx_sandbox_capture.ps1
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\05_local_risk_files.csv:312: "audit-artifacts/release-verify/compuwerx_sandbox_capture.txt","False"
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\05_local_risk_files.csv:2611: "scripts/release/compuwerx_sandbox_capture.ps1","True"
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\local_changed_files.txt:335: audit-artifacts/release-verify/compuwerx_sandbox_capture.txt
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\local_changed_files.txt:2636: scripts/release/compuwerx_sandbox_capture.ps1
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:12: - Gate 2 Sandbox Golden-Path Proof: PASS (225 PASS / 0 FAIL / 0 SAFE-UNAVAILABLE)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:20: - Gate 10 Sandbox Data Safety: PASS
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:28: - Sandbox proof: audit-artifacts/sandbox-golden-path/00_STATUS.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:33: - Gate 10 evidence: audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:38: - Sandbox readiness: GO
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:12: | 2 | Sandbox Golden-Path Proof Gate | PASS | audit-artifacts/sandbox-golden-path/00_STATUS.md |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:15: | 5 | CORS/API-Base Proof Gate | PASS | audit-artifacts/sandbox-golden-path/07_request_failures.csv |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:20: | 10 | Sandbox Data Safety Gate | PASS | audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:21: | 11 | Known Limitations Gate | PASS | audit-artifacts/release-readiness/02_SANDBOX_LIMITATIONS_AND_DISCLOSURES.md |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\02_PRODUCTION_ACCEPTANCE_MATRIX.csv:3: GATE-02,sandbox golden-path proof gate,PASS,audit-artifacts/sandbox-golden-path/00_STATUS.md,Current authoritative run: rows=225 PASS=225 FAIL=0 SAFE=0 request_failures=0 workflow logout/session PASS,none
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\02_PRODUCTION_ACCEPTANCE_MATRIX.csv:6: GATE-05,CORS/API-base proof gate,PASS,audit-artifacts/sandbox-golden-path/07_request_failures.csv,No failure rows in request failures file. CORS=0 wrong_api_base=0 backend_500=0. API base routing and CORS headers functional.,none
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\02_PRODUCTION_ACCEPTANCE_MATRIX.csv:11: GATE-10,sandbox data safety gate,PASS,audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md,Data safety assertions approved by data privacy product and operations owners,none
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\02_PRODUCTION_ACCEPTANCE_MATRIX.csv:12: GATE-11,known limitations gate,PASS,audit-artifacts/release-readiness/02_SANDBOX_LIMITATIONS_AND_DISCLOSURES.md,Known limitations documented: guest login flow deferred to post-release role-guard patterns result in expected access denials (now PASS not SAFE-UNAVAILABLE) sandbox data is non-production.,none
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:8: - Environment: Azure sandbox
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:9: - Frontend URL: https://crown-sandbox.azurestaticapps.net
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:18: - [x] Database migration impact reviewed (no blocking migration risk for sandbox closure)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:25: | Frontend reachable | https://crown-sandbox.azurestaticapps.net | 2026-04-24T23:35:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:28: | Golden-path proof | audit-artifacts/sandbox-golden-path/00_STATUS.md | 2026-04-24T23:27:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:29: | Azure deployment proof package | audit-artifacts/release-readiness/09_AZURE_SANDBOX_DEPLOYMENT_PROOF.md | 2026-04-24T23:40:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:32: - Deployment and runtime verification completed against sandbox endpoints.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:34: - No request-failure blockers remain in sandbox proof artifacts.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:48: - **Evidence Source:** audit-artifacts/sandbox-golden-path/02_golden_path_matrix.csv
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:77: 1. **Sandbox environment:** Single-server deployment with a shared database
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:81: 3. **CORS configuration:** Permissive in sandbox (`http://localhost:*`); production will restrict to the known frontend domain
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:83: 4. **TLS/HTTPS:** Sandbox uses HTTP; production will enforce HTTPS
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:112: - Approval statement: I have reviewed the backend/API/security proof, tenant isolation proof, sandbox golden-path proof, and release-readiness packet. Based on the evidence available at the time of review, I approve Gate 4 Security/Tenant Release Signoff for the May 1 Crown2026 sandbox/release readiness packet.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:118: - audit-artifacts/sandbox-golden-path/02_golden_path_matrix.csv
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:1: # Sandbox Data Safety Signoff
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:4: Gate: 10 (Sandbox Data Safety)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:13: - [x] Sandbox-only credentials
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:19: | Demo-only data set | audit-artifacts/sandbox-golden-path/02_golden_path_matrix.csv | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:21: | Auth/session controls | audit-artifacts/sandbox-golden-path/00_STATUS.md | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:25: - Sandbox credentials are scoped to non-production test accounts.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:26: - Sandbox runtime is isolated from production tenants and production data stores.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\05_SANDBOX_DATA_SAFETY_SIGNOFF.md:27: - Data reset and seed path remains sandbox-scoped and reproducible.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\07_FINAL_GO_NO_GO.md:37: - Gate 10 sandbox data safety: audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\07_FINAL_GO_NO_GO.md:40: ## Sandbox and Proof Baseline
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\07_FINAL_GO_NO_GO.md:42: - Sandbox proof: 225 PASS / 0 FAIL / 0 SAFE-UNAVAILABLE
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\07_FINAL_GO_NO_GO.md:43: - Sandbox readiness: GO
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:8: - Sandbox URL: https://crown-sandbox.azurestaticapps.net
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:27: 1. Sign in with assigned sandbox persona.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:44: Evidence source: audit-artifacts/sandbox-golden-path/00_STATUS.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:47: - Feedback form process: submit through #crown-sandbox-support using template
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:51: - Intake: #crown-sandbox-support and support@crown2026.local
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:69: - Gate 10 evidence: audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\09_AZURE_SANDBOX_DEPLOYMENT_PROOF.md:1: # Azure Sandbox Deployment Proof
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\09_AZURE_SANDBOX_DEPLOYMENT_PROOF.md:20: - Frontend URL: https://crown-sandbox.azurestaticapps.net
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\09_AZURE_SANDBOX_DEPLOYMENT_PROOF.md:29: | Frontend availability | HTTPS sandbox frontend reachable | 2026-04-24T23:35:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\09_AZURE_SANDBOX_DEPLOYMENT_PROOF.md:31: | Login/session check | sandbox proof workflow login/session PASS | 2026-04-24T23:27:00Z | PASS |
+
+===== demo school =====
+C:\w\crown_main_postmerge_verify\seed_a535.py:24: defaults={'name': 'Crown Demo School', 'timezone': 'America/New_York', 'is_active': True}
+C:\w\crown_main_postmerge_verify\seed_a535_clean.py:20: defaults={'name': 'Crown Demo School', 'timezone': 'America/New_York', 'is_active': True}
+C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset-smoke.yml:53: - name: Seed demo school
+C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:60: - name: Seed demo school
+C:\w\crown_main_postmerge_verify\.github\workflows\phase4-gradebook-demo-proof.yml:57: - name: Seed demo school + parent gradebook
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:6: - demo school
+C:\w\crown_main_postmerge_verify\backend\smoke_test_curriculum_demo.py:69: # Expected values from seed_heritage_realism_pack (main demo school)
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:59: "name": "Demo School",
+C:\w\crown_main_postmerge_verify\backend\billing\management\commands\seed_billing_demo.py:28: help="School UUID (defaults to demo school)",
+C:\w\crown_main_postmerge_verify\backend\billing\tests\test_lane2_billing_smoke.py:25: pytest.skip("DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)")
+C:\w\crown_main_postmerge_verify\backend\billing\tests\test_lane2_payment_endpoints.py:13: pytest.skip("DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)")
+C:\w\crown_main_postmerge_verify\backend\core\seed_helpers.py:31: - name: 'Crown Demo School'
+C:\w\crown_main_postmerge_verify\backend\core\seed_helpers.py:39: >>> assert school.name == 'Crown Demo School'
+C:\w\crown_main_postmerge_verify\backend\core\seed_helpers.py:47: 'name': 'Crown Demo School',
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_attendance_demo.py:33: raise RuntimeError("No demo school found")
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:224: """Wipe all demo school data (signals, aftercare, households)."""
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:236: self.stdout.write("No demo school to reset.")
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:239: self.stdout.write(f"Resetting demo school {school.pk}...")
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:49: help = "Seed a realistic demo school for Crown (PK–12, ~300 students, $12k tuition, 35% aid)."
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:333: self.stdout.write(self.style.SUCCESS("✅ Demo school seed complete. Now review in Django Admin."))
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:49: raise RuntimeError("No demo school found after seed_demo_school")
+C:\w\crown_main_postmerge_verify\backend\core\__pycache__\seed_helpers.cpython-312.pyc:29: - name: 'Crown Demo School'
+C:\w\crown_main_postmerge_verify\backend\core\__pycache__\seed_helpers.cpython-312.pyc:37: >>> assert school.name == 'Crown Demo School'
+C:\w\crown_main_postmerge_verify\backend\core\__pycache__\seed_helpers.cpython-312.pyc:38: zschool_id must be UUID, got zCrown Demo SchoolzAmerica/New_YorkT)�name�timezone�	is_active)�id�defaults)�
+C:\w\crown_main_postmerge_verify\backend\crown_api\dev_token_views.py:47: "school_id": "demo school UUID",
+C:\w\crown_main_postmerge_verify\backend\crown_api\dev_token_views.py:78: # 6) Deterministic demo school ID (single source of truth)
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:148: DEV-only ops endpoint that returns the canonical demo school UUID.
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:159: # If you already have a canonical "demo school id" env var, use it.
+C:\w\crown_main_postmerge_verify\backend\crown_api\exports\tests\test_exports_audit_log.py:14: school_id = "b45b8c5a-6708-4597-aad9-a226627b2962"  # canonical demo school
+C:\w\crown_main_postmerge_verify\backend\crown_api\exports\tests\test_exports_audit_log.py:15: School.objects.create(id=school_id, name="Demo School")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\ensure_ci_user.py:5: Also creates the demo school (deterministic UUID) if CI_SMOKE_SCHOOL_ID is set.
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\ensure_ci_user.py:39: # Ensure the demo school exists in prod DB before creating the user
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase3_runtime.py:12: CROWN_DEMO_SCHOOL_ID        Demo school UUID
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase3_runtime.py:113: # Resolve the demo school UUID from the actual database rather than from
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase3_runtime.py:121: self.stdout.write(f"Demo school UUID (from DB): {school_id}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase3_runtime.py:125: f"Demo school '{DEMO_SCHOOL_NAME}' not found in DB — falling back to --school-id"
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_ledger_min.py:5: - 1 Household  (name="Demo Household (proof)", school_id=<demo school>)
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_ledger_min.py:10: Resolves the demo school UUID the same way proof_phase3_runtime does:
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_ledger_min.py:34: # Resolve demo school — must exist (seed_demo_school runs before this)
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_ledger_min.py:40: f"Demo school '{DEMO_SCHOOL_NAME}' not found. "
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:49: # 1) Demo school
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_metrics_permissions_contract.py:21: return School.objects.create(name="Demo School")
+C:\w\crown_main_postmerge_verify\backend\crown_api\__pycache__\dev_token_views.cpython-312.pyc:38: "school_id": "demo school UUID",
+C:\w\crown_main_postmerge_verify\backend\crown_api\__pycache__\ops_views.cpython-312.pyc:73: DEV-only ops endpoint that returns the canonical demo school UUID.
+C:\w\crown_main_postmerge_verify\backend\curricula\management\commands\seed_curricula_demo.py:125: help="UUID of the tenant school to seed (e.g., from DEMO school record).",
+C:\w\crown_main_postmerge_verify\backend\financial_aid\management\commands\seed_phase4b_scenario.py:61: defaults={"name": "Phase4B Demo School"},
+C:\w\crown_main_postmerge_verify\backend\quarantine_old_tests\old_test_mark_needs_info_sent.py:23: print("❌ No demo school/year found. Run seed_demo_school first.")
+C:\w\crown_main_postmerge_verify\backend\quarantine_old_tests\old_test_priority_snapshot.py:23: print("❌ No demo school/year found. Run seed_demo_school first.")
+C:\w\crown_main_postmerge_verify\backend\tests\test_ensure_ci_user_api.py:50: assert school.name == 'Crown Demo School'
+C:\w\crown_main_postmerge_verify\backend\tests\test_ensure_ci_user_api.py:68: name='Crown Demo School',
+C:\w\crown_main_postmerge_verify\backend\tests\test_golden_path_bootstrap_school_create.py:26: # Use canonical demo school UUID from seed_a535.py
+C:\w\crown_main_postmerge_verify\backend\tests\test_golden_path_bootstrap_school_create.py:43: assert school.name == 'Crown Demo School'
+C:\w\crown_main_postmerge_verify\backend\tests\test_graduation_audit_v1.py:13: self.school = School.objects.create(name="Demo School")
+C:\w\crown_main_postmerge_verify\docs\DEMO_RUNBOOK_25MIN.md:7: **Demo school:** Heritage Christian Academy
+C:\w\crown_main_postmerge_verify\docs\DEMO_RUNBOOK_25MIN.md:215: | /admissions is blank | No data in prod | Say "scoped to this demo school" and move to finance segment |
+C:\w\crown_main_postmerge_verify\docs\LOCAL_QUICKSTART.md:28: Use the canonical demo school ID for consistency with Azure DEV:
+C:\w\crown_main_postmerge_verify\docs\LOCAL_QUICKSTART.md:153: - ✅ **School:** Crown Demo School (deterministic UUID: a5351136-98fe-4d48-add0-fa8f62d9ceff)
+C:\w\crown_main_postmerge_verify\docs\OPS_DEV_RESET_SOP.md:247: A: Modify the `school_id` parameter in Step 1. Current default is the demo school.
+C:\w\crown_main_postmerge_verify\docs\PROOF_GRADEBOOK_PLAYBOOK.md:181: | **Demo school seed** | [backend/core/management/commands/seed_demo_school.py](backend/core/management/commands/seed_demo_school.py) |
+C:\w\crown_main_postmerge_verify\docs\PROOF_LOG_FINAL.md:229: [school]       created: Phase4B Demo School
+C:\w\crown_main_postmerge_verify\docs\audit\_audit_test_run.txt:135: SKIPPED [1] backend\billing\tests\test_lane2_billing_smoke.py:25: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+C:\w\crown_main_postmerge_verify\docs\audit\_audit_test_run.txt:136: SKIPPED [1] backend\billing\tests\test_lane2_payment_endpoints.py:13: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+C:\w\crown_main_postmerge_verify\docs\completion\07-INVESTOR-READINESS-CHECKLIST.md:19: | Demo school/data set defined | UNPROVEN | No explicit demo dataset declaration captured in completion docs | |
+C:\w\crown_main_postmerge_verify\docs\demo\DEMO_CHECKLIST.md:242: | "KPI shows dashes (—)" | Check browser console (F12) for API errors. Verify demo school exists. |
+C:\w\crown_main_postmerge_verify\docs\demo\HERITAGE_REALISM_PACK.md:5: Single canonical seed command that populates Heritage demo school with realistic linked data across all roles, making the demo feel like a live school rather than empty CRUD screens.
+C:\w\crown_main_postmerge_verify\docs\maps\LANE2_BILLING_MAP.txt:322: backend\core\management\commands\seed_demo_school.py              49     help = "Seed a realistic demo school for Crown (PK-12, ~300 students, $12k tuition, 35% aid)."
+C:\w\crown_main_postmerge_verify\docs\spine\CHECKPOINT_GRADEBOOK_DEMO_READY.md:75: ### Quick Command (Heritage Christian Academy demo school)
+C:\w\crown_main_postmerge_verify\docs\spine\STEP_16_17_RUNBOOK.md:137: - **Seed data:** Uses existing demo school + seeded data
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\dashboard-proof.spec.ts:5: // Use the Heritage demo school UUID (safe default used throughout your demo wiring).
+C:\w\crown_main_postmerge_verify\scripts\ops\root_legacy\verify_invoices_schema.py:14: # Use the demo school ID
+C:\w\crown_main_postmerge_verify\scripts\ops\root_legacy\verify_invoices_schema.py:24: print(f"Found {invoices.count()} invoices in demo school")
+C:\w\crown_main_postmerge_verify\tools\demo_reset_smoke.ps1:11: 2. seed_demo_school --wipe  (wipes and re-seeds demo school data)
+C:\w\crown_main_postmerge_verify\tools\demo_reset_smoke.ps1:60: Write-Step "Seed demo school (--wipe)"
+
+===== school_admin =====
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:324: role="school_admin",
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:7: - school_admin
+C:\w\crown_main_postmerge_verify\backend\billing\tests\test_billing_api.py:79: role_groups=("school_admin",),
+C:\w\crown_main_postmerge_verify\backend\billing\tests\test_billing_api.py:122: role_groups=("school_admin",),
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:10: {"key": "school_admin", "label": "School Administrator", "role": "admin", "email": "admin@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Nathan Brooks"},
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:181: "school_admin":    [
+C:\w\crown_main_postmerge_verify\backend\crown_api\billing_api\permissions.py:29: FINANCE_RUNTIME_ROLE_IDS = {"super_admin", "school_admin", "finance_admin"}
+C:\w\crown_main_postmerge_verify\backend\crown_api\billing_api\__pycache__\permissions.cpython-312.pyc:10: 2r   r   >   �super_admin�school_admin�
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_rbac_matrix_readonly.py:31: "SCHOOL_ADMIN",
+C:\w\crown_main_postmerge_verify\docs\release\LIVE_REPORTING_EXPORT_AUDIT.json:7749: "path":  "docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md",
+C:\w\crown_main_postmerge_verify\docs\release\evidence\live-pack\20260411_044809\docs\release\live-audit\phase9\phase9_reporting_export_hits.csv:1169: "reporting_exports","docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md","report","False"
+C:\w\crown_main_postmerge_verify\docs\release\evidence\live-pack\20260411_045453\docs\release\live-audit\phase9\phase9_reporting_export_hits.csv:1291: "reporting_exports","docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md","report","False"
+C:\w\crown_main_postmerge_verify\docs\release\evidence\live-pack\20260411_075358\docs\release\live-audit\phase9\phase9_reporting_export_hits.csv:1291: "reporting_exports","docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md","report","False"
+C:\w\crown_main_postmerge_verify\docs\release\evidence\live-pack\20260411_075803\docs\release\live-audit\phase9\phase9_reporting_export_hits.csv:1291: "reporting_exports","docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md","report","False"
+C:\w\crown_main_postmerge_verify\docs\release\evidence\live-pack\20260411_075919\docs\release\live-audit\phase9\phase9_reporting_export_hits.csv:1291: "reporting_exports","docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md","report","False"
+C:\w\crown_main_postmerge_verify\docs\release\evidence\live-pack\20260411_081446\docs\release\live-audit\phase9\phase9_reporting_export_hits.csv:1291: "reporting_exports","docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md","report","False"
+C:\w\crown_main_postmerge_verify\docs\release\live-audit\phase9\phase9_reporting_export_hits.csv:1291: "reporting_exports","docs/ui/SCHOOL_ADMIN_DASHBOARD_CANON.md","report","False"
+C:\w\crown_main_postmerge_verify\frontend\dashboards\public\demo\heritage_demo_credentials.json:9: {"key": "school_admin", "label": "School Administrator", "email": "admin@heritage.example.org"},
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\permissions.js:38: school_admin: ['*'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.js:3: ["head_of_school", "school_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:12: expect(normalizeRoles(["head_of_school"])).toContain("school_admin");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:22: expect(getUserRoles({ role: "head_of_school" })).toContain("school_admin");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:29: expect(hasAnyRole({ role: "head_of_school" }, ["school_admin"])).toBe(true);
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:39: ["school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:46: ["school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:59: { label: "Settings", href: "/settings", roles: ["school_admin"] },
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:81: children: [{ label: "Settings", href: "/settings", roles: ["school_admin"] }],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:74: const SCHOOL_ADMIN = ['school_admin', ...MASTER_CONTROL];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:76: const FINANCE_TEAM = ['finance_admin', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:77: const REGISTRAR_TEAM = ['registrar', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:79: const ACADEMIC_TEAM = ['academic_admin', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:80: const ADMISSIONS_TEAM = ['admissions_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:81: const ADVANCEMENT_TEAM = ['advancement_officer', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:82: const HR_TEAM = ['hr_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:83: const FACILITIES_TEAM = ['facilities_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:84: const HEALTH_TEAM = ['nurse', 'health_office', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:85: const TRANSPORT_TEAM = ['transportation_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:86: const FOOD_TEAM = ['food_service_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:88: const FINE_ARTS_TEAM = ['fine_arts_director', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:89: const ATHLETICS_TEAM = ['athletics_director', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:90: const LIBRARY_TEAM = ['librarian', 'media_specialist', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:91: const EXTENDED_CARE_TEAM = ['extended_care_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:92: const SAFETY_TEAM = ['safety_manager', 'security_officer', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:93: const CURRICULUM_TEAM = ['curriculum_director', 'pd_coordinator', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:94: const CHAPLAIN_TEAM = ['chaplain', 'spiritual_life', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:95: const VOLUNTEER_TEAM = ['volunteer_coordinator', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:96: const PORTRAIT_TEAM = ['service_learning_coordinator', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:237: allowedRoles: SCHOOL_ADMIN,
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:245: path: PATHS.SCHOOL_ADMIN_DASHBOARD,
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:248: allowedRoles: SCHOOL_ADMIN,
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.test.js:35: expect(normalizeRoles(['HEAD_OF_SCHOOL'])).toContain('school_admin');
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.test.js:42: expect(hasRouteAccess(['HEAD_OF_SCHOOL'], ['school_admin'])).toBe(true);
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\AcademicsDashboard.jsx:62: ['parent', 'school_admin', 'super_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'staff', 'admin'].includes(role)
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\LoginPage.jsx:175: const persona = data.required_personas?.find(p => p.key === "school_admin") || data.required_personas?.[0];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\RoleHomeRedirect.jsx:151: if (isSandbox && role === "school_admin") navigate("/school-admin-dashboard");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxOpsRouteAccess.test.jsx:6: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxOpsRouteAccess.test.jsx:10: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxOpsRouteAccess.test.jsx:14: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxPackage3RouteAccess.test.jsx:3: const financeOnly = ["super_admin", "school_admin", "finance_admin"];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxPackage3RouteAccess.test.jsx:6: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxPackage4RouteAccess.test.jsx:3: const financeOnly = ["super_admin", "school_admin", "finance_admin"];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxRouteAccess.test.jsx:5: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:6: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:10: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:14: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:18: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:22: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:31: it("admits school_admin to all finance routes", () => {
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:32: const roles = ["school_admin"];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\paths.js:105: SCHOOL_ADMIN_DASHBOARD: '/school-admin-dashboard',
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:4: 'school_admin',
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:14: ADMIN_ONLY: ['super_admin', 'school_admin', 'head_of_school'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:15: ADMIN_REGISTRAR: ['super_admin', 'school_admin', 'head_of_school', 'registrar'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:16: ADMIN_FINANCE: ['super_admin', 'school_admin', 'head_of_school', 'finance_admin', 'finance'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:17: ACADEMIC_TEAM: ['super_admin', 'school_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'admin'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:88: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:498: allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:534: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:549: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:562: allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+
+===== login =====
+C:\w\crown_main_postmerge_verify\.gitignore:189: login.json
+C:\w\crown_main_postmerge_verify\.gitignore:190: test_login.json
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:554: "/login",
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:669: async function login(page: Page) {
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:670: await page.goto(`${BASE_URL}/login`, { waitUntil: "domcontentloaded" });
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:674: const submit = page.getByRole("button", { name: /sign in|log in|login|continue/i }).first();
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:684: await assertPageHealthy(page, "post-login-admin");
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:695: test("login works and lands on admin", async ({ page }) => {
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:696: await login(page);
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:705: await login(page);
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:846: Start-Process "http://localhost:3000/login"
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:850: Write-Host "Primary login: playwright@crown-demo.local / PlaywrightDemo1!"
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:107: "/login",
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:268: async function login(page: Page) {
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:269: await page.goto(`${BASE_URL}/login`, { waitUntil: "domcontentloaded" });
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:273: const submit = page.getByRole("button", { name: /sign in|log in|login|continue/i }).first();
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:283: await assertPageHealthy(page, "post-login-admin");
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:290: test("login works and lands on admin", async ({ page }) => {
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:291: await login(page);
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:296: await login(page);
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:342: Start-Process "http://localhost:3000/login"
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:346: Write-Host "Default demo login: playwright@crown-demo.local / PlaywrightDemo1!"
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:398: Write-Step "Playwright route and login smoke"
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:449: - browser login and critical dashboard route smoke
+C:\w\crown_main_postmerge_verify\test_custom_login.py:3: Test custom login endpoint
+C:\w\crown_main_postmerge_verify\test_custom_login.py:13: endpoint = f'{BACKEND_BASE}/api/auth/login/'
+C:\w\crown_main_postmerge_verify\WIRING_VERIFICATION_README.txt:23: - browser login and critical dashboard route smoke
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:32: - name: Azure Login
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:33: uses: azure/login@v1
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:45: - name: Azure Login
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:46: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:64: run: az acr login --name crownregistry --only-show-errors
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:103: echo "login_mode=sp" >> "$GITHUB_OUTPUT"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:114: echo "login_mode=oidc" >> "$GITHUB_OUTPUT"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:118: if: steps.auth_guard.outputs.login_mode == 'oidc'
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:125: echo "If Azure login fails with AADSTS700213, ensure Azure federated credential subject exactly matches this value."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:127: - name: Azure Login (Service Principal JSON)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:128: if: steps.auth_guard.outputs.login_mode == 'sp'
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:129: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:133: - name: Azure Login (OIDC)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:134: if: steps.auth_guard.outputs.login_mode == 'oidc'
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:135: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:170: az acr login --name crownregistry --only-show-errors
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:91: echo "login_mode=sp" >> "$GITHUB_OUTPUT"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:102: echo "login_mode=oidc" >> "$GITHUB_OUTPUT"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:106: if: steps.auth_guard.outputs.login_mode == 'oidc'
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:113: echo "If Azure login fails with AADSTS700213, ensure Azure federated credential subject exactly matches this value."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:115: - name: Azure Login (Service Principal JSON)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:116: if: steps.auth_guard.outputs.login_mode == 'sp'
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:117: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:121: - name: Azure Login (OIDC)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:122: if: steps.auth_guard.outputs.login_mode == 'oidc'
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:123: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:158: az acr login --name crownregistry --only-show-errors
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-gradebook.yml:35: # Demo mode configuration (for single-button dev token login)
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-gradebook.yml:207: # Run API proof (uses UI login to acquire token deterministically from sessionStorage)
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-promotion-gate.yml:66: - name: M5 â€” Login and fetch fresh token for smoke probes
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-promotion-gate.yml:80: f"{base}/api/auth/login/",
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-promotion-gate.yml:90: print(f"Login failed: {e.code} {body}", file=sys.stderr)
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-tier1-deployed-smoke.yml:64: - name: Login and fetch fresh RC_TOKEN
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-tier1-deployed-smoke.yml:66: id: rc-login
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-tier1-deployed-smoke.yml:78: f"{base}/api/auth/login/",
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-tier1-deployed-smoke.yml:88: print(f"Login failed: {e.code} {body}", file=sys.stderr)
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:8: - login
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:19: C:\w\crown_main_postmerge_verify\test_custom_login.py:10: email = 'admissions@bethesda-christian-school.sandbox.example.org'
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:20: C:\w\crown_main_postmerge_verify\test_custom_login.py:11: password = 'SandboxPassword2026!'
+C:\w\crown_main_postmerge_verify\audit-artifacts\fix-release-blockers-20260413_073330\01_repo_state.txt:51: M frontend/dashboards/src/pages/LoginPage.jsx
+C:\w\crown_main_postmerge_verify\audit-artifacts\freeze-reconcile\04_git_status.txt:184: ?? login.json
+C:\w\crown_main_postmerge_verify\audit-artifacts\freeze-reconcile\04_git_status.txt:218: ?? test_login.json
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\00_summary.txt:27: - azure_login_failure_detected = YES
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\31_run_view.json:1: {"conclusion":"failure","createdAt":"2026-04-13T07:16:54Z","headBranch":"prod-deploy-20260413_031159-controlled","headSha":"e0f353373967b062deb9bec766954d74c4424d76","jobs":[{"completedAt":"2026-04-13T07:18:54Z","conclusion":"failure","databaseId":71035691258,"name":"build-and-deploy","startedAt":"2026-04-13T07:18:17Z","status":"completed","steps":[{"completedAt":"2026-04-13T07:18:29Z","conclusion":"success","name":"Set up job","number":1,"startedAt":"2026-04-13T07:18:18Z","status":"completed"},{"completedAt":"2026-04-13T07:18:35Z","conclusion":"success","name":"Checkout code","number":2,"startedAt":"2026-04-13T07:18:29Z","status":"completed"},{"completedAt":"2026-04-13T07:18:35Z","conclusion":"success","name":"Guard: tag name must match prod-deploy-*","number":3,"startedAt":"2026-04-13T07:18:35Z","status":"completed"},{"completedAt":"2026-04-13T07:18:39Z","conclusion":"success","name":"Guard: tag required and resolvable","number":4,"startedAt":"2026-04-13T07:18:35Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"failure","name":"Azure Login","number":5,"startedAt":"2026-04-13T07:18:39Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Determine deploy SHA","number":6,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Guard: deploy contract ╬ô├ç├╢ SHA and tag must be present and valid","number":7,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Set up Docker Buildx","number":8,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Log in to Azure Container Registry","number":9,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify AcrPull Identity (Guardrail)","number":10,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Bake BUILD_SHA into artifact","number":11,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Build and push Docker image","number":12,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Pull image for Trivy local scan","number":13,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Run security scan (Trivy)","number":14,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"success","name":"Upload Trivy scan results (SARIF) if present","number":15,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Upload Trivy scan results (SARIF)","number":16,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Set up Python","number":17,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Install dependencies","number":18,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Preflight gate (Django deploy checks)","number":19,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Run tests","number":20,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Upload coverage","number":21,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Deploy to Azure Web App","number":22,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Build allowed appsettings JSON","number":23,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Appsettings allowlist gate","number":24,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Apply appsettings (allowlisted only)","number":25,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Guard: verify BUILD_SHA app setting matches deployed SHA","number":26,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Health check","number":27,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify deployed build_sha via /api/health/","number":28,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify live production build","number":29,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify release identity end-to-end","number":30,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Notify deployment","number":31,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"failure","name":"Rollback on failure","number":32,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:52Z","conclusion":"success","name":"Post Azure Login","number":63,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:52Z","conclusion":"success","name":"Post Checkout code","number":64,"startedAt":"2026-04-13T07:18:52Z","status":"completed"},{"completedAt":"2026-04-13T07:18:52Z","conclusion":"success","name":"Complete job","number":65,"startedAt":"2026-04-13T07:18:52Z","status":"completed"}],"url":"https://github.com/tcmegahan/Crown2026/actions/runs/24330701019/job/71035691258"},{"completedAt":"2026-04-13T07:18:59Z","conclusion":"success","databaseId":71035919438,"name":"notification","startedAt":"2026-04-13T07:18:57Z","status":"completed","steps":[{"completedAt":"2026-04-13T07:18:59Z","conclusion":"success","name":"Set up job","number":1,"startedAt":"2026-04-13T07:18:58Z","status":"completed"},{"completedAt":"2026-04-13T07:18:59Z","conclusion":"skipped","name":"Send Slack notification","number":2,"startedAt":"2026-04-13T07:18:59Z","status":"completed"},{"completedAt":"2026-04-13T07:18:59Z","conclusion":"success","name":"Complete job","number":3,"startedAt":"2026-04-13T07:18:59Z","status":"completed"}],"url":"https://github.com/tcmegahan/Crown2026/actions/runs/24330701019/job/71035919438"}],"status":"completed","updatedAt":"2026-04-13T07:19:00Z","url":"https://github.com/tcmegahan/Crown2026/actions/runs/24330701019"}
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:1: build-and-deploy	Azure Login	∩╗┐2026-04-13T07:18:39.0635265Z ##[group]Run azure/login@v2
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:2: build-and-deploy	Azure Login	2026-04-13T07:18:39.0635577Z with:
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:3: build-and-deploy	Azure Login	2026-04-13T07:18:39.0636240Z   client-id: ***
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:4: build-and-deploy	Azure Login	2026-04-13T07:18:39.0636544Z   tenant-id: ***
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:5: build-and-deploy	Azure Login	2026-04-13T07:18:39.0636832Z   subscription-id: ***
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:6: build-and-deploy	Azure Login	2026-04-13T07:18:39.0637089Z   enable-AzPSSession: false
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:7: build-and-deploy	Azure Login	2026-04-13T07:18:39.0637343Z   environment: azurecloud
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:8: build-and-deploy	Azure Login	2026-04-13T07:18:39.0637600Z   allow-no-subscriptions: false
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\33_failed_job_log.txt:9: build-and-deploy	Azure Login	2026-04-13T07:18:39.0637879Z   audience: api://AzureADTokenExchange
+
+===== prefill =====
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:9: - prefill
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:5: "prefill_enabled": true,
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:7: "school_prefill": "Heritage Christian Academy",
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:8: "tenant_prefill": "heritage-christian-academy",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\public\demo\heritage_demo_credentials.json:6: "prefill_enabled": true,
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\LoginPage.jsx:195: // Prefill sandbox credentials from JSON if in sandbox mode
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\LoginPage.jsx:263: <p className="lp-body-copy">Sign in to your sandbox environment using the prefilled credentials below. Only sandbox logins are permitted in this environment.</p>
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\LoginPage.jsx:273: <p className="lp-prompt">Use the prefilled credentials below to access your sandbox.</p>
+
+===== Heritage =====
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:19: $loadHeritageDemo = @'
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:52: help = "Loads Heritage Christian Academy demo identities and baseline school-scoped data."
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:247: ("Olivia", "Moore", "6", "parent1@heritage.demo"),
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:248: ("Benjamin", "Parker", "3", "parent2@heritage.demo"),
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:249: ("Charlotte", "Reed", "8", "parent3@heritage.demo"),
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:250: ("James", "Scott", "1", "parent4@heritage.demo"),
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:251: ("Ella", "Turner", "K", "parent5@heritage.demo"),
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:292: school_name = "Heritage Christian Academy"
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:294: school_domain = "heritage.demo.crown2026.local"
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:319: email="admin@heritage.demo",
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:329: email="principal@heritage.demo",
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:339: email="teacher@heritage.demo",
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:349: email="parent@heritage.demo",
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:359: email="student@heritage.demo",
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:383: self.stdout.write(self.style.SUCCESS("Heritage Christian Academy demo scaffold loaded."))
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:388: self.stdout.write(f"  admin@heritage.demo / {admin_password}")
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:389: self.stdout.write(f"  principal@heritage.demo / {principal_password}")
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:390: self.stdout.write(f"  teacher@heritage.demo / {teacher_password}")
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:391: self.stdout.write(f"  parent@heritage.demo / {parent_password}")
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:392: self.stdout.write(f"  student@heritage.demo / {student_password}")
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:428: Demo - Heritage Christian Academy - For demonstration purposes only
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:821: $startHeritageDemo = @'
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:829: python manage.py load_heritage_demo --reset-passwords
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:872: Write-FileUtf8 "backend/core/management/commands/load_heritage_demo.py" $loadHeritageDemo
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:880: Write-FileUtf8 "scripts/demo/start_heritage_demo.ps1" $startHeritageDemo
+C:\w\crown_main_postmerge_verify\APPLY_DEMO_PROOF_FIXES.ps1:887: Write-Host "python manage.py load_heritage_demo --reset-passwords"
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:320: if ($helpText -match "load_heritage_demo") {
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:321: Write-Host "==> Loading Heritage demo data"
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:322: python manage.py load_heritage_demo --reset-passwords
+C:\w\crown_main_postmerge_verify\APPLY_WIRING_VERIFICATION_PACK.ps1:324: Write-Host "==> load_heritage_demo command not found. Skipping demo seed." -ForegroundColor Yellow
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:10: - Heritage
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\04_local_changed_files.txt:361: backend/core/demo/heritage_demo_credentials.json
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\04_local_changed_files.txt:2575: frontend/dashboards/public/demo/heritage_demo_credentials.json
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\05_local_risk_files.csv:361: "backend/core/demo/heritage_demo_credentials.json","False"
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\05_local_risk_files.csv:2575: "frontend/dashboards/public/demo/heritage_demo_credentials.json","True"
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\local_changed_files.txt:384: backend/core/demo/heritage_demo_credentials.json
+C:\w\crown_main_postmerge_verify\audit-artifacts\pr-reconcile\local_changed_files.txt:2599: frontend/dashboards/public/demo/heritage_demo_credentials.json
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\03_tags.txt:126: gate3-seed-foundation-heritage-v1
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\03_tags.txt:207: checkpoint_20260119_heritage_academics_seed_v1
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:40: - **SEC-003 (School-Level Data Isolation):** PASS - Heritage Christian Academy data not visible to Harvest Christian School; cross-school data access blocked at API layer
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:49: - **Schools Tested:** 5 (Heritage Christian Academy, Harvest Christian School, Faith Christian Academy, Calvary Christian School, St. Anne's Academy)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:13: - Heritage Christian Academy
+C:\w\crown_main_postmerge_verify\backend\smoke_test_curriculum_demo.py:69: # Expected values from seed_heritage_realism_pack (main demo school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:228: CurriculumSource.objects.create(school_id=school.id, name="BJU Press Heritage Studies")
+C:\w\crown_main_postmerge_verify\backend\classroom\management\commands\seed_classroom_demo.py:41: # Students/Staff must exist already (heritage realism pack creates them)
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:7: "school_prefill": "Heritage Christian Academy",
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:8: "tenant_prefill": "heritage-christian-academy",
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:10: {"key": "school_admin", "label": "School Administrator", "role": "admin", "email": "admin@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Nathan Brooks"},
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:11: {"key": "head_of_school", "label": "Head of School", "role": "executive_admin", "email": "miriam.caldwell@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Miriam Caldwell"},
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:12: {"key": "admissions_director", "label": "Admissions Director", "role": "admissions_admin", "email": "admissions@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Samuel Hayes"},
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:13: {"key": "registrar", "label": "Registrar", "role": "registrar", "email": "registrar@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Monica Dean"},
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:14: {"key": "finance_director", "label": "Finance Director", "role": "finance_admin", "email": "finance@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Olivia Mercer"},
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:15: {"key": "teacher", "label": "Teacher", "role": "teacher", "email": "teacher.lower@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Hannah Porter"},
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:16: {"key": "parent", "label": "Parent", "role": "parent", "email": "parent.reed@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Daniel Reed"},
+C:\w\crown_main_postmerge_verify\backend\core\demo\heritage_demo_credentials.json:17: {"key": "student", "label": "Student", "role": "student", "email": "student.avery.reed11@heritage.example.org", "password": "CrownDemo!2026", "display_name": "Avery Reed"}
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_attendance_demo.py:13: help = "Seed deterministic attendance records for Heritage demo (fixed week: Feb 9-13, 2026)"
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:10: help = "Seed Heritage demo with realism pack: linked data across roles, finance, aid, comms, scheduling, academics."
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:40: self.stdout.write("=== Heritage Realism Pack Seed (canonical) ===")
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:101: self.stdout.write(self.style.SUCCESS("Heritage realism pack: OK"))
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\views.py:20: raw = request.headers.get('X-School-ID') or request.query_params.get('school_id') or 'heritage-demo'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\views.py:22: return value or 'heritage-demo'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:17: default='heritage-demo',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\__pycache__\views.cpython-312.pyc:9: heritage-demo)�headers�get�query_params�str�strip)�request�raw�values      �FC:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\views.py�_school_id_from_requestr      sM   � �
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_auth_jwt.py:16: email="admin@heritage.test",
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_auth_jwt.py:33: data={"email": "admin@heritage.test", "password": "Passw0rd!"},
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_auth_jwt.py:49: assert me["user"]["email"] == "admin@heritage.test"
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_dashboard_snapshot_summary_api.py:13: school_id='heritage-demo',
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_dashboard_snapshot_summary_api.py:29: HTTP_X_SCHOOL_ID='heritage-demo',
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_dashboard_snapshot_summary_api.py:45: HTTP_X_SCHOOL_ID='heritage-demo',
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_dashboard_snapshot_summary_api.py:61: HTTP_X_SCHOOL_ID='heritage-demo',
+C:\w\crown_main_postmerge_verify\backend\governance\services.py:695: def build_heritage_verification_payload(school_id) -> dict:
+C:\w\crown_main_postmerge_verify\backend\governance\services.py:701: "school_name": "Heritage Christian Academy",
+C:\w\crown_main_postmerge_verify\backend\households\tests\test_households_api.py:68: hh = Household.objects.create(school_id=school_a, name="Heritage Household")
+C:\w\crown_main_postmerge_verify\backend\households\tests\test_households_api.py:94: assert data["name"] == "Heritage Household"
+C:\w\crown_main_postmerge_verify\backend\integrations\tests\test_gate2c_webhook_idempotency.py:18: school = School.objects.create(name="Heritage")
+C:\w\crown_main_postmerge_verify\backend\ledger\tests\test_ar_posts_to_journal.py:16: self.school = School.objects.create(name="Heritage Test School")
+C:\w\crown_main_postmerge_verify\backend\ledger\tests\test_gate2b_charge_void_reversal.py:22: school = School.objects.create(name="Heritage")
+C:\w\crown_main_postmerge_verify\backend\parent360\tests\test_parent_overview_api.py:141: school = School.objects.create(name="Heritage Parent Academy")
+C:\w\crown_main_postmerge_verify\backend\scripts\seed_academics_readonly.py:45: name="Heritage Christian Academy",
+C:\w\crown_main_postmerge_verify\backend\scripts\seed_academics_readonly.py:112: ("Alice", "Brooks", "alice.brooks@heritage.edu"),
+
+===== Harvest =====
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:11: - Harvest
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:40: - **SEC-003 (School-Level Data Isolation):** PASS - Heritage Christian Academy data not visible to Harvest Christian School; cross-school data access blocked at API layer
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:49: - **Schools Tested:** 5 (Heritage Christian Academy, Harvest Christian School, Faith Christian Academy, Calvary Christian School, St. Anne's Academy)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:14: - Harvest Christian School
+C:\w\crown_main_postmerge_verify\docs\release\PHASE2_REPORTING_EXPORT_TRANSCRIPT_REPAIR_BLOCK.md:42: - `powershell -ExecutionPolicy Bypass -File .\scripts\release-certification\00_run_release_certification.ps1 -BaseUrl "http://127.0.0.1:8000" -FrontendUrl "http://127.0.0.1:3000" -RepoSlug "tcmegahan/Crown2026" -SandboxAdminEmail "admin@heritage.test" -SandboxAdminPassword "Crown2026!" -SandboxSecondAdminEmail "admin@harvest.test" -SandboxSecondAdminPassword "Crown2026!" -SchoolAdminRoute "/school-admin-dashboard" -SkipLoad`
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-admin-dashboard-cert.spec.ts:6: const secondEmail = process.env.CERT_SANDBOX_SECOND_ADMIN_EMAIL || "admin@harvest.test";
+C:\w\crown_main_postmerge_verify\scripts\release-certification\00_run_release_certification.ps1:9: [string]$SandboxSecondAdminEmail = "admin@harvest.test",
+C:\w\crown_main_postmerge_verify\scripts\release-certification\03_run_playwright_and_golden_path.ps1:7: [string]$SandboxSecondAdminEmail = "admin@harvest.test",
+C:\w\crown_main_postmerge_verify\scripts\release-certification\07_build_final_signoff_packet.ps1:36: $lines += "- [ ] Heritage and Harvest redesigned admin landing re-proven"
+
+===== Faith =====
+C:\w\crown_main_postmerge_verify\CHANGELOG.md:58: - Faith module foundation
+C:\w\crown_main_postmerge_verify\SECURITY.md:52: Good-faith security research is welcome. The following are out of scope unless explicitly authorized:
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:12: - Faith
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:49: - **Schools Tested:** 5 (Heritage Christian Academy, Harvest Christian School, Faith Christian Academy, Calvary Christian School, St. Anne's Academy)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:15: - Faith Christian Academy
+C:\w\crown_main_postmerge_verify\backend\aid\models.py:49: statement_of_faith_score = models.IntegerField(default=0)
+C:\w\crown_main_postmerge_verify\backend\aid\models.py:379: mas_weight_statement_of_faith = models.IntegerField(default=25)
+C:\w\crown_main_postmerge_verify\backend\aid\serializers.py:30: "statement_of_faith_score",
+C:\w\crown_main_postmerge_verify\backend\aid\serializers.py:88: "mas_weight_statement_of_faith",
+C:\w\crown_main_postmerge_verify\backend\aid\migrations\0003_phase75_policy_budget_engine_fields.py:48: name='statement_of_faith_score',
+C:\w\crown_main_postmerge_verify\backend\aid\migrations\0003_phase75_policy_budget_engine_fields.py:111: ('mas_weight_statement_of_faith', models.IntegerField(default=25)),
+C:\w\crown_main_postmerge_verify\backend\aid\migrations\__pycache__\0003_phase75_policy_budget_engine_fields.cpython-312.pyc:20: model_name�name�field�church_involvement_score�family_values_survey_score�liabilities_cents�pastoral_reference_score�pog_preassessment_score�statement_of_faith_score�aidaward�aid_applicationT�awardszaid.aidapplication)�blank�null�	on_delete�related_name�to�explanation_json)r   r
+C:\w\crown_main_postmerge_verify\backend\aid\migrations\__pycache__\0003_phase75_policy_budget_engine_fields.cpython-312.pyc:30:    �	help_text�max_award_percent�<   z,Maximum award as % of gross tuition (0-100).�min_award_percentz,Minimum award as % of gross tuition (0-100).�bucket_need_bpsip  �bucket_mission_bpsi�  �bucket_marketing_bpsi   �bucket_merit_bps�bucket_hardship_bpsi�  �mas_weight_statement_of_faith�   �mas_weight_church_involvement�   �mas_weight_family_values�mas_weight_pastoral_reference�   �mas_weight_pog_preassessment�aid_policies)rA   r?   N)�__name__�
+C:\w\crown_main_postmerge_verify\backend\aid\services\award_engine.py:13: app.statement_of_faith_score = AidApplication.statement_of_faith_score
+C:\w\crown_main_postmerge_verify\backend\aid\services\award_engine.py:47: "statement_of_faith": policy.mas_weight_statement_of_faith,
+C:\w\crown_main_postmerge_verify\backend\aid\services\award_engine.py:56: "statement_of_faith": clamp_int(app.statement_of_faith_score, 0, 100),
+C:\w\crown_main_postmerge_verify\backend\aid\services\__pycache__\award_engine.cpython-312.pyc:19: app.statement_of_faith_score = AidApplication.statement_of_faith_score
+C:\w\crown_main_postmerge_verify\backend\aid\services\__pycache__\award_engine.cpython-312.pyc:31: )�statement_of_faith�church_involvement�
+C:\w\crown_main_postmerge_verify\backend\aid\services\__pycache__\award_engine.cpython-312.pyc:32: family_values�pastoral_reference�pog_preassessment�   r   �d   c              3  �4   �K  � | ]  }�|   �|   z  �� � y �wr	   � )�.0�k�raw�weightss     ��r   �	<genexpr>z$compute_mas_score.<locals>.<genexpr>?   s   �� �� �;�s�!�#�a�&�7�1�:�-�s�s   �)r   �inputs�total_weight�score)�mas_weight_statement_of_faith�mas_weight_church_involvement�mas_weight_family_values�mas_weight_pastoral_reference�mas_weight_pog_preassessment�sum�valuesr   �statement_of_faith_score�church_involvement_score�family_values_survey_score�pastoral_reference_score�pog_preassessment_score�int�round)�policy�app�total_wr#   r   r   s       @@r   �compute_mas_scorer5   '   s�   �� � %�B�B�$�B�B��8�8�$�B�B�#�@�@��G� �'�.�.�"�#�(�q�G� (��(D�(D�a��M�'��(D�(D�a��M�"�3�#A�#A�1�c�J�'��(D�(D�a��M�&�s�'B�'B�A�s�K��C� 
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:33: mas_weight_statement_of_faith=25,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:49: statement_of_faith_score=0,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:86: statement_of_faith_score=100,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:105: mas_weight_statement_of_faith=20,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:112: statement_of_faith_score=50,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:124: statement_of_faith_score=999,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:136: statement_of_faith_score=-50,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:147: app = _make_app(statement_of_faith_score=80)
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:243: statement_of_faith_score=100,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:260: statement_of_faith_score=100,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_engine.py:313: statement_of_faith_score=90,
+C:\w\crown_main_postmerge_verify\backend\aid\__pycache__\models.cpython-312.pyc:32: ForeignKeyr   �PROTECTrC   r   rD   r   rH   r   r_   �	CharFieldrE   �PositiveSmallIntegerField�household_size�IntegerField�income_annual_cents�assets_cents�liabilities_cents�	TextField�notes_internal�statement_of_faith_score�church_involvement_score�family_values_survey_score�pastoral_reference_score�pog_preassessment_score�last_contacted_atr
+C:\w\crown_main_postmerge_verify\backend\aid\__pycache__\models.cpython-312.pyc:208: �aid_policiesr0   r   z>Income below this floor is treated as $0 for need calculation.)r   �	help_text�<   z,Maximum award as % of gross tuition (0-100).z,Minimum award as % of gross tuition (0-100).ip  r;   i�  i   i�  �   �   �   c                   �   � e Zd ZdZy)�AidPolicy.Meta�rC   rD   N�r   r   r   �unique_togetherr   r   r   r   r  �  s   � �5�r   r   rL   c                 �:   � d| j                   � d| j                  � �S )Nu   AidPolicy — rO   r   rR   s    r   rT   zAidPolicy.__str__�  s    � �����}�E�$�2D�2D�1E�F�Fr   N)r   r   r   �__doc__r   rn   r   ro   rC   r   rD   �BigIntegerField�need_income_floor_centsrs   �max_award_percent�min_award_percent�bucket_need_bps�bucket_mission_bps�bucket_marketing_bps�bucket_merit_bps�bucket_hardship_bps�mas_weight_statement_of_faith�mas_weight_church_involvement�mas_weight_family_values�mas_weight_pastoral_reference�mas_weight_pog_preassessmentr   r�   rT   r   r   r   r  r  X  sh  � �� �V�
+C:\w\crown_main_postmerge_verify\backend\aid\__pycache__\serializers.cpython-312.pyc:15: �    )�serializers)�AidApplication�AidAward�AidBudgetTracker�	AidPolicyc                   �$   � e Zd ZdZ G d� d�      Zy)�AidApplicationSerializerzLRead serializer for AidApplication.  Used in admin overview + family portal.c                   �   � e Zd ZeZg d�ZeZy)�AidApplicationSerializer.Meta)�id�	family_id�academic_year_id�status�submitted_at�household_size�income_annual_cents�assets_cents�liabilities_cents�statement_of_faith_score�church_involvement_score�family_values_survey_score�pastoral_reference_score�pog_preassessment_score�notes_internal�
+C:\w\crown_main_postmerge_verify\backend\aid\__pycache__\serializers.cpython-312.pyc:27:                   dgz   ZeZy)�&AidAwardWithExplanationSerializer.Meta�explanation_jsonN)r   r   r   r*   r&   r!   r"   r#   r$   r%   r&   r:   D   s"   � �#�(�(�/�/�3E�2F�F��!�r$   r&   N)r   r   r   r(   r*   r&   r#   r$   r%   r8   r8   A   s   � �H�"�!�&�&� "r$   r8   c                   �    � e Zd Z G d� d�      Zy)�AidPolicySerializerc                   �    � e Zd ZeZg d�Zg d�Zy)�AidPolicySerializer.Meta)r   �	school_idr   �need_income_floor_cents�max_award_percent�min_award_percent�bucket_need_bps�bucket_mission_bps�bucket_marketing_bps�bucket_merit_bps�bucket_hardship_bps�mas_weight_statement_of_faith�mas_weight_church_involvement�mas_weight_family_values�mas_weight_pastoral_reference�mas_weight_pog_preassessmentr   r   )r   r@   r   r   N)r   r   r   r   r    r!   r"   r#   r$   r%   r&   r?   J   s   � ���
+C:\w\crown_main_postmerge_verify\backend\crown_api\metrics_views.py:327: {"date": "Feb 24", "topic": "Faith in Community",   "speaker": "Chaplain Davis"},
+C:\w\crown_main_postmerge_verify\backend\crown_api\settings.py:375: "Purpose-built for Christian and faith-based private schools."
+C:\w\crown_main_postmerge_verify\backend\crown_api\__pycache__\metrics_views.cpython-312.pyc:116: �      S )uK   Spiritual Life Director dashboard — chapel, service hours, pastoral care.r�   r�   i�  i�  r'   r   r   �Feb 24zFaith in CommunityzChaplain Davis)r   �topic�speaker�Feb 26zService & Callingu   Guest — Rev. Park�Mar 3zChapel Worship NightzStudent Ledz)3 students flagged for pastoral follow-upr{   r|   z(4 open care referrals pending assignment)
+C:\w\crown_main_postmerge_verify\backend\crown_api\__pycache__\settings.cpython-312.pyc:49: �.�.�.r   )�%rest_framework.renderers.JSONRenderer)r�   z-rest_framework.renderers.BrowsableAPIRenderer)z9rest_framework_simplejwt.authentication.JWTAuthenticationz0core.auth.authentication.AADBearerAuthenticationz3rest_framework.authentication.SessionAuthenticationz*rest_framework.permissions.IsAuthenticatedz"drf_spectacular.openapi.AutoSchemaz30/minz120/hourz60/min)�exports_user_minute�exports_user_hour�exports_ip_minute)�DEFAULT_AUTHENTICATION_CLASSES�DEFAULT_PERMISSION_CLASSES�DEFAULT_SCHEMA_CLASS�DEFAULT_RENDERER_CLASSES�DEFAULT_THROTTLE_RATESz	Crown APIzwInvestor review and partner integration surface for Crown. Purpose-built for Christian and faith-based private schools.z	1.0.0-rc1)�TITLE�DESCRIPTION�VERSION�SERVE_INCLUDE_SCHEMA�COMPONENT_SPLIT_REQUEST�   )�minutes�   )�days)�Bearer)�ACCESS_TOKEN_LIFETIME�REFRESH_TOKEN_LIFETIME�ROTATE_REFRESH_TOKENS�BLACKLIST_AFTER_ROTATION�AUTH_HEADER_TYPESzstatic/zdjango.db.models.BigAutoFieldz/accounts/login/z
+C:\w\crown_main_postmerge_verify\backend\curricula\management\commands\seed_curricula_demo.py:39: title="Bible 9: Foundations of Faith",
+C:\w\crown_main_postmerge_verify\backend\financial_aid\workflows.py:72: "- 2 Thessalonians 3:10 reminds us to value faithful effort and responsibility.\n"
+C:\w\crown_main_postmerge_verify\backend\financial_aid\workflows.py:88: "- Celebrate students who serve faithfully and grow in responsibility."
+C:\w\crown_main_postmerge_verify\backend\financial_aid\workflows.py:96: "Mentorship can strengthen a student’s faith, character, and academic resilience through intentional discipleship.\n\n"
+C:\w\crown_main_postmerge_verify\backend\financial_aid\workflows.py:295: "reflection_prompt": "Who could faithfully encourage this student in faith, academics, and character this term?",
+C:\w\crown_main_postmerge_verify\backend\outreach\tests\test_outreach.py:348: {"title": "Faithful Service", "prompt": "How did you serve Christ?", "active": True},
+C:\w\crown_main_postmerge_verify\backend\outreach\tests\test_outreach.py:352: assert r.json()["title"] == "Faithful Service"
+C:\w\crown_main_postmerge_verify\backend\portrait\services.py:15: "faith_gate_count": 0,
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\models.py:20: faith_background = models.CharField(max_length=120, blank=True, default="")
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\services.py:279: "faith_gate_count": portrait.get("faith_gate_count", 0),
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\api\serializers.py:32: "faith_background",
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\api\views.py:94: "faith_background",
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\api\views.py:133: "faith_background",
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\api\__pycache__\serializers.cpython-312.pyc:17: student_id�faith_background�baptized�baptism_date�spiritual_gifts�notes�
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\api\__pycache__\views.cpython-312.pyc:62: student_id�error�student_id is required.�r   ��idr<   )r<   r=   ��faith_background�baptized�baptism_date�spiritual_gifts�notes)r*   rB   r&   r   r   �HTTP_400_BAD_REQUESTr   r
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\migrations\0001_initial_spiritual_life.py:161: ('faith_background', models.CharField(blank=True, default='', max_length=120)),
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\migrations\__pycache__\0001_initial_spiritual_life.cpython-312.pyc:128: max_digitsr   �	max_score�administered_by�"spiritual_assessments_administered�spiritual_assessmentsz-assessment_date�StudentSpiritualProfile�faith_background�baptized�baptism_date�spiritual_gifts�spiritual_profiles�
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:393: {"session_date": "2026-03-15", "topic": "Faith & Works"},
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:397: assert resp.data["topic"] == "Faith & Works"
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:501: "faith_background": "Reformed",
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:511: assert resp.data["faith_background"] == "Reformed"
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:519: school=school, student=student, faith_background="Baptist"
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:524: {"student_id": str(student.id), "faith_background": "Presbyterian"},
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:529: assert resp.data["faith_background"] == "Presbyterian"
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:550: school=school, student=student, faith_background="Lutheran"
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:558: assert resp.data["faith_background"] == "Lutheran"
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\tests\test_spiritual_life.py:583: {"faith_background": "Baptist"},
+C:\w\crown_main_postmerge_verify\backend\spiritual_life\__pycache__\models.cpython-312.pyc:21: ForeignKey�CASCADEr"   r#   �	CharField�faith_background�BooleanField�baptized�	DateField�baptism_date�	TextField�spiritual_gifts�notesr   �AUTH_USER_MODEL�SET_NULL�
+C:\w\crown_main_postmerge_verify\docs\COMPLIANCE.md:30: | Faith records | Chapel attendance, Bible progress, milestones | Enrollment duration |
+C:\w\crown_main_postmerge_verify\docs\audit\evidence\openapi.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\audit\evidence\openapi.yaml:36854: faith_background:
+C:\w\crown_main_postmerge_verify\docs\audit\evidence\openapi.yaml:38777: faith_background:
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_admissions_schema.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_admissions_schema_v3.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_admissions_triplecheck.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_admissions_triplecheck_after.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_enrollment_audit.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_enrollment_audit_after.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_openapi_audit_after_priority_fix.yaml:6: for Christian and faith-based private schools.
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_openapi_audit_after_priority_fix.yaml:20647: family_faith_statement:
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_openapi_audit_after_priority_fix.yaml:20656: student_faith_notes:
+C:\w\crown_main_postmerge_verify\docs\investor-audit\archives\20260422_114613\root-files\_tmp_openapi_audit_after_priority_fix.yaml:20680: faith_gate_triggered:
+
+===== Calvary =====
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:13: - Calvary
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:49: - **Schools Tested:** 5 (Heritage Christian Academy, Harvest Christian School, Faith Christian Academy, Calvary Christian School, St. Anne's Academy)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:16: - Calvary Christian School
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\components\dashboard\master\MasterControlPortfolioSnapshotCard.jsx:6: { school: 'Calvary Christian School', status: 'Watch', next: 'Review adoption' },
+
+===== St. Anne =====
+C:\w\crown_main_postmerge_verify\audit-artifacts\48h-sandbox-prod-readiness\20260425_114916\sandbox_readiness_discovery.txt:14: - St. Anne
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\04_SECURITY_TENANT_RELEASE_SIGNOFF.md:49: - **Schools Tested:** 5 (Heritage Christian Academy, Harvest Christian School, Faith Christian Academy, Calvary Christian School, St. Anne's Academy)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\08_OPERATOR_LAUNCH_PACKET.md:17: - St. Anne's Academy

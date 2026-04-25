@@ -1,0 +1,302 @@
+﻿Environment/config discovery
+Date/time: 2026-04-25 11:50:21 -04:00
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:1: name: Azure Drift Watchdog
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:20: name: Assert Azure Infrastructure Invariants
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:29: PROD_URL: https://crown-api-prod.azurewebsites.net/api/health/
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:32: - name: Azure Login
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:33: uses: azure/login@v1
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:35: creds: ${{ secrets.AZURE_CREDENTIALS }}
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:106: - name: "Assert: Prod SECRET_KEY is a KV reference"
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:110: --query "[?name=='SECRET_KEY'].value | [0]" -o tsv)
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:112: echo "❌ DRIFT: Prod SECRET_KEY is NOT a Key Vault reference"
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:116: echo "✅ Prod SECRET_KEY is KV reference"
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:143: - name: "Assert: Dev DATABASE_URL is a KV reference"
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:147: --query "[?name=='DATABASE_URL'].value | [0]" -o tsv 2>/dev/null || true)
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:149: echo "❌ DRIFT: Dev DATABASE_URL is NOT a Key Vault reference"
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:152: echo "✅ Dev DATABASE_URL is KV reference"
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:180: echo "║  All Azure infrastructure invariants satisfied ✅    ║"
+C:\w\crown_main_postmerge_verify\.github\workflows\azure-drift-watchdog.yml:186: echo "  KV refs:      SECRET_KEY + DB_PASSWORD (prod), DATABASE_URL (dev)"
+C:\w\crown_main_postmerge_verify\.github\workflows\backend-gate.yml:39: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\backend-gate.yml:40: SECRET_KEY: ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\backend-gate.yml:42: ALLOWED_HOSTS: localhost,127.0.0.1
+C:\w\crown_main_postmerge_verify\.github\workflows\backend-gate.yml:43: DATABASE_URL: sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\backend-shell-seeded-proof.yml:32: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\backend-shell-write-and-lifecycle-proof.yml:32: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\backend-shell-write-and-lifecycle-proof.yml:79: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\contract-gate.yml:42: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\contract-gate.yml:43: SECRET_KEY: ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\contract-gate.yml:45: ALLOWED_HOSTS: localhost,127.0.0.1
+C:\w\crown_main_postmerge_verify\.github\workflows\contract-gate.yml:46: DATABASE_URL: sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:44: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:45: SECRET_KEY: ci-audit-not-a-real-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:47: ALLOWED_HOSTS: "localhost,127.0.0.1"
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:48: DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:104: grep -nE "DEBUG\s*=|DEMO_MODE|CORS_ALLOW_ALL_ORIGINS|CORS_ALLOW_CREDENTIALS|CSRF_TRUSTED_ORIGINS|ALLOWED_HOSTS|SECURE_|SESSION_COOKIE_SECURE|CSRF_COOKIE_SECURE|X_FRAME_OPTIONS|TENANT_HEADER_REQUIRED|BUILD_SHA" \
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:214: - name: "E3: Production build"
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:286: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:287: SECRET_KEY: ci-audit-not-a-real-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:289: ALLOWED_HOSTS: "localhost,127.0.0.1"
+C:\w\crown_main_postmerge_verify\.github\workflows\crown-magus0-gate.yml:290: DATABASE_URL: "sqlite:///./ci_audit.sqlite3"
+C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset-smoke.yml:29: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset-smoke.yml:30: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset.yml:22: API_BASE: https://crown-api-dev.azurewebsites.net
+C:\w\crown_main_postmerge_verify\.github\workflows\demo-reset.yml:42: API_BASE: https://crown-api-dev.azurewebsites.net
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:1: name: Deploy Dashboard (Production)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:9: # services are stamped from the same SHA and tag on every production push.
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:13: #     and tag name at build time, then shipped inside dist/ to Azure SWA
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:19: #   AZURE_SWA_TOKEN  deployment token from the Azure Static Web Apps resource
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:22: #                     https://crown-dash.azurestaticapps.net
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:119: - name: Deploy to Azure Static Web Apps
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:120: uses: Azure/static-web-apps-deploy@v1
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:122: azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_TOKEN }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:26: REGISTRY: crownregistry.azurecr.io
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:45: - name: Azure Login
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:46: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:48: client-id: ${{ secrets.AZURE_CLIENT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:49: tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:50: subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:63: - name: Log in to Azure Container Registry
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:110: # Azure App Service because it cannot resolve the platform from an
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:120: - name: Deploy to Azure Web App (managed identity pull)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:145: STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ || true)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:164: BODY=$(curl -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ 2>/dev/null || true)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dev.yml:186: echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:1: name: Production Deploy (Dispatch v2)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:24: REGISTRY: crownregistry.azurecr.io
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:32: environment: production
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:65: - name: "Guard: Azure auth secrets present"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:69: AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:70: AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:71: AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:72: AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:75: if [ -n "$AZURE_CREDENTIALS" ]; then
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:76: echo "Using AZURE_CREDENTIALS service principal auth path."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:77: export AZURE_CREDENTIALS
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:84: raw = os.environ.get("AZURE_CREDENTIALS", "")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:88: print("ERROR: AZURE_CREDENTIALS is not valid JSON")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:94: print(f"ERROR: AZURE_CREDENTIALS missing required keys: {', '.join(missing)}")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:100: print(f"ERROR: AZURE_CREDENTIALS key '{key}' is not a valid GUID format")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:108: [ -n "$AZURE_CLIENT_ID" ] || { echo "ERROR: Missing required secret AZURE_CLIENT_ID"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:109: [ -n "$AZURE_TENANT_ID" ] || { echo "ERROR: Missing required secret AZURE_TENANT_ID"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:110: [ -n "$AZURE_SUBSCRIPTION_ID" ] || { echo "ERROR: Missing required secret AZURE_SUBSCRIPTION_ID"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:111: [[ "$AZURE_CLIENT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_CLIENT_ID is not a valid GUID format"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:112: [[ "$AZURE_TENANT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_TENANT_ID is not a valid GUID format"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:113: [[ "$AZURE_SUBSCRIPTION_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_SUBSCRIPTION_ID is not a valid GUID format"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:115: echo "oidc_subject=repo:${{ github.repository }}:environment:production" >> "$GITHUB_OUTPUT"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:124: echo "OIDC audience used by this job: api://AzureADTokenExchange"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:125: echo "If Azure login fails with AADSTS700213, ensure Azure federated credential subject exactly matches this value."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:127: - name: Azure Login (Service Principal JSON)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:129: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:131: creds: ${{ secrets.AZURE_CREDENTIALS }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:133: - name: Azure Login (OIDC)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:135: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:137: client-id: ${{ secrets.AZURE_CLIENT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:138: tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:139: subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:168: - name: Log in to Azure Container Registry
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:259: export DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:260: export DATABASE_URL=sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:266: DJANGO_SECRET_KEY: ${{ github.sha }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:267: DATABASE_URL: sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:268: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:302: - name: Deploy to Azure Web App
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:303: uses: azure/webapps-deploy@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:318: "https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:446: Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:456: response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:473: URL="https://crown-api-prod.azurewebsites.net/api/health/"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:504: HEALTH_URL="https://crown-api-prod.azurewebsites.net/api/health/"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:510: AZURE_IMAGE=$(az webapp config container show \
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:515: if [ -z "$AZURE_IMAGE" ]; then
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:516: AZURE_IMAGE=$(az webapp config container show \
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:522: echo "Azure configured image: $AZURE_IMAGE"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:524: AZURE_SHA=$(echo "$AZURE_IMAGE" | sed -E 's/^DOCKER\|.*:([0-9a-f]{40})$/\1/')
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:525: if [ -z "$AZURE_SHA" ]; then
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:526: echo "Could not extract Azure SHA from configured image."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:535: echo "Waiting for production health..."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:547: export AZURE_SHA
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:554: azure_sha = os.environ["AZURE_SHA"]
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:566: if expected != azure_sha or azure_sha != live_sha:
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:568: f"Release identity mismatch: expected={expected} azure={azure_sha} live={live_sha}"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:571: print("Release identity verified: workflow SHA, Azure SHA, and live SHA all match.")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:578: echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:584: # Azure will handle automatic rollback based on health check
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod-dispatch.yml:602: "text": "Crown Academy Production Deployment",
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:1: name: Production Deploy
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:19: REGISTRY: crownregistry.azurecr.io
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:27: environment: production
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:53: - name: "Guard: Azure auth secrets present"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:57: AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:58: AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:59: AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:60: AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:63: if [ -n "$AZURE_CREDENTIALS" ]; then
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:64: echo "Using AZURE_CREDENTIALS service principal auth path."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:65: export AZURE_CREDENTIALS
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:72: raw = os.environ.get("AZURE_CREDENTIALS", "")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:76: print("ERROR: AZURE_CREDENTIALS is not valid JSON")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:82: print(f"ERROR: AZURE_CREDENTIALS missing required keys: {', '.join(missing)}")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:88: print(f"ERROR: AZURE_CREDENTIALS key '{key}' is not a valid GUID format")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:96: [ -n "$AZURE_CLIENT_ID" ] || { echo "ERROR: Missing required secret AZURE_CLIENT_ID"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:97: [ -n "$AZURE_TENANT_ID" ] || { echo "ERROR: Missing required secret AZURE_TENANT_ID"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:98: [ -n "$AZURE_SUBSCRIPTION_ID" ] || { echo "ERROR: Missing required secret AZURE_SUBSCRIPTION_ID"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:99: [[ "$AZURE_CLIENT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_CLIENT_ID is not a valid GUID format"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:100: [[ "$AZURE_TENANT_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_TENANT_ID is not a valid GUID format"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:101: [[ "$AZURE_SUBSCRIPTION_ID" =~ $guid_re ]] || { echo "ERROR: AZURE_SUBSCRIPTION_ID is not a valid GUID format"; exit 1; }
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:103: echo "oidc_subject=repo:${{ github.repository }}:environment:production" >> "$GITHUB_OUTPUT"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:112: echo "OIDC audience used by this job: api://AzureADTokenExchange"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:113: echo "If Azure login fails with AADSTS700213, ensure Azure federated credential subject exactly matches this value."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:115: - name: Azure Login (Service Principal JSON)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:117: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:119: creds: ${{ secrets.AZURE_CREDENTIALS }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:121: - name: Azure Login (OIDC)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:123: uses: azure/login@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:125: client-id: ${{ secrets.AZURE_CLIENT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:126: tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:127: subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:156: - name: Log in to Azure Container Registry
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:247: export DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:248: export DATABASE_URL=sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:254: DJANGO_SECRET_KEY: ${{ github.sha }}
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:255: DATABASE_URL: sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:256: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:290: - name: Deploy to Azure Web App
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:291: uses: azure/webapps-deploy@v2
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:306: "https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:434: Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:444: response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:461: URL="https://crown-api-prod.azurewebsites.net/api/health/"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:485: - name: Verify live production build
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:492: HEALTH_URL="https://crown-api-prod.azurewebsites.net/api/health/"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:494: echo "Checking production health endpoint..."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:529: print("Production deploy verified successfully.")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:539: HEALTH_URL="https://crown-api-prod.azurewebsites.net/api/health/"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:545: AZURE_IMAGE=$(az webapp config container show \
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:550: if [ -z "$AZURE_IMAGE" ]; then
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:551: AZURE_IMAGE=$(az webapp config container show \
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:557: echo "Azure configured image: $AZURE_IMAGE"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:559: AZURE_SHA=$(echo "$AZURE_IMAGE" | sed -E 's/^DOCKER\|.*:([0-9a-f]{40})$/\1/')
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:560: if [ -z "$AZURE_SHA" ]; then
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:561: echo "Could not extract Azure SHA from configured image."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:570: echo "Waiting for production health..."
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:582: export AZURE_SHA
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:589: azure_sha = os.environ["AZURE_SHA"]
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:601: if expected != azure_sha or azure_sha != live_sha:
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:603: f"Release identity mismatch: expected={expected} azure={azure_sha} live={live_sha}"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:606: print("Release identity verified: workflow SHA, Azure SHA, and live SHA all match.")
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:613: echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:619: # Azure will handle automatic rollback based on health check
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-prod.yml:637: "text": "Crown Academy Production Deployment",
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke-azure-dev.yml:1: name: Azure DEV Smoke (Deterministic)
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke-azure-dev.yml:20: run: echo "BASE=https://crown-api-dev.azurewebsites.net" >> $GITHUB_ENV
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke-azure-dev.yml:33: # 404 = billing app not yet deployed on this Azure DEV instance → acceptable
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke-azure-dev.yml:45: - name: Ensure CI user and get JWT (optional — requires Azure DEV seed)
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke-azure-dev.yml:59: echo "WARN ensure-ci-user did not return a token — Azure DEV may not be seeded with school $SMOKE_SCHOOL_ID"
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke-azure-dev.yml:75: # 404 = billing app not yet deployed on this Azure DEV instance → acceptable
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke.yml:57: URL="https://crown-api-dev.azurewebsites.net/health/"
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke.yml:80: GP_API_BASE: https://crown-api-dev.azurewebsites.net
+C:\w\crown_main_postmerge_verify\.github\workflows\dev-smoke.yml:120: GP_API_BASE: https://crown-api-dev.azurewebsites.net
+C:\w\crown_main_postmerge_verify\.github\workflows\lockdown-golden-path-gate.yml:64: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\migration-lock-gate.yml:42: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\migration-lock-gate.yml:43: SECRET_KEY: ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\migration-lock-gate.yml:45: ALLOWED_HOSTS: localhost,127.0.0.1
+C:\w\crown_main_postmerge_verify\.github\workflows\migration-lock-gate.yml:46: DATABASE_URL: sqlite:///./ci_migration_lock.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\ops-reset-dev.yml:25: API_BASE: https://crown-api-dev.azurewebsites.net
+C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:31: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:32: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\phase3-runtime-proof.yml:33: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\phase4-gradebook-demo-proof.yml:35: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\phase4-gradebook-demo-proof.yml:36: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:1: name: Production Health Watch
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:9: group: production-health-watch
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:18: name: Production Health Monitor
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:23: - name: Check production health endpoint
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:27: if [ -z "${PRODUCTION_URL:-}" ]; then
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:36: "${PRODUCTION_URL}/api/health/" || echo "000")
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:62: PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:74: '## Production Health Alert',
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:82: '2. Verify Azure app service is running.',
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:86: '_This issue was opened automatically by the production health monitor._',
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:92: title: '[ALERT] Production health check failed - ' + now,
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:94: labels: ['production-alert', 'priority-high'],
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:99: run: echo "Production health OK - HTTP ${{ steps.health.outputs.http_code }}"
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:106: const titlePrefix = '[ALERT] Production health check failed';
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:112: labels: 'production-alert',
+C:\w\crown_main_postmerge_verify\.github\workflows\prod-health-watch.yml:121: body: 'Production health recovered. Closing alert automatically.',
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-after-prod.yml:15: #   PROD_API_BASE  — e.g. https://crown-api-prod.azurewebsites.net
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-after-prod.yml:16: #   PROD_DASH_BASE — e.g. https://crown-dash.azurewebsites.net  (optional; skip UI check if absent)
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-after-prod.yml:21: - "Production Deploy"
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-after-prod.yml:22: - "Production Deploy (Dispatch v2)"
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-after-prod.yml:74: echo "      Set it to the backend prod URL, e.g. https://crown-api-prod.azurewebsites.net"
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-prod.yml:5: # Phase 7C— Crown Proof Ceremony (Production)
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony-prod.yml:24: default: "https://crown-api-prod.azurewebsites.net"
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony.yml:38: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony.yml:39: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-ceremony.yml:40: DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-gradebook.yml:33: DJANGO_SETTINGS_MODULE: "crown_api.settings"
+C:\w\crown_main_postmerge_verify\.github\workflows\proof-gradebook.yml:34: DJANGO_SECRET_KEY: "ci-test-secret-key"
+C:\w\crown_main_postmerge_verify\.github\workflows\pytest-gate.yml:39: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\pytest-gate.yml:40: SECRET_KEY: ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\pytest-gate.yml:42: ALLOWED_HOSTS: localhost,127.0.0.1
+C:\w\crown_main_postmerge_verify\.github\workflows\pytest-gate.yml:43: DATABASE_URL: sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-build-sha-proof.yml:32: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-build-sha-proof.yml:39: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-gate.yml:19: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-gate.yml:20: SECRET_KEY: ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-gate.yml:22: ALLOWED_HOSTS: localhost,127.0.0.1
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-gate.yml:23: DATABASE_URL: sqlite:///./ci.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-gate.yml:53: DATABASE_URL: sqlite:///./ci_migration_lock.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-runbook.yml:27: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-runbook.yml:28: DATABASE_URL: sqlite:///./ci_rc.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-runbook.yml:29: SECRET_KEY: rc-ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\rc-runbook.yml:30: ALLOWED_HOSTS: "127.0.0.1,localhost"
+C:\w\crown_main_postmerge_verify\.github\workflows\release-verify.yml:22: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\schema-governance.yml:22: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\spine-audit.yml:50: "(?i)secret_key\\s*[:=]"                                            # secret_key=
+C:\w\crown_main_postmerge_verify\.github\workflows\spine-audit.yml:55: "(?i)AZURE_CLIENT_SECRET"                                           # common env var
+C:\w\crown_main_postmerge_verify\.github\workflows\system-health.yml:19: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\tests.yml:62: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\tests.yml:63: DJANGO_SECRET_KEY: ci-test-secret-key
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:50: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:51: SECRET_KEY: ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:53: ALLOWED_HOSTS: localhost,127.0.0.1
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:54: DATABASE_URL: sqlite:///./ci_ui.sqlite3
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:67: DJANGO_SETTINGS_MODULE: crown_api.settings
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:68: SECRET_KEY: ci-not-secret
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:70: ALLOWED_HOSTS: localhost,127.0.0.1
+C:\w\crown_main_postmerge_verify\.github\workflows\ui-proof-gates.yml:71: DATABASE_URL: sqlite:///./ci_ui.sqlite3
+C:\w\crown_main_postmerge_verify\.github\copilot-instructions.md:3: You are assisting in a production Django codebase.
+C:\w\crown_main_postmerge_verify\.github\copilot-instructions.md:29: - **Major API:** The Director Actions API (`POST /api/director/actions/`) is the central pattern for admin actions (see [backend/crown_api/director_views.py](backend/crown_api/director_views.py) and [docs/DIRECTOR_ACTIONS_API.md](docs/DIRECTOR_ACTIONS_API.md)).
+C:\w\crown_main_postmerge_verify\.github\prod-integrity-target.json:4: "health_url": "https://crown-api-prod.azurewebsites.net/api/health/"
+C:\w\crown_main_postmerge_verify\audit-artifacts\gate4-security-tenant-signoff\GATE4_APPROVAL_RECORDED.md:19: - sandbox golden-path proof
+C:\w\crown_main_postmerge_verify\audit-artifacts\gate4-security-tenant-signoff\GATE4_APPROVAL_RECORDED.md:26: I have reviewed the backend/API/security proof, tenant isolation proof, sandbox golden-path proof, and release-readiness packet. Based on the evidence available at the time of review, I approve Gate 4 Security/Tenant Release Signoff for the May 1 Crown2026 sandbox/release readiness packet.
+C:\w\crown_main_postmerge_verify\audit-artifacts\maximum-proof-20260413_031159\31_run_view.json:1: {"conclusion":"failure","createdAt":"2026-04-13T07:16:54Z","headBranch":"prod-deploy-20260413_031159-controlled","headSha":"e0f353373967b062deb9bec766954d74c4424d76","jobs":[{"completedAt":"2026-04-13T07:18:54Z","conclusion":"failure","databaseId":71035691258,"name":"build-and-deploy","startedAt":"2026-04-13T07:18:17Z","status":"completed","steps":[{"completedAt":"2026-04-13T07:18:29Z","conclusion":"success","name":"Set up job","number":1,"startedAt":"2026-04-13T07:18:18Z","status":"completed"},{"completedAt":"2026-04-13T07:18:35Z","conclusion":"success","name":"Checkout code","number":2,"startedAt":"2026-04-13T07:18:29Z","status":"completed"},{"completedAt":"2026-04-13T07:18:35Z","conclusion":"success","name":"Guard: tag name must match prod-deploy-*","number":3,"startedAt":"2026-04-13T07:18:35Z","status":"completed"},{"completedAt":"2026-04-13T07:18:39Z","conclusion":"success","name":"Guard: tag required and resolvable","number":4,"startedAt":"2026-04-13T07:18:35Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"failure","name":"Azure Login","number":5,"startedAt":"2026-04-13T07:18:39Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Determine deploy SHA","number":6,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Guard: deploy contract ╬ô├ç├╢ SHA and tag must be present and valid","number":7,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Set up Docker Buildx","number":8,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Log in to Azure Container Registry","number":9,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify AcrPull Identity (Guardrail)","number":10,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Bake BUILD_SHA into artifact","number":11,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Build and push Docker image","number":12,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Pull image for Trivy local scan","number":13,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Run security scan (Trivy)","number":14,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"success","name":"Upload Trivy scan results (SARIF) if present","number":15,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Upload Trivy scan results (SARIF)","number":16,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Set up Python","number":17,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Install dependencies","number":18,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Preflight gate (Django deploy checks)","number":19,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Run tests","number":20,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Upload coverage","number":21,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Deploy to Azure Web App","number":22,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Build allowed appsettings JSON","number":23,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Appsettings allowlist gate","number":24,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Apply appsettings (allowlisted only)","number":25,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Guard: verify BUILD_SHA app setting matches deployed SHA","number":26,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Health check","number":27,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify deployed build_sha via /api/health/","number":28,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify live production build","number":29,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Verify release identity end-to-end","number":30,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"skipped","name":"Notify deployment","number":31,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:51Z","conclusion":"failure","name":"Rollback on failure","number":32,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:52Z","conclusion":"success","name":"Post Azure Login","number":63,"startedAt":"2026-04-13T07:18:51Z","status":"completed"},{"completedAt":"2026-04-13T07:18:52Z","conclusion":"success","name":"Post Checkout code","number":64,"startedAt":"2026-04-13T07:18:52Z","status":"completed"},{"completedAt":"2026-04-13T07:18:52Z","conclusion":"success","name":"Complete job","number":65,"startedAt":"2026-04-13T07:18:52Z","status":"completed"}],"url":"https://github.com/tcmegahan/Crown2026/actions/runs/24330701019/job/71035691258"},{"completedAt":"2026-04-13T07:18:59Z","conclusion":"success","databaseId":71035919438,"name":"notification","startedAt":"2026-04-13T07:18:57Z","status":"completed","steps":[{"completedAt":"2026-04-13T07:18:59Z","conclusion":"success","name":"Set up job","number":1,"startedAt":"2026-04-13T07:18:58Z","status":"completed"},{"completedAt":"2026-04-13T07:18:59Z","conclusion":"skipped","name":"Send Slack notification","number":2,"startedAt":"2026-04-13T07:18:59Z","status":"completed"},{"completedAt":"2026-04-13T07:18:59Z","conclusion":"success","name":"Complete job","number":3,"startedAt":"2026-04-13T07:18:59Z","status":"completed"}],"url":"https://github.com/tcmegahan/Crown2026/actions/runs/24330701019/job/71035919438"}],"status":"completed","updatedAt":"2026-04-13T07:19:00Z","url":"https://github.com/tcmegahan/Crown2026/actions/runs/24330701019"}
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-closeout\evidence-pack\04_evidence_pack_index.md:13: - Supporting sources: `audit-artifacts/release-certification/latest/03_playwright_investor_golden_path.txt`, `audit-artifacts/production-readiness-delta/13_morning_smoke_summary.md`
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-closeout\evidence-pack\04_evidence_pack_index.md:40: - Production-alert remediation proof: production health workflow was patched to stop misconfiguration-driven alert spam and stale alert issues were closed.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-closeout\evidence-pack\04_evidence_pack_index.md:41: - CI signal hygiene: release-closeout monitoring now runs with reduced false-positive noise from production-alert issue churn.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-closeout\FINAL_STATUS.md:7: - Complete and verified: production-alert noise root cause was fixed in the production health workflow, and the previously opened alert-spam issues were closed.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-closeout\FINAL_STATUS.md:8: - Complete and verified: CI signal quality improved after removing production-alert noise, reducing false operational blockers during release-closeout monitoring.
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\06_workflows.json:3: "Name":  "azure-drift-watchdog.yml",
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\06_workflows.json:4: "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\.github\\workflows\\azure-drift-watchdog.yml"
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\06_workflows.json:83: "Name":  "dev-smoke-azure-dev.yml",
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\06_workflows.json:84: "FullName":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\.github\\workflows\\dev-smoke-azure-dev.yml"
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\workflow_preflight.json:3: "azure-drift-watchdog.yml",
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-manifest\workflow_preflight.json:23: "dev-smoke-azure-dev.yml",
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:12: - Gate 2 Sandbox Golden-Path Proof: PASS (225 PASS / 0 FAIL / 0 SAFE-UNAVAILABLE)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:20: - Gate 10 Sandbox Data Safety: PASS
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:28: - Sandbox proof: audit-artifacts/sandbox-golden-path/00_STATUS.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:33: - Gate 10 evidence: audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\00_MAY1_RELEASE_READINESS_STATUS.md:38: - Sandbox readiness: GO
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:12: | 2 | Sandbox Golden-Path Proof Gate | PASS | audit-artifacts/sandbox-golden-path/00_STATUS.md |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:15: | 5 | CORS/API-Base Proof Gate | PASS | audit-artifacts/sandbox-golden-path/07_request_failures.csv |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:20: | 10 | Sandbox Data Safety Gate | PASS | audit-artifacts/release-readiness/05_SANDBOX_DATA_SAFETY_SIGNOFF.md |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\01_RELEASE_GATE_CHECKLIST.md:21: | 11 | Known Limitations Gate | PASS | audit-artifacts/release-readiness/02_SANDBOX_LIMITATIONS_AND_DISCLOSURES.md |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:8: - Environment: Azure sandbox
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:9: - Frontend URL: https://crown-sandbox.azurestaticapps.net
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:10: - Backend API URL: https://crown-api-dev.azurewebsites.net
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:18: - [x] Database migration impact reviewed (no blocking migration risk for sandbox closure)
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:25: | Frontend reachable | https://crown-sandbox.azurestaticapps.net | 2026-04-24T23:35:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:26: | Backend health | https://crown-api-dev.azurewebsites.net/api/health/ | 2026-04-24T23:36:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:28: | Golden-path proof | audit-artifacts/sandbox-golden-path/00_STATUS.md | 2026-04-24T23:27:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:29: | Azure deployment proof package | audit-artifacts/release-readiness/09_AZURE_SANDBOX_DEPLOYMENT_PROOF.md | 2026-04-24T23:40:00Z | PASS |
+C:\w\crown_main_postmerge_verify\audit-artifacts\release-readiness\03_DEPLOYMENT_READINESS_CHECKLIST.md:32: - Deployment and runtime verification completed against sandbox endpoints.
