@@ -6,6 +6,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: release-verify-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -13,6 +17,7 @@ jobs:
   release-verify:
     name: release-verify
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       DJANGO_SECRET_KEY: ci-test-secret-key
     steps:
@@ -72,6 +77,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-verify-artifacts
+          if-no-files-found: error
           path: |
             docs/openapi/crown-openapi.yaml
             audit-artifacts/**

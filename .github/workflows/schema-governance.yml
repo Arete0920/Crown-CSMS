@@ -6,6 +6,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: schema-governance-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -13,12 +17,13 @@ jobs:
   schema-governance:
     name: schema-governance
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       DJANGO_SECRET_KEY: ci-test-secret-key
     steps:
       - uses: actions/checkout@v4.1.1
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4.9.1
         with:
           python-version: "3.12"
 
@@ -60,9 +65,10 @@ jobs:
         run: pytest -q tests/test_schema_governance_assets.py
 
       - name: Upload schema artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: schema-governance-artifacts
+          if-no-files-found: error
           path: |
             audit-artifacts/release-verify/**
             audit-artifacts/release-manifest/**
