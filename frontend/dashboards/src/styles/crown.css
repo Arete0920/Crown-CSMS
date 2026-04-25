@@ -92,6 +92,8 @@ body {
   min-width: 0;
   padding: 22px;
   box-sizing: border-box;
+  color: var(--crown-ink) !important;
+  background-color: var(--crown-bg) !important;
 }
 
 /* ── Page header ─────────────────────────────────────────── */
@@ -169,12 +171,6 @@ body {
   color: var(--crown-ink);
   cursor: pointer;
   text-decoration: none;
-}
-
-.crown-btn-primary {
-  background: var(--crown-brand);
-  color: #fff;
-  border-color: transparent;
 }
 
 .crown-btn-primary:hover {
@@ -261,8 +257,7 @@ button, .MuiButton-root {
 /* ── Light-mode override (wins over crown-theme.css !important rules) ───── */
 
 body,
-.crown-app,
-.crown-main {
+.crown-app {
   color: var(--crown-ink) !important;
   background-color: var(--crown-bg) !important;
 }
