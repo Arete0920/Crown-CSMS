@@ -24,24 +24,28 @@ async function seedSession(page, role: string) {
   );
 }
 
-test("Executive Dashboard renders admin KPI cards and Executive Insights section", async ({
+test("School Administrator dashboard renders key workflow and metrics sections", async ({
   page,
 }) => {
   await seedSession(page, "admin");
 
-  // Mock the admin metrics API so the test is independent of any backend or demo fallback.
-  await page.route("**/api/v1/admin/metrics/**", (route) =>
+  // Mock the school-admin summary API so this gate is deterministic and decoupled from backend state.
+  await page.route("**/api/v1/dashboards/school-administrator/summary**", (route) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        enrolled: 320,
-        attendance_flags_today: 5,
-        discipline_incidents_week: 2,
-        messages_pending: 8,
-        billing_delinquencies: 3,
-        enrollment_funnel: { inquiries: 50, applicants: 30, admitted: 25, enrolled: 20 },
-        operational_alerts: [],
+        dashboard_key: "school-administrator",
+        metrics: [
+          { label: "Enrollment", value: "412" },
+          { label: "Attendance Today", value: "96.4%" },
+          { label: "Tuition Collected MTD", value: "$287,400" },
+          { label: "Students At Risk", value: "18" },
+        ],
+        alerts: [
+          { title: "Grade 10 attendance dip for second straight week", level: "High" },
+        ],
+        queue: ["Review board packet readiness by Friday"],
       }),
     })
   );
@@ -66,28 +70,21 @@ test("Executive Dashboard renders admin KPI cards and Executive Insights section
 
   await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
 
-  // Page title from CrownLayout
+  // /admin redirects to the school-admin dashboard route.
   await expect(
-    page.getByRole("heading", { name: /administration/i })
+    page.getByRole("heading", { name: /school administrator dashboard/i })
   ).toBeVisible();
 
-  // Operational KPI cards (rendered from API mock — deterministic)
-  // .first() required: each label also appears in the "Today at a Glance" table row (case-insensitive substring match)
-  await expect(page.locator("text=Enrolled").first()).toBeVisible();  // KPI card + FunnelStep both render "Enrolled"
-  await expect(page.locator("text=Attendance Flags").first()).toBeVisible();
-  await expect(page.locator("text=Discipline").first()).toBeVisible();
-  await expect(page.locator("text=Messages Pending").first()).toBeVisible();
+  // Workflow panel is always present for the school-admin view.
+  await expect(page.locator("text=Administrator Workflow Actions")).toBeVisible();
 
-  // Enrollment funnel section
-  await expect(page.locator("text=Enrollment Funnel")).toBeVisible();
+  // Deterministic metric labels from mocked summary payload.
+  await expect(page.locator("text=Enrollment").first()).toBeVisible();
+  await expect(page.locator("text=Attendance Today").first()).toBeVisible();
+  await expect(page.locator("text=Tuition Collected MTD").first()).toBeVisible();
+  await expect(page.locator("text=Students At Risk").first()).toBeVisible();
 
-  // Executive Insights card title (added in this slice)
-  // .first() required: ErrorBanner title also contains "Executive insights" as a substring (case-insensitive match)
-  await expect(page.locator("text=Executive Insights").first()).toBeVisible();
-
-  // ExecMetric labels (always rendered regardless of API availability)
-  await expect(page.locator("text=Receivables")).toBeVisible();
-  await expect(page.locator("text=Aid Allocated")).toBeVisible();
-  await expect(page.locator("text=Academic Risk")).toBeVisible();
-  await expect(page.locator("text=Overdue Work")).toBeVisible();
+  // Card section titles in the new school-admin layout.
+  await expect(page.locator("text=Administrator Priorities").first()).toBeVisible();
+  await expect(page.locator("text=Operational Queue").first()).toBeVisible();
 });
