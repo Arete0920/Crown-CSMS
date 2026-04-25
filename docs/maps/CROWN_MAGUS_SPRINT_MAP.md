@@ -1,7 +1,7 @@
 # CrownMagus0 – Dev Sprint Map + Gate 4 Lock Checklist
 
-**Objective:** Move from "demo-capable" → "production-hardened"  
-**Duration:** 4 Sprints × 2 weeks = 8 weeks to Gate 4 Lock  
+**Objective:** Move from "demo-capable" → "production-hardened"
+**Duration:** 4 Sprints × 2 weeks = 8 weeks to Gate 4 Lock
 **Tag target:** `crown-0.4.0-gate4-locked`
 
 ---

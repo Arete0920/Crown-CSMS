@@ -13,7 +13,7 @@
       "points_possible": "10.00"
     },
     {
-      "assignment_name": "Homework 1", 
+      "assignment_name": "Homework 1",
       "points_possible": "20.00"
     }
   ],

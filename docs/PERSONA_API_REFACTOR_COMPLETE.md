@@ -1,7 +1,7 @@
 # PERSONA-SPECIFIC API REFACTOR COMPLETE
 
-**Date:** January 4, 2026  
-**Commit:** 27e128c  
+**Date:** January 4, 2026
+**Commit:** 27e128c
 **Branch:** recovery
 
 ## ✅ WHAT WAS IMPLEMENTED
@@ -17,23 +17,23 @@ I had initially built a **unified** API architecture (`/api/director/*` returnin
 ## 📋 NEW API STRUCTURE
 
 ### Aid Director APIs
-- **`GET /api/aid/priority-queue/`**  
+- **`GET /api/aid/priority-queue/`**
   Returns ONLY aid worklist items (needs_info, under_review, accepted_not_posted)
-  
-- **`GET /api/aid/metrics/`**  
+
+- **`GET /api/aid/metrics/`**
   Returns ONLY aid metrics (application counts, awarded amounts)
-  
-- **`GET /api/aid/timeline/`**  
+
+- **`GET /api/aid/timeline/`**
   Returns ONLY aid events (application submissions, status changes)
 
-### Admissions Director APIs  
-- **`GET /api/admissions/priority-queue/`**  
+### Admissions Director APIs
+- **`GET /api/admissions/priority-queue/`**
   Returns ONLY admissions worklist items (needs_info, under_review)
-  
-- **`GET /api/admissions/metrics/`**  
+
+- **`GET /api/admissions/metrics/`**
   Returns ONLY admissions metrics (application counts by status)
-  
-- **`GET /api/admissions/timeline/`**  
+
+- **`GET /api/admissions/timeline/`**
   Returns ONLY admissions events (application submissions)
 
 ---
@@ -146,7 +146,7 @@ python validate_persona_apis.py  # In another terminal
 
 ## 📊 WHAT'S DIFFERENT NOW
 
-### BEFORE (Unified Architecture)  
+### BEFORE (Unified Architecture)
 ❌ Single API `/api/director/priority/` returned merged data:
 ```json
 {
@@ -157,7 +157,7 @@ python validate_persona_apis.py  # In another terminal
 }
 ```
 
-### AFTER (Persona-Specific Architecture)  
+### AFTER (Persona-Specific Architecture)
 ✅ Separate APIs per persona:
 - `/api/aid/priority-queue/` → **ONLY aid data**
 - `/api/admissions/priority-queue/` → **ONLY admissions data**

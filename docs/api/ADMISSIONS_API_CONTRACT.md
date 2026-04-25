@@ -1,9 +1,9 @@
 # Admissions Funnel API Contract
 
-**Version:** 1.0.0  
-**Status:** FROZEN (v1.0)  
-**Last Updated:** 2026-01-31  
-**Author:** @tcmegahan  
+**Version:** 1.0.0
+**Status:** FROZEN (v1.0)
+**Last Updated:** 2026-01-31
+**Author:** @tcmegahan
 
 ---
 
@@ -20,10 +20,10 @@
 
 All endpoints require:
 
-- **Header:** `Authorization: Bearer <JWT_TOKEN>`  
+- **Header:** `Authorization: Bearer <JWT_TOKEN>`
   Obtained from `POST /api/v1/auth/token/`
 
-- **Header:** `X-School-Id: <UUID>`  
+- **Header:** `X-School-Id: <UUID>`
   Required to scope all queries to school
 
 **Example:**
@@ -483,7 +483,7 @@ $drilldown = Invoke-RestMethod -Uri "$API/api/v1/admissions/drilldown/?stage=inq
 
 ## Contract Tests
 
-This contract is **automatically enforced** by:  
+This contract is **automatically enforced** by:
 **`backend/admissions/tests/test_admissions_endpoints.py`**
 
 - **12+ automated tests** validate every response shape, field type, and status code

@@ -24,27 +24,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.14'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: |
           pip install -r backend/requirements.txt
-      
+
       - name: Run migrations
         run: |
           cd backend
           python manage.py migrate --noinput
-      
+
       - name: Django system check
         run: |
           cd backend
           python manage.py check
-      
+
       - name: Run pytest suite
         run: |
           cd backend

@@ -1,6 +1,6 @@
 # PR, Issues, and Concerns Action Plan
 
-Generated: 2026-04-02  
+Generated: 2026-04-02
 Branch: `chore/github-cleanup-phase3-investor-evidence`
 
 Purpose: provide one canonical, execution-ready cleanup plan for open PR backlog,
@@ -42,7 +42,7 @@ workflow, and root file deletion deltas.
 
 ### Close Candidate
 
-1. [#641](https://github.com/tcmegahan/Crown2026/pull/641) `chore: remove stale operational debris from repo root`  
+1. [#641](https://github.com/tcmegahan/Crown2026/pull/641) `chore: remove stale operational debris from repo root`
 Reason: superseded by cleanup sequence delivered in Phase 1/2/3 branches.
 
 ---

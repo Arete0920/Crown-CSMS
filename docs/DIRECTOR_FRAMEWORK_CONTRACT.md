@@ -1,7 +1,7 @@
 # DIRECTOR FRAMEWORK CONTRACT
 
-**Version:** 1.0  
-**Date:** 2026-01-04  
+**Version:** 1.0
+**Date:** 2026-01-04
 **Architecture:** Unified Dashboard (Multi-Persona)
 
 ---
@@ -249,7 +249,7 @@ Clone from Aid pattern (around line 428-470):
 # --- <Module> priorities (cloned from Aid) ---
 <module>_needs_info_apps = (
     <Module>Application.objects
-    .filter(school_id=school_id, academic_year=academic_year, 
+    .filter(school_id=school_id, academic_year=academic_year,
             status=<Module>Application.STATUS_NEEDS_INFO)
     .select_related("family")
     .order_by("-submitted_at")[:10]
@@ -358,8 +358,8 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/director/dashboard/" | Convert
 ## Current Anchors
 
 ### anchor-financial-aid-director-v1
-**Date:** 2026-01-03  
-**Commit:** af946be  
+**Date:** 2026-01-03
+**Commit:** af946be
 **Status:** ✅ Gold Standard
 
 **What's included:**
@@ -369,8 +369,8 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/director/dashboard/" | Convert
 - API integration (aid section in priority queue)
 
 ### anchor-admissions-director-v1
-**Date:** 2026-01-04  
-**Commit:** e337b3a  
+**Date:** 2026-01-04
+**Commit:** e337b3a
 **Status:** ✅ Validated
 
 **What's included:**
@@ -457,5 +457,5 @@ All API endpoints must meet these targets:
 
 ---
 
-**Maintained by:** Crown 2026 Team  
+**Maintained by:** Crown 2026 Team
 **Questions?** See `director_views.py` or `REFERENCE_MODULE_PATTERN.md`

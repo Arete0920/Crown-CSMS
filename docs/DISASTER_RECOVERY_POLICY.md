@@ -1,7 +1,7 @@
 # Crown2026 — Disaster Recovery Policy
 
-**Version:** 1.0  
-**Effective:** 2026-02-28  
+**Version:** 1.0
+**Effective:** 2026-02-28
 **Owner:** Engineering Leadership
 
 ---
@@ -66,7 +66,7 @@ Automation: `python manage.py verify_backup_restore`
 
 ## Status Page
 
-Public uptime status: required before GA launch.  
+Public uptime status: required before GA launch.
 Provider: Atlassian Statuspage or BetterStack (TBD — Phase 5).
 
 ---

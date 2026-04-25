@@ -1,7 +1,7 @@
 # Financial Invariants — Engineering Contract
 
-> **Purpose:** Canonical list of enforced ledger/journal invariants.  
-> **Authority:** This document is generated from tests; if a test and this doc disagree, the test wins.  
+> **Purpose:** Canonical list of enforced ledger/journal invariants.
+> **Authority:** This document is generated from tests; if a test and this doc disagree, the test wins.
 > **Phase:** 7.3 — Ledger Invariant Hardening (PR #430)
 
 ---

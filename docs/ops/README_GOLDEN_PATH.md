@@ -148,7 +148,7 @@ Use the repo root script for a quick, deterministic check of App Service status 
 ```
 
 ### Bootstrap before each Azure smoke
-On Azure, the smoke run **changes state** (e.g., invoices get paid and awards get posted).  
+On Azure, the smoke run **changes state** (e.g., invoices get paid and awards get posted).
 So for repeatable receipts, run the bootstrap command first to print **fresh GP_* IDs**:
 
 ```bash

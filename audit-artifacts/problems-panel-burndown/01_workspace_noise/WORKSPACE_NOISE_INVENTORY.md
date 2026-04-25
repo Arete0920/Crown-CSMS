@@ -1,4 +1,4 @@
-﻿# Workspace / Path Noise Inventory
+# Workspace / Path Noise Inventory
 
 ## Purpose
 
@@ -41,7 +41,7 @@ Git repo/worktree: YES
 ### C:\w\crown_main_verify
 
 Git repo/worktree: YES
-- Branch: 
+- Branch:
 - HEAD: b629364f22e138ba50fd92a0dfd1da3e7e43e72f
 - Dirty: False
 
@@ -60,7 +60,7 @@ Git repo/worktree: YES
 ### C:\w\pr756_fix
 
 Git repo/worktree: YES
-- Branch: 
+- Branch:
 - HEAD: 3299c08c1243134a3ecb5173a7179f95bbe5cb62
 - Dirty: False
 

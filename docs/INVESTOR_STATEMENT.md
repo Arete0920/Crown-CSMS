@@ -1,6 +1,6 @@
 # Investor-Ready Production Statement
 
-**Date**: January 27, 2026  
+**Date**: January 27, 2026
 **Status**: ✅ Production Verified
 
 ---
@@ -34,7 +34,7 @@ curl https://crown-api-prod.azurewebsites.net/api/health/
    │  - DEV workflow bakes SHA into artifact
    │
    └─→ 8241bfe (crown-0.3.1-prod-pipeline-fix) [DEPLOYED]
-      
+
       Pipeline parity: PROD workflow aligned with DEV
       - Bakes SHA into artifact (no appsettings mutation)
       - Eliminates SCM container restart conflict

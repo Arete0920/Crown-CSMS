@@ -1,5 +1,5 @@
 # 🧭 DIRECTOR_FRAMEWORK_CONTRACT.md
-**Crown Christian School Management Solutions**  
+**Crown Christian School Management Solutions**
 **Director Dashboard Framework – Contract v1.0 (LOCKED)**
 
 This contract governs all Director dashboards under the `/director/` route family.

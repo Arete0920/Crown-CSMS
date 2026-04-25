@@ -1,6 +1,6 @@
 # Curriculum Segment Demo Script
-**Demo Date: Feb 28, 2026**  
-**Segment Length: 8–12 minutes**  
+**Demo Date: Feb 28, 2026**
+**Segment Length: 8–12 minutes**
 **Narrative: Mission-driven curriculum with pacing analytics**
 
 ---
@@ -19,9 +19,9 @@ python -m pytest -q tests/test_curriculum_pacing.py
 ```
 
 **If both succeed with exit code 0:**
-✅ Database is fresh and seeded  
-✅ Scoping is enforced  
-✅ Routes are live  
+✅ Database is fresh and seeded
+✅ Scoping is enforced
+✅ Routes are live
 ✅ Clear to proceed with demo
 
 **If either fails:**
@@ -65,8 +65,8 @@ Expected: `Starting development server at http://127.0.0.1:8000/`
 
 **Narrator says:**
 
-> "We've built a curriculum framework for Christian schools. This is bigger than just lessons—it's about pacing. We need to know: is instruction staying on schedule? Are we falling behind?  
->  
+> "We've built a curriculum framework for Christian schools. This is bigger than just lessons—it's about pacing. We need to know: is instruction staying on schedule? Are we falling behind?
+>
 > Let me show you what that looks like."
 
 **On screen:**
@@ -112,10 +112,10 @@ Expected: `Starting development server at http://127.0.0.1:8000/`
 
 **Narrator says:**
 
-> "Here's the curriculum pacing view. Each row represents one of our four active courses. The percentage shows—out of all planned lessons—how many are 'due' by today's date.  
->  
-> We set lesson dates 14 days in advance and distribute them across the unit. So BIB-09 has 20 lessons total, spread from Feb 2 to Feb 27. Today is Feb 16, so 11 of those 20 are past or present. That's 55% complete.  
->  
+> "Here's the curriculum pacing view. Each row represents one of our four active courses. The percentage shows—out of all planned lessons—how many are 'due' by today's date.
+>
+> We set lesson dates 14 days in advance and distribute them across the unit. So BIB-09 has 20 lessons total, spread from Feb 2 to Feb 27. Today is Feb 16, so 11 of those 20 are past or present. That's 55% complete.
+>
 > This isn't a perfection metric. It's a reality check: 'Are we on pace, or are we drifting?'"
 
 **On screen (for each course):**
@@ -134,10 +134,10 @@ Expected: `Starting development server at http://127.0.0.1:8000/`
 
 **Narrator says:**
 
-> "Under the hood, this is school-scoped. Every API call includes the school ID. If you're School A, you see School A's curriculum. School B's data is invisible. That's not just privacy—it's multi-tenant architecture.  
->  
-> The data is read-only in this view. The UI is pulling from a nested JSON structure: each course contains units, each unit contains lessons. Lessons have planned dates, objectives, activities, assessment strategies, even scripture references for each unit.  
->  
+> "Under the hood, this is school-scoped. Every API call includes the school ID. If you're School A, you see School A's curriculum. School B's data is invisible. That's not just privacy—it's multi-tenant architecture.
+>
+> The data is read-only in this view. The UI is pulling from a nested JSON structure: each course contains units, each unit contains lessons. Lessons have planned dates, objectives, activities, assessment strategies, even scripture references for each unit.
+>
 > This is serious curriculum design for Christian schools, not a checkbox feature."
 
 **Optional:** Show browser DevTools Network tab (F12 → Network) and refresh to show:
@@ -191,10 +191,10 @@ Expected: `Starting development server at http://127.0.0.1:8000/`
 
 **Narrator says:**
 
-> "Here's why this matters: pacing drives parent communication. If Bible 9 is falling behind, the head of school knows it now, not in March. That affects tuition messaging, parent guides, and student expectations.  
->  
-> This data ties directly to grades, assessment, and attendance. We're building a connected view of the whole student experience.  
->  
+> "Here's why this matters: pacing drives parent communication. If Bible 9 is falling behind, the head of school knows it now, not in March. That affects tuition messaging, parent guides, and student expectations.
+>
+> This data ties directly to grades, assessment, and attendance. We're building a connected view of the whole student experience.
+>
 > And it works across 300 students, multiple terms, multiple schools—all scoped by school ID. No data leakage. No performance hit."
 
 **Narrator continues:**
@@ -207,8 +207,8 @@ Expected: `Starting development server at http://127.0.0.1:8000/`
 
 **Narrator says:**
 
-> "Christian schools are data-light. They inherit crude spreadsheets from public ed or nothing at all. We're building something different: thoughtful, intentional, mission-aligned.  
->  
+> "Christian schools are data-light. They inherit crude spreadsheets from public ed or nothing at all. We're building something different: thoughtful, intentional, mission-aligned.
+>
 > That's what the curriculum framework represents. Not just what's taught, but *how it's paced, tracked, and communicated* to families."
 
 **On screen:**
@@ -274,12 +274,12 @@ Expected: `Starting development server at http://127.0.0.1:8000/`
 
 ## SUCCESS CRITERIA
 
-✅ **Auto-login works** (user sees dashboard, no form)  
-✅ **Curriculum card loads** (4 courses visible within 5 seconds)  
-✅ **Progress bars render** (~55%, ~60%, etc., not 100%)  
-✅ **Narrator nails the pacing story** (realistic, mission-aligned, not checkbox)  
-✅ **No console errors** (F12 shows no red errors)  
-✅ **Data persists across reload** (refresh page, card still shows same values)  
+✅ **Auto-login works** (user sees dashboard, no form)
+✅ **Curriculum card loads** (4 courses visible within 5 seconds)
+✅ **Progress bars render** (~55%, ~60%, etc., not 100%)
+✅ **Narrator nails the pacing story** (realistic, mission-aligned, not checkbox)
+✅ **No console errors** (F12 shows no red errors)
+✅ **Data persists across reload** (refresh page, card still shows same values)
 
 If all ✅: Segment is locked for Feb 28.
 
@@ -300,9 +300,9 @@ If all ✅: Segment is locked for Feb 28.
 - [ ] Refresh page, data persists
 - [ ] Demo under 12 minutes
 
-**Rehearsal 1:** Cold start, full narration, full timing  
-**Rehearsal 2:** Cold start, full narration, full timing  
-**Timing run 1:** Timed 10 minutes (segments 0–3, 5–6)  
+**Rehearsal 1:** Cold start, full narration, full timing
+**Rehearsal 2:** Cold start, full narration, full timing
+**Timing run 1:** Timed 10 minutes (segments 0–3, 5–6)
 **Timing run 2:** Timed 20 minutes (segments 0–4, 5–6, with Q&A)
 
 ---
