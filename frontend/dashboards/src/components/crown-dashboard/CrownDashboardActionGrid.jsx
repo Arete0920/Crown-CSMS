@@ -7,6 +7,7 @@ export default function CrownDashboardActionGrid({ actions = [] }) {
       title={action.title}
       description={action.description}
       actionLabel={action.actionLabel}
+      eyebrow={action.eyebrow || action.kicker || 'Quick Action'}
     />
   ));
 }
