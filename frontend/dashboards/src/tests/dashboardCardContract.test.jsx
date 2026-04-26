@@ -31,27 +31,51 @@ describe('dashboard registry contract', () => {
   });
 
   it('launch dashboard renders the canonical CROWN shell without legacy fallback chrome', () => {
-    render(<CrownLaunchDashboardPage activePath="/admin" />);
+    const paths = ['/admin', '/school-admin', '/school-administrator'];
 
-    expect(screen.getByText('CROWN')).toBeTruthy();
-    expect(screen.getAllByText('Christian School Management Solution').length).toBeGreaterThan(0);
-    expect(screen.getByText('Good morning, Sarah!')).toBeTruthy();
-    expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
-    expect(screen.getByText('Sandbox preview data shown. Connect backend for live records.')).toBeTruthy();
+    for (const path of paths) {
+      const view = render(<CrownLaunchDashboardPage activePath={path} />);
 
-    expect(screen.getByText('Total Students')).toBeTruthy();
-    expect(screen.getByText('1,248')).toBeTruthy();
-    expect(screen.getByText('Faculty & Staff')).toBeTruthy();
-    expect(screen.getByText('156')).toBeTruthy();
-    expect(screen.getByText('Attendance Rate')).toBeTruthy();
-    expect(screen.getByText('96.2%')).toBeTruthy();
-    expect(screen.getByText('Tuition Collected')).toBeTruthy();
-    expect(screen.getByText('$2.4M')).toBeTruthy();
+      expect(screen.getByText('CROWN')).toBeTruthy();
+      expect(screen.getAllByText('Christian School Management Solution').length).toBeGreaterThan(0);
+      expect(screen.getByText('Good morning, Sarah!')).toBeTruthy();
+      expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Sandbox preview data shown. Connect backend for live records.').length).toBeGreaterThan(0);
 
-    expect(screen.queryByText('Offline / Fallback')).toBeNull();
-    expect(screen.queryByText('Build: missing')).toBeNull();
-    expect(screen.queryByText('Dashboard unavailable')).toBeNull();
-    expect(screen.queryByText('Dev JWT Login')).toBeNull();
+      expect(screen.getByText('Total Students')).toBeTruthy();
+      expect(screen.getByText('Attendance Rate')).toBeTruthy();
+      expect(screen.getByText('Tuition Collected')).toBeTruthy();
+      expect(screen.getByText('Open Admissions')).toBeTruthy();
+      expect(screen.getByText('Active Alerts')).toBeTruthy();
+
+      expect(screen.getAllByText('Admissions / Enrollment').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Attendance').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Academics / Gradebook').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Finance / Billing').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Communications').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Staff / HR').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Student Life / Discipline').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Health / Safety').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('System / IT / Integrations').length).toBeGreaterThan(0);
+
+      expect(screen.getByText('Prayer Requests')).toBeTruthy();
+      expect(screen.getByText('Daily Devotion')).toBeTruthy();
+      expect(screen.getByText('Announcements')).toBeTruthy();
+      expect(screen.getByText("Today's Calendar")).toBeTruthy();
+      expect(screen.getByText('Administrator To-Dos')).toBeTruthy();
+      expect(screen.getByText('Communications Inbox')).toBeTruthy();
+      expect(screen.getByText('Approvals Needed')).toBeTruthy();
+      expect(screen.getByText('Critical Alerts')).toBeTruthy();
+      expect(screen.getByText('Mrs. Carter surgery recovery')).toBeTruthy();
+      expect(screen.getByText('8 family replies need response')).toBeTruthy();
+
+      expect(screen.queryByText('Offline / Fallback')).toBeNull();
+      expect(screen.queryByText('Build: missing')).toBeNull();
+      expect(screen.queryByText('Dashboard unavailable')).toBeNull();
+      expect(screen.queryByText('Dev JWT Login')).toBeNull();
+
+      view.unmount();
+    }
   });
 
   it('module launch pages render through the same template shell', () => {

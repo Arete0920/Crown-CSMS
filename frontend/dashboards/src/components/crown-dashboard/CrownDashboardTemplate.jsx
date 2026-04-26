@@ -10,6 +10,8 @@ import CrownDashboardStatusPanel from './CrownDashboardStatusPanel.jsx';
 import CrownModuleSection from './CrownModuleSection.jsx';
 import CrownDashboardEmptyState from './CrownDashboardEmptyState.jsx';
 import CrownDashboardErrorState from './CrownDashboardErrorState.jsx';
+import CrownDashboardFlipCard from './CrownDashboardFlipCard.jsx';
+import CrownDashboardRightRail from './CrownDashboardRightRail.jsx';
 
 function renderActionsByRole(actions = [], roleKey) {
   return actions.filter((action) => {
@@ -19,10 +21,32 @@ function renderActionsByRole(actions = [], roleKey) {
 }
 
 export default function CrownDashboardTemplate({ config, roleKey }) {
-  const actions = renderActionsByRole(config.quickActions, roleKey);
+  if (!config || typeof config !== 'object') {
+    return <CrownDashboardErrorState title="Dashboard unavailable" message="Dashboard configuration is missing or invalid." />;
+  }
+
+  const actions = renderActionsByRole(config.quickActions || [], roleKey);
+  const metrics = Array.isArray(config.metrics) ? config.metrics : [];
+  const statuses = Array.isArray(config.statuses) ? config.statuses : [];
+  const activities = Array.isArray(config.activities) ? config.activities : [];
+  const operations = Array.isArray(config.operations) ? config.operations : [];
+  const insight = config.insight || {};
+  const trendPanels = Array.isArray(config.trendPanels) ? config.trendPanels : [];
+  const priorities = Array.isArray(config.priorities) ? config.priorities : [];
+  const alerts = Array.isArray(config.alerts) ? config.alerts : [];
+  const commandModules = Array.isArray(config.commandModules) ? config.commandModules : [];
+  const rightRailSections = Array.isArray(config.rightRailSections) ? config.rightRailSections : [];
+
+  const isSchoolAdminCommandCenter = config.key === 'schoolAdministrator';
 
   return (
-    <CrownDashboardShell activePath={config.activePath} schoolName={config.schoolName}>
+    <CrownDashboardShell
+      activePath={config.activePath}
+      schoolName={config.schoolName}
+      user={config.user}
+      updatesCount={config.updatesCount}
+      rightRail={isSchoolAdminCommandCenter ? <CrownDashboardRightRail sections={rightRailSections} /> : null}
+    >
       <CrownDashboardHeader
         eyebrow={config.eyebrow}
         title={config.title}
@@ -31,47 +55,165 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
       />
 
       <div className="launch-content">
-        <CrownDashboardMetricGrid>
-          {config.metrics.map((card) => (
-            <CrownDashboardMetricCard key={card.label} {...card} />
-          ))}
-        </CrownDashboardMetricGrid>
+        {isSchoolAdminCommandCenter ? (
+          <>
+            <CrownDashboardMetricGrid className="launch-dashboard-grid-metrics-admin">
+              {metrics.map((card) => (
+                <CrownDashboardMetricCard key={card.label} {...card} />
+              ))}
+            </CrownDashboardMetricGrid>
 
-        <section className="launch-dashboard-grid launch-dashboard-grid-primary">
-          <CrownInsightPanel
-            kicker={config.insight.kicker}
-            title={config.insight.title}
-            chip={config.insight.chip}
-            trend={config.insight.trend}
-          />
-          <CrownDashboardActivityFeed title={config.activityTitle} items={config.activities} />
-        </section>
+            <section className="launch-dashboard-grid launch-dashboard-grid-primary">
+              <CrownCard className="launch-priority-card">
+                <div className="launch-section-kicker">Today's priorities</div>
+                <h3>Leadership execution queue</h3>
+                <ul className="launch-priority-list">
+                  {priorities.map((item) => (
+                    <li key={item.title}>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <span>{item.detail}</span>
+                      </div>
+                      <span className={`launch-status-pill ${item.tone === 'warn' ? 'is-warn' : 'is-good'}`}>{item.state}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CrownCard>
 
-        <section className="launch-dashboard-grid launch-dashboard-grid-secondary">
-          <CrownQuickActions actions={actions} />
-          <CrownDashboardStatusPanel title={config.statusTitle} statuses={config.statuses} />
-        </section>
+              <CrownCard className="launch-alert-card">
+                <div className="launch-section-kicker">Alerts and exceptions</div>
+                <h3>Action required</h3>
+                <ul className="launch-alert-list">
+                  {alerts.map((item) => (
+                    <li key={item.title} className={item.tone === 'warn' ? 'is-warn' : 'is-good'}>
+                      <strong>{item.title}</strong>
+                      <span>{item.detail}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CrownCard>
+            </section>
 
-        {config.moduleSection ? (
-          <section className="launch-dashboard-grid launch-dashboard-grid-primary">
-            <CrownModuleSection
-              kicker={config.moduleSection.kicker}
-              title={config.moduleSection.title}
-              body={config.moduleSection.body}
-              actions={config.moduleSection.actions || []}
-            />
-            <CrownDashboardEmptyState
-              title="Live records are not required for visual review"
-              message="Sandbox preview data shown. Connect backend for live records."
-            />
-          </section>
-        ) : null}
+            <section className="launch-dashboard-grid launch-dashboard-grid-module launch-command-grid">
+              {commandModules.map((module) => (
+                <CrownDashboardFlipCard key={module.key} module={module} />
+              ))}
+            </section>
+
+            <section className="launch-dashboard-grid launch-dashboard-grid-analytics">
+              {trendPanels.map((panel) => (
+                <CrownInsightPanel
+                  key={panel.title}
+                  kicker={panel.kicker}
+                  title={panel.title}
+                  chip={panel.chip}
+                  trend={panel.trend}
+                />
+              ))}
+              <CrownDashboardActivityFeed
+                title={config.activityTitle}
+                kicker={config.activityKicker || 'Recent activity'}
+                items={activities}
+              />
+            </section>
+
+            <CrownCard>
+              <div className="launch-card-heading-row">
+                <div>
+                  <div className="launch-section-kicker">Department readiness</div>
+                  <h3>{config.operationsTitle}</h3>
+                </div>
+              </div>
+              <div className="launch-table-wrap">
+                <table className="launch-table">
+                  <thead>
+                    <tr>
+                      <th>Department</th>
+                      <th>Owner</th>
+                      <th>Readiness</th>
+                      <th>Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {operations.map((row) => (
+                      <tr key={`${row.area}-${row.owner}`}>
+                        <td>{row.area}</td>
+                        <td>{row.owner}</td>
+                        <td>{row.status}</td>
+                        <td>{row.updated}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CrownCard>
+
+            <section className="launch-dashboard-grid launch-dashboard-grid-secondary">
+              <CrownQuickActions actions={actions} />
+              <CrownDashboardStatusPanel
+                kicker={config.statusKicker || 'Operational status'}
+                title={config.statusTitle}
+                statuses={statuses}
+              />
+              <CrownDashboardEmptyState
+                title="Sandbox preview"
+                message="Sandbox preview data shown. Connect backend for live records."
+              />
+            </section>
+          </>
+        ) : (
+          <>
+            <CrownDashboardMetricGrid>
+              {metrics.map((card) => (
+                <CrownDashboardMetricCard key={card.label} {...card} />
+              ))}
+            </CrownDashboardMetricGrid>
+
+            <section className="launch-dashboard-grid launch-dashboard-grid-primary">
+              <CrownInsightPanel
+                kicker={insight.kicker}
+                title={insight.title}
+                chip={insight.chip}
+                trend={insight.trend}
+              />
+              <CrownDashboardActivityFeed
+                title={config.activityTitle}
+                kicker={config.activityKicker}
+                items={activities}
+              />
+            </section>
+
+            <section className="launch-dashboard-grid launch-dashboard-grid-secondary">
+              <CrownQuickActions actions={actions} />
+              <CrownDashboardStatusPanel
+                kicker={config.statusKicker || 'System Status'}
+                title={config.statusTitle}
+                statuses={statuses}
+              />
+            </section>
+
+            {config.moduleSection ? (
+              <section className="launch-dashboard-grid launch-dashboard-grid-primary">
+                <CrownModuleSection
+                  kicker={config.moduleSection.kicker}
+                  title={config.moduleSection.title}
+                  body={config.moduleSection.body}
+                  actions={config.moduleSection.actions || []}
+                />
+                <CrownDashboardEmptyState
+                  title="Sandbox preview"
+                  message="Live records are not required for this visual review pass."
+                />
+              </section>
+            ) : null}
+          </>
+        )}
 
         {config.errorState ? (
           <CrownDashboardErrorState title={config.errorState.title} message={config.errorState.message} />
         ) : null}
 
-        {config.operations?.length ? (
+        {operations.length && !isSchoolAdminCommandCenter ? (
           <CrownCard>
             <div className="launch-card-heading-row">
               <div>
@@ -91,7 +233,7 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {config.operations.map((row) => (
+                  {operations.map((row) => (
                     <tr key={`${row.area}-${row.owner}`}>
                       <td>{row.area}</td>
                       <td>{row.owner}</td>
