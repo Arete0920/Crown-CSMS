@@ -200,12 +200,12 @@ Then refresh the browser page.
 
 ## Success Criteria
 
-✅ Dashboard page loads in under 3 seconds  
-✅ KPI metrics display (numbers, not dashes)  
-✅ Priority Worklist has at least 3 items  
-✅ Timeline shows at least 5 recent actions  
-✅ Refresh button works and updates data  
-✅ One action button executes without error  
+✅ Dashboard page loads in under 3 seconds
+✅ KPI metrics display (numbers, not dashes)
+✅ Priority Worklist has at least 3 items
+✅ Timeline shows at least 5 recent actions
+✅ Refresh button works and updates data
+✅ One action button executes without error
 
 **If all 6 are true:** You're ready to demo.
 

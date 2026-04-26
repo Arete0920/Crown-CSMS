@@ -1,8 +1,8 @@
 # Tenant Isolation Architecture — Production Canon
 
-**Status:** Production-certified baseline  
-**Last Updated:** February 18, 2026  
-**Baseline Tag:** `tenant-isolation-production-baseline`  
+**Status:** Production-certified baseline
+**Last Updated:** February 18, 2026
+**Baseline Tag:** `tenant-isolation-production-baseline`
 **Checkpoint Tags:** `hardening-04-checkpoint` through `hardening-10-checkpoint`
 
 ---
@@ -31,8 +31,8 @@ Crown2026 implements a **10-layer tenant isolation framework** with fail-closed 
 ## Layer Architecture
 
 ### Layer 04: HTTP Header Enforcement
-**Tag:** `hardening-04-checkpoint`  
-**PR:** #222  
+**Tag:** `hardening-04-checkpoint`
+**PR:** #222
 **Purpose:** Require `X-School-Id` header for all `/api/v1/*` requests (except exempt endpoints)
 
 **Implementation:**
@@ -50,8 +50,8 @@ Crown2026 implements a **10-layer tenant isolation framework** with fail-closed 
 ---
 
 ### Layer 05: UUID Validation + School Existence
-**Tag:** `hardening-05-checkpoint`  
-**PR:** #223  
+**Tag:** `hardening-05-checkpoint`
+**PR:** #223
 **Purpose:** Validate `X-School-Id` is valid UUID and School exists in database
 
 **Enforcement:**
@@ -64,8 +64,8 @@ Crown2026 implements a **10-layer tenant isolation framework** with fail-closed 
 ---
 
 ### Layer 06: ORM Auto-Scoping (Fail-Closed Reads)
-**Tag:** `hardening-06-checkpoint`  
-**PR:** #224  
+**Tag:** `hardening-06-checkpoint`
+**PR:** #224
 **Purpose:** Automatically scope all TenantScopedModel queries to current tenant
 
 **Implementation:**
@@ -89,8 +89,8 @@ class Classroom(TenantScopedModel):
 ---
 
 ### Layer 07: Write Protection (Cross-Tenant Blocking)
-**Tag:** `hardening-07-checkpoint`  
-**PR:** #225  
+**Tag:** `hardening-07-checkpoint`
+**PR:** #225
 **Purpose:** Block cross-tenant write operations at model `save()` level
 
 **Implementation:**
@@ -107,8 +107,8 @@ class Classroom(TenantScopedModel):
 ---
 
 ### Layer 08: Bulk Operation Protection
-**Tag:** `hardening-08-checkpoint`  
-**PR:** #226  
+**Tag:** `hardening-08-checkpoint`
+**PR:** #226
 **Purpose:** Guard `QuerySet.update()` and `QuerySet.delete()` operations
 
 **Implementation:**
@@ -127,8 +127,8 @@ class Classroom(TenantScopedModel):
 ---
 
 ### Layer 09: Admin/Shell/Script Guardrails
-**Tag:** `hardening-09-checkpoint`  
-**PR:** #227  
+**Tag:** `hardening-09-checkpoint`
+**PR:** #227
 **Purpose:** Explicit tenant context management for management commands, Django shell, admin actions
 
 **Implementation:**
@@ -156,8 +156,8 @@ with tenant_context(school):
 ---
 
 ### Layer 10: Request Lifecycle Hardening
-**Tag:** `hardening-10-checkpoint`  
-**PR:** #228  
+**Tag:** `hardening-10-checkpoint`
+**PR:** #228
 **Purpose:** Guarantee tenant context cleanup after every request, even on exceptions
 
 **Implementation:**
@@ -182,7 +182,7 @@ with tenant_context(school):
 - `test_tenant_context_guardrails.py`: Script guardrails (3 tests)
 - `test_tenant_lifecycle_cleanup.py`: Lifecycle cleanup (2 tests)
 
-**All tests passing:** ✅ Django + pytest runners  
+**All tests passing:** ✅ Django + pytest runners
 **All CI checks passing:** ✅ 8/8 checks on all PRs
 
 ---
@@ -256,7 +256,7 @@ MIDDLEWARE = [
 
 ## Investor/Demo Narrative
 
-**Key Message:**  
+**Key Message:**
 "We built a 10-layer tenant isolation architecture with fail-closed enforcement at every data boundary—HTTP middleware, ORM reads, instance writes, bulk operations, admin scripts, and request lifecycle. Every operation proves tenant identity. Zero trust by default."
 
 **Technical Credibility Points:**
@@ -266,7 +266,7 @@ MIDDLEWARE = [
 4. **Tested and tagged** - 12 tests, 10 checkpoint tags, 100% CI pass rate
 5. **Production-ready** - Already protecting Classroom model, ready to scale
 
-**Competitive Advantage:**  
+**Competitive Advantage:**
 Most multi-tenant SaaS products rely on developer discipline ("remember to filter by tenant"). We enforce isolation at the ORM/middleware layer. Impossible to accidentally leak data.
 
 ---
@@ -274,15 +274,15 @@ Most multi-tenant SaaS products rely on developer discipline ("remember to filte
 ## Maintenance Guidelines
 
 ### DO:
-✅ Use `TenantScopedModel` for all tenant-owned data  
-✅ Use `tenant_context()` in management commands  
-✅ Add tests for any new tenant-scoped models  
+✅ Use `TenantScopedModel` for all tenant-owned data
+✅ Use `tenant_context()` in management commands
+✅ Add tests for any new tenant-scoped models
 ✅ Keep thread-local context lightweight (just school reference)
 
 ### DON'T:
-❌ Bypass `TenantManager` by using `Model._base_manager`  
-❌ Manually filter by school (let auto-scoping do it)  
-❌ Set tenant context in views (middleware handles it)  
+❌ Bypass `TenantManager` by using `Model._base_manager`
+❌ Manually filter by school (let auto-scoping do it)
+❌ Set tenant context in views (middleware handles it)
 ❌ Forget to call `require_tenant_context()` in sensitive scripts
 
 ### Code Review Checklist:
@@ -311,13 +311,13 @@ Most multi-tenant SaaS products rely on developer discipline ("remember to filte
 - Full suite after merge: 609 passed, 11 skipped, 0 failed
 - Patch notes: `docs/SECURITY_PATCH_NOTES_2026-02-25.md`
 
-**2026-02-18:** Initial canon baseline  
+**2026-02-18:** Initial canon baseline
 - Layers 04-10 complete and tagged
 - All tests passing
 - Production baseline tag: `tenant-isolation-production-baseline`
 
 ---
 
-**Certified By:** AI Coding Agent + Developer Review  
-**Certification Date:** February 18, 2026  
+**Certified By:** AI Coding Agent + Developer Review
+**Certification Date:** February 18, 2026
 **Next Review:** Before each major release or every 90 days

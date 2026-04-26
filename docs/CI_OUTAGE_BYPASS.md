@@ -1,7 +1,7 @@
 # CI Outage Bypass Procedure
 
-**Last updated:** 2026-02-27  
-**Author:** ops  
+**Last updated:** 2026-02-27
+**Author:** ops
 **Status:** Active procedure — follow exactly during Actions quota exhaustion or runner failure
 
 ---
@@ -139,7 +139,7 @@ gh api repos/tcmegahan/Crown2026/actions/runs/$runId/jobs | ConvertFrom-Json |
   Format-Table
 ```
 
-**Quota exhaustion signature:** all jobs show `elapsed_s < 10` AND `runner_name` is blank.  
+**Quota exhaustion signature:** all jobs show `elapsed_s < 10` AND `runner_name` is blank.
 **Real failure signature:** at least one job shows `elapsed_s > 30` AND `runner_name` is populated.
 
 Once confirmed exhausted → proceed to Bypass procedure above.

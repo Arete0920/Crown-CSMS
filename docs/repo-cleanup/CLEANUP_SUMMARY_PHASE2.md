@@ -1,6 +1,6 @@
 # Cleanup Summary — Phase 2
 
-Generated: Phase 2 cleanup pass  
+Generated: Phase 2 cleanup pass
 Branch: `chore/github-cleanup-phase2-workflows-prs`
 
 ---

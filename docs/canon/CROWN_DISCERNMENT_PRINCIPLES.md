@@ -6,7 +6,7 @@ Official principles canon.
 ## Definition
 Crown Discernment is the explainable predictive analytics and scenario-modeling engine that powers selected Crown Compass capabilities.
 
-Discernment is a decision-support instrument.  
+Discernment is a decision-support instrument.
 It is not a decision-maker.
 
 ## Core Principle
@@ -17,7 +17,7 @@ Discernment informs leadership judgment; it does not replace it.
 ### 1. Mission Before Optimization
 Discernment must operate within mission-defined, leadership-defined, and board-reviewable parameters.
 
-The system may optimize within approved constraints.  
+The system may optimize within approved constraints.
 It may not redefine those constraints on its own.
 
 ### 2. Human Judgment Above Algorithmic Output

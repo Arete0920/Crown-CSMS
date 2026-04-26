@@ -1,0 +1,1106 @@
+﻿Dashboard and route discovery
+Date/time: 2026-04-25 11:50:17 -04:00
+
+===== Dashboard =====
+C:\w\crown_main_postmerge_verify\audit-artifacts\revised-48h-20260413_024257\33_fetch_pass.py:4: root = Path(r"C:\crown2026_recovery\wt_20260413_024257") / "frontend" / "dashboards" / "src"
+C:\w\crown_main_postmerge_verify\audit-artifacts\revised-48h-20260413_031159\33_fetch_pass.py:4: root = Path(r"C:\crown2026_recovery\wt_20260413_031159") / "frontend" / "dashboards" / "src"
+C:\w\crown_main_postmerge_verify\backend\advancement\api.py:294: # Advancement summary / dashboard feed
+C:\w\crown_main_postmerge_verify\backend\advancement\api.py:317: Full KPI summary for AdvancementDashboard.
+C:\w\crown_main_postmerge_verify\backend\advancement\urls.py:93: # KPI summary (dashboard feed)
+C:\w\crown_main_postmerge_verify\backend\billing\management\commands\seed_billing_demo.py:21: help = "Seed demo billing data (billing runs, invoices, line items) for Finance dashboard"
+C:\w\crown_main_postmerge_verify\backend\board_oversight\tests\test_board_get_only.py:8: "/api/board/dashboard/",
+C:\w\crown_main_postmerge_verify\backend\board_oversight\tests\test_board_urls.py:10: assert reverse("board_oversight_dashboard").endswith("/board/dashboard/")
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:5: """Return the board metrics payload consumed by the existing BoardDashboard
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:35: def build_board_dashboard_payload(*, school_id) -> dict:
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:36: """Return board-safe aggregated metrics for the structured dashboard API.
+C:\w\crown_main_postmerge_verify\backend\board_oversight\urls.py:5: # Primary endpoint consumed by existing BoardDashboard frontend
+C:\w\crown_main_postmerge_verify\backend\board_oversight\urls.py:8: path("dashboard/", views.board_dashboard, name="board_oversight_dashboard"),
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:12: from .services import build_board_metrics_payload, build_board_dashboard_payload
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:28: """Primary endpoint consumed by the existing BoardDashboard frontend.
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:40: def board_dashboard(request):
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:41: """Structured dashboard payload (spec-aligned, finer metric breakdown)."""
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:45: payload = build_board_dashboard_payload(school_id=school_id)
+C:\w\crown_main_postmerge_verify\backend\classroom\views.py:25: Read-only Classroom endpoints for demo + operator dashboards.
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:2: seed_demo -- populate deterministic demo data for dashboard proof.
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:43: help = "Seed deterministic demo data for Crown signals + board dashboard proof."
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:22: ("health.view",                "View health / system-status dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:24: ("metrics.view",               "View all KPI dashboards"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:37: ("admin.view",                 "View administration dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:38: ("board.view",                 "View board / governance dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:40: ("billing.view",               "View billing and fee dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:41: ("office.view",                "View office operations dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:42: ("it.view",                    "View IT / infrastructure dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:43: ("facilities.view",            "View facilities dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:44: ("transportation.view",        "View transportation dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:47: ("financial_aid.view",         "View financial aid dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:51: ("advancement.view",           "View advancement / fundraising dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:55: ("teacher.view",               "View teacher dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:56: ("registrar.view",             "View registrar dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:57: ("academic_support.view",      "View SPED / academic-support dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:58: ("fine_arts.view",             "View fine-arts dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:59: ("library.view",               "View library dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:60: ("pd.view",                    "View professional-development dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:64: ("parent.view",                "View parent dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:65: ("student.view",               "View student dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:66: ("health.dashboard.view",      "View student health dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:67: ("counseling.view",            "View counseling dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:68: ("food.view",                  "View food-services dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:69: ("athletics.view",             "View athletics dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:70: ("spiritual_life.view",        "View spiritual-life dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:71: ("extended_care.view",         "View extended-care dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:72: ("communications.view",        "View communications dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:73: ("student_services.view",      "View student-services dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:79: ("hr.view",                    "View HR / staff directory dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:83: ("safety.view",                "View campus safety / incident dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:85: ("security.view",              "View security / safety dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:86: ("integrity.view",             "View academic-integrity dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:180: # Frontend role aliases (dashboard/route guard vocabulary)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:3: from crown_api.dashboards.models import DashboardSnapshot
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:4: from crown_api.dashboards.sample_payloads import (
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:11: help = 'Seed dashboard snapshot records for attendance and release reliability.'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:18: help='School identifier for school-scoped dashboard snapshots.',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:28: DashboardSnapshot.objects.update_or_create(
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:30: dashboard_key='attendance',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:42: DashboardSnapshot.objects.update_or_create(
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:44: dashboard_key='release-reliability',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:53: f'Seeded dashboard snapshots for school_id="{school_id}".'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:12: name='DashboardSnapshot',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:16: ('dashboard_key', models.SlugField(db_index=True, max_length=120)),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:24: 'db_table': 'dashboard_snapshots',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:25: 'ordering': ['school_id', 'dashboard_key'],
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:26: 'unique_together': {('school_id', 'dashboard_key')},
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:30: model_name='dashboardsnapshot',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:31: index=models.Index(fields=['school_id', 'dashboard_key'], name='dashboard_s_school__f79a6d_idx'),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:2: Academics Dashboard API - Read-only endpoint
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:11: from crown_api.dashboards.tenant import get_dashboard_school_id
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:18: GET /api/v1/dashboards/academics/enrollment/
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:42: school_id = get_dashboard_school_id(request, required=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:1: """Read-only Admissions dashboard endpoints."""
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:14: from crown_api.dashboards.tenant import get_dashboard_school_id
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:17: class AdmissionsFunnelDashboard(APIView):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:23: school_id = get_dashboard_school_id(request, required=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:54: AdmissionsFunnelView = AdmissionsFunnelDashboard
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:1: """Read-only Finance dashboard endpoints."""
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:9: from crown_api.dashboards.tenant import get_dashboard_school_id
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:13: class FinanceSummaryDashboard(APIView):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:19: school_id = get_dashboard_school_id(request, required=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:42: FinanceSummaryView = FinanceSummaryDashboard
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:4: class DashboardSnapshot(models.Model):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:6: dashboard_key = models.SlugField(max_length=120, db_index=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:14: db_table = 'dashboard_snapshots'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:15: unique_together = ('school_id', 'dashboard_key')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:17: models.Index(fields=['school_id', 'dashboard_key'], name='dashboard_s_school__f05431_idx'),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:19: ordering = ['school_id', 'dashboard_key']
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:22: return f'{self.school_id}:{self.dashboard_key}'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:30: def build_dashboard_payload(dashboard_key, metrics, alerts, queue, meta=None):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:32: 'dashboard_key': str(dashboard_key),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:38: validate_dashboard_payload(payload)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:42: def validate_dashboard_payload(payload):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:44: raise ValueError('Dashboard payload must be a dictionary.')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:46: required_keys = {'dashboard_key', 'metrics', 'alerts', 'queue', 'meta'}
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:49: raise ValueError(f'Dashboard payload missing keys: {sorted(missing)}')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:51: if not isinstance(payload['dashboard_key'], str) or not payload['dashboard_key']:
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:52: raise ValueError('dashboard_key must be a non-empty string.')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\sample_payloads.py:1: from .payload_contract import alert, build_dashboard_payload, metric, queue_item
+
+===== dashboard =====
+C:\w\crown_main_postmerge_verify\audit-artifacts\revised-48h-20260413_024257\33_fetch_pass.py:4: root = Path(r"C:\crown2026_recovery\wt_20260413_024257") / "frontend" / "dashboards" / "src"
+C:\w\crown_main_postmerge_verify\audit-artifacts\revised-48h-20260413_031159\33_fetch_pass.py:4: root = Path(r"C:\crown2026_recovery\wt_20260413_031159") / "frontend" / "dashboards" / "src"
+C:\w\crown_main_postmerge_verify\backend\advancement\api.py:294: # Advancement summary / dashboard feed
+C:\w\crown_main_postmerge_verify\backend\advancement\api.py:317: Full KPI summary for AdvancementDashboard.
+C:\w\crown_main_postmerge_verify\backend\advancement\urls.py:93: # KPI summary (dashboard feed)
+C:\w\crown_main_postmerge_verify\backend\billing\management\commands\seed_billing_demo.py:21: help = "Seed demo billing data (billing runs, invoices, line items) for Finance dashboard"
+C:\w\crown_main_postmerge_verify\backend\board_oversight\tests\test_board_get_only.py:8: "/api/board/dashboard/",
+C:\w\crown_main_postmerge_verify\backend\board_oversight\tests\test_board_urls.py:10: assert reverse("board_oversight_dashboard").endswith("/board/dashboard/")
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:5: """Return the board metrics payload consumed by the existing BoardDashboard
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:35: def build_board_dashboard_payload(*, school_id) -> dict:
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:36: """Return board-safe aggregated metrics for the structured dashboard API.
+C:\w\crown_main_postmerge_verify\backend\board_oversight\urls.py:5: # Primary endpoint consumed by existing BoardDashboard frontend
+C:\w\crown_main_postmerge_verify\backend\board_oversight\urls.py:8: path("dashboard/", views.board_dashboard, name="board_oversight_dashboard"),
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:12: from .services import build_board_metrics_payload, build_board_dashboard_payload
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:28: """Primary endpoint consumed by the existing BoardDashboard frontend.
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:40: def board_dashboard(request):
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:41: """Structured dashboard payload (spec-aligned, finer metric breakdown)."""
+C:\w\crown_main_postmerge_verify\backend\board_oversight\views.py:45: payload = build_board_dashboard_payload(school_id=school_id)
+C:\w\crown_main_postmerge_verify\backend\classroom\views.py:25: Read-only Classroom endpoints for demo + operator dashboards.
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:2: seed_demo -- populate deterministic demo data for dashboard proof.
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:43: help = "Seed deterministic demo data for Crown signals + board dashboard proof."
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:22: ("health.view",                "View health / system-status dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:24: ("metrics.view",               "View all KPI dashboards"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:37: ("admin.view",                 "View administration dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:38: ("board.view",                 "View board / governance dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:40: ("billing.view",               "View billing and fee dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:41: ("office.view",                "View office operations dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:42: ("it.view",                    "View IT / infrastructure dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:43: ("facilities.view",            "View facilities dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:44: ("transportation.view",        "View transportation dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:47: ("financial_aid.view",         "View financial aid dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:51: ("advancement.view",           "View advancement / fundraising dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:55: ("teacher.view",               "View teacher dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:56: ("registrar.view",             "View registrar dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:57: ("academic_support.view",      "View SPED / academic-support dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:58: ("fine_arts.view",             "View fine-arts dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:59: ("library.view",               "View library dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:60: ("pd.view",                    "View professional-development dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:64: ("parent.view",                "View parent dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:65: ("student.view",               "View student dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:66: ("health.dashboard.view",      "View student health dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:67: ("counseling.view",            "View counseling dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:68: ("food.view",                  "View food-services dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:69: ("athletics.view",             "View athletics dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:70: ("spiritual_life.view",        "View spiritual-life dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:71: ("extended_care.view",         "View extended-care dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:72: ("communications.view",        "View communications dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:73: ("student_services.view",      "View student-services dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:79: ("hr.view",                    "View HR / staff directory dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:83: ("safety.view",                "View campus safety / incident dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:85: ("security.view",              "View security / safety dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:86: ("integrity.view",             "View academic-integrity dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:180: # Frontend role aliases (dashboard/route guard vocabulary)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:3: from crown_api.dashboards.models import DashboardSnapshot
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:4: from crown_api.dashboards.sample_payloads import (
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:11: help = 'Seed dashboard snapshot records for attendance and release reliability.'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:18: help='School identifier for school-scoped dashboard snapshots.',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:28: DashboardSnapshot.objects.update_or_create(
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:30: dashboard_key='attendance',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:42: DashboardSnapshot.objects.update_or_create(
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:44: dashboard_key='release-reliability',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\management\commands\seed_dashboard_snapshots.py:53: f'Seeded dashboard snapshots for school_id="{school_id}".'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:12: name='DashboardSnapshot',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:16: ('dashboard_key', models.SlugField(db_index=True, max_length=120)),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:24: 'db_table': 'dashboard_snapshots',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:25: 'ordering': ['school_id', 'dashboard_key'],
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:26: 'unique_together': {('school_id', 'dashboard_key')},
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:30: model_name='dashboardsnapshot',
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\migrations\0001_dashboard_snapshot.py:31: index=models.Index(fields=['school_id', 'dashboard_key'], name='dashboard_s_school__f79a6d_idx'),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:2: Academics Dashboard API - Read-only endpoint
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:11: from crown_api.dashboards.tenant import get_dashboard_school_id
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:18: GET /api/v1/dashboards/academics/enrollment/
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\academics.py:42: school_id = get_dashboard_school_id(request, required=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:1: """Read-only Admissions dashboard endpoints."""
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:14: from crown_api.dashboards.tenant import get_dashboard_school_id
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:17: class AdmissionsFunnelDashboard(APIView):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:23: school_id = get_dashboard_school_id(request, required=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\admissions.py:54: AdmissionsFunnelView = AdmissionsFunnelDashboard
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:1: """Read-only Finance dashboard endpoints."""
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:9: from crown_api.dashboards.tenant import get_dashboard_school_id
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:13: class FinanceSummaryDashboard(APIView):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:19: school_id = get_dashboard_school_id(request, required=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\finance.py:42: FinanceSummaryView = FinanceSummaryDashboard
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:4: class DashboardSnapshot(models.Model):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:6: dashboard_key = models.SlugField(max_length=120, db_index=True)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:14: db_table = 'dashboard_snapshots'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:15: unique_together = ('school_id', 'dashboard_key')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:17: models.Index(fields=['school_id', 'dashboard_key'], name='dashboard_s_school__f05431_idx'),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:19: ordering = ['school_id', 'dashboard_key']
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\models.py:22: return f'{self.school_id}:{self.dashboard_key}'
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:30: def build_dashboard_payload(dashboard_key, metrics, alerts, queue, meta=None):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:32: 'dashboard_key': str(dashboard_key),
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:38: validate_dashboard_payload(payload)
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:42: def validate_dashboard_payload(payload):
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:44: raise ValueError('Dashboard payload must be a dictionary.')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:46: required_keys = {'dashboard_key', 'metrics', 'alerts', 'queue', 'meta'}
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:49: raise ValueError(f'Dashboard payload missing keys: {sorted(missing)}')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:51: if not isinstance(payload['dashboard_key'], str) or not payload['dashboard_key']:
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\payload_contract.py:52: raise ValueError('dashboard_key must be a non-empty string.')
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\sample_payloads.py:1: from .payload_contract import alert, build_dashboard_payload, metric, queue_item
+
+===== school_admin =====
+C:\w\crown_main_postmerge_verify\backend\billing\tests\test_billing_api.py:79: role_groups=("school_admin",),
+C:\w\crown_main_postmerge_verify\backend\billing\tests\test_billing_api.py:122: role_groups=("school_admin",),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:181: "school_admin":    [
+C:\w\crown_main_postmerge_verify\backend\crown_api\billing_api\permissions.py:29: FINANCE_RUNTIME_ROLE_IDS = {"super_admin", "school_admin", "finance_admin"}
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_rbac_matrix_readonly.py:31: "SCHOOL_ADMIN",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\permissions.js:38: school_admin: ['*'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.js:3: ["head_of_school", "school_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:12: expect(normalizeRoles(["head_of_school"])).toContain("school_admin");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:22: expect(getUserRoles({ role: "head_of_school" })).toContain("school_admin");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:29: expect(hasAnyRole({ role: "head_of_school" }, ["school_admin"])).toBe(true);
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:39: ["school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:46: ["school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:59: { label: "Settings", href: "/settings", roles: ["school_admin"] },
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\auth\roleAccess.test.js:81: children: [{ label: "Settings", href: "/settings", roles: ["school_admin"] }],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:74: const SCHOOL_ADMIN = ['school_admin', ...MASTER_CONTROL];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:76: const FINANCE_TEAM = ['finance_admin', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:77: const REGISTRAR_TEAM = ['registrar', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:79: const ACADEMIC_TEAM = ['academic_admin', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:80: const ADMISSIONS_TEAM = ['admissions_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:81: const ADVANCEMENT_TEAM = ['advancement_officer', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:82: const HR_TEAM = ['hr_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:83: const FACILITIES_TEAM = ['facilities_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:84: const HEALTH_TEAM = ['nurse', 'health_office', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:85: const TRANSPORT_TEAM = ['transportation_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:86: const FOOD_TEAM = ['food_service_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:88: const FINE_ARTS_TEAM = ['fine_arts_director', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:89: const ATHLETICS_TEAM = ['athletics_director', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:90: const LIBRARY_TEAM = ['librarian', 'media_specialist', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:91: const EXTENDED_CARE_TEAM = ['extended_care_manager', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:92: const SAFETY_TEAM = ['safety_manager', 'security_officer', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:93: const CURRICULUM_TEAM = ['curriculum_director', 'pd_coordinator', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:94: const CHAPLAIN_TEAM = ['chaplain', 'spiritual_life', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:95: const VOLUNTEER_TEAM = ['volunteer_coordinator', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:96: const PORTRAIT_TEAM = ['service_learning_coordinator', ...SCHOOL_ADMIN];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:237: allowedRoles: SCHOOL_ADMIN,
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:245: path: PATHS.SCHOOL_ADMIN_DASHBOARD,
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.js:248: allowedRoles: SCHOOL_ADMIN,
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.test.js:35: expect(normalizeRoles(['HEAD_OF_SCHOOL'])).toContain('school_admin');
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\config\dashboardRegistry.test.js:42: expect(hasRouteAccess(['HEAD_OF_SCHOOL'], ['school_admin'])).toBe(true);
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\AcademicsDashboard.jsx:62: ['parent', 'school_admin', 'super_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'staff', 'admin'].includes(role)
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\LoginPage.jsx:175: const persona = data.required_personas?.find(p => p.key === "school_admin") || data.required_personas?.[0];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\pages\RoleHomeRedirect.jsx:151: if (isSandbox && role === "school_admin") navigate("/school-admin-dashboard");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxOpsRouteAccess.test.jsx:6: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxOpsRouteAccess.test.jsx:10: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxOpsRouteAccess.test.jsx:14: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxPackage3RouteAccess.test.jsx:3: const financeOnly = ["super_admin", "school_admin", "finance_admin"];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxPackage3RouteAccess.test.jsx:6: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxPackage4RouteAccess.test.jsx:3: const financeOnly = ["super_admin", "school_admin", "finance_admin"];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\compuwerxRouteAccess.test.jsx:5: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:6: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:10: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:14: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:18: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:22: allowedRoles: ["super_admin", "school_admin", "finance_admin"],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:31: it("admits school_admin to all finance routes", () => {
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\financeRouteAccess.test.jsx:32: const roles = ["school_admin"];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\paths.js:105: SCHOOL_ADMIN_DASHBOARD: '/school-admin-dashboard',
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:4: 'school_admin',
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:14: ADMIN_ONLY: ['super_admin', 'school_admin', 'head_of_school'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:15: ADMIN_REGISTRAR: ['super_admin', 'school_admin', 'head_of_school', 'registrar'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:16: ADMIN_FINANCE: ['super_admin', 'school_admin', 'head_of_school', 'finance_admin', 'finance'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\routeGroups.js:17: ACADEMIC_TEAM: ['super_admin', 'school_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'admin'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:88: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:498: allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:534: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:549: "school_admin",
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:562: allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:572: allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\router.jsx:582: allowedRoles={["super_admin", "school_admin", "finance_admin"]}
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\wizardRouteAccess.test.jsx:27: const roles = ["school_admin"];
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\wizards.js:70: roles: ['super_admin', 'school_admin', 'admissions_manager'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\wizards.js:77: roles: ['super_admin', 'school_admin', 'registrar'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\wizards.js:91: roles: ['super_admin', 'school_admin', 'finance_admin'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\wizards.js:140: roles: ['super_admin', 'school_admin', 'admissions_manager', 'registrar'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\routes\wizards.js:175: roles: ['super_admin', 'school_admin', 'registrar'],
+C:\w\crown_main_postmerge_verify\frontend\dashboards\src\tests\roleGuard.test.jsx:7: expect(isRoleAllowed('school_admin', ['super_admin', 'school_admin'])).toBe(true);
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\e2e\sandbox-admin-dashboard-cert.spec.ts:8: const schoolAdminRoute = process.env.CERT_SCHOOL_ADMIN_ROUTE || "/school-admin-dashboard";
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\nav-role-routing.spec.ts:32: { role: IS_SANDBOX ? "school_admin" : "admin", expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/admin" },
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\nav-role-routing.spec.ts:85: await seedDemoSession(page, IS_SANDBOX ? "school_admin" : "admin");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\nav-role-routing.spec.ts:105: await seedDemoSession(page, IS_SANDBOX ? "school_admin" : "admin");
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\ui\role-dashboard-matrix-pack-3.spec.ts:122: const adminSeedRole = IS_SANDBOX ? "school_admin" : "admin";
+C:\w\crown_main_postmerge_verify\frontend\dashboards\tests\proof-smoke.spec.ts:75: const adminSeedRole = isSandbox ? "school_admin" : "admin";
+
+===== admin =====
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:10: 6. Permissions: non-admin cannot POST/PATCH/DELETE
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:468: def test_non_admin_cannot_create_category(transactional_db):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:470: User without ADMIN or DIRECTOR role cannot POST category.
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:494: def test_non_admin_cannot_create_assignment(transactional_db):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:496: User without ADMIN or DIRECTOR role cannot POST assignment.
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:6: - Write access: only ADMIN/DIRECTOR roles can create/update
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:117: user = _mk_user(school=school, email="admin@test.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:118: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:130: user = _mk_user(school=school, email="admin2@test.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:131: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:144: _assign_role(user=user_a, school=school_a, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:161: def test_admin_can_create_lesson_plan(self):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:163: user = _mk_user(school=school, email="admin@school.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:164: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:185: user = _mk_user(school=school, email="admin2@school.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:186: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:208: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:222: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:237: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:261: def test_non_admin_cannot_create_lesson_plan(self):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:308: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:320: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:333: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:353: def test_admin_sees_teacher_notes(self):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:355: admin = _mk_user(school=school, email="admin_priv@school.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:356: _assign_role(user=admin, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:359: c = _client_auth(admin, school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:372: admin = _mk_user(school=school, email="admin_pub@school.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:373: _assign_role(user=admin, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:376: c_admin = _client_auth(admin, school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:377: c_admin.post(f"/api/academics/sections/{section.id}/lesson-plans/", {
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:409: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:421: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:437: _assign_role(user=user_a, school=school_a, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:438: _assign_role(user=user_b, school=school_b, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:459: _assign_role(user=user, school=school, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:506: def test_non_admin_cannot_create_resource(self):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:553: _assign_role(user=user_a, school=school_a, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:554: _assign_role(user=user_b, school=school_b, role_code="ADMIN")
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:12: - Write: Users with ADMIN or DIRECTOR role
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:46: """Check if user has write permissions (ADMIN or DIRECTOR role)."""
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:50: return "ADMIN" in roles or "DIRECTOR" in roles
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:115: raise PermissionDenied("Only ADMIN or DIRECTOR can create categories")
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:169: raise PermissionDenied("Only ADMIN or DIRECTOR can modify categories")
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:243: raise PermissionDenied("Only ADMIN or DIRECTOR can modify category weights")
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:382: raise PermissionDenied("Only ADMIN or DIRECTOR can create assignments")
+C:\w\crown_main_postmerge_verify\backend\academics\assignments_views.py:449: raise PermissionDenied("Only ADMIN or DIRECTOR can modify assignments")
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:20: - POST/PATCH/PUT: staff or teacher of section (ADMIN/DIRECTOR role)
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:51: """Write access: superuser OR ADMIN/DIRECTOR role."""
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:59: return "ADMIN" in roles or "DIRECTOR" in roles
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:63: """Teacher notes visibility: staff / admin / director."""
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:141: return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:189: return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:230: return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+C:\w\crown_main_postmerge_verify\backend\academics\lesson_plan_views.py:262: return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+C:\w\crown_main_postmerge_verify\backend\academics_ro\admin.py:1: from django.contrib import admin
+C:\w\crown_main_postmerge_verify\backend\academics_ro\views.py:67: ALLOWED_ROLES = ("admin", "staff", "teacher", "student", "parent")
+C:\w\crown_main_postmerge_verify\backend\admissions\admin.py:1: from django.contrib import admin
+C:\w\crown_main_postmerge_verify\backend\advancement\admin.py:1: from django.contrib import admin
+C:\w\crown_main_postmerge_verify\backend\advancement\admin.py:4: admin.site.register(Donor)
+C:\w\crown_main_postmerge_verify\backend\advancement\admin.py:5: admin.site.register(Campaign)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:91: if normalized.intersection({"admin", "aftercare_staff"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:115: if not require_role(request, {"admin"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:140: if not require_role(request, {"admin"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:166: if not require_role(request, {"admin", "aftercare_staff"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:180: if not require_role(request, {"admin", "aftercare_staff"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:220: if not require_role(request, {"admin", "aftercare_staff"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:243: if not require_role(request, {"admin", "aftercare_staff"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:271: if not require_role(request, {"admin", "aftercare_staff"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:299: if not require_role(request, {"admin", "aftercare_staff", "board"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:322: if not require_role(request, {"board", "admin"}):
+C:\w\crown_main_postmerge_verify\backend\aftercare\wizard_api.py:12: def require_admin(request) -> bool:
+C:\w\crown_main_postmerge_verify\backend\aftercare\wizard_api.py:37: if not require_admin(request):
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:4: Integration tests for admin_aid_overview, admin_recommend_award,
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:5: admin_approve_award, and family_aid_status.
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:123: # 1. admin_aid_overview
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:126: class TestAdminAidOverview(TestCase):
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:136: self.url = f"/api/aid/admin/overview/"
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:202: # 2. admin_recommend_award
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:205: class TestAdminRecommendAward(TestCase):
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:216: self.url = "/api/aid/admin/recommend-award/"
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:286: # 3. admin_approve_award
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:289: class TestAdminApproveAward(TestCase):
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:299: self.url = f"/api/aid/admin/awards/{self.award.id}/approve/"
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:324: url = f"/api/aid/admin/awards/{overrun_award.id}/approve/"
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:335: url = "/api/aid/admin/awards/99999999/approve/"
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:1: from django.contrib import admin, messages
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:8: @admin.action(description="Accept + Post selected awards to Ledger (AID)")
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:9: def accept_and_post_awards(modeladmin, request, queryset):
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:27: description="Aid Awards - Admin Post",
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:43: modeladmin.message_user(
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:49: modeladmin.message_user(request, f"Posted {posted}. Skipped {skipped}.", level=messages.SUCCESS)
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:52: class ApplicationPriorityFilter(admin.SimpleListFilter):
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:56: def lookups(self, request, model_admin):
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:77: @admin.register(AidApplication)
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:78: class AidApplicationAdmin(admin.ModelAdmin):
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:93: @admin.register(AidDocument)
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:94: class AidDocumentAdmin(admin.ModelAdmin):
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:100: @admin.register(AidReview)
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:101: class AidReviewAdmin(admin.ModelAdmin):
+
+===== parent =====
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:184: def test_parent_only_sees_linked_students():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:186: user = _mk_user(school=school, email="parent@example.com", is_staff=False)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:187: _assign_role(user=user, school=school, role_code="PARENT")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:196: last_name="Parent",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:197: email="parent@example.com",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:218: resp = client.get("/api/v1/academics/parents/me/students/")
+C:\w\crown_main_postmerge_verify\backend\academics\models.py:451: Audience: teacher (full); parent/student (objectives/materials/activities/homework only —
+C:\w\crown_main_postmerge_verify\backend\academics\serializers.py:393: """Read-only serializer for student/parent; omits teacher_notes_private."""
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:24: parent_students,
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:77: "academics/parents/me/students/",
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:78: parent_students,
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:79: name="academics-parent-students",
+C:\w\crown_main_postmerge_verify\backend\academics\views.py:111: if "PARENT" in roles:
+C:\w\crown_main_postmerge_verify\backend\academics\views.py:147: if "PARENT" in roles:
+C:\w\crown_main_postmerge_verify\backend\academics\views.py:410: def parent_students(request):
+C:\w\crown_main_postmerge_verify\backend\academics\views.py:419: if "PARENT" not in roles:
+C:\w\crown_main_postmerge_verify\backend\academics\views.py:420: raise PermissionDenied("Parent role required for this endpoint.")
+C:\w\crown_main_postmerge_verify\backend\academics_ro\views.py:67: ALLOWED_ROLES = ("admin", "staff", "teacher", "student", "parent")
+C:\w\crown_main_postmerge_verify\backend\advancement\migrations\0004_stage3_advancement.py:124: ('relationship_type', models.CharField(choices=[('alumni', 'Alumni'), ('parent', 'Parent'), ('grandparent', 'Grandparent'), ('church_partner', 'Church Partner'), ('business_partner', 'Business Partner'), ('board', 'Board Member'), ('friend', 'Friend of School'), ('staff', 'Staff')], default='friend', max_length=50)),
+C:\w\crown_main_postmerge_verify\backend\advancement\models_stage3.py:31: A relationship record — alumni, parent, business partner, board member, etc.
+C:\w\crown_main_postmerge_verify\backend\advancement\models_stage3.py:35: ("parent", "Parent"),
+C:\w\crown_main_postmerge_verify\backend\advancement\models_stage3.py:36: ("grandparent", "Grandparent"),
+C:\w\crown_main_postmerge_verify\backend\advancement\tickets_render.py:56: parent=styles["Heading1"],
+C:\w\crown_main_postmerge_verify\backend\advancement\tickets_render.py:62: parent=styles["Normal"],
+C:\w\crown_main_postmerge_verify\backend\advancement\tickets_render.py:69: parent=styles["Normal"],
+C:\w\crown_main_postmerge_verify\backend\advancement\tickets_render.py:75: parent=styles["Normal"],
+C:\w\crown_main_postmerge_verify\backend\advancement\tickets_render.py:137: "Mono", parent=styles["Normal"], fontName="Courier", fontSize=9,
+C:\w\crown_main_postmerge_verify\backend\advancement\tickets_render.py:155: b"3 0 obj<</Type /Page /Parent 2 0 R /MediaBox [0 0 200 200]>>endobj\n"
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0001_initial.py:94: ('parent_notified', models.BooleanField(default=False)),
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:39: class ParentViewResponseSerializer(serializers.Serializer):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:70: parent_notified = serializers.BooleanField(required=False)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:289: parent_notified=bool(request.data.get("parent_notified", False)),
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:294: @extend_schema(responses=ParentViewResponseSerializer)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:296: def parent_view(request, student_id: int):
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:297: """Parent-facing read-only summary: enrollment and attendance history."""
+C:\w\crown_main_postmerge_verify\backend\aftercare\models.py:210: parent_notified = models.BooleanField(default=False)
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:180: parent_notified: bool = False,
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:188: parent_notified=parent_notified,
+C:\w\crown_main_postmerge_verify\backend\aftercare\urls.py:23: # Parent portal (read-only)
+C:\w\crown_main_postmerge_verify\backend\aftercare\urls.py:24: path("parent/<int:student_id>/",                     api.parent_view,              name="aftercare_parent_view"),
+C:\w\crown_main_postmerge_verify\backend\comms_wizard\tests\test_views.py:19: {"to": "parent1@example.com", "name": "Parent One"},
+C:\w\crown_main_postmerge_verify\backend\comms_wizard\tests\test_views.py:20: {"to": "parent2@example.com", "name": "Parent Two"},
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo.py:211: "parent_notified": True,
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:28: repo_root = Path(__file__).resolve().parents[4]  # Crown2026/
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:64: ("parent.view",                "View parent dashboard"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:135: "PARENT": ["parent.view"],
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:176: "parent":          ["parent.view"],
+C:\w\crown_main_postmerge_verify\backend\core\migrations\0001_initial.py:142: ('role_code', models.CharField(choices=[('HEAD_OF_SCHOOL', 'Head of School'), ('AID_DIRECTOR', 'Aid Director'), ('FINANCE_DIRECTOR', 'Finance Director'), ('REGISTRAR', 'Registrar'), ('TEACHER', 'Teacher'), ('PARENT', 'Parent'), ('STUDENT', 'Student'), ('SUPPORT', 'Support')], max_length=50)),
+C:\w\crown_main_postmerge_verify\backend\core\migrations\0001_initial.py:273: ('relationship', models.CharField(choices=[('MOTHER', 'Mother'), ('FATHER', 'Father'), ('GRANDPARENT', 'Grandparent'), ('GUARDIAN', 'Guardian'), ('OTHER', 'Other')], max_length=20)),
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:88: def test_parent_does_not_see_finance_admissions_billing_integrity(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:89: school = _school("Parent Nav School")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:90: parent = _user("parent1")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:91: _assign_role(parent, school, "parent")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:92: _grant("parent", "parent.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:95: c.force_login(parent)
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:103: assert "Parent" in labels
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:104: assert "/parent" in hrefs
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:134: assert "/parent" not in hrefs
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:199: _assign_role(user, school, "parent")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:200: _grant("parent", "parent.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:213: _assign_role(user, school, "parent")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:214: _grant("parent", "parent.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:229: _assign_role(user, school, "parent")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:230: _grant("parent", "parent.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_rbac_contract.py:47: # HEAD_OF_SCHOOL, AID_DIRECTOR, FINANCE_DIRECTOR, REGISTRAR, TEACHER, PARENT, STUDENT, SUPPORT
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_rbac_contract.py:53: "PARENT": _mk_user("parent"),
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_rbac_contract.py:82: ("PARENT", 403),
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:102: # Test: Parent → Students via Guardian.email → Household
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:106: class TestScopingStudentsParent(TestCase):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:110: self.parent = UserAccount.objects.create_user(
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:111: username="parent_scope_test", password=TEST_AUTH_SECRET, email="mama@family.com"
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:113: self.parent.role = "PARENT"
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:115: # Own household — guardian email matches parent user email.
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:135: def test_parent_sees_only_own_household_students(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:137: result = scope_queryset(self.parent, qs, DOMAIN_STUDENTS)
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:142: def test_parent_email_match_is_case_insensitive(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:144: case_parent = UserAccount.objects.create_user(
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:145: username="case_parent_scope_test", password=TEST_AUTH_SECRET,
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:148: case_parent.role = "PARENT"
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:150: result = scope_queryset(case_parent, qs, DOMAIN_STUDENTS)
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:153: def test_parent_with_no_guardian_record_sees_nothing(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:155: username="orphan_parent_scope_test", password=TEST_AUTH_SECRET,
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:158: orphan.role = "PARENT"
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:164: # Test: Parent → FinancialAidApplication via Guardian.email → household_id
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:168: class TestScopingFinancialAidParent(TestCase):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:172: self.parent = UserAccount.objects.create_user(
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:173: username="aid_parent_scope_test", password=TEST_AUTH_SECRET,
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:176: self.parent.role = "PARENT"
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:199: def test_parent_sees_only_own_household_applications(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:201: result = scope_queryset(self.parent, qs, DOMAIN_FINANCIAL_AID)
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:206: def test_parent_with_no_guardian_record_sees_nothing(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:211: ghost.role = "PARENT"
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:217: # Test: Parent → LedgerEntry via user.guardian.family
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:221: # Rename to test_scope_financial_parent_family once DB test is feasible.
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:224: class TestScopingFinancialParentFamily(TestCase):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:238: self.parent = UserAccount.objects.create_user(
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:239: username="fin_parent_scope_test", password=TEST_AUTH_SECRET,
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:241: UserAccount.objects.filter(pk=self.parent.pk).update(guardian=self.guardian)
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:242: self.parent.refresh_from_db()
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_scoping.py:243: self.parent.role = "PARENT"
+
+===== teacher =====
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:128: "teacher_name": "Demo Teacher",
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:158: # Get teacher (first staff user or create demo teacher)
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:159: teacher = User.objects.filter(is_staff=True).first()
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:160: if not teacher:
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:161: teacher = User.objects.filter(username="teacher1").first()
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:162: if not teacher:
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:163: teacher = User.objects.create_user(
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:164: username="teacher_demo",
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:165: email="teacher@demo.local",
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:250: graded_by=teacher,
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0030_academics_core.py:42: ('teacher_name', models.CharField(blank=True, default='', max_length=120)),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:53: name="TeacherAssignment",
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:63: related_name="teacher_assignments",
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:77: "db_table": "teacher_assignment",
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:89: model_name="teacherassignment",
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:90: index=models.Index(fields=["school_id", "section"], name="teacher_ass_school__e963a3_idx"),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:93: model_name="teacherassignment",
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:94: index=models.Index(fields=["school_id", "staff"], name="teacher_ass_school__a331ab_idx"),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0031_academics_readonly.py:97: model_name="teacherassignment",
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0033_assignmentcategory_assignment_and_more.py:11: ('academics', '0032_rename_teacher_ass_school__7df83a_idx_teacher_ass_school__e963a3_idx_and_more'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0035_section_teacher_id.py:15: name="teacher_id",
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0036_remove_section_teacher_id_section_teacher.py:11: ('academics', '0035_section_teacher_id'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0036_remove_section_teacher_id_section_teacher.py:18: name='teacher_id',
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0036_remove_section_teacher_id_section_teacher.py:22: name='teacher',
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:12: ('academics', '0036_remove_section_teacher_id_section_teacher'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:119: ('teacher_feedback', models.TextField(blank=True, default='')),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0038_lesson_plan_and_resource.py:30: ('teacher_notes_private', models.TextField(blank=True, default='')),
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_api.py:42: data={"course_id": str(uuid.uuid4()), "term": "2026-FALL", "teacher_name": "Mrs. Smith"},
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:9: from academics.models import Course, CurriculumSource, Section, TeacherAssignment, Term
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:93: teacher_name="Mrs. A",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:100: teacher_name="Mrs. B",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:115: def test_teacher_only_sees_own_sections():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:138: teacher_name="Teacher A",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:145: teacher_name="Teacher B",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:153: role_type="TEACHER",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:161: role_type="TEACHER",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:165: TeacherAssignment.objects.create(school_id=school.id, section=section_a, staff=staff_a)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:166: TeacherAssignment.objects.create(school_id=school.id, section=section_b, staff=staff_b)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:171: _assign_role(user=user, school=school, role_code="TEACHER")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:230: CurriculumSource.objects.create(school_id=school.id, name="Independent Teacher Notes", source_type="research")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assessments_api.py:55: teacher_name="Mrs. Smith",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:70: teacher_name="Mr. Anderson",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:475: user = _mk_user(school=school, email="teacher@test.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:476: _assign_role(user=user, school=school, role_code="TEACHER")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:501: user = _mk_user(school=school, email="teacher@test.com")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:502: _assign_role(user=user, school=school, role_code="TEACHER")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:38: Authenticated teacher (demo superuser) can POST attendance and the record
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:48: username="test_lane3_teacher",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:10: - Teacher notes visibility: public serializer omits teacher_notes_private
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:174: "teacher_notes_private": "Watch for struggling students.",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:180: assert r.data["teacher_notes_private"] == "Watch for struggling students."
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:347: # Teacher Notes Privacy
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:350: class TestTeacherNotesPrivacy:
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:351: """Public serializer omits teacher_notes_private for non-role users."""
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:353: def test_admin_sees_teacher_notes(self):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:362: "teacher_notes_private": "Private teacher note.",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:367: assert r.data[0]["teacher_notes_private"] == "Private teacher note."
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:369: def test_unauthenticated_user_does_not_see_teacher_notes(self):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:370: """Non-role user gets the public serializer (no teacher_notes_private field)."""
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:379: "teacher_notes_private": "Top secret.",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:387: # Public serializer does not include teacher_notes_private
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:388: assert "teacher_notes_private" not in r.data[0]
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:26: def _seed_section(*, school: School, teacher=None):
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:55: teacher=teacher,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:56: teacher_name="Mrs. Smith",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:74: section, _student = _seed_section(school=school, teacher=user)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:89: section, _student = _seed_section(school=school, teacher=user)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:107: section, student = _seed_section(school=school, teacher=user)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:7: from academics.models import Course, Enrollment, Section, Term, TeacherAssignment
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:17: def test_teacher_cannot_query_other_teacher_id():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:19: If user has TEACHER role, they may not pass another teacher_id.
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:25: staff_teacher1 = Staff.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:27: first_name="Teacher",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:29: email="teacher1@test.com",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:30: role_type="TEACHER",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:32: # Create teacher 1 user (the authenticated user) linked to staff1
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:33: teacher1_user = User.objects.create_user(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:34: username=f"teacher1-{uuid.uuid4()}",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:35: email="teacher1@test.com",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:38: staff=staff_teacher1,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:41: user=teacher1_user,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:43: role_code="TEACHER",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:47: staff_teacher2 = Staff.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:49: first_name="Teacher",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:51: email="teacher2@test.com",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:52: role_type="TEACHER",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:54: # Create teacher 2 user (the other teacher) linked to staff2
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:55: teacher2_user = User.objects.create_user(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:56: username=f"teacher2-{uuid.uuid4()}",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:57: email="teacher2@test.com",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:60: staff=staff_teacher2,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:63: # Create a section assigned to teacher2
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:92: teacher=teacher2_user,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:93: teacher_name="Teacher Two",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:95: TeacherAssignment.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:98: staff=staff_teacher2,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:101: # Teacher1 tries to query sections with teacher2's staff ID
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:103: client.force_authenticate(user=teacher1_user)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_teacher_guard.py:105: url = f"/api/v1/academics/sections/?teacher_id={staff_teacher2.id}"
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_section_roster.py:61: teacher_name="Teacher A",
+
+===== student =====
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:12: - Enrollments: first 25 active students per section (or fewer if < 25 exist)
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:27: from households.models import Student, Household
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:136: # Get active students (or create minimal set)
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:137: students = list(Student.objects.filter(school_id=school.id, is_active=True)[:25])
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:139: if not students:
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:140: self.stdout.write(self.style.WARNING("No active students found. Creating demo students..."))
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:141: students = self._create_demo_students(school, count=25)
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:146: for student in students:
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:150: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:157: f"{enrollment_count} enrollments ({len(students)} students)"
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:162: # 1. Delete enrollments first (references sections + students)
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:179: def _create_demo_students(self, school: School, count: int = 25) -> list[Student]:
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:180: """Create minimal demo students for academics (idempotent)."""
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:181: students = []
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:191: student, created = Student.objects.get_or_create(
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:194: first_name=f"Student{i}",
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:201: students.append(student)
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:203: self.stdout.write(f"    Created student: {student.first_name} {student.last_name}")
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_academics_demo.py:205: return students
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:30: from households.models import Student
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:134: "description": f"Students will demonstrate understanding of Topic {i} concepts.",
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:196: # Create submissions for enrolled students
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:197: enrollments = Enrollment.objects.filter(section=section).select_related("student")[:10]
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:207: student = enrollment.student
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:209: # Simulate variety of student performance
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:210: is_high_performer = student.id.hex[0] in "abcdef"  # ~50% high performers
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:211: is_at_risk = student.id.hex[0] in "0123"  # ~25% at-risk
+C:\w\crown_main_postmerge_verify\backend\academics\management\commands\seed_curriculum_vertical_slice.py:229: # At-risk students: some missing submissions
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0030_academics_core.py:15: ("households", "0008_households_guardians_students"),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0030_academics_core.py:57: ('student', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='enrollments', to='households.student')),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0030_academics_core.py:78: index=models.Index(fields=['school_id', 'student'], name='enrollment_school__a219b0_idx'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0030_academics_core.py:82: constraint=models.UniqueConstraint(fields=('section', 'student'), name='uniq_section_student'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:13: ('households', '0008_households_guardians_students'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:80: ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='mastery_records', to='households.student')),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:142: ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='transcript_entries', to='households.student')),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:182: index=models.Index(fields=['school_id', 'student'], name='mastery_rec_school__efd27b_idx'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:190: constraint=models.UniqueConstraint(fields=('student', 'objective'), name='uniq_mastery_student_objective'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:210: index=models.Index(fields=['school_id', 'student'], name='transcript__school__00a4c7_idx'),
+C:\w\crown_main_postmerge_verify\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py:218: constraint=models.UniqueConstraint(fields=('student', 'course', 'term'), name='uniq_transcript_student_course_term'),
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_api.py:8: from households.models import Household, Student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_api.py:49: data={"section_id": str(uuid.uuid4()), "student_id": str(uuid.uuid4())},
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:8: from households.models import Guardian, Household, Student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:184: def test_parent_only_sees_linked_students():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:200: student_a = Student.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:207: Student.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:218: resp = client.get("/api/v1/academics/parents/me/students/")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_academics_readonly_api.py:222: assert results[0]["student_id"] == str(student_a.id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assessments_api.py:9: from households.models import Household, Student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assessments_api.py:58: student = Student.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assessments_api.py:65: Enrollment.objects.create(school_id=school.id, section=section, student=student)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:23: from households.models import Household, Student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:76: student = Student.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:80: last_name="Student",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:86: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:88: return section, student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:98: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:122: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:128: final = _compute_section_final_percent(str(school.id), section.id, student.id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:143: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:181: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:189: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:195: final = _compute_section_final_percent(str(school.id), section.id, student.id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:213: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:257: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:265: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:271: final = _compute_section_final_percent(str(school.id), section.id, student.id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:282: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:290: student=student,
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:296: final = _compute_section_final_percent(str(school.id), section.id, student.id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:308: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:349: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:388: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:427: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:473: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:499: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:533: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:573: section, student = _seed_base_data(school=school)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:32: """Submitting the same student+date twice must be idempotent (update, not double-create)."""
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:47: student_id = str(enrollment.student_id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:51: AttendanceRecord.objects.filter(student_id=student_id, course=None, date=today).delete()
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:56: payload = {"date": today, "items": [{"student_id": student_id, "status": "PRESENT"}]}
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:75: count = AttendanceRecord.objects.filter(student_id=student_id, course=None, date=today).count()
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:95: student_id = str(enrollment.student_id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:97: AttendanceRecord.objects.filter(student_id=student_id, course=None, date=today).delete()
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:104: {"date": today, "items": [{"student_id": student_id, "status": "ABSENT"}]},
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:27: data={"items": [{"student_id": "00000000-0000-0000-0000-000000000001", "status": "present"}]},
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:39: appears in the student attendance GET endpoint.
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:62: student_id = str(enrollment.student_id)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:70: data={"date": today, "items": [{"student_id": student_id, "status": "present"}]},
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:79: read_resp = client.get(f"/api/v1/academics/students/{student_id}/attendance/")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:28: from households.models import Household, Student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:174: "teacher_notes_private": "Watch for struggling students.",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lesson_plans.py:180: assert r.data["teacher_notes_private"] == "Watch for struggling students."
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:9: from households.models import Household, Student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:59: student = Student.objects.create(
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:66: Enrollment.objects.create(school_id=school.id, section=section, student=student)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:67: return section, student
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:74: section, _student = _seed_section(school=school, teacher=user)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:89: section, _student = _seed_section(school=school, teacher=user)
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_sections_api.py:103: def test_section_roster_returns_students():
+
+===== finance =====
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_api.py:20: from finance.models import ChartAccount
+C:\w\crown_main_postmerge_verify\backend\aid\tests\test_aid_award_invariants.py:22: from finance.models import ChartAccount
+C:\w\crown_main_postmerge_verify\backend\aid\admin.py:5: from finance.models import JournalBatch, ChartAccount
+C:\w\crown_main_postmerge_verify\backend\aid\models.py:5: from finance.models import ChartAccount, JournalBatch
+C:\w\crown_main_postmerge_verify\backend\analytics\services_health.py:9: from finance.models import FinancePayment, PaymentStatus
+C:\w\crown_main_postmerge_verify\backend\analytics\services_health.py:37: totals = FinancePayment.objects.filter(school_id=school_id, created_at__gte=horizon).aggregate(
+C:\w\crown_main_postmerge_verify\backend\athletics\api\views.py:102: # NOTE: Phase 2 — add ledger charge hook here when finance.services
+C:\w\crown_main_postmerge_verify\backend\billing\management\commands\seed_billing_demo.py:21: help = "Seed demo billing data (billing runs, invoices, line items) for Finance dashboard"
+C:\w\crown_main_postmerge_verify\backend\billing\management\commands\seed_billing_demo.py:80: description="Demo Finance Seed Data",
+C:\w\crown_main_postmerge_verify\backend\billing\management\commands\seed_billing_demo.py:165: f"   Visit /finance/invoices to see results"
+C:\w\crown_main_postmerge_verify\backend\billing\tests\test_billing_api.py:154: role_groups=("finance_admin",),
+C:\w\crown_main_postmerge_verify\backend\billing\api.py:22: from crown_api.billing_api.permissions import has_finance_runtime_role
+C:\w\crown_main_postmerge_verify\backend\billing\api.py:293: This is intentionally finance/admin-only until the family-scoped account
+C:\w\crown_main_postmerge_verify\backend\billing\api.py:296: if not has_finance_runtime_role(request.user):
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:15: "finance_health": {
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:38: Replace these placeholders with real Finance/Admissions/Discipline
+C:\w\crown_main_postmerge_verify\backend\board_oversight\services.py:49: "finance": {
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\golden_path_bootstrap.py:500: from finance.models import ChartAccount
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:24: from finance.models import ChartAccount, JournalBatch
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:106: # --- 3) Finance: Chart of Accounts + Tuition Plan ---
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:165: created_by=directors["finance_user"],
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:206: created_by_user=directors["finance_user"],
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:391: fin_staff = ensure_staff("Morgan", "Ledger", "finance@crown-demo.local", "DIRECTOR")
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:396: finance_user = ensure_user("finance@crown-demo.local", fin_staff)
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:401: ensure_role(finance_user, "FINANCE_DIRECTOR")
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_demo_school.py:407: "finance_user": finance_user,
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_expansion.py:51: {"first_name": "Carol", "last_name": "Davis",   "department": "Finance",    "role": "Accountant",        "email": "c.davis@crown.example",   "date_hired": date(2019, 3, 20), "active": True},
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:10: help = "Seed Heritage demo with realism pack: linked data across roles, finance, aid, comms, scheduling, academics."
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:19: "--no-finance-scripts",
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:21: help="Skip extra finance realism scripts (faster runs).",
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:84: # 7) Finance realism scripts (optional)
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:85: if not opts["no_finance_scripts"]:
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:86: run_script_module("seed_finance.py")
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:27: ("finance.edit",               "Post ledger entries, reverse transactions"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:28: ("finance.period_lock",        "Lock / unlock accounting periods"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:39: ("finance.view",               "View financial summaries and ledger"),
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:101: "finance.view", "billing.view",
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:115: "FINANCE_DIRECTOR": [
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:116: "finance.view", "finance.edit", "finance.period_lock",
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:141: "finance.view", "billing.view",
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:155: "finance":         ["finance.view", "finance.edit", "billing.view", "integrity.view"],
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:183: "finance.view", "billing.view",
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_permissions.py:196: "finance_admin": ["finance.view", "finance.edit", "billing.view", "integrity.view"],
+C:\w\crown_main_postmerge_verify\backend\core\migrations\0001_initial.py:142: ('role_code', models.CharField(choices=[('HEAD_OF_SCHOOL', 'Head of School'), ('AID_DIRECTOR', 'Aid Director'), ('FINANCE_DIRECTOR', 'Finance Director'), ('REGISTRAR', 'Registrar'), ('TEACHER', 'Teacher'), ('PARENT', 'Parent'), ('STUDENT', 'Student'), ('SUPPORT', 'Support')], max_length=50)),
+C:\w\crown_main_postmerge_verify\backend\core\migrations\0002_initial.py:14: ('finance', '0001_initial'),
+C:\w\crown_main_postmerge_verify\backend\core\migrations\0002_initial.py:21: field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='ledger_entries', to='finance.chartaccount'),
+C:\w\crown_main_postmerge_verify\backend\core\migrations\0002_initial.py:26: field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='ledger_entries', to='finance.journalbatch'),
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:88: def test_parent_does_not_see_finance_admissions_billing_integrity(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:107: assert "Finance" not in labels
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:111: assert "/finance" not in hrefs
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:116: def test_finance_role_sees_finance_and_billing_not_admissions(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:117: school = _school("Finance Nav School")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:119: _assign_role(fin, school, "finance")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:120: _grant("finance", "finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:121: _grant("finance", "billing.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:131: assert "/finance" in hrefs
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:169: def test_teacher_sees_teacher_and_academics_not_finance(self):
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:186: assert "/finance" not in hrefs
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:247: _assign_role(user, school_a, "finance")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_nav_endpoint.py:248: _grant("finance", "finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:61: _grant("HEAD_OF_SCHOOL", "finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:63: assert user_has_permission(user, "finance.view") is True
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:69: _grant("HEAD_OF_SCHOOL", "finance.view")  # granted to HoS, not TEACHER
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:71: assert user_has_permission(user, "finance.view") is False
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:82: _grant("HEAD_OF_SCHOOL", "finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:84: assert user_has_permission(user, "finance.view") is False
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:89: _grant("HEAD_OF_SCHOOL", "finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:91: assert user_has_permission(anon, "finance.view") is False
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:104: _grant("HEAD_OF_SCHOOL", "finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:106: assert user_has_permission(user, "finance.view", school=school) is True
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:113: _grant("HEAD_OF_SCHOOL", "finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:116: assert user_has_permission(user, "finance.view", school=school_b) is False
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:121: _assign_role(user, school_a, "FINANCE_DIRECTOR")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:122: _grant("FINANCE_DIRECTOR", "finance.edit")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:125: assert user_has_permission(user, "finance.edit") is True
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:163: # TEACHER not granted finance.view
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:170: view = self._make_view("finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:201: view = self._make_view("finance.edit")
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:266: assert CrownPermission.objects.filter(code="finance.view").exists()
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:275: permission__code="finance.view",
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:278: role_code="FINANCE_DIRECTOR",
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_permission_engine.py:279: permission__code="finance.edit",
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_rbac_contract.py:47: # HEAD_OF_SCHOOL, AID_DIRECTOR, FINANCE_DIRECTOR, REGISTRAR, TEACHER, PARENT, STUDENT, SUPPORT
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_rbac_contract.py:48: # ADMIN does not exist — FINANCE_DIRECTOR is the privileged finance-level role.
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_rbac_contract.py:50: "FINANCE_DIRECTOR": _mk_user("fin-dir"),
+C:\w\crown_main_postmerge_verify\backend\core\tests\test_rbac_contract.py:79: ("FINANCE_DIRECTOR", 200),
+C:\w\crown_main_postmerge_verify\backend\core\admin.py:107: # Ensure finance-owned views do not appear under Core
+C:\w\crown_main_postmerge_verify\backend\core\models.py:207: ('FINANCE_DIRECTOR', 'Finance Director'),
+C:\w\crown_main_postmerge_verify\backend\core\models.py:303: account = models.ForeignKey('finance.ChartAccount', on_delete=models.PROTECT, related_name='ledger_entries')
+C:\w\crown_main_postmerge_verify\backend\core\models.py:304: batch = models.ForeignKey('finance.JournalBatch', on_delete=models.SET_NULL, null=True, blank=True, related_name='ledger_entries')
+C:\w\crown_main_postmerge_verify\backend\core\models.py:368: Codes follow the pattern  <module>.<action>  e.g. "finance.view".
+C:\w\crown_main_postmerge_verify\backend\core\nav_registry.py:25: NavItem(group="Operations", label="Finance",           href="/finance",         permission="finance.view"),
+C:\w\crown_main_postmerge_verify\backend\core\permissions.py:12: #   @require_permission("finance.view")
+C:\w\crown_main_postmerge_verify\backend\core\scoping.py:33: HEAD_OF_SCHOOL, AID_DIRECTOR, FINANCE_DIRECTOR, REGISTRAR,
+C:\w\crown_main_postmerge_verify\backend\core\scoping.py:106: "FINANCE_DIRECTOR": "finance",
+C:\w\crown_main_postmerge_verify\backend\core\scoping.py:119: "FINANCE_DIRECTOR",
+C:\w\crown_main_postmerge_verify\backend\core\scoping.py:255: if role in {"head", "director", "finance"}:
+C:\w\crown_main_postmerge_verify\backend\core\scoping.py:278: if role in {"head", "director", "finance", "aid_officer"}:
+C:\w\crown_main_postmerge_verify\backend\core\scoping.py:358: if role == "finance":
+C:\w\crown_main_postmerge_verify\backend\core\scoping.py:404: "finance": FieldScope(allow="__all__", deny=set()),
+
+===== admissions =====
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:5: from admissions.models import AdmissionsApplication
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:9: help = "Seed deterministic admissions applications for demo/gate checks"
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:34: marker = "seed_admissions_demo"
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:35: existing_seeded = AdmissionsApplication.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:44: f"seed_admissions_demo: already seeded {existing_seeded} applications"
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:51: f"Not enough families to seed admissions applications (needed={needed}, found={len(families)})"
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:55: AdmissionsApplication.STATUS_SUBMITTED,
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:56: AdmissionsApplication.STATUS_UNDER_REVIEW,
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:57: AdmissionsApplication.STATUS_NEEDS_INFO,
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:58: AdmissionsApplication.STATUS_ACCEPTED,
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:59: AdmissionsApplication.STATUS_WAITLISTED,
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:65: AdmissionsApplication.objects.create(
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:78: total = AdmissionsApplication.objects.filter(school=school, academic_year=year).count()
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\seed_admissions_demo.py:80: f"seed_admissions_demo: created={created}, seeded_marker_total={existing_seeded + created}, applications_total={total}"
+C:\w\crown_main_postmerge_verify\backend\admissions\management\commands\__init__.py:1: # admissions management commands package
+C:\w\crown_main_postmerge_verify\backend\admissions\management\__init__.py:1: # admissions management package
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:20: name='AdmissionsApplication',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:35: ('academic_year', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_applications', to='core.academicyear')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:36: ('family', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_applications', to='core.family')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:37: ('last_contacted_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='admissions_contacts_initiated', to=settings.AUTH_USER_MODEL)),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:38: ('school', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_applications', to='core.school')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:39: ('student', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='admissions_applications', to='core.student')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:43: name='AdmissionsAuditEvent',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:53: ('actor_user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='admissions_audit_events', to=settings.AUTH_USER_MODEL)),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:54: ('school', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_audit_events', to='core.school')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:58: name='AdmissionsDecision',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:67: ('academic_year', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_decisions', to='core.academicyear')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:68: ('application', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='decision', to='admissions.admissionsapplication')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:69: ('decided_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_decisions_made', to=settings.AUTH_USER_MODEL)),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:70: ('school', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_decisions', to='core.school')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:74: name='AdmissionsReview',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:86: ('application', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='reviews', to='admissions.admissionsapplication')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:87: ('reviewer_user', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_reviews', to=settings.AUTH_USER_MODEL)),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:88: ('school', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='admissions_reviews', to='core.school')),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:95: model_name='admissionsapplication',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:96: index=models.Index(fields=['school', 'academic_year', 'status'], name='admissions__school__679329_idx'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:99: model_name='admissionsapplication',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:100: index=models.Index(fields=['school', 'family'], name='admissions__school__fb34f2_idx'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:103: model_name='admissionsauditevent',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:104: index=models.Index(fields=['school', 'entity_type', 'entity_id'], name='admissions__school__386aff_idx'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:107: model_name='admissionsauditevent',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:108: index=models.Index(fields=['school', 'timestamp'], name='admissions__school__c3018f_idx'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:111: model_name='admissionsauditevent',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:112: index=models.Index(fields=['school', 'action'], name='admissions__school__853ea2_idx'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:115: model_name='admissionsdecision',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0001_initial.py:116: index=models.Index(fields=['school', 'academic_year', 'decision_status'], name='admissions__school__aae55c_idx'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0002_link_household_student.py:10: ('admissions', '0001_initial'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0002_link_household_student.py:16: model_name='admissionsapplication',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0002_link_household_student.py:21: model_name='admissionsapplication',
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0003_alter_admissionsapplication_status.py:9: ('admissions', '0002_link_household_student'),
+C:\w\crown_main_postmerge_verify\backend\admissions\migrations\0003_alter_admissionsapplication_status.py:14: model_name='admissionsapplication',
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:2: URL routing for Admissions Director APIs
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:5: - /api/admissions/priority-queue/
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:6: - /api/admissions/metrics/
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:7: - /api/admissions/timeline/
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:12: from .views_admissions_links import (
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:13: admissions_application_detail,
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:14: admissions_applications_list,
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:19: path("priority-queue/", api_views.admissions_priority_queue, name="admissions_priority_queue"),
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:20: path("metrics/", api_views.admissions_metrics, name="admissions_metrics"),
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:21: path("timeline/", api_views.admissions_timeline, name="admissions_timeline"),
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:24: path("enroll/", enroll_applicant, name="admissions_enroll"),
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:27: path("applications/", admissions_applications_list, name="admissions_applications_list"),
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:30: admissions_application_detail,
+C:\w\crown_main_postmerge_verify\backend\admissions\api_urls.py:31: name="admissions_application_detail",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:2: Persona-specific API views for Admissions Director
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:14: from admissions.models import AdmissionsApplication
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:28: def admissions_priority_queue(request):
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:30: Priority queue for Admissions Director - returns ONLY admissions-related items.
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:47: # Query admissions applications
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:49: AdmissionsApplication.objects
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:51: status=AdmissionsApplication.STATUS_NEEDS_INFO)
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:57: AdmissionsApplication.objects
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:59: status=AdmissionsApplication.STATUS_UNDER_REVIEW)
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:70: "type": "ADMISSIONS_APPLICATION_NEEDS_INFO",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:75: "summary": "Admissions application needs info (missing documents).",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:81: "type": "ADMISSIONS_APPLICATION_UNDER_REVIEW",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:86: "summary": "Admissions application under review.",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:95: "persona": "admissions",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:103: def admissions_metrics(request):
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:105: Metrics for Admissions Director - returns ONLY admissions metrics.
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:123: total_applications = AdmissionsApplication.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:127: needs_info_count = AdmissionsApplication.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:129: status=AdmissionsApplication.STATUS_NEEDS_INFO
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:132: under_review_count = AdmissionsApplication.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:134: status=AdmissionsApplication.STATUS_UNDER_REVIEW
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:137: accepted_count = AdmissionsApplication.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:139: status=AdmissionsApplication.STATUS_ACCEPTED
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:142: waitlisted_count = AdmissionsApplication.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:144: status=AdmissionsApplication.STATUS_WAITLISTED
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:156: "persona": "admissions",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:163: def admissions_timeline(request):
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:165: Timeline for Admissions Director - returns ONLY admissions events.
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:182: # Get recent admissions applications
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:184: AdmissionsApplication.objects
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:194: "type": "ADMISSIONS_APPLICATION_SUBMITTED",
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:195: "actor": None,  # AdmissionsApplication doesn't have submitted_by field
+C:\w\crown_main_postmerge_verify\backend\admissions\api_views.py:206: "persona": "admissions",
+C:\w\crown_main_postmerge_verify\backend\admissions\apps.py:4: class AdmissionsConfig(AppConfig):
+C:\w\crown_main_postmerge_verify\backend\admissions\apps.py:6: name = 'admissions'
+
+===== gradebook =====
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_assignments_weights.py:22: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_transcript_ro_api.py:13: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\academics\transcript_views.py:15: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:62: # 3) Scheduling/sections first so academics and gradebook attach cleanly
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:74: # 5) Gradebook + category weights (makes the UI look alive)
+C:\w\crown_main_postmerge_verify\backend\core\management\commands\seed_heritage_realism_pack.py:75: call_command("seed_gradebook_demo", school_id=str(school.id))
+C:\w\crown_main_postmerge_verify\backend\core\tenant_header_middleware.py:45: "/api/v1/gradebook/",
+C:\w\crown_main_postmerge_verify\backend\crown_api\dashboards\summary.py:110: Phase B: wire to assignments + gradebook models.
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:2: Phase 4 demo-token API proof: parent gradebook endpoint.
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:5: /api/v1/gradebook/students/<uuid>/grades/ over HTTP.
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:15: python manage.py proof_phase4_gradebook_demo [--verbose] [--base-url URL]
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:35: help = "Phase 4 demo-token API proof: gradebook parent endpoint returns demo payload (Alex Demo)"
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:62: raise CommandError(f"PHASE4_GRADEBOOK_DEMO_PROOF: FAIL :: {msg}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:83: "Alex Demo student not found. Run seed_demo_parent_gradebook first.",
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:85: log(f"proof_phase4_gradebook_demo: school_id={school.id} student_id={student.id}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:98: log("proof_phase4_gradebook_demo: demo token acquired")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:101: grades_url = f"{base}/api/v1/gradebook/students/{student.id}/grades/"
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:110: self._assert(st2 == 200, f"gradebook endpoint failed: HTTP {st2} :: {raw2[:300]}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:112: log(f"proof_phase4_gradebook_demo: response keys={list(out.keys())}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\proof_phase4_gradebook_demo.py:129: f"PHASE4_GRADEBOOK_DEMO_PROOF: PASS :: student={out['student_name']} courses={len(out['courses'])}"
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:2: Seed deterministic parent-gradebook demo data.
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:15: python manage.py seed_demo_parent_gradebook [--verbose]
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:26: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:36: help = "Seed deterministic parent-gradebook demo data (Alex Demo, idempotent)"
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:55: log(f"seed_demo_parent_gradebook: school_id={school.id}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:62: log(f"seed_demo_parent_gradebook: household_id={household.pk}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:80: log(f"seed_demo_parent_gradebook: student_id={student.pk}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:88: log(f"seed_demo_parent_gradebook: course_id={course.pk}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:96: log(f"seed_demo_parent_gradebook: section_id={section.pk}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:104: log(f"seed_demo_parent_gradebook: enrollment_id={enrollment.pk}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:119: log(f"seed_demo_parent_gradebook: grade_entry '{name}' {'created' if created else 'exists'}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\management\commands\seed_demo_parent_gradebook.py:122: f"seed_demo_parent_gradebook: OK  student_id={student.pk}"
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_ops_endpoints.py:89: self.assertIn("gradebook", deps)
+C:\w\crown_main_postmerge_verify\backend\crown_api\tests\test_tenant_enforcement.py:53: r = c.get("/api/v1/gradebook/sections/")
+C:\w\crown_main_postmerge_verify\backend\crown_api\api_v1_urls.py:49: path("", include("gradebook.urls")),
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:249: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:252: logger.exception("ops_summary: failed to load gradebook count")
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:300: deps = {"admissions": False, "finance": False, "gradebook": False}
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:340: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:341: deps["gradebook"] = True
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:343: errors.append(f"gradebook import failed: {type(e).__name__}")
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:390: # --- Rule 3: Gradebook missing (warning) ---
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:394: "gradebook_missing",
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:396: "Gradebook has no entries",
+C:\w\crown_main_postmerge_verify\backend\crown_api\ops_views.py:397: "No grade entries found. Seed gradebook so the academic side is believable.",
+C:\w\crown_main_postmerge_verify\backend\crown_api\settings.py:187: 'gradebook',
+C:\w\crown_main_postmerge_verify\backend\crown_api\system_views.py:91: out_gradebook = io.StringIO()
+C:\w\crown_main_postmerge_verify\backend\crown_api\system_views.py:131: # 5) seed gradebook entries
+C:\w\crown_main_postmerge_verify\backend\crown_api\system_views.py:133: "seed_gradebook_demo",
+C:\w\crown_main_postmerge_verify\backend\crown_api\system_views.py:139: stdout=out_gradebook,
+C:\w\crown_main_postmerge_verify\backend\crown_api\system_views.py:140: stderr=out_gradebook,
+C:\w\crown_main_postmerge_verify\backend\crown_api\system_views.py:154: "gradebook_tail": out_gradebook.getvalue()[-2000:],
+C:\w\crown_main_postmerge_verify\backend\crown_api\system_views.py:168: "gradebook_tail": out_gradebook.getvalue()[-2000:],
+C:\w\crown_main_postmerge_verify\backend\crown_api\wizard_registry.py:93: # #9 — Gradebook Setup
+C:\w\crown_main_postmerge_verify\backend\crown_api\wizard_registry.py:95: "name":       "Gradebook Setup",
+C:\w\crown_main_postmerge_verify\backend\crown_api\wizard_registry.py:96: "app_config": "gradebook_setup_wizard.apps.GradebookSetupWizardConfig",
+C:\w\crown_main_postmerge_verify\backend\crown_api\wizard_registry.py:97: "url_prefix": "api/v1/gradebook-setup-wizard/sessions/",
+C:\w\crown_main_postmerge_verify\backend\crown_api\wizard_registry.py:98: "urls_module": "gradebook_setup_wizard.urls",
+C:\w\crown_main_postmerge_verify\backend\executive360\api\views.py:84: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\gradebook\management\commands\seed_gradebook_demo.py:14: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\gradebook\management\commands\seed_gradebook_demo.py:63: Prefer real roster: Section.enrollments -> student_id (based on your existing gradebook views).
+C:\w\crown_main_postmerge_verify\backend\gradebook\management\commands\seed_gradebook_demo.py:76: logger.exception("seed_gradebook_demo: failed reading section enrollments")
+C:\w\crown_main_postmerge_verify\backend\gradebook\management\commands\seed_gradebook_demo.py:95: help = "Seed Gradebook demo data (GradeEntry rows) for a given school_id. Idempotent and rerunnable."
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0002_gradeentry_assignment.py:11: ('gradebook', '0001_initial'),
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:16: - Get or create a "Gradebook" category per section
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:20: GradeEntry = apps.get_model("gradebook", "GradeEntry")
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:38: # Build or cache "Gradebook" categories by section_id
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:68: # Get or create "Gradebook" category for this section
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:72: name="Gradebook",
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:115: print(f"[gradebook 0003] created categories: {created_categories}, created assignments: {created_assignments}, linked GradeEntry rows: {linked}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:122: GradeEntry = apps.get_model("gradebook", "GradeEntry")
+C:\w\crown_main_postmerge_verify\backend\gradebook\migrations\0003_populate_assignment_fk.py:129: ('gradebook', '0002_gradeentry_assignment'),
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:2: Smoke tests for gradebook API endpoints.
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:5: - GET /api/v1/gradebook/sections/ returns paginated results
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:6: - GET /api/v1/gradebook/sections/<id>/grades/ returns {section_id, assignments, rows}
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:97: def test_gradebook_sections_returns_paginated_results():
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:110: resp = client.get("/api/v1/gradebook/sections/", HTTP_X_SCHOOL_ID=str(school.id))
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:120: def test_gradebook_grades_returns_assignments_and_rows():
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:126: call_command("seed_gradebook_demo", "--school-id", str(school.id))
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_api_smoke.py:137: f"/api/v1/gradebook/sections/{section.id}/grades/",
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_drilldown.py:89: call_command("seed_gradebook_demo", "--school-id", str(school.id), "--per-section=12", "--seed=2026")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_drilldown.py:99: f"/api/v1/gradebook/sections/{section.id}/drilldown/?bucket=all&limit=25&offset=0",
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_drilldown.py:139: call_command("seed_gradebook_demo", "--school-id", str(school.id), "--per-section=12", "--seed=2026")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_drilldown.py:148: f"/api/v1/gradebook/sections/{section.id}/drilldown/?bucket=missing&limit=25&offset=0",
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_drilldown.py:166: call_command("seed_gradebook_demo", "--school-id", str(school.id), "--per-section=12", "--seed=2026")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_drilldown.py:176: f"/api/v1/gradebook/sections/{section.id}/drilldown/?bucket=all&limit=2&offset=0",
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_drilldown.py:185: f"/api/v1/gradebook/sections/{section.id}/drilldown/?bucket=all&limit=2&offset=2",
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:9: from gradebook.models import GradeEntry
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:101: resp = client.get("/api/v1/gradebook/assignments/")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:118: resp = client.get("/api/v1/gradebook/students/")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:135: resp = client.get(f"/api/v1/gradebook/assignments/?section_id={section.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:155: resp = client.get(f"/api/v1/gradebook/students/?section_id={section.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:174: resp = client.get(f"/api/v1/gradebook/assignments/?section_id={section.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:188: resp = client.get(f"/api/v1/gradebook/students/?section_id={section.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:206: resp = client.get(f"/api/v1/gradebook/assignments/?section_id={section1.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:210: resp = client.get(f"/api/v1/gradebook/assignments/?section_id={section2.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:228: resp = client.get(f"/api/v1/gradebook/students/?section_id={section1.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:232: resp = client.get(f"/api/v1/gradebook/students/?section_id={section2.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:259: resp = client.get(f"/api/v1/gradebook/students/?section_id={section.id}")
+C:\w\crown_main_postmerge_verify\backend\gradebook\tests\test_gradebook_list_endpoints.py:296: resp = client.get(f"/api/v1/gradebook/assignments/?section_id={section.id}")
+
+===== attendance =====
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:2: Phase 2 proof: attendance submit idempotency + RBAC hardening (ATTENDANCE_HARDENING_V2).
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:15: from crown_api.models import AttendanceRecord
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:20: URL_TMPL = "/api/v1/academics/sections/{section_id}/attendance/"
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:23: def test_attendance_submit_unauthenticated_no_redirect():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:31: def test_attendance_submit_idempotent():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:51: AttendanceRecord.objects.filter(student_id=student_id, course=None, date=today).delete()
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:75: count = AttendanceRecord.objects.filter(student_id=student_id, course=None, date=today).count()
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:76: assert count == 1, f"Expected 1 AttendanceRecord, found {count}"
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:79: def test_attendance_submit_response_includes_section_id():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_attendance_hardening_v2.py:97: AttendanceRecord.objects.filter(student_id=student_id, course=None, date=today).delete()
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:3: Verifies the attendance submit endpoint exists and does NOT return a 302 redirect.
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:12: def test_lane3_attendance_write_endpoint_no_redirect():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:14: POST academics/sections/<id>/attendance/ must not redirect (302).
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:24: path = f"/api/v1/academics/sections/{sec.id}/attendance/"
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:36: def test_lane3_attendance_submit_and_read():
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:38: Authenticated teacher (demo superuser) can POST attendance and the record
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:39: appears in the student attendance GET endpoint.
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:44: from crown_api.models import AttendanceRecord
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:69: f"/api/v1/academics/sections/{sec.id}/attendance/",
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:79: read_resp = client.get(f"/api/v1/academics/students/{student_id}/attendance/")
+C:\w\crown_main_postmerge_verify\backend\academics\tests\test_lane3_attendance_smoke.py:85: assert today in dates, f"today's attendance not found in read list: {dates}"
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:18: from crown_api.views_academics import section_attendance_submit
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:87: "academics/sections/<uuid:section_id>/attendance/",
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:88: section_attendance_submit,
+C:\w\crown_main_postmerge_verify\backend\academics\urls.py:89: name="academics-section-attendance-submit",
+C:\w\crown_main_postmerge_verify\backend\advancement\api.py:357: "attendance_percent": e.attendance_percent(),
+C:\w\crown_main_postmerge_verify\backend\advancement\models.py:116: def attendance_percent(self):
+C:\w\crown_main_postmerge_verify\backend\advancement\serializers.py:43: attendance_percent = serializers.SerializerMethodField()
+C:\w\crown_main_postmerge_verify\backend\advancement\serializers.py:50: def get_attendance_percent(self, obj):
+C:\w\crown_main_postmerge_verify\backend\advancement\serializers.py:51: return obj.attendance_percent()
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0001_initial.py:42: name='AftercareAttendance',
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0001_initial.py:90: ('attendance_id', models.IntegerField(blank=True, null=True)),
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0002_add_uuid_fks.py:5: AftercareAttendance, and AftercareIncident.
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0002_add_uuid_fks.py:54: # ---- AftercareAttendance ----------------------------------------- #
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0002_add_uuid_fks.py:56: model_name="aftercareattendance",
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0002_add_uuid_fks.py:62: related_name="aftercare_attendance",
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0002_add_uuid_fks.py:68: model_name="aftercareattendance",
+C:\w\crown_main_postmerge_verify\backend\aftercare\migrations\0002_add_uuid_fks.py:74: related_name="aftercare_attendance",
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:3: from aftercare.models import AftercareAttendance, AftercareEnrollment
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:8: def test_attendance_unique_per_student_day_per_school():
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:11: AftercareAttendance.objects.create(school_id=1, student_id=2001, date=d, checkin_time=timezone.now())
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:12: AftercareAttendance.objects.create(school_id=2, student_id=2001, date=d, checkin_time=timezone.now())
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:13: assert AftercareAttendance.objects.filter(school_id=1, student_id=2001).count() == 1
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:14: assert AftercareAttendance.objects.filter(school_id=2, student_id=2001).count() == 1
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:17: def test_attendance_duplicate_same_school_raises():
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:20: AftercareAttendance.objects.create(school_id=3, student_id=3001, date=d, checkin_time=timezone.now())
+C:\w\crown_main_postmerge_verify\backend\aftercare\tests\test_aftercare_tenant_scoping.py:22: AftercareAttendance.objects.create(school_id=3, student_id=3001, date=d, checkin_time=timezone.now())
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:11: AftercareAttendance,
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:17: AftercareAttendanceSerializer,
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:30: attendance = AftercareAttendanceSerializer(allow_null=True)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:41: attendance = AftercareAttendanceSerializer(many=True)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:69: attendance_id = serializers.IntegerField(required=False, allow_null=True)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:193: attendance_map = {
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:194: attendance.student_id: attendance
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:195: for attendance in AftercareAttendance.objects.filter(school_id=school_id, date=today)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:200: attendance = attendance_map.get(enrollment.student_id)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:205: "attendance": AftercareAttendanceSerializer(attendance).data if attendance else None,
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:214: responses={201: AftercareAttendanceSerializer, 400: AftercareStudentRequiredSerializer},
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:227: attendance = checkin_student(
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:232: return Response(AftercareAttendanceSerializer(attendance).data, status=status.HTTP_201_CREATED)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:237: responses={200: AftercareAttendanceSerializer, 400: AftercareStudentRequiredSerializer},
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:251: attendance = checkout_student(
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:258: return Response(AftercareAttendanceSerializer(attendance).data, status=status.HTTP_200_OK)
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:282: raw_attendance_id = request.data.get("attendance_id")
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:288: attendance_id=int(raw_attendance_id) if raw_attendance_id else None,
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:297: """Parent-facing read-only summary: enrollment and attendance history."""
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:305: attendance = AftercareAttendance.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:312: "attendance": AftercareAttendanceSerializer(attendance, many=True).data,
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:329: sessions = AftercareAttendance.objects.filter(school_id=school_id, date__gte=month_start).count()
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:330: late_pickups = AftercareAttendance.objects.filter(
+C:\w\crown_main_postmerge_verify\backend\aftercare\api.py:337: AftercareAttendance.objects.filter(school_id=school_id, date__gte=month_start)
+C:\w\crown_main_postmerge_verify\backend\aftercare\models.py:135: class AftercareAttendance(models.Model):
+C:\w\crown_main_postmerge_verify\backend\aftercare\models.py:147: related_name="aftercare_attendance",
+C:\w\crown_main_postmerge_verify\backend\aftercare\models.py:154: related_name="aftercare_attendance",
+C:\w\crown_main_postmerge_verify\backend\aftercare\models.py:204: attendance_id = models.IntegerField(null=True, blank=True)
+C:\w\crown_main_postmerge_verify\backend\aftercare\serializers.py:6: AftercareAttendance,
+C:\w\crown_main_postmerge_verify\backend\aftercare\serializers.py:29: class AftercareAttendanceSerializer(serializers.ModelSerializer):
+C:\w\crown_main_postmerge_verify\backend\aftercare\serializers.py:31: model = AftercareAttendance
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:19: AftercareAttendance,
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:47: def compute_late_fee(config: AftercareProgramConfig, attendance_date: date, checkout_dt: datetime) -> LateFeeResult:
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:57: cutoff_dt = combine_local(attendance_date, config.end_time)
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:118: ) -> AftercareAttendance:
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:122: a, created = AftercareAttendance.objects.get_or_create(
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:143: ) -> AftercareAttendance:
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:148: a = AftercareAttendance.objects.select_for_update().get(
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:179: attendance_id: int | None = None,
+C:\w\crown_main_postmerge_verify\backend\aftercare\services.py:187: attendance_id=attendance_id,
+C:\w\crown_main_postmerge_verify\backend\aftercare\urls.py:17: path("attendance/checkin/",                          api.checkin,                  name="aftercare_checkin"),
+C:\w\crown_main_postmerge_verify\backend\aftercare\urls.py:18: path("attendance/checkout/",                         api.checkout,                 name="aftercare_checkout"),
+C:\w\crown_main_postmerge_verify\backend\analytics\tests\test_predictor_integrations.py:20: "attendance_rate": 0.95 - (i % 6) * 0.08,
+C:\w\crown_main_postmerge_verify\backend\analytics\predictors.py:107: "Review the flagged students with attendance, grade, and student-care teams this week.",
+C:\w\crown_main_postmerge_verify\backend\athletics\api\serializers.py:117: "is_attendance_eligible",
+C:\w\crown_main_postmerge_verify\backend\athletics\migrations\0001_initial_athletics.py:90: ('is_attendance_eligible', models.BooleanField(default=False)),
+C:\w\crown_main_postmerge_verify\backend\athletics\tests\test_athletics.py:485: is_attendance_eligible=True,
+C:\w\crown_main_postmerge_verify\backend\athletics\tests\test_athletics.py:500: is_attendance_eligible=True,
+C:\w\crown_main_postmerge_verify\backend\athletics\models.py:172: is_attendance_eligible = models.BooleanField(default=False)
+C:\w\crown_main_postmerge_verify\backend\athletics\models.py:188: and self.is_attendance_eligible
+C:\w\crown_main_postmerge_verify\backend\attendance_codes_wizard\migrations\0001_initial.py:20: name='AttendanceCodesWizardSession',
+C:\w\crown_main_postmerge_verify\backend\attendance_codes_wizard\migrations\0001_initial.py:30: ('school', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='attendance_codes_wizard_sessions', to='core.school')),
+C:\w\crown_main_postmerge_verify\backend\attendance_codes_wizard\tests\test_views.py:7: from attendance_codes_wizard.models import AttendanceCodesWizardSession

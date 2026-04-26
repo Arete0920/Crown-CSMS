@@ -146,13 +146,13 @@ Correct deletion cascade (from commit f81b4be0):
 ```python
 def _wipe_school(self, school: School):
     from financial_aid.models import AidAuditEvent
-    
+
     # 1. Delete audit events (reference UserAccount via actor_user_id)
     user_ids = list(UserAccount.objects.filter(school=school).values_list('id', flat=True))
     AidAuditEvent.objects.filter(school_id=school.id).delete()
     if user_ids:
         AidAuditEvent.objects.filter(actor_user_id__in=user_ids).delete()
-    
+
     # 2. Delete school data (now safe, no protected FKs)
     AidAward.objects.filter(school=school).delete()
     AidApplication.objects.filter(school=school).delete()
@@ -373,27 +373,27 @@ Deployment:
 ## 9. Troubleshooting Guide
 
 ### Problem: `ModuleNotFoundError: No module named 'django'`
-**Cause**: Using system Python instead of venv Python  
+**Cause**: Using system Python instead of venv Python
 **Fix**: Use `.\venv\Scripts\python.exe` not `python`
 
 ### Problem: `AppRegistryNotReady: Apps aren't loaded yet`
-**Cause**: Importing models before Django loads app registry  
+**Cause**: Importing models before Django loads app registry
 **Fix**: Use lazy imports in URLconf or add `--noreload` flag to runserver
 
 ### Problem: Server hangs or crashes silently
-**Cause**: Stray Python process from previous run still bound to port 8000  
+**Cause**: Stray Python process from previous run still bound to port 8000
 **Fix**: Kill all Python: `Get-Process python | Stop-Process -Force`
 
 ### Problem: Admin login credentials don't work
-**Cause**: User not created with `is_staff=True` and `is_superuser=True`  
+**Cause**: User not created with `is_staff=True` and `is_superuser=True`
 **Fix**: Re-seed database: `.\venv\Scripts\python.exe manage.py seed_demo_school --wipe`
 
 ### Problem: Database migrations conflict
-**Cause**: Multiple developers created migrations with same name  
+**Cause**: Multiple developers created migrations with same name
 **Fix**: Revert conflicts manually, squash migrations: `.\venv\Scripts\python.exe manage.py squashmigrations`
 
 ### Problem: `User matching query does not exist` on login
-**Cause**: User account deleted or email changed after initial seeding  
+**Cause**: User account deleted or email changed after initial seeding
 **Fix**: Check admin: http://127.0.0.1:8000/admin/core/useraccount/
 
 ---
@@ -455,8 +455,8 @@ Deployment:
 
 ---
 
-**Last Updated**: January 3, 2026  
-**Maintained By**: Development Team  
+**Last Updated**: January 3, 2026
+**Maintained By**: Development Team
 **Questions?** Check server logs first: http://127.0.0.1:8000/ → check terminal for error messages
 
 ---

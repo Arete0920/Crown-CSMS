@@ -147,8 +147,8 @@ curl http://127.0.0.1:8000/api/system/whoami/ `
 
 ## Gate 1D — Authoritative Journal Ledger Core (Double-Entry)
 
-**Canonical Tag:** `gate1d-ledger-core`  
-**Canonical Commit:** `aa569002`  
+**Canonical Tag:** `gate1d-ledger-core`
+**Canonical Commit:** `aa569002`
 
 ### Proof: Repo + Tag
 ```powershell
@@ -218,7 +218,7 @@ Destroying test database for alias 'default'...
 
 ## Gate 2A — AR → GL Integration (Charges/Payments Auto-Post to Journal)
 
-**Canonical Tag:** `gate2a-ar-gl-integration`  
+**Canonical Tag:** `gate2a-ar-gl-integration`
 **Canonical Commit:** `e1431f159d65e2961a73198cab5ce214a0ddaa61`
 
 ### Proof: Repo + Tag
@@ -358,9 +358,9 @@ If anything breaks during demo prep, restore to the last known-good state:
 git checkout demo-2026-02-18-academics-polish
 ```
 
-**Tag:** `demo-2026-02-18-academics-polish`  
-**Commit:** `2c6bd258`  
-**Contains:** PRs #211–#215 (billing fix, curriculum backend, UI pages, student picker + demo tools, seed Decimal fix)  
+**Tag:** `demo-2026-02-18-academics-polish`
+**Commit:** `2c6bd258`
+**Contains:** PRs #211–#215 (billing fix, curriculum backend, UI pages, student picker + demo tools, seed Decimal fix)
 **Verified:** 82 backend tests, frontend build clean, 3 academics routes live, 9/9 CI green
 
 ---

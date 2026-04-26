@@ -1,0 +1,20 @@
+﻿4b45758 Restore release-readiness artifacts for main validation (#760)
+5fcae89 Restore release-readiness artifacts for main validation
+93b98e4 Clean Gate 4 finalization and release readiness packet (#757)
+e5d02f6 Fix PR 757 UI dashboard proof gate
+5f96553 Fix PR 757 UI dashboard proof gate
+a0f3817 Revert "Scope PR test workflows to backend-related changes"
+a5364d8 Revert "Reduce PR CI fan-out by tightening workflow triggers"
+b2cbb53 Scope PR test workflows to backend-related changes
+0ae31d2 Reduce PR CI fan-out by tightening workflow triggers
+feedb50 Fix migration drift for PR757 backend gates
+0fcfff3 Add missing comms_wizard parent migration for graph consistency
+5e623c1 Fix CodeQL alerts and executive UI proof alignment
+eab4b0f Add missing backend migrations for release checks
+8c26867 Record Gate 4 approval artifacts after consistency pass
+4d28d48 Harden release workflows and packet consistency guard
+b629364 docs(release-closeout): close governance evidence blocker and finalize release posture (#755)
+5db0deb P0 Security: quarantine sensitive files outside repo, update ignore rules, refresh status (#749)
+54b16b6 Fix prod-health-watch YAML syntax (#736)
+2d768e7 Fix YAML workflow-file issues for main runs (#735)
+8d19389 Merge remote-tracking branch 'origin/main' into copilot/fix-issues-with-pr-730

@@ -1,8 +1,8 @@
 # PROOF: Academics Roster Endpoint (Read-Only)
 
-**Date**: 2026-02-10  
-**Branch**: main (merged from spine/academics-roster-fixed)  
-**PR**: #98 - spine(academics): section roster read-only endpoint  
+**Date**: 2026-02-10
+**Branch**: main (merged from spine/academics-roster-fixed)
+**PR**: #98 - spine(academics): section roster read-only endpoint
 **Commit**: ab169d8a
 
 ## Endpoint
@@ -103,7 +103,7 @@ pytest academics/tests/test_section_roster.py -v
 An existing `@action(detail=True)` on SectionViewSet already provided roster functionality. Rather than creating a duplicate function-based view, the action was refactored to match the canonical response shape. This preserves:
 
 - Viewset abstraction (correct home for the action)
-- Routing consistency (one endpoint, one source of truth)  
+- Routing consistency (one endpoint, one source of truth)
 - Extensibility (future expansions via the viewset)
 
 ### Domain Alignment
@@ -123,9 +123,9 @@ Response contract is now locked and tested. No future changes to:
 
 ## Sign-Off
 
-✅ **All tests pass locally and in CI**  
-✅ **All checks green in PR #98**  
-✅ **Merged to main**  
+✅ **All tests pass locally and in CI**
+✅ **All checks green in PR #98**
+✅ **Merged to main**
 ✅ **Endpoint ready for UI integration**
 
 ---
