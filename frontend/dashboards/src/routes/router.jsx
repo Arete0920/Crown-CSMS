@@ -27,6 +27,7 @@ import TeacherAttendancePage from "../pages/TeacherAttendancePage.jsx";
 import ParentAttendancePage from "../pages/ParentAttendancePage.jsx";
 import AttendanceDashboard from "../pages/AttendanceDashboard.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
+import LogoutPage from "../pages/LogoutPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import BoardDashboard from "../pages/BoardDashboard.jsx";
@@ -126,6 +127,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/logout',
+    element: <LogoutPage />,
   },
   {
     // Unified role dashboard � /dash/admin, /dash/teacher, /dash/parent, etc.
