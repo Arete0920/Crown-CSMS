@@ -24,6 +24,10 @@
   font-family: Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+.launch-shell.has-right-rail {
+  grid-template-columns: 260px minmax(0, 1fr) minmax(320px, 360px);
+}
+
 .launch-sidebar {
   display: flex;
   flex-direction: column;
@@ -160,6 +164,45 @@
 
 .launch-main {
   padding: 18px 24px 28px;
+}
+
+.launch-right-rail {
+  padding: 18px 20px 28px 0;
+}
+
+.launch-right-rail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.launch-rail-card {
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.launch-rail-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.launch-rail-list li {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 8px 10px;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.launch-rail-quote {
+  margin: 6px 0 2px;
+  color: #1e3a8a;
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .launch-topbar,
@@ -842,8 +885,29 @@
   }
 }
 
+@media (max-width: 1520px) {
+  .launch-shell.has-right-rail {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  .launch-right-rail {
+    grid-column: 2;
+    padding: 0 24px 28px;
+  }
+
+  .launch-right-rail-content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
 @media (max-width: 1120px) {
   .launch-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .launch-shell.has-right-rail {
     grid-template-columns: 1fr;
   }
 
@@ -868,6 +932,15 @@
   .launch-dashboard-grid-secondary,
   .launch-dashboard-grid-module,
   .launch-dashboard-grid-analytics {
+    grid-template-columns: 1fr;
+  }
+
+  .launch-right-rail {
+    grid-column: auto;
+    padding: 0 14px 24px;
+  }
+
+  .launch-right-rail-content {
     grid-template-columns: 1fr;
   }
 }

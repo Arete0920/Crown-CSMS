@@ -11,6 +11,7 @@ import CrownModuleSection from './CrownModuleSection.jsx';
 import CrownDashboardEmptyState from './CrownDashboardEmptyState.jsx';
 import CrownDashboardErrorState from './CrownDashboardErrorState.jsx';
 import CrownDashboardFlipCard from './CrownDashboardFlipCard.jsx';
+import CrownDashboardRightRail from './CrownDashboardRightRail.jsx';
 
 function renderActionsByRole(actions = [], roleKey) {
   return actions.filter((action) => {
@@ -34,6 +35,7 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
   const priorities = Array.isArray(config.priorities) ? config.priorities : [];
   const alerts = Array.isArray(config.alerts) ? config.alerts : [];
   const commandModules = Array.isArray(config.commandModules) ? config.commandModules : [];
+  const rightRailSections = Array.isArray(config.rightRailSections) ? config.rightRailSections : [];
 
   const isSchoolAdminCommandCenter = config.key === 'schoolAdministrator';
 
@@ -43,6 +45,7 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
       schoolName={config.schoolName}
       user={config.user}
       updatesCount={config.updatesCount}
+      rightRail={isSchoolAdminCommandCenter ? <CrownDashboardRightRail sections={rightRailSections} /> : null}
     >
       <CrownDashboardHeader
         eyebrow={config.eyebrow}

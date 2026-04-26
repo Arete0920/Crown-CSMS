@@ -345,4 +345,79 @@ export default {
     { area: 'Calendar / Events', owner: 'Events Office', status: 'Ready - approvals in queue', updated: '8:09 AM' },
     { area: 'System / IT', owner: 'Technology Team', status: 'Watch - 3 failed syncs', updated: '8:04 AM' },
   ],
+  rightRailSections: [
+    {
+      kicker: 'Spiritual life',
+      title: 'Prayer Requests',
+      items: [
+        'Mrs. Carter surgery recovery',
+        '6th grade retreat travel safety',
+        'New families joining this week',
+      ],
+    },
+    {
+      kicker: 'Daily devotion',
+      title: 'Daily Devotion',
+      quote: '"Trust in the Lord with all your heart..." Proverbs 3:5',
+      items: [
+        'Lead today with wisdom and calm.',
+      ],
+    },
+    {
+      kicker: 'Communications',
+      title: 'Announcements',
+      items: [
+        'Chapel Friday at 9:00 AM',
+        'Re-enrollment packets due Monday',
+        'Parent newsletter scheduled',
+      ],
+    },
+    {
+      kicker: 'Calendar',
+      title: "Today's Calendar",
+      items: [
+        '8:15 AM Leadership huddle',
+        '10:00 AM Admissions tour',
+        '1:30 PM Finance review',
+        '3:15 PM Staff briefing',
+      ],
+    },
+    {
+      kicker: 'Leadership queue',
+      title: 'Administrator To-Dos',
+      items: [
+        'Approve 4 enrollment packets',
+        'Review 3 attendance exceptions',
+        'Sign off tuition adjustment queue',
+        'Confirm substitute coverage',
+      ],
+    },
+    {
+      kicker: 'Inbox',
+      title: 'Communications Inbox',
+      items: [
+        '8 family replies need response',
+        '3 unread staff messages',
+        '2 announcement drafts pending approval',
+      ],
+    },
+    {
+      kicker: 'Approvals',
+      title: 'Approvals Needed',
+      items: [
+        'Enrollment packet exceptions',
+        'Finance aid committee queue',
+        'Field trip transport approval',
+      ],
+    },
+    {
+      kicker: 'Escalations',
+      title: 'Critical Alerts',
+      items: [
+        'Bus loop incident follow-up pending',
+        'SIS retry threshold nearing alert limit',
+        'Emergency contact completion below target',
+      ],
+    },
+  ],
 };
