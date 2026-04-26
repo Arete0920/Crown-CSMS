@@ -350,6 +350,91 @@ function SmallCard({ card }) {
   );
 }
 
+const demoSegments = [
+  { label: "Elementary K–5", value: 156, color: "#2563EB" },
+  { label: "Middle 6–8",     value: 128, color: "#7C3AED" },
+  { label: "High 9–12",      value: 168, color: "#059669" },
+  { label: "Pre-K",          value:  60, color: "#F59E0B" },
+];
+
+function StudentDemographicsCard() {
+  const total = demoSegments.reduce((s, d) => s + d.value, 0);
+  const r = 46;
+  const circ = 2 * Math.PI * r;
+  const slices = demoSegments.reduce((acc, seg) => {
+    const prev = acc.length ? acc[acc.length - 1] : { offset: 0, dash: 0 };
+    const dash = (seg.value / total) * circ;
+    const gap  = circ - dash;
+    acc.push({ ...seg, dash, gap, offset: prev.offset + prev.dash });
+    return acc;
+  }, []);
+  return (
+    <article className="cc-card cc-small-card">
+      <h3>Student Demographics</h3>
+      <div className="cc-demo-layout">
+        <svg viewBox="0 0 120 120" className="cc-demo-donut" aria-hidden="true">
+          <circle cx="60" cy="60" r={r} fill="none" stroke="#f1f5f9" strokeWidth="18" />
+          {slices.map((s) => (
+            <circle
+              key={s.label}
+              cx="60" cy="60" r={r}
+              fill="none"
+              stroke={s.color}
+              strokeWidth="18"
+              strokeDasharray={`${s.dash} ${s.gap}`}
+              strokeDashoffset={-s.offset}
+              transform="rotate(-90 60 60)"
+            />
+          ))}
+          <text x="60" y="56" textAnchor="middle" fontSize="14" fontWeight="700" fill="#0B2A5B">{total}</text>
+          <text x="60" y="70" textAnchor="middle" fontSize="8" fill="#64748b">Students</text>
+        </svg>
+        <ul className="cc-demo-legend">
+          {demoSegments.map((seg) => (
+            <li key={seg.label}>
+              <i style={{ background: seg.color }} />
+              <span>{seg.label}</span>
+              <strong>{seg.value}</strong>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <a href="/">View demographic report →</a>
+    </article>
+  );
+}
+
+const gradeGroups = [
+  { label: "A",    value: 142, color: "#059669" },
+  { label: "B",    value: 198, color: "#2563EB" },
+  { label: "C",    value:  87, color: "#F59E0B" },
+  { label: "D/F",  value:  23, color: "#DC2626" },
+];
+
+function GradeDistributionCard() {
+  const maxVal = Math.max(...gradeGroups.map((g) => g.value));
+  return (
+    <article className="cc-card cc-small-card">
+      <h3>Grade Distribution</h3>
+      <div className="cc-grade-bars" aria-label="Grade distribution bar chart">
+        {gradeGroups.map((g) => (
+          <div key={g.label} className="cc-grade-bar-row">
+            <span className="cc-grade-bar-label">{g.label}</span>
+            <div className="cc-grade-bar-track">
+              <div
+                className="cc-grade-bar-fill"
+                style={{ width: `${(g.value / maxVal) * 100}%`, background: g.color }}
+              />
+            </div>
+            <strong className="cc-grade-bar-val">{g.value}</strong>
+          </div>
+        ))}
+      </div>
+      <a href="/">View gradebook →</a>
+    </article>
+  );
+}
+
 function RightRail() {
   return (
     <aside className="cc-right-rail" aria-label="Administrator context rail">
@@ -423,9 +508,10 @@ export default function AdminCommandCenterFinal() {
             <QuickActions />
 
             <section className="cc-small-grid">
-              {overviewCards.map((card) => (
-                <SmallCard key={card.title} card={card} />
-              ))}
+              <SmallCard key={overviewCards[0].title} card={overviewCards[0]} />
+              <StudentDemographicsCard />
+              <GradeDistributionCard />
+              <SmallCard key={overviewCards[3].title} card={overviewCards[3]} />
             </section>
 
             <section className="cc-bottom-grid">

@@ -661,6 +661,95 @@
   margin-top: 13px;
 }
 
+/* ── Student Demographics donut ──────────────────────────────────── */
+.cc-demo-layout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.cc-demo-donut {
+  flex-shrink: 0;
+  width: 110px;
+  height: 110px;
+}
+
+.cc-demo-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.cc-demo-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+  color: #263954;
+}
+
+.cc-demo-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cc-demo-legend strong {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--cc-text);
+}
+
+/* ── Grade Distribution bars ─────────────────────────────────────── */
+.cc-grade-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.cc-grade-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cc-grade-bar-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  width: 26px;
+  flex-shrink: 0;
+}
+
+.cc-grade-bar-track {
+  flex: 1;
+  height: 14px;
+  background: #f1f5f9;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.cc-grade-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.4s ease;
+}
+
+.cc-grade-bar-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cc-text);
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 /* ── Right Rail ──────────────────────────────────────────────────── */
 .cc-right-rail {
   display: flex;
