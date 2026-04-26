@@ -2,16 +2,16 @@ import { Link, useInRouterContext } from 'react-router-dom';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', glyph: 'D' },
+  { label: 'School', href: '/school-admin', glyph: 'S' },
   { label: 'Administration', href: '/admin', glyph: 'A' },
-  { label: 'School View', href: '/school-admin', glyph: 'S' },
-  { label: 'Teacher', href: '/teacher', glyph: 'T' },
-  { label: 'Parent', href: '/parent', glyph: 'P' },
-  { label: 'Student', href: '/student', glyph: 'St' },
   { label: 'Admissions', href: '/admissions', glyph: 'Ad' },
+  { label: 'Academics', href: '/gradebook', glyph: 'Ac' },
+  { label: 'Student Life', href: '/student-life', glyph: 'SL' },
   { label: 'Attendance', href: '/attendance', glyph: 'At' },
-  { label: 'Gradebook', href: '/gradebook', glyph: 'G' },
   { label: 'Finance', href: '/finance', glyph: 'F' },
   { label: 'Communications', href: '/communications', glyph: 'C' },
+  { label: 'Reports', href: '/reporting', glyph: 'R' },
+  { label: 'Settings', href: '/settings', glyph: 'Se' },
 ];
 
 function BrandLockup() {

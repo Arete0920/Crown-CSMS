@@ -58,6 +58,17 @@ describe('dashboard registry contract', () => {
       expect(screen.getAllByText('Health / Safety').length).toBeGreaterThan(0);
       expect(screen.getAllByText('System / IT / Integrations').length).toBeGreaterThan(0);
 
+      expect(screen.getByText('Prayer Requests')).toBeTruthy();
+      expect(screen.getByText('Daily Devotion')).toBeTruthy();
+      expect(screen.getByText('Announcements')).toBeTruthy();
+      expect(screen.getByText("Today's Calendar")).toBeTruthy();
+      expect(screen.getByText('Administrator To-Dos')).toBeTruthy();
+      expect(screen.getByText('Communications Inbox')).toBeTruthy();
+      expect(screen.getByText('Approvals Needed')).toBeTruthy();
+      expect(screen.getByText('Critical Alerts')).toBeTruthy();
+      expect(screen.getByText('Mrs. Carter surgery recovery')).toBeTruthy();
+      expect(screen.getByText('8 family replies need response')).toBeTruthy();
+
       expect(screen.queryByText('Offline / Fallback')).toBeNull();
       expect(screen.queryByText('Build: missing')).toBeNull();
       expect(screen.queryByText('Dashboard unavailable')).toBeNull();
