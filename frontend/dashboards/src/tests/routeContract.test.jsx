@@ -18,11 +18,23 @@ describe('route contract', () => {
 
   it('core path constants exist', () => {
     expect(PATHS.HOME).toBeDefined();
+    expect(PATHS.DASHBOARD).toBeDefined();
     expect(PATHS.ADMISSIONS).toBeDefined();
     expect(PATHS.BILLING).toBeDefined();
     expect(PATHS.FINANCIAL_AID).toBeDefined();
     expect(PATHS.ATTENDANCE).toBeDefined();
     expect(PATHS.GRADEBOOK).toBeDefined();
     expect(PATHS.SYSTEM_STATUS).toBeDefined();
+  });
+
+  it('launch review paths remain stable', () => {
+    expect(PATHS.DASHBOARD).toBe('/dashboard');
+    expect(PATHS.ADMIN).toBe('/admin');
+    expect(PATHS.ADMISSIONS).toBe('/admissions');
+    expect(PATHS.ATTENDANCE).toBe('/attendance');
+    expect(PATHS.GRADEBOOK).toBe('/gradebook');
+    expect(PATHS.FINANCE).toBe('/finance');
+    expect(PATHS.COMMUNICATIONS).toBe('/communications');
+    expect(PATHS.SCHOOL_ADMIN_DASHBOARD).toBe('/school-admin-dashboard');
   });
 });

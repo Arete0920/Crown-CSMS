@@ -516,12 +516,12 @@ export default function LoginPage() {
             <div className="brand-mark">
               <CrownMark />
               <div>
-                <div className="brand-title">Crown2026</div>
-                <div className="brand-subtitle">Christian school operations platform</div>
+                <div className="brand-title">CROWN</div>
+                <div className="brand-subtitle">Christian School Management Solution</div>
               </div>
             </div>
 
-            <h1 className="brand-heading">{IS_SANDBOX ? "Crown2026 Sandbox Access" : "Crown2026 Access"}</h1>
+            <h1 className="brand-heading">{IS_SANDBOX ? "CROWN Sandbox Access" : "CROWN Access"}</h1>
             <p className="brand-trust">
               A calm and secure sign-in experience for school teams and families.
             </p>
@@ -535,7 +535,7 @@ export default function LoginPage() {
             </ul>
           </div>
 
-          <p className="brand-footer">Crown2026 - Christian school operations platform</p>
+          <p className="brand-footer">CROWN - Christian School Management Solution</p>
         </section>
 
         <section className="login-panel" aria-label="Login form panel">
@@ -546,7 +546,7 @@ export default function LoginPage() {
             <p className="login-subtitle">
               {IS_SANDBOX
                 ? "Choose your sandbox school and role, then continue with sandbox credentials."
-                : "Use your authorized role and account to access Crown2026."}
+                : "Use your authorized role and account to access CROWN."}
             </p>
 
             {IS_SANDBOX && (
@@ -639,10 +639,11 @@ export default function LoginPage() {
             <p className="support-note">
               Need help? Contact your school administrator or {SUPPORT_EMAIL}.
             </p>
-            <p className="product-footer">Crown2026 - Christian school operations platform</p>
+            <p className="product-footer">CROWN - Christian School Management Solution</p>
           </form>
         </section>
       </main>
     </>
   );
 }
+
