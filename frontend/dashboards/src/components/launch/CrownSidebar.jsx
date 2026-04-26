@@ -43,10 +43,13 @@ function BrandLockup() {
       <div>
         <img
           src="/brand/crown-logo-transparent.svg"
-          alt="CROWN Christian School Management Solution"
+          alt=""
+          aria-hidden="true"
           className="launch-brand-logo"
           height="36"
         />
+        <span className="sr-only">CROWN</span>
+        <span className="sr-only">Christian School Management Solution</span>
         <div className="launch-brand-edition">Administrator Command Center</div>
       </div>
     </div>
