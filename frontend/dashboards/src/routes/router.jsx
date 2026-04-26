@@ -12,7 +12,6 @@ import { CategoryWeightsEditor } from "../pages/CategoryWeightsEditor.jsx";
 import { AdmissionsPipelineList } from "../pages/AdmissionsPipelineList.jsx";
 import FinanceInvoicesList from "../pages/FinanceInvoicesList.jsx";
 import CommunicationsThreadsList from "../pages/CommunicationsThreadsList.jsx";
-import OpsCommandCenter from "../components/OpsCommandCenter.jsx";
 import ClassroomsDashboard from "../pages/ClassroomsDashboard.jsx";
 import ServiceHoursPage from "../pages/ServiceHoursPage.jsx";
 import Student360Page from "../pages/Student360Page.jsx";
@@ -68,6 +67,8 @@ import SystemStatusPage from "../pages/SystemStatusPage.jsx";
 import ReleaseReadinessPage from "../pages/ReleaseReadinessPage.jsx";
 import DemoReadinessPage from "../pages/DemoReadinessPage.jsx";
 import NotFoundPage from "../pages/NotFoundPage.jsx";
+import CrownLaunchDashboardPage from "../pages/CrownLaunchDashboardPage.jsx";
+import CrownLaunchModulePage from "../pages/CrownLaunchModulePage.jsx";
 import { dashboardRoutes } from "./dashboardRoutes";
 import { wizardRoutes } from "./wizards.js";
 import { PATHS } from "./paths";
@@ -103,11 +104,18 @@ const FINANCIAL_AID_ALLOWED_ROLES = [
 ];
 
 const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
+const IS_LAUNCH_PREVIEW = Boolean(import.meta.env.DEV || IS_SANDBOX || import.meta.env.VITE_LAUNCH_UI_TAKEOVER === '1');
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <RoleHomeRedirect />,
+  },
+  {
+    path: PATHS.DASHBOARD,
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchDashboardPage activePath="/dashboard" />
+      : <RoleHomeRedirect />),
   },
   {
     path: '/director/aid/*',
@@ -167,7 +175,9 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.ATTENDANCE,
-    element: <Navigate to={PATHS.TEACHER_ATTENDANCE} replace />,
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="attendance" activePath="/attendance" />
+      : <Navigate to={PATHS.TEACHER_ATTENDANCE} replace />),
   },
   // Contract-preserving teacher alias routes.
   // Keep these as literal strings in router.jsx for static gate checks.
@@ -189,7 +199,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/teacher',
-    element: <AttendanceDashboard />,
+    element: <TeacherDashboard />,
   },
   // Contract-preserving parent alias routes.
   // Keep these as literal strings in router.jsx for static gate checks.
@@ -213,10 +223,6 @@ export const router = createBrowserRouter([
         <AcademicsDashboard />
       </RoleGuard>
     ),
-  },
-  {
-    path: PATHS.TEACHER,
-    element: <TeacherDashboard />,
   },
   {
     path: '/parent',
@@ -264,7 +270,9 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.ADMISSIONS,
-    element: <AdmissionsPipelineList />,
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="admissions" activePath="/admissions" />
+      : <AdmissionsPipelineList />),
   },
   {
     path: PATHS.ADMISSIONS_PIPELINE,
@@ -287,15 +295,13 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.COMMUNICATIONS,
-    element: <CommunicationsThreadsList />,
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="communications" activePath="/communications" />
+      : <CommunicationsThreadsList />),
   },
   {
     path: PATHS.SERVICE_HOURS,
     element: <ServiceHoursPage />,
-  },
-  {
-    path: PATHS.OPS,
-    element: <OpsCommandCenter />,
   },
   {
     path: PATHS.ACADEMICS_TEACHER_GRADING,
@@ -339,9 +345,23 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: (IS_SANDBOX
-      ? <Navigate to="/school-admin-dashboard" replace />
-      : <AdminDashboard />),
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchDashboardPage activePath="/admin" />
+      : (IS_SANDBOX
+        ? <Navigate to="/school-admin-dashboard" replace />
+        : <AdminDashboard />)),
+  },
+  {
+    path: '/school-admin',
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchDashboardPage activePath="/school-admin" />
+      : <Navigate to={PATHS.SCHOOL_ADMIN_DASHBOARD} replace />),
+  },
+  {
+    path: '/school-administrator',
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchDashboardPage activePath="/school-admin" />
+      : <Navigate to={PATHS.SCHOOL_ADMIN_DASHBOARD} replace />),
   },
   {
     path: PATHS.BOARD,
@@ -349,11 +369,13 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.FINANCE,
-    element: (
-      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-        <FinanceDashboard />
-      </RoleRouteGuard>
-    ),
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
+      : (
+        <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+          <FinanceDashboard />
+        </RoleRouteGuard>
+      )),
   },
   {
     path: PATHS.IT,
@@ -588,5 +610,28 @@ export const router = createBrowserRouter([
   {
     path: PATHS.NOT_FOUND,
     element: <NotFoundPage />,
+  },
+  // ── CROWN sidebar navigation routes ──────────────────────────────────
+  {
+    path: PATHS.SCHOOL_ADMIN,
+    element: IS_LAUNCH_PREVIEW
+      ? <CrownLaunchDashboardPage />
+      : <Navigate to={PATHS.DASHBOARD} replace />,
+  },
+  {
+    path: PATHS.STUDENT_LIFE,
+    element: IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="student" activePath="/student-life" />
+      : <SpiritualLifeDashboard />,
+  },
+  {
+    path: PATHS.SETTINGS,
+    element: IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="schoolAdministrator" activePath="/settings" />
+      : <AdminDashboard />,
+  },
+  {
+    path: PATHS.REPORTING,
+    element: <IntegrityDashboard />,
   },
 ]);

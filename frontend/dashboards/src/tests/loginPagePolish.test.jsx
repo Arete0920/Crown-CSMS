@@ -27,12 +27,12 @@ beforeEach(() => {
   vi.unstubAllEnvs();
   vi.stubEnv("VITE_DEMO_MODE", "sandbox");
   vi.stubEnv("VITE_SANDBOX_MODE", "1");
-  global.fetch = vi.fn(() =>
+  vi.stubGlobal("fetch", vi.fn(() =>
     Promise.resolve({
       ok: true,
       json: () => Promise.resolve({ access: "token", school_id: "school-1" }),
     })
-  );
+  ));
 });
 
 afterEach(() => {
@@ -52,7 +52,13 @@ describe("login page polish", () => {
 
     expect(screen.getByText("Sandbox Environment")).toBeTruthy();
     expect(screen.getByText("Use demo data only. Do not enter real school records.")).toBeTruthy();
-    expect(screen.getByText("Crown2026 Sandbox Access")).toBeTruthy();
+    expect(screen.getByText("CROWN Sandbox Access")).toBeTruthy();
+    expect(screen.getByText("CROWN")).toBeTruthy();
+    expect(screen.getAllByText("Christian School Management Solution").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Crown2026")).toBeNull();
+    expect(screen.queryByText("Dev JWT Login")).toBeNull();
+    expect(screen.queryByText("Offline / Fallback")).toBeNull();
+    expect(screen.queryByText("Build: missing")).toBeNull();
   });
 
   it("shows school selector and role selector with school admin", async () => {
