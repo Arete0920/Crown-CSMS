@@ -1,0 +1,17 @@
+<svg width="1600" height="600" viewBox="0 0 1600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="600" fill="none"/>
+  <g transform="translate(70,70)">
+    <path d="M150 0H350L372 130L250 360L128 130L150 0Z" fill="#0B2A5B" stroke="#F5B82E" stroke-width="14"/>
+    <path d="M172 30H328L344 130L250 320L156 130L172 30Z" fill="#123C7C" stroke="#E9EEF7" stroke-width="5"/>
+    <path d="M180 160L205 95L235 145L250 75L265 145L295 95L320 160" stroke="#F5B82E" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M185 185H315" stroke="#F5B82E" stroke-width="16" stroke-linecap="round"/>
+    <rect x="236" y="145" width="28" height="150" rx="4" fill="#F5B82E"/>
+    <rect x="195" y="190" width="110" height="28" rx="4" fill="#F5B82E"/>
+    <path d="M180 285C205 260 230 260 250 295C270 260 295 260 320 285" stroke="white" stroke-width="11" stroke-linecap="round"/>
+    <path d="M250 260V320" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <text x="455" y="235" font-family="Georgia, 'Times New Roman', serif" font-size="118" font-weight="700" fill="#0B2A5B">CROWN</text>
+  <line x1="455" y1="282" x2="1045" y2="282" stroke="#F5B82E" stroke-width="5"/>
+  <text x="462" y="350" font-family="Inter, Arial, sans-serif" font-size="40" font-weight="800" letter-spacing="2" fill="#0B2A5B">CHRISTIAN SCHOOL</text>
+  <text x="462" y="405" font-family="Inter, Arial, sans-serif" font-size="40" font-weight="800" letter-spacing="2" fill="#0B2A5B">MANAGEMENT SOLUTION</text>
+</svg>
