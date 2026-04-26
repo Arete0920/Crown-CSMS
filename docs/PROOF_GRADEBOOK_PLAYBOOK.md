@@ -2,8 +2,8 @@
 
 ## Quick Summary
 
-**What**: Automated E2E proof that gradebook API (roster, grades, assignments) + UI work together with proper auth  
-**When**: Runs on `workflow_dispatch` (manual trigger) or can be added to push/PR events  
+**What**: Automated E2E proof that gradebook API (roster, grades, assignments) + UI work together with proper auth
+**When**: Runs on `workflow_dispatch` (manual trigger) or can be added to push/PR events
 **Status**: ✅ GREEN (locked at tag `proof-gradebook-green-20260211-0340`)
 
 ---
@@ -100,17 +100,17 @@ gh run view <run-id> -R tcmegahan/Crown2026 --log-failed
 
 **What it means**: Login response didn't match the Playwright matcher
 
-**Why it happens**: 
+**Why it happens**:
 - Password changed and auth failed
 - Auth endpoint path changed (e.g., `/api/v1/auth/token/` became `/api/auth/jwt/login/`)
 
-**Fix**: 
+**Fix**:
 - Check password matches seed command (should be `demo1234`)
 - Update matcher in test if auth endpoint changed:
   ```typescript
   const loginResponsePromise = page.waitForResponse((r) =>
-    r.request().method() === "POST" && 
-    r.url().includes("/api/") && 
+    r.request().method() === "POST" &&
+    r.url().includes("/api/") &&
     r.url().includes("token")  // ← adjust if needed
   );
   ```
@@ -161,7 +161,7 @@ gh run view <run-id> -R tcmegahan/Crown2026 --log-failed
 - Section serializer changes (field names)
 - API response structure changes (results/data wrapper)
 
-**Key principle**: 
+**Key principle**:
 - Test should never hardcode UUIDs
 - Test should fetch realistic data from the API after auth
 - Token should come from login response, never from storage scraping

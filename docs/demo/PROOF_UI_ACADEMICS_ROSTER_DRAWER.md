@@ -1,8 +1,8 @@
 # PROOF: UI Academics Roster Drawer (PR #100)
 
-**Date:** 2026-02-10  
-**PR:** #100 (`spine/ui-academics-roster-drawer`)  
-**Status:** MERGED ✅  
+**Date:** 2026-02-10
+**PR:** #100 (`spine/ui-academics-roster-drawer`)
+**Status:** MERGED ✅
 **Endpoint:** `GET /api/v1/academics/sections/<SECTION_ID>/roster/`
 
 ---
@@ -26,7 +26,7 @@
 
 ### Observed Results
 
-**Request URL:**  
+**Request URL:**
 ```
 GET http://127.0.0.1:8000/api/v1/academics/sections/<SECTION_ID>/roster/
 ```

@@ -54,8 +54,8 @@ Solomon supports Discernment use by providing:
 - “what this means / what this does not mean” guidance
 
 ## Canonical Product Job
-Compass is the leadership strategy surface.  
-Discernment is the explainable engine inside Compass.  
+Compass is the leadership strategy surface.
+Discernment is the explainable engine inside Compass.
 Solomon is the human-guidance layer around both.
 
 ## Experience Design Rules

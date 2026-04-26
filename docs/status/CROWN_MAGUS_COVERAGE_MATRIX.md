@@ -1,8 +1,8 @@
 # CrownMagus0 – Tier + Wizard Coverage Matrix
 
-**Scope:** Gate 3–4 MVP (Core Ops + Academics Foundation)  
-**Standard:** Tenant-safe, JWT protected, school-scoped, audited  
-**Last verified:** 2026-02-28 (main `61e67163`)  
+**Scope:** Gate 3–4 MVP (Core Ops + Academics Foundation)
+**Standard:** Tenant-safe, JWT protected, school-scoped, audited
+**Last verified:** 2026-02-28 (main `61e67163`)
 **Build evidence:** `django check` clean · no pending migrations · all gates green
 
 ---

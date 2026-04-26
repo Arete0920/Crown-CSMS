@@ -1,7 +1,7 @@
 # pp-003 Demo Proof
 
-**Golden Tag:** `demo-feb16-gradebook-edit-pp-003`  
-**SHA:** `aec71930dffba0e1d186e49468ff67f77df5ead9`  
+**Golden Tag:** `demo-feb16-gradebook-edit-pp-003`
+**SHA:** `aec71930dffba0e1d186e49468ff67f77df5ead9`
 **Status:** Locked & frozen (no further changes to tag)
 
 ## Screenshots

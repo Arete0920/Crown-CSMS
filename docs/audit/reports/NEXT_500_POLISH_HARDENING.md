@@ -1,9 +1,9 @@
-﻿# Next 500 Polish + Hardening Queue
+# Next 500 Polish + Hardening Queue
 
-- Generated: 
+- Generated:
 2026-04-15T06:13:33
 - Source: TOP_1000_IMMEDIATE_PRIORITIES.csv
-- OPEN items remaining after latest tranche: 
+- OPEN items remaining after latest tranche:
 751
 - Queue exported: docs/audit/reports/NEXT_500_POLISH_HARDENING.csv
 

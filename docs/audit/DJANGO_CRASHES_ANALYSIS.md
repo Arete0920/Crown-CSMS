@@ -1,8 +1,8 @@
 # Django Development Server Crashes on Windows + OneDrive: Comprehensive Analysis
 
-**Project Context:** Crown2026 (Django 6.0, SQLite database, Located in OneDrive Desktop)  
-**Issue:** 30+ crashes in a single day with inconsistent error patterns  
-**Environment:** Windows, OneDrive storage, Python venv  
+**Project Context:** Crown2026 (Django 6.0, SQLite database, Located in OneDrive Desktop)
+**Issue:** 30+ crashes in a single day with inconsistent error patterns
+**Environment:** Windows, OneDrive storage, Python venv
 
 ---
 
@@ -167,7 +167,7 @@ def check_for_changes(file_path):
     └─ Detects change in core/models.py
     └─ Signals child to reload
     └─ Child attempts graceful shutdown
-    
+
 [Child process cleanup]
     └─ Closes database connections (releases SQLite lock)
     └─ Tries to clear __pycache__
@@ -194,7 +194,7 @@ Get-Process python | Where-Object {$_.CommandLine -like "*manage.py*"} | Stop-Pr
 ```python
 # Django spawns processes with subprocess.Popen()
 # On Unix: os.execvp() replaces process cleanly
-# On Windows: Popen() creates separate process, 
+# On Windows: Popen() creates separate process,
 #            parent must wait() for child
 ```
 
@@ -256,11 +256,11 @@ class AidAward(Model):
         # BEGINS TRANSACTION
         journal = FinanceJournalBatch.objects.create(...)
         # SQLite creates: db.sqlite3-journal
-        
+
         for award in self.awards.all():
             entry = FinanceLedgerEntry.objects.create(...)
             # Transaction continues...
-        
+
         # COMMITS TRANSACTION
         # SQLite deletes: db.sqlite3-journal
 ```
@@ -348,10 +348,10 @@ rm db.sqlite3 -Force; .\venv\Scripts\python.exe manage.py migrate
 def handle(self, *options, **kwargs):
     with transaction.atomic():  # Begins transaction
         school = School.objects.create(...)  # Lock acquired
-        
+
         for year in years:  # OneDrive sync starts HERE
             AcademicYear.objects.create(...)  # Writes blocked
-            
+
         # Can't acquire write lock due to OneDrive read
         # Transaction hangs
         # After timeout: "database is locked"
@@ -451,7 +451,7 @@ import django
 **From your terminal history:**
 
 ```powershell
-cd "c:\Users\JMega\OneDrive\Desktop\Crown2026\backend"; 
+cd "c:\Users\JMega\OneDrive\Desktop\Crown2026\backend";
 .\venv\Scripts\pip.exe install -q django djangorestframework 2>&1 | tail -5
 # Exit Code: 1 (installation failed)
 ```
@@ -732,7 +732,7 @@ Start-Sleep -Seconds 2
 
 # Clear Python cache
 Write-Host "Clearing Python cache..."
-Get-ChildItem -Recurse -Directory -Filter __pycache__ -ErrorAction SilentlyContinue | 
+Get-ChildItem -Recurse -Directory -Filter __pycache__ -ErrorAction SilentlyContinue |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 # Fresh database if specified
@@ -804,24 +804,24 @@ class DjangoReloader(FileSystemEventHandler):
     def __init__(self):
         self.process = None
         self.last_restart = time.time()
-    
+
     def on_modified(self, event):
         if event.src_path.endswith('.py') and not event.is_directory:
             if time.time() - self.last_restart > 2:  # Debounce
                 self.restart_server()
-    
+
     def restart_server(self):
         if self.process:
             self.process.terminate()
             self.process.wait()
-        
+
         # Kill any lingering Python processes
         os.system("taskkill /IM python.exe /F 2>nul")
         time.sleep(2)
-        
+
         # Clear cache
         subprocess.run("python manage.py clear_cache", shell=True)
-        
+
         # Start server
         self.process = subprocess.Popen([
             "python", "manage.py", "runserver",
@@ -834,10 +834,10 @@ if __name__ == "__main__":
     observer = Observer()
     observer.schedule(reloader, path=".", recursive=True)
     observer.start()
-    
+
     # Start initial server
     reloader.restart_server()
-    
+
     try:
         while True:
             time.sleep(1)

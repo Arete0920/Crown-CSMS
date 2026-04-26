@@ -47,7 +47,7 @@ $expected = git rev-parse --short=7 crown-X.Y.Z-descriptor
 $dev = curl.exe -s https://crown-api-dev.azurewebsites.net/api/health/ | ConvertFrom-Json
 $dev.build_sha -eq $expected
 
-# PROD  
+# PROD
 $prod = curl.exe -s https://crown-api-prod.azurewebsites.net/api/health/ | ConvertFrom-Json
 $prod.build_sha -eq $expected
 ```

@@ -67,5 +67,5 @@ Do not rewrite history. Instead:
 
 ---
 
-**Last Updated:** 2026-02-13  
+**Last Updated:** 2026-02-13
 **Last Enforced:** demo-feb16-gradebook-edit-pp-003 acceptance run

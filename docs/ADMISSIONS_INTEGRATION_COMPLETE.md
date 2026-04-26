@@ -1,7 +1,7 @@
 # ADMISSIONS DIRECTOR INTEGRATION - COMPLETION REPORT
 
-**Date:** 2026-01-04  
-**Branch:** recovery  
+**Date:** 2026-01-04
+**Branch:** recovery
 **Commits:** e337b3a, 3ffd18e
 
 ---
@@ -27,7 +27,7 @@ from admissions.models import AdmissionsApplication
 ```python
 admissions_needs_info_apps = (
     AdmissionsApplication.objects
-    .filter(school_id=school_id, academic_year=academic_year, 
+    .filter(school_id=school_id, academic_year=academic_year,
             status=AdmissionsApplication.STATUS_NEEDS_INFO)
     .select_related("family")
     .order_by("-submitted_at")[:10]
@@ -304,5 +304,5 @@ python backend/test_admissions_api.py
 
 ---
 
-**Report maintained by:** GitHub Copilot  
+**Report maintained by:** GitHub Copilot
 **Questions?** See `docs/REFERENCE_MODULE_PATTERN.md`
