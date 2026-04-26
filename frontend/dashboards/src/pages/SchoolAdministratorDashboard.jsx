@@ -1,5 +1,5 @@
-import CrownLaunchDashboardPage from './CrownLaunchDashboardPage.jsx';
+import AdminCommandCenterClean from './AdminCommandCenterClean.jsx';
 
 export default function SchoolAdministratorDashboard() {
-  return <CrownLaunchDashboardPage activePath="/school-admin" />;
+  return <AdminCommandCenterClean />;
 }
