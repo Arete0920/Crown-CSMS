@@ -123,7 +123,7 @@
 .cc-nav nav a {
   min-height: 44px;
   margin: 4px 0;
-  border: 1px solid #e2e8f5;
+  border: 1px solid #d9e3f3;
   border-radius: 12px;
   padding: 0 14px;
   display: flex;
@@ -133,12 +133,12 @@
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
-  background: #ffffff !important;
+  background: #fcfdff !important;
   color: #273b5f !important;
 }
 
 .cc-nav nav a:hover {
-  background: #f7faff;
+  background: #f5f9ff;
   border-color: #cfe0ff;
   color: #153865;
 }
@@ -211,14 +211,14 @@
   flex: 1;
   max-width: 620px;
   height: 46px;
-  border: 1px solid #d6e2f5;
+  border: 1px solid #d3ddec;
   border-radius: 14px;
   display: flex;
   align-items: center;
   padding: 0 14px;
   gap: 10px;
   background: #ffffff !important;
-  box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.03);
+  box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.02);
   cursor: text;
 }
 
@@ -232,6 +232,11 @@
   appearance: none;
   -webkit-appearance: none;
   border-radius: 10px;
+}
+
+.cc-search input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
 }
 
 .cc-primary-action {
@@ -314,8 +319,8 @@
 .cc-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 24px;
-  padding: 24px;
+  gap: 26px;
+  padding: 26px;
 }
 
 .cc-content {
@@ -328,7 +333,7 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.9fr) 84px;
   align-items: center;
   gap: 18px;
-  margin-bottom: 22px;
+  margin-bottom: 30px;
   padding: 18px 20px;
   border: 1px solid var(--cc-border);
   border-radius: 18px;
@@ -384,7 +389,7 @@
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .cc-kpi {
@@ -790,21 +795,22 @@
 .cc-right-rail {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .cc-rail-card {
   border: 1px solid var(--cc-border);
   background: var(--cc-card);
   border-radius: 18px;
-  padding: 22px;
+  padding: 20px;
   box-shadow: var(--cc-shadow);
 }
 
 .cc-rail-card h3 {
   margin: 0 0 12px;
   color: var(--cc-text);
-  font-size: 17px;
+  font-size: 16px;
+  font-weight: 800;
   letter-spacing: -0.02em;
 }
 
@@ -818,7 +824,7 @@
   padding: 9px 0;
   border-bottom: 1px solid #eef2f7;
   color: #263954;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -833,8 +839,8 @@
   margin-top: 12px;
   color: var(--cc-royal);
   text-decoration: none;
-  font-weight: 850;
-  font-size: 14px;
+  font-weight: 800;
+  font-size: 13px;
   min-height: 36px;
   padding: 0 12px;
   border-radius: 10px;
