@@ -21,6 +21,16 @@ export const DASHBOARD_TEMPLATE_MAP = {
   communications: communicationsDashboard,
 };
 
+function isValidDashboardTemplate(template) {
+  return Boolean(
+    template
+    && typeof template === 'object'
+    && typeof template.title === 'string'
+    && Array.isArray(template.metrics)
+  );
+}
+
 export function getDashboardTemplate(key) {
-  return DASHBOARD_TEMPLATE_MAP[key] || schoolAdministratorDashboard;
+  const candidate = DASHBOARD_TEMPLATE_MAP[key] || schoolAdministratorDashboard;
+  return isValidDashboardTemplate(candidate) ? candidate : schoolAdministratorDashboard;
 }
