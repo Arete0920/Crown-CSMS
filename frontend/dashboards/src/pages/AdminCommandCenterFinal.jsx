@@ -1,21 +1,20 @@
 import "../styles/admin-command-center-final.css";
 
 const kpis = [
-  { label: "Total Students", value: "512", detail: "5 new this month", icon: "👥", tone: "blue" },
-  { label: "Active Families", value: "428", detail: "3 new this month", icon: "👪", tone: "purple" },
-  { label: "Attendance Today", value: "96.4%", detail: "Above target", icon: "✓", tone: "green" },
-  { label: "Open Invoices", value: "12", detail: "$24,350 outstanding", icon: "$", tone: "gold" },
-  { label: "Teacher Attendance", value: "98.1%", detail: "Coverage stable", icon: "◎", tone: "teal" },
-  { label: "Monthly Revenue", value: "$128,540", detail: "8.4% over last month", icon: "▥", tone: "green" },
+  { label: "Total Students", value: "912", detail: "5 new this month", icon: "👥", tone: "blue" },
+  { label: "Admissions", value: "418", detail: "9 this month", icon: "👪", tone: "purple" },
+  { label: "Attendance Today", value: "99.4%", detail: "Above target", icon: "✓", tone: "green" },
+  { label: "Open Invoices", value: "19", detail: "$38,580 outstanding", icon: "$", tone: "gold" },
+  { label: "Teacher Attendance", value: "91.1%", detail: "9 Approaching", icon: "◎", tone: "gold" },
+  { label: "Monthly Revenue", value: "$128,940", detail: "8.4% over last month", icon: "▥", tone: "green" },
 ];
 
 const navGroups = [
-  { title: "Command Center", items: ["Dashboard", "Overview"] },
-  { title: "School Operations", items: ["Admissions", "Students", "Attendance", "Gradebook", "Academics", "Scheduling"] },
-  { title: "Business & Finance", items: ["Finance", "Tuition & Billing", "Invoicing", "Payroll"] },
-  { title: "Communications", items: ["Communications", "Announcements", "Calendar", "Tasks & To-Dos"] },
-  { title: "Staff & HR", items: ["Staff Directory", "HR & Benefits"] },
-  { title: "Reports & System", items: ["Reports", "Analytics", "System Settings"] },
+  { title: "Command Centre", items: ["Dashboard", "Overview"] },
+  { title: "School Operations", items: ["Admissions", "Students", "Attendance", "Gradebook", "Academics"] },
+  { title: "Offices & Finance", items: ["Finance", "Human Resources", "Boarding"] },
+  { title: "Communications", items: ["Communications", "Database", "Administration", "Chaplain"] },
+  { title: "Student Services", items: ["Family Pay", "Student Lending", "Fundraising"] },
 ];
 
 const quickActions = [
@@ -34,12 +33,25 @@ const quickActions = [
 const rightRail = [
   {
     title: "Daily Prayer & Devotion",
+    hasPhoto: true,
+    photoLabel: "Morning devotion",
     items: [
       "Be strong and courageous.",
       "Do not be afraid; the Lord your God will be with you.",
-      "Joshua 1:9",
+      "— Joshua 1:9",
     ],
     action: "Read devotion",
+    tone: "devotion",
+  },
+  {
+    title: "Today's Devotion",
+    hasPhoto: true,
+    photoLabel: "Open Bible",
+    items: [
+      "Walking by Faith, Not by Sight",
+      "Reflect on 2 Corinthians 5:7",
+    ],
+    action: "Read more",
     tone: "devotion",
   },
   {
@@ -52,33 +64,36 @@ const rightRail = [
     action: "View all",
   },
   {
-    title: "Calendar Snapshot",
-    items: [
-      "3:30 PM — Teacher meeting",
-      "6:00 PM — School board meeting",
-      "Friday 9:00 AM — Chapel service",
-    ],
-    action: "View calendar",
-  },
-  {
-    title: "Needs Your Attention",
-    items: [
-      "3 unpaid invoices over 30 days",
-      "5 students with low attendance",
-      "2 missing immunization records",
-      "4 approvals pending",
+    title: "Counsel Segment",
+    isGrid: true,
+    gridRows: [
+      ["Student", "Proxy", "Score"],
+      ["A. James", "Parent", "92"],
+      ["B. Smith", "Counselor", "87"],
+      ["C. Brown", "Teacher", "78"],
     ],
     action: "View all",
+    tone: "counsel",
+  },
+  {
+    title: "Family Focus",
+    items: [
+      "3 families awaiting follow-up",
+      "1 new inquiry this morning",
+      "2 re-enrollment meetings today",
+    ],
+    action: "View families",
+  },
+  {
+    title: "Today Due",
+    items: [
+      "Submit payroll approvals",
+      "Review 3 pending invoices",
+      "Respond to board email",
+      "Sign field trip forms",
+    ],
+    action: "View all tasks",
     tone: "attention",
-  },
-  {
-    title: "My Communications",
-    items: [
-      "Newsletter: April edition",
-      "Tuition reminder draft",
-      "Spring carnival invitation",
-    ],
-    action: "View all",
   },
   {
     title: "System Status",
@@ -110,24 +125,24 @@ const overviewCards = [
     action: "View demographic report",
   },
   {
-    title: "Communication Center",
+    title: "Grade Distribution",
     rows: [
-      ["Unread messages", "7"],
-      ["Parent messages", "3"],
-      ["Staff messages", "2"],
-      ["Announcements", "5"],
+      ["A (90–100)", "142"],
+      ["B (80–89)", "198"],
+      ["C (70–79)", "87"],
+      ["D / F (below 70)", "23"],
     ],
-    action: "Go to communications",
+    action: "View gradebook",
   },
   {
-    title: "Snapshot Reports",
+    title: "Staff Overview",
     rows: [
-      ["Enrollment summary", ""],
-      ["Monthly financial summary", ""],
-      ["Attendance report", ""],
-      ["Incident report", ""],
+      ["Certified Teachers", "42"],
+      ["Support Staff", "18"],
+      ["Administrators", "6"],
+      ["Substitutes active", "3"],
     ],
-    action: "View all reports",
+    action: "View staff directory",
   },
 ];
 
@@ -268,7 +283,7 @@ function AttendanceCard() {
       <h3>Attendance Overview</h3>
       <div className="cc-attendance-layout">
         <div className="cc-donut">
-          <span>96.4%</span>
+          <span>99.4%</span>
           <small>Today</small>
         </div>
         <div className="cc-legend">
@@ -341,11 +356,27 @@ function RightRail() {
       {rightRail.map((section) => (
         <section key={section.title} className={`cc-rail-card cc-rail-${section.tone || "default"}`}>
           <h3>{section.title}</h3>
-          <ul>
-            {section.items.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+          {section.hasPhoto && (
+            <div className="cc-rail-photo" role="img" aria-label={section.photoLabel} />
+          )}
+          {section.isGrid ? (
+            <table className="cc-rail-grid">
+              <thead>
+                <tr>{section.gridRows[0].map((h) => <th key={h}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {section.gridRows.slice(1).map((row) => (
+                  <tr key={row[0]}>{row.map((cell) => <td key={cell}>{cell}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <ul>
+              {section.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
           <a href="/">{section.action} →</a>
         </section>
       ))}
