@@ -30,6 +30,7 @@ import LoginPage from "../pages/LoginPage.jsx";
 import LogoutPage from "../pages/LogoutPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
+import AdminCommandCenterClean from "../pages/AdminCommandCenterClean.jsx";
 import BoardDashboard from "../pages/BoardDashboard.jsx";
 import FinanceDashboard from "../pages/FinanceDashboard.jsx";
 import ITDashboard from "../pages/ITDashboard.jsx";
@@ -350,23 +351,15 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchDashboardPage activePath="/admin" />
-      : (IS_SANDBOX
-        ? <Navigate to="/school-admin-dashboard" replace />
-        : <AdminDashboard />)),
+    element: <AdminCommandCenterClean />,
   },
   {
     path: '/school-admin',
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchDashboardPage activePath="/school-admin" />
-      : <Navigate to={PATHS.SCHOOL_ADMIN_DASHBOARD} replace />),
+    element: <AdminCommandCenterClean />,
   },
   {
     path: '/school-administrator',
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchDashboardPage activePath="/school-admin" />
-      : <Navigate to={PATHS.SCHOOL_ADMIN_DASHBOARD} replace />),
+    element: <AdminCommandCenterClean />,
   },
   {
     path: PATHS.BOARD,
@@ -619,9 +612,7 @@ export const router = createBrowserRouter([
   // ── CROWN sidebar navigation routes ──────────────────────────────────
   {
     path: PATHS.SCHOOL_ADMIN,
-    element: IS_LAUNCH_PREVIEW
-      ? <CrownLaunchDashboardPage />
-      : <Navigate to={PATHS.DASHBOARD} replace />,
+    element: <AdminCommandCenterClean />,
   },
   {
     path: PATHS.STUDENT_LIFE,
