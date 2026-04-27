@@ -1,41 +1,13 @@
-# Code Owners — Branch Policy & Security Controls
-#
-# Enforcement: require_code_owner_review is configured in ruleset_main.json.
-# Every PR touching these paths requires approval from the listed owner(s).
-# Enable in: Settings → Branches / Rulesets → "Require review from Code Owners"
+﻿* @tcmegahan
 
-# ── Branch policy & repo governance ────────────────────────────────────────
-/ruleset_main.json @tcmegahan
-/ruleset_tags.json @tcmegahan
-/ruleset_release.json @tcmegahan
-/BRANCH_PROTECTION.md @tcmegahan
-/.github/CODEOWNERS @tcmegahan
-
-# ── CI/CD workflows ─────────────────────────────────────────────────────────
-# Any workflow change requires owner review to prevent CI bypass
-/.github/workflows/ @tcmegahan
-
-# ── Secret scanning and protection ──────────────────────────────────────────
-/.gitleaks.toml @tcmegahan
-/.gitleaksignore @tcmegahan
-
-# ── Secret handling modules ─────────────────────────────────────────────────
-/scripts/Redact.psm1 @tcmegahan
-/scripts/Invoke-SecureCommand.ps1 @tcmegahan
-/scripts/hooks/ @tcmegahan
-/scripts/install-hooks.ps1 @tcmegahan
-/scripts/install-hooks.sh @tcmegahan
-
-# ── Credential templates and rotation runbook ───────────────────────────────
-/local.secrets.ps1.example @tcmegahan
-/ROTATE_SECRETS.md @tcmegahan
-
-# ── Core application settings ───────────────────────────────────────────────
-/backend/crown_api/settings.py @tcmegahan
-/backend/crown_api/urls.py @tcmegahan
-
-# ── Core platform (tenant, auth, scoping) ──────────────────────────────────
-/backend/core/ @tcmegahan
-
-# ── Git configuration ────────────────────────────────────────────────────────
-/.gitignore @tcmegahan
+.github/** @tcmegahan
+SECURITY.md @tcmegahan
+README.md @tcmegahan
+.env.example @tcmegahan
+docs/security/** @tcmegahan
+docs/governance/** @tcmegahan
+docs/release/** @tcmegahan
+docs/dashboard/** @tcmegahan
+docs/engineering/** @tcmegahan
+scripts/** @tcmegahan
+contracts/** @tcmegahan

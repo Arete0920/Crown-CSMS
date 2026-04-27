@@ -1,36 +1,46 @@
-# Crown2026
+# CROWN
 
-## What Crown2026 Is
+Christian School Management Solution
 
-Crown2026 is a multi-tenant school operations platform for Christian schools and daycare.
+## Current public status
 
-## Who It Is For
+CROWN is currently treated as a release-candidate and sandbox-hardening codebase unless a later signed release note explicitly states otherwise.
 
-Crown2026 is built for Christian school leaders, administrators, and operations teams who need one platform to run daily institutional workflows with operational clarity and delivery discipline.
+Do not represent this repository as generally available production software until the release gates in this repository are green and current.
 
-## Core Platform Areas
+## Public repo rules
 
-- SIS core
-- admissions and enrollment
-- billing and finance
-- communications and portals
-- school operations workflows
-- mission-driven extensions
+This is a public repository.
 
-## Repository Structure
+Never commit:
+- passwords
+- API keys
+- bearer tokens
+- refresh tokens
+- real student data
+- real family data
+- real staff data
+- real school financial data
+- production .env files
+- production database dumps
+- private certificates
+- tenant secrets
+- Microsoft 365 client secrets
 
-- `backend/` Django backend and API surfaces
-- `frontend/` dashboard and UI applications
-- `contracts/` interface and contract artifacts
-- `docs/` architecture, operations, security, and evidence documentation
-- `scripts/` operations and automation scripts
-- `tools/` engineering support tools
-- `services/` service-specific integrations
-- `.github/` workflows, templates, and repository automation
+Sandbox data must be clearly labeled as sandbox data.
 
-## Active vs Legacy Repository Note
+## Security
 
-Crown2026 is the current active platform repository.
-Crown-Christian is retained as an archived legacy repository.
+Use private security reporting. Do not open public issues for vulnerabilities. See SECURITY.md.
 
-Documentation: see `docs/README.md`.
+## Known limitations
+
+See docs/KNOWN_LIMITATIONS.md.
+
+## Public repo status
+
+See docs/PUBLIC_REPO_STATUS.md.
+
+## Release evidence
+
+See docs/release/README.md.
