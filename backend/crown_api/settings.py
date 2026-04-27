@@ -615,3 +615,45 @@ if "release_closeout" not in INSTALLED_APPS:
 INSTALLED_APPS = globals().get("INSTALLED_APPS", INSTALLED_APPS if "INSTALLED_APPS" in globals() else [])
 if "django_extensions" not in INSTALLED_APPS:
     INSTALLED_APPS.append("django_extensions")
+# === CROWN DEPLOY SECURITY SETTINGS START ===
+# Used for staging/sandbox/production deploy-readiness checks.
+# No secret is stored here. A real DJANGO_SECRET_KEY must be supplied by the environment.
+import os as _crown_os
+
+_CROWN_TRUE_VALUES = {"1", "true", "yes", "on"}
+_CROWN_ENV = _crown_os.getenv("CROWN_ENV", "").strip().lower()
+_CROWN_DEPLOY_SECURITY = (
+    _crown_os.getenv("CROWN_DEPLOY_SECURITY", "").strip().lower() in _CROWN_TRUE_VALUES
+    or _CROWN_ENV in {"sandbox", "staging", "production", "prod"}
+)
+
+if _CROWN_DEPLOY_SECURITY:
+    DEBUG = False
+
+    _allowed_hosts_raw = _crown_os.getenv(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1,.azurewebsites.net"
+    )
+    ALLOWED_HOSTS = [
+        host.strip()
+        for host in _allowed_hosts_raw.split(",")
+        if host.strip()
+    ]
+
+    _secret_key_from_env = _crown_os.getenv("DJANGO_SECRET_KEY")
+    if _secret_key_from_env:
+        SECRET_KEY = _secret_key_from_env
+
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = int(_crown_os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    X_FRAME_OPTIONS = "DENY"
+
+    # Required when HTTPS is terminated by Azure/App Service/reverse proxy.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# === CROWN DEPLOY SECURITY SETTINGS END ===
