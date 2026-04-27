@@ -1,4 +1,4 @@
-﻿# Public Repository Hardening Notes
+# Public Repository Hardening Notes
 
 Completed by this pass:
 - removed unsafe root scripts from HEAD

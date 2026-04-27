@@ -1,4 +1,4 @@
-﻿"""
+"""
 CROWN manual auth check template.
 
 Public-safe example only.

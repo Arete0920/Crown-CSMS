@@ -1,4 +1,4 @@
-﻿# Known Limitations
+# Known Limitations
 
 Current known limitation categories:
 - KPI cards must be connected to live APIs before production approval.

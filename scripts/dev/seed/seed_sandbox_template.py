@@ -1,4 +1,4 @@
-﻿"""
+"""
 CROWN sandbox seed template.
 
 Public-safe example only.

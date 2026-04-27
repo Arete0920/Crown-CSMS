@@ -1,4 +1,4 @@
-﻿# GitHub Governance and Required Checks
+# GitHub Governance and Required Checks
 
 Main branch should require pull request review, code owner review, resolved threads, fresh approval after push, and required checks.
 

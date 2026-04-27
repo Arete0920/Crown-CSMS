@@ -1,4 +1,4 @@
-﻿# Public Repository Status
+# Public Repository Status
 
 CROWN is public for transparency, review, and controlled development.
 

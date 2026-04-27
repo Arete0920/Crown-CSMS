@@ -1,4 +1,4 @@
-﻿# Security Policy
+# Security Policy
 
 CROWN handles school operations data and is designed for environments involving students, families, staff, communications, billing, and school records.
 

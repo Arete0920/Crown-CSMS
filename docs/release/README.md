@@ -1,4 +1,4 @@
-﻿# Release Evidence Index
+# Release Evidence Index
 
 Only the current release index and signed release packet should be used for release decisions.
 

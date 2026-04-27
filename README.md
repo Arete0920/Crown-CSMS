@@ -1,4 +1,4 @@
-﻿# CROWN
+# CROWN
 
 Christian School Management Solution
 
