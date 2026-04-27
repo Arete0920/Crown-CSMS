@@ -1,4 +1,4 @@
-﻿name: public-repo-quality-gate
+name: public-repo-quality-gate
 
 on:
   pull_request:

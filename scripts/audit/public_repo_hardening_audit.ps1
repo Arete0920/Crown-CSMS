@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $out = "audit-artifacts/public-repo-hardening-audit/$stamp"
