@@ -1,0 +1,67 @@
+﻿name: public-repo-quality-gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-repo-quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Block unsafe root files
+        shell: bash
+        run: |
+          set -euo pipefail
+          forbidden=("debug_auth.py" "test_custom_login.py" "seed_a535.py" "seed_a535_clean.py")
+          for f in "${forbidden[@]}"; do
+            if [[ -e "$f" ]]; then
+              echo "::error file=$f::Unsafe public root file exists"
+              exit 1
+            fi
+          done
+
+      - name: Block committed env and local backup files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          bad_env="$(git ls-files | grep -E '(^|/)\.env($|\.|/)' | grep -Ev '(^|/)\.env(\.[A-Za-z0-9_-]+)?\.(example|sample)$' || true)"
+          if [[ -n "$bad_env" ]]; then
+            echo "$bad_env"
+            echo "::error::Committed environment file detected"
+            exit 1
+          fi
+
+          if git ls-files | grep -E '^\.local-backups/'; then
+            echo "::error::.local-backups must never be committed"
+            exit 1
+          fi
+
+      - name: Required public docs exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            "README.md"
+            "SECURITY.md"
+            "docs/PUBLIC_REPO_STATUS.md"
+            "docs/KNOWN_LIMITATIONS.md"
+            "docs/release/README.md"
+            "docs/governance/GITHUB_REQUIRED_CHECKS.md"
+            "docs/dashboard/DASHBOARD_PRODUCTION_GATE.md"
+            "docs/engineering/PUBLIC_REPO_HARDENING.md"
+            ".env.example"
+            ".github/CODEOWNERS"
+          )
+          for f in "${required[@]}"; do
+            [[ -s "$f" ]] || { echo "::error file=$f::Missing required file"; exit 1; }
+          done
