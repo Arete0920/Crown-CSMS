@@ -9,10 +9,15 @@ export default function CrownDashboardFlipCard({ module }) {
       {!flipped ? (
         <div className="launch-flip-face launch-flip-face-front">
           <div className="launch-flip-head">
-            <span className="launch-module-icon" aria-hidden="true">{module.icon || 'OP'}</span>
-            <span className={`launch-status-pill ${module.statusTone === 'warn' ? 'is-warn' : 'is-good'}`}>
-              {module.status}
-            </span>
+            <div className="launch-flip-head-leading">
+              <span className="launch-module-icon" aria-hidden="true">{module.icon || 'OP'}</span>
+              <div className="launch-flip-meta">
+                <span className={`launch-status-pill ${module.statusTone === 'warn' ? 'is-warn' : 'is-good'}`}>
+                  {module.status}
+                </span>
+                <span className="launch-module-updated">Updated {module.lastUpdated}</span>
+              </div>
+            </div>
           </div>
           <div className="launch-section-kicker">{module.title}</div>
           <h3>{module.mainKpi}</h3>
@@ -28,7 +33,7 @@ export default function CrownDashboardFlipCard({ module }) {
           <div className="launch-inline-actions">
             <button type="button" className="launch-button launch-button-primary">{module.primaryActionLabel}</button>
             <button type="button" className="launch-button launch-button-secondary" onClick={() => setFlipped(true)}>
-              View Detail
+              Open detail
             </button>
           </div>
         </div>
