@@ -1,4 +1,5 @@
 import "../styles/admin-command-center.css";
+import CrownLayout from "../components/crown/CrownLayout";
 
 const executiveKpis = [
   {
@@ -288,19 +289,20 @@ function RightRailCard({ title, children, accent = "blue" }) {
 
 export default function AdminCommandCenterDashboard() {
   return (
-    <main className="admin-command-page" data-testid="admin-command-center">
-      <section className="admin-command-hero">
-        <div>
-          <p className="admin-command-eyebrow">CROWN Launch Preview</p>
-          <h1>Good morning, Sarah!</h1>
-          <p>Heritage Christian Academy</p>
-        </div>
+    <CrownLayout>
+      <main className="admin-command-page" data-testid="admin-command-center">
+        <section className="admin-command-hero">
+          <div>
+            <p className="admin-command-eyebrow">CROWN Launch Preview</p>
+            <h1>Good morning, Sarah!</h1>
+            <p>Heritage Christian Academy</p>
+          </div>
 
-        <div className="admin-command-hero-actions">
-          <span>Sandbox preview data shown. Connect backend for live records.</span>
-          <button type="button">Generate report</button>
-        </div>
-      </section>
+          <div className="admin-command-hero-actions">
+            <span>Sandbox preview data shown. Connect backend for live records.</span>
+            <button type="button">Generate report</button>
+          </div>
+        </section>
 
       <section className="admin-command-layout">
         <div className="admin-command-main">
@@ -470,6 +472,7 @@ export default function AdminCommandCenterDashboard() {
           </RightRailCard>
         </aside>
       </section>
-    </main>
+      </main>
+    </CrownLayout>
   );
 }
