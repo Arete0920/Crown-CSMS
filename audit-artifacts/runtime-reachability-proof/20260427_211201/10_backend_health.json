@@ -1,0 +1,13 @@
+﻿{
+    "ok":  true,
+    "status":  "ok",
+    "demo_mode":  false,
+    "build_sha":  "local-dev",
+    "prod_deploy_tag":  "",
+    "env":  "dev",
+    "build_time_utc":  "2026-04-28T01:12:01.301761+00:00",
+    "version":  "crown-0.4.0-rc1",
+    "db":  "ok",
+    "deploy_run_id":  "",
+    "deploy_workflow":  ""
+}
