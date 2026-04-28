@@ -186,6 +186,11 @@ export default function LoginPage() {
       const payload = await response.json();
       sessionStorage.setItem("crown.jwt.access", payload.access);
       sessionStorage.setItem("crown.school.id", payload.school_id || selectedSchoolId || DEMO_SCHOOL);
+      sessionStorage.setItem("crown.role", role.value);
+      localStorage.setItem("crown.role", role.value);
+      if (IS_SANDBOX) {
+        localStorage.setItem("crown.demo.role", role.value);
+      }
 
       globalThis.location.href = role.route;
     } catch (authError) {
