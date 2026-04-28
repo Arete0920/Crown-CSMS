@@ -146,7 +146,15 @@ function Parse-RunSummary {
 
 function Ensure-InfoExcludePattern {
     param([string]$RepoRoot, [string]$Pattern)
-    $excludePath = Join-Path $RepoRoot ".git\info\exclude"
+    # Resolve real git dir (handles worktrees where .git is a file)
+    $realGitDir = (git -C $RepoRoot rev-parse --git-dir 2>$null).Trim()
+    if ([string]::IsNullOrWhiteSpace($realGitDir)) {
+        $realGitDir = Join-Path $RepoRoot ".git"
+    }
+    if (-not [System.IO.Path]::IsPathRooted($realGitDir)) {
+        $realGitDir = Join-Path $RepoRoot $realGitDir
+    }
+    $excludePath = Join-Path $realGitDir "info\exclude"
     if (-not (Test-Path $excludePath)) {
         New-Dir (Split-Path -Parent $excludePath)
         "" | Set-Content -Path $excludePath -Encoding UTF8
