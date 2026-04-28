@@ -38,12 +38,6 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
   const rightRailSections = Array.isArray(config.rightRailSections) ? config.rightRailSections : [];
 
   const isSchoolAdminCommandCenter = config.key === 'schoolAdministrator';
-  const adminHeroMetrics = metrics.slice(0, 4);
-  const adminSnapshot = [
-    priorities[0] ? { label: 'Immediate decision', value: priorities[0].title } : null,
-    alerts[0] ? { label: 'Highest alert', value: alerts[0].title } : null,
-    operations[0] ? { label: 'First watch area', value: operations[0].area } : null,
-  ].filter(Boolean);
 
   return (
     <CrownDashboardShell
@@ -63,60 +57,11 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
       <div className="launch-content">
         {isSchoolAdminCommandCenter ? (
           <>
-            <section className="launch-admin-hero-grid">
-              <CrownCard className="launch-admin-brief-card">
-                <div className="launch-card-heading-row launch-card-heading-row-tight">
-                  <div>
-                    <div className="launch-section-kicker">Administrator brief</div>
-                    <h3>Whole-school command posture</h3>
-                  </div>
-                  <span className="launch-chip">Morning view</span>
-                </div>
-                <p className="launch-admin-brief-copy">
-                  Enrollment momentum is healthy, operations are stable overall, and the main leadership load is concentrated in admissions decisions, attendance recovery, and same-day exceptions.
-                </p>
-                <div className="launch-admin-snapshot-list">
-                  {adminSnapshot.map((item) => (
-                    <div key={item.label} className="launch-admin-snapshot-item">
-                      <span>{item.label}</span>
-                      <strong>{item.value}</strong>
-                    </div>
-                  ))}
-                </div>
-              </CrownCard>
-
-              <CrownCard className="launch-admin-hero-metrics-card">
-                <div className="launch-card-heading-row launch-card-heading-row-tight">
-                  <div>
-                    <div className="launch-section-kicker">Executive metrics</div>
-                    <h3>Leadership scorecard</h3>
-                  </div>
-                </div>
-                <div className="launch-admin-hero-metrics-grid">
-                  {adminHeroMetrics.map((card) => (
-                    <div key={card.label} className={`launch-admin-hero-metric launch-accent-${card.accent || 'blue'}`}>
-                      <span>{card.label}</span>
-                      <strong>{card.value}</strong>
-                    </div>
-                  ))}
-                </div>
-              </CrownCard>
-            </section>
-
-            <section className="launch-admin-section-block">
-              <div className="launch-admin-section-headline">
-                <div>
-                  <div className="launch-section-kicker">Executive overview</div>
-                  <h3>Core performance indicators</h3>
-                </div>
-                <p>Dense operational signals for the school day, tuned for quick scanning.</p>
-              </div>
             <CrownDashboardMetricGrid className="launch-dashboard-grid-metrics-admin">
               {metrics.map((card) => (
                 <CrownDashboardMetricCard key={card.label} {...card} />
               ))}
             </CrownDashboardMetricGrid>
-            </section>
 
             <section className="launch-dashboard-grid launch-dashboard-grid-primary">
               <CrownCard className="launch-priority-card">
@@ -149,19 +94,10 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
               </CrownCard>
             </section>
 
-            <section className="launch-admin-section-block">
-              <div className="launch-admin-section-headline">
-                <div>
-                  <div className="launch-section-kicker">Operational command grid</div>
-                  <h3>Department control surfaces</h3>
-                </div>
-                <p>Each module highlights current pressure, readiness, and the next decisive action.</p>
-              </div>
             <section className="launch-dashboard-grid launch-dashboard-grid-module launch-command-grid">
               {commandModules.map((module) => (
                 <CrownDashboardFlipCard key={module.key} module={module} />
               ))}
-            </section>
             </section>
 
             <section className="launch-dashboard-grid launch-dashboard-grid-analytics">

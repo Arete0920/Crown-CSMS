@@ -42,11 +42,11 @@ describe('dashboard registry contract', () => {
       expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Sandbox preview data shown. Connect backend for live records.').length).toBeGreaterThan(0);
 
-      expect(screen.getAllByText('Total Students').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Attendance Rate').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Tuition Collected').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Open Admissions').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Active Alerts').length).toBeGreaterThan(0);
+      expect(screen.getByText('Total Students')).toBeTruthy();
+      expect(screen.getByText('Attendance Rate')).toBeTruthy();
+      expect(screen.getByText('Tuition Collected')).toBeTruthy();
+      expect(screen.getByText('Open Admissions')).toBeTruthy();
+      expect(screen.getByText('Active Alerts')).toBeTruthy();
 
       expect(screen.getAllByText('Admissions / Enrollment').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Attendance').length).toBeGreaterThan(0);

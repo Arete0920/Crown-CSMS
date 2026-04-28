@@ -1,0 +1,16 @@
+ M .github/CODEOWNERS
+ M .gitignore
+ M README.md
+ M SECURITY.md
+D  seed_a535.py
+D  seed_a535_clean.py
+?? .env.example
+?? .github/workflows/public-repo-quality-gate.yml
+?? docs/KNOWN_LIMITATIONS.md
+?? docs/PUBLIC_REPO_STATUS.md
+?? docs/dashboard/
+?? docs/engineering/PUBLIC_REPO_HARDENING.md
+?? docs/governance/
+?? docs/release/README.md
+?? scripts/audit/
+?? scripts/dev/
