@@ -11,14 +11,10 @@ export default function CrownTopbar({
       </label>
 
       <div className="launch-topbar-actions">
-        <div className="launch-chip launch-chip-muted">School day live</div>
         <button type="button" className="launch-icon-button">Updates <span className="launch-counter">{updatesCount}</span></button>
         <button type="button" className="launch-icon-button">Help</button>
         <div className="launch-school-chip">{schoolName}</div>
-        <div className="launch-user-menu">
-          <span className="launch-user-menu-avatar">{userInitials}</span>
-          <span className="launch-user-menu-label">Admin</span>
-        </div>
+        <div className="launch-user-menu">{userInitials}</div>
       </div>
     </div>
   );

@@ -191,3 +191,16 @@ test_login.json
 schools_prod.txt
 .env.release
 local.secrets.ps1.example
+
+# Crown public repo hardening
+.local-backups/
+*.local
+*.bak
+*.backup
+*.tmp
+.env
+.env.*
+!.env.example
+!.env.sample
+.DS_Store
+Thumbs.db

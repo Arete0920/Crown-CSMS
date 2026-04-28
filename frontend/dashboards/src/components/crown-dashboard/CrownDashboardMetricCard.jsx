@@ -6,18 +6,11 @@ export default function CrownDashboardMetricCard({ label, value, detail, accent 
   return (
     <CrownCard className={`launch-metric-card launch-accent-${accent}`}>
       <div className="launch-metric-toprow">
-        <div>
-          <div className="launch-metric-label">{label}</div>
-          <div className="launch-metric-subtitle">Command signal</div>
-        </div>
+        <div className="launch-metric-label">{label}</div>
         <div className="launch-metric-icon-bubble" aria-hidden="true">{badge || 'C'}</div>
       </div>
       <div className="launch-metric-value">{value}</div>
       <div className="launch-metric-detail">{detail}</div>
-      <div className="launch-metric-footer">
-        <span className="launch-metric-footer-label">Leadership read</span>
-        <strong>Monitored now</strong>
-      </div>
     </CrownCard>
   );
 }

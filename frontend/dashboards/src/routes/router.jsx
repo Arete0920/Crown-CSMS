@@ -30,7 +30,7 @@ import LoginPage from "../pages/LoginPage.jsx";
 import LogoutPage from "../pages/LogoutPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
-import AdminCommandCenterFinal from "../pages/AdminCommandCenterFinal.jsx";
+import AdminCommandCenterClean from "../pages/AdminCommandCenterClean.jsx";
 import BoardDashboard from "../pages/BoardDashboard.jsx";
 import FinanceDashboard from "../pages/FinanceDashboard.jsx";
 import ITDashboard from "../pages/ITDashboard.jsx";
@@ -351,15 +351,15 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <AdminCommandCenterFinal />,
+    element: <AdminCommandCenterClean />,
   },
   {
     path: '/school-admin',
-    element: <AdminCommandCenterFinal />,
+    element: <AdminCommandCenterClean />,
   },
   {
     path: '/school-administrator',
-    element: <AdminCommandCenterFinal />,
+    element: <AdminCommandCenterClean />,
   },
   {
     path: PATHS.BOARD,
@@ -612,9 +612,7 @@ export const router = createBrowserRouter([
   // ── CROWN sidebar navigation routes ──────────────────────────────────
   {
     path: PATHS.SCHOOL_ADMIN,
-    element: IS_LAUNCH_PREVIEW
-      ? <CrownLaunchDashboardPage />
-      : <Navigate to={PATHS.DASHBOARD} replace />,
+    element: <AdminCommandCenterClean />,
   },
   {
     path: PATHS.STUDENT_LIFE,

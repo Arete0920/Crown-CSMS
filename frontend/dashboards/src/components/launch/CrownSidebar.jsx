@@ -1,56 +1,38 @@
 import { Link, useInRouterContext } from 'react-router-dom';
 
-const NAV_SECTIONS = [
-  {
-    title: 'Command center',
-    items: [
-      { label: 'Dashboard', href: '/dashboard', glyph: 'D' },
-      { label: 'School', href: '/school-admin', glyph: 'S' },
-      { label: 'Administration', href: '/admin', glyph: 'A' },
-      { label: 'Reports', href: '/reporting', glyph: 'R' },
-    ],
-  },
-  {
-    title: 'Academic operations',
-    items: [
-      { label: 'Admissions', href: '/admissions', glyph: 'Ad' },
-      { label: 'Academics', href: '/gradebook', glyph: 'Ac' },
-      { label: 'Student Life', href: '/student-life', glyph: 'SL' },
-      { label: 'Attendance', href: '/attendance', glyph: 'At' },
-    ],
-  },
-  {
-    title: 'Business and comms',
-    items: [
-      { label: 'Finance', href: '/finance', glyph: 'F' },
-      { label: 'Communications', href: '/communications', glyph: 'C' },
-      { label: 'Settings', href: '/settings', glyph: 'Se' },
-    ],
-  },
+const NAV_ITEMS = [
+  { label: 'Dashboard', href: '/dashboard', glyph: 'D' },
+  { label: 'School', href: '/school-admin', glyph: 'S' },
+  { label: 'Administration', href: '/admin', glyph: 'A' },
+  { label: 'Admissions', href: '/admissions', glyph: 'Ad' },
+  { label: 'Academics', href: '/gradebook', glyph: 'Ac' },
+  { label: 'Student Life', href: '/student-life', glyph: 'SL' },
+  { label: 'Attendance', href: '/attendance', glyph: 'At' },
+  { label: 'Finance', href: '/finance', glyph: 'F' },
+  { label: 'Communications', href: '/communications', glyph: 'C' },
+  { label: 'Reports', href: '/reporting', glyph: 'R' },
+  { label: 'Settings', href: '/settings', glyph: 'Se' },
 ];
 
 function BrandLockup() {
   return (
     <div className="launch-brand-lockup">
-      <img
-        src="/brand/crown-mark-transparent.svg"
-        alt=""
-        className="launch-brand-mark"
-        aria-hidden="true"
-        width="44"
-        height="44"
-      />
+      <div className="launch-brand-crest" aria-hidden="true">
+        <svg viewBox="0 0 64 64" role="presentation" focusable="false">
+          <defs>
+            <linearGradient id="crownCrest" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#1D4ED8" />
+              <stop offset="100%" stopColor="#60A5FA" />
+            </linearGradient>
+          </defs>
+          <path d="M32 5 L52 13 L49 39 C48 48 41 55 32 58 C23 55 16 48 15 39 L12 13 Z" fill="url(#crownCrest)" />
+          <path d="M21 24 L27 19 L32 25 L37 19 L43 24 L41 35 H23 Z" fill="#FBBF24" opacity="0.96" />
+          <rect x="23" y="36" width="18" height="4" rx="2" fill="#FFFFFF" opacity="0.9" />
+        </svg>
+      </div>
       <div>
-        <img
-          src="/brand/crown-logo-transparent.svg"
-          alt=""
-          aria-hidden="true"
-          className="launch-brand-logo"
-          height="36"
-        />
-        <span className="sr-only">CROWN</span>
-        <span className="sr-only">Christian School Management Solution</span>
-        <div className="launch-brand-edition">Administrator Command Center</div>
+        <div className="launch-brand-title">CROWN</div>
+        <div className="launch-brand-tagline">Christian School Management Solution</div>
       </div>
     </div>
   );
@@ -67,37 +49,30 @@ export default function CrownSidebar({
       <BrandLockup />
 
       <nav className="launch-sidebar-nav" aria-label="Primary">
-        {NAV_SECTIONS.map((section) => (
-          <section key={section.title} className="launch-nav-section" aria-label={section.title}>
-            <h3>{section.title}</h3>
-            <div className="launch-nav-section-items">
-              {section.items.map((item) => {
-                const active = activePath === item.href;
-                const classes = active ? 'is-active' : '';
-                const content = (
-                  <>
-                    <span className="launch-nav-icon" aria-hidden="true">{item.glyph}</span>
-                    <span>{item.label}</span>
-                  </>
-                );
+        {NAV_ITEMS.map((item) => {
+          const active = activePath === item.href;
+          const classes = active ? 'is-active' : '';
+          const content = (
+            <>
+              <span className="launch-nav-icon" aria-hidden="true">{item.glyph}</span>
+              <span>{item.label}</span>
+            </>
+          );
 
-                if (hasRouterContext) {
-                  return (
-                    <Link key={item.href + item.label} to={item.href} className={classes}>
-                      {content}
-                    </Link>
-                  );
-                }
+          if (hasRouterContext) {
+            return (
+              <Link key={item.href + item.label} to={item.href} className={classes}>
+                {content}
+              </Link>
+            );
+          }
 
-                return (
-                  <a key={item.href + item.label} href={item.href} className={classes}>
-                    {content}
-                  </a>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+          return (
+            <a key={item.href + item.label} href={item.href} className={classes}>
+              {content}
+            </a>
+          );
+        })}
       </nav>
 
       <div className="launch-user-card">
