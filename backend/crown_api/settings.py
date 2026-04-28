@@ -615,3 +615,34 @@ if "release_closeout" not in INSTALLED_APPS:
 INSTALLED_APPS = globals().get("INSTALLED_APPS", INSTALLED_APPS if "INSTALLED_APPS" in globals() else [])
 if "django_extensions" not in INSTALLED_APPS:
     INSTALLED_APPS.append("django_extensions")
+# CROWN_RELEASE_SECURITY_HARDENING_BLOCK
+# Release security defaults. Production must provide DJANGO_SECRET_KEY from hosting secrets.
+import os as _crown_security_os
+
+def _crown_env_bool(name, default=False):
+    raw = _crown_security_os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+def _crown_env_int(name, default):
+    raw = _crown_security_os.getenv(name)
+    if raw is None or str(raw).strip() == "":
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+DEBUG = _crown_env_bool("DJANGO_DEBUG", False)
+if _crown_security_os.getenv("DJANGO_SECRET_KEY"):
+    SECRET_KEY = _crown_security_os.getenv("DJANGO_SECRET_KEY")
+
+SECURE_SSL_REDIRECT = _crown_env_bool("DJANGO_SECURE_SSL_REDIRECT", True)
+SECURE_HSTS_SECONDS = _crown_env_int("DJANGO_SECURE_HSTS_SECONDS", 31536000)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _crown_env_bool("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", True)
+SECURE_HSTS_PRELOAD = _crown_env_bool("DJANGO_SECURE_HSTS_PRELOAD", True)
+SESSION_COOKIE_SECURE = _crown_env_bool("DJANGO_SESSION_COOKIE_SECURE", True)
+CSRF_COOKIE_SECURE = _crown_env_bool("DJANGO_CSRF_COOKIE_SECURE", True)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
