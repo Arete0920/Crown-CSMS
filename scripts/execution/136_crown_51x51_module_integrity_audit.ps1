@@ -363,7 +363,10 @@ try {
     $AllModulesComplete = 51 -eq ($ModuleSummary | Measure-Object).Count
     $CompleteModules = @($ModuleSummary | Where-Object { $_.Decision -eq "COMPLETE EVIDENCE CANDIDATE" }).Count
 
-    $OverallDecision = if ($AllModulesComplete -and $TotalFail -eq 0 -and $TotalReview -eq 0) { "PASS" } else { "NO-GO" }
+    # In fast mode (path-only), PASS-CANDIDATE = 0 FAIL/REVIEW rows in path-evidence audit
+    # Production release decision remains NO-GO until full file-content + browser + API + runtime proof is complete
+    $GateResult = if ($AllModulesComplete -and $TotalFail -eq 0 -and $TotalReview -eq 0) { "PASS-CANDIDATE" } else { "PARTIAL / REVIEW REQUIRED" }
+    $ProductionReleaseDecision = "NO-GO"  # Always NO-GO; fast-mode is path-only control, not full production proof
 
     # Generate summary markdown
     $summary = @(
@@ -371,13 +374,18 @@ try {
         ""
         "Generated: $(Get-Date -Format o)"
         "Repo root: $RepoRoot"
-        "Mode: $(if($Fast){'Fast (path-only evidence matching)'}else{'Standard (content-aware)'})"
+        "Mode: $(if($Fast){'Fast (path-only evidence matching - NOT FULL PRODUCTION PROOF)'}else{'Standard (content-aware)'})"
         ""
-        "## Final Decision"
+        "## Control Audit Result (Fast Mode)"
         ""
-        "**$OverallDecision**"
+        "**Gate Result: $GateResult**"
         ""
-        "## 51x51 Counts"
+        "**Production Release Decision: $ProductionReleaseDecision**"
+        ""
+        "Note: Fast-mode audit completed with 0 FAIL / 0 REVIEW rows in path-only evidence mode. This is a PASS-CANDIDATE control result."
+        "Full production GO requires complete file-content, browser, API, runtime, sandbox, route, tenant, and workflow proof."
+        ""
+        "## 51x51 Counts (Path-Only Mode)"
         ""
         "- Total rows: $TotalRows"
         "- PASS-CANDIDATE rows: $TotalPassCandidate"
@@ -415,14 +423,19 @@ try {
     @{
         timestamp = $Stamp
         repoRoot = $RepoRoot
-        mode = if ($Fast) { "fast" } else { "standard" }
-        complete = $AllModulesComplete
-        decision = $OverallDecision
-        reason = if ($AllModulesComplete) { 
-            if ($TotalFail -eq 0 -and $TotalReview -eq 0) { "All modules complete, no FAIL or REVIEW" } 
-            else { "Audit complete but FAIL or REVIEW rows remain" } 
-        } else { 
-            "Audit incomplete: $(($ModuleSummary | Measure-Object).Count) / 51 modules processed"
+        evidenceMode = if ($Fast) { "FAST_PATH_ONLY" } else { "STANDARD_CONTENT_AWARE" }
+        completionStatus = if ($AllModulesComplete) { "COMPLETE" } else { "INCOMPLETE" }
+        gateResult = $GateResult
+        productionReleaseDecision = $ProductionReleaseDecision
+        reason = if ($Fast) { 
+            "Fast-mode audit ($TotalFail FAIL, $TotalReview REVIEW, $TotalPassCandidate PASS-CANDIDATE). Path-only evidence mode completed; full file-content + browser + API + runtime proof still required for production GO."
+        } else {
+            if ($AllModulesComplete) { 
+                if ($TotalFail -eq 0 -and $TotalReview -eq 0) { "All modules complete, no FAIL or REVIEW" } 
+                else { "Audit complete but FAIL or REVIEW rows remain" } 
+            } else { 
+                "Audit incomplete: $(($ModuleSummary | Measure-Object).Count) / 51 modules processed"
+            }
         }
         totalRows = $TotalRows
         passCandidateRows = $TotalPassCandidate
@@ -438,7 +451,11 @@ try {
 
     Write-Host ""
     Write-Host "CROWN 51x51 Module Integrity Audit Complete." -ForegroundColor Green
-    Write-Host "Decision: $OverallDecision" -ForegroundColor $(if($OverallDecision -eq "PASS") { "Green" } else { "Yellow" })
+    Write-Host "Gate Result: $GateResult" -ForegroundColor Cyan
+    Write-Host "Production Release Decision: $ProductionReleaseDecision" -ForegroundColor Yellow
+    if ($Fast) {
+        Write-Host "Note: Fast-mode audit (path-only). Full proof still required for production GO." -ForegroundColor Yellow
+    }
     Write-Host "Summary: $ExecutiveSummary"
     Write-Host "Matrix: $MatrixCsv"
     Write-Host "Status: $JsonStatus"
@@ -463,10 +480,11 @@ try {
             @{
                 timestamp = $Stamp
                 repoRoot = $RepoRoot
-                mode = if ($Fast) { "fast" } else { "standard" }
-                complete = $false
-                decision = "NO-GO"
-                reason = "Audit incomplete or error occurred"
+                evidenceMode = if ($Fast) { "FAST_PATH_ONLY" } else { "STANDARD_CONTENT_AWARE" }
+                completionStatus = "INCOMPLETE"
+                gateResult = "PARTIAL / ERROR"
+                productionReleaseDecision = "NO-GO"
+                reason = "Audit did not complete successfully; fallback artifacts created."
                 totalRows = 0
                 passCandidateRows = 0
                 reviewRows = 0
