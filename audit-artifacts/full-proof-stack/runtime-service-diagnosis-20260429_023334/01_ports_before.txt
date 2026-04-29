@@ -1,0 +1,8 @@
+=== PORT CHECK BEFORE ===
+
+LocalAddress LocalPort OwningProcess
+------------ --------- -------------
+127.0.0.1         5173         14404
+
+
+
