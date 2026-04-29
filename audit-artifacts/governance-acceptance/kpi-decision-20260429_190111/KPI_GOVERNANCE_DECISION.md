@@ -1,6 +1,6 @@
-# CROWN Release Decision: KPI Matrix Exception vs. Remediation
+﻿# CROWN Release Decision: KPI Matrix Exception vs. Remediation
 
-Timestamp: 2026-04-29T19:00:00
+Timestamp: 2026-04-29T19:01:11
 Branch: readiness/sandbox-operator-freeze-20260427_222113
 HEAD: 93f0afe
 Final Packet Commit: 93f0afe
@@ -35,7 +35,7 @@ Choose one:
 
 ### Option A — Accept KPI Exception for This Release
 
-[x] ACCEPTED
+[ ] ACCEPTED
 
 Governance accepts the KPI matrix exception for this release candidate.
 
@@ -62,23 +62,12 @@ Release remains blocked until:
 
 Selected option:
 
-[x] Option A — Accept KPI exception
+[ ] Option A — Accept KPI exception
 [ ] Option B — Require KPI remediation before GO
 
----
-
-## Governance Acceptance Statement
-
-I accept the final CROWN proof packet at commit 93f0afe as a GO-candidate release packet.
-I acknowledge the KPI matrix caveat: a token-backed KPI rerun exposed dashboard/sidebar nav gaps, so the KPI truth matrix is not fully proven in this packet.
-For this controlled release, I accept the KPI exception and approve deferring KPI dashboard/sidebar remediation to a follow-up work item.
-This approval allows the team to proceed to Azure production proof.
-This is not final production GO until Azure production proof is green and the final GO decision packet is committed.
-
 Approved by:
-Date: 2026-04-29
-Role:
-Decision: APPROVED TO PROCEED TO AZURE PRODUCTION PROOF
+Date:
+Notes:
 
 ## Final Rule
 
