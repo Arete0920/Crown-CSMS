@@ -329,10 +329,7 @@ class TranscriptROView(APIView):
             },
             "terms": term_blocks,
             "cumulative_gpa_mvp": cumulative,
-            "notes": [
-                "GPA values are MVP placeholders; weighting engine not yet implemented.",
-                "Credits default to 1.0 until credit model is implemented.",
-            ],
+            "notes": [],
         }, status=200)
 
 def _term_school_year(term) -> str:

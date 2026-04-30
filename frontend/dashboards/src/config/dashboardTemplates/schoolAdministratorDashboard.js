@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ENROLLMENT_TREND = [
   { month: 'Oct', value: 1198 },
@@ -34,7 +34,7 @@ export default {
   note: BASE_NOTE,
   metrics: [
     { label: 'Total Students', value: '1,248', detail: 'Enrollment is up 4.1% from last semester.', accent: 'blue' },
-    { label: 'Faculty & Staff', value: '156', detail: 'Three new hires completed onboarding this week.', accent: 'navy' },
+    { label: 'Faculty & Staff', value: '156', detail: 'Three new hires completed onboarding this week.', accent: 'royal' },
     { label: 'Attendance Rate', value: '96.2%', detail: 'Steady above benchmark across all divisions.', accent: 'gold' },
     { label: 'Tuition Collected', value: '$2.4M', detail: '94% of semester target collected to date.', accent: 'emerald' },
     { label: 'Open Admissions', value: '42', detail: 'Applications in decision and packet stages.', accent: 'blue' },
