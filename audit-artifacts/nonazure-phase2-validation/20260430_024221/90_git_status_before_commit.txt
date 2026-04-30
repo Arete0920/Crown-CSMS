@@ -1,6 +1,38 @@
 ﻿ M audit-artifacts/full-proof-stack/runtime-start-20260429_023348/backend_8000.log
-?? docs/crown-master-binder/design-system/04_UI_COMPLETION_CHECKLIST.csv
-?? docs/crown-master-binder/operations/10_FINAL_RELEASE_ACCEPTANCE_CHECKLIST.csv
-?? docs/crown-master-binder/operations/11_CURRENT_PHASE2_SUMMARY.md
-?? scripts/execution/142_nonazure_phase2_validation.ps1
+ M audit-artifacts/nonazure-phase2-validation/20260430_024221/00_PHASE2_RUN_LOG.txt
+ M audit-artifacts/nonazure-phase2-validation/20260430_024221/06_validation_results.csv
+ M audit-artifacts/nonazure-phase2-validation/20260430_024221/07_RELEASE_BLOCKER_BOARD.csv
+ M audit-artifacts/nonazure-phase2-validation/20260430_024221/09_FINAL_RELEASE_ACCEPTANCE_CHECKLIST.csv
+ M audit-artifacts/nonazure-phase2-validation/20260430_024221/99_PHASE2_SUMMARY.md
+ M audit-artifacts/nonazure-phase2-validation/20260430_024221/validation_Backend_Python_21.txt
+ M docs/crown-master-binder/operations/10_FINAL_RELEASE_ACCEPTANCE_CHECKLIST.csv
+ M docs/crown-master-binder/operations/11_CURRENT_PHASE2_SUMMARY.md
+ M frontend/dashboards/src/pages/BillingDashboard.jsx
+ M frontend/dashboards/src/pages/FinancialAidDashboard.jsx
+ M frontend/dashboards/src/pages/Login.jsx
+ M frontend/dashboards/src/pages/LoginPage.jsx
+ M frontend/dashboards/src/pages/WizardHub.jsx
+ M frontend/dashboards/src/styles/crown-theme.css
+ M frontend/dashboards/src/tests/loginPagePolish.test.jsx
+ M frontend/dashboards/src/views/platformOps/PlatformOpsHome.jsx
+?? docs/crown-master-binder/design-system/05_PHASE3_UI_POLISH_ADOPTION_GUIDE.md
+?? docs/crown-master-binder/inventory/
+?? docs/crown-master-binder/operations/12_PHASE3_BLOCKER_BOARD.csv
+?? docs/crown-master-binder/operations/13_CURRENT_PHASE3_UI_POLISH_SUMMARY.md
+?? frontend/dashboards/src/components/crown/CrownDashboardFrame.tsx
+?? frontend/dashboards/src/components/crown/CrownEmptyState.tsx
+?? frontend/dashboards/src/components/crown/CrownKpiCard.tsx
+?? frontend/dashboards/src/components/crown/CrownPageHeader.tsx
+?? frontend/dashboards/src/components/crown/CrownStatusPill.tsx
+?? frontend/dashboards/src/components/crown/index.ts
+?? frontend/dashboards/src/index.css
+?? frontend/dashboards/src/lib/crown/
 ?? scripts/execution/142b_phase2_postprocess.ps1
+?? scripts/execution/143_phase3_ui_polish.ps1
+?? scripts/execution/144_waiting_on_azure_local_work_pack.ps1
+?? scripts/execution/_tmp_final_board.ps1
+?? scripts/execution/_tmp_fix_blockers.ps1
+?? scripts/execution/_tmp_placeholder_triage.ps1
+?? scripts/execution/_tmp_triage.cmd
+?? scripts/execution/_tmp_ui_triage.ps1
+?? scripts/execution/_tmp_update_board.ps1
