@@ -1,0 +1,11 @@
+﻿On branch readiness/sandbox-operator-freeze-20260427_222113
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   audit-artifacts/full-proof-stack/runtime-start-20260429_023348/backend_8000.log
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	scripts/execution/142_nonazure_phase2_validation.ps1
+
+no changes added to commit (use "git add" and/or "git commit -a")

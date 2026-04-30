@@ -1,0 +1,6 @@
+﻿ M audit-artifacts/full-proof-stack/runtime-start-20260429_023348/backend_8000.log
+?? docs/crown-master-binder/design-system/04_UI_COMPLETION_CHECKLIST.csv
+?? docs/crown-master-binder/operations/10_FINAL_RELEASE_ACCEPTANCE_CHECKLIST.csv
+?? docs/crown-master-binder/operations/11_CURRENT_PHASE2_SUMMARY.md
+?? scripts/execution/142_nonazure_phase2_validation.ps1
+?? scripts/execution/142b_phase2_postprocess.ps1
