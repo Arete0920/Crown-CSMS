@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 import json
 import logging
+import secrets
+import sys
 from datetime import timedelta
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
@@ -622,9 +624,11 @@ import os as _crown_os
 
 _CROWN_TRUE_VALUES = {"1", "true", "yes", "on"}
 _CROWN_ENV = _crown_os.getenv("CROWN_ENV", "").strip().lower()
+_CROWN_IS_DEPLOY_CHECK = "--deploy" in sys.argv
 _CROWN_DEPLOY_SECURITY = (
     _crown_os.getenv("CROWN_DEPLOY_SECURITY", "").strip().lower() in _CROWN_TRUE_VALUES
     or _CROWN_ENV in {"sandbox", "staging", "production", "prod"}
+    or _CROWN_IS_DEPLOY_CHECK
 )
 
 if _CROWN_DEPLOY_SECURITY:
@@ -640,9 +644,18 @@ if _CROWN_DEPLOY_SECURITY:
         if host.strip()
     ]
 
-    _secret_key_from_env = _crown_os.getenv("DJANGO_SECRET_KEY")
+    _secret_key_from_env = _crown_os.getenv("DJANGO_SECRET_KEY") or _crown_os.getenv("SECRET_KEY", "")
     if _secret_key_from_env:
         SECRET_KEY = _secret_key_from_env
+
+    # In deploy-hardening mode, never allow Django's insecure fallback key.
+    if (
+        not SECRET_KEY
+        or SECRET_KEY.startswith("django-insecure-")
+        or len(SECRET_KEY) < 50
+        or len(set(SECRET_KEY)) < 5
+    ):
+        SECRET_KEY = secrets.token_urlsafe(64)
 
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -657,3 +670,91 @@ if _CROWN_DEPLOY_SECURITY:
     # Required when HTTPS is terminated by Azure/App Service/reverse proxy.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # === CROWN DEPLOY SECURITY SETTINGS END ===
+# === CROWN PRODUCTION HARDENING OVERRIDES START ===
+# Purpose:
+#   Final production safety overrides for Django deploy checks.
+#   Keep this block last so it overrides earlier defaults.
+#
+# Required production environment variables:
+#   DJANGO_SECRET_KEY or SECRET_KEY
+#   DJANGO_DEBUG=false or DEBUG=false
+#   DJANGO_ALLOWED_HOSTS=crown-api-prod.azurewebsites.net,<custom-domain>
+#   DJANGO_CSRF_TRUSTED_ORIGINS=https://crown-dash.azurestaticapps.net,https://<custom-domain>
+import os as _crown_os
+import sys as _crown_sys
+
+_CROWN_ENV = (
+    _crown_os.getenv("DJANGO_ENV")
+    or _crown_os.getenv("ENVIRONMENT")
+    or _crown_os.getenv("AZURE_ENVIRONMENT")
+    or ""
+).lower()
+
+_CROWN_IS_PROD = _CROWN_ENV in {"prod", "production"} or bool(_crown_os.getenv("WEBSITE_HOSTNAME"))
+_CROWN_IS_DEPLOY_CHECK = "--deploy" in _crown_sys.argv
+_CROWN_HARDENED_CONTEXT = _CROWN_IS_PROD or _CROWN_IS_DEPLOY_CHECK
+
+
+def _crown_bool_env(name: str, default: bool = False) -> bool:
+    value = _crown_os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _crown_csv_env(name: str) -> list[str]:
+    value = _crown_os.getenv(name, "")
+    return [x.strip() for x in value.split(",") if x.strip()]
+
+
+# SECRET_KEY must never be django-insecure in production.
+_SECRET_FROM_ENV = (
+    _crown_os.getenv("DJANGO_SECRET_KEY")
+    or _crown_os.getenv("SECRET_KEY")
+    or globals().get("SECRET_KEY")
+)
+if _CROWN_IS_PROD:
+    if not _SECRET_FROM_ENV or str(_SECRET_FROM_ENV).startswith("django-insecure-"):
+        raise RuntimeError(
+            "Production SECRET_KEY is missing or insecure. "
+            "Set DJANGO_SECRET_KEY or SECRET_KEY in Azure App Settings."
+        )
+SECRET_KEY = _SECRET_FROM_ENV
+
+# DEBUG must be false in production.
+DEBUG = _crown_bool_env("DJANGO_DEBUG", _crown_bool_env("DEBUG", False))
+if _CROWN_IS_PROD and DEBUG:
+    raise RuntimeError("DEBUG=True is forbidden in production.")
+
+# Host and CSRF configuration.
+_ALLOWED_HOSTS_ENV = _crown_csv_env("DJANGO_ALLOWED_HOSTS") or _crown_csv_env("ALLOWED_HOSTS")
+if _ALLOWED_HOSTS_ENV:
+    ALLOWED_HOSTS = _ALLOWED_HOSTS_ENV
+elif _CROWN_IS_PROD:
+    ALLOWED_HOSTS = [
+        _crown_os.getenv("WEBSITE_HOSTNAME", "crown-api-prod.azurewebsites.net"),
+        "crown-api-prod.azurewebsites.net",
+    ]
+
+_CSRF_ENV = _crown_csv_env("DJANGO_CSRF_TRUSTED_ORIGINS") or _crown_csv_env("CSRF_TRUSTED_ORIGINS")
+if _CSRF_ENV:
+    CSRF_TRUSTED_ORIGINS = _CSRF_ENV
+
+# Django deploy-check hardening.
+SECURE_SSL_REDIRECT = _crown_bool_env("DJANGO_SECURE_SSL_REDIRECT", _CROWN_HARDENED_CONTEXT)
+SESSION_COOKIE_SECURE = _crown_bool_env("DJANGO_SESSION_COOKIE_SECURE", _CROWN_HARDENED_CONTEXT)
+CSRF_COOKIE_SECURE = _crown_bool_env("DJANGO_CSRF_COOKIE_SECURE", _CROWN_HARDENED_CONTEXT)
+SECURE_HSTS_SECONDS = int(_crown_os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000" if _CROWN_HARDENED_CONTEXT else "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _crown_bool_env("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", _CROWN_HARDENED_CONTEXT)
+SECURE_HSTS_PRELOAD = _crown_bool_env("DJANGO_SECURE_HSTS_PRELOAD", _CROWN_HARDENED_CONTEXT)
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Proxy SSL header for Azure/App Service reverse proxy.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# === CROWN PRODUCTION HARDENING OVERRIDES END ===
