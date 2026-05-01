@@ -1,5 +1,4 @@
 import CrownCard from '../launch/CrownCard.jsx';
-import { KpiStrip } from '../dashboard/KpiFlipCard.jsx';
 import CrownDashboardShell from './CrownDashboardShell.jsx';
 import CrownDashboardHeader from './CrownDashboardHeader.jsx';
 import CrownDashboardMetricGrid from './CrownDashboardMetricGrid.jsx';
@@ -213,12 +212,6 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
         {config.errorState ? (
           <CrownDashboardErrorState title={config.errorState.title} message={config.errorState.message} />
         ) : null}
-
-        {/* KPI strip — rendered when config.kpiStrip is provided.
-            Each item may carry a dataSource: label for provenance tracking. */}
-        {Array.isArray(config.kpiStrip) && config.kpiStrip.length > 0 && (
-          <KpiStrip cards={config.kpiStrip} />
-        )}
 
         {operations.length && !isSchoolAdminCommandCenter ? (
           <CrownCard>

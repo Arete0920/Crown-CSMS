@@ -1,5 +1,5 @@
 ﻿/**
- * WizardHub — CROWN
+ * WizardHub — Crown2026
  * =====================
  * Fetches all registered wizards from GET /api/v1/wizards/ and renders
  * a navigable card list. Browser paths are sourced from WIZARD_MANIFEST
@@ -115,4 +115,3 @@ export default function WizardHub() {
     </CrownLayout>
   );
 }
-

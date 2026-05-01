@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'parent',
@@ -11,7 +11,7 @@ export default {
   metrics: [
     { label: 'Children Enrolled', value: '2', detail: 'Both learners active in current term.', accent: 'blue' },
     { label: 'Missing Assignments', value: '7', detail: 'Across all enrolled students.', accent: 'gold' },
-    { label: 'Household Balance', value: '$620', detail: 'Current family account balance.', accent: 'royal' },
+    { label: 'Household Balance', value: '$620', detail: 'Current family account balance.', accent: 'navy' },
     { label: 'Upcoming', value: '5', detail: 'Events and due dates this week.', accent: 'emerald' },
   ],
   insight: {

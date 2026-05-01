@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import FacilitiesSnapshotCard from '../components/dashboard/facilities/FacilitiesSnapshotCard';
 import FacilitiesAlertsPanel from '../components/dashboard/facilities/FacilitiesAlertsPanel';
 import FacilitiesQueueCard from '../components/dashboard/facilities/FacilitiesQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const FACILITIES_KPI = [
-  { label: 'Open Work Orders', value: '—', dataSource: 'Facilities' },
-  { label: 'Completed MTD', value: '—', dataSource: 'Facilities' },
-  { label: 'Scheduled Maintenance', value: '—', dataSource: 'Facilities' },
-  { label: 'Critical Alerts', value: '—', dataSource: 'Facilities' }
-];
 
 export default function FacilitiesDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function FacilitiesDashboard() {
           Work orders, repairs, inspections, room readiness, and event setup status.
         </Typography>
       </div>
-
-      <KpiStrip cards={FACILITIES_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

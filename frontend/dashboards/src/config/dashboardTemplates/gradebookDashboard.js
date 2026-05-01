@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'gradebook',
@@ -11,7 +11,7 @@ export default {
   metrics: [
     { label: 'Assignments Graded', value: '482', detail: '92% completion rate this week.', accent: 'blue' },
     { label: 'Missing Work', value: '39', detail: 'Down 11% since Monday.', accent: 'gold' },
-    { label: 'At-Risk Students', value: '18', detail: 'Counselor review scheduled.', accent: 'royal' },
+    { label: 'At-Risk Students', value: '18', detail: 'Counselor review scheduled.', accent: 'navy' },
     { label: 'Grade Sync', value: '99%', detail: 'Last synchronization completed.', accent: 'emerald' },
   ],
   insight: { kicker: 'Gradebook Trend', title: 'Assignment completion is improving', chip: 'Updated by faculty', trend: BASE_TREND },

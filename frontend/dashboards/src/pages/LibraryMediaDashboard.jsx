@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import LibraryMediaSnapshotCard from '../components/dashboard/librarymedia/LibraryMediaSnapshotCard';
 import LibraryMediaAlertsPanel from '../components/dashboard/librarymedia/LibraryMediaAlertsPanel';
 import LibraryMediaQueueCard from '../components/dashboard/librarymedia/LibraryMediaQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const LIBRARY_MEDIA_KPI = [
-  { label: 'Items Checked Out', value: '—', dataSource: 'Library' },
-  { label: 'Overdue', value: '—', dataSource: 'Library' },
-  { label: 'New Acquisitions', value: '—', dataSource: 'Library' },
-  { label: 'Holds Pending', value: '—', dataSource: 'Library' }
-];
 
 export default function LibraryMediaDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function LibraryMediaDashboard() {
           Circulation, resource requests, media support, scheduling conflicts, and readiness.
         </Typography>
       </div>
-
-      <KpiStrip cards={LIBRARY_MEDIA_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

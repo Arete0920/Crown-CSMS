@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import HRSnapshotCard from '../components/dashboard/hr/HRSnapshotCard';
 import HRAlertsPanel from '../components/dashboard/hr/HRAlertsPanel';
 import HRWorkQueueCard from '../components/dashboard/hr/HRWorkQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const HR_KPI = [
-  { label: 'Active Staff', value: '—', dataSource: 'HRIS' },
-  { label: 'On Leave', value: '—', dataSource: 'HRIS' },
-  { label: 'Open Positions', value: '—', dataSource: 'HRIS' },
-  { label: 'Background Checks', value: '—', dataSource: 'HRIS' }
-];
 
 export default function HRDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function HRDashboard() {
           Staffing readiness, onboarding, compliance, reviews, and absence coverage.
         </Typography>
       </div>
-
-      <KpiStrip cards={HR_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

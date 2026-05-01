@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import AlumniSnapshotCard from '../components/dashboard/alumni/AlumniSnapshotCard';
 import AlumniAlertsPanel from '../components/dashboard/alumni/AlumniAlertsPanel';
 import AlumniQueueCard from '../components/dashboard/alumni/AlumniQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const ALUMNI_RELATIONS_KPI = [
-  { label: 'Alumni Records', value: '—', dataSource: 'CRM' },
-  { label: 'Events Planned', value: '—', dataSource: 'SIS' },
-  { label: 'Giving Participation', value: '—', dataSource: 'Finance' },
-  { label: 'Engaged This Year', value: '—', dataSource: 'CRM' }
-];
 
 export default function AlumniRelationsDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function AlumniRelationsDashboard() {
           Alumni records, engagement, event outreach, giving participation, and follow-up workload.
         </Typography>
       </div>
-
-      <KpiStrip cards={ALUMNI_RELATIONS_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

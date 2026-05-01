@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import ComplianceAuditSnapshotCard from '../components/dashboard/complianceaudit/ComplianceAuditSnapshotCard';
 import ComplianceAuditAlertsPanel from '../components/dashboard/complianceaudit/ComplianceAuditAlertsPanel';
 import ComplianceAuditQueueCard from '../components/dashboard/complianceaudit/ComplianceAuditQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const COMPLIANCE_AUDIT_KPI = [
-  { label: 'Open Items', value: '—', dataSource: 'Audit' },
-  { label: 'Resolved MTD', value: '—', dataSource: 'Audit' },
-  { label: 'Overdue', value: '—', dataSource: 'Audit' },
-  { label: 'High Risk', value: '—', dataSource: 'Audit' }
-];
 
 export default function ComplianceAuditDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function ComplianceAuditDashboard() {
           Tenant safety, audit evidence, policy readiness, and control exceptions across Crown.
         </Typography>
       </div>
-
-      <KpiStrip cards={COMPLIANCE_AUDIT_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

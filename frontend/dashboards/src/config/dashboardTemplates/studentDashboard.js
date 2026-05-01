@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'student',
@@ -11,7 +11,7 @@ export default {
   metrics: [
     { label: 'Current Average', value: '91.2%', detail: 'Up 2 points this week.', accent: 'blue' },
     { label: 'Missing Work', value: '1', detail: 'Needs submission today.', accent: 'gold' },
-    { label: 'Balance Due', value: '$250', detail: 'Current student account balance.', accent: 'royal' },
+    { label: 'Balance Due', value: '$250', detail: 'Current student account balance.', accent: 'navy' },
     { label: 'My GPA', value: '3.4', detail: 'Estimated cumulative performance.', accent: 'emerald' },
   ],
   insight: {

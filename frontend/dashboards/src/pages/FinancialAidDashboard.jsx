@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchFinancialAidSummary, fetchFinancialAidDrilldown } from "../api/financialAid.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownCard from "../components/crown/CrownCard.jsx";
@@ -10,7 +10,7 @@ import PageState from "../components/states/PageState.jsx";
 import WidgetState from "../components/states/WidgetState.jsx";
 
 /*
-  CROWN - Financial Aid Dashboard
+  Crown2026 ? Financial Aid Dashboard
   - Summary cards showing applications and awards by bucket
   - Drilldown drawer for detailed award rows with filters
   - Wired to real backend: /api/v1/financial-aid/
@@ -21,25 +21,18 @@ function formatMoney(x) {
   return String(x);
 }
 
-function formatCurrency(value) {
-  if (value === null || value === undefined) {
-    return "$0";
-  }
-  return `$${Number(value).toLocaleString()}`;
-}
-
-/* Financial Aid KPI flip cards */
+/* ── Financial Aid KPI flip cards ───────────────────────────────────── */
 const ADMIN_KPI = [
-  { label: "Applications",      value: "--",    trend: null,          trendUp: null,
+  { label: "Applications",      value: "�",    trend: null,          trendUp: null,
     definition: "Total financial aid applications submitted for the selected academic year.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Awards Active",     value: "--",    trend: null,          trendUp: null,
+  { label: "Awards Active",     value: "�",    trend: null,          trendUp: null,
     definition: "Number of approved aid awards currently disbursed to students.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Total Awarded",     value: "--",    trend: null,          trendUp: null,
+  { label: "Total Awarded",     value: "�",    trend: null,          trendUp: null,
     definition: "Sum of all aid amounts granted this academic year across all buckets.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
-  { label: "Avg Award",         value: "--",    trend: null,          trendUp: null,
+  { label: "Avg Award",         value: "�",    trend: null,          trendUp: null,
     definition: "Mean aid amount per household awarded this term.",
     dataSource: "Financial Aid API", dataHref: "/financial-aid" },
   { label: "Budget Utilization", value: "73%", trend: "+5% vs plan",  trendUp: true,
@@ -114,8 +107,6 @@ export function FinancialAidDashboard() {
   };
 
   const isEmpty = summary && summary.totals?.applications_total === 0 && summary.totals?.awards_total_count === 0;
-  const totalAwardAmount = summary?.awards?.total_amount;
-  const avgAwardAmount = summary?.awards?.avg_amount;
 
   return (
     <CrownLayout title="Financial Aid" subtitle="Award summaries and application drilldown">
@@ -137,7 +128,7 @@ export function FinancialAidDashboard() {
           <WidgetState title="Awarded" loading={summaryLoading}>
             <CrownMetricCard
               label="Awarded"
-              value={formatCurrency(totalAwardAmount)}
+              value={summary?.awards?.total_amount != null ? `$${Number(summary.awards.total_amount).toLocaleString()}` : "$0"}
               hint="Total $ disbursed"
             />
           </WidgetState>
@@ -146,7 +137,7 @@ export function FinancialAidDashboard() {
           <WidgetState title="Avg Award" loading={summaryLoading}>
             <CrownMetricCard
               label="Avg Award"
-              value={formatCurrency(avgAwardAmount)}
+              value={summary?.awards?.avg_amount != null ? `$${Number(summary.awards.avg_amount).toLocaleString()}` : "$0"}
               hint="Per household"
             />
           </WidgetState>
@@ -174,7 +165,7 @@ export function FinancialAidDashboard() {
           <>
           <div style={{ marginBottom: 24 }}>
             <label>
-              <span>Academic Year:</span>
+              Academic Year:
               <select
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
@@ -216,10 +207,12 @@ export function FinancialAidDashboard() {
           <h2>Awards by Bucket</h2>
           <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
             {summary.awards_by_bucket && Object.entries(summary.awards_by_bucket).map(([bucket, data]) => (
-              <button
+              <div
                 key={bucket}
                 onClick={() => handleBucketClick(bucket)}
-                type="button"
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleBucketClick(bucket); }}
+                role="button"
+                tabIndex={0}
                 style={{
                   border: "1px solid var(--crown-brand)",
                   padding: 16,
@@ -227,13 +220,12 @@ export function FinancialAidDashboard() {
                   cursor: "pointer",
                   background: selectedBucket === bucket ? "var(--crown-surface-2)" : "var(--crown-surface)",
                   minWidth: 150,
-                  textAlign: "left",
                 }}
               >
                 <h4 style={{ textTransform: "capitalize", margin: "0 0 8px 0" }}>{bucket}</h4>
                 <p style={{ margin: 0, fontSize: 20, fontWeight: "bold" }}>{data.count}</p>
                 <p style={{ margin: "4px 0 0 0", color: "var(--crown-muted)" }}>${formatMoney(data.amount)}</p>
-              </button>
+              </div>
             ))}
           </div>
           </>
@@ -259,72 +251,6 @@ export function FinancialAidDashboard() {
 }
 
 function DrilldownDrawer({ drilldown, loading, error, onClose, onRetry, onLoadMore, hasMore }) {
-  let drawerBody = null;
-  if (loading) {
-    drawerBody = <p>Loading awards...</p>;
-  } else if (drilldown == null) {
-    drawerBody = <p>No data available</p>;
-  } else if (drilldown.rows.length === 0) {
-    drawerBody = (
-      <div style={{ padding: 32, textAlign: "center", color: "var(--crown-muted)" }}>
-        <p>No awards found for this filter.</p>
-      </div>
-    );
-  } else {
-    drawerBody = (
-      <>
-        <div style={{ marginBottom: 16, fontSize: 14, color: "var(--crown-muted)" }}>
-          Showing {drilldown.rows.length} of {drilldown.count} awards
-          {drilldown.bucket && <> (Bucket: <strong>{drilldown.bucket}</strong>)</>}
-        </div>
-
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-          <thead>
-            <tr style={{ background: "var(--crown-surface-2)" }}>
-              <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Award ID</th>
-              <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Household ID</th>
-              <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "right" }}>Amount</th>
-              <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Status</th>
-              <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Rationale</th>
-            </tr>
-          </thead>
-          <tbody>
-            {drilldown.rows.map((row) => (
-              <tr key={row.award_id}>
-                <td style={{ border: "1px solid var(--crown-border)", padding: 8, fontSize: 12, fontFamily: "monospace" }}>
-                  {row.award_id.slice(0, 8)}...
-                </td>
-                <td style={{ border: "1px solid var(--crown-border)", padding: 8, fontSize: 12, fontFamily: "monospace" }}>
-                  {row.household_id ? row.household_id.slice(0, 8) + "..." : "?"}
-                </td>
-                <td style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "right" }}>
-                  ${formatMoney(row.amount)}
-                </td>
-                <td style={{ border: "1px solid var(--crown-border)", padding: 8 }}>
-                  {row.status || "?"}
-                </td>
-                <td style={{ border: "1px solid var(--crown-border)", padding: 8 }}>
-                  {row.rationale || "?"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {hasMore && (
-          <div style={{ marginTop: 16, textAlign: "center" }}>
-            <button
-              onClick={onLoadMore}
-              style={{ padding: "8px 16px", background: "var(--crown-brand)", color: "var(--crown-surface)", border: "none", borderRadius: 4, cursor: "pointer" }}
-            >
-              Load More
-            </button>
-          </div>
-        )}
-      </>
-    );
-  }
-
   return (
     <div
       style={{
@@ -352,8 +278,66 @@ function DrilldownDrawer({ drilldown, loading, error, onClose, onRetry, onLoadMo
         </div>
       )}
 
-      {drawerBody}
+      {loading ? (
+        <p>Loading awards...</p>
+      ) : !drilldown ? (
+        <p>No data available</p>
+      ) : drilldown.rows.length === 0 ? (
+        <div style={{ padding: 32, textAlign: "center", color: "var(--crown-muted)" }}>
+          <p>No awards found for this filter.</p>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: 16, fontSize: 14, color: "var(--crown-muted)" }}>
+            Showing {drilldown.rows.length} of {drilldown.count} awards
+            {drilldown.bucket && <> (Bucket: <strong>{drilldown.bucket}</strong>)</>}
+          </div>
+
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: "var(--crown-surface-2)" }}>
+                <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Award ID</th>
+                <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Household ID</th>
+                <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "right" }}>Amount</th>
+                <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Status</th>
+                <th style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "left" }}>Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drilldown.rows.map((row) => (
+                <tr key={row.award_id}>
+                  <td style={{ border: "1px solid var(--crown-border)", padding: 8, fontSize: 12, fontFamily: "monospace" }}>
+                    {row.award_id.slice(0, 8)}...
+                  </td>
+                  <td style={{ border: "1px solid var(--crown-border)", padding: 8, fontSize: 12, fontFamily: "monospace" }}>
+                    {row.household_id ? row.household_id.slice(0, 8) + "..." : "?"}
+                  </td>
+                  <td style={{ border: "1px solid var(--crown-border)", padding: 8, textAlign: "right" }}>
+                    ${formatMoney(row.amount)}
+                  </td>
+                  <td style={{ border: "1px solid var(--crown-border)", padding: 8 }}>
+                    {row.status || "?"}
+                  </td>
+                  <td style={{ border: "1px solid var(--crown-border)", padding: 8 }}>
+                    {row.rationale || "?"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {hasMore && (
+            <div style={{ marginTop: 16, textAlign: "center" }}>
+              <button
+                onClick={onLoadMore}
+                style={{ padding: "8px 16px", background: "var(--crown-brand)", color: "var(--crown-surface)", border: "none", borderRadius: 4, cursor: "pointer" }}
+              >
+                Load More
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
-

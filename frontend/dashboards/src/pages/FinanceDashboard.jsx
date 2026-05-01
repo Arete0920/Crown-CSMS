@@ -1,6 +1,5 @@
-﻿import useFinanceDashboardData from "../hooks/useFinanceDashboardData";
+import useFinanceDashboardData from "../hooks/useFinanceDashboardData";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function metricValue(source, key, fallback = "—") {
   const value = source?.[key];
@@ -35,23 +34,14 @@ function InvoiceList({ invoices }) {
 function KpiCard({ title, value, subtitle }) {
   return (
     <article className="h-full rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <KpiStrip cards={FINANCE_DASH_KPI} />
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </p>
-      <KpiStrip cards={FINANCE_DASH_KPI} />
       <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
       {subtitle ? <p className="mt-2 text-sm text-slate-600">{subtitle}</p> : null}
     </article>
   );
 }
-
-const FINANCE_DASH_KPI = [
-  { label: 'Revenue MTD', value: '—', dataSource: 'Finance' },
-  { label: 'Open Invoices', value: '—', dataSource: 'Finance' },
-  { label: 'Collection Rate', value: '—', dataSource: 'Finance' },
-  { label: 'Overdue', value: '—', dataSource: 'Finance' }
-];
 
 export default function FinanceDashboard() {
   const { loading, error, metrics, summary, invoices, reload } =
@@ -62,7 +52,6 @@ export default function FinanceDashboard() {
       title="Finance"
       subtitle="Live finance metrics and invoice visibility"
     >
-      <KpiStrip cards={FINANCE_DASH_KPI} />
       <section className="space-y-6">
         <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
