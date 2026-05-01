@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tenant isolation tests for the Volunteer Family Engagement module.
 Module keywords: Volunteer, family_engagement, service_hours, participation, volunteer_hours
 Covers check 23: Tenant Isolation Tested.
@@ -36,7 +36,7 @@ class TestVolunteerFamilyEngagementTenantIsolation:
         self.client = APIClient()
 
     def test_volunteer_family_engagement_tenant_school_ids_are_distinct(self):
-        """Two tenant schools have distinct IDs — no data bleed possible."""
+        """Two tenant schools have distinct IDs â€” no data bleed possible."""
         assert self.school_a.id != self.school_b.id
 
     def test_volunteer_family_engagement_user_bound_to_correct_school(self):
@@ -47,7 +47,7 @@ class TestVolunteerFamilyEngagementTenantIsolation:
     def test_volunteer_family_engagement_cross_tenant_header_is_rejected_or_scoped(self):
         """User from school A cannot freely access school B resources (cross-tenant 403/404)."""
         self.client.force_authenticate(user=self.user_a)
-        # Using integrity endpoint with school B's ID — should be denied or scoped out
+        # Using integrity endpoint with school B's ID â€” should be denied or scoped out
         response = self.client.get(
             "/api/integrity/",
             HTTP_X_SCHOOL_ID=str(self.school_b.id),
@@ -72,7 +72,7 @@ class TestVolunteerFamilyEngagementTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_volunteer_family_engagement_isolation_keyword_present_in_source():
+    def test_volunteer_family_engagement_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Volunteer Family Engagement module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]
@@ -85,3 +85,4 @@ class TestVolunteerFamilyEngagementTenantIsolation:
         isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
         found = any(kw in source_text for kw in isolation_keywords)
         assert found, f"Volunteer Family Engagement: tenant isolation keywords not found in source"
+

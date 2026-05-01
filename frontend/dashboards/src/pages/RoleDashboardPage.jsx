@@ -1,4 +1,4 @@
-/**
+﻿/**
  * RoleDashboardPage - unified role-based dashboard.
  *
  * Route: /dash/:role  (e.g., /dash/admin, /dash/teacher)
@@ -12,6 +12,7 @@ import CrownLayout from "../components/crown/CrownLayout.jsx";
 import WidgetDispatcher from "../components/dashboard/WidgetDispatcher.jsx";
 import DrilldownDrawer from "../components/dashboard/DrilldownDrawer.jsx";
 import { fetchDashboardSummary } from "../api/dashboards.js";
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function WidgetSkeleton() {
   return (
@@ -38,6 +39,13 @@ function getSchoolId() {
     return "";
   }
 }
+
+const ROLE_DASHBOARD_KPI = [
+  { label: 'Active Students', value: '—', dataSource: 'SIS' },
+  { label: 'Attendance Rate', value: '—', dataSource: 'SIS' },
+  { label: 'Open Incidents', value: '—', dataSource: 'SIS' },
+  { label: 'Messages', value: '—', dataSource: 'Comms' }
+];
 
 export default function RoleDashboardPage() {
   const { role: routeRole } = useParams();
@@ -119,6 +127,7 @@ export default function RoleDashboardPage() {
         </button>
       }
     >
+      <KpiStrip cards={ROLE_DASHBOARD_KPI} />
       {error ? (
         <div
           role="alert"

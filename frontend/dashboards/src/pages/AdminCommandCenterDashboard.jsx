@@ -1,5 +1,6 @@
-import "../styles/admin-command-center.css";
+﻿import "../styles/admin-command-center.css";
 import CrownLayout from "../components/crown/CrownLayout";
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 const executiveKpis = [
   {
@@ -233,11 +234,14 @@ function ToneDot({ tone }) {
 function KpiCard({ item }) {
   return (
     <article className={`admin-command-kpi admin-command-kpi-${item.tone}`}>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       <div>
         <p className="admin-command-eyebrow">{item.label}</p>
         <strong>{item.value}</strong>
         <span>{item.detail}</span>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       </div>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       <div className="admin-command-kpi-icon" aria-hidden="true">
         {item.icon}
       </div>
@@ -248,12 +252,14 @@ function KpiCard({ item }) {
 function ModuleCard({ module }) {
   return (
     <article className={`admin-command-module admin-command-module-${module.tone}`}>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       <header>
         <div>
           <p className="admin-command-eyebrow">{module.title}</p>
           <h3>{module.main}</h3>
         </div>
         <span className="admin-command-badge">{module.badge}</span>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       </header>
 
       <p className="admin-command-module-detail">{module.detail}</p>
@@ -281,15 +287,24 @@ function ModuleCard({ module }) {
 function RightRailCard({ title, children, accent = "blue" }) {
   return (
     <section className={`admin-command-rail-card admin-command-rail-card-${accent}`}>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       <h3>{title}</h3>
       {children}
     </section>
   );
 }
 
+const ADMIN_CMD_KPI = [
+  { label: 'Enrolled', value: '—', dataSource: 'SIS' },
+  { label: 'Faculty & Staff', value: '—', dataSource: 'HRIS' },
+  { label: 'Open Incidents', value: '—', dataSource: 'SIS' },
+  { label: 'Messages Pending', value: '—', dataSource: 'SIS' }
+];
+
 export default function AdminCommandCenterDashboard() {
   return (
     <CrownLayout>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       <main className="admin-command-page" data-testid="admin-command-center">
         <section className="admin-command-hero">
           <div>
@@ -471,7 +486,9 @@ export default function AdminCommandCenterDashboard() {
             </ul>
           </RightRailCard>
         </aside>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       </section>
+      <KpiStrip cards={ADMIN_CMD_KPI} />
       </main>
     </CrownLayout>
   );

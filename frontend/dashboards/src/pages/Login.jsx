@@ -1,7 +1,7 @@
-import { Box, Paper, Typography, TextField, Button, Stack } from "@mui/material";
+﻿import { Box, Paper, Typography, TextField, Button, Stack } from "@mui/material";
 
 /**
- * Login — split-panel login template with Crown branding.
+ * Login - split-panel login template with Crown branding.
  *
  * This is a UI design template using the crownTheme color system.
  * Production auth routes to LoginPage.jsx (M365 SSO via /auth/microsoft/login/).
@@ -22,7 +22,7 @@ export default function Login() {
         }}
       >
         <Typography variant="h1" sx={{ color: "var(--crown-surface)", mb: 1 }}>
-          Crown2026
+          CROWN
         </Typography>
         <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.72)" }}>
           School information system
@@ -57,3 +57,4 @@ export default function Login() {
     </Box>
   );
 }
+

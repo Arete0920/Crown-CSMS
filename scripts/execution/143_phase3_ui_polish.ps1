@@ -28,7 +28,6 @@ Write-Host "Output: $Out"
 # ------------------------------------------------------------
 $Branch = git branch --show-current
 $HeadBefore = git rev-parse --short HEAD
-$HeadFullBefore = git rev-parse HEAD
 
 git status --short | Set-Content "$Out\01_git_status_before.txt" -Encoding UTF8
 git log --oneline -20 | Set-Content "$Out\02_recent_commits.txt" -Encoding UTF8

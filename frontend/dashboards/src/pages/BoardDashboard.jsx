@@ -1,4 +1,5 @@
 import CrownLayout from '../components/crown/CrownLayout.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
 
@@ -20,10 +21,26 @@ import BoardCalendarCard from '../components/dashboard/board/BoardCalendarCard.j
 import BoardCommunicationsCard from '../components/dashboard/board/BoardCommunicationsCard.jsx';
 import BoardReportSnapshotCard from '../components/dashboard/board/BoardReportSnapshotCard.jsx';
 
+const BOARD_KPI = [
+  { label: 'Total Enrollment', value: '—', trend: null, trendUp: null,
+    definition: 'Total enrolled students across all campuses for the current school year.',
+    dataSource: 'Enrollment Summary', dataHref: '/admissions' },
+  { label: 'Revenue YTD',     value: '—', trend: null, trendUp: null,
+    definition: 'Total revenue collected year-to-date against annual budget.',
+    dataSource: 'Finance API', dataHref: '/finance' },
+  { label: 'Retention Rate',  value: '—', trend: null, trendUp: null,
+    definition: 'Percentage of students returning from the prior school year.',
+    dataSource: 'Student Records', dataHref: '/academics' },
+  { label: 'Advancement Total', value: '—', trend: null, trendUp: null,
+    definition: 'Total advancement and giving received year-to-date.',
+    dataSource: 'Advancement API', dataHref: '/advancement' },
+];
+
 export default function BoardDashboard() {
   return (
     <CrownLayout
       title="Board Dashboard"
+      kpiStrip={<KpiStrip cards={BOARD_KPI} />}
       subtitle="Strategic oversight, institutional health, and governance visibility"
     >
       <DashboardSection title="Faith and Community">

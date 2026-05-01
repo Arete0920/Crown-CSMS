@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
@@ -7,7 +7,7 @@ const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || impor
 const ENABLE_SANDBOX_STUDENT = import.meta.env.VITE_SANDBOX_ENABLE_STUDENT !== "0";
 const SANDBOX_DEFAULT_EMAIL = "admin@heritage.example.org";
 const SANDBOX_DEFAULT_PASS = import.meta.env.VITE_DEMO_PASS || "CrownDemo!2026";
-const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.local";
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@CROWN.local";
 
 const SANDBOX_ROLES = [
   { value: "school_admin", label: "School Admin", route: "/school-admin-dashboard" },
@@ -651,4 +651,5 @@ export default function LoginPage() {
     </>
   );
 }
+
 

@@ -1,8 +1,16 @@
-import { Grid, Stack } from '@mui/material';
+﻿import { Grid, Stack } from '@mui/material';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import StudentCareSnapshotCard from '../components/dashboard/studentcare/StudentCareSnapshotCard.jsx';
 import StudentCareAlertsPanel from '../components/dashboard/studentcare/StudentCareAlertsPanel.jsx';
 import InterventionQueueCard from '../components/dashboard/studentcare/InterventionQueueCard.jsx';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+const STUDENT_CARE_KPI = [
+  { label: 'Students In Care', value: '—', dataSource: 'Health' },
+  { label: 'Open Cases', value: '—', dataSource: 'Health' },
+  { label: 'Referrals', value: '—', dataSource: 'Health' },
+  { label: 'Follow-Ups Due', value: '—', dataSource: 'Health' }
+];
 
 export default function StudentCareDashboard() {
   return (
@@ -10,6 +18,7 @@ export default function StudentCareDashboard() {
       title="Student Care Dashboard"
       subtitle="Care cases, discipline patterns, attendance-linked concerns, and intervention follow-up"
     >
+      <KpiStrip cards={STUDENT_CARE_KPI} />
       <Stack spacing={3}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
@@ -22,6 +31,7 @@ export default function StudentCareDashboard() {
             <InterventionQueueCard />
           </Grid>
         </Grid>
+      <KpiStrip cards={STUDENT_CARE_KPI} />
       </Stack>
     </CrownLayout>
   );

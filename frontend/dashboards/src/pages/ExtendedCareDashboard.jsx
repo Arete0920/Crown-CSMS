@@ -1,7 +1,15 @@
-import { Grid, Stack, Typography } from '@mui/material';
+﻿import { Grid, Stack, Typography } from '@mui/material';
 import ExtendedCareSnapshotCard from '../components/dashboard/extendedcare/ExtendedCareSnapshotCard';
 import ExtendedCareAlertsPanel from '../components/dashboard/extendedcare/ExtendedCareAlertsPanel';
 import ExtendedCareQueueCard from '../components/dashboard/extendedcare/ExtendedCareQueueCard';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+const EXTENDED_CARE_KPI = [
+  { label: 'Children Enrolled', value: '—', dataSource: 'SIS' },
+  { label: 'Attendance Today', value: '—', dataSource: 'SIS' },
+  { label: 'Staff on Duty', value: '—', dataSource: 'HRIS' },
+  { label: 'Open Slots', value: '—', dataSource: 'SIS' }
+];
 
 export default function ExtendedCareDashboard() {
   return (
@@ -14,6 +22,8 @@ export default function ExtendedCareDashboard() {
           Student roster, attendance, pickups, staffing, balances, and daily care readiness.
         </Typography>
       </div>
+
+      <KpiStrip cards={EXTENDED_CARE_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Alert,
   Box,
   Card,
@@ -13,6 +13,14 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { fetchCompuwerxDisputes } from "../api/compuwerxOps";
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+const COMPUWERX_KPI = [
+  { label: 'Open Disputes', value: '—', dataSource: 'CompuWerx' },
+  { label: 'Resolved MTD', value: '—', dataSource: 'CompuWerx' },
+  { label: 'Pending Review', value: '—', dataSource: 'CompuWerx' },
+  { label: 'Escalated', value: '—', dataSource: 'CompuWerx' }
+];
 
 export default function CompuwerxDisputesDashboard() {
   const [loading, setLoading] = useState(true);
@@ -44,6 +52,7 @@ export default function CompuwerxDisputesDashboard() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <KpiStrip cards={COMPUWERX_KPI} />
       <Stack spacing={2}>
         <Typography variant="h4">Compuwerx Disputes</Typography>
         {error ? <Alert severity="error">{error}</Alert> : null}

@@ -1,4 +1,4 @@
-import { Grid, Stack, Typography } from '@mui/material';
+﻿import { Grid, Stack, Typography } from '@mui/material';
 import useDashboardData from '../hooks/useDashboardData';
 import DataStatusBanner from '../components/dashboard/shared/DataStatusBanner';
 import DashboardLoadingState from '../components/dashboard/shared/DashboardLoadingState';
@@ -6,6 +6,14 @@ import DashboardErrorState from '../components/dashboard/shared/DashboardErrorSt
 import MetricSummaryGrid from '../components/dashboard/shared/MetricSummaryGrid';
 import AlertListCard from '../components/dashboard/shared/AlertListCard';
 import TextListCard from '../components/dashboard/shared/TextListCard';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+const RELEASE_RELIABILITY_KPI = [
+  { label: 'Releases MTD', value: '—', dataSource: 'CI' },
+  { label: 'Test Pass Rate', value: '—', dataSource: 'CI' },
+  { label: 'Open Incidents', value: '—', dataSource: 'Monitor' },
+  { label: 'Deployments', value: '—', dataSource: 'CI' }
+];
 
 export default function ReleaseReliabilityDashboard() {
   const {
@@ -28,6 +36,8 @@ export default function ReleaseReliabilityDashboard() {
           Live release reliability view with scaffold fallback until full deployment telemetry is wired.
         </Typography>
       </div>
+
+      <KpiStrip cards={RELEASE_RELIABILITY_KPI} />
 
       <DataStatusBanner
         certification={certification}

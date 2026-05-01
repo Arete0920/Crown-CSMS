@@ -1,7 +1,15 @@
-import { Grid, Stack, Typography } from '@mui/material';
+﻿import { Grid, Stack, Typography } from '@mui/material';
 import FineArtsSnapshotCard from '../components/dashboard/finearts/FineArtsSnapshotCard';
 import FineArtsAlertsPanel from '../components/dashboard/finearts/FineArtsAlertsPanel';
 import FineArtsQueueCard from '../components/dashboard/finearts/FineArtsQueueCard';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+const FINE_ARTS_KPI = [
+  { label: 'Students Enrolled', value: '—', dataSource: 'SIS' },
+  { label: 'Performances Scheduled', value: '—', dataSource: 'SIS' },
+  { label: 'Practice Hours Logged', value: '—', dataSource: 'SIS' },
+  { label: 'Productions This Year', value: '—', dataSource: 'SIS' }
+];
 
 export default function FineArtsDashboard() {
   return (
@@ -14,6 +22,8 @@ export default function FineArtsDashboard() {
           Programs, performances, rehearsals, equipment readiness, and production follow-up.
         </Typography>
       </div>
+
+      <KpiStrip cards={FINE_ARTS_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
