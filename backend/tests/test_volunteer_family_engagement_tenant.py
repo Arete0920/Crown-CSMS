@@ -72,7 +72,7 @@ class TestVolunteerFamilyEngagementTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_volunteer_family_engagement_isolation_keyword_present_in_source():
+    def test_volunteer_family_engagement_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Volunteer Family Engagement module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]

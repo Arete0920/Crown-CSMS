@@ -72,7 +72,7 @@ class TestCrmMarketingTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_crm_marketing_isolation_keyword_present_in_source():
+    def test_crm_marketing_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the CRM Marketing Suite module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]

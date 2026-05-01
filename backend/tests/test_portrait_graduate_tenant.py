@@ -72,7 +72,7 @@ class TestPortraitGraduateTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_portrait_graduate_isolation_keyword_present_in_source():
+    def test_portrait_graduate_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Portrait of the Graduate module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]

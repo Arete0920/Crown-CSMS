@@ -72,7 +72,7 @@ class TestGradesReportCardsTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_grades_report_cards_isolation_keyword_present_in_source():
+    def test_grades_report_cards_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Grades Report Cards module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]

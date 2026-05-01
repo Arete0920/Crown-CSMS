@@ -72,7 +72,7 @@ class TestReportingDataAccessTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_reporting_data_access_isolation_keyword_present_in_source():
+    def test_reporting_data_access_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Reporting Data Access Standards module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]
