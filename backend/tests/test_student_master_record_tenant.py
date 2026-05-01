@@ -72,7 +72,7 @@ class TestStudentMasterRecordTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_student_master_record_isolation_keyword_present_in_source():
+    def test_student_master_record_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Student Master Record module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]

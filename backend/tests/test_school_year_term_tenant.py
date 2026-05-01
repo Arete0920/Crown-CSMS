@@ -72,7 +72,7 @@ class TestSchoolYearTermTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_school_year_term_isolation_keyword_present_in_source():
+    def test_school_year_term_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the School Year Term module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]

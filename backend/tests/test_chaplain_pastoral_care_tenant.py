@@ -72,7 +72,7 @@ class TestChaplainPastoralCareTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_chaplain_pastoral_care_isolation_keyword_present_in_source():
+    def test_chaplain_pastoral_care_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Chaplain Pastoral Care module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]
