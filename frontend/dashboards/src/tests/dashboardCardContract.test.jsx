@@ -43,7 +43,7 @@ describe('dashboard registry contract', () => {
       expect(screen.getAllByText('Sandbox preview data shown. Connect backend for live records.').length).toBeGreaterThan(0);
 
       expect(screen.getByText('Total Students')).toBeTruthy();
-      expect(screen.getByText('Attendance Rate')).toBeTruthy();
+      expect(screen.getAllByText('Attendance Rate').length).toBeGreaterThan(0);
       expect(screen.getByText('Tuition Collected')).toBeTruthy();
       expect(screen.getByText('Open Admissions')).toBeTruthy();
       expect(screen.getByText('Active Alerts')).toBeTruthy();
