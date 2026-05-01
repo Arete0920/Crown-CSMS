@@ -175,8 +175,19 @@ $Settings["markdownlint.ignore"] = @(
     "**/backend/staticfiles/**",
     "**/coverage/**",
     "**/.venv/**",
-    "**/venv/**"
+    "**/venv/**",
+    "**/docs/crown-master-binder/**"
 )
+
+$Settings["markdownlint.lintWorkspaceGlobs"] = @(
+    ".github/**/*.md",
+    "docs/**/*.md",
+    "!docs/crown-master-binder/**",
+    "!audit-artifacts/**"
+)
+
+$Settings["markdownlint.run"] = "onSave"
+$Settings["markdownlint.configFile"] = ".markdownlint.json"
 
 $SearchExclude = Ensure-HashtableSetting $Settings "search.exclude"
 $SearchExclude["**/audit-artifacts/**"] = $true
@@ -206,6 +217,7 @@ $MarkdownLintIgnore = ".markdownlintignore"
 $IgnoreLines = @(
     "audit-artifacts/**",
     "**/audit-artifacts/**",
+    "audit-artifacts/ui-cleanup-captures/**",
     "node_modules/**",
     "**/node_modules/**",
     "frontend/dist/**",
@@ -213,7 +225,12 @@ $IgnoreLines = @(
     "coverage/**",
     ".venv/**",
     "venv/**",
-    "backend/staticfiles/**"
+    "backend/staticfiles/**",
+    "docs/crown-master-binder/**",
+    "docs/crown-master-binder/operations/**",
+    "docs/crown-master-binder/inventory/**",
+    "docs/crown-master-binder/runbooks/**",
+    "docs/crown-master-binder/security/**"
 )
 
 if (Test-Path $MarkdownLintIgnore) {
