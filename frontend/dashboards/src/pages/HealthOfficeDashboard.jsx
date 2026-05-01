@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import HealthOfficeSnapshotCard from '../components/dashboard/healthoffice/HealthOfficeSnapshotCard';
 import HealthOfficeAlertsPanel from '../components/dashboard/healthoffice/HealthOfficeAlertsPanel';
 import HealthOfficeQueueCard from '../components/dashboard/healthoffice/HealthOfficeQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const HEALTH_OFFICE_KPI = [
-  { label: 'Visits Today', value: '—', dataSource: 'Health' },
-  { label: 'Medications Due', value: '—', dataSource: 'Health' },
-  { label: 'Immunization Alerts', value: '—', dataSource: 'Health' },
-  { label: 'Referrals Pending', value: '—', dataSource: 'Health' }
-];
 
 export default function HealthOfficeDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function HealthOfficeDashboard() {
           Nurse visits, medications, medical document follow-up, and care plan readiness.
         </Typography>
       </div>
-
-      <KpiStrip cards={HEALTH_OFFICE_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

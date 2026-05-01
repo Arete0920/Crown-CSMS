@@ -16,6 +16,7 @@ export function AutoLoginGate({ children }) {
 
         const TOKEN_KEY = "crown.jwt.access";
         const SCHOOL_KEY = "crown.school.id";
+        const ROLE_KEY = "crown.role";
 
         const did = await ensureDemoAutoLogin({
           apiBase,
@@ -24,6 +25,8 @@ export function AutoLoginGate({ children }) {
           schoolId: import.meta.env.VITE_DEMO_SCHOOL_ID || "b45b8c5a-6708-4597-aad9-a226627b2962",
           tokenKey: TOKEN_KEY,
           schoolKey: SCHOOL_KEY,
+          role: import.meta.env.VITE_DEMO_ROLE || "school_admin",
+          roleKey: ROLE_KEY,
         });
 
         // If we just logged in, reload once so all hooks see token + school immediately

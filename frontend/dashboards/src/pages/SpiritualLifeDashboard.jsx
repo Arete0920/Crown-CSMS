@@ -1,4 +1,4 @@
-﻿import CrownLayout from '../components/crown/CrownLayout.jsx';
+import CrownLayout from '../components/crown/CrownLayout.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
 
@@ -18,14 +18,6 @@ import StudentLifeSnapshotCard from '../components/dashboard/studentlife/Student
 import StudentLifeCalendarCard from '../components/dashboard/studentlife/StudentLifeCalendarCard.jsx';
 import StudentLifeCommunicationsCard from '../components/dashboard/studentlife/StudentLifeCommunicationsCard.jsx';
 import StudentLifeReportsCard from '../components/dashboard/studentlife/StudentLifeReportsCard.jsx';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const SPIRITUAL_LIFE_KPI = [
-  { label: 'Chapel Attendance', value: '—', dataSource: 'SIS' },
-  { label: 'Prayer Requests', value: '—', dataSource: 'SIS' },
-  { label: 'Special Days', value: '—', dataSource: 'SIS' },
-  { label: 'Events', value: '—', dataSource: 'SIS' }
-];
 
 export default function SpiritualLifeDashboard() {
   return (
@@ -33,14 +25,12 @@ export default function SpiritualLifeDashboard() {
       title="Student Life / Chaplain Dashboard"
       subtitle="Chapel, service, student care, spiritual formation, and pastoral visibility"
     >
-      <KpiStrip cards={SPIRITUAL_LIFE_KPI} />
       <DashboardSection title="Faith and Community">
         <CrownGrid>
           <Col span={3}><PrayerRequests /></Col>
           <Col span={6}><DailyDevotion /></Col>
           <Col span={3}><SpecialDays /></Col>
         </CrownGrid>
-      <KpiStrip cards={SPIRITUAL_LIFE_KPI} />
       </DashboardSection>
 
       <DashboardSection title="Chaplain Action">
@@ -58,7 +48,6 @@ export default function SpiritualLifeDashboard() {
 
           <Col span={3}><StudentLifeAlertsPanel /></Col>
         </CrownGrid>
-      <KpiStrip cards={SPIRITUAL_LIFE_KPI} />
       </DashboardSection>
 
       <DashboardSection title="Spiritual Health">
@@ -94,7 +83,6 @@ export default function SpiritualLifeDashboard() {
             />
           </Col>
         </CrownGrid>
-      <KpiStrip cards={SPIRITUAL_LIFE_KPI} />
       </DashboardSection>
 
       <DashboardSection title="Spiritual Trends">
@@ -129,7 +117,6 @@ export default function SpiritualLifeDashboard() {
             />
           </Col>
         </CrownGrid>
-      <KpiStrip cards={SPIRITUAL_LIFE_KPI} />
       </DashboardSection>
 
       <DashboardSection title="Care Detail">
@@ -137,7 +124,6 @@ export default function SpiritualLifeDashboard() {
           <Col span={4}><StudentLifeActivityFeedCard /></Col>
           <Col span={8}><StudentLifeSnapshotCard /></Col>
         </CrownGrid>
-      <KpiStrip cards={SPIRITUAL_LIFE_KPI} />
       </DashboardSection>
 
       <DashboardSection title="Events, Communications, and Reports">
@@ -146,7 +132,6 @@ export default function SpiritualLifeDashboard() {
           <Col span={4}><StudentLifeCommunicationsCard /></Col>
           <Col span={4}><StudentLifeReportsCard /></Col>
         </CrownGrid>
-      <KpiStrip cards={SPIRITUAL_LIFE_KPI} />
       </DashboardSection>
     </CrownLayout>
   );

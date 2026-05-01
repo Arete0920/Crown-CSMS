@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'communications',
@@ -11,7 +11,7 @@ export default {
   metrics: [
     { label: 'Queued Messages', value: '18', detail: 'Family update ready for approval.', accent: 'blue' },
     { label: 'Unread Threads', value: '9', detail: 'Front office triage before lunch.', accent: 'gold' },
-    { label: 'Announcements Sent', value: '4', detail: 'This morning across all divisions.', accent: 'royal' },
+    { label: 'Announcements Sent', value: '4', detail: 'This morning across all divisions.', accent: 'navy' },
     { label: 'Delivery Health', value: '99.4%', detail: 'Outbound communications success rate.', accent: 'emerald' },
   ],
   insight: { kicker: 'Comms Trend', title: 'Engagement is consistent across channels', chip: 'Delivery healthy', trend: BASE_TREND },

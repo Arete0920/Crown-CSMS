@@ -1,18 +1,10 @@
-﻿import { Grid, Stack } from '@mui/material';
+import { Grid, Stack } from '@mui/material';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import GradebookSnapshotCard from '../components/dashboard/gradebook/GradebookSnapshotCard.jsx';
 import GradebookAlertsPanel from '../components/dashboard/gradebook/GradebookAlertsPanel.jsx';
 import TeacherPostingQueueCard from '../components/dashboard/gradebook/TeacherPostingQueueCard.jsx';
 import PageState from '../components/states/PageState.jsx';
 import WidgetState from '../components/states/WidgetState.jsx';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const GRADEBOOK_KPI = [
-  { label: 'Grade Submissions', value: '—', dataSource: 'SIS' },
-  { label: 'Pending Grades', value: '—', dataSource: 'SIS' },
-  { label: 'Avg GPA', value: '—', dataSource: 'SIS' },
-  { label: 'Missing Grades', value: '—', dataSource: 'SIS' }
-];
 
 export default function GradebookDashboard() {
   return (
@@ -20,7 +12,6 @@ export default function GradebookDashboard() {
       title="Gradebook Dashboard"
       subtitle="Assignment completion, grading health, academic risk, and teacher posting status"
     >
-      <KpiStrip cards={GRADEBOOK_KPI} />
       <PageState>
         <Stack spacing={3}>
           <Grid container spacing={3}>
@@ -41,7 +32,6 @@ export default function GradebookDashboard() {
             </Grid>
           </Grid>
         </Stack>
-      <KpiStrip cards={GRADEBOOK_KPI} />
       </PageState>
     </CrownLayout>
   );

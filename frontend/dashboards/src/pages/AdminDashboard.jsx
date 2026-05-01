@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
 import ErrorBanner from '../components/ui/ErrorBanner.jsx';
@@ -66,21 +65,6 @@ function mapAlerts(data) {
   }));
 }
 
-const ADMIN_KPI = [
-  { label: 'Enrolled',        value: '—', trend: null, trendUp: null,
-    definition: 'Total students currently enrolled across all grade levels.',
-    dataSource: 'Enrollment API', dataHref: '/admissions' },
-  { label: 'Attendance Rate', value: '—', trend: null, trendUp: null,
-    definition: 'School-wide attendance rate for the current school day.',
-    dataSource: 'Attendance API', dataHref: '/attendance' },
-  { label: 'Open Incidents',  value: '—', trend: null, trendUp: null,
-    definition: 'Discipline or safety incidents currently open and requiring follow-up.',
-    dataSource: 'Discipline Log', dataHref: '/discipline' },
-  { label: 'Messages Pending', value: '—', trend: null, trendUp: null,
-    definition: 'Messages awaiting response from school leadership.',
-    dataSource: 'Communications API', dataHref: '/communications' },
-];
-
 export default function AdminDashboard() {
   const [state, setState] = useState({ loading: true, live: false, data: null });
   const [metricsError, setMetricsError] = useState('');
@@ -98,12 +82,11 @@ export default function AdminDashboard() {
     ? '...'
     : String(data?.enrolled ?? 412);
 
-  let attendanceValue = '91%';
-  if (loading) {
-    attendanceValue = '...';
-  } else if (data?.attendance_rate) {
-    attendanceValue = `${Math.round(data.attendance_rate)}%`;
-  }
+  const attendanceValue = loading
+    ? '...'
+    : data?.attendance_rate
+    ? `${Math.round(data.attendance_rate)}%`
+    : '91%';
 
   const alerts = mapAlerts(data);
 
@@ -114,8 +97,6 @@ export default function AdminDashboard() {
     >
       <h1 className="text-2xl font-semibold tracking-tight">Administration</h1>
       <h2 className="text-sm font-medium uppercase tracking-wide">Executive Dashboard</h2>
-
-      <KpiStrip cards={ADMIN_KPI} />
 
       <ErrorBanner title="Dashboard unavailable" message={metricsError} />
 

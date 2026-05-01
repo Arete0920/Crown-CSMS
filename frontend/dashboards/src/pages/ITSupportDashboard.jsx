@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import ITSupportSnapshotCard from '../components/dashboard/itsupport/ITSupportSnapshotCard';
 import ITSupportAlertsPanel from '../components/dashboard/itsupport/ITSupportAlertsPanel';
 import ITSupportQueueCard from '../components/dashboard/itsupport/ITSupportQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const IT_SUPPORT_KPI = [
-  { label: 'Open Tickets', value: '—', dataSource: 'Support' },
-  { label: 'Resolved Today', value: '—', dataSource: 'Support' },
-  { label: 'SLA Breaches', value: '—', dataSource: 'Support' },
-  { label: 'Pending Review', value: '—', dataSource: 'Support' }
-];
 
 export default function ITSupportDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function ITSupportDashboard() {
           Ticket flow, account provisioning, device readiness, outages, and support backlog.
         </Typography>
       </div>
-
-      <KpiStrip cards={IT_SUPPORT_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

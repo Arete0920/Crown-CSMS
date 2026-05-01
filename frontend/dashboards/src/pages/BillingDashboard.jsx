@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { downloadCsv } from "../utils/downloadCsv.js";
 import { authenticatedFetch } from "../utils/authClient.js";
@@ -10,7 +10,7 @@ import ErrorBanner from "../components/ui/ErrorBanner.jsx";
 import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
 
 /*
-  CROWN - Billing Dashboard (0101 UI)
+  Crown2026 ? Billing Dashboard (0101 UI)
   - Export Center for 0093?0096
   - Manual Record Payment (0102)
   - Open invoice lookup (0102)
@@ -25,167 +25,10 @@ import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
-async function fetchJson(url, options = {}) {
-  const headers = {
-    "Content-Type": "application/json",
-  };
-  if (options.headers) {
-    Object.assign(headers, options.headers);
-  }
-
-  const res = await authenticatedFetch(url, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
-  const contentType = res.headers.get("content-type") || "";
-
-  if (!res.ok) {
-    let bodyText = "";
-    try {
-      bodyText = await res.text();
-    } catch {
-      bodyText = "";
-    }
-
-    if (res.status === 403) {
-      throw new Error("403: Missing school context (tenant safety).");
-    }
-    if (contentType.includes("application/json")) {
-      try {
-        const j = JSON.parse(bodyText);
-        throw new Error(j.detail || j.error || `HTTP ${res.status}`);
-      } catch {
-        throw new Error(`HTTP ${res.status}`);
-      }
-    }
-    throw new Error(bodyText || `HTTP ${res.status}`);
-  }
-
-  return res.json();
-}
-
-function dollarsToCents(val) {
-  const n = Number(val);
-  if (!Number.isFinite(n)) return 0;
-  return Math.round(n * 100);
-}
-
-function formatApiError(status, bodyText, bodyJson) {
-  if (status === 403) return "You don?t have permission to record payments (finance role required).";
-  if (status === 409) return "Duplicate reference: this payment reference was already recorded.";
-  if (status === 400) {
-    const detail =
-      (bodyJson && (bodyJson.detail || bodyJson.error)) ||
-      (typeof bodyText === "string" && bodyText.trim()) ||
-      "Validation error.";
-    return `Validation error: ${detail}`;
-  }
-  const detail =
-    (bodyJson && (bodyJson.detail || bodyJson.error)) ||
-    (typeof bodyText === "string" && bodyText.trim()) ||
-    "";
-  return detail ? `Payment failed (${status}): ${detail}` : `Payment failed (${status}).`;
-}
-
-function resolveSelectedOpenItems(openItemsList, allocsMap) {
-  const selectedChargeIds = Object.keys(allocsMap || {});
-  if (selectedChargeIds.length === 0) {
-    return {
-      selectedChargeIds: [],
-      singleInvoiceId: null,
-      singleChargeId: null,
-      error: "Select at least one open item to apply this payment to.",
-    };
-  }
-
-  if (selectedChargeIds.length === 1) {
-    const singleChargeId = selectedChargeIds[0];
-    const match = (openItemsList || []).find((it) => it.ledger_charge_id === singleChargeId);
-    if (!match?.invoice_id) {
-      return {
-        selectedChargeIds,
-        singleInvoiceId: null,
-        singleChargeId,
-        error: "Could not resolve invoice_id for the selected open item. Reload Open Invoices and try again.",
-      };
-    }
-    return { selectedChargeIds, singleInvoiceId: match.invoice_id, singleChargeId, error: null };
-  }
-
-  return { selectedChargeIds, singleInvoiceId: null, singleChargeId: null, error: null };
-}
-
-function buildRecordPaymentPayload({
-  householdIdUuid,
-  selectedChargeIds,
-  singleInvoiceId,
-  singleChargeId,
-  allocs,
-  paymentAmount,
-  paymentDate,
-  paymentReference,
-  paymentSource,
-}) {
-  const paymentAmountCents = dollarsToCents(paymentAmount);
-  if (!paymentAmountCents || paymentAmountCents <= 0) {
-    return { error: "Enter a valid payment amount > 0." };
-  }
-
-  const basePayload = {
-    amount_cents: paymentAmountCents,
-    method: (paymentSource || "manual").trim() || "manual",
-    reference: (paymentReference || "").trim(),
-    received_on: paymentDate || null,
-  };
-
-  if (selectedChargeIds.length === 1) {
-    const selectedAllocationDollars = (allocs && singleChargeId ? allocs[singleChargeId] : "") || "";
-    const amountCents = dollarsToCents(selectedAllocationDollars || paymentAmount);
-    if (!amountCents || amountCents <= 0) {
-      return { error: "Enter a valid amount > 0." };
-    }
-    return {
-      payload: {
-        ...basePayload,
-        invoice_id: singleInvoiceId,
-        amount_cents: amountCents,
-      },
-      invoiceIdForOptimistic: singleInvoiceId,
-    };
-  }
-
-  const allocations = selectedChargeIds.map((chargeId) => {
-    const dollars = String(allocs?.[chargeId] ?? "").trim();
-    const cents = dollars ? dollarsToCents(dollars) : 0;
-    return { ledger_charge_id: chargeId, amount_cents: Number.isFinite(cents) ? cents : 0 };
-  });
-
-  const sumAllocCents = allocations.reduce((acc, a) => acc + (Number(a.amount_cents) || 0), 0);
-  if (sumAllocCents === 0) {
-    allocations[0].amount_cents = paymentAmountCents;
-  } else if (sumAllocCents !== paymentAmountCents) {
-    return {
-      error: `Allocation total must equal payment amount. Allocated $${(sumAllocCents / 100).toFixed(2)} but payment is $${(
-        paymentAmountCents / 100
-      ).toFixed(2)}.`,
-    };
-  }
-
-  return {
-    payload: {
-      ...basePayload,
-      household_id: householdIdUuid,
-      allocations,
-    },
-    invoiceIdForOptimistic: null,
-  };
-}
-
 // Dev-mode regression guard: catch missing API_BASE before it breaks exports.
 // Skip this warning under tests to avoid noisy stderr that obscures true failures.
 if (import.meta.env.DEV && import.meta.env.MODE !== "test" && !API_BASE) {
-  console.warn("BillingDashboard: API_BASE is empty. Exports will fail. Set VITE_API_BASE_URL in .env.local");
+  console.warn("?? BillingDashboard: API_BASE is empty. Exports will fail. Set VITE_API_BASE_URL in .env.local");
 }
 
 function formatMoney(x) {
@@ -195,7 +38,7 @@ function formatMoney(x) {
   return n.toFixed(2);
 }
 
-/* Billing / Accounts-Receivable KPI flip cards */
+/* ── Billing / Accounts-Receivable KPI flip cards ───────────────────── */
 const ADMIN_KPI = [
   { label: "Collection Rate",   value: "93.1%", trend: "+6.0% vs last yr", trendUp: true,
     definition: "Percentage of total billed tuition and fees collected as of today.",
@@ -215,7 +58,7 @@ export function BillingDashboard() {
   const [householdId, setHouseholdId] = useState("");
   const householdIdUuid = useMemo(() => {
     const v = (householdId || "").trim();
-    return v || null;
+    return v ? v : null;
   }, [householdId]);
 
   // Exports
@@ -246,6 +89,41 @@ export function BillingDashboard() {
   // Demo household loader
   const [loadingDemoHousehold, setLoadingDemoHousehold] = useState(false);
 
+  async function fetchJson(url, options = {}) {
+    const res = await authenticatedFetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      credentials: "include",
+    });
+    const contentType = res.headers.get("content-type") || "";
+
+    if (!res.ok) {
+      let bodyText = "";
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = "";
+      }
+
+      if (res.status === 403) {
+        throw new Error("403: Missing school context (tenant safety).");
+      }
+      if (contentType.includes("application/json")) {
+        try {
+          const j = JSON.parse(bodyText);
+          throw new Error(j.detail || j.error || `HTTP ${res.status}`);
+        } catch {
+          throw new Error(`HTTP ${res.status}`);
+        }
+      }
+      throw new Error(bodyText || `HTTP ${res.status}`);
+    }
+
+    return res.json();
+  }
 
   async function handleDownload(path, filename) {
     setExportBusy(true);
@@ -311,10 +189,10 @@ export function BillingDashboard() {
   function toggleAlloc(chargeId, checked, suggestedAmount) {
     setAllocs((prev) => {
       const next = { ...prev };
-      if (checked) {
-        next[chargeId] = next[chargeId] || String(suggestedAmount || "0.00");
-      } else {
+      if (!checked) {
         delete next[chargeId];
+      } else {
+        next[chargeId] = next[chargeId] || String(suggestedAmount || "0.00");
       }
       return next;
     });
@@ -322,6 +200,57 @@ export function BillingDashboard() {
 
   function setAllocAmount(chargeId, val) {
     setAllocs((prev) => ({ ...prev, [chargeId]: val }));
+  }
+
+  function dollarsToCents(val) {
+    const n = Number(val);
+    if (!Number.isFinite(n)) return 0;
+    return Math.round(n * 100);
+  }
+
+  function formatApiError(status, bodyText, bodyJson) {
+    if (status === 403) return "You don?t have permission to record payments (finance role required).";
+    if (status === 409) return "Duplicate reference: this payment reference was already recorded.";
+    if (status === 400) {
+      const detail =
+        (bodyJson && (bodyJson.detail || bodyJson.error)) ||
+        (typeof bodyText === "string" && bodyText.trim()) ||
+        "Validation error.";
+      return `Validation error: ${detail}`;
+    }
+    const detail =
+      (bodyJson && (bodyJson.detail || bodyJson.error)) ||
+      (typeof bodyText === "string" && bodyText.trim()) ||
+      "";
+    return detail ? `Payment failed (${status}): ${detail}` : `Payment failed (${status}).`;
+  }
+
+  function resolveSelectedOpenItems(openItemsList, allocsMap) {
+    const selectedChargeIds = Object.keys(allocsMap || {});
+    if (selectedChargeIds.length === 0) {
+      return {
+        selectedChargeIds: [],
+        singleInvoiceId: null,
+        singleChargeId: null,
+        error: "Select at least one open item to apply this payment to.",
+      };
+    }
+
+    if (selectedChargeIds.length === 1) {
+      const singleChargeId = selectedChargeIds[0];
+      const match = (openItemsList || []).find((it) => it.ledger_charge_id === singleChargeId);
+      if (!match || !match.invoice_id) {
+        return {
+          selectedChargeIds,
+          singleInvoiceId: null,
+          singleChargeId,
+          error: "Could not resolve invoice_id for the selected open item. Reload Open Invoices and try again.",
+        };
+      }
+      return { selectedChargeIds, singleInvoiceId: match.invoice_id, singleChargeId, error: null };
+    }
+
+    return { selectedChargeIds, singleInvoiceId: null, singleChargeId: null, error: null };
   }
 
   async function recordPayment() {
@@ -341,23 +270,65 @@ export function BillingDashboard() {
       return;
     }
 
-    const payloadResult = buildRecordPaymentPayload({
-      householdIdUuid,
-      selectedChargeIds,
-      singleInvoiceId,
-      singleChargeId,
-      allocs,
-      paymentAmount,
-      paymentDate,
-      paymentReference,
-      paymentSource,
-    });
-    if (payloadResult.error) {
-      setPayError(payloadResult.error);
+    const paymentAmountCents = dollarsToCents(paymentAmount);
+    if (!paymentAmountCents || paymentAmountCents <= 0) {
+      setPayError("Enter a valid payment amount > 0.");
       return;
     }
 
-    const { payload, invoiceIdForOptimistic } = payloadResult;
+    const basePayload = {
+      amount_cents: paymentAmountCents,
+      method: (paymentSource || "manual").trim() || "manual",
+      reference: (paymentReference || "").trim(),
+      received_on: paymentDate || null,
+    };
+
+    let payload = basePayload;
+    let invoiceIdForOptimistic = null;
+
+    if (selectedChargeIds.length === 1) {
+      // Fallback to 0109 behavior (single invoice): keeps existing response handling and optimistic refresh.
+      const selectedAllocationDollars = (allocs && singleChargeId ? allocs[singleChargeId] : "") || "";
+      const amountCents = dollarsToCents(selectedAllocationDollars || paymentAmount);
+      if (!amountCents || amountCents <= 0) {
+        setPayError("Enter a valid amount > 0.");
+        return;
+      }
+
+      payload = {
+        ...basePayload,
+        invoice_id: singleInvoiceId,
+        amount_cents: amountCents,
+      };
+      invoiceIdForOptimistic = singleInvoiceId;
+    } else {
+      // Multi-allocation: one payment ? many ledger charges.
+      const allocations = selectedChargeIds.map((chargeId) => {
+        const dollars = (allocs && allocs[chargeId] != null ? String(allocs[chargeId]) : "").trim();
+        const cents = dollars ? dollarsToCents(dollars) : 0;
+        return { ledger_charge_id: chargeId, amount_cents: Number.isFinite(cents) ? cents : 0 };
+      });
+
+      const sumAllocCents = allocations.reduce((acc, a) => acc + (Number(a.amount_cents) || 0), 0);
+
+      if (sumAllocCents === 0) {
+        // Auto-fill: if user left allocations blank, allocate full payment to the first selected item.
+        allocations[0].amount_cents = paymentAmountCents;
+      } else if (sumAllocCents !== paymentAmountCents) {
+        setPayError(
+          `Allocation total must equal payment amount. Allocated $${(sumAllocCents / 100).toFixed(2)} but payment is $${(
+            paymentAmountCents / 100
+          ).toFixed(2)}.`
+        );
+        return;
+      }
+
+      payload = {
+        ...basePayload,
+        household_id: householdIdUuid,
+        allocations,
+      };
+    }
 
     setPayBusy(true);
     try {
@@ -536,7 +507,7 @@ export function BillingDashboard() {
             <tbody>
               {openItems.map((it) => {
                 const cid = it.ledger_charge_id;
-                const checked = cid && Object.hasOwn(allocs, cid);
+                const checked = cid && Object.prototype.hasOwnProperty.call(allocs, cid);
                 return (
                   <tr key={`${it.invoice_id}-${cid}`} style={{ borderBottom: "1px solid var(--crown-border)" }}>
                     <td style={{ padding: 8 }}>
@@ -624,4 +595,3 @@ export function BillingDashboard() {
     </CrownLayout>
   );
 }
-

@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import ImplementationSuccessSnapshotCard from '../components/dashboard/implementationsuccess/ImplementationSuccessSnapshotCard';
 import ImplementationSuccessAlertsPanel from '../components/dashboard/implementationsuccess/ImplementationSuccessAlertsPanel';
 import ImplementationSuccessQueueCard from '../components/dashboard/implementationsuccess/ImplementationSuccessQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const IMPL_SUCCESS_KPI = [
-  { label: 'Schools Onboarded', value: '—', dataSource: 'SIS' },
-  { label: 'In Progress', value: '—', dataSource: 'SIS' },
-  { label: 'Support Tickets', value: '—', dataSource: 'Support' },
-  { label: 'At Risk', value: '—', dataSource: 'SIS' }
-];
 
 export default function ImplementationSuccessDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function ImplementationSuccessDashboard() {
           Launch readiness, school onboarding progress, training workload, and go-live risks.
         </Typography>
       </div>
-
-      <KpiStrip cards={IMPL_SUCCESS_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 import {
   Box,
   Button,
@@ -77,21 +76,6 @@ export default function AdmissionsDashboard() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(String(currentYear));
 
-  const ADMISSIONS_KPI = [
-    { label: 'Applications',   value: '—', trend: null, trendUp: null,
-      definition: 'Total new student applications received for the current enrollment period.',
-      dataSource: 'Admissions API', dataHref: '/admissions' },
-    { label: 'Enrolled',       value: '—', trend: null, trendUp: null,
-      definition: 'Total students who completed enrollment for the current academic year.',
-      dataSource: 'Enrollment Module', dataHref: '/admissions' },
-    { label: 'Waitlisted',     value: '—', trend: null, trendUp: null,
-      definition: 'Students on the waitlist pending an available seat.',
-      dataSource: 'Admissions API', dataHref: '/admissions' },
-    { label: 'Pending Review', value: '—', trend: null, trendUp: null,
-      definition: 'Applications submitted but not yet reviewed by admissions staff.',
-      dataSource: 'Admissions API', dataHref: '/admissions' },
-  ];
-
   const {
     loading,
     drilldownLoading,
@@ -117,41 +101,9 @@ export default function AdmissionsDashboard() {
     [currentYear],
   );
 
-  let drilldownContent = null;
-  if (drilldownLoading) {
-    drilldownContent = (
-      <Box sx={{ py: 4, display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
-      </Box>
-    );
-  } else if (drilldownRows.length === 0) {
-    drilldownContent = (
-      <Typography variant="body2" color="text.secondary">
-        No matching records found.
-      </Typography>
-    );
-  } else {
-    drilldownContent = (
-      <List dense>
-        {drilldownRows.map((row, index) => (
-          <ListItem
-            key={row?.id || row?.application_id || index}
-            disableGutters
-          >
-            <ListItemText
-              primary={displayName(row)}
-              secondary={displayMeta(row)}
-            />
-          </ListItem>
-        ))}
-      </List>
-    );
-  }
-
   return (
     <Box sx={{ p: 3 }}>
       <Stack spacing={3}>
-        <KpiStrip cards={ADMISSIONS_KPI} />
         <Stack
           direction={{ xs: "column", md: "row" }}
           spacing={2}
@@ -366,7 +318,29 @@ export default function AdmissionsDashboard() {
             </Typography>
             <Divider />
 
-            {drilldownContent}
+            {drilldownLoading ? (
+              <Box sx={{ py: 4, display: "flex", justifyContent: "center" }}>
+                <CircularProgress />
+              </Box>
+            ) : drilldownRows.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No matching records found.
+              </Typography>
+            ) : (
+              <List dense>
+                {drilldownRows.map((row, index) => (
+                  <ListItem
+                    key={row?.id || row?.application_id || index}
+                    disableGutters
+                  >
+                    <ListItemText
+                      primary={displayName(row)}
+                      secondary={displayMeta(row)}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
 
             <Button variant="outlined" onClick={closeDrilldown}>
               Close

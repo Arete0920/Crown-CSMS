@@ -1,15 +1,7 @@
-﻿import { Grid, Stack, Typography } from '@mui/material';
+import { Grid, Stack, Typography } from '@mui/material';
 import AthleticsDirectorSnapshotCard from '../components/dashboard/athleticsdirector/AthleticsDirectorSnapshotCard';
 import AthleticsDirectorAlertsPanel from '../components/dashboard/athleticsdirector/AthleticsDirectorAlertsPanel';
 import AthleticsDirectorQueueCard from '../components/dashboard/athleticsdirector/AthleticsDirectorQueueCard';
-import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
-
-const ATHLETICS_DIRECTOR_KPI = [
-  { label: 'Teams Active', value: '—', dataSource: 'SIS' },
-  { label: 'Eligibility Holds', value: '—', dataSource: 'SIS' },
-  { label: 'Events This Week', value: '—', dataSource: 'SIS' },
-  { label: 'Head Coaches', value: '—', dataSource: 'HRIS' }
-];
 
 export default function AthleticsDirectorDashboard() {
   return (
@@ -22,8 +14,6 @@ export default function AthleticsDirectorDashboard() {
           Team operations, eligibility, transportation, compliance, and event readiness.
         </Typography>
       </div>
-
-      <KpiStrip cards={ATHLETICS_DIRECTOR_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

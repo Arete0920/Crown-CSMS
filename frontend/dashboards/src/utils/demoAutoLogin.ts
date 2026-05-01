@@ -12,6 +12,8 @@ export async function ensureDemoAutoLogin({
   schoolId,
   tokenKey,
   schoolKey,
+  role,
+  roleKey,
 }: {
   apiBase: string;
   username: string;
@@ -19,6 +21,8 @@ export async function ensureDemoAutoLogin({
   schoolId: string;
   tokenKey: string;
   schoolKey: string;
+  role: string;
+  roleKey: string;
 }): Promise<boolean> {
   const isDemoMode = import.meta.env.VITE_DEMO_MODE === "1";
   const autoLogin = import.meta.env.VITE_DEMO_AUTO_LOGIN === "1";
@@ -46,5 +50,15 @@ export async function ensureDemoAutoLogin({
   localStorage.setItem(tokenKey, data.access);
   sessionStorage.setItem(schoolKey, schoolId);
   localStorage.setItem(schoolKey, schoolId);
+
+  // Set role so RoleRouteGuard and RequirePermission resolve correctly in demo mode
+  sessionStorage.setItem(roleKey, role);
+  localStorage.setItem(roleKey, role);
+  localStorage.setItem("crown.demo.role", role);
+  localStorage.setItem("crown_user", JSON.stringify({
+    username,
+    role,
+    school_id: schoolId,
+  }));
   return true;
 }
