@@ -1,4 +1,4 @@
-import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'attendance',
@@ -12,7 +12,7 @@ export default {
     { label: 'Present Today', value: '1,201', detail: '94 students marked absent or tardy.', accent: 'blue' },
     { label: 'Homerooms Posted', value: '100%', detail: 'All divisions reported before 8:30 AM.', accent: 'emerald' },
     { label: 'Intervention Flags', value: '7', detail: 'Counseling follow-up required.', accent: 'gold' },
-    { label: 'Chronic Cases', value: '18', detail: 'Monitoring against attendance threshold.', accent: 'navy' },
+    { label: 'Chronic Cases', value: '18', detail: 'Monitoring against attendance threshold.', accent: 'royal' },
   ],
   insight: { kicker: 'Attendance Trend', title: 'Campus attendance remains strong', chip: 'Morning sync complete', trend: BASE_TREND },
   activityTitle: 'Recent attendance activity',
@@ -24,7 +24,7 @@ export default {
   ],
   quickActions: [
     { title: 'Open interventions', description: 'Review flagged student attendance patterns.', actionLabel: 'Open Interventions' },
-    { title: 'Export attendance report', description: 'Generate today’s attendance snapshot.', actionLabel: 'Export Report' },
+    { title: 'Export attendance report', description: 'Generate todayâ€™s attendance snapshot.', actionLabel: 'Export Report' },
   ],
   statusTitle: 'Attendance service status',
   statuses: BASE_STATUS,

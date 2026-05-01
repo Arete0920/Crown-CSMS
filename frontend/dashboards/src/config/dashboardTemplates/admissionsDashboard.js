@@ -1,4 +1,4 @@
-import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'admissions',
@@ -11,7 +11,7 @@ export default {
   metrics: [
     { label: 'Open Applications', value: '84', detail: '12 awaiting family follow-up.', accent: 'blue' },
     { label: 'Accepted Students', value: '31', detail: '6 families ready to enroll.', accent: 'gold' },
-    { label: 'Tours Scheduled', value: '14', detail: 'Three new families booked today.', accent: 'navy' },
+    { label: 'Tours Scheduled', value: '14', detail: 'Three new families booked today.', accent: 'royal' },
     { label: 'Conversion Rate', value: '68%', detail: 'Current cycle conversion trend.', accent: 'emerald' },
   ],
   insight: { kicker: 'Admissions Trend', title: 'Pipeline velocity remains healthy', chip: 'Updated today', trend: BASE_TREND },

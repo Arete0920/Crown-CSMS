@@ -87,7 +87,7 @@ describe("login page polish", () => {
     await waitFor(() => {
       expect(email.value).toBe("admin@heritage.example.org");
     });
-      expect(password.value).toBe("demo-password");
+      expect(password.value).toBe("CrownDemo!2026");
     expect(screen.getByRole("button", { name: "Use Sandbox Credentials" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sign In" })).toBeTruthy();
   });

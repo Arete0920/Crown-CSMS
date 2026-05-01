@@ -44,6 +44,8 @@ jobs:
           VITE_DEV_BASE_URL: "http://localhost:4173"
           CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
           CROWN_DEMO_TOKEN: "playwright-demo-token"
+          VITE_SANDBOX_MODE: "1"
+          VITE_DEMO_MODE: "sandbox"
 
       - name: Upload Playwright report on failure
         if: failure()

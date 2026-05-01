@@ -1,0 +1,8 @@
+"FindingType","RelativePath","LineNumber","LineContent"
+"Route","frontend\dashboards\src\routes\router.jsx","119","? <CrownLaunchDashboardPage activePath=""/dashboard"" />"
+"Route","frontend\dashboards\src\routes\router.jsx","185","? <CrownLaunchModulePage moduleKey=""attendance"" activePath=""/attendance"" />"
+"Route","frontend\dashboards\src\routes\router.jsx","280","? <CrownLaunchModulePage moduleKey=""admissions"" activePath=""/admissions"" />"
+"Route","frontend\dashboards\src\routes\router.jsx","305","? <CrownLaunchModulePage moduleKey=""communications"" activePath=""/communications"" />"
+"Route","frontend\dashboards\src\routes\router.jsx","385","? <CrownLaunchModulePage moduleKey=""finance"" activePath=""/finance"" />"
+"Route","frontend\dashboards\src\routes\router.jsx","634","? <CrownLaunchModulePage moduleKey=""student"" activePath=""/student-life"" />"
+"Route","frontend\dashboards\src\routes\router.jsx","640","? <CrownLaunchModulePage moduleKey=""schoolAdministrator"" activePath=""/settings"" />"
