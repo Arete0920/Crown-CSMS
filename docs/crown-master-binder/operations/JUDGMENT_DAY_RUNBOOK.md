@@ -1,5 +1,5 @@
 ﻿# CROWN Judgment Day Release Gauntlet Runbook
-Generated: 2026-05-01T09:35:21
+Generated: 2026-05-01T13:54:10
 
 ## Purpose
 This is the harshest release readiness gate for CROWN. It is designed to kill weak release candidates before schools, sandbox testers, or customers experience failures.
@@ -43,7 +43,7 @@ Total score: 1000 points
 - Below 700: Not release-ready
 
 ## Evidence Folder
-C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_085908
+C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_131601
 
 ## Required Manual Proof Matrix
-C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_085908\60_required_runtime_proof_matrix.csv
+C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_131601\60_required_runtime_proof_matrix.csv

@@ -1,12 +1,12 @@
 ﻿# CROWN Judgment Day Release Gauntlet Summary
-Generated: 2026-05-01T09:35:21
+Generated: 2026-05-01T13:54:10
 Repo: C:\w\crown_main_postmerge_verify
 Branch: readiness/sandbox-operator-freeze-20260427_222113
-HEAD: d4f309b
-HEAD_FULL: d4f309bcf471b45c52ddd708f8749941e1dc3399
+HEAD: ded54ff
+HEAD_FULL: ded54ff723bbba1aaf36fe6cccf17facab80bf7d
 BackendBaseUrl: https://crown-api-prod.azurewebsites.net
 FrontendBaseUrl: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
-ApprovedShaForGate: 84b780b97001c1fb4f7ce8f3b2f099e99835ae4f
+ApprovedShaForGate: ded54ff723bbba1aaf36fe6cccf17facab80bf7d
 
 ## Decision
 NO-GO
@@ -51,10 +51,10 @@ Browser smoke: PASS
 Safe load: PASS
 
 ## Open First
-1. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_085908\81_JUDGMENT_DAY_BLOCKER_BOARD.csv
-2. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_085908\80_JUDGMENT_DAY_SCORECARD.csv
-3. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_085908\60_required_runtime_proof_matrix.csv
-4. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_085908\70_JUDGMENT_DAY_RUNBOOK.md
+1. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_131601\81_JUDGMENT_DAY_BLOCKER_BOARD.csv
+2. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_131601\80_JUDGMENT_DAY_SCORECARD.csv
+3. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_131601\60_required_runtime_proof_matrix.csv
+4. C:\w\crown_main_postmerge_verify\audit-artifacts\judgment-day-gauntlet\20260501_131601\70_JUDGMENT_DAY_RUNBOOK.md
 
 ## Scorecard
 
