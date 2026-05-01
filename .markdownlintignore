@@ -1,0 +1,12 @@
+﻿# Ignore patterns
+**/audit-artifacts/**
+**/node_modules/**
+.venv/**
+audit-artifacts/**
+backend/staticfiles/**
+coverage/**
+docs/crown-master-binder/operations/**
+frontend/build/**
+frontend/dist/**
+node_modules/**
+venv/**
