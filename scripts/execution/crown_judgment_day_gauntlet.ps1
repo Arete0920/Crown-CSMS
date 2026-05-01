@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Continue"
+﻿$ErrorActionPreference = "Continue"
 $ProgressPreference = "SilentlyContinue"
 # ============================================================
 # CROWN JUDGMENT DAY RELEASE GAUNTLET
@@ -8,7 +8,7 @@ $ProgressPreference = "SilentlyContinue"
 #
 # Optional env vars:
 #   $env:CROWN_BACKEND_BASE_URL   = "https://crown-api-prod.azurewebsites.net"
-#   $env:CROWN_FRONTEND_BASE_URL  = "https://crown-dash.azurestaticapps.net"
+#   $env:CROWN_FRONTEND_BASE_URL  = "https://yellow-forest-0eecc8b0f.7.azurestaticapps.net"
 #   $env:CROWN_APPROVED_SHA       = "b9dad81..."
 #   $env:CROWN_RUN_BROWSER        = "YES"
 #   $env:CROWN_RUN_SAFE_LOAD      = "YES"
@@ -261,7 +261,7 @@ if ([string]::IsNullOrWhiteSpace($BackendBaseUrl)) {
 }
 $FrontendBaseUrl = $env:CROWN_FRONTEND_BASE_URL
 if ([string]::IsNullOrWhiteSpace($FrontendBaseUrl)) {
-    $FrontendBaseUrl = "https://crown-dash.azurestaticapps.net"
+    $FrontendBaseUrl = "https://yellow-forest-0eecc8b0f.7.azurestaticapps.net"
 }
 $ApprovedSha = $env:CROWN_APPROVED_SHA
 if ([string]::IsNullOrWhiteSpace($ApprovedSha)) {
