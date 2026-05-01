@@ -1,8 +1,16 @@
-import CrownLayout from '../components/crown/CrownLayout.jsx';
+﻿import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import { Link } from 'react-router-dom';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+const HOME_KPI = [
+  { label: 'Active Schools', value: '—', dataSource: 'SIS' },
+  { label: 'Daily Logins', value: '—', dataSource: 'Auth' },
+  { label: 'Open Items', value: '—', dataSource: 'SIS' },
+  { label: 'Platform Build', value: '—', dataSource: 'CI' }
+];
 
 export function HomeDashboard() {
   const navLinks = [
@@ -16,6 +24,7 @@ export function HomeDashboard() {
 
   return (
     <CrownLayout title="Crown" subtitle="School management platform">
+      <KpiStrip cards={HOME_KPI} />
       <h1 className="text-2xl font-semibold tracking-tight">Crown Dashboard</h1>
 
       <section aria-labelledby="proof-links-heading" style={{ marginBottom: 16 }}>
