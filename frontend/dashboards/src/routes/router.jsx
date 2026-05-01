@@ -351,15 +351,27 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <AdminCommandCenterClean />,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>
+        <AdminCommandCenterClean />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/school-admin',
-    element: <AdminCommandCenterClean />,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>
+        <AdminCommandCenterClean />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/school-administrator',
-    element: <AdminCommandCenterClean />,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>
+        <AdminCommandCenterClean />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.BOARD,
@@ -367,13 +379,15 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.FINANCE,
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
-      : (
-        <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        {IS_LAUNCH_PREVIEW
+          ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
+          : (
           <FinanceDashboard />
-        </RoleRouteGuard>
-      )),
+          )}
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.IT,

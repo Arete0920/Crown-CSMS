@@ -1,0 +1,4 @@
+﻿ M audit-artifacts/full-proof-stack/runtime-start-20260429_023348/backend_8000.log
+?? docs/crown-master-binder/
+?? scripts/execution/140_nonazure_readiness_pack.ps1
+?? scripts/execution/141_nonazure_burndown_pack.ps1

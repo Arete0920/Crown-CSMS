@@ -1,17 +1,19 @@
 import { Link, useInRouterContext } from 'react-router-dom';
+import { getCurrentUserRoles } from '../../auth/roleAdapter';
+import { hasAnyRole } from '../../auth/roleAccess';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', glyph: 'D' },
-  { label: 'School', href: '/school-admin', glyph: 'S' },
-  { label: 'Administration', href: '/admin', glyph: 'A' },
-  { label: 'Admissions', href: '/admissions', glyph: 'Ad' },
-  { label: 'Academics', href: '/gradebook', glyph: 'Ac' },
-  { label: 'Student Life', href: '/student-life', glyph: 'SL' },
-  { label: 'Attendance', href: '/attendance', glyph: 'At' },
-  { label: 'Finance', href: '/finance', glyph: 'F' },
+  { label: 'School', href: '/school-admin', glyph: 'S', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'] },
+  { label: 'Administration', href: '/admin', glyph: 'A', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'] },
+  { label: 'Admissions', href: '/admissions', glyph: 'Ad', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'admissions', 'admissions_manager'] },
+  { label: 'Academics', href: '/gradebook', glyph: 'Ac', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'academic_admin', 'academics'] },
+  { label: 'Student Life', href: '/student-life', glyph: 'SL', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'] },
+  { label: 'Attendance', href: '/attendance', glyph: 'At', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'] },
+  { label: 'Finance', href: '/finance', glyph: 'F', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'finance', 'finance_admin', 'finance_director', 'biz_office', 'super_admin'] },
   { label: 'Communications', href: '/communications', glyph: 'C' },
-  { label: 'Reports', href: '/reporting', glyph: 'R' },
-  { label: 'Settings', href: '/settings', glyph: 'Se' },
+  { label: 'Reports', href: '/reporting', glyph: 'R', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'board', 'board_member', 'super_admin'] },
+  { label: 'Settings', href: '/settings', glyph: 'Se', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'] },
 ];
 
 function BrandLockup() {
@@ -43,13 +45,15 @@ export default function CrownSidebar({
   user = { initials: 'SJ', name: 'Sarah James', role: 'Head of School' },
 }) {
   const hasRouterContext = useInRouterContext();
+  const userRoles = getCurrentUserRoles();
+  const visibleItems = NAV_ITEMS.filter((item) => !Array.isArray(item.roles) || hasAnyRole(userRoles, item.roles));
 
   return (
     <aside className="launch-sidebar">
       <BrandLockup />
 
       <nav className="launch-sidebar-nav" aria-label="Primary">
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const active = activePath === item.href;
           const classes = active ? 'is-active' : '';
           const content = (

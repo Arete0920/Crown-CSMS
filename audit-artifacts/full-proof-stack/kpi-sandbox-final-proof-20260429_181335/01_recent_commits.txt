@@ -1,0 +1,10 @@
+8d8f39c Capture real sandbox login proof without fallback
+8cd3af0 Fix role navigation permissions and capture proof
+a20c579 Harden role/nav plumbing and finalize hygiene sweep
+a24f200 Capture KPI matrix and tenant role permission proof
+6ec4d6a Capture browser console and sandbox smoke proof
+65bd9ef Capture active repo build parse and runtime validation proof
+7a47bda Capture runtime service and route proof artifacts
+09ea776 Clear 51x51 fast-control unresolved queue
+3abd4b6 Clarify fast-mode 51x51 audit as pass-candidate control, not production GO
+7b81dd0 Add deterministic resumable fast-mode 51x51 integrity audit

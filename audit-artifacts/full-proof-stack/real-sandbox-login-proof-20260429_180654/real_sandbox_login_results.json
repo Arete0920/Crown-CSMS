@@ -1,0 +1,47 @@
+[
+  {
+    "role": "admin",
+    "email": "admin@heritage.example.org",
+    "expectedPath": "/admin",
+    "finalUrl": "http://localhost:3000/admin",
+    "roleSelected": "head_of_school",
+    "selectedEmailSelector": "input[type=\"email\"]",
+    "selectedPasswordSelector": "input[type=\"password\"]",
+    "selectedSubmitSelector": "button[type=\"submit\"]",
+    "consoleErrors": 0,
+    "pageErrors": 0,
+    "failedRequests": 0,
+    "result": "PASS",
+    "error": ""
+  },
+  {
+    "role": "teacher",
+    "email": "teacher.lower@heritage.example.org",
+    "expectedPath": "/teacher",
+    "finalUrl": "http://localhost:3000/teacher",
+    "roleSelected": "teacher",
+    "selectedEmailSelector": "input[type=\"email\"]",
+    "selectedPasswordSelector": "input[type=\"password\"]",
+    "selectedSubmitSelector": "button[type=\"submit\"]",
+    "consoleErrors": 0,
+    "pageErrors": 0,
+    "failedRequests": 0,
+    "result": "PASS",
+    "error": ""
+  },
+  {
+    "role": "parent",
+    "email": "parent.reed@heritage.example.org",
+    "expectedPath": "/parent",
+    "finalUrl": "http://localhost:3000/parent",
+    "roleSelected": "parent",
+    "selectedEmailSelector": "input[type=\"email\"]",
+    "selectedPasswordSelector": "input[type=\"password\"]",
+    "selectedSubmitSelector": "button[type=\"submit\"]",
+    "consoleErrors": 0,
+    "pageErrors": 0,
+    "failedRequests": 0,
+    "result": "PASS",
+    "error": ""
+  }
+]
