@@ -1,0 +1,4 @@
+JOB 73685334579 build-and-deploy conclusion=failure
+  FAILED step 5: Guard: Azure auth secrets present conclusion=failure
+  FAILED step 37: Rollback on failure conclusion=failure
+JOB 73689242062 notification conclusion=success

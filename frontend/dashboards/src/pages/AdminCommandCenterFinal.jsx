@@ -952,7 +952,7 @@ export default function AdminCommandCenterFinal() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [overviewCards, todayAtGlanceMetrics]);
 
   const handleToggleSidebar = () => {
     setIsSidebarCollapsed((previous) => {

@@ -1,4 +1,4 @@
-import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'finance',
@@ -10,9 +10,9 @@ export default {
   note: BASE_NOTE,
   metrics: [
     { label: 'Receivables', value: '$148K', detail: 'Current family balances outstanding.', accent: 'blue' },
-    { label: 'Deposits Posted', value: '$82K', detail: 'Today’s batch completed successfully.', accent: 'emerald' },
+    { label: 'Deposits Posted', value: '$82K', detail: 'Todayâ€™s batch completed successfully.', accent: 'emerald' },
     { label: 'Payment Plans', value: '412', detail: '98% active without issue.', accent: 'gold' },
-    { label: 'Exceptions Queue', value: '9', detail: 'Requires finance specialist review.', accent: 'navy' },
+    { label: 'Exceptions Queue', value: '9', detail: 'Requires finance specialist review.', accent: 'royal' },
   ],
   insight: { kicker: 'Finance Trend', title: 'Collections remain on target', chip: 'Ledger sync healthy', trend: BASE_TREND },
   activityTitle: 'Recent finance activity',
