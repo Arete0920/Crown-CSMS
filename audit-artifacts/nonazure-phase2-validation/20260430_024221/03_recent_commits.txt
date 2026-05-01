@@ -1,0 +1,20 @@
+﻿667d63f ops: non-Azure readiness pack + burn-down board 20260430
+71b2328 audit: deep-dive live audit 20260430_020745 ΓÇö NO-GO 6/12 gates failing
+4c103b9 Capture post-deploy-tag Azure workflow and endpoint evidence
+a5bad6b Add Azure proof packet - RC not yet deployed, SHA mismatch documented
+b9dad81 Record governance acceptance for release candidate
+cb61668 Add governance decision required memo - KPI caveat resolution path
+1cd89cb Add KPI governance decision record - leadership sign-off required
+93f0afe Capture final clean proof packet candidate
+bffbc6d Capture KPI truth matrix and sandbox smoke final proof
+8d8f39c Capture real sandbox login proof without fallback
+8cd3af0 Fix role navigation permissions and capture proof
+a20c579 Harden role/nav plumbing and finalize hygiene sweep
+a24f200 Capture KPI matrix and tenant role permission proof
+6ec4d6a Capture browser console and sandbox smoke proof
+65bd9ef Capture active repo build parse and runtime validation proof
+7a47bda Capture runtime service and route proof artifacts
+09ea776 Clear 51x51 fast-control unresolved queue
+3abd4b6 Clarify fast-mode 51x51 audit as pass-candidate control, not production GO
+7b81dd0 Add deterministic resumable fast-mode 51x51 integrity audit
+64ae4d0 Add fast-mode deterministic 51x51 audit (path-only, no transcript redirection)

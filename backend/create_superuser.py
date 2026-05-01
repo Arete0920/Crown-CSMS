@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+import os
 import logging
 
 
@@ -14,7 +15,7 @@ User.objects.filter(username='admin').delete()
 user = User.objects.create_superuser(
     username='admin',
     email='admin@crown.local',
-    password='Crown2026!'
+    password=os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'Crown2026!')
 )
 
 # Attach a school context for tenant-scoped APIs (exports/billing/etc.).
@@ -33,4 +34,4 @@ except Exception:
 
 logger.info("Superuser created: %s", user.username)
 logger.info("  Username: admin")
-logger.info("  Password: Crown2026!")
+logger.info("  Password: (set via DJANGO_SUPERUSER_PASSWORD env var or default)")

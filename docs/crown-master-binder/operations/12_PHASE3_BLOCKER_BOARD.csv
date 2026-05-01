@@ -1,0 +1,3 @@
+"Priority","Area","Issue","Owner","Evidence","RequiredFix","Status"
+"P0","Frontend validation","Validation failed: npm run test","Dev 4 / Dev 5","C:\w\crown_main_postmerge_verify\audit-artifacts\nonazure-phase3-ui-polish\20260430_030951\validation_frontend_2_test.txt","Fix validation failure and rerun Phase 3.","Open"
+"P1","Placeholder cleanup","156 placeholder/incomplete markers remain.","Dev 4 / Dev 5","audit-artifacts\nonazure-phase3-ui-polish\20260430_030951\06_placeholder_hits_after.csv","Remove, replace, or formally defer production-facing markers.","Open"

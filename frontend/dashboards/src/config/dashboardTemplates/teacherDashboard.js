@@ -1,4 +1,4 @@
-import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'teacher',
@@ -11,7 +11,7 @@ export default {
   metrics: [
     { label: 'Classes Today', value: '5', detail: 'Full teaching schedule active.', accent: 'blue' },
     { label: 'Attendance Posted', value: '4/5', detail: 'One class remaining.', accent: 'gold' },
-    { label: 'Assignments to Grade', value: '23', detail: 'Needs end-of-day completion.', accent: 'navy' },
+    { label: 'Assignments to Grade', value: '23', detail: 'Needs end-of-day completion.', accent: 'royal' },
     { label: 'Parent Messages', value: '3', detail: 'Unread this morning.', accent: 'emerald' },
   ],
   insight: {
