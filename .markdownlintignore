@@ -3,9 +3,14 @@
 **/node_modules/**
 .venv/**
 audit-artifacts/**
+audit-artifacts/ui-cleanup-captures/**
 backend/staticfiles/**
 coverage/**
+docs/crown-master-binder/**
+docs/crown-master-binder/inventory/**
 docs/crown-master-binder/operations/**
+docs/crown-master-binder/runbooks/**
+docs/crown-master-binder/security/**
 frontend/build/**
 frontend/dist/**
 node_modules/**
