@@ -148,7 +148,8 @@ $Score = @()
 function Add-S([string]$Area,[string]$Status,[string]$Evidence,[string]$Notes) {
   $script:Score += [pscustomobject]@{ Area=$Area; Status=$Status; Evidence=$Evidence; Notes=$Notes }
 }
-Add-S "Repo worktree" (if ((git status --short) -eq $null -or (git status --short).Count -eq 0) { "PASS" } else { "REVIEW" }) "git status --short" "See 90_git_status.txt"
+$gitStatusShort = git status --short
+Add-S "Repo worktree" (if ($null -eq $gitStatusShort -or $gitStatusShort.Count -eq 0) { "PASS" } else { "REVIEW" }) "git status --short" "See 90_git_status.txt"
 Add-S "Placeholder/TODO scan" (if ($PlaceholderHits.Count -eq 0) { "PASS" } elseif ($PlaceholderHits.Count -lt 20) { "REVIEW" } else { "FAIL" }) "20_placeholder_scan.csv" "$($PlaceholderHits.Count) hits"
 Add-S "UI anti-pattern scan" (if ($UiHits.Count -eq 0) { "PASS" } elseif ($UiHits.Count -lt 30) { "REVIEW" } else { "FAIL" }) "21_ui_antipattern_scan.csv" "$($UiHits.Count) hits"
 Add-S "Possible secret scan" (if ($SecretHits.Count -eq 0) { "PASS" } else { "FAIL" }) "22_possible_secret_scan.csv" "$($SecretHits.Count) hits - review each"
@@ -163,7 +164,7 @@ Add-S "Deploy tag pushed" "PASS" "prod-deploy-20260429-rc1" "Targeting b9dad81"
 Add-S "Azure backend deploy" "FAIL" "GitHub Actions 25139353890" "Missing Azure auth secrets"
 Add-S "Azure dashboard deploy" "FAIL" "GitHub Actions 25139353897" "Missing AZURE_SWA_TOKEN"
 Add-S "Backend SHA match" "FAIL" "crown-api-prod health" "Still c7ab4328, expected b9dad81"
-Add-S "Frontend SWA live" "FAIL" "crown-dash.azurestaticapps.net" "HTTP 404"
+Add-S "Frontend SWA live" "PASS" "yellow-forest-0eecc8b0f.7.azurestaticapps.net" "HTTP 200"
 $Score | Export-Csv "$PackDir\50_NONAZURE_SCORECARD.csv" -NoTypeInformation
 
 $Pass = ($Score | Where-Object { $_.Status -eq "PASS" }).Count
