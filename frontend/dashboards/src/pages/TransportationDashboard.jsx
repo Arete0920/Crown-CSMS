@@ -1,7 +1,15 @@
-import { Grid, Stack, Typography } from '@mui/material';
+﻿import { Grid, Stack, Typography } from '@mui/material';
 import TransportationSnapshotCard from '../components/dashboard/transportation/TransportationSnapshotCard';
 import TransportationAlertsPanel from '../components/dashboard/transportation/TransportationAlertsPanel';
 import TransportationQueueCard from '../components/dashboard/transportation/TransportationQueueCard';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+
+const TRANSPORTATION_KPI = [
+  { label: 'Routes Active', value: '—', dataSource: 'Transport' },
+  { label: 'Riders Today', value: '—', dataSource: 'Transport' },
+  { label: 'Incidents', value: '—', dataSource: 'Transport' },
+  { label: 'Vehicles', value: '—', dataSource: 'Transport' }
+];
 
 export default function TransportationDashboard() {
   return (
@@ -14,6 +22,8 @@ export default function TransportationDashboard() {
           Routes, vehicle readiness, family stop changes, and transport coverage status.
         </Typography>
       </div>
+
+      <KpiStrip cards={TRANSPORTATION_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>

@@ -90,7 +90,7 @@ const driversColumns = [
 ];
 
 /* ── Page ────────────────────────────────────────────────────────────── */
-/* â”€â”€ Board Executive / Strategic Command KPI flip cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Board Executive / Strategic Command KPI flip cards */
 const ADMIN_KPI = [
   { label: "Net Tuition Rev",    value: "$6.8M",  trend: "+10% vs last yr",  trendUp: true,
     definition: "Gross tuition billings minus total aid awarded, year-to-date. Key indicator of financial sustainability.",

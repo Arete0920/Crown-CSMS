@@ -62,6 +62,32 @@ export function AcademicsDashboard() {
     ['parent', 'school_admin', 'super_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'staff', 'admin'].includes(role)
   );
 
+  const loadParentStudentsAndSchedules = async () => {
+    try {
+      const students = await fetchParentStudents();
+      const safeStudents = students || [];
+      setParentStudents(safeStudents);
+
+      const results = await Promise.all(
+        safeStudents.map(async (st) => {
+          const rows = await fetchStudentSections(st.student_id);
+          return {
+            studentId: st.student_id,
+            rows: rows || [],
+          };
+        })
+      );
+
+      const next = {};
+      results.forEach((r) => {
+        next[r.studentId] = r.rows;
+      });
+      setStudentSchedules(next);
+    } catch (err) {
+      setParentError(err?.message ?? 'Failed to load parent students.');
+    }
+  };
+
   // Initialize schoolId from authClient (which checks sessionStorage first, then localStorage)
   useEffect(() => {
     const id = getSelectedSchoolId();
@@ -82,27 +108,7 @@ export function AcademicsDashboard() {
       return;
     }
 
-    fetchParentStudents()
-      .then((students) => {
-        setParentStudents(students || []);
-        return Promise.all(
-          (students || []).map((st) =>
-            fetchStudentSections(st.student_id).then((rows) => ({
-              studentId: st.student_id,
-              rows: rows || [],
-            }))
-          )
-        );
-      })
-      .then((results) => {
-        if (!results) return;
-        const next = {};
-        results.forEach((r) => {
-          next[r.studentId] = r.rows;
-        });
-        setStudentSchedules(next);
-      })
-      .catch((err) => setParentError(err?.message ?? 'Failed to load parent students.'));
+    loadParentStudentsAndSchedules();
   }, [canViewParentStudents]);
 
   const handleLookup = () => {
@@ -262,6 +268,47 @@ export function AcademicsDashboard() {
     }
   };
 
+  let parentStudentsBody = null;
+  if (canViewParentStudents) {
+    if (parentError) {
+      parentStudentsBody = <ErrorBanner title="Failed to load parent students" message={parentError} />;
+    } else {
+      parentStudentsBody = (
+        <div>
+          {parentStudents.length === 0 && <div>No linked students.</div>}
+          {parentStudents.map((st) => (
+            <div key={st.student_id} style={{ marginBottom: 16 }}>
+              <strong>{st.first_name} {st.last_name}</strong> (Grade {st.grade_level})
+              <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%', marginTop: 8 }}>
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th>Term</th>
+                    <th>Teacher</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(studentSchedules[st.student_id] || []).map((row) => (
+                    <tr key={`${st.student_id}-${row.section_id}`}>
+                      <td>{row.course_code} — {row.course_name}</td>
+                      <td>{row.term_code || row.term_id}</td>
+                      <td>{row.teacher_name || '—'}</td>
+                    </tr>
+                  ))}
+                  {(studentSchedules[st.student_id] || []).length === 0 && (
+                    <tr>
+                      <td colSpan="3">No sections available.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      );
+    }
+  }
+
   return (
     <CrownLayout title="Academics" subtitle="Read Only">
       <KpiStrip cards={ACADEMICS_KPI} />
@@ -315,42 +362,10 @@ export function AcademicsDashboard() {
 
       <section style={{ marginBottom: 32 }}>
         <h2>Parent Students</h2>
-        {!canViewParentStudents ? (
-          <div>Parent-linked students are only available for parent/family and staff roles.</div>
-        ) : parentError ? (
-          <ErrorBanner title="Failed to load parent students" message={parentError} />
+        {canViewParentStudents ? (
+          parentStudentsBody
         ) : (
-          <div>
-            {parentStudents.length === 0 && <div>No linked students.</div>}
-            {parentStudents.map((st) => (
-              <div key={st.student_id} style={{ marginBottom: 16 }}>
-                <strong>{st.first_name} {st.last_name}</strong> (Grade {st.grade_level})
-                <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%', marginTop: 8 }}>
-                  <thead>
-                    <tr>
-                      <th>Course</th>
-                      <th>Term</th>
-                      <th>Teacher</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(studentSchedules[st.student_id] || []).map((row) => (
-                      <tr key={`${st.student_id}-${row.section_id}`}>
-                        <td>{row.course_code} — {row.course_name}</td>
-                        <td>{row.term_code || row.term_id}</td>
-                        <td>{row.teacher_name || '—'}</td>
-                      </tr>
-                    ))}
-                    {(studentSchedules[st.student_id] || []).length === 0 && (
-                      <tr>
-                        <td colSpan="3">No sections available.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-          </div>
+          <div>Parent-linked students are only available for parent/family and staff roles.</div>
         )}
       </section>
 
@@ -534,7 +549,7 @@ export function AcademicsDashboard() {
                             {studentGradesLoading ? 'Loading gradebook...' : 'Load gradebook'}
                           </button>
                           <button disabled style={{ width: '100%', padding: 8, marginBottom: 8 }}>
-                            Attendance (coming soon)
+                            Attendance summary unavailable in this view
                           </button>
                           <button
                             data-testid="btn-load-assignments"
@@ -671,7 +686,7 @@ export function AcademicsDashboard() {
                           </div>
                         )}
 
-                        {!assignmentsError && assignments && assignments.length === 0 && (
+                        {!assignmentsError && (assignments?.length ?? 0) === 0 && (
                           <div
                             style={{
                               marginTop: 10,

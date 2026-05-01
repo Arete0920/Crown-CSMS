@@ -45,7 +45,7 @@ C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:1: name:
 C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:9: # services are stamped from the same SHA and tag on every production push.
 C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:13: #     and tag name at build time, then shipped inside dist/ to Azure SWA
 C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:19: #   AZURE_SWA_TOKEN  deployment token from the Azure Static Web Apps resource
-C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:22: #                     https://crown-dash.azurestaticapps.net
+C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:22: #                     https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
 C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:119: - name: Deploy to Azure Static Web Apps
 C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:120: uses: Azure/static-web-apps-deploy@v1
 C:\w\crown_main_postmerge_verify\.github\workflows\deploy-dashboard.yml:122: azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_TOKEN }}

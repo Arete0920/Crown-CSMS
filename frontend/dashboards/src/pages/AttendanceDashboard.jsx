@@ -1,4 +1,5 @@
 import { Grid, Stack, Typography } from '@mui/material';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 import useDashboardData from '../hooks/useDashboardData';
 import DataStatusBanner from '../components/dashboard/shared/DataStatusBanner';
 import DashboardLoadingState from '../components/dashboard/shared/DashboardLoadingState';
@@ -7,6 +8,21 @@ import MetricSummaryGrid from '../components/dashboard/shared/MetricSummaryGrid'
 import AlertListCard from '../components/dashboard/shared/AlertListCard';
 import TextListCard from '../components/dashboard/shared/TextListCard';
 import PageState from '../components/states/PageState.jsx';
+
+const ATTENDANCE_KPI = [
+  { label: 'Daily Rate',     value: '—', trend: null, trendUp: null,
+    definition: 'School-wide attendance rate for the current school day.',
+    dataSource: 'Attendance API', dataHref: '/attendance' },
+  { label: 'Absent Today',   value: '—', trend: null, trendUp: null,
+    definition: 'Total students marked absent for the current school day.',
+    dataSource: 'Attendance API', dataHref: '/attendance' },
+  { label: 'Tardy Today',    value: '—', trend: null, trendUp: null,
+    definition: 'Total students marked tardy for the current school day.',
+    dataSource: 'Attendance API', dataHref: '/attendance' },
+  { label: 'Chronic Absent', value: '—', trend: null, trendUp: null,
+    definition: 'Students with 10% or more absences in the current term.',
+    dataSource: 'Attendance API', dataHref: '/attendance' },
+];
 
 export default function AttendanceDashboard() {
   const {
@@ -29,6 +45,8 @@ export default function AttendanceDashboard() {
           Live attendance visibility with scaffold fallback until full endpoint certification is complete.
         </Typography>
       </div>
+
+      <KpiStrip cards={ATTENDANCE_KPI} />
 
       <DataStatusBanner
         certification={certification}

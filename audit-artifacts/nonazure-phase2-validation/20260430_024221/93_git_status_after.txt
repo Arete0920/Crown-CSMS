@@ -1,3 +1,18 @@
 ﻿ M audit-artifacts/full-proof-stack/runtime-start-20260429_023348/backend_8000.log
- M audit-artifacts/nonazure-phase2-validation/20260430_024221/00_PHASE2_RUN_LOG.txt
-?? scripts/execution/142b_phase2_postprocess.ps1
+ M audit-artifacts/nonazure-phase2-validation/20260430_024221/92_commit_sha.txt
+ M frontend/dashboards/src/pages/BillingDashboard.jsx
+ M frontend/dashboards/src/pages/FinancialAidDashboard.jsx
+ M frontend/dashboards/src/pages/Login.jsx
+ M frontend/dashboards/src/pages/LoginPage.jsx
+ M frontend/dashboards/src/pages/WizardHub.jsx
+ M frontend/dashboards/src/styles/crown-theme.css
+ M frontend/dashboards/src/tests/loginPagePolish.test.jsx
+ M frontend/dashboards/src/views/platformOps/PlatformOpsHome.jsx
+?? frontend/dashboards/src/components/crown/CrownDashboardFrame.tsx
+?? frontend/dashboards/src/components/crown/CrownEmptyState.tsx
+?? frontend/dashboards/src/components/crown/CrownKpiCard.tsx
+?? frontend/dashboards/src/components/crown/CrownPageHeader.tsx
+?? frontend/dashboards/src/components/crown/CrownStatusPill.tsx
+?? frontend/dashboards/src/components/crown/index.ts
+?? frontend/dashboards/src/index.css
+?? frontend/dashboards/src/lib/crown/

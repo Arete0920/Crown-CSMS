@@ -1,4 +1,4 @@
-import {
+﻿import {
   Card,
   CardContent,
   Chip,
@@ -17,12 +17,20 @@ import {
   getCertificationStatusColor,
 } from '../config/dashboardCertificationRegistry';
 import { DASHBOARD_DATA_REGISTRY } from '../config/dashboardDataRegistry';
+import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
 
 function countByStatus(status) {
   return Object.values(DASHBOARD_CERTIFICATION_REGISTRY).filter(
     (item) => item.status === status
   ).length;
 }
+
+const DASH_CERT_KPI = [
+  { label: 'Certified', value: '—', dataSource: 'Registry' },
+  { label: 'In Review', value: '—', dataSource: 'Registry' },
+  { label: 'Pending', value: '—', dataSource: 'Registry' },
+  { label: 'Blocked', value: '—', dataSource: 'Registry' }
+];
 
 export default function DashboardCertificationCenter() {
   const rows = DASHBOARD_REGISTRY.map((dashboard) => {
@@ -51,6 +59,8 @@ export default function DashboardCertificationCenter() {
           Single view of dashboard readiness, endpoint binding, ownership, and rollout posture.
         </Typography>
       </div>
+
+      <KpiStrip cards={DASH_CERT_KPI} />
 
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Tenant isolation tests for the Christian PD Hub module.
 Module keywords: PDHub, professional_development, course, training, teacher_development
 Covers check 23: Tenant Isolation Tested.
@@ -36,7 +36,7 @@ class TestChristianPdHubTenantIsolation:
         self.client = APIClient()
 
     def test_christian_pd_hub_tenant_school_ids_are_distinct(self):
-        """Two tenant schools have distinct IDs — no data bleed possible."""
+        """Two tenant schools have distinct IDs â€” no data bleed possible."""
         assert self.school_a.id != self.school_b.id
 
     def test_christian_pd_hub_user_bound_to_correct_school(self):
@@ -47,7 +47,7 @@ class TestChristianPdHubTenantIsolation:
     def test_christian_pd_hub_cross_tenant_header_is_rejected_or_scoped(self):
         """User from school A cannot freely access school B resources (cross-tenant 403/404)."""
         self.client.force_authenticate(user=self.user_a)
-        # Using integrity endpoint with school B's ID — should be denied or scoped out
+        # Using integrity endpoint with school B's ID â€” should be denied or scoped out
         response = self.client.get(
             "/api/integrity/",
             HTTP_X_SCHOOL_ID=str(self.school_b.id),
@@ -72,7 +72,7 @@ class TestChristianPdHubTenantIsolation:
         )
         assert response.status_code in (401, 403)
 
-    def test_christian_pd_hub_isolation_keyword_present_in_source():
+    def test_christian_pd_hub_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Christian PD Hub module source."""
         from pathlib import Path
         root = Path(__file__).resolve().parents[2]
@@ -85,3 +85,4 @@ class TestChristianPdHubTenantIsolation:
         isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
         found = any(kw in source_text for kw in isolation_keywords)
         assert found, f"Christian PD Hub: tenant isolation keywords not found in source"
+

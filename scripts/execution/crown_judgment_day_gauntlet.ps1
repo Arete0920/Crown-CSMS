@@ -9,10 +9,12 @@ $ProgressPreference = "SilentlyContinue"
 # Optional env vars:
 #   $env:CROWN_BACKEND_BASE_URL   = "https://crown-api-prod.azurewebsites.net"
 #   $env:CROWN_FRONTEND_BASE_URL  = "https://yellow-forest-0eecc8b0f.7.azurestaticapps.net"
-#   $env:CROWN_APPROVED_SHA       = "b9dad81..."
-#   $env:CROWN_RUN_BROWSER        = "YES"
-#   $env:CROWN_RUN_SAFE_LOAD      = "YES"
-#   $env:CROWN_LOAD_REQUESTS      = "100"
+#   $env:CROWN_APPROVED_SHA              = "b9dad81..."   # legacy: applies to both surfaces
+#   $env:CROWN_APPROVED_BACKEND_SHA      = "backend sha"
+#   $env:CROWN_APPROVED_FRONTEND_SHA     = "frontend sha"
+#   $env:CROWN_RUN_BROWSER               = "YES"
+#   $env:CROWN_RUN_SAFE_LOAD             = "YES"
+#   $env:CROWN_LOAD_REQUESTS             = "100"
 #
 # This script:
 # - does not deploy
@@ -133,7 +135,10 @@ function Run-Validation {
         $proc = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdLine -PassThru -WindowStyle Hidden
         $finished = $proc.WaitForExit($timeoutSec * 1000)
         if (-not $finished) {
-            try { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue } catch {}
+            try {
+                Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+                try { $null = $proc.WaitForExit(5000) } catch {}
+            } catch {}
             $exit = 124
             $status = "TIMEOUT"
             try {
@@ -267,6 +272,14 @@ $ApprovedSha = $env:CROWN_APPROVED_SHA
 if ([string]::IsNullOrWhiteSpace($ApprovedSha)) {
     $ApprovedSha = $HeadFull
 }
+$ApprovedBackendSha = $env:CROWN_APPROVED_BACKEND_SHA
+if ([string]::IsNullOrWhiteSpace($ApprovedBackendSha)) {
+    $ApprovedBackendSha = $ApprovedSha
+}
+$ApprovedFrontendSha = $env:CROWN_APPROVED_FRONTEND_SHA
+if ([string]::IsNullOrWhiteSpace($ApprovedFrontendSha)) {
+    $ApprovedFrontendSha = $ApprovedSha
+}
 @"
 Repo: $Root
 Branch: $Branch
@@ -278,6 +291,8 @@ BackendManagePy: $BackendManagePy
 BackendBaseUrl: $BackendBaseUrl
 FrontendBaseUrl: $FrontendBaseUrl
 ApprovedShaForGate: $ApprovedSha
+ApprovedBackendShaForGate: $ApprovedBackendSha
+ApprovedFrontendShaForGate: $ApprovedFrontendSha
 "@ | Set-Content "$Out\06_detected_surfaces.txt" -Encoding UTF8
 # ------------------------------------------------------------
 # 03. Local validation gauntlet
@@ -588,14 +603,15 @@ FrontendRootUrl: $FrontendRootUrl
 FrontendStatus: $FrontendStatus
 BuildJsonUrl: $BuildJsonUrl
 BuildJsonStatus: $BuildJsonStatus
-ApprovedSha: $ApprovedSha
+ApprovedBackendSha: $ApprovedBackendSha
+ApprovedFrontendSha: $ApprovedFrontendSha
 "@ | Set-Content "$Out\32_deployment_probe_summary.txt" -Encoding UTF8
 $BackendShaMatch = $false
 $FrontendShaMatch = $false
-if ($BackendBody -match [regex]::Escape($ApprovedSha) -or ($ApprovedSha.Length -ge 7 -and $BackendBody -match [regex]::Escape($ApprovedSha.Substring(0,7)))) {
+if ($BackendBody -match [regex]::Escape($ApprovedBackendSha) -or ($ApprovedBackendSha.Length -ge 7 -and $BackendBody -match [regex]::Escape($ApprovedBackendSha.Substring(0,7)))) {
     $BackendShaMatch = $true
 }
-if ($BuildJsonBody -match [regex]::Escape($ApprovedSha) -or ($ApprovedSha.Length -ge 7 -and $BuildJsonBody -match [regex]::Escape($ApprovedSha.Substring(0,7)))) {
+if ($BuildJsonBody -match [regex]::Escape($ApprovedFrontendSha) -or ($ApprovedFrontendSha.Length -ge 7 -and $BuildJsonBody -match [regex]::Escape($ApprovedFrontendSha.Substring(0,7)))) {
     $FrontendShaMatch = $true
 }
 $DeployPoints = 0
@@ -610,7 +626,7 @@ if ($BackendStatus -ne "200") {
     Add-Blocker "P0" "Deployment integrity" "Backend health is not HTTP 200." "Azure/DevOps team" "$Out\32_deployment_probe_summary.txt" "Repair backend deployment/runtime."
 }
 if (-not $BackendShaMatch) {
-    Add-Blocker "P0" "Deployment integrity" "Backend live SHA does not match approved SHA." "Azure/DevOps team" "$Out\30_backend_health_body.txt" "Deploy approved backend build and rerun proof."
+    Add-Blocker "P0" "Deployment integrity" "Backend live SHA does not match approved backend SHA." "Azure/DevOps team" "$Out\30_backend_health_body.txt" "Deploy approved backend build and rerun proof."
 }
 if ($FrontendStatus -ne "200") {
     Add-Blocker "P0" "Deployment integrity" "Frontend root is not HTTP 200." "Azure/DevOps team" "$Out\32_deployment_probe_summary.txt" "Repair dashboard/frontend deployment."
@@ -619,7 +635,7 @@ if ($BuildJsonStatus -ne "200") {
     Add-Blocker "P0" "Deployment integrity" "Frontend build.json is not HTTP 200." "Azure/DevOps team" "$Out\32_deployment_probe_summary.txt" "Publish build.json with deployed frontend."
 }
 if (-not $FrontendShaMatch) {
-    Add-Blocker "P0" "Deployment integrity" "Frontend build SHA does not match approved SHA." "Azure/DevOps team" "$Out\31_frontend_build_json_body.txt" "Deploy approved frontend build and rerun proof."
+    Add-Blocker "P0" "Deployment integrity" "Frontend build SHA does not match approved frontend SHA." "Azure/DevOps team" "$Out\31_frontend_build_json_body.txt" "Deploy approved frontend build and rerun proof."
 }
 # ------------------------------------------------------------
 # 06. Browser smoke test if Playwright is available/enabled
@@ -764,57 +780,89 @@ Add-Score "Safe load probe" 50 $LoadPoints $LoadStatus "$Out\51_safe_load_summar
 # ------------------------------------------------------------
 # 08. Required manual/runtime proof matrices
 # ------------------------------------------------------------
-# Tenant isolation
-$TenantProofs = @(
-    @("TI-001","Tenant isolation","School A admin cannot access School B student by URL/API id.","403/404/safe redirect","Dev 1 / Dev 2 / Dev 5"),
-    @("TI-002","Tenant isolation","School A parent cannot access School B household record.","403/404/safe redirect","Dev 1 / Dev 2 / Dev 5"),
-    @("TI-003","Tenant isolation","School A finance user cannot access School B billing data.","403/404/safe redirect","Dev 1 / Dev 3 / Dev 5"),
-    @("TI-004","Tenant isolation","School A teacher cannot access School B roster/attendance/grades.","403/404/safe redirect","Dev 1 / Dev 2 / Dev 5"),
-    @("TI-005","Tenant isolation","School A dashboard cannot aggregate School B data.","Only active school data","Dev 1 / Dev 4 / Dev 5"),
-    @("TI-006","Tenant isolation","Unauthorized school switcher context change is rejected.","Denied","Dev 1 / Dev 5"),
-    @("TI-007","Tenant isolation","School A user cannot download School B document/file.","403/404/safe redirect","Dev 1 / Dev 5"))
-foreach ($p in $TenantProofs) {
-    Add-Proof $p[0] $p[1] $p[2] $p[3] $p[4] "Manual Runtime Required" ""
+$RuntimeProofTemplate = @(
+    @{ ProofId = "TI-001"; Lane = "Tenant isolation"; Test = "School A admin cannot access School B student by URL/API id."; Expected = "403/404/safe redirect"; Owner = "Dev 1 / Dev 2 / Dev 5" },
+    @{ ProofId = "TI-002"; Lane = "Tenant isolation"; Test = "School A parent cannot access School B household record."; Expected = "403/404/safe redirect"; Owner = "Dev 1 / Dev 2 / Dev 5" },
+    @{ ProofId = "TI-003"; Lane = "Tenant isolation"; Test = "School A finance user cannot access School B billing data."; Expected = "403/404/safe redirect"; Owner = "Dev 1 / Dev 3 / Dev 5" },
+    @{ ProofId = "TI-004"; Lane = "Tenant isolation"; Test = "School A teacher cannot access School B roster/attendance/grades."; Expected = "403/404/safe redirect"; Owner = "Dev 1 / Dev 2 / Dev 5" },
+    @{ ProofId = "TI-005"; Lane = "Tenant isolation"; Test = "School A dashboard cannot aggregate School B data."; Expected = "Only active school data"; Owner = "Dev 1 / Dev 4 / Dev 5" },
+    @{ ProofId = "TI-006"; Lane = "Tenant isolation"; Test = "Unauthorized school switcher context change is rejected."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "TI-007"; Lane = "Tenant isolation"; Test = "School A user cannot download School B document/file."; Expected = "403/404/safe redirect"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "RBAC-001"; Lane = "RBAC"; Test = "Parent cannot access admin dashboard."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "RBAC-002"; Lane = "RBAC"; Test = "Teacher cannot access finance billing admin."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "RBAC-003"; Lane = "RBAC"; Test = "Student cannot access staff/student admin records."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "RBAC-004"; Lane = "RBAC"; Test = "Finance cannot edit grades/transcripts."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "RBAC-005"; Lane = "RBAC"; Test = "Admissions cannot edit transcript records."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "RBAC-006"; Lane = "RBAC"; Test = "Direct API call outside role is denied even if frontend route is guessed."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "WF-001"; Lane = "Workflow"; Test = "Inquiry to applicant to admitted to enrolled."; Expected = "Canonical SIS student/enrollment created once"; Owner = "Dev 2 / Dev 3 / Dev 5" },
+    @{ ProofId = "WF-002"; Lane = "Workflow"; Test = "Re-enrollment checklist to next-year enrollment."; Expected = "Returning student status updates correctly"; Owner = "Dev 2 / Dev 3 / Dev 5" },
+    @{ ProofId = "WF-003"; Lane = "Workflow"; Test = "Billing charge to payment to balance."; Expected = "Admin and parent views reconcile"; Owner = "Dev 3 / Dev 5" },
+    @{ ProofId = "WF-004"; Lane = "Workflow"; Test = "Teacher roster to attendance posting."; Expected = "Attendance persists and admin sees result"; Owner = "Dev 2 / Dev 4 / Dev 5" },
+    @{ ProofId = "WF-005"; Lane = "Workflow"; Test = "Parent portal household/student/billing/messages."; Expected = "Parent sees only authorized household data"; Owner = "Dev 4 / Dev 5" },
+    @{ ProofId = "WF-006"; Lane = "Workflow"; Test = "Admin dashboard KPI drill-downs."; Expected = "Dashboard totals match source data"; Owner = "Dev 4 / Dev 5" },
+    @{ ProofId = "CHAOS-001"; Lane = "Browser chaos"; Test = "Double-click submit does not duplicate records."; Expected = "No duplicate/corruption"; Owner = "Dev 4 / Dev 5" },
+    @{ ProofId = "CHAOS-002"; Lane = "Browser chaos"; Test = "Refresh/back mid-wizard recovers safely."; Expected = "No stuck state/corruption"; Owner = "Dev 4 / Dev 5" },
+    @{ ProofId = "CHAOS-003"; Lane = "Browser chaos"; Test = "Two tabs editing same record handles stale update safely."; Expected = "No silent overwrite"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "SEC-001"; Lane = "Security red team"; Test = "IDOR object id swapping fails."; Expected = "Denied"; Owner = "Dev 1 / Dev 5" },
+    @{ ProofId = "SEC-002"; Lane = "Security red team"; Test = "XSS payload in names/messages/notes is neutralized."; Expected = "No script execution"; Owner = "Dev 1 / Dev 4 / Dev 5" },
+    @{ ProofId = "DATA-001"; Lane = "Data integrity"; Test = "Migration check and backup/restore procedure verified."; Expected = "No data loss"; Owner = "Dev 2 / Dev 5" },
+    @{ ProofId = "DATA-002"; Lane = "Data integrity"; Test = "Withdrawn/archived student keeps history but blocks active workflows."; Expected = "Correct lifecycle behavior"; Owner = "Dev 2 / Dev 5" }
+)
+
+$RuntimeMatrixPath = $env:CROWN_RUNTIME_PROOF_MATRIX
+if ([string]::IsNullOrWhiteSpace($RuntimeMatrixPath)) {
+    $RuntimeMatrixPath = "$Ops\JUDGMENT_DAY_REQUIRED_RUNTIME_PROOF_MATRIX.csv"
 }
-# RBAC
-$RbacProofs = @(
-    @("RBAC-001","RBAC","Parent cannot access admin dashboard.","Denied","Dev 1 / Dev 5"),
-    @("RBAC-002","RBAC","Teacher cannot access finance billing admin.","Denied","Dev 1 / Dev 5"),
-    @("RBAC-003","RBAC","Student cannot access staff/student admin records.","Denied","Dev 1 / Dev 5"),
-    @("RBAC-004","RBAC","Finance cannot edit grades/transcripts.","Denied","Dev 1 / Dev 5"),
-    @("RBAC-005","RBAC","Admissions cannot edit transcript records.","Denied","Dev 1 / Dev 5"),
-    @("RBAC-006","RBAC","Direct API call outside role is denied even if frontend route is guessed.","Denied","Dev 1 / Dev 5"))
-foreach ($p in $RbacProofs) {
-    Add-Proof $p[0] $p[1] $p[2] $p[3] $p[4] "Manual Runtime Required" ""
+$RuntimeInputById = @{}
+if (Test-Path $RuntimeMatrixPath) {
+    try {
+        $RuntimeInputRows = Import-Csv $RuntimeMatrixPath
+        foreach ($r in $RuntimeInputRows) {
+            if ($r.ProofId) {
+                $RuntimeInputById[$r.ProofId] = $r
+            }
+        }
+    } catch {}
 }
-# Workflows
-$WorkflowProofs = @(
-    @("WF-001","Workflow","Inquiry to applicant to admitted to enrolled.","Canonical SIS student/enrollment created once","Dev 2 / Dev 3 / Dev 5"),
-    @("WF-002","Workflow","Re-enrollment checklist to next-year enrollment.","Returning student status updates correctly","Dev 2 / Dev 3 / Dev 5"),
-    @("WF-003","Workflow","Billing charge to payment to balance.","Admin and parent views reconcile","Dev 3 / Dev 5"),
-    @("WF-004","Workflow","Teacher roster to attendance posting.","Attendance persists and admin sees result","Dev 2 / Dev 4 / Dev 5"),
-    @("WF-005","Workflow","Parent portal household/student/billing/messages.","Parent sees only authorized household data","Dev 4 / Dev 5"),
-    @("WF-006","Workflow","Admin dashboard KPI drill-downs.","Dashboard totals match source data","Dev 4 / Dev 5"))
-foreach ($p in $WorkflowProofs) {
-    Add-Proof $p[0] $p[1] $p[2] $p[3] $p[4] "Manual Runtime Required" ""
+
+foreach ($t in $RuntimeProofTemplate) {
+    $row = $null
+    if ($RuntimeInputById.ContainsKey($t.ProofId)) {
+        $row = $RuntimeInputById[$t.ProofId]
+    }
+    $status = "Manual Runtime Required"
+    if ($row -and -not [string]::IsNullOrWhiteSpace($row.Status)) {
+        $status = $row.Status
+    }
+    $evidence = ""
+    if ($row -and -not [string]::IsNullOrWhiteSpace($row.Evidence)) {
+        $evidence = $row.Evidence
+    }
+    Add-Proof $t.ProofId $t.Lane $t.Test $t.Expected $t.Owner $status $evidence
 }
-# Chaos/security/data
-$ChaosProofs = @(
-    @("CHAOS-001","Browser chaos","Double-click submit does not duplicate records.","No duplicate/corruption","Dev 4 / Dev 5"),
-    @("CHAOS-002","Browser chaos","Refresh/back mid-wizard recovers safely.","No stuck state/corruption","Dev 4 / Dev 5"),
-    @("CHAOS-003","Browser chaos","Two tabs editing same record handles stale update safely.","No silent overwrite","Dev 1 / Dev 5"),
-    @("SEC-001","Security red team","IDOR object id swapping fails.","Denied","Dev 1 / Dev 5"),
-    @("SEC-002","Security red team","XSS payload in names/messages/notes is neutralized.","No script execution","Dev 1 / Dev 4 / Dev 5"),
-    @("DATA-001","Data integrity","Migration check and backup/restore procedure verified.","No data loss","Dev 2 / Dev 5"),
-    @("DATA-002","Data integrity","Withdrawn/archived student keeps history but blocks active workflows.","Correct lifecycle behavior","Dev 2 / Dev 5"))
-foreach ($p in $ChaosProofs) {
-    Add-Proof $p[0] $p[1] $p[2] $p[3] $p[4] "Manual Runtime Required" ""
-}
+
 $ProofRows | Export-Csv "$Out\60_required_runtime_proof_matrix.csv" -NoTypeInformation
 Copy-Item "$Out\60_required_runtime_proof_matrix.csv" "$Ops\JUDGMENT_DAY_REQUIRED_RUNTIME_PROOF_MATRIX.csv" -Force
-# Runtime proof scoring: not awarded until executed.
-Add-Score "Required runtime proof matrix" 175 0 "MANUAL_REQUIRED" "$Out\60_required_runtime_proof_matrix.csv" "Tenant/RBAC/workflow/chaos/security/data proof rows must be executed with evidence before release GO."
-Add-Blocker "P0" "Runtime proof" "Tenant/RBAC/workflow/security runtime proof matrix is not executed yet." "Dev 5 / all leads" "$Out\60_required_runtime_proof_matrix.csv" "Execute every manual runtime proof row with evidence."
+
+$ProofPass = @($ProofRows | Where-Object { $_.Status -match "(?i)^pass$|^waived$|^approved$" }).Count
+$ProofPending = @($ProofRows | Where-Object { $_.Status -notmatch "(?i)^pass$|^waived$|^approved$" }).Count
+$ProofTotal = $ProofRows.Count
+$RequireRuntimeProof = $true
+if (-not [string]::IsNullOrWhiteSpace($env:CROWN_REQUIRE_RUNTIME_PROOF) -and $env:CROWN_REQUIRE_RUNTIME_PROOF -match "(?i)^no$|^false$|^0$") {
+    $RequireRuntimeProof = $false
+}
+
+if ($ProofPending -eq 0 -and $ProofTotal -gt 0) {
+    Add-Score "Required runtime proof matrix" 175 175 "PASS" "$Out\60_required_runtime_proof_matrix.csv" "All runtime proof rows are marked PASS/WAIVED/APPROVED."
+} else {
+    $proofEarned = [int](175 * ($ProofPass / [Math]::Max(1,$ProofTotal)))
+    Add-Score "Required runtime proof matrix" 175 $proofEarned "MANUAL_REQUIRED" "$Out\60_required_runtime_proof_matrix.csv" "Runtime proof rows pending: $ProofPending of $ProofTotal."
+    if ($RequireRuntimeProof) {
+        Add-Blocker "P0" "Runtime proof" "Tenant/RBAC/workflow/security runtime proof matrix is not executed yet." "Dev 5 / all leads" "$Out\60_required_runtime_proof_matrix.csv" "Execute every manual runtime proof row with evidence."
+    } else {
+        Add-Blocker "P1" "Runtime proof" "Runtime proof matrix contains pending rows." "Dev 5 / all leads" "$Out\60_required_runtime_proof_matrix.csv" "Complete pending runtime proof rows with evidence."
+    }
+}
 # ------------------------------------------------------------
 # 09. CROWN Judgment Day master runbook
 # ------------------------------------------------------------

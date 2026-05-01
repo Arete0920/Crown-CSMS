@@ -15,7 +15,6 @@ Run from repo root:
   python scripts/execution/generate_215_fixes.py
 """
 
-import os
 import subprocess
 from pathlib import Path
 
@@ -483,7 +482,7 @@ describe('{comp}Module', () => {{
 
 
 def playwright_test(slug, name, keywords):
-    comp = pascal(slug)
+    pascal(slug)
     kw_comment = ", ".join(keywords)
     return f'''\
 /**
@@ -577,9 +576,9 @@ def main():
     print()
     print("=" * 60)
     print(f"DONE: Created {created} test files for {len(MODULES)} modules.")
-    print(f"  Backend:   backend/tests/test_{{slug}}_{{unit,api,tenant,negative}}.py")
-    print(f"  Frontend:  frontend/src/components/__tests__/{{Comp}}Module.test.tsx")
-    print(f"  E2E:       tests/e2e/{{slug}}.spec.ts")
+    print("  Backend:   backend/tests/test_{slug}_{unit,api,tenant,negative}.py")
+    print("  Frontend:  frontend/src/components/__tests__/{Comp}Module.test.tsx")
+    print("  E2E:       tests/e2e/{slug}.spec.ts")
     print("=" * 60)
 
 
