@@ -426,6 +426,143 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* ── Faith & Community strip ─────────────────────────────── */
+.launch-faith-community-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+}
+
+.launch-faith-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.launch-faith-card--devotion {
+  border-top: 3px solid var(--launch-gold);
+}
+
+.launch-faith-card--prayer {
+  border-top: 3px solid #7c3aed;
+}
+
+.launch-faith-card--announcements {
+  border-top: 3px solid var(--launch-royal);
+}
+
+.launch-faith-card--celebrations {
+  border-top: 3px solid #059669;
+}
+
+.launch-faith-title {
+  margin: 4px 0 10px !important;
+}
+
+.launch-faith-scripture {
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--launch-gold);
+  background: var(--launch-gold-soft);
+  border-radius: 0 10px 10px 0;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--launch-text);
+  line-height: 1.5;
+}
+
+.launch-faith-reference {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.launch-faith-reflection {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--launch-text-muted);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.launch-faith-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  flex: 1;
+}
+
+.launch-faith-list li {
+  border: 1px solid var(--launch-border);
+  border-radius: 10px;
+  background: var(--launch-surface-alt);
+  padding: 7px 10px;
+  font-size: 0.83rem;
+  color: var(--launch-text-muted);
+}
+
+.launch-faith-celebration-list {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  flex: 1;
+}
+
+.launch-faith-celebration-item {
+  border: 1px solid var(--launch-border);
+  border-radius: 10px;
+  background: var(--launch-surface-alt);
+  padding: 7px 10px;
+  display: grid;
+  gap: 2px;
+}
+
+.launch-faith-celebration-item strong {
+  font-size: 0.83rem;
+  color: var(--launch-text);
+}
+
+.launch-faith-celebration-item span {
+  font-size: 0.78rem;
+  color: var(--launch-text-muted);
+}
+
+.launch-faith-celebration-item.is-gold {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.launch-faith-celebration-item.is-good {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.launch-faith-empty {
+  font-size: 0.85rem;
+  color: var(--launch-text-muted);
+  font-style: italic;
+  flex: 1;
+}
+
+.launch-faith-action {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.launch-button-ghost {
+  color: var(--launch-royal);
+  background: transparent;
+  border-color: var(--launch-sky);
+}
+
+.launch-button-ghost:hover {
+  background: var(--launch-sky-soft);
+}
+/* ── end Faith & Community ──────────────────────────────── */
+
 .launch-command-grid {
   align-items: stretch;
 }
@@ -883,6 +1020,10 @@
   .launch-dashboard-grid-analytics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .launch-faith-community-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 1520px) {
@@ -931,7 +1072,8 @@
   .launch-dashboard-grid-primary,
   .launch-dashboard-grid-secondary,
   .launch-dashboard-grid-module,
-  .launch-dashboard-grid-analytics {
+  .launch-dashboard-grid-analytics,
+  .launch-faith-community-strip {
     grid-template-columns: 1fr;
   }
 
