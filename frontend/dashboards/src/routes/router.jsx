@@ -652,10 +652,6 @@ export const router = createBrowserRouter([
   },
   // ── CROWN sidebar navigation routes ──────────────────────────────────
   {
-    path: PATHS.SCHOOL_ADMIN,
-    element: <SchoolAdministratorDashboard />,
-  },
-  {
     path: PATHS.STUDENT_LIFE,
     element: IS_LAUNCH_PREVIEW
       ? <StudentDashboard />
@@ -666,10 +662,6 @@ export const router = createBrowserRouter([
     element: IS_LAUNCH_PREVIEW
       ? <CrownLaunchModulePage moduleKey="schoolAdministrator" activePath="/settings" />
       : <AdminDashboard />,
-  },
-  {
-    path: PATHS.REPORTING,
-    element: <IntegrityDashboard />,
   },
   // ── Common inbound path aliases (no-backend fallback redirects) ──────────
   { path: '/students', element: <Navigate to={PATHS.ADMISSIONS} replace /> },
