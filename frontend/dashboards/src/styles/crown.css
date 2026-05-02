@@ -2,6 +2,11 @@
    Token-first design system
    Dark-on-light default
    Works with plain CSS + utility-ish classes
+
+   SCOPE: Legacy component styles and structural shell classes (crown-app, crown-sidebar,
+   crown-main, crown-btn, etc). Do NOT add layout grid, spacing utilities, or dashboard
+   section classes here — those belong in launch-shell.css. Do NOT duplicate :root tokens
+   defined in crown-theme.css.
 */
 
 :root {

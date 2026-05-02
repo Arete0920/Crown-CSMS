@@ -39,6 +39,8 @@ export default {
     { label: 'Tuition Collected', value: '$2.4M', detail: '94% of semester target collected to date.', accent: 'emerald' },
     { label: 'Open Admissions', value: '42', detail: 'Applications in decision and packet stages.', accent: 'blue' },
     { label: 'Active Alerts', value: '6', detail: 'Cross-department exceptions need review today.', accent: 'gold' },
+    { label: 'Pending Approvals', value: '11', detail: 'Enrollment, staffing, and field trip approvals awaiting signoff.', accent: 'navy' },
+    { label: 'Messages Pending', value: '27', detail: 'Family and staff threads require same-day response.', accent: 'emerald' },
   ],
   priorities: [
     { title: 'Finalize open admissions decisions', detail: '12 applications pending principal signoff.', state: 'Due by 10:30 AM', tone: 'warn' },
@@ -374,32 +376,6 @@ export default {
     { area: 'System / IT', owner: 'Technology Team', status: 'Watch - 3 failed syncs', updated: '8:04 AM' },
   ],
   rightRailSections: [
-    {
-      kicker: 'Spiritual life',
-      title: 'Prayer Requests',
-      items: [
-        'Mrs. Carter surgery recovery',
-        '6th grade retreat travel safety',
-        'New families joining this week',
-      ],
-    },
-    {
-      kicker: 'Daily devotion',
-      title: 'Daily Devotion',
-      quote: '"Trust in the Lord with all your heart..." Proverbs 3:5',
-      items: [
-        'Lead today with wisdom and calm.',
-      ],
-    },
-    {
-      kicker: 'Communications',
-      title: 'Announcements',
-      items: [
-        'Chapel Friday at 9:00 AM',
-        'Re-enrollment packets due Monday',
-        'Parent newsletter scheduled',
-      ],
-    },
     {
       kicker: 'Calendar',
       title: "Today's Calendar",

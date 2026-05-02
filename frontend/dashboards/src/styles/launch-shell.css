@@ -1,21 +1,32 @@
-﻿:root {
-  --launch-royal: #2563eb;
-  --launch-royal-strong: #1d4ed8;
-  --launch-sky: #dbeafe;
-  --launch-sky-soft: #eff6ff;
-  --launch-gold: #f59e0b;
-  --launch-gold-soft: #fef3c7;
-  --launch-text: #0f172a;
-  --launch-text-muted: #475569;
-  --launch-border: #e2e8f0;
-  --launch-surface: #ffffff;
-  --launch-surface-alt: #f8fafc;
+﻿/* Crown Launch Shell — PRIMARY LAYOUT AUTHORITY
+
+   SCOPE: All dashboard layout, grid, sidebar, topbar, widget, and section classes
+   for the launch shell system. This is the single source of truth for dashboard
+   structure. All new dashboard layout work goes here. Consumes tokens from
+   crown-theme.css via var(). Do NOT duplicate component classes from crown.css.
+*/
+
+:root {
+  --launch-royal: var(--crown-primary-strong, #2563eb);
+  --launch-royal-strong: var(--crown-primary-deep, #1d4ed8);
+  --launch-sky: var(--crown-primary-soft, #dbeafe);
+  --launch-sky-soft: var(--crown-primary-faint, #eff6ff);
+  --launch-gold: var(--crown-gold, #d99a2b);
+  --launch-gold-soft: var(--crown-gold-soft, #fff3d6);
+  --launch-text: var(--crown-text, #172033);
+  --launch-text-muted: var(--crown-muted, #5f6f89);
+  --launch-border: var(--crown-border, #d8e6ff);
+  --launch-surface: var(--crown-surface, #ffffff);
+  --launch-surface-alt: var(--crown-surface-soft, #f4f8ff);
 }
 
 .launch-shell {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 98% -10%, rgba(37, 99, 235, 0.12), transparent 34%),
     radial-gradient(circle at 8% -6%, rgba(245, 158, 11, 0.12), transparent 28%),
@@ -163,6 +174,7 @@
 }
 
 .launch-main {
+  min-width: 0;
   padding: 18px 24px 28px;
 }
 
@@ -217,6 +229,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
   padding: 12px 14px;
   border-radius: 18px;
@@ -224,8 +237,9 @@
 }
 
 .launch-search {
-  flex: 1;
-  max-width: 520px;
+  flex: 1 1 420px;
+  min-width: 260px;
+  max-width: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -277,7 +291,16 @@
 .launch-topbar-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-left: auto;
   gap: 8px;
+}
+
+.launch-school-chip {
+  max-width: min(45vw, 320px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .launch-icon-button,
@@ -402,28 +425,32 @@
   gap: 16px;
 }
 
+.launch-dashboard-grid > * {
+  min-width: 0;
+}
+
 .launch-dashboard-grid-metrics {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .launch-dashboard-grid-metrics-admin {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .launch-dashboard-grid-primary {
-  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.9fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 1fr);
 }
 
 .launch-dashboard-grid-secondary {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .launch-dashboard-grid-module {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .launch-dashboard-grid-analytics {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 /* ── Faith & Community strip ─────────────────────────────── */
@@ -570,6 +597,7 @@
 .launch-card {
   border-radius: 22px;
   padding: 20px;
+  min-width: 0;
 }
 
 .launch-card:hover {
@@ -765,6 +793,8 @@
 
 .launch-chart-wrap {
   height: 285px;
+  min-height: 220px;
+  min-width: 0;
 }
 
 .launch-chart-test-fallback {
@@ -1004,23 +1034,21 @@
   }
 }
 
-@media (max-width: 1320px) {
+@media (max-width: 1180px) {
   .launch-dashboard-grid-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .launch-dashboard-grid-metrics-admin {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .launch-dashboard-grid-secondary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .launch-dashboard-grid-analytics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
+  .launch-dashboard-grid-module,
+  .launch-dashboard-grid-analytics,
   .launch-faith-community-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

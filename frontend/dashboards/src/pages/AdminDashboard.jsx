@@ -95,9 +95,6 @@ export default function AdminDashboard() {
       title="Executive Portal"
       subtitle="Faith, leadership, and school operations command center"
     >
-      <h1 className="text-2xl font-semibold tracking-tight">Administration</h1>
-      <h2 className="text-sm font-medium uppercase tracking-wide">Executive Dashboard</h2>
-
       <ErrorBanner title="Dashboard unavailable" message={metricsError} />
 
       <DashboardSection title="Faith and Community">

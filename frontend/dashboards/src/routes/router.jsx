@@ -378,11 +378,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <SchoolAdministratorDashboard />,
+    element: <Navigate to="/school-admin" replace />,
   },
   {
     path: '/admin/dashboard',
-    element: <SchoolAdministratorDashboard />,
+    element: <Navigate to="/school-admin" replace />,
   },
   {
     path: '/school-admin',
