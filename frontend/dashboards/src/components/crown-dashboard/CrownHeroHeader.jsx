@@ -100,23 +100,6 @@ export default function CrownHeroHeader({
           )}
 
           <div className="launch-school-chip launch-hero-action-btn">{schoolName}</div>
-          {userAvatar ? (
-            <img
-              src={userAvatar}
-              alt={userInitials}
-              className="launch-hero-avatar-img launch-hero-avatar"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextSibling.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          <div
-            className="launch-user-menu launch-hero-avatar"
-            style={userAvatar ? { display: 'none' } : undefined}
-          >
-            {userInitials}
-          </div>
         </div>
       </div>
 
