@@ -30,7 +30,7 @@
 |---|---|---|
 | **Backend Health** | https://crown-api-dev.azurewebsites.net/health/ | ✅ HTTP 200 |
 | **Backend API Root** | https://crown-api-dev.azurewebsites.net/api/v1/ | — |
-| **Local Frontend** | http://localhost:5173 | run `npm run dev` |
+| **Local Frontend** | http://localhost:3000 | run `npm run dev` |
 | **Local Backend** | http://localhost:8000 | run `python manage.py runserver` |
 | **Portal: crown-api-dev** | https://portal.azure.com/#@/resource/subscriptions/4ef0ba4b-4810-48d4-b3fe-953a9708953a/resourceGroups/crown-rg/providers/Microsoft.Web/sites/crown-api-dev/overview | — |
 
@@ -84,7 +84,7 @@ PRODUCTION
 
 SANDBOX/DEV
   API Health:    https://crown-api-dev.azurewebsites.net/health/
-  Local App:     http://localhost:5173  (npm run dev)
+  Local App:     http://localhost:3000  (npm run dev)
   Local API:     http://localhost:8000
 
 GITHUB

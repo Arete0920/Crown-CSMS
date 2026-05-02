@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4.1.1
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
@@ -63,7 +63,7 @@ jobs:
           echo " Deploy contract: TAG=$TAG SHA=${SHA:0:7}"
 
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
@@ -90,6 +90,7 @@ jobs:
         env:
           VITE_BUILD_SHA: ${{ github.sha }}
           VITE_DEPLOY_TAG: ${{ github.ref_name }}
+          VITE_LAUNCH_UI_TAKEOVER: '1'
         run: npm run build
 
       - name: Verify build.json in dist
