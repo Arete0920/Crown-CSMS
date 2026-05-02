@@ -3,8 +3,8 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 // No-op touch to ensure required route/dashboard gate contexts run on this PR.
 
 import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
-import { BillingDashboard } from "../pages/BillingDashboard.jsx";
-import { FinancialAidDashboard } from "../pages/FinancialAidDashboard.jsx";
+import BillingDashboard from "../pages/BillingDashboard.jsx";
+import FinancialAidDashboard from "../pages/FinancialAidDashboard.jsx";
 import { AcademicsDashboard } from "../pages/AcademicsDashboard.jsx";
 import { GradebookRO } from "../pages/GradebookRO.jsx";
 import { TranscriptRO } from "../pages/TranscriptRO.jsx";
