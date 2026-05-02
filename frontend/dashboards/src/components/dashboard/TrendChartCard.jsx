@@ -38,7 +38,7 @@ export default function TrendChartCard({
       ) : null}
 
       <div style={{ height: 280 }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minHeight={220}>
           {type === 'bar' ? (
             <BarChart data={rows}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
