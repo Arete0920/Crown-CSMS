@@ -30,3 +30,30 @@ export const BASE_OPERATIONS = [
   { area: 'Finance', owner: 'Business Office', status: 'Deposit batch posted', updated: '8:35 AM' },
   { area: 'Communications', owner: 'Front Office', status: 'Parent bulletin queued', updated: '8:42 AM' },
 ];
+
+export const BASE_FAITH_COMMUNITY = {
+  devotion: {
+    scripture: '"Trust in the Lord with all your heart and lean not on your own understanding."',
+    reference: 'Proverbs 3:5',
+    reflection: 'Leadership in Christian education begins with humility before God. Every decision shapes the lives of students entrusted to us.',
+    actionLabel: 'Read More',
+  },
+  prayerRequests: [
+    'Mrs. Carter surgery recovery',
+    'Wisdom for leadership meetings',
+    '6th grade retreat travel safety',
+    'New families joining this week',
+  ],
+  announcements: [
+    'Chapel Friday at 9:00 AM',
+    'Re-enrollment packets due Monday',
+    'Parent newsletter scheduled for Thursday',
+    'Uniform order deadline approaching',
+  ],
+  celebrations: [
+    { name: 'Mr. Thompson', reason: '20-year anniversary at Heritage', tone: 'gold' },
+    { name: 'Sarah M., Grade 8', reason: 'State science fair finalist', tone: 'good' },
+    { name: 'Robotics Team', reason: 'Regional championship win', tone: 'good' },
+    { name: 'Mrs. Chen', reason: 'New baby — Elijah born this week', tone: 'gold' },
+  ],
+};

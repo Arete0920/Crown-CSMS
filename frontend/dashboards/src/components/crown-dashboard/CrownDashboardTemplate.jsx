@@ -12,6 +12,8 @@ import CrownDashboardEmptyState from './CrownDashboardEmptyState.jsx';
 import CrownDashboardErrorState from './CrownDashboardErrorState.jsx';
 import CrownDashboardFlipCard from './CrownDashboardFlipCard.jsx';
 import CrownDashboardRightRail from './CrownDashboardRightRail.jsx';
+import CrownFaithCommunityStrip from './CrownFaithCommunityStrip.jsx';
+import { BASE_FAITH_COMMUNITY } from '../../config/dashboardTemplates/_baseData.js';
 
 function renderActionsByRole(actions = [], roleKey) {
   return actions.filter((action) => {
@@ -56,6 +58,8 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
         subtitle={config.subtitle}
         note={config.note}
       />
+
+      <CrownFaithCommunityStrip faithCommunity={config.faithCommunity ?? BASE_FAITH_COMMUNITY} />
 
       <div className="launch-content">
         {isRichLayout ? (
