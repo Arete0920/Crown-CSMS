@@ -29,9 +29,8 @@ export default {
     role: 'School Administrator',
     avatar: 'https://i.pravatar.cc/80?img=47',
   },
-  eyebrow: 'CROWN Launch Preview',
+  heroMessage: '"Let the peace of Christ rule in your hearts." — Colossians 3:15',
   title: 'Good morning, Sarah!',
-  subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
   metrics: [
     { label: 'Total Students', value: '1,248', detail: 'Enrollment is up 4.1% from last semester.', accent: 'blue' },
