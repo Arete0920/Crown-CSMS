@@ -461,7 +461,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  padding: 13px 18px;
+  padding: 10px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
@@ -512,15 +512,26 @@
   font-weight: 800;
 }
 
+/* Profile photo avatar */
+.launch-hero-avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(217, 154, 43, 0.55);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  display: block;
+}
+
 /* ── Hero body ──── */
 .launch-hero-body {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 28px;
-  padding: 28px 28px 32px;
+  padding: 16px 22px 20px;
 }
 
 /* Left — greeting text */
@@ -536,12 +547,12 @@
 
 .launch-hero-title {
   color: #ffffff !important;
-  font-size: clamp(1.9rem, 3vw, 2.7rem) !important;
+  font-size: clamp(1.5rem, 2.4vw, 2.1rem) !important;
   font-weight: 800 !important;
-  margin: 6px 0 8px !important;
+  margin: 0 0 0 !important;
   letter-spacing: -0.025em;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .launch-hero-subtitle {

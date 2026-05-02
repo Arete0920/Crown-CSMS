@@ -58,10 +58,9 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
         <CrownHeroHeader
           schoolName={config.schoolName}
           userInitials={config.user?.initials}
+          userAvatar={config.user?.avatar}
           updatesCount={config.updatesCount}
-          eyebrow={config.eyebrow}
           title={config.title}
-          subtitle={config.subtitle}
         />
       }
     >

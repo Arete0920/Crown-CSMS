@@ -57,9 +57,8 @@ export default function CrownHeroHeader({
   schoolName = 'Heritage Christian Academy',
   updatesCount = 3,
   userInitials = 'SJ',
-  eyebrow,
+  userAvatar = null,
   title,
-  subtitle,
 }) {
   const hasRouterContext = useInRouterContext();
 
@@ -100,18 +99,30 @@ export default function CrownHeroHeader({
           )}
 
           <div className="launch-school-chip launch-hero-action-btn">{schoolName}</div>
-          <div className="launch-user-menu launch-hero-avatar">{userInitials}</div>
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              alt={userInitials}
+              className="launch-hero-avatar-img launch-hero-avatar"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div
+            className="launch-user-menu launch-hero-avatar"
+            style={userAvatar ? { display: 'none' } : undefined}
+          >
+            {userInitials}
+          </div>
         </div>
       </div>
 
       {/* ── Hero body ───────────────────────────────────────────────── */}
       <div className="launch-hero-body">
         <div className="launch-hero-text">
-          {eyebrow && (
-            <div className="launch-page-eyebrow launch-hero-eyebrow">{eyebrow}</div>
-          )}
           <h1 className="launch-hero-title">{title}</h1>
-          {subtitle && <p className="launch-hero-subtitle">{subtitle}</p>}
         </div>
 
         {/* MS 365 quick-launch panel */}
