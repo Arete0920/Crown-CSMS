@@ -23,8 +23,8 @@ export default {
     'At-risk summary shared with counseling team.',
   ],
   quickActions: [
-    { title: 'Open grading queue', description: 'Prioritize ungraded assignments by course.', actionLabel: 'Open Queue' },
-    { title: 'Review at-risk list', description: 'Inspect students below performance threshold.', actionLabel: 'Open Alerts' },
+    { title: 'Open grading queue', description: 'Prioritize ungraded assignments by course.', actionLabel: 'Open Queue', href: '/gradebook' },
+    { title: 'Review at-risk list', description: 'Inspect students below performance threshold.', actionLabel: 'Open Alerts', href: '/student-services' },
   ],
   statusTitle: 'Gradebook service status',
   statuses: BASE_STATUS,
@@ -32,6 +32,6 @@ export default {
     kicker: 'Module Focus',
     title: 'Reduce missing work and finalize weekly grades',
     body: 'Gradebook now renders through the same CROWN template system used by School Administrator.',
-    actions: [{ label: 'Review Queue' }, { label: 'Export Snapshot', tone: 'secondary' }],
+    actions: [{ label: 'Review Queue', href: '/gradebook' }, { label: 'Export Snapshot', tone: 'secondary', href: '/integrity' }],
   },
 };

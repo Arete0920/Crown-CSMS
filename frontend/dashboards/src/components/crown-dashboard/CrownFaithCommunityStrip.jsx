@@ -1,10 +1,32 @@
 import CrownCard from '../launch/CrownCard.jsx';
+import { Link, useInRouterContext } from 'react-router-dom';
+
+function ActionControl({ href, className, children }) {
+  const hasRouterContext = useInRouterContext();
+  const isDataSourceLink = typeof href === 'string' && (href.startsWith('/api/') || href.startsWith('http://') || href.startsWith('https://'));
+
+  if (isDataSourceLink) {
+    return (
+      <a href={href} className={className} target="_blank" rel="noopener noreferrer">{children}</a>
+    );
+  }
+
+  return hasRouterContext ? (
+    <Link to={href} className={className}>{children}</Link>
+  ) : (
+    <a href={href} className={className}>{children}</a>
+  );
+}
 
 export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
   const devotion = faithCommunity.devotion || {};
   const prayers = Array.isArray(faithCommunity.prayerRequests) ? faithCommunity.prayerRequests : [];
   const announcements = Array.isArray(faithCommunity.announcements) ? faithCommunity.announcements : [];
   const celebrations = Array.isArray(faithCommunity.celebrations) ? faithCommunity.celebrations : [];
+  const devotionHref = devotion.actionHref || '/api/v1/dashboards/chaplain-spiritual-life/summary?section=devotion';
+  const prayerHref = faithCommunity.prayerActionHref || '/api/v1/dashboards/chaplain-spiritual-life/summary?section=prayerRequests';
+  const announcementsHref = faithCommunity.announcementsActionHref || '/api/v1/dashboards/communications/summary?section=announcements';
+  const celebrationsHref = faithCommunity.celebrationsActionHref || '/api/v1/dashboards/chaplain-spiritual-life/summary?section=celebrations';
 
   return (
     <section className="launch-dashboard-grid launch-faith-community-strip" aria-label="Faith and Community">
@@ -24,9 +46,9 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
           <p className="launch-faith-reflection">{devotion.reflection}</p>
         )}
         {devotion.actionLabel && (
-          <button type="button" className="launch-button launch-button-ghost launch-faith-action">
+          <ActionControl href={devotionHref} className="launch-button launch-button-ghost launch-faith-action">
             {devotion.actionLabel}
-          </button>
+          </ActionControl>
         )}
       </CrownCard>
 
@@ -43,9 +65,9 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
         ) : (
           <p className="launch-faith-empty">No prayer requests today.</p>
         )}
-        <button type="button" className="launch-button launch-button-ghost launch-faith-action">
+        <ActionControl href={prayerHref} className="launch-button launch-button-ghost launch-faith-action">
           Submit a Request
-        </button>
+        </ActionControl>
       </CrownCard>
 
       {/* Announcements */}
@@ -61,9 +83,9 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
         ) : (
           <p className="launch-faith-empty">No announcements today.</p>
         )}
-        <button type="button" className="launch-button launch-button-ghost launch-faith-action">
+        <ActionControl href={announcementsHref} className="launch-button launch-button-ghost launch-faith-action">
           View All
-        </button>
+        </ActionControl>
       </CrownCard>
 
       {/* Celebrations */}
@@ -82,9 +104,9 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
         ) : (
           <p className="launch-faith-empty">No celebrations today.</p>
         )}
-        <button type="button" className="launch-button launch-button-ghost launch-faith-action">
+        <ActionControl href={celebrationsHref} className="launch-button launch-button-ghost launch-faith-action">
           Add Recognition
-        </button>
+        </ActionControl>
       </CrownCard>
     </section>
   );

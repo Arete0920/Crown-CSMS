@@ -1,8 +1,12 @@
+import { Link, useInRouterContext } from 'react-router-dom';
+
 export default function CrownTopbar({
   schoolName = 'Heritage Christian Academy',
   updatesCount = 3,
   userInitials = 'SJ',
 }) {
+  const hasRouterContext = useInRouterContext();
+
   return (
     <div className="launch-topbar">
       <label className="launch-search">
@@ -11,8 +15,16 @@ export default function CrownTopbar({
       </label>
 
       <div className="launch-topbar-actions">
-        <button type="button" className="launch-icon-button">Updates <span className="launch-counter">{updatesCount}</span></button>
-        <button type="button" className="launch-icon-button">Help</button>
+        {hasRouterContext ? (
+          <Link to="/communications" className="launch-icon-button">Updates <span className="launch-counter">{updatesCount}</span></Link>
+        ) : (
+          <a href="/communications" className="launch-icon-button">Updates <span className="launch-counter">{updatesCount}</span></a>
+        )}
+        {hasRouterContext ? (
+          <Link to="/settings" className="launch-icon-button">Help</Link>
+        ) : (
+          <a href="/settings" className="launch-icon-button">Help</a>
+        )}
         <div className="launch-school-chip">{schoolName}</div>
         <div className="launch-user-menu">{userInitials}</div>
       </div>

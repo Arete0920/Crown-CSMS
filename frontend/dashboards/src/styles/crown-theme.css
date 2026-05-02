@@ -1,4 +1,11 @@
-﻿:root {
+﻿/* Crown Design Token Layer
+
+   SCOPE: CSS custom property tokens ONLY — colors, radii, shadows, typography scale.
+   No component classes belong here. launch-shell.css consumes these tokens via var().
+   Do NOT add component styles, grid classes, or utility-ish selectors here.
+*/
+
+:root {
   --crown-bg: #f7faff;
   --crown-bg-soft: #eef5ff;
   --crown-surface: #ffffff;

@@ -23,8 +23,8 @@ export default {
     'Daily attendance report exported for leadership.',
   ],
   quickActions: [
-    { title: 'Open interventions', description: 'Review flagged student attendance patterns.', actionLabel: 'Open Interventions' },
-    { title: 'Export attendance report', description: 'Generate today’s attendance snapshot.', actionLabel: 'Export Report' },
+    { title: 'Open interventions', description: 'Review flagged student attendance patterns.', actionLabel: 'Open Interventions', href: '/attendance' },
+    { title: 'Export attendance report', description: 'Generate today’s attendance snapshot.', actionLabel: 'Export Report', href: '/integrity' },
   ],
   statusTitle: 'Attendance service status',
   statuses: BASE_STATUS,
@@ -32,6 +32,6 @@ export default {
     kicker: 'Module Focus',
     title: 'Address intervention flags before noon',
     body: 'Attendance route follows the same canonical CROWN shell to avoid design drift.',
-    actions: [{ label: 'Review Queue' }, { label: 'Export Snapshot', tone: 'secondary' }],
+    actions: [{ label: 'Review Queue', href: '/attendance' }, { label: 'Export Snapshot', tone: 'secondary', href: '/integrity' }],
   },
 };

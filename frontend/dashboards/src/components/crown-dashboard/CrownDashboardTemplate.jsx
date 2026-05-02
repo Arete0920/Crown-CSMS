@@ -13,6 +13,7 @@ import CrownDashboardErrorState from './CrownDashboardErrorState.jsx';
 import CrownDashboardFlipCard from './CrownDashboardFlipCard.jsx';
 import CrownDashboardRightRail from './CrownDashboardRightRail.jsx';
 import CrownFaithCommunityStrip from './CrownFaithCommunityStrip.jsx';
+import { Link, useInRouterContext } from 'react-router-dom';
 import { BASE_FAITH_COMMUNITY } from '../../config/dashboardTemplates/_baseData.js';
 
 function renderActionsByRole(actions = [], roleKey) {
@@ -23,6 +24,8 @@ function renderActionsByRole(actions = [], roleKey) {
 }
 
 export default function CrownDashboardTemplate({ config, roleKey }) {
+  const hasRouterContext = useInRouterContext();
+
   if (!config || typeof config !== 'object') {
     return <CrownDashboardErrorState title="Dashboard unavailable" message="Dashboard configuration is missing or invalid." />;
   }
@@ -237,7 +240,11 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
                 <div className="launch-section-kicker">Operational Detail</div>
                 <h3>{config.operationsTitle}</h3>
               </div>
-              <button type="button" className="launch-button launch-button-secondary">Export Summary</button>
+              {hasRouterContext ? (
+                <Link to={config.exportSummaryHref || '/integrity'} className="launch-button launch-button-secondary">Export Summary</Link>
+              ) : (
+                <a href={config.exportSummaryHref || '/integrity'} className="launch-button launch-button-secondary">Export Summary</a>
+              )}
             </div>
             <div className="launch-table-wrap">
               <table className="launch-table">
