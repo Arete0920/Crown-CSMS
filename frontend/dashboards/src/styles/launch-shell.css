@@ -342,8 +342,8 @@
   place-items: center;
   font-size: 0.7rem;
   font-weight: 800;
-  color: #ffffff;
-  background: #1d4ed8;
+  color: #0f172a;
+  background: #f59e0b;
 }
 
 .launch-page-header {
@@ -416,14 +416,11 @@
   overflow: hidden;
   border-radius: 20px;
   margin-bottom: 18px;
-  border: 1px solid rgba(217, 154, 43, 0.25);
+  border: none;
   box-shadow:
-    0 16px 48px rgba(15, 23, 42, 0.08),
-    0 2px 8px rgba(15, 23, 42, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  background:
-    linear-gradient(180deg, #faf8f3 0%, #f5f0e8 100%);
-  border-top: 3px solid var(--launch-gold, #d99a2b);
+    0 20px 60px rgba(29, 78, 216, 0.22),
+    0 4px 16px rgba(15, 23, 42, 0.1);
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #2563eb 100%);
 }
 
 /* decorative dot grid (subtle on cream) */
@@ -431,7 +428,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(217, 154, 43, 0.04) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
   z-index: 0;
@@ -446,7 +443,7 @@
   bottom: -100px;
   right: -80px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(217, 154, 43, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.25) 0%, transparent 65%);
   pointer-events: none;
   z-index: 0;
 }
@@ -461,53 +458,53 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 10px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* Search bar — override for cream background */
 .launch-hero-header .launch-search {
-  background: rgba(255, 255, 255, 0.6);
-  border-color: rgba(217, 154, 43, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .launch-hero-header .launch-search:focus-within {
-  border-color: var(--launch-gold, #d99a2b);
-  box-shadow: 0 0 0 3px rgba(217, 154, 43, 0.15);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
 }
 
 .launch-hero-header .launch-search input {
-  color: #1f2937;
+  color: #ffffff;
 }
 
 .launch-hero-header .launch-search input::placeholder {
-  color: rgba(31, 41, 55, 0.5);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .launch-hero-header .launch-search-icon {
-  border-color: rgba(217, 154, 43, 0.4);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 .launch-hero-header .launch-search-icon::after {
-  background: rgba(217, 154, 43, 0.4);
+  background: rgba(255, 255, 255, 0.45);
 }
 
 /* Action buttons / school chip — override for cream background */
 .launch-hero-action-btn.launch-icon-button,
 .launch-hero-action-btn.launch-school-chip {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: rgba(217, 154, 43, 0.25);
-  color: #374151;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
 }
 
 .launch-hero-action-btn.launch-icon-button:hover {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* User avatar — gold accent on dark */
 .launch-hero-avatar.launch-user-menu {
-  background: var(--launch-gold, #d99a2b);
-  border-color: rgba(217, 154, 43, 0.4);
-  color: #0f172a;
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
   font-weight: 800;
 }
 
@@ -517,8 +514,8 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(217, 154, 43, 0.55);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.2);
   display: block;
 }
 
@@ -555,23 +552,24 @@
 }
 
 .launch-hero-title {
-  color: #1f2937 !important;
-  font-size: clamp(1.6rem, 2vw, 2rem) !important;
+  color: #ffffff !important;
+  font-size: clamp(1.7rem, 2.2vw, 2.2rem) !important;
   font-weight: 700 !important;
   margin: 0 0 8px !important;
-  letter-spacing: -0.01em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .launch-hero-subtitle {
-  color: rgba(31, 41, 55, 0.62) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
   font-size: 0.95rem;
   margin: 0;
   line-height: 1.5;
 }
 
 .launch-hero-message {
-  color: #7c3d1a;
+  color: rgba(253, 230, 138, 0.92);
   font-size: 0.9rem;
   font-weight: 500;
   font-style: italic;
@@ -623,33 +621,34 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 11px 18px;
+  padding: 10px 16px;
   border-radius: 14px;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
   color: #ffffff;
-  background: rgba(217, 154, 43, 0.2);
-  border: 2px solid rgba(217, 154, 43, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
   transition: all 0.15s ease;
   white-space: nowrap;
+  backdrop-filter: blur(4px);
 }
 
 .launch-ms-app-chip:hover {
-  background: rgba(217, 154, 43, 0.3);
-  border-color: rgba(217, 154, 43, 0.65);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.45);
   transform: translateY(-2px);
   text-decoration: none;
 }
 
-.launch-ms-app-chip--teams:hover  { background: rgba(98, 100, 167, 0.25); border-color: rgba(98, 100, 167, 0.5); }
-.launch-ms-app-chip--outlook:hover { background: rgba(0, 120, 212, 0.2); border-color: rgba(0, 120, 212, 0.5); }
-.launch-ms-app-chip--calendar:hover { background: rgba(3, 100, 184, 0.2); border-color: rgba(3, 100, 184, 0.5); }
+.launch-ms-app-chip--teams:hover    { background: rgba(98, 100, 167, 0.35); border-color: rgba(180, 181, 220, 0.6); }
+.launch-ms-app-chip--outlook:hover  { background: rgba(0, 120, 212, 0.35); border-color: rgba(100, 180, 255, 0.6); }
+.launch-ms-app-chip--calendar:hover { background: rgba(3, 100, 184, 0.35); border-color: rgba(100, 175, 255, 0.6); }
 
 .launch-hero-date {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(127, 127, 127, 0.6);
+  color: rgba(255, 255, 255, 0.5);
   letter-spacing: 0.02em;
 }
 
@@ -940,13 +939,13 @@
 }
 
 .launch-module-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  font-size: 0.68rem;
-  font-weight: 800;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.12), 0 8px 24px rgba(0, 0, 0, 0.25);
   color: #1d4ed8;
   border: 1px solid #bfdbfe;
   background: #eff6ff;
