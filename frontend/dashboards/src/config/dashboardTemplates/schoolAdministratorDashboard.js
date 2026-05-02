@@ -13,7 +13,7 @@ const ATTENDANCE_TREND = [
   { month: 'Oct', value: 95.1 },
   { month: 'Nov', value: 95.4 },
   { month: 'Dec', value: 95.8 },
-  { month: 'Jan', value: 96.0 },
+  { month: 'Jan', value: 96 },
   { month: 'Feb', value: 96.1 },
   { month: 'Mar', value: 96.2 },
 ];
@@ -69,6 +69,8 @@ export default {
       details: ['12 files pending final review', '19 family tours in next 7 days', '8 follow-up calls required'],
       primaryActionLabel: 'Review applications',
       backActionLabel: 'Send enrollment packet',
+      primaryActionHref: '/admissions',
+      backActionHref: '/admissions/pipeline',
       lastUpdated: '8:42 AM',
     },
     {
@@ -88,6 +90,8 @@ export default {
       details: ['5 teachers missing first period sync', '18 late arrivals logged before 9:00 AM', 'Family notification batch ready'],
       primaryActionLabel: 'Open attendance review',
       backActionLabel: 'Notify families',
+      primaryActionHref: '/attendance',
+      backActionHref: '/communications',
       lastUpdated: '8:50 AM',
     },
     {
@@ -107,6 +111,8 @@ export default {
       details: ['9 courses need final grade sync', 'Intervention plans pending for 6 students', 'Report cards ready by Thursday target'],
       primaryActionLabel: 'Review gradebook',
       backActionLabel: 'Generate progress report',
+      primaryActionHref: '/gradebook',
+      backActionHref: '/integrity',
       lastUpdated: '8:36 AM',
     },
     {
@@ -126,6 +132,8 @@ export default {
       details: ['138 plans active across all divisions', '24 aid applications awaiting committee', 'Batch posting completed this morning'],
       primaryActionLabel: 'Review billing',
       backActionLabel: 'Open financial aid queue',
+      primaryActionHref: '/billing',
+      backActionHref: '/financial-aid',
       lastUpdated: '8:31 AM',
     },
     {
@@ -145,6 +153,8 @@ export default {
       details: ['Weekly bulletin draft ready', '14 family responses pending follow-up', 'Staff channel digest scheduled'],
       primaryActionLabel: 'Send announcement',
       backActionLabel: 'Open message center',
+      primaryActionHref: '/communications',
+      backActionHref: '/communications',
       lastUpdated: '8:27 AM',
     },
     {
@@ -164,6 +174,8 @@ export default {
       details: ['4 substitute assignments unresolved', '7 certifications expire this month', '11 HR checklist tasks remain'],
       primaryActionLabel: 'Open staff roster',
       backActionLabel: 'Manage HR checklist',
+      primaryActionHref: '/hr',
+      backActionHref: '/staff-setup',
       lastUpdated: '8:21 AM',
     },
     {
@@ -183,6 +195,8 @@ export default {
       details: ['6 high-priority alerts require same-day response', 'Counseling referrals queued for advisor review', 'Service hour verification backlog increased'],
       primaryActionLabel: 'Review student life queue',
       backActionLabel: 'Open discipline cases',
+      primaryActionHref: '/student-services',
+      backActionHref: '/student-services',
       lastUpdated: '8:18 AM',
     },
     {
@@ -202,6 +216,8 @@ export default {
       details: ['7 incidents need administrator signoff', '16 families missing medical updates', 'Emergency contact verification in progress'],
       primaryActionLabel: 'Open health office',
       backActionLabel: 'Review incidents',
+      primaryActionHref: '/health',
+      backActionHref: '/safety',
       lastUpdated: '8:12 AM',
     },
     {
@@ -221,6 +237,8 @@ export default {
       details: ['3 field trip approvals awaiting final signoff', 'Volunteer roster still needs 14 slots', 'Room booking conflicts resolved for Friday'],
       primaryActionLabel: 'Create event',
       backActionLabel: 'Approve field trip',
+      primaryActionHref: '/activities-dashboard',
+      backActionHref: '/settings',
       lastUpdated: '8:09 AM',
     },
     {
@@ -240,6 +258,8 @@ export default {
       details: ['3 SIS retries from overnight import', '8 tickets in school support queue', 'Backup completed at 2:14 AM'],
       primaryActionLabel: 'Open system integrity',
       backActionLabel: 'Review sync errors',
+      primaryActionHref: '/it',
+      backActionHref: '/integrity',
       lastUpdated: '8:04 AM',
     },
   ],
@@ -272,6 +292,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Create a new student profile and initialize enrollment records.',
       actionLabel: 'Add student',
+      href: '/onboarding',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -279,6 +300,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Start onboarding workflow for new teacher or support staff.',
       actionLabel: 'Add staff',
+      href: '/staff-setup',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -286,6 +308,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Open pending admissions queue and decision checklist.',
       actionLabel: 'Review admissions',
+      href: '/admissions',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -293,6 +316,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Draft and publish a schoolwide communication update.',
       actionLabel: 'Send announcement',
+      href: '/communications',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -300,6 +324,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Review attendance exceptions and dispatch follow-ups.',
       actionLabel: 'Open attendance',
+      href: '/attendance',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -307,6 +332,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Jump to billing exceptions and payment processing queue.',
       actionLabel: 'Open billing',
+      href: '/billing',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -314,6 +340,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Create executive daily operations and readiness report.',
       actionLabel: 'Generate report',
+      href: '/integrity',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -321,6 +348,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Open calendar control center for events and approvals.',
       actionLabel: 'View calendar',
+      href: '/activities-dashboard',
       allowedRoles: ['schoolAdministrator'],
     },
   ],
