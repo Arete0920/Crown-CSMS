@@ -59,7 +59,6 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
         eyebrow={config.eyebrow}
         title={config.title}
         subtitle={config.subtitle}
-        note={config.note}
       />
 
       <CrownFaithCommunityStrip faithCommunity={config.faithCommunity ?? BASE_FAITH_COMMUNITY} />
@@ -173,12 +172,7 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
                 title={config.statusTitle}
                 statuses={statuses}
               />
-              {isSchoolAdminCommandCenter ? (
-                <CrownDashboardEmptyState
-                  title="Sandbox preview"
-                  message="Sandbox preview data shown. Connect backend for live records."
-                />
-              ) : null}
+
             </section>
           </>
         ) : (
@@ -219,10 +213,6 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
                   title={config.moduleSection.title}
                   body={config.moduleSection.body}
                   actions={config.moduleSection.actions || []}
-                />
-                <CrownDashboardEmptyState
-                  title="Sandbox preview"
-                  message="Live records are not required for this visual review pass."
                 />
               </section>
             ) : null}
