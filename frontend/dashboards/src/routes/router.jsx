@@ -30,7 +30,7 @@ import LoginPage from "../pages/LoginPage.jsx";
 import LogoutPage from "../pages/LogoutPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
-import AdminCommandCenterClean from "../pages/AdminCommandCenterClean.jsx";
+import SchoolAdministratorDashboard from "../pages/SchoolAdministratorDashboard.jsx";
 import BoardDashboard from "../pages/BoardDashboard.jsx";
 import FinanceDashboard from "../pages/FinanceDashboard.jsx";
 import ITDashboard from "../pages/ITDashboard.jsx";
@@ -172,6 +172,15 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    // Alias: /billing/dashboard mirrors /billing for inbound nav links
+    path: '/billing/dashboard',
+    element: (
+      <RequirePermission permission={APP_PERMISSIONS.BILLING_VIEW}>
+        <BillingDashboard />
+      </RequirePermission>
+    ),
+  },
+  {
     path: PATHS.FINANCIAL_AID,
     element: (
       <RoleRouteGuard allowedRoles={FINANCIAL_AID_ALLOWED_ROLES}>
@@ -207,6 +216,10 @@ export const router = createBrowserRouter([
     path: '/teacher',
     element: <TeacherDashboard />,
   },
+  {
+    path: '/teacher/dashboard',
+    element: <TeacherDashboard />,
+  },
   // Contract-preserving parent alias routes.
   // Keep these as literal strings in router.jsx for static gate checks.
   {
@@ -235,7 +248,15 @@ export const router = createBrowserRouter([
     element: <ParentDashboard />,
   },
   {
+    path: '/parent/dashboard',
+    element: <ParentDashboard />,
+  },
+  {
     path: PATHS.STUDENT,
+    element: <StudentDashboard />,
+  },
+  {
+    path: '/student/dashboard',
     element: <StudentDashboard />,
   },
   {
@@ -276,6 +297,12 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.ADMISSIONS,
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="admissions" activePath="/admissions" />
+      : <AdmissionsPipelineList />),
+  },
+  {
+    path: '/admissions/dashboard',
     element: (IS_LAUNCH_PREVIEW
       ? <CrownLaunchModulePage moduleKey="admissions" activePath="/admissions" />
       : <AdmissionsPipelineList />),
@@ -351,15 +378,19 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <AdminCommandCenterClean />,
+    element: <SchoolAdministratorDashboard />,
+  },
+  {
+    path: '/admin/dashboard',
+    element: <SchoolAdministratorDashboard />,
   },
   {
     path: '/school-admin',
-    element: <AdminCommandCenterClean />,
+    element: <SchoolAdministratorDashboard />,
   },
   {
     path: '/school-administrator',
-    element: <AdminCommandCenterClean />,
+    element: <SchoolAdministratorDashboard />,
   },
   {
     path: PATHS.BOARD,
@@ -367,6 +398,16 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.FINANCE,
+    element: (IS_LAUNCH_PREVIEW
+      ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
+      : (
+        <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+          <FinanceDashboard />
+        </RoleRouteGuard>
+      )),
+  },
+  {
+    path: '/finance/dashboard',
     element: (IS_LAUNCH_PREVIEW
       ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
       : (
@@ -612,12 +653,12 @@ export const router = createBrowserRouter([
   // ── CROWN sidebar navigation routes ──────────────────────────────────
   {
     path: PATHS.SCHOOL_ADMIN,
-    element: <AdminCommandCenterClean />,
+    element: <SchoolAdministratorDashboard />,
   },
   {
     path: PATHS.STUDENT_LIFE,
     element: IS_LAUNCH_PREVIEW
-      ? <CrownLaunchModulePage moduleKey="student" activePath="/student-life" />
+      ? <StudentDashboard />
       : <SpiritualLifeDashboard />,
   },
   {
@@ -630,4 +671,10 @@ export const router = createBrowserRouter([
     path: PATHS.REPORTING,
     element: <IntegrityDashboard />,
   },
+  // ── Common inbound path aliases (no-backend fallback redirects) ──────────
+  { path: '/students', element: <Navigate to={PATHS.ADMISSIONS} replace /> },
+  { path: '/families', element: <Navigate to={PATHS.SCHOOL_ADMIN} replace /> },
+  { path: '/staff', element: <Navigate to={PATHS.STAFF} replace /> },
+  { path: '/reports', element: <Navigate to={PATHS.REPORTING} replace /> },
+  { path: '/enrollment', element: <Navigate to={PATHS.ENROLLMENT} replace /> },
 ]);
