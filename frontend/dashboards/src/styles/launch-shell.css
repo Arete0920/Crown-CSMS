@@ -36,7 +36,7 @@
 }
 
 .launch-shell.has-right-rail {
-  grid-template-columns: 260px minmax(0, 1fr) minmax(320px, 360px);
+  grid-template-columns: 260px minmax(0, 1fr) minmax(240px, 300px);
 }
 
 .launch-sidebar {
@@ -1271,7 +1271,7 @@
   }
 }
 
-@media (max-width: 1520px) {
+@media (max-width: 1100px) {
   .launch-shell.has-right-rail {
     grid-template-columns: 260px minmax(0, 1fr);
   }
