@@ -27,6 +27,7 @@ export default {
     initials: 'SJ',
     name: 'Sarah James',
     role: 'School Administrator',
+    avatar: 'https://i.pravatar.cc/80?img=47',
   },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Sarah!',
