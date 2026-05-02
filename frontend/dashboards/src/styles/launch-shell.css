@@ -424,7 +424,7 @@
   background:
     radial-gradient(ellipse 80% 160% at 98% -20%, rgba(99, 141, 255, 0.28) 0%, transparent 55%),
     radial-gradient(ellipse 50% 80% at 4% 105%, rgba(217, 154, 43, 0.15) 0%, transparent 50%),
-    linear-gradient(148deg, #0c1a3d 0%, #112359 42%, #1a3570 72%, #1e3a8a 100%);
+    linear-gradient(148deg, #2563eb 0%, #3b82f6 42%, #60a5fa 72%, #93c5fd 100%);
 }
 
 /* decorative dot grid */
