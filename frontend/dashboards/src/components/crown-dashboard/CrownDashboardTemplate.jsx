@@ -1,6 +1,6 @@
 import CrownCard from '../launch/CrownCard.jsx';
 import CrownDashboardShell from './CrownDashboardShell.jsx';
-import CrownDashboardHeader from './CrownDashboardHeader.jsx';
+import CrownHeroHeader from './CrownHeroHeader.jsx';
 import CrownDashboardMetricGrid from './CrownDashboardMetricGrid.jsx';
 import CrownDashboardMetricCard from './CrownDashboardMetricCard.jsx';
 import CrownInsightPanel from './CrownInsightPanel.jsx';
@@ -54,12 +54,17 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
       user={config.user}
       updatesCount={config.updatesCount}
       rightRail={(isSchoolAdminCommandCenter && rightRailSections.length > 0) ? <CrownDashboardRightRail sections={rightRailSections} /> : null}
+      topbarSlot={
+        <CrownHeroHeader
+          schoolName={config.schoolName}
+          userInitials={config.user?.initials}
+          updatesCount={config.updatesCount}
+          eyebrow={config.eyebrow}
+          title={config.title}
+          subtitle={config.subtitle}
+        />
+      }
     >
-      <CrownDashboardHeader
-        eyebrow={config.eyebrow}
-        title={config.title}
-        subtitle={config.subtitle}
-      />
 
       <CrownFaithCommunityStrip faithCommunity={config.faithCommunity ?? BASE_FAITH_COMMUNITY} />
 
