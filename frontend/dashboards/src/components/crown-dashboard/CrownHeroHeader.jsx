@@ -59,6 +59,7 @@ export default function CrownHeroHeader({
   userInitials = 'SJ',
   userAvatar = null,
   title,
+  heroMessage = null,
 }) {
   const hasRouterContext = useInRouterContext();
 
@@ -121,44 +122,60 @@ export default function CrownHeroHeader({
 
       {/* ── Hero body ───────────────────────────────────────────────── */}
       <div className="launch-hero-body">
-        <div className="launch-hero-text">
-          <h1 className="launch-hero-title">{title}</h1>
+        {/* Left: content stack */}
+        <div className="launch-hero-content">
+          <div className="launch-hero-text">
+            <h1 className="launch-hero-title">{title}</h1>
+            {heroMessage && (
+              <p className="launch-hero-message">{heroMessage}</p>
+            )}
+          </div>
+
+          {/* MS 365 quick-launch */}
+          <div className="launch-hero-ms365-center">
+            <div className="launch-hero-ms365-chips">
+              <a
+                href="https://teams.microsoft.com"
+                target="_blank"
+                rel="noreferrer"
+                className="launch-ms-app-chip launch-ms-app-chip--teams"
+                aria-label="Open Microsoft Teams"
+              >
+                <TeamsIcon /> Teams
+              </a>
+              <a
+                href="https://outlook.office365.com"
+                target="_blank"
+                rel="noreferrer"
+                className="launch-ms-app-chip launch-ms-app-chip--outlook"
+                aria-label="Open Outlook"
+              >
+                <OutlookIcon /> Outlook
+              </a>
+              <a
+                href="https://outlook.office365.com/calendar"
+                target="_blank"
+                rel="noreferrer"
+                className="launch-ms-app-chip launch-ms-app-chip--calendar"
+                aria-label="Open Calendar"
+              >
+                <CalendarIcon /> Calendar
+              </a>
+            </div>
+          </div>
         </div>
 
-        {/* MS 365 quick-launch panel */}
-        <div className="launch-hero-ms365">
-          <div className="launch-hero-ms365-label">Quick launch</div>
-          <div className="launch-hero-ms365-chips">
-            <a
-              href="https://teams.microsoft.com"
-              target="_blank"
-              rel="noreferrer"
-              className="launch-ms-app-chip launch-ms-app-chip--teams"
-              aria-label="Open Microsoft Teams"
-            >
-              <TeamsIcon /> Teams
-            </a>
-            <a
-              href="https://outlook.office365.com"
-              target="_blank"
-              rel="noreferrer"
-              className="launch-ms-app-chip launch-ms-app-chip--outlook"
-              aria-label="Open Outlook"
-            >
-              <OutlookIcon /> Outlook
-            </a>
-            <a
-              href="https://outlook.office365.com/calendar"
-              target="_blank"
-              rel="noreferrer"
-              className="launch-ms-app-chip launch-ms-app-chip--calendar"
-              aria-label="Open Calendar"
-            >
-              <CalendarIcon /> Calendar
-            </a>
-          </div>
-          <div className="launch-hero-date" aria-label={`Today is ${today}`}>{today}</div>
-        </div>
+        {/* Right: avatar */}
+        {userAvatar ? (
+          <img
+            src={userAvatar}
+            alt={userInitials}
+            className="launch-hero-avatar-img"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

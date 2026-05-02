@@ -416,38 +416,37 @@
   overflow: hidden;
   border-radius: 20px;
   margin-bottom: 18px;
-  border: 1px solid rgba(37, 99, 235, 0.25);
+  border: 1px solid rgba(217, 154, 43, 0.25);
   box-shadow:
-    0 16px 48px rgba(15, 23, 42, 0.22),
-    0 2px 8px rgba(15, 23, 42, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 16px 48px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   background:
-    radial-gradient(ellipse 80% 160% at 98% -20%, rgba(99, 141, 255, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 80% at 4% 105%, rgba(217, 154, 43, 0.15) 0%, transparent 50%),
-    linear-gradient(148deg, #2563eb 0%, #3b82f6 42%, #60a5fa 72%, #93c5fd 100%);
+    linear-gradient(180deg, #faf8f3 0%, #f5f0e8 100%);
+  border-top: 3px solid var(--launch-gold, #d99a2b);
 }
 
-/* decorative dot grid */
+/* decorative dot grid (subtle on cream) */
 .launch-hero-header::before {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-image: radial-gradient(circle, rgba(217, 154, 43, 0.04) 1px, transparent 1px);
+  background-size: 28px 28px;
   pointer-events: none;
   z-index: 0;
 }
 
-/* decorative arc — large faint circle at top-right */
+/* decorative accent — faint gold swash at bottom-right */
 .launch-hero-header::after {
   content: '';
   position: absolute;
-  width: 420px;
-  height: 420px;
-  top: -160px;
-  right: -120px;
+  width: 300px;
+  height: 300px;
+  bottom: -100px;
+  right: -80px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.06);
+  background: radial-gradient(circle, rgba(217, 154, 43, 0.08) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -465,43 +464,43 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-/* Search bar — override for dark background */
+/* Search bar — override for cream background */
 .launch-hero-header .launch-search {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(217, 154, 43, 0.3);
 }
 
 .launch-hero-header .launch-search:focus-within {
-  border-color: rgba(147, 197, 253, 0.5);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  border-color: var(--launch-gold, #d99a2b);
+  box-shadow: 0 0 0 3px rgba(217, 154, 43, 0.15);
 }
 
 .launch-hero-header .launch-search input {
-  color: #e2e8f0;
+  color: #1f2937;
 }
 
 .launch-hero-header .launch-search input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(31, 41, 55, 0.5);
 }
 
 .launch-hero-header .launch-search-icon {
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: rgba(217, 154, 43, 0.4);
 }
 
 .launch-hero-header .launch-search-icon::after {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(217, 154, 43, 0.4);
 }
 
-/* Action buttons / school chip — override for dark background */
+/* Action buttons / school chip — override for cream background */
 .launch-hero-action-btn.launch-icon-button,
 .launch-hero-action-btn.launch-school-chip {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.14);
-  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(217, 154, 43, 0.25);
+  color: #374151;
 }
 
 .launch-hero-action-btn.launch-icon-button:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.75);
 }
 
 /* User avatar — gold accent on dark */
@@ -527,11 +526,11 @@
 .launch-hero-body {
   position: relative;
   z-index: 1;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 28px;
-  padding: 16px 22px 20px;
+  gap: 40px;
+  padding: 24px 28px 28px;
 }
 
 /* Left — greeting text */
@@ -546,20 +545,29 @@
 }
 
 .launch-hero-title {
-  color: #ffffff !important;
-  font-size: clamp(1.5rem, 2.4vw, 2.1rem) !important;
-  font-weight: 800 !important;
-  margin: 0 0 0 !important;
-  letter-spacing: -0.025em;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
-  line-height: 1.15;
+  color: #1f2937 !important;
+  font-size: clamp(1.6rem, 2vw, 2rem) !important;
+  font-weight: 700 !important;
+  margin: 0 0 8px !important;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .launch-hero-subtitle {
-  color: rgba(255, 255, 255, 0.62) !important;
+  color: rgba(31, 41, 55, 0.62) !important;
   font-size: 0.95rem;
   margin: 0;
   line-height: 1.5;
+}
+
+.launch-hero-message {
+  color: #7c3d1a;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-style: italic;
+  margin: 12px 0 0 0;
+  line-height: 1.6;
+  max-width: 500px;
 }
 
 /* Right — MS365 quick-launch panel */
@@ -569,6 +577,15 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+}
+
+/* Centered quick launch */
+.launch-hero-ms365-center {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
 }
 
 .launch-hero-ms365-label {
@@ -589,36 +606,44 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 14px;
-  border-radius: 12px;
-  font-size: 0.82rem;
+  padding: 11px 18px;
+  border-radius: 14px;
+  font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(8px);
-  transition: background 0.15s ease, transform 0.12s ease, border-color 0.15s ease;
+  background: rgba(217, 154, 43, 0.2);
+  border: 2px solid rgba(217, 154, 43, 0.4);
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .launch-ms-app-chip:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(217, 154, 43, 0.3);
+  border-color: rgba(217, 154, 43, 0.65);
   transform: translateY(-2px);
-  color: #ffffff;
   text-decoration: none;
 }
 
-.launch-ms-app-chip--teams:hover  { background: rgba(98, 100, 167, 0.45); border-color: rgba(98, 100, 167, 0.6); }
-.launch-ms-app-chip--outlook:hover { background: rgba(0, 120, 212, 0.4); border-color: rgba(0, 120, 212, 0.6); }
-.launch-ms-app-chip--calendar:hover { background: rgba(3, 100, 184, 0.4); border-color: rgba(3, 100, 184, 0.6); }
+.launch-ms-app-chip--teams:hover  { background: rgba(98, 100, 167, 0.25); border-color: rgba(98, 100, 167, 0.5); }
+.launch-ms-app-chip--outlook:hover { background: rgba(0, 120, 212, 0.2); border-color: rgba(0, 120, 212, 0.5); }
+.launch-ms-app-chip--calendar:hover { background: rgba(3, 100, 184, 0.2); border-color: rgba(3, 100, 184, 0.5); }
 
 .launch-hero-date {
   font-size: 0.75rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(127, 127, 127, 0.6);
   letter-spacing: 0.02em;
+}
+
+.launch-hero-avatar-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--launch-gold, #d99a2b);
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* ── End Hero Header ─────────────────────────────────────────────────── */
@@ -1313,13 +1338,15 @@
   }
 
   .launch-hero-body {
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 20px;
+    text-align: center;
   }
 
   .launch-hero-ms365 {
-    align-items: flex-start;
+    align-items: center;
   }
 
   .launch-dashboard-grid-metrics,

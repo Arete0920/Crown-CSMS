@@ -61,6 +61,7 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
           userAvatar={config.user?.avatar}
           updatesCount={config.updatesCount}
           title={config.title}
+          heroMessage={config.heroMessage}
         />
       }
     >
