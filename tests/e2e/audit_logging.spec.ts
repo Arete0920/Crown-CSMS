@@ -8,10 +8,6 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:8000';
 
 test.describe('Audit Logging - E2E Smoke Tests', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL + '/');
-  });
-
   test('Audit Logging: application root is reachable', async ({ page }) => {
     await page.goto(BASE_URL + '/');
     expect(page.url()).toContain(new URL(BASE_URL).hostname);

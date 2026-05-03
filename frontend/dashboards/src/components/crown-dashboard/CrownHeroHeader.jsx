@@ -36,17 +36,52 @@ function CalendarIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <rect width="20" height="20" rx="5" fill="#0364B8" />
-      {/* calendar body */}
       <rect x="3" y="6" width="14" height="11" rx="1.5" fill="white" fillOpacity=".9" />
-      {/* header band */}
       <rect x="3" y="6" width="14" height="4" rx="1.5" fill="white" />
-      {/* pin knobs */}
       <rect x="6" y="4" width="2" height="4" rx="1" fill="white" />
       <rect x="12" y="4" width="2" height="4" rx="1" fill="white" />
-      {/* day dots */}
       <rect x="5.5" y="12.5" width="2" height="2" rx=".5" fill="#0364B8" fillOpacity=".6" />
       <rect x="9"   y="12.5" width="2" height="2" rx=".5" fill="#0364B8" fillOpacity=".6" />
       <rect x="12.5" y="12.5" width="2" height="2" rx=".5" fill="#0364B8" fillOpacity=".6" />
+    </svg>
+  );
+}
+
+function WordIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect width="20" height="20" rx="5" fill="#185ABD" />
+      <rect x="2" y="5" width="10" height="13" rx="1.5" fill="white" fillOpacity=".9" />
+      <rect x="4" y="8" width="6" height="1.2" rx=".6" fill="#185ABD" fillOpacity=".7" />
+      <rect x="4" y="10.5" width="6" height="1.2" rx=".6" fill="#185ABD" fillOpacity=".7" />
+      <rect x="4" y="13" width="4" height="1.2" rx=".6" fill="#185ABD" fillOpacity=".7" />
+      <rect x="11" y="7" width="7" height="9" rx="1" fill="white" fillOpacity=".55" />
+      <text x="11.5" y="14" fontSize="7" fontWeight="800" fill="white" fontFamily="Arial">W</text>
+    </svg>
+  );
+}
+
+function ExcelIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect width="20" height="20" rx="5" fill="#107C41" />
+      <rect x="2" y="5" width="10" height="13" rx="1.5" fill="white" fillOpacity=".9" />
+      <rect x="11" y="7" width="7" height="9" rx="1" fill="white" fillOpacity=".55" />
+      <line x1="4" y1="8.5" x2="10" y2="14.5" stroke="#107C41" strokeWidth="1.4" strokeLinecap="round" />
+      <line x1="10" y1="8.5" x2="4" y2="14.5" stroke="#107C41" strokeWidth="1.4" strokeLinecap="round" />
+      <text x="11.5" y="14" fontSize="7" fontWeight="800" fill="white" fontFamily="Arial">X</text>
+    </svg>
+  );
+}
+
+function OneDriveIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect width="20" height="20" rx="5" fill="#0364B8" />
+      {/* large cloud */}
+      <path d="M14.5 13H6a3 3 0 0 1-.5-5.95A4 4 0 0 1 13 8.5a2.5 2.5 0 0 1 1.5 4.5z" fill="white" fillOpacity=".9" />
+      {/* small cloud accent */}
+      <path d="M8.5 10.5H5.5a2 2 0 0 1 0-4 2 2 0 0 1 3.8.7" fill="white" fillOpacity=".5" />
     </svg>
   );
 }
@@ -63,12 +98,6 @@ export default function CrownHeroHeader({
 }) {
   const hasRouterContext = useInRouterContext();
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-
   return (
     <div className="launch-hero-header" role="banner">
       {/* ── Top utility row ─────────────────────────────────────────── */}
@@ -82,7 +111,15 @@ export default function CrownHeroHeader({
           />
         </label>
 
-        <div className="launch-topbar-actions">
+        <div className="launch-topbar-actions launch-hero-topbar-actions">
+          <div className="launch-school-chip launch-hero-action-btn">{schoolName}</div>
+
+          {hasRouterContext ? (
+            <Link to="/settings" className="launch-icon-button launch-hero-action-btn">Help</Link>
+          ) : (
+            <a href="/settings" className="launch-icon-button launch-hero-action-btn">Help</a>
+          )}
+
           {hasRouterContext ? (
             <Link to="/communications" className="launch-icon-button launch-hero-action-btn">
               Updates <span className="launch-counter">{updatesCount}</span>
@@ -92,14 +129,6 @@ export default function CrownHeroHeader({
               Updates <span className="launch-counter">{updatesCount}</span>
             </a>
           )}
-
-          {hasRouterContext ? (
-            <Link to="/settings" className="launch-icon-button launch-hero-action-btn">Help</Link>
-          ) : (
-            <a href="/settings" className="launch-icon-button launch-hero-action-btn">Help</a>
-          )}
-
-          <div className="launch-school-chip launch-hero-action-btn">{schoolName}</div>
         </div>
       </div>
 
@@ -143,6 +172,33 @@ export default function CrownHeroHeader({
                 aria-label="Open Calendar"
               >
                 <CalendarIcon /> Calendar
+              </a>
+              <a
+                href="https://word.office.com"
+                target="_blank"
+                rel="noreferrer"
+                className="launch-ms-app-chip launch-ms-app-chip--word"
+                aria-label="Open Word"
+              >
+                <WordIcon /> Word
+              </a>
+              <a
+                href="https://excel.office.com"
+                target="_blank"
+                rel="noreferrer"
+                className="launch-ms-app-chip launch-ms-app-chip--excel"
+                aria-label="Open Excel"
+              >
+                <ExcelIcon /> Excel
+              </a>
+              <a
+                href="https://onedrive.live.com"
+                target="_blank"
+                rel="noreferrer"
+                className="launch-ms-app-chip launch-ms-app-chip--onedrive"
+                aria-label="Open OneDrive"
+              >
+                <OneDriveIcon /> OneDrive
               </a>
             </div>
           </div>

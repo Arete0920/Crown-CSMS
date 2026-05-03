@@ -109,6 +109,13 @@ django_out.txt
 student360_test.txt
 tools/_step1a.py
 
+# Screenshot artifacts from design/browser capture sessions
+*.png
+*.jpg
+*.jpeg
+!frontend/dashboards/public/**
+!docs/**/*.png
+
 # PR body scratch files (created by CI agent during PR workflow)
 pr_*.txt
 # Temp agent/automation scratch files
