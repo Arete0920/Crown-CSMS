@@ -1,4 +1,4 @@
-﻿"""
+"""
 Negative / error-path tests for the Shared Design System module.
 Module keywords: design_system, theme, palette, Button, Card, Modal
 Covers check 44: Negative Tests Exist.
@@ -81,11 +81,10 @@ class TestSharedDesignSystemNegativeCases:
         assert response.status_code in (200, 403, 404, 405)
 
     def test_shared_design_system_raises_when_school_missing_from_request(self):
-        """User without school triggers correct error handling â€” no 500."""
+        """User without school triggers correct error handling — no 500."""
         client = APIClient()
         response = client.get("/api/auth/me/")
         # Must return 401/403, never an unhandled 500
         assert response.status_code in (401, 403), (
             f"Expected 401/403 for unauthenticated request, got {response.status_code}"
         )
-

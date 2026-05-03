@@ -1,4 +1,4 @@
-﻿"""
+"""
 Negative / error-path tests for the CRM Marketing Suite module.
 Module keywords: CRM, Marketing, campaign, prospect, lead
 Covers check 44: Negative Tests Exist.
@@ -81,11 +81,10 @@ class TestCrmMarketingNegativeCases:
         assert response.status_code in (200, 403, 404, 405)
 
     def test_crm_marketing_raises_when_school_missing_from_request(self):
-        """User without school triggers correct error handling â€” no 500."""
+        """User without school triggers correct error handling — no 500."""
         client = APIClient()
         response = client.get("/api/auth/me/")
         # Must return 401/403, never an unhandled 500
         assert response.status_code in (401, 403), (
             f"Expected 401/403 for unauthenticated request, got {response.status_code}"
         )
-

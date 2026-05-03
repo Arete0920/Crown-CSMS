@@ -1,4 +1,4 @@
-﻿"""
+"""
 Negative / error-path tests for the Parent Portal module.
 Module keywords: ParentPortal, parent, guardian_portal, family_dashboard, parent_dashboard
 Covers check 44: Negative Tests Exist.
@@ -81,11 +81,10 @@ class TestParentPortalNegativeCases:
         assert response.status_code in (200, 403, 404, 405)
 
     def test_parent_portal_raises_when_school_missing_from_request(self):
-        """User without school triggers correct error handling â€” no 500."""
+        """User without school triggers correct error handling — no 500."""
         client = APIClient()
         response = client.get("/api/auth/me/")
         # Must return 401/403, never an unhandled 500
         assert response.status_code in (401, 403), (
             f"Expected 401/403 for unauthenticated request, got {response.status_code}"
         )
-
