@@ -1,4 +1,4 @@
-﻿// @vitest-environment jsdom
+// @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -87,7 +87,7 @@ describe("login page polish", () => {
     await waitFor(() => {
       expect(email.value).toBe("admin@heritage.example.org");
     });
-    expect(password.value).toBe("CrownDemo!2026");
+      expect(password.value).toBe("CrownDemo!2026");
     expect(screen.getByRole("button", { name: "Use Sandbox Credentials" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sign In" })).toBeTruthy();
   });
@@ -105,4 +105,3 @@ describe("login page polish", () => {
     expect(screen.queryByRole("button", { name: "Use Sandbox Credentials" })).toBeNull();
   });
 });
-
