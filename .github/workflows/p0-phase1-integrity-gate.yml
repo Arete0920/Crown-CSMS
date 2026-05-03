@@ -1,10 +1,11 @@
-name: P0 Phase1 Integrity Gate
+﻿name: P0 Phase1 Integrity Gate
 
 on:
   pull_request:
     branches: [main]
     paths:
       - ".github/workflows/p0-phase1-integrity-gate.yml"
+      - "backend/**"
       - "tools/verify_backend_gate.py"
       - "tools/verify_pytest_gate.py"
       - "frontend/dashboards/playwright.p0.config.ts"
@@ -54,6 +55,7 @@ jobs:
   p0-playwright-proof:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: [backend-gates]
 
     steps:
       - name: Checkout
@@ -134,7 +136,15 @@ jobs:
             tests/e2e/crm_marketing.spec.ts \
             tests/e2e/survey_sentiment.spec.ts \
             --config frontend/dashboards/playwright.p0.config.ts \
-            --reporter=line
+            --reporter=line,html
+
+      - name: Upload Playwright report (audit evidence)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p0-playwright-report
+          path: frontend/dashboards/playwright-report/
+          retention-days: 30
 
       - name: Upload backend proof log on failure
         if: failure()
