@@ -32,7 +32,7 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
     <section className="launch-dashboard-grid launch-faith-community-strip" aria-label="Faith and Community">
       {/* Daily Devotion */}
       <CrownCard className="launch-faith-card launch-faith-card--devotion">
-        <div className="launch-section-kicker">Daily devotion</div>
+        <div className="launch-section-kicker">Daily Devotion</div>
         <h3 className="launch-faith-title">Morning Word</h3>
         {devotion.scripture && (
           <blockquote className="launch-faith-scripture">
