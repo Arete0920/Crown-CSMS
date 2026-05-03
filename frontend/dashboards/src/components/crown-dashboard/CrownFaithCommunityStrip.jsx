@@ -23,10 +23,10 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
   const prayers = Array.isArray(faithCommunity.prayerRequests) ? faithCommunity.prayerRequests : [];
   const announcements = Array.isArray(faithCommunity.announcements) ? faithCommunity.announcements : [];
   const celebrations = Array.isArray(faithCommunity.celebrations) ? faithCommunity.celebrations : [];
-  const devotionHref = devotion.actionHref || '/api/v1/dashboards/chaplain-spiritual-life/summary?section=devotion';
-  const prayerHref = faithCommunity.prayerActionHref || '/api/v1/dashboards/chaplain-spiritual-life/summary?section=prayerRequests';
-  const announcementsHref = faithCommunity.announcementsActionHref || '/api/v1/dashboards/communications/summary?section=announcements';
-  const celebrationsHref = faithCommunity.celebrationsActionHref || '/api/v1/dashboards/chaplain-spiritual-life/summary?section=celebrations';
+  const devotionHref = devotion.actionHref || 'https://www.biblegateway.com/passage/?search=Proverbs%203%3A5&version=KJV';
+  const prayerHref = faithCommunity.prayerActionHref || '/spiritual-life';
+  const announcementsHref = faithCommunity.announcementsActionHref || '/communications';
+  const celebrationsHref = faithCommunity.celebrationsActionHref || '/spiritual-life';
 
   return (
     <section className="launch-dashboard-grid launch-faith-community-strip" aria-label="Faith and Community">

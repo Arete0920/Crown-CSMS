@@ -377,8 +377,27 @@ export default {
   ],
   rightRailSections: [
     {
+      type: 'gauge',
+      kicker: 'Leadership queue',
+      title: 'To-Dos today',
+      metric: '2',
+      total: '4',
+      detail: '50% complete',
+      accent: 'gold',
+      items: [
+        '✓ Approve 4 enrollment packets',
+        '✓ Review 3 attendance exceptions',
+        'Sign off tuition adjustment queue',
+        'Confirm substitute coverage',
+      ],
+    },
+    {
+      type: 'metric',
       kicker: 'Calendar',
-      title: "Today's Calendar",
+      title: 'Events today',
+      metric: '4',
+      detail: 'Next: Leadership huddle @ 8:15 AM',
+      accent: 'blue',
       items: [
         '8:15 AM Leadership huddle',
         '10:00 AM Admissions tour',
@@ -387,18 +406,12 @@ export default {
       ],
     },
     {
-      kicker: 'Leadership queue',
-      title: 'Administrator To-Dos',
-      items: [
-        'Approve 4 enrollment packets',
-        'Review 3 attendance exceptions',
-        'Sign off tuition adjustment queue',
-        'Confirm substitute coverage',
-      ],
-    },
-    {
+      type: 'activity',
       kicker: 'Inbox',
-      title: 'Communications Inbox',
+      title: 'Pending responses',
+      metric: '13',
+      detail: 'Messages need action',
+      accent: 'emerald',
       items: [
         '8 family replies need response',
         '3 unread staff messages',
@@ -406,8 +419,15 @@ export default {
       ],
     },
     {
+      type: 'status',
       kicker: 'Approvals',
-      title: 'Approvals Needed',
+      title: 'Approval queue',
+      metric: '3',
+      statuses: [
+        { label: 'Enrollment exceptions', state: 'pending' },
+        { label: 'Aid committee queue', state: 'ready' },
+        { label: 'Field trip approval', state: 'pending' },
+      ],
       items: [
         'Enrollment packet exceptions',
         'Finance aid committee queue',
@@ -415,8 +435,12 @@ export default {
       ],
     },
     {
+      type: 'alert',
       kicker: 'Escalations',
-      title: 'Critical Alerts',
+      title: 'Critical alerts',
+      metric: '3',
+      detail: 'Immediate action needed',
+      accent: 'warn',
       items: [
         'Bus loop incident follow-up pending',
         'SIS retry threshold nearing alert limit',
