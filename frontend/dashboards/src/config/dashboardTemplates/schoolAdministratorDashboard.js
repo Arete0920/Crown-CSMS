@@ -379,7 +379,7 @@ export default {
     {
       type: 'gauge',
       kicker: 'Leadership queue',
-      title: 'To-Dos today',
+      title: 'Administrator To-Dos',
       metric: '2',
       total: '4',
       detail: '50% complete',
@@ -394,7 +394,7 @@ export default {
     {
       type: 'metric',
       kicker: 'Calendar',
-      title: 'Events today',
+      title: "Today's Calendar",
       metric: '4',
       detail: 'Next: Leadership huddle @ 8:15 AM',
       accent: 'blue',
@@ -408,7 +408,7 @@ export default {
     {
       type: 'activity',
       kicker: 'Inbox',
-      title: 'Pending responses',
+      title: 'Communications Inbox',
       metric: '13',
       detail: 'Messages need action',
       accent: 'emerald',
@@ -421,7 +421,7 @@ export default {
     {
       type: 'status',
       kicker: 'Approvals',
-      title: 'Approval queue',
+      title: 'Approvals Needed',
       metric: '3',
       statuses: [
         { label: 'Enrollment exceptions', state: 'pending' },
@@ -437,7 +437,7 @@ export default {
     {
       type: 'alert',
       kicker: 'Escalations',
-      title: 'Critical alerts',
+      title: 'Critical Alerts',
       metric: '3',
       detail: 'Immediate action needed',
       accent: 'warn',
