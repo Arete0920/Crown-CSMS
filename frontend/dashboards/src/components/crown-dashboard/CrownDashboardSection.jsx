@@ -1,6 +1,9 @@
 import CrownCard from '../launch/CrownCard.jsx';
+import { Link, useInRouterContext } from 'react-router-dom';
 
 export default function CrownDashboardSection({ kicker = 'Overview', title, body, actions = [] }) {
+  const hasRouterContext = useInRouterContext();
+
   return (
     <CrownCard>
       <div className="launch-section-kicker">{kicker}</div>
@@ -9,23 +12,25 @@ export default function CrownDashboardSection({ kicker = 'Overview', title, body
       {actions.length ? (
         <div className="launch-inline-actions">
           {actions.map((action) => (
-            action.href ? (
-              <a
-                key={action.label}
-                href={action.href}
-                className={`launch-button ${action.tone === 'secondary' ? 'launch-button-secondary' : 'launch-button-primary'}`}
-              >
-                {action.label}
-              </a>
-            ) : (
-              <button
-                key={action.label}
-                type="button"
-                className={`launch-button ${action.tone === 'secondary' ? 'launch-button-secondary' : 'launch-button-primary'}`}
-              >
-                {action.label}
-              </button>
-            )
+            (action.href || action.fallbackHref || '/dashboard') ? (
+              hasRouterContext ? (
+                <Link
+                  key={action.label}
+                  to={action.href || action.fallbackHref || '/dashboard'}
+                  className={`launch-button ${action.tone === 'secondary' ? 'launch-button-secondary' : 'launch-button-primary'}`}
+                >
+                  {action.label}
+                </Link>
+              ) : (
+                <a
+                  key={action.label}
+                  href={action.href || action.fallbackHref || '/dashboard'}
+                  className={`launch-button ${action.tone === 'secondary' ? 'launch-button-secondary' : 'launch-button-primary'}`}
+                >
+                  {action.label}
+                </a>
+              )
+            ) : null
           ))}
         </div>
       ) : null}

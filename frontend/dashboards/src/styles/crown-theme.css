@@ -1,399 +1,360 @@
-﻿/* Crown Global Theme (safe: CSS-only, no behavior changes) */
+﻿/* Crown Design Token Layer
 
-:root{
-  /* Core tokens */
-  --crown-bg: #0b1220;          /* deep navy */
-  --crown-surface: #0f1a2f;     /* elevated navy */
-  --crown-card: #111f3a;        /* card surface */
-  --crown-text: #e7eefc;        /* primary text */
-  --crown-muted: #b8c5e6;       /* secondary text */
-  --crown-subtle: rgba(231,238,252,.08);
-  --crown-border: rgba(231,238,252,.14);
+   SCOPE: CSS custom property tokens ONLY — colors, radii, shadows, typography scale.
+   No component classes belong here. launch-shell.css consumes these tokens via var().
+   Do NOT add component styles, grid classes, or utility-ish selectors here.
+*/
 
-  --crown-gold: #d4af37;
-  --crown-gold-2: #f1d88a;
-
-  --crown-danger: #ff5d5d;
-  --crown-warn: #ffbf5f;
-  --crown-ok: #4ee18a;
-
-  --crown-radius: 14px;
+:root {
+  --crown-bg: #f7faff;
+  --crown-bg-soft: #eef5ff;
+  --crown-surface: #ffffff;
+  --crown-surface-soft: #f4f8ff;
+  --crown-border: #d8e6ff;
+  --crown-border-strong: #b8d4ff;
+  --crown-primary: #3b82f6;
+  --crown-primary-strong: #2563eb;
+  --crown-primary-deep: #1d4ed8;
+  --crown-primary-soft: #dbeafe;
+  --crown-primary-faint: #eff6ff;
+  --crown-accent: #8b5cf6;
+  --crown-accent-soft: #ede9fe;
+  --crown-gold: #d99a2b;
+  --crown-gold-soft: #fff3d6;
+  --crown-success: #16a34a;
+  --crown-success-soft: #dcfce7;
+  --crown-warning: #d97706;
+  --crown-warning-soft: #fef3c7;
+  --crown-danger: #dc2626;
+  --crown-danger-soft: #fee2e2;
+  --crown-text: #172033;
+  --crown-muted: #5f6f89;
+  --crown-subtle: #8291aa;
   --crown-radius-sm: 10px;
-  --crown-shadow: 0 10px 30px rgba(0,0,0,.35);
-
-  --crown-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  --crown-radius-md: 14px;
+  --crown-radius-lg: 20px;
+  --crown-radius-xl: 28px;
+  --crown-shadow-soft: 0 8px 24px rgba(37, 99, 235, 0.08);
+  --crown-shadow-card: 0 16px 40px rgba(37, 99, 235, 0.10);
+  --crown-shadow-lift: 0 22px 58px rgba(37, 99, 235, 0.14);
 }
 
-/* Base */
-html, body{
-  height:100%;
-  background: radial-gradient(1200px 800px at 20% 0%, rgba(212,175,55,.10), transparent 55%),
-              radial-gradient(1000px 700px at 90% 10%, rgba(241,216,138,.08), transparent 50%),
-              var(--crown-bg);
+html {
+  background: var(--crown-bg);
+}
+
+body {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(59, 130, 246, 0.14), transparent 32rem),
+    radial-gradient(circle at 90% 5%, rgba(139, 92, 246, 0.09), transparent 30rem),
+    linear-gradient(180deg, var(--crown-bg) 0%, var(--crown-bg-soft) 100%);
   color: var(--crown-text);
-  font-family: var(--crown-font);
+  text-rendering: optimizeLegibility;
 }
 
-a{ color: #0f4d8c; text-decoration: none; }
-a:hover{ color: #0b3b6d; text-decoration: underline; }
+a {
+  color: var(--crown-primary-strong);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
 
-*{ box-sizing: border-box; }
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
 
-/* Page shell helpers (if your app already uses these, it will instantly improve) */
-.crown-main{
-  padding: 20px 22px;
-  max-width: 1280px;
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.34);
+  outline-offset: 2px;
+}
+
+.crown-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.13), transparent 28rem),
+    radial-gradient(circle at 85% 0%, rgba(139, 92, 246, 0.08), transparent 32rem),
+    linear-gradient(180deg, var(--crown-bg) 0%, var(--crown-bg-soft) 100%);
+  color: var(--crown-text);
+}
+
+.crown-shell {
+  width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
+  padding: 24px 0 48px;
 }
-.crown-section{
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+
+.crown-card {
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--crown-border);
-  border-radius: var(--crown-radius);
-  box-shadow: var(--crown-shadow);
-  padding: 16px 16px;
+  border-radius: var(--crown-radius-lg);
+  box-shadow: var(--crown-shadow-card);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
-/* Typography */
-h1{
-  font-size: 24px;
-  line-height: 1.15;
-  margin: 0 0 12px 0;
-  letter-spacing: .2px;
+.crown-card-soft {
+  background: linear-gradient(180deg, #ffffff 0%, var(--crown-surface-soft) 100%);
+  border: 1px solid var(--crown-border);
+  border-radius: var(--crown-radius-lg);
+  box-shadow: var(--crown-shadow-soft);
 }
-h2{
-  font-size: 16px;
-  margin: 18px 0 10px 0;
-  color: var(--crown-muted);
-  letter-spacing: .2px;
-}
-.crown-muted{ color: var(--crown-muted); }
 
-/* Buttons (covers existing .crown-btn patterns) */
-.crown-btn, button.crown-btn, a.crown-btn{
+.crown-card-section {
+  padding: 22px;
+}
+
+.crown-page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.crown-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  color: var(--crown-primary-strong);
+  background: var(--crown-primary-faint);
   border: 1px solid var(--crown-border);
-  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.crown-title {
+  margin: 10px 0 6px;
   color: var(--crown-text);
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform .05s ease, background .15s ease, border-color .15s ease;
-}
-.crown-btn:hover{
-  background: rgba(255,255,255,.10);
-  border-color: rgba(212,175,55,.40);
-}
-.crown-btn:active{ transform: translateY(1px); }
-
-.crown-btn-primary:hover{
-  background: linear-gradient(180deg, rgba(212,175,55,.32), rgba(212,175,55,.16));
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.05;
+  font-weight: 850;
+  letter-spacing: -0.035em;
 }
 
-/* Inputs */
-input, select, textarea{
-  background: rgba(255,255,255,.06);
-  border: 1px solid var(--crown-border);
+.crown-subtitle {
+  max-width: 780px;
+  color: var(--crown-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.crown-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.crown-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.crown-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.crown-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.crown-kpi {
+  padding: 18px;
+}
+
+.crown-kpi-label {
+  color: var(--crown-muted);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.crown-kpi-value {
+  margin-top: 8px;
   color: var(--crown-text);
-  border-radius: 12px;
-  padding: 10px 12px;
-  outline: none;
-}
-input:focus, select:focus, textarea:focus{
-  border-color: rgba(212,175,55,.55);
-  box-shadow: 0 0 0 3px rgba(212,175,55,.16);
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: -0.035em;
 }
 
-/* Tables (safe defaults) */
-table{
+.crown-kpi-context {
+  margin-top: 10px;
+  color: var(--crown-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.crown-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--crown-primary-strong);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--crown-primary) 0%, var(--crown-primary-strong) 100%);
+  color: #ffffff;
+  min-height: 42px;
+  padding: 10px 16px;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+  text-decoration: none;
+}
+
+.crown-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.28);
+}
+
+.crown-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--crown-border-strong);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--crown-primary-strong);
+  min-height: 42px;
+  padding: 10px 16px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.crown-button-secondary:hover {
+  background: var(--crown-primary-faint);
+  transform: translateY(-1px);
+}
+
+.crown-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.crown-status-pass {
+  background: var(--crown-success-soft);
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.crown-status-review {
+  background: var(--crown-warning-soft);
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.crown-status-fail {
+  background: var(--crown-danger-soft);
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.crown-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   overflow: hidden;
-  border-radius: var(--crown-radius);
   border: 1px solid var(--crown-border);
-  background: rgba(255,255,255,.04);
+  border-radius: var(--crown-radius-lg);
+  background: #ffffff;
 }
-thead th{
+
+.crown-table th {
+  background: var(--crown-primary-faint);
+  color: var(--crown-text);
   text-align: left;
   font-size: 12px;
-  color: var(--crown-muted);
-  background: rgba(255,255,255,.06);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--crown-border);
-  padding: 10px 10px;
-}
-tbody td{
-  padding: 10px 10px;
-  border-bottom: 1px solid rgba(231,238,252,.08);
-}
-tbody tr:hover{
-  background: rgba(212,175,55,.06);
 }
 
-/* Cards (opt-in via class) */
-.crown-card{
-  background: rgba(255,255,255,.05);
-  border: 1px solid var(--crown-border);
-  border-radius: var(--crown-radius);
-  box-shadow: var(--crown-shadow);
-  padding: 14px 14px;
+.crown-table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--crown-border);
+  color: var(--crown-text);
 }
 
-/* Badges */
-.crown-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--crown-border);
-  background: rgba(255,255,255,.06);
+.crown-empty-state {
+  padding: 32px;
+  text-align: center;
+  border: 1px dashed var(--crown-border-strong);
+  border-radius: var(--crown-radius-lg);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.crown-form-control {
+  width: 100%;
+  border: 1px solid var(--crown-border-strong);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--crown-text);
+  min-height: 42px;
+  padding: 10px 12px;
+}
+
+.crown-form-label {
+  display: block;
+  color: var(--crown-text);
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.crown-form-help {
   color: var(--crown-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-.crown-badge.ok{ border-color: rgba(78,225,138,.35); color: rgba(78,225,138,.95); }
-.crown-badge.warn{ border-color: rgba(255,191,95,.35); color: rgba(255,191,95,.95); }
-.crown-badge.danger{ border-color: rgba(255,93,93,.35); color: rgba(255,93,93,.95); }
-
-/* Scrollbars (non-critical) */
-*::-webkit-scrollbar{ height: 10px; width: 10px; }
-*::-webkit-scrollbar-thumb{
-  background: rgba(231,238,252,.14);
-  border-radius: 999px;
-  border: 2px solid rgba(0,0,0,.15);
+  font-size: 13px;
+  line-height: 1.45;
+  margin-top: 6px;
 }
 
-/* --- Contrast hotfix (demo-safe) --- */
+@media (max-width: 1080px) {
+  .crown-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-/* Some pages likely have existing input/button CSS (crown.css) overriding colors.
-   Force readable foreground and visible borders using higher specificity + !important. */
-
-.crown-main input,
-.crown-main select,
-.crown-main textarea,
-.crown-section input,
-.crown-section select,
-.crown-section textarea,
-input, select, textarea{
-  color: var(--crown-text) !important;
-  background-color: rgba(255,255,255,.08) !important;
-  border-color: rgba(231,238,252,.22) !important;
+  .crown-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-input::placeholder,
-textarea::placeholder{
-  color: rgba(231,238,252,.55) !important;
+@media (max-width: 720px) {
+  .crown-shell {
+    width: min(100% - 20px, 1440px);
+    padding-top: 16px;
+  }
+
+  .crown-grid-2,
+  .crown-grid-3,
+  .crown-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .crown-page-header {
+    flex-direction: column;
+  }
+
+  .crown-title {
+    font-size: 30px;
+  }
 }
-
-/* Buttons: ensure text is readable even if background is overridden elsewhere */
-button,
-.crown-btn,
-a.crown-btn{
-  color: var(--crown-text) !important;
-  background-color: rgba(255,255,255,.08) !important;
-  border-color: rgba(231,238,252,.22) !important;
-}
-
-/* Primary button: keep gold intent but ensure contrast */
-.crown-btn-primary{
-  color: var(--crown-text) !important;
-  background: linear-gradient(180deg, rgba(212,175,55,.30), rgba(212,175,55,.16)) !important;
-  border-color: rgba(212,175,55,.55) !important;
-}
-
-/* Dropdown arrow / calendar indicators (Windows/Chrome quirks) */
-select{
-  color-scheme: dark;
-}
-
-/* If any page sets a white background on inputs, keep text dark readable */
-input[style*="background: white"],
-input[style*="background-color: white"],
-textarea[style*="background: white"],
-textarea[style*="background-color: white"]{
-  color: #0b1220 !important;
-}
-
-
-
-/* --- Crown Inputs & Autofill (consolidated v2v5, behavior-preserving) --- */
-
-/* Global input/readability baseline */
-input, select, textarea{
-  color: var(--crown-text) !important;
-  caret-color: var(--crown-text) !important;
-  -webkit-text-fill-color: var(--crown-text) !important;
-
-  /* Dark field surface to avoid light-on-light across pages */
-  background-color: rgba(14,18,32,.55) !important;
-  border: 1px solid rgba(231,238,252,.22) !important;
-}
-
-input::placeholder,
-textarea::placeholder{
-  color: rgba(231,238,252,.55) !important;
-  -webkit-text-fill-color: rgba(231,238,252,.55) !important;
-  opacity: 1 !important;
-}
-
-select{
-  background-color: rgba(14,18,32,.55) !important;
-}
-
-/* Chrome/Edge autofill neutralization */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus,
-select:-webkit-autofill,
-select:-webkit-autofill:hover,
-select:-webkit-autofill:focus{
-  -webkit-text-fill-color: var(--crown-text) !important;
-  caret-color: var(--crown-text) !important;
-  transition: background-color 999999s ease-in-out 0s;
-  box-shadow: 0 0 0px 1000px rgba(14,18,32,.55) inset !important;
-  border: 1px solid rgba(231,238,252,.22) !important;
-}
-
-/* Disabled/readonly states should still be readable */
-input:disabled, select:disabled, textarea:disabled,
-input[readonly], select[readonly], textarea[readonly]{
-  opacity: .85;
-  color: var(--crown-text) !important;
-  -webkit-text-fill-color: var(--crown-text) !important;
-}
-
-/* Table-context specificity bump (Attendance + other table-heavy pages) */
-html body table input,
-html body table select,
-html body table textarea,
-html body .crown-table input,
-html body .crown-table select,
-html body .crown-table textarea{
-  color: var(--crown-text) !important;
-  caret-color: var(--crown-text) !important;
-  -webkit-text-fill-color: var(--crown-text) !important;
-
-  background-color: rgba(14,18,32,.55) !important;
-  border: 1px solid rgba(231,238,252,.22) !important;
-}
-
-html body table input::placeholder,
-html body table textarea::placeholder,
-html body .crown-table input::placeholder,
-html body .crown-table textarea::placeholder{
-  color: rgba(231,238,252,.55) !important;
-  -webkit-text-fill-color: rgba(231,238,252,.55) !important;
-  opacity: 1 !important;
-}
-
-html body table input:-webkit-autofill,
-html body table input:-webkit-autofill:hover,
-html body table input:-webkit-autofill:focus,
-html body table textarea:-webkit-autofill,
-html body table textarea:-webkit-autofill:hover,
-html body table textarea:-webkit-autofill:focus,
-html body table select:-webkit-autofill,
-html body table select:-webkit-autofill:hover,
-html body table select:-webkit-autofill:focus{
-  -webkit-text-fill-color: var(--crown-text) !important;
-  caret-color: var(--crown-text) !important;
-  transition: background-color 999999s ease-in-out 0s;
-  box-shadow: 0 0 0px 1000px rgba(14,18,32,.55) inset !important;
-  border: 1px solid rgba(231,238,252,.22) !important;
-}
-
-/* Accessibility hardening for known release-gate contrast selectors */
-.lp-prompt,
-.lp-sep-text,
-.lp-foot {
-  color: #1f3448 !important;
-}
-
-a[href="/"],
-a[href$="parent-snapshot"],
-a[href$="invoices"],
-a[href$="gradebook"] {
-  color: #f8fafc !important;
-  background: #0f2c4c !important;
-  padding: 2px 8px;
-  border-radius: 6px;
-  display: inline-block;
-  font-weight: 700;
-  text-decoration: none !important;
-}
-
-a[href="/"]:hover,
-a[href$="parent-snapshot"]:hover,
-a[href$="invoices"]:hover,
-a[href$="gradebook"]:hover {
-  background: #123a63 !important;
-}
-
-.crown-alert {
-  background: #fde8e8 !important;
-  border-color: #dc2626 !important;
-  color: #4a1111 !important;
-}
-
-.crown-alert > div {
-  color: #4a1111 !important;
-}
-
-.MuiChip-colorWarning.MuiChip-filledWarning {
-  background-color: #f8d58a !important;
-  color: #4d3200 !important;
-}
-
-.MuiChip-colorWarning.MuiChip-filledWarning .MuiChip-label {
-  color: #4d3200 !important;
-  font-weight: 600;
-}
-
-/* Attendance-only override (uses stronger surface: .70) */
-.crown-attendance input,
-.crown-attendance select,
-.crown-attendance textarea{
-  color: var(--crown-text) !important;
-  caret-color: var(--crown-text) !important;
-  -webkit-text-fill-color: var(--crown-text) !important;
-
-  background-color: rgba(14,18,32,.70) !important;
-  border: 1px solid rgba(231,238,252,.22) !important;
-}
-
-.crown-attendance select{
-  background-color: rgba(14,18,32,.70) !important;
-}
-
-.crown-attendance input::placeholder,
-.crown-attendance textarea::placeholder{
-  color: rgba(231,238,252,.55) !important;
-  -webkit-text-fill-color: rgba(231,238,252,.55) !important;
-  opacity: 1 !important;
-}
-
-.crown-attendance input:-webkit-autofill,
-.crown-attendance input:-webkit-autofill:hover,
-.crown-attendance input:-webkit-autofill:focus,
-.crown-attendance textarea:-webkit-autofill,
-.crown-attendance textarea:-webkit-autofill:hover,
-.crown-attendance textarea:-webkit-autofill:focus,
-.crown-attendance select:-webkit-autofill,
-.crown-attendance select:-webkit-autofill:hover,
-.crown-attendance select:-webkit-autofill:focus{
-  -webkit-text-fill-color: var(--crown-text) !important;
-  caret-color: var(--crown-text) !important;
-  transition: background-color 999999s ease-in-out 0s;
-  box-shadow: 0 0 0px 1000px rgba(14,18,32,.70) inset !important;
-  border: 1px solid rgba(231,238,252,.22) !important;
-}
-
-/* --- end consolidated section --- */
-
-

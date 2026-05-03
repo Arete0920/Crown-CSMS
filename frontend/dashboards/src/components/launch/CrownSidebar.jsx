@@ -3,18 +3,108 @@ import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { hasAnyRole } from '../../auth/roleAccess';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/dashboard', glyph: 'D' },
-  { label: 'School', href: '/school-admin', glyph: 'S', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'] },
-  { label: 'Administration', href: '/admin', glyph: 'A', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'] },
-  { label: 'Admissions', href: '/admissions', glyph: 'Ad', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'admissions', 'admissions_manager'] },
-  { label: 'Academics', href: '/gradebook', glyph: 'Ac', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'academic_admin', 'academics'] },
-  { label: 'Student Life', href: '/student-life', glyph: 'SL', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'] },
-  { label: 'Attendance', href: '/attendance', glyph: 'At', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'] },
-  { label: 'Finance', href: '/finance', glyph: 'F', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'finance', 'finance_admin', 'finance_director', 'biz_office', 'super_admin'] },
-  { label: 'Communications', href: '/communications', glyph: 'C' },
-  { label: 'Reports', href: '/reporting', glyph: 'R', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'board', 'board_member', 'super_admin'] },
-  { label: 'Settings', href: '/settings', glyph: 'Se', roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'] },
+  {
+    key: 'dashboard',
+    label: 'Dashboard',
+    href: '/dashboard',
+    glyph: 'D',
+    activePrefixes: ['/dashboard', '/teacher', '/teacher/dashboard', '/parent', '/parent/dashboard', '/student', '/student/dashboard'],
+  },
+  {
+    key: 'school',
+    label: 'School',
+    href: '/school-admin',
+    glyph: 'S',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'],
+    activePrefixes: ['/school-admin', '/school-administrator', '/school-admin-dashboard'],
+  },
+  {
+    key: 'administration',
+    label: 'Control Center',
+    href: '/master-control',
+    glyph: 'A',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'],
+    activePrefixes: ['/master-control', '/master-control-dashboard'],
+  },
+  {
+    key: 'admissions',
+    label: 'Admissions',
+    href: '/admissions',
+    glyph: 'Ad',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'admissions', 'admissions_manager'],
+    activePrefixes: ['/admissions', '/admissions-dashboard'],
+  },
+  {
+    key: 'academics',
+    label: 'Academics',
+    href: '/gradebook',
+    glyph: 'Ac',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'academic_admin', 'academics'],
+    activePrefixes: ['/gradebook', '/gradebook-dashboard', '/scheduling-dashboard', '/curriculum-pd-dashboard', '/library-media-dashboard'],
+  },
+  {
+    key: 'student-life',
+    label: 'Student Life',
+    href: '/student-life',
+    glyph: 'SL',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'],
+    activePrefixes: ['/student-life', '/spiritual-life', '/athletics', '/activities-dashboard', '/activities-athletics-dashboard', '/student-care-dashboard', '/chaplain-dashboard', '/portrait-service-dashboard', '/volunteer-management-dashboard', '/alumni-relations-dashboard', '/extended-care-dashboard', '/safety-security-dashboard'],
+  },
+  {
+    key: 'attendance',
+    label: 'Attendance',
+    href: '/attendance',
+    glyph: 'At',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'teacher', 'parent', 'student'],
+    activePrefixes: ['/attendance', '/attendance-dashboard', '/teacher/attendance', '/parent/attendance'],
+  },
+  {
+    key: 'finance',
+    label: 'Finance',
+    href: '/finance',
+    glyph: 'F',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'finance', 'finance_admin', 'finance_director', 'biz_office', 'super_admin'],
+    activePrefixes: ['/finance', '/billing', '/billing-dashboard', '/financial-aid', '/financial-aid-dashboard', '/revenue-operations-dashboard'],
+  },
+  {
+    key: 'communications',
+    label: 'Communications',
+    href: '/communications',
+    glyph: 'C',
+    activePrefixes: ['/communications', '/communications-dashboard', '/communications-director'],
+  },
+  {
+    key: 'reports',
+    label: 'Reports',
+    href: '/integrity',
+    glyph: 'R',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'board', 'board_member', 'super_admin'],
+    activePrefixes: ['/integrity', '/compliance-audit-dashboard', '/release-reliability-dashboard', '/dashboard-certification-center', '/network-benchmarking-dashboard'],
+  },
+  {
+    key: 'settings',
+    label: 'Settings',
+    href: '/settings',
+    glyph: 'Se',
+    roles: ['school_admin', 'head_of_school', 'admin', 'director', 'principal', 'super_admin'],
+    activePrefixes: ['/settings'],
+  },
 ];
+
+function resolveActiveNavKey(pathname = '') {
+  if (!pathname) return null;
+
+  const normalizedPath = pathname.toLowerCase();
+  const match = NAV_ITEMS.find((item) => {
+    const prefixes = Array.isArray(item.activePrefixes) && item.activePrefixes.length > 0
+      ? item.activePrefixes
+      : [item.href];
+
+    return prefixes.some((prefix) => normalizedPath.startsWith(prefix.toLowerCase()));
+  });
+
+  return match?.key ?? null;
+}
 
 function BrandLockup() {
   return (
@@ -47,6 +137,7 @@ export default function CrownSidebar({
   const hasRouterContext = useInRouterContext();
   const userRoles = getCurrentUserRoles();
   const visibleItems = NAV_ITEMS.filter((item) => !Array.isArray(item.roles) || hasAnyRole(userRoles, item.roles));
+  const activeNavKey = resolveActiveNavKey(activePath);
 
   return (
     <aside className="launch-sidebar">
@@ -54,7 +145,7 @@ export default function CrownSidebar({
 
       <nav className="launch-sidebar-nav" aria-label="Primary">
         {visibleItems.map((item) => {
-          const active = activePath === item.href;
+          const active = item.key === activeNavKey;
           const classes = active ? 'is-active' : '';
           const content = (
             <>

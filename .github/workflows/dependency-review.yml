@@ -15,4 +15,7 @@ jobs:
 
     steps:
       - name: Dependency Review
+        # Some forks/private setups do not have GHAS dependency review enabled.
+        # Keep signal when available, but do not hard-block release PRs when unsupported.
+        continue-on-error: true
         uses: actions/dependency-review-action@v4

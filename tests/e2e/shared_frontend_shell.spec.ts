@@ -8,10 +8,6 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:8000';
 
 test.describe('Shared Frontend Shell - E2E Smoke Tests', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(BASE_URL + '/');
-  });
-
   test('Shared Frontend Shell: application root is reachable', async ({ page }) => {
     await page.goto(BASE_URL + '/');
     expect(page.url()).toContain(new URL(BASE_URL).hostname);
@@ -30,6 +26,22 @@ test.describe('Shared Frontend Shell - E2E Smoke Tests', () => {
   test('Shared Frontend Shell: unauthenticated access to protected endpoint is blocked', async ({ page }) => {
     const response = await page.request.get(BASE_URL + '/api/auth/me/');
     expect([401, 403]).toContain(response.status());
+  });
+
+  test('Shared Frontend Shell: missing tenant header is fail-closed on /api/v1/nav/', async ({ page }) => {
+    const response = await page.request.get(BASE_URL + '/api/v1/nav/');
+    expect(response.status()).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe('missing_tenant');
+  });
+
+  test('Shared Frontend Shell: cross-tenant (wrong X-School-Id) is denied on /api/v1/nav/', async ({ page }) => {
+    // Check 23: Cross-tenant mismatch — a non-existent/wrong school ID must not return 200
+    const response = await page.request.get(BASE_URL + '/api/v1/nav/', {
+      headers: { 'X-School-Id': '99999' },
+    });
+    expect(response.status()).not.toBe(200);
+    expect(response.status()).toBeGreaterThanOrEqual(400);
   });
 
   test('Shared Frontend Shell: page loads without critical JS errors', async ({ page }) => {

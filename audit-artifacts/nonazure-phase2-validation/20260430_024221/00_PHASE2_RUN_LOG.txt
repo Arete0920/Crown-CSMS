@@ -40,3 +40,17 @@ Running validation 18/21: python backend\manage.py check
 Running validation 19/21: python backend\manage.py check --deploy
 Running validation 20/21: python backend\manage.py showmigrations
 Running validation 21/21: python -m pytest
+
+
+
+CROWN Phase 2 complete.
+Decision: NON_AZURE_PHASE2_REMEDIATION_REQUIRED
+Output: C:\w\crown_main_postmerge_verify\audit-artifacts\nonazure-phase2-validation\20260430_024221
+
+Open first:
+C:\w\crown_main_postmerge_verify\audit-artifacts\nonazure-phase2-validation\20260430_024221\99_PHASE2_SUMMARY.md
+C:\w\crown_main_postmerge_verify\audit-artifacts\nonazure-phase2-validation\20260430_024221\07_RELEASE_BLOCKER_BOARD.csv
+**********************
+Windows PowerShell transcript end
+End time: 20260430031807
+**********************
