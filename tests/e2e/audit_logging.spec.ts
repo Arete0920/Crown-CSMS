@@ -49,4 +49,13 @@ test.describe('Audit Logging - E2E Smoke Tests', () => {
     // e2e spec.ts: no critical JS errors on root page load
     expect(critical.length).toBe(0);
   });
+
+  test('Audit Logging: cross-tenant (wrong X-School-Id) is denied on /api/v1/nav/', async ({ page }) => {
+    // Check 23: Cross-tenant mismatch — a non-existent/wrong school ID must not return 200
+    const response = await page.request.get(BASE_URL + '/api/v1/nav/', {
+      headers: { 'X-School-Id': '99999' },
+    });
+    expect(response.status()).not.toBe(200);
+    expect(response.status()).toBeGreaterThanOrEqual(400);
+  });
 });
