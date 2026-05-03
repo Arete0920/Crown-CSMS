@@ -32,6 +32,13 @@ test.describe('Document File Framework - E2E Smoke Tests', () => {
     expect([401, 403]).toContain(response.status());
   });
 
+  test('Document File Framework: missing tenant header is fail-closed on /api/v1/nav/', async ({ page }) => {
+    const response = await page.request.get(BASE_URL + '/api/v1/nav/');
+    expect(response.status()).toBe(400);
+    const payload = await response.json();
+    expect(payload.code).toBe('missing_tenant');
+  });
+
   test('Document File Framework: page loads without critical JS errors', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
