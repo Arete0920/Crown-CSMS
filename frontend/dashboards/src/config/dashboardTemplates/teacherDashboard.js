@@ -30,6 +30,7 @@ export default {
     name: 'David Chen',
     role: 'Teacher — English & History',
   },
+  dashboardTitle: 'Teacher Dashboard',
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Mr. Chen!',
   subtitle: 'Heritage Christian Academy',

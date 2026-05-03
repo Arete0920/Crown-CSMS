@@ -15,5 +15,6 @@ paths = [
   '''(^|/)audit-artifacts($|/)''',
   '''(^|/)\.pytest_cache($|/)''',
   '''(^|/)htmlcov($|/)''',
-  '''(^|/)docs/audit/scans($|/)'''
+  '''(^|/)docs/audit/scans($|/)''',
+  '''(^|/)docs/crown-master-binder/inventory($|/)'''
 ]
