@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import { Page } from "@playwright/test";
+// cSpell:words networkidle devjwt
+import { test, expect, type Page } from "@playwright/test";
 
 const frontendUrl = process.env.CERT_FRONTEND_URL || "http://127.0.0.1:3000";
 const IS_SANDBOX =
@@ -17,8 +17,6 @@ const adminRouteExpectation = /\/school-admin-dashboard\b|\/admin\b/;
 
 async function login(page: Page, email: string, password: string) {
   await page.goto(`${frontendUrl}/login`, { waitUntil: "networkidle" });
-  const emailInput = page.locator('input[type="email"], input[name*="email"], input[placeholder*="@"]').first();
-  const passwordInput = page.locator('input[type="password"]').first();
 
   // Some environments auto-redirect to a role dashboard.
   const path = new URL(page.url()).pathname;
@@ -28,42 +26,9 @@ async function login(page: Page, email: string, password: string) {
 
   // Support both sandbox login surfaces:
   // 1) credential form, 2) role-card button flow.
-  if ((await emailInput.count()) > 0 && (await passwordInput.count()) > 0) {
-    const roleSelect = page.locator("#login-role").first();
-    if ((await roleSelect.count()) > 0) {
-      const schoolAdminOption = roleSelect.locator('option[value="school_admin"]');
-      if ((await schoolAdminOption.count()) > 0) {
-        await roleSelect.selectOption("school_admin");
-      }
-    }
-
-    await expect(emailInput).toBeVisible();
-    await expect(passwordInput).toBeVisible();
-
-    if (await emailInput.isEditable()) {
-      await emailInput.fill(email);
-    }
-    if (await passwordInput.isEditable()) {
-      await passwordInput.fill(password);
-    }
-
-    const signInButton = page.getByRole("button", { name: /sign in|login/i }).first();
-    await signInButton.click();
-    await page.waitForLoadState("networkidle");
-
-    // Runtime-safe fallback: keep route cert deterministic when auth fixtures drift.
-    if (new URL(page.url()).pathname === "/login") {
-      await page.evaluate(({ token, schoolId }) => {
-        sessionStorage.setItem("crown.jwt.access", token);
-        sessionStorage.setItem("crown.role", "school_admin");
-        localStorage.setItem("crown.role", "school_admin");
-        sessionStorage.setItem("crown.school.id", schoolId);
-      }, { token: DEMO_TOKEN, schoolId: DEMO_SCHOOL_ID });
-      await page.goto(`${frontendUrl}/admin`, { waitUntil: "networkidle" });
-      return "seeded";
-    }
-
-    return "credentials";
+  const credentialMode = await tryCredentialLogin(page, email, password);
+  if (credentialMode) {
+    return credentialMode;
   }
 
   const sandboxRoleButton = page.getByRole("button", { name: /school sandbox/i }).first();
@@ -82,6 +47,63 @@ async function login(page: Page, email: string, password: string) {
 
   // If no known login affordance is present, continue with current session state.
   return "already-authenticated";
+}
+
+async function tryCredentialLogin(page: Page, email: string, password: string): Promise<"credentials" | "seeded" | null> {
+  const emailInput = page.locator('input[type="email"], input[name*="email"], input[placeholder*="@"]').first();
+  const passwordInput = page.locator('input[type="password"]').first();
+  const hasCredentialInputs = (await emailInput.count()) > 0 && (await passwordInput.count()) > 0;
+
+  if (!hasCredentialInputs) {
+    return null;
+  }
+
+  await selectSchoolAdminRoleIfAvailable(page);
+
+  await expect(emailInput).toBeVisible();
+  await expect(passwordInput).toBeVisible();
+
+  if (await emailInput.isEditable()) {
+    await emailInput.fill(email);
+  }
+  if (await passwordInput.isEditable()) {
+    await passwordInput.fill(password);
+  }
+
+  const signInButton = page.getByRole("button", { name: /sign in|login/i }).first();
+  await signInButton.click();
+  await page.waitForLoadState("networkidle");
+
+  if (new URL(page.url()).pathname !== "/login") {
+    return "credentials";
+  }
+
+  // Runtime-safe fallback: keep route cert deterministic when auth fixtures drift.
+  await seedSandboxAdminSession(page);
+  return "seeded";
+}
+
+async function selectSchoolAdminRoleIfAvailable(page: Page): Promise<void> {
+  const roleSelect = page.locator("#login-role").first();
+  if ((await roleSelect.count()) === 0) {
+    return;
+  }
+
+  const schoolAdminOption = roleSelect.locator('option[value="school_admin"]');
+  if ((await schoolAdminOption.count()) > 0) {
+    await roleSelect.selectOption("school_admin");
+  }
+}
+
+async function seedSandboxAdminSession(page: Page): Promise<void> {
+  await page.evaluate(({ token, schoolId }) => {
+    sessionStorage.setItem("crown.jwt.access", token);
+    sessionStorage.setItem("crown.role", "school_admin");
+    localStorage.setItem("crown.role", "school_admin");
+    sessionStorage.setItem("crown.school.id", schoolId);
+  }, { token: DEMO_TOKEN, schoolId: DEMO_SCHOOL_ID });
+
+  await page.goto(`${frontendUrl}/admin`, { waitUntil: "networkidle" });
 }
 
 test("sandbox admin lands on redesigned dashboard and stays out of legacy routes", async ({ page }) => {

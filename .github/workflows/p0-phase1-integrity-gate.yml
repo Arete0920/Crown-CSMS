@@ -1,0 +1,145 @@
+name: P0 Phase1 Integrity Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/p0-phase1-integrity-gate.yml"
+      - "tools/verify_backend_gate.py"
+      - "tools/verify_pytest_gate.py"
+      - "frontend/dashboards/playwright.p0.config.ts"
+      - "tests/e2e/audit_logging.spec.ts"
+      - "tests/e2e/notifications_framework.spec.ts"
+      - "tests/e2e/document_file_framework.spec.ts"
+      - "tests/e2e/shared_frontend_shell.spec.ts"
+      - "tests/e2e/christian_pd_hub.spec.ts"
+      - "tests/e2e/crm_marketing.spec.ts"
+      - "tests/e2e/survey_sentiment.spec.ts"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  backend-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          fi
+
+      - name: Tenant tripwire gate
+        run: python tools/verify_backend_gate.py --tenant-checks-only
+
+      - name: Curated pytest gate
+        run: python tools/verify_pytest_gate.py
+
+  p0-playwright-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install backend dependencies
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          SECRET_KEY: ci-not-secret
+          DEBUG: "0"
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DATABASE_URL: sqlite:///./ci_p0.sqlite3
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          fi
+
+      - name: Start backend API
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          SECRET_KEY: ci-not-secret
+          DEBUG: "0"
+          ALLOWED_HOSTS: localhost,127.0.0.1
+          DATABASE_URL: sqlite:///./ci_p0.sqlite3
+        run: |
+          python manage.py migrate --noinput
+          nohup python manage.py runserver 127.0.0.1:8000 > ../backend-p0-proof.log 2>&1 &
+
+      - name: Wait for backend API
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8000/api/health/ >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/ >/dev/null 2>&1; then
+              echo "Backend API is up"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend API did not become ready" >&2
+          exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend/dashboards ci
+
+      - name: Install Playwright browser
+        run: npx --prefix frontend/dashboards playwright install --with-deps chromium
+
+      - name: Run P0 Playwright proof pack
+        env:
+          E2E_BASE_URL: http://127.0.0.1:8000
+          NODE_PATH: ${{ github.workspace }}/frontend/dashboards/node_modules
+        run: |
+          npx --prefix frontend/dashboards playwright test \
+            tests/e2e/audit_logging.spec.ts \
+            tests/e2e/notifications_framework.spec.ts \
+            tests/e2e/document_file_framework.spec.ts \
+            tests/e2e/shared_frontend_shell.spec.ts \
+            tests/e2e/christian_pd_hub.spec.ts \
+            tests/e2e/crm_marketing.spec.ts \
+            tests/e2e/survey_sentiment.spec.ts \
+            --config frontend/dashboards/playwright.p0.config.ts \
+            --reporter=line
+
+      - name: Upload backend proof log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-p0-proof-log
+          path: backend-p0-proof.log
+          retention-days: 7
