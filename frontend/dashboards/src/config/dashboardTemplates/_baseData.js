@@ -37,7 +37,11 @@ export const BASE_FAITH_COMMUNITY = {
     reference: 'Proverbs 3:5',
     reflection: 'Leadership in Christian education begins with humility before God. Every decision shapes the lives of students entrusted to us.',
     actionLabel: 'Read More',
+    actionHref: 'https://www.biblegateway.com/passage/?search=Proverbs%203%3A5&version=KJV',
   },
+  prayerActionHref: '/spiritual-life',
+  announcementsActionHref: '/communications',
+  celebrationsActionHref: '/spiritual-life',
   prayerRequests: [
     'Mrs. Carter surgery recovery',
     'Wisdom for leadership meetings',

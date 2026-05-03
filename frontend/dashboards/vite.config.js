@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
       // Keep warning signal meaningful while avoiding noisy false alarms for this bundle profile.
       chunkSizeWarningLimit: 2000,
     },
+    optimizeDeps: {
+      exclude: ['@playwright/test'],
+    },
     test: {
       environment: 'jsdom',
       include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}', 'tests/**/*.test.{js,jsx,ts,tsx}'],
