@@ -64,6 +64,7 @@ Production GO cannot be granted unless governance makes an explicit decision on 
 **Approved exception**: Release proceeds without full KPI proof.
 
 **Required action**:
+
 - [ ] Check "ACCEPTED" in KPI_GOVERNANCE_DECISION.md
 - [ ] Sign off (name, date, notes)
 - [ ] Create post-release remediation ticket for dashboard nav/KPI completion
@@ -80,6 +81,7 @@ Production GO cannot be granted unless governance makes an explicit decision on 
 **Blocked release**: Release remains blocked until KPI is fully proven.
 
 **Required action**:
+
 - [ ] Check "REQUIRED" in KPI_GOVERNANCE_DECISION.md
 - [ ] Engineering fixes dashboard sidebar/nav routes for KPI integration
 - [ ] Rerun KPI matrix with CROWN_DEMO_TOKEN set → 18/18 PASS required
@@ -130,6 +132,7 @@ Production GO cannot be granted unless governance makes an explicit decision on 
 ## Blocking Rule
 
 **Production GO cannot be granted until:**
+
 1. ✅ All proof lanes cleared (COMPLETE)
 2. ⏳ **KPI governance decision documented and approved** (WAITING FOR THIS)
 3. ⏳ Azure production proof green (NEXT after KPI decision)

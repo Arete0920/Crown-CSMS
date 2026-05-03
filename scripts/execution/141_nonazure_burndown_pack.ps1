@@ -7,7 +7,6 @@ $ProgressPreference = "SilentlyContinue"
 # ============================================================
 Set-Location (git rev-parse --show-toplevel)
 $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$Root = (Get-Location).Path
 $Base = "audit-artifacts\nonazure-production-readiness"
 $Out = "audit-artifacts\nonazure-burndown\$Stamp"
 $Docs = "docs\crown-master-binder"

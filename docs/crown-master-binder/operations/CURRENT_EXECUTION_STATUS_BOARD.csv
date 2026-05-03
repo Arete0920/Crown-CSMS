@@ -1,0 +1,7 @@
+﻿"Priority","Team","Workstream","File","Status","EvidenceRequired"
+"P0-4","Dev 1 / Dev 2 / Dev 5","Tenant Isolation Runtime Proof","audit-artifacts\execution-control-room\20260501_023332\DEV125_TENANT_RUNTIME_PACKET.md","READY_FOR_EXECUTION","TI-001 through TI-007 with screenshots, API output, and verdicts"
+"P0-4","Dev 1 / Dev 5","RBAC Runtime Proof","audit-artifacts\execution-control-room\20260501_023332\DEV15_RBAC_RUNTIME_PACKET.md","READY_FOR_EXECUTION","RBAC-001 through RBAC-006 denial proof"
+"P1","Dev 2 / Dev 3","Workflow Runtime Proof","audit-artifacts\execution-control-room\20260501_023332\DEV23_WORKFLOW_RUNTIME_PACKET.md","READY_FOR_EXECUTION","WF-001 through WF-006 with screenshots or command output"
+"P1","Dev 4","UI / Dashboard / Route Polish","audit-artifacts\execution-control-room\20260501_023332\DEV4_UI_POLISH_PACKET.md","READY_FOR_EXECUTION","Screenshots, route checks, no dead links/placeholders on production-facing pages"
+"P7","Azure / DevOps","Post-Azure Live Proof","audit-artifacts\execution-control-room\20260501_023332\AZURE_POST_DEPLOY_PACKET.md","WAITING_ON_AZURE","Backend 200, frontend 200, build.json 200, approved SHA matches"
+"FINAL","Dev 5 / QA Release","Judgment Day Rerun","audit-artifacts\execution-control-room\20260501_023332\QA_FINAL_RERUN_PACKET.md","WAITING_ON_AZURE_AND_RUNTIME_PROOF","Fresh scorecard and blocker board after all gates pass"

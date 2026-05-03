@@ -115,7 +115,7 @@ $Commands | Export-Csv "$Out\05_detected_validation_commands.csv" -NoTypeInforma
 # 04. Run safe local validations and capture outputs
 # ------------------------------------------------------------
 $ValidationResults = @()
-function Run-Validation {
+function Invoke-Validation {
     param(
         [string]$Area,
         [string]$WorkingDirectory,
@@ -172,7 +172,7 @@ $i = 0
 foreach ($cmd in $Commands) {
     $i++
     Write-Host "Running validation $i/$($Commands.Count): $($cmd.Command)"
-    Run-Validation -Area $cmd.Area -WorkingDirectory $cmd.WorkingDirectory -Command $cmd.Command -Purpose $cmd.Purpose -Index $i
+    Invoke-Validation -Area $cmd.Area -WorkingDirectory $cmd.WorkingDirectory -Command $cmd.Command -Purpose $cmd.Purpose -Index $i
 }
 $ValidationResults | Export-Csv "$Out\06_validation_results.csv" -NoTypeInformation
 
@@ -211,7 +211,7 @@ if (-not [string]::IsNullOrWhiteSpace($StatusBefore)) {
 }
 
 # Pull prior scan counts if available
-function Count-CsvRows {
+function Measure-CsvRows {
     param([string]$Path)
     if (Test-Path $Path) {
         return @((Import-Csv $Path)).Count
@@ -224,10 +224,10 @@ $PriorPlaceholderScan = if ($LatestReadiness) { Join-Path $LatestReadiness "20_p
 $PriorUiScan          = if ($LatestReadiness) { Join-Path $LatestReadiness "21_ui_antipattern_scan.csv" } else { "" }
 $PriorA11yScan        = if ($LatestReadiness) { Join-Path $LatestReadiness "26_accessibility_review.csv" } else { "" }
 
-$SecretCount      = Count-CsvRows $PriorSecretScan
-$PlaceholderCount = Count-CsvRows $PriorPlaceholderScan
-$UiCount          = Count-CsvRows $PriorUiScan
-$A11yCount        = Count-CsvRows $PriorA11yScan
+$SecretCount      = Measure-CsvRows $PriorSecretScan
+$PlaceholderCount = Measure-CsvRows $PriorPlaceholderScan
+$UiCount          = Measure-CsvRows $PriorUiScan
+$A11yCount        = Measure-CsvRows $PriorA11yScan
 
 if ($SecretCount -gt 0) {
     Add-Blocker "P0" "Security" "$SecretCount possible secret/token hits require review." "Dev 5" $PriorSecretScan "Classify each as false positive or remove/move secret."

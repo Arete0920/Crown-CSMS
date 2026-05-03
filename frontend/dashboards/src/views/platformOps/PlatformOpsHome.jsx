@@ -1,16 +1,16 @@
-/**
+﻿/**
  * PlatformOpsHome.jsx
  *
- * Platform Operations Console — Super-Admin view.
+ * Platform Operations Console - Super-Admin view.
  *
  * Displays a searchable, paginated list of all school tenants with their
  * TenantProfile status (slug, plan, status, payment provider).
  *
  * Accessible only to users with is_staff=true / IsAdminUser permission.
- * Does NOT require or send X-School-ID — these are cross-tenant ops.
+ * Does NOT require or send X-School-ID - these are cross-tenant ops.
  *
  * Dependencies: @mui/material, @mui/x-data-grid, axios (all already in use
- * elsewhere in the Crown2026 frontend).
+ * elsewhere in the CROWN frontend).
  */
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -34,7 +34,7 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 import axios from "axios";
 
-// ─── Status chip colour map ───────────────────────────────────────────────────
+// Status chip color map
 const STATUS_COLOR = {
   pending: "warning",
   provisioning: "info",
@@ -43,7 +43,7 @@ const STATUS_COLOR = {
   offboarded: "default",
 };
 
-// ─── DataGrid column definitions ─────────────────────────────────────────────
+// DataGrid column definitions
 const columns = [
   {
     field: "slug",
@@ -83,7 +83,7 @@ const columns = [
         </Typography>
       ) : (
         <Typography variant="body2" color="text.disabled">
-          —
+          -
         </Typography>
       ),
   },
@@ -92,11 +92,11 @@ const columns = [
     headerName: "Created",
     width: 180,
     renderCell: ({ value }) =>
-      value ? new Date(value).toLocaleString() : "—",
+      value ? new Date(value).toLocaleString() : "-",
   },
 ];
 
-// ─── Create School Dialog ─────────────────────────────────────────────────────
+// Create School Dialog
 function CreateSchoolDialog({ open, onClose, onCreated }) {
   const [form, setForm] = useState({
     name: "",
@@ -202,7 +202,7 @@ function CreateSchoolDialog({ open, onClose, onCreated }) {
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// Main component
 export default function PlatformOpsHome() {
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
@@ -248,7 +248,7 @@ export default function PlatformOpsHome() {
             Platform Operations
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Super-admin console — all school tenants across the platform.
+            Super-admin console - all school tenants across the platform.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
@@ -324,3 +324,4 @@ export default function PlatformOpsHome() {
     </Container>
   );
 }
+

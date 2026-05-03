@@ -63,7 +63,7 @@ jobs:
 
       - name: Report unhealthy status
         if: steps.health.outputs.status != 'healthy' && steps.health.outputs.status != 'misconfigured'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const status = '${{ steps.health.outputs.status }}';
@@ -100,7 +100,7 @@ jobs:
 
       - name: Close recovered alert
         if: steps.health.outputs.status == 'healthy'
-        uses: actions/github-script@v7.1.0
+        uses: actions/github-script@v8
         with:
           script: |
             const titlePrefix = '[ALERT] Production health check failed';

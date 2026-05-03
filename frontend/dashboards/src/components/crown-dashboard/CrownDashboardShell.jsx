@@ -8,6 +8,7 @@ export default function CrownDashboardShell({
   updatesCount,
   rightRail,
   children,
+  topbarSlot,
 }) {
   const shellClass = rightRail ? 'launch-shell has-right-rail' : 'launch-shell';
 
@@ -15,7 +16,7 @@ export default function CrownDashboardShell({
     <div className={shellClass}>
       <CrownSidebar activePath={activePath} user={user} />
       <main className="launch-main">
-        <CrownTopbar schoolName={schoolName} userInitials={user?.initials} updatesCount={updatesCount} />
+        {topbarSlot ?? <CrownTopbar schoolName={schoolName} userInitials={user?.initials} updatesCount={updatesCount} />}
         {children}
       </main>
       {rightRail ? <aside className="launch-right-rail">{rightRail}</aside> : null}

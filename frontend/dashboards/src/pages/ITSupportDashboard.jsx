@@ -1,31 +1,6 @@
-import { Grid, Stack, Typography } from '@mui/material';
-import ITSupportSnapshotCard from '../components/dashboard/itsupport/ITSupportSnapshotCard';
-import ITSupportAlertsPanel from '../components/dashboard/itsupport/ITSupportAlertsPanel';
-import ITSupportQueueCard from '../components/dashboard/itsupport/ITSupportQueueCard';
-
+import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
+import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 export default function ITSupportDashboard() {
-  return (
-    <Stack spacing={3}>
-      <div>
-        <Typography variant="h4" fontWeight={700}>
-          IT Support Dashboard
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Ticket flow, account provisioning, device readiness, outages, and support backlog.
-        </Typography>
-      </div>
-
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <ITSupportSnapshotCard />
-        </Grid>
-        <Grid item xs={12} md={8}>
-          <ITSupportAlertsPanel />
-        </Grid>
-        <Grid item xs={12}>
-          <ITSupportQueueCard />
-        </Grid>
-      </Grid>
-    </Stack>
-  );
+  const config = getDashboardTemplate('itSupport');
+  return <CrownDashboardTemplate config={config} roleKey="itSupport" />;
 }

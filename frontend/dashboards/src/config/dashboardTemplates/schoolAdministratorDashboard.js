@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+import { BASE_NOTE } from './_baseData.js';
 
 const ENROLLMENT_TREND = [
   { month: 'Oct', value: 1198 },
@@ -13,7 +13,7 @@ const ATTENDANCE_TREND = [
   { month: 'Oct', value: 95.1 },
   { month: 'Nov', value: 95.4 },
   { month: 'Dec', value: 95.8 },
-  { month: 'Jan', value: 96.0 },
+  { month: 'Jan', value: 96 },
   { month: 'Feb', value: 96.1 },
   { month: 'Mar', value: 96.2 },
 ];
@@ -27,18 +27,20 @@ export default {
     initials: 'SJ',
     name: 'Sarah James',
     role: 'School Administrator',
+    avatar: 'https://i.pravatar.cc/80?img=47',
   },
-  eyebrow: 'CROWN Launch Preview',
+  heroMessage: '"Let the peace of Christ rule in your hearts." — Colossians 3:15',
   title: 'Good morning, Sarah!',
-  subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
   metrics: [
     { label: 'Total Students', value: '1,248', detail: 'Enrollment is up 4.1% from last semester.', accent: 'blue' },
-    { label: 'Faculty & Staff', value: '156', detail: 'Three new hires completed onboarding this week.', accent: 'royal' },
+    { label: 'Faculty & Staff', value: '156', detail: 'Three new hires completed onboarding this week.', accent: 'navy' },
     { label: 'Attendance Rate', value: '96.2%', detail: 'Steady above benchmark across all divisions.', accent: 'gold' },
     { label: 'Tuition Collected', value: '$2.4M', detail: '94% of semester target collected to date.', accent: 'emerald' },
     { label: 'Open Admissions', value: '42', detail: 'Applications in decision and packet stages.', accent: 'blue' },
     { label: 'Active Alerts', value: '6', detail: 'Cross-department exceptions need review today.', accent: 'gold' },
+    { label: 'Pending Approvals', value: '11', detail: 'Enrollment, staffing, and field trip approvals awaiting signoff.', accent: 'navy' },
+    { label: 'Messages Pending', value: '27', detail: 'Family and staff threads require same-day response.', accent: 'emerald' },
   ],
   priorities: [
     { title: 'Finalize open admissions decisions', detail: '12 applications pending principal signoff.', state: 'Due by 10:30 AM', tone: 'warn' },
@@ -69,6 +71,8 @@ export default {
       details: ['12 files pending final review', '19 family tours in next 7 days', '8 follow-up calls required'],
       primaryActionLabel: 'Review applications',
       backActionLabel: 'Send enrollment packet',
+      primaryActionHref: '/admissions',
+      backActionHref: '/admissions/pipeline',
       lastUpdated: '8:42 AM',
     },
     {
@@ -88,6 +92,8 @@ export default {
       details: ['5 teachers missing first period sync', '18 late arrivals logged before 9:00 AM', 'Family notification batch ready'],
       primaryActionLabel: 'Open attendance review',
       backActionLabel: 'Notify families',
+      primaryActionHref: '/attendance',
+      backActionHref: '/communications',
       lastUpdated: '8:50 AM',
     },
     {
@@ -107,6 +113,8 @@ export default {
       details: ['9 courses need final grade sync', 'Intervention plans pending for 6 students', 'Report cards ready by Thursday target'],
       primaryActionLabel: 'Review gradebook',
       backActionLabel: 'Generate progress report',
+      primaryActionHref: '/gradebook',
+      backActionHref: '/integrity',
       lastUpdated: '8:36 AM',
     },
     {
@@ -126,6 +134,8 @@ export default {
       details: ['138 plans active across all divisions', '24 aid applications awaiting committee', 'Batch posting completed this morning'],
       primaryActionLabel: 'Review billing',
       backActionLabel: 'Open financial aid queue',
+      primaryActionHref: '/billing',
+      backActionHref: '/financial-aid',
       lastUpdated: '8:31 AM',
     },
     {
@@ -145,6 +155,8 @@ export default {
       details: ['Weekly bulletin draft ready', '14 family responses pending follow-up', 'Staff channel digest scheduled'],
       primaryActionLabel: 'Send announcement',
       backActionLabel: 'Open message center',
+      primaryActionHref: '/communications',
+      backActionHref: '/communications',
       lastUpdated: '8:27 AM',
     },
     {
@@ -164,6 +176,8 @@ export default {
       details: ['4 substitute assignments unresolved', '7 certifications expire this month', '11 HR checklist tasks remain'],
       primaryActionLabel: 'Open staff roster',
       backActionLabel: 'Manage HR checklist',
+      primaryActionHref: '/hr',
+      backActionHref: '/staff-setup',
       lastUpdated: '8:21 AM',
     },
     {
@@ -183,6 +197,8 @@ export default {
       details: ['6 high-priority alerts require same-day response', 'Counseling referrals queued for advisor review', 'Service hour verification backlog increased'],
       primaryActionLabel: 'Review student life queue',
       backActionLabel: 'Open discipline cases',
+      primaryActionHref: '/student-services',
+      backActionHref: '/student-services',
       lastUpdated: '8:18 AM',
     },
     {
@@ -202,6 +218,8 @@ export default {
       details: ['7 incidents need administrator signoff', '16 families missing medical updates', 'Emergency contact verification in progress'],
       primaryActionLabel: 'Open health office',
       backActionLabel: 'Review incidents',
+      primaryActionHref: '/health',
+      backActionHref: '/safety',
       lastUpdated: '8:12 AM',
     },
     {
@@ -221,6 +239,8 @@ export default {
       details: ['3 field trip approvals awaiting final signoff', 'Volunteer roster still needs 14 slots', 'Room booking conflicts resolved for Friday'],
       primaryActionLabel: 'Create event',
       backActionLabel: 'Approve field trip',
+      primaryActionHref: '/activities-dashboard',
+      backActionHref: '/settings',
       lastUpdated: '8:09 AM',
     },
     {
@@ -240,6 +260,8 @@ export default {
       details: ['3 SIS retries from overnight import', '8 tickets in school support queue', 'Backup completed at 2:14 AM'],
       primaryActionLabel: 'Open system integrity',
       backActionLabel: 'Review sync errors',
+      primaryActionHref: '/it',
+      backActionHref: '/integrity',
       lastUpdated: '8:04 AM',
     },
   ],
@@ -272,6 +294,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Create a new student profile and initialize enrollment records.',
       actionLabel: 'Add student',
+      href: '/onboarding',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -279,6 +302,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Start onboarding workflow for new teacher or support staff.',
       actionLabel: 'Add staff',
+      href: '/staff-setup',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -286,6 +310,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Open pending admissions queue and decision checklist.',
       actionLabel: 'Review admissions',
+      href: '/admissions',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -293,6 +318,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Draft and publish a schoolwide communication update.',
       actionLabel: 'Send announcement',
+      href: '/communications',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -300,6 +326,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Review attendance exceptions and dispatch follow-ups.',
       actionLabel: 'Open attendance',
+      href: '/attendance',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -307,6 +334,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Jump to billing exceptions and payment processing queue.',
       actionLabel: 'Open billing',
+      href: '/billing',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -314,6 +342,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Create executive daily operations and readiness report.',
       actionLabel: 'Generate report',
+      href: '/integrity',
       allowedRoles: ['schoolAdministrator'],
     },
     {
@@ -321,6 +350,7 @@ export default {
       eyebrow: 'Quick action',
       description: 'Open calendar control center for events and approvals.',
       actionLabel: 'View calendar',
+      href: '/activities-dashboard',
       allowedRoles: ['schoolAdministrator'],
     },
   ],
@@ -347,34 +377,27 @@ export default {
   ],
   rightRailSections: [
     {
-      kicker: 'Spiritual life',
-      title: 'Prayer Requests',
+      type: 'gauge',
+      kicker: 'Leadership queue',
+      title: 'To-Dos today',
+      metric: '2',
+      total: '4',
+      detail: '50% complete',
+      accent: 'gold',
       items: [
-        'Mrs. Carter surgery recovery',
-        '6th grade retreat travel safety',
-        'New families joining this week',
+        '✓ Approve 4 enrollment packets',
+        '✓ Review 3 attendance exceptions',
+        'Sign off tuition adjustment queue',
+        'Confirm substitute coverage',
       ],
     },
     {
-      kicker: 'Daily devotion',
-      title: 'Daily Devotion',
-      quote: '"Trust in the Lord with all your heart..." Proverbs 3:5',
-      items: [
-        'Lead today with wisdom and calm.',
-      ],
-    },
-    {
-      kicker: 'Communications',
-      title: 'Announcements',
-      items: [
-        'Chapel Friday at 9:00 AM',
-        'Re-enrollment packets due Monday',
-        'Parent newsletter scheduled',
-      ],
-    },
-    {
+      type: 'metric',
       kicker: 'Calendar',
-      title: "Today's Calendar",
+      title: 'Events today',
+      metric: '4',
+      detail: 'Next: Leadership huddle @ 8:15 AM',
+      accent: 'blue',
       items: [
         '8:15 AM Leadership huddle',
         '10:00 AM Admissions tour',
@@ -383,18 +406,12 @@ export default {
       ],
     },
     {
-      kicker: 'Leadership queue',
-      title: 'Administrator To-Dos',
-      items: [
-        'Approve 4 enrollment packets',
-        'Review 3 attendance exceptions',
-        'Sign off tuition adjustment queue',
-        'Confirm substitute coverage',
-      ],
-    },
-    {
+      type: 'activity',
       kicker: 'Inbox',
-      title: 'Communications Inbox',
+      title: 'Pending responses',
+      metric: '13',
+      detail: 'Messages need action',
+      accent: 'emerald',
       items: [
         '8 family replies need response',
         '3 unread staff messages',
@@ -402,8 +419,15 @@ export default {
       ],
     },
     {
+      type: 'status',
       kicker: 'Approvals',
-      title: 'Approvals Needed',
+      title: 'Approval queue',
+      metric: '3',
+      statuses: [
+        { label: 'Enrollment exceptions', state: 'pending' },
+        { label: 'Aid committee queue', state: 'ready' },
+        { label: 'Field trip approval', state: 'pending' },
+      ],
       items: [
         'Enrollment packet exceptions',
         'Finance aid committee queue',
@@ -411,8 +435,12 @@ export default {
       ],
     },
     {
+      type: 'alert',
       kicker: 'Escalations',
-      title: 'Critical Alerts',
+      title: 'Critical alerts',
+      metric: '3',
+      detail: 'Immediate action needed',
+      accent: 'warn',
       items: [
         'Bus loop incident follow-up pending',
         'SIS retry threshold nearing alert limit',

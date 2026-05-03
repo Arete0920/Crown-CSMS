@@ -40,10 +40,12 @@ Choose one:
 Governance accepts the KPI matrix exception for this release candidate.
 
 Accepted risk:
+
 - KPI dashboard/sidebar/nav matrix is not fully proven in this release packet.
 - Dashboard nav/KPI completion is deferred to post-release remediation.
 
 Required follow-up:
+
 - Create post-release remediation ticket for dashboard nav/KPI matrix completion.
 - Rerun KPI matrix with CROWN_DEMO_TOKEN after remediation.
 

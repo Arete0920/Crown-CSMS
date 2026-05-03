@@ -1,0 +1,710 @@
+import type {
+  DashboardRoleKey,
+  DashboardRoleProfile,
+  DashboardSharedCard,
+} from "./dashboardTypes";
+
+export const requiredSharedDashboardCards: DashboardSharedCard[] = [
+  {
+    key: "communications",
+    title: "Communications",
+    description: "Messages, direct updates, family/staff communication, and action-required conversation threads.",
+    href: "/communications",
+    required: true,
+  },
+  {
+    key: "calendar",
+    title: "Calendar",
+    description: "School calendar, personal schedule, class events, meetings, practices, and role-relevant deadlines.",
+    href: "/calendar",
+    required: true,
+  },
+  {
+    key: "devotions",
+    title: "Devotions",
+    description: "Daily devotional content, chapel alignment, staff/student reflection prompts, and mission-life resources.",
+    href: "/mission/devotions",
+    required: true,
+  },
+  {
+    key: "prayer-requests",
+    title: "Prayer Requests",
+    description: "Prayer needs, pastoral-care visibility, community support, and permission-aware request handling.",
+    href: "/mission/prayer-requests",
+    required: true,
+  },
+  {
+    key: "announcements",
+    title: "Announcements",
+    description: "School-wide, class-level, team-level, and role-specific announcements.",
+    href: "/announcements",
+    required: true,
+  },
+  {
+    key: "shared-information",
+    title: "Shared Information",
+    description: "Documents, links, policies, forms, resources, and current operational notices.",
+    href: "/resources/shared",
+    required: true,
+  },
+  {
+    key: "microsoft365",
+    title: "Microsoft 365",
+    description: "Outlook, OneDrive, SharePoint, documents, identity, and school productivity tools.",
+    href: "/integrations/microsoft365",
+    required: true,
+  },
+  {
+    key: "microsoft-education",
+    title: "Microsoft Education",
+    description: "Education tools, classroom resources, assignments, learning workflows, and school collaboration features.",
+    href: "/integrations/microsoft-education",
+    required: true,
+  },
+  {
+    key: "teams",
+    title: "Teams",
+    description: "Teams meetings, class channels, staff channels, announcements, collaboration, and role-based links.",
+    href: "/integrations/teams",
+    required: true,
+  },
+];
+
+export const roleDashboardProfiles: DashboardRoleProfile[] = [
+  {
+    key: "school-administrator",
+    title: "School Administrator Dashboard",
+    route: "/dashboards/school-administrator",
+    audience: "School administrator / campus executive operator",
+    purpose: "Run the school day from one operational command center while preserving the existing completed administrator dashboard as the benchmark.",
+    tone: "royal",
+    primaryResponsibilities: [
+      "Monitor whole-school operating health",
+      "Resolve cross-department blockers",
+      "Review attendance, enrollment, billing, staffing, and parent communication",
+      "Protect tenant, role, compliance, and mission integrity",
+    ],
+    kpis: [
+      { label: "Daily Attendance", value: "96.8%", helper: "Whole-school present rate", source: "Attendance records", tone: "royal" },
+      { label: "Open Admin Tasks", value: "18", helper: "Items needing administrator decision", source: "Workflow queue", tone: "amber" },
+      { label: "Enrollment Health", value: "94%", helper: "Current seats filled against target", source: "Enrollment module", tone: "emerald" },
+      { label: "Family Balance Risk", value: "7", helper: "Families needing finance follow-up", source: "Billing module", tone: "rose" },
+    ],
+    queue: [
+      { title: "Parent escalations", count: 5, urgency: "high", href: "/communications/escalations" },
+      { title: "Attendance exceptions", count: 11, urgency: "medium", href: "/attendance/exceptions" },
+      { title: "Contracts awaiting final approval", count: 8, urgency: "medium", href: "/reenrollment/contracts" },
+      { title: "Safety/operations notices", count: 2, urgency: "critical", href: "/operations/notices" },
+    ],
+    quickActions: [
+      { label: "Open command center", href: "/operations/command-center", description: "Review schoolwide blockers and decisions." },
+      { label: "Send school announcement", href: "/announcements/new", description: "Publish schoolwide notice." },
+      { label: "Review readiness scorecard", href: "/governance/readiness", description: "Open current operational readiness status." },
+      { label: "View Microsoft 365 status", href: "/integrations/microsoft365", description: "Check Teams, Outlook, OneDrive, and identity sync." },
+    ],
+    panels: [
+      {
+        title: "Administrator operating view",
+        description: "Whole-school operational visibility without replacing module workflows.",
+        items: ["Attendance and safety", "Enrollment and admissions", "Finance and billing", "Staffing and parent communication"],
+      },
+    ],
+  },
+  {
+    key: "head-of-school",
+    title: "Head of School Dashboard",
+    route: "/dashboards/head-of-school",
+    audience: "Head of school / executive leader",
+    purpose: "Provide mission, enrollment, finance, staffing, parent confidence, and board-ready institutional health visibility.",
+    tone: "royal",
+    primaryResponsibilities: [
+      "Lead institutional health",
+      "Monitor mission alignment",
+      "Prepare board and leadership reporting",
+      "Resolve high-level strategic risk",
+    ],
+    kpis: [
+      { label: "Enrollment Trend", value: "+4.2%", helper: "Net movement against same point last year", source: "Enrollment analytics", tone: "emerald" },
+      { label: "Mission Pulse", value: "91", helper: "Composite mission-health index", source: "Mission Suite", tone: "royal" },
+      { label: "Cash Collection", value: "97.1%", helper: "Collected vs scheduled receivables", source: "Finance dashboard", tone: "emerald" },
+      { label: "Board Items Due", value: "6", helper: "Items due for next governance cycle", source: "Board governance", tone: "amber" },
+    ],
+    queue: [
+      { title: "Strategic decisions pending", count: 4, urgency: "high", href: "/leadership/decisions" },
+      { title: "Board packet items", count: 6, urgency: "medium", href: "/board/packet" },
+      { title: "Parent confidence follow-ups", count: 9, urgency: "medium", href: "/communications/family-pulse" },
+      { title: "Mission health exceptions", count: 3, urgency: "high", href: "/mission/health" },
+    ],
+    quickActions: [
+      { label: "Open board summary", href: "/board/dashboard", description: "Review governance-ready indicators." },
+      { label: "Review mission dashboard", href: "/mission/dashboard", description: "Check spiritual life, service, and school health." },
+      { label: "Send leadership message", href: "/communications/new?audience=staff", description: "Send executive communication." },
+      { label: "Open Teams leadership channel", href: "/integrations/teams/leadership", description: "Open leadership collaboration." },
+    ],
+    panels: [
+      {
+        title: "Executive priorities",
+        description: "Focused on institutional direction, not daily clerical execution.",
+        items: ["Enrollment confidence", "Financial durability", "Mission integrity", "Board governance"],
+      },
+    ],
+  },
+  {
+    key: "principal",
+    title: "Principal / Academic Dean Dashboard",
+    route: "/dashboards/principal",
+    audience: "Principal, academic dean, or division leader",
+    purpose: "Manage academic operations, attendance patterns, teacher follow-up, student care, and instructional quality.",
+    tone: "sky",
+    primaryResponsibilities: [
+      "Oversee teaching and learning",
+      "Monitor attendance and academic performance",
+      "Support teachers",
+      "Review student-care and discipline trends",
+    ],
+    kpis: [
+      { label: "Classes On Track", value: "88%", helper: "Sections current on lesson/grade activity", source: "Academic module", tone: "emerald" },
+      { label: "Attendance Watch", value: "14", helper: "Students with emerging attendance pattern risk", source: "Attendance", tone: "amber" },
+      { label: "Grade Posting", value: "92%", helper: "Gradebooks current this week", source: "Gradebook", tone: "royal" },
+      { label: "Care Referrals", value: "5", helper: "Student-care items needing review", source: "Student care", tone: "rose" },
+    ],
+    queue: [
+      { title: "Teacher follow-ups", count: 7, urgency: "medium", href: "/teachers/follow-up" },
+      { title: "Attendance interventions", count: 14, urgency: "high", href: "/attendance/interventions" },
+      { title: "Discipline/care reviews", count: 5, urgency: "high", href: "/student-care/reviews" },
+      { title: "Schedule conflicts", count: 3, urgency: "medium", href: "/scheduling/conflicts" },
+    ],
+    quickActions: [
+      { label: "Review academic dashboard", href: "/academics/dashboard", description: "Open teaching and learning indicators." },
+      { label: "Post principal announcement", href: "/announcements/new?audience=division", description: "Send division-level announcement." },
+      { label: "Open Teams academic channel", href: "/integrations/teams/academics", description: "Collaborate with academic staff." },
+      { label: "Review student-care queue", href: "/student-care", description: "Open care and discipline queue." },
+    ],
+    panels: [
+      {
+        title: "Academic leadership view",
+        description: "Prioritizes teaching, attendance, grading, student-care, and class schedule health.",
+        items: ["Gradebook completion", "Teacher action items", "Academic risks", "Student-care visibility"],
+      },
+    ],
+  },
+  {
+    key: "registrar",
+    title: "Registrar Dashboard",
+    route: "/dashboards/registrar",
+    audience: "Registrar / records office",
+    purpose: "Protect official student records, enrollment status, transcripts, rosters, and academic-year accuracy.",
+    tone: "slate",
+    primaryResponsibilities: [
+      "Maintain student record truth",
+      "Manage enrollment states and rosters",
+      "Protect transcript accuracy",
+      "Prepare compliance exports",
+    ],
+    kpis: [
+      { label: "Record Exceptions", value: "12", helper: "Student records missing required fields", source: "SIS integrity", tone: "amber" },
+      { label: "Transcript Requests", value: "9", helper: "Requests awaiting processing", source: "Transcript module", tone: "royal" },
+      { label: "Roster Accuracy", value: "98.4%", helper: "Sections with verified rosters", source: "Rosters", tone: "emerald" },
+      { label: "Status Conflicts", value: "3", helper: "Enrollment states needing correction", source: "Enrollment lifecycle", tone: "rose" },
+    ],
+    queue: [
+      { title: "Transcript requests", count: 9, urgency: "medium", href: "/registrar/transcripts" },
+      { title: "Enrollment status conflicts", count: 3, urgency: "high", href: "/registrar/enrollment-status" },
+      { title: "Roster verification", count: 6, urgency: "medium", href: "/registrar/rosters" },
+      { title: "Compliance exports", count: 2, urgency: "low", href: "/registrar/compliance" },
+    ],
+    quickActions: [
+      { label: "Open student records", href: "/students", description: "Review official student records." },
+      { label: "Run records integrity", href: "/registrar/integrity", description: "Check SIS record completeness." },
+      { label: "Generate transcript", href: "/registrar/transcripts/new", description: "Prepare official transcript." },
+      { label: "Open Microsoft records folder", href: "/integrations/microsoft365/records", description: "Open records documents." },
+    ],
+    panels: [
+      {
+        title: "Records truth view",
+        description: "Registrar dashboard is built around accuracy, status, and official record integrity.",
+        items: ["Student records", "Rosters", "Transcripts", "Compliance"],
+      },
+    ],
+  },
+  {
+    key: "admissions-director",
+    title: "Admissions Director Dashboard",
+    route: "/dashboards/admissions-director",
+    audience: "Admissions director / enrollment growth team",
+    purpose: "Manage inquiry-to-application-to-acceptance pipeline without duplicating student truth.",
+    tone: "emerald",
+    primaryResponsibilities: [
+      "Move prospects through the admissions funnel",
+      "Coordinate tours, interviews, and decision workflows",
+      "Convert accepted students into enrollment",
+      "Protect family communication quality",
+    ],
+    kpis: [
+      { label: "Active Inquiries", value: "47", helper: "Families currently in inquiry stage", source: "Admissions pipeline", tone: "royal" },
+      { label: "Applications Due", value: "19", helper: "Applications missing required steps", source: "Admissions checklist", tone: "amber" },
+      { label: "Yield Rate", value: "68%", helper: "Accepted-to-enrolled conversion", source: "Admissions analytics", tone: "emerald" },
+      { label: "Tour Follow-ups", value: "8", helper: "Tours needing follow-up within 48 hours", source: "Admissions tasks", tone: "rose" },
+    ],
+    queue: [
+      { title: "New inquiries", count: 11, urgency: "medium", href: "/admissions/inquiries" },
+      { title: "Application checklist gaps", count: 19, urgency: "high", href: "/admissions/applications" },
+      { title: "Interview scheduling", count: 6, urgency: "medium", href: "/admissions/interviews" },
+      { title: "Acceptance handoffs", count: 4, urgency: "high", href: "/admissions/acceptance-handoff" },
+    ],
+    quickActions: [
+      { label: "Create inquiry", href: "/admissions/inquiries/new", description: "Start a new prospective family record." },
+      { label: "Schedule tour", href: "/calendar/new?type=admissions-tour", description: "Put tour on admissions calendar." },
+      { label: "Send admissions message", href: "/communications/new?audience=prospects", description: "Message prospective families." },
+      { label: "Open Teams admissions channel", href: "/integrations/teams/admissions", description: "Coordinate admissions work." },
+    ],
+    panels: [
+      {
+        title: "Admissions pipeline view",
+        description: "Focused on conversion, follow-up, decisioning, and clean SIS handoff.",
+        items: ["Inquiry velocity", "Application completeness", "Tour/interview coordination", "Accepted-to-enrolled handoff"],
+      },
+    ],
+  },
+  {
+    key: "finance-director",
+    title: "Finance Director Dashboard",
+    route: "/dashboards/finance-director",
+    audience: "Business office / finance director",
+    purpose: "Manage tuition, fees, payments, financial aid, balances, and CompuWerx reconciliation.",
+    tone: "emerald",
+    primaryResponsibilities: [
+      "Monitor receivables and collections",
+      "Resolve payment failures",
+      "Track financial aid and scholarships",
+      "Reconcile CompuWerx and ledger events",
+    ],
+    kpis: [
+      { label: "Receivables Current", value: "94.5%", helper: "Scheduled receivables collected", source: "Billing ledger", tone: "emerald" },
+      { label: "Failed Payments", value: "13", helper: "Processor failures needing attention", source: "CompuWerx/processor events", tone: "rose" },
+      { label: "Aid Reviews", value: "7", helper: "Financial aid files awaiting review", source: "Financial aid module", tone: "amber" },
+      { label: "Ledger Integrity", value: "100%", helper: "Current ledger reconciliation status", source: "Finance integrity", tone: "royal" },
+    ],
+    queue: [
+      { title: "Payment failures", count: 13, urgency: "high", href: "/finance/payments/failed" },
+      { title: "Aid applications", count: 7, urgency: "medium", href: "/finance/aid" },
+      { title: "Balance follow-ups", count: 16, urgency: "medium", href: "/finance/balances" },
+      { title: "CompuWerx reconciliation", count: 2, urgency: "critical", href: "/finance/reconciliation" },
+    ],
+    quickActions: [
+      { label: "Open billing center", href: "/finance/billing", description: "Manage charges, plans, balances, and accounts." },
+      { label: "Run reconciliation", href: "/finance/reconciliation", description: "Match payments to ledger." },
+      { label: "Send payment reminder", href: "/communications/new?template=payment-reminder", description: "Contact families with payment issues." },
+      { label: "Open finance Teams channel", href: "/integrations/teams/finance", description: "Coordinate finance work." },
+    ],
+    panels: [
+      {
+        title: "Finance operating view",
+        description: "Built for collections, aid, ledger truth, processor reconciliation, and family account clarity.",
+        items: ["Tuition receivables", "Payment failures", "Aid decisions", "CompuWerx reconciliation"],
+      },
+    ],
+  },
+  {
+    key: "teacher",
+    title: "Teacher Dashboard",
+    route: "/dashboards/teacher",
+    audience: "Teacher / classroom staff",
+    purpose: "Provide fast daily access to classes, attendance, gradebook, messages, prayer/devotion resources, and student alerts.",
+    tone: "sky",
+    primaryResponsibilities: [
+      "Take attendance",
+      "Manage classwork and grades",
+      "Communicate with students and families",
+      "Support student formation and care",
+    ],
+    kpis: [
+      { label: "Today's Classes", value: "5", helper: "Sections scheduled today", source: "Schedule", tone: "royal" },
+      { label: "Attendance Open", value: "2", helper: "Sections still needing attendance", source: "Attendance", tone: "amber" },
+      { label: "Ungraded Work", value: "24", helper: "Assignments awaiting grading", source: "Gradebook", tone: "rose" },
+      { label: "Parent Messages", value: "6", helper: "Unread or action-needed threads", source: "Communications", tone: "emerald" },
+    ],
+    queue: [
+      { title: "Attendance to submit", count: 2, urgency: "high", href: "/teacher/attendance" },
+      { title: "Assignments to grade", count: 24, urgency: "medium", href: "/teacher/gradebook" },
+      { title: "Student support notes", count: 3, urgency: "medium", href: "/student-care/teacher" },
+      { title: "Parent message replies", count: 6, urgency: "medium", href: "/communications/inbox" },
+    ],
+    quickActions: [
+      { label: "Take attendance", href: "/teacher/attendance/today", description: "Submit class attendance." },
+      { label: "Open gradebook", href: "/teacher/gradebook", description: "Review assignments and grades." },
+      { label: "Send class announcement", href: "/announcements/new?audience=class", description: "Message selected class." },
+      { label: "Open Teams class channels", href: "/integrations/teams/classes", description: "Open class collaboration." },
+    ],
+    panels: [
+      {
+        title: "Teacher daily view",
+        description: "Designed for classroom speed and clarity.",
+        items: ["Today's schedule", "Attendance", "Gradebook", "Class communication"],
+      },
+    ],
+  },
+  {
+    key: "parent",
+    title: "Parent / Guardian Dashboard",
+    route: "/dashboards/parent",
+    audience: "Parent or guardian",
+    purpose: "Show only the family's children, school messages, billing, calendar, prayer/devotion resources, and action items.",
+    tone: "violet",
+    primaryResponsibilities: [
+      "Monitor student attendance and grades",
+      "Complete family tasks",
+      "Manage payments and documents",
+      "Stay connected to school communication and mission life",
+    ],
+    kpis: [
+      { label: "Family Tasks", value: "4", helper: "Forms, permissions, or acknowledgements due", source: "Family portal", tone: "amber" },
+      { label: "Unread Messages", value: "3", helper: "Teacher or school messages", source: "Communications", tone: "royal" },
+      { label: "Balance Due", value: "$320", helper: "Current family account balance", source: "Billing", tone: "rose" },
+      { label: "Upcoming Events", value: "7", helper: "Events involving your family", source: "Calendar", tone: "emerald" },
+    ],
+    queue: [
+      { title: "Forms to complete", count: 2, urgency: "medium", href: "/parent/forms" },
+      { title: "Messages needing reply", count: 3, urgency: "medium", href: "/communications/inbox" },
+      { title: "Payments due", count: 1, urgency: "high", href: "/parent/billing" },
+      { title: "Upcoming events", count: 7, urgency: "low", href: "/calendar" },
+    ],
+    quickActions: [
+      { label: "View my children", href: "/parent/students", description: "Open family student view." },
+      { label: "Make payment", href: "/parent/billing/pay", description: "Pay tuition or fees." },
+      { label: "Send teacher message", href: "/communications/new?audience=teacher", description: "Contact teacher." },
+      { label: "Open Teams family resources", href: "/integrations/teams/family", description: "Open family collaboration resources." },
+    ],
+    panels: [
+      {
+        title: "Family view",
+        description: "Parent dashboard is family-scoped and never exposes unrelated school records.",
+        items: ["Student progress", "Billing", "Messages", "School life"],
+      },
+    ],
+  },
+  {
+    key: "student",
+    title: "Student Dashboard",
+    route: "/dashboards/student",
+    audience: "Student",
+    purpose: "Give students simple access to schedule, assignments, grades, announcements, devotions, prayer, service, and Teams.",
+    tone: "sky",
+    primaryResponsibilities: [
+      "Track schedule and assignments",
+      "Review grades and teacher feedback",
+      "Access class communication",
+      "Participate in mission and service life",
+    ],
+    kpis: [
+      { label: "Assignments Due", value: "6", helper: "Work due in the next seven days", source: "Assignments", tone: "amber" },
+      { label: "Today's Classes", value: "7", helper: "Scheduled classes today", source: "Schedule", tone: "royal" },
+      { label: "Service Hours", value: "14", helper: "Logged service hours this year", source: "Service module", tone: "emerald" },
+      { label: "Unread Class Updates", value: "5", helper: "Announcements or teacher messages", source: "Communications", tone: "rose" },
+    ],
+    queue: [
+      { title: "Assignments due", count: 6, urgency: "high", href: "/student/assignments" },
+      { title: "Unread updates", count: 5, urgency: "medium", href: "/communications/inbox" },
+      { title: "Service opportunities", count: 3, urgency: "low", href: "/mission/service" },
+      { title: "Calendar reminders", count: 4, urgency: "low", href: "/calendar" },
+    ],
+    quickActions: [
+      { label: "Open assignments", href: "/student/assignments", description: "Review work due." },
+      { label: "Open class Teams", href: "/integrations/teams/classes", description: "Join class collaboration." },
+      { label: "View grades", href: "/student/grades", description: "Check current grades." },
+      { label: "Submit prayer request", href: "/mission/prayer-requests/new", description: "Share prayer request with approved audience." },
+    ],
+    panels: [
+      {
+        title: "Student daily view",
+        description: "Built for school day clarity, assignments, communication, and mission participation.",
+        items: ["Schedule", "Assignments", "Grades", "Service and formation"],
+      },
+    ],
+  },
+  {
+    key: "counselor-chaplain",
+    title: "Counselor / Chaplain Dashboard",
+    route: "/dashboards/counselor-chaplain",
+    audience: "Counselor, chaplain, pastoral-care staff",
+    purpose: "Coordinate student-care, pastoral follow-up, prayer, referrals, and protected support workflows.",
+    tone: "violet",
+    primaryResponsibilities: [
+      "Review student-care referrals",
+      "Coordinate pastoral and counseling support",
+      "Protect sensitive notes",
+      "Support prayer and mission formation",
+    ],
+    kpis: [
+      { label: "Care Referrals", value: "12", helper: "Active referrals needing review", source: "Student care", tone: "rose" },
+      { label: "Prayer Follow-ups", value: "9", helper: "Requests marked for follow-up", source: "Prayer requests", tone: "violet" },
+      { label: "Pastoral Meetings", value: "6", helper: "Scheduled this week", source: "Calendar", tone: "royal" },
+      { label: "Closed Care Items", value: "18", helper: "Resolved in the last 30 days", source: "Care workflow", tone: "emerald" },
+    ],
+    queue: [
+      { title: "Care referrals", count: 12, urgency: "high", href: "/student-care/referrals" },
+      { title: "Prayer follow-ups", count: 9, urgency: "medium", href: "/mission/prayer-requests/follow-up" },
+      { title: "Confidential notes to review", count: 4, urgency: "medium", href: "/student-care/confidential" },
+      { title: "Meetings this week", count: 6, urgency: "low", href: "/calendar" },
+    ],
+    quickActions: [
+      { label: "Create care note", href: "/student-care/new", description: "Add protected student-care note." },
+      { label: "Review prayer board", href: "/mission/prayer-requests", description: "Open prayer requests." },
+      { label: "Schedule pastoral meeting", href: "/calendar/new?type=pastoral-care", description: "Create care meeting." },
+      { label: "Open Teams care channel", href: "/integrations/teams/care", description: "Open approved care collaboration." },
+    ],
+    panels: [
+      {
+        title: "Care and mission view",
+        description: "Sensitive workflows require role-based access and careful information boundaries.",
+        items: ["Care referrals", "Prayer follow-up", "Pastoral scheduling", "Confidential access"],
+      },
+    ],
+  },
+  {
+    key: "nurse-health",
+    title: "Nurse / Health Office Dashboard",
+    route: "/dashboards/nurse-health",
+    audience: "Nurse and health office",
+    purpose: "Manage health visits, medication, alerts, incidents, emergency information, and parent health communication.",
+    tone: "rose",
+    primaryResponsibilities: [
+      "Review medical alerts",
+      "Document health office visits",
+      "Manage medication and incident records",
+      "Contact families when health follow-up is needed",
+    ],
+    kpis: [
+      { label: "Health Alerts", value: "21", helper: "Active student health flags", source: "Health records", tone: "rose" },
+      { label: "Visits Today", value: "8", helper: "Health office visits logged today", source: "Health office", tone: "royal" },
+      { label: "Medication Due", value: "4", helper: "Scheduled medication actions", source: "Medication log", tone: "amber" },
+      { label: "Parent Follow-ups", value: "5", helper: "Health messages to send", source: "Communications", tone: "violet" },
+    ],
+    queue: [
+      { title: "Medication schedule", count: 4, urgency: "high", href: "/health/medication" },
+      { title: "Parent health follow-ups", count: 5, urgency: "medium", href: "/communications/health" },
+      { title: "Incident reports", count: 2, urgency: "high", href: "/health/incidents" },
+      { title: "Emergency info updates", count: 6, urgency: "medium", href: "/health/emergency-info" },
+    ],
+    quickActions: [
+      { label: "Log health visit", href: "/health/visits/new", description: "Create health office visit." },
+      { label: "Open emergency contacts", href: "/health/emergency-info", description: "Review emergency records." },
+      { label: "Send parent health message", href: "/communications/new?template=health", description: "Contact family." },
+      { label: "Open health Teams channel", href: "/integrations/teams/health", description: "Coordinate approved health workflows." },
+    ],
+    panels: [
+      {
+        title: "Health operations view",
+        description: "Protects medical information while surfacing urgent operational needs.",
+        items: ["Health alerts", "Medication", "Incidents", "Parent follow-up"],
+      },
+    ],
+  },
+  {
+    key: "activities-athletics",
+    title: "Activities / Athletics Dashboard",
+    route: "/dashboards/activities-athletics",
+    audience: "Athletic director, activities director, clubs coordinator",
+    purpose: "Manage teams, clubs, events, eligibility, rosters, calendars, announcements, and participation.",
+    tone: "amber",
+    primaryResponsibilities: [
+      "Coordinate athletics and activities",
+      "Manage rosters and eligibility",
+      "Publish event updates",
+      "Track participation and service opportunities",
+    ],
+    kpis: [
+      { label: "Events This Week", value: "18", helper: "Games, practices, clubs, and activities", source: "Calendar", tone: "amber" },
+      { label: "Eligibility Flags", value: "6", helper: "Students needing review", source: "Eligibility", tone: "rose" },
+      { label: "Roster Updates", value: "9", helper: "Teams/clubs needing roster confirmation", source: "Activities", tone: "royal" },
+      { label: "Volunteer Slots", value: "14", helper: "Open volunteer needs", source: "Volunteer module", tone: "emerald" },
+    ],
+    queue: [
+      { title: "Eligibility review", count: 6, urgency: "high", href: "/activities/eligibility" },
+      { title: "Event updates", count: 18, urgency: "medium", href: "/calendar/activities" },
+      { title: "Rosters to confirm", count: 9, urgency: "medium", href: "/activities/rosters" },
+      { title: "Volunteer openings", count: 14, urgency: "low", href: "/volunteer" },
+    ],
+    quickActions: [
+      { label: "Create event", href: "/calendar/new?type=activity", description: "Add game, practice, club, or activity." },
+      { label: "Send team announcement", href: "/announcements/new?audience=team", description: "Publish team/club update." },
+      { label: "Review eligibility", href: "/activities/eligibility", description: "Check student eligibility." },
+      { label: "Open Teams athletics channel", href: "/integrations/teams/athletics", description: "Open athletics collaboration." },
+    ],
+    panels: [
+      {
+        title: "Activities operating view",
+        description: "Designed around rosters, events, eligibility, communication, and participation.",
+        items: ["Events", "Rosters", "Eligibility", "Volunteer needs"],
+      },
+    ],
+  },
+  {
+    key: "development-director",
+    title: "Development / Advancement Dashboard",
+    route: "/dashboards/development-director",
+    audience: "Development director / advancement office",
+    purpose: "Track donors, campaigns, giving, events, acknowledgements, alumni, and advancement communication.",
+    tone: "emerald",
+    primaryResponsibilities: [
+      "Manage giving campaigns",
+      "Track donor engagement",
+      "Coordinate events and acknowledgements",
+      "Support fundraising strategy",
+    ],
+    kpis: [
+      { label: "Campaign Progress", value: "72%", helper: "Current campaign toward goal", source: "Development", tone: "emerald" },
+      { label: "Donor Follow-ups", value: "22", helper: "Contacts needing follow-up", source: "CRM", tone: "amber" },
+      { label: "Gifts This Month", value: "$48K", helper: "Recorded giving this month", source: "Gift ledger", tone: "royal" },
+      { label: "Acknowledgements", value: "11", helper: "Thank-you notes pending", source: "Development queue", tone: "rose" },
+    ],
+    queue: [
+      { title: "Donor follow-ups", count: 22, urgency: "medium", href: "/development/donors/follow-up" },
+      { title: "Acknowledgements", count: 11, urgency: "medium", href: "/development/acknowledgements" },
+      { title: "Campaign tasks", count: 8, urgency: "medium", href: "/development/campaigns" },
+      { title: "Event sponsorships", count: 4, urgency: "low", href: "/development/events" },
+    ],
+    quickActions: [
+      { label: "Add donor note", href: "/development/donors", description: "Update donor relationship record." },
+      { label: "Create campaign update", href: "/announcements/new?audience=donors", description: "Send development update." },
+      { label: "Open giving report", href: "/development/reports/giving", description: "Review gift performance." },
+      { label: "Open Teams advancement channel", href: "/integrations/teams/development", description: "Coordinate advancement work." },
+    ],
+    panels: [
+      {
+        title: "Advancement view",
+        description: "Built for donor stewardship, campaign progress, gifts, events, and communications.",
+        items: ["Campaigns", "Donors", "Giving", "Acknowledgements"],
+      },
+    ],
+  },
+  {
+    key: "board-member",
+    title: "Board / Governance Dashboard",
+    route: "/dashboards/board-member",
+    audience: "Board member / governance leader",
+    purpose: "Provide governance-safe, summary-level visibility into school health, mission, finance, enrollment, compliance, and board packets.",
+    tone: "slate",
+    primaryResponsibilities: [
+      "Review board packet",
+      "Monitor mission and institutional health",
+      "Review finance and enrollment summaries",
+      "Track governance decisions and policy work",
+    ],
+    kpis: [
+      { label: "Board Packet", value: "82%", helper: "Completion before next meeting", source: "Board governance", tone: "royal" },
+      { label: "Enrollment Health", value: "94%", helper: "Enrollment against target", source: "Enrollment analytics", tone: "emerald" },
+      { label: "Finance Health", value: "Green", helper: "Governance-level finance status", source: "Finance summary", tone: "emerald" },
+      { label: "Policy Reviews", value: "5", helper: "Policies due for review", source: "Policy library", tone: "amber" },
+    ],
+    queue: [
+      { title: "Board packet items", count: 6, urgency: "medium", href: "/board/packet" },
+      { title: "Policy reviews", count: 5, urgency: "medium", href: "/board/policies" },
+      { title: "Governance decisions", count: 3, urgency: "high", href: "/board/decisions" },
+      { title: "Mission dashboard notes", count: 4, urgency: "low", href: "/mission/dashboard" },
+    ],
+    quickActions: [
+      { label: "Open board packet", href: "/board/packet", description: "Review meeting materials." },
+      { label: "Open mission summary", href: "/mission/dashboard", description: "Review governance-level mission indicators." },
+      { label: "Review policy library", href: "/board/policies", description: "Open policy queue." },
+      { label: "Open Teams board channel", href: "/integrations/teams/board", description: "Open board collaboration." },
+    ],
+    panels: [
+      {
+        title: "Governance view",
+        description: "Board dashboard is summary-level and decision-focused, not a staff operations console.",
+        items: ["Board packet", "Policy", "Finance summary", "Mission health"],
+      },
+    ],
+  },
+  {
+    key: "technology-director",
+    title: "Technology Director Dashboard",
+    route: "/dashboards/technology-director",
+    audience: "Technology director / IT administrator",
+    purpose: "Monitor identity, Microsoft 365, Teams, integrations, sync health, support tickets, and environment readiness.",
+    tone: "slate",
+    primaryResponsibilities: [
+      "Manage Microsoft 365 and Teams integration",
+      "Monitor login and identity health",
+      "Resolve support tickets",
+      "Protect system configuration and integration health",
+    ],
+    kpis: [
+      { label: "SSO Health", value: "OK", helper: "Microsoft identity status", source: "MSAL/Entra", tone: "emerald" },
+      { label: "Open IT Tickets", value: "17", helper: "Support items needing resolution", source: "Support queue", tone: "amber" },
+      { label: "Teams Sync", value: "98%", helper: "Class/staff Teams sync rate", source: "Microsoft Teams", tone: "royal" },
+      { label: "Integration Alerts", value: "2", helper: "External integration issues", source: "Integration health", tone: "rose" },
+    ],
+    queue: [
+      { title: "Support tickets", count: 17, urgency: "medium", href: "/support/tickets" },
+      { title: "Integration alerts", count: 2, urgency: "high", href: "/integrations/health" },
+      { title: "Teams sync review", count: 4, urgency: "medium", href: "/integrations/teams/sync" },
+      { title: "User access requests", count: 6, urgency: "medium", href: "/settings/users/access" },
+    ],
+    quickActions: [
+      { label: "Open Microsoft 365 admin", href: "/integrations/microsoft365", description: "Review Microsoft integration status." },
+      { label: "Open Teams sync", href: "/integrations/teams/sync", description: "Review Teams channels/classes." },
+      { label: "Review login issues", href: "/settings/auth/issues", description: "Open identity and login queue." },
+      { label: "Open support queue", href: "/support/tickets", description: "Resolve support tickets." },
+    ],
+    panels: [
+      {
+        title: "Technology operations view",
+        description: "Prioritizes identity, sync, integration health, user access, and school technology support.",
+        items: ["Microsoft 365", "Teams", "SSO", "Support tickets"],
+      },
+    ],
+  },
+  {
+    key: "operations-director",
+    title: "Operations Director Dashboard",
+    route: "/dashboards/operations-director",
+    audience: "Operations director / transportation / food / facilities lead",
+    purpose: "Coordinate daily operations including transportation, food service, facilities, events, safety, and resource notices.",
+    tone: "amber",
+    primaryResponsibilities: [
+      "Coordinate transportation and food service",
+      "Monitor facilities and safety items",
+      "Support school events",
+      "Communicate operational changes",
+    ],
+    kpis: [
+      { label: "Bus Exceptions", value: "5", helper: "Route or rider changes today", source: "Transportation", tone: "amber" },
+      { label: "Lunch Orders", value: "312", helper: "Meals scheduled today", source: "Food service", tone: "emerald" },
+      { label: "Facilities Tickets", value: "9", helper: "Open building/service requests", source: "Facilities", tone: "rose" },
+      { label: "Events Today", value: "6", helper: "Operationally supported events", source: "Calendar", tone: "royal" },
+    ],
+    queue: [
+      { title: "Transportation exceptions", count: 5, urgency: "high", href: "/operations/transportation" },
+      { title: "Lunch service issues", count: 3, urgency: "medium", href: "/operations/food-service" },
+      { title: "Facilities tickets", count: 9, urgency: "medium", href: "/operations/facilities" },
+      { title: "Event setup tasks", count: 6, urgency: "medium", href: "/operations/events" },
+    ],
+    quickActions: [
+      { label: "Open operations board", href: "/operations", description: "Review daily operations queue." },
+      { label: "Send operations notice", href: "/announcements/new?audience=operations", description: "Publish operational update." },
+      { label: "Open transportation", href: "/operations/transportation", description: "Review route and rider issues." },
+      { label: "Open Teams operations channel", href: "/integrations/teams/operations", description: "Coordinate operations team." },
+    ],
+    panels: [
+      {
+        title: "Operations view",
+        description: "Built for the moving parts of the school day.",
+        items: ["Transportation", "Food service", "Facilities", "Events and safety"],
+      },
+    ],
+  },
+];
+
+export function getDashboardProfile(roleKey: DashboardRoleKey): DashboardRoleProfile {
+  const profile = roleDashboardProfiles.find((item) => item.key === roleKey);
+  if (!profile) {
+    throw new Error(`Unknown dashboard role: ${roleKey}`);
+  }
+  return profile;
+}
+
+export function isDashboardRoleKey(value: string): value is DashboardRoleKey {
+  return roleDashboardProfiles.some((item) => item.key === value);
+}

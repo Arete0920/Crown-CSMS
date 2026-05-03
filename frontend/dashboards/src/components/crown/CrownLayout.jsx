@@ -75,11 +75,43 @@ const FALLBACK_NAV = {
     {
       title: "Navigation",
       items: [
-        { label: "Home", href: "/" },
+        { label: "Administration", href: "/admin" },
+        { label: "School Board", href: "/board" },
+        { label: "Finance", href: "/finance" },
+        { label: "Financial Aid", href: "/financial-aid" },
+        { label: "Admissions", href: "/admissions" },
+        { label: "Academics", href: "/academics" },
+        { label: "Billing", href: "/billing" },
+        { label: "System Integrity", href: "/integrity" },
+        { label: "IT", href: "/it" },
+        { label: "Office / HR", href: "/office" },
+        { label: "Teacher", href: "/teacher" },
+        { label: "Parent", href: "/parent" },
+        { label: "Student", href: "/student" },
+        { label: "Spiritual Life", href: "/spiritual-life" },
+        { label: "Marketing", href: "/marketing" },
       ],
     },
   ],
 };
+
+const CONTRACT_NAV_ITEMS = [
+  { label: "Administration", href: "/admin" },
+  { label: "School Board", href: "/board" },
+  { label: "Finance", href: "/finance" },
+  { label: "Financial Aid", href: "/financial-aid" },
+  { label: "Admissions", href: "/admissions" },
+  { label: "Academics", href: "/academics" },
+  { label: "Billing", href: "/billing" },
+  { label: "System Integrity", href: "/integrity" },
+  { label: "IT", href: "/it" },
+  { label: "Office / HR", href: "/office" },
+  { label: "Teacher", href: "/teacher" },
+  { label: "Parent", href: "/parent" },
+  { label: "Student", href: "/student" },
+  { label: "Spiritual Life", href: "/spiritual-life" },
+  { label: "Marketing", href: "/marketing" },
+];
 
 function mergeNavGroupsWithContract(navData) {
   const incoming = Array.isArray(navData?.groups) ? navData.groups : [];
@@ -97,6 +129,16 @@ function mergeNavGroupsWithContract(navData) {
 
     return { ...group, items };
   });
+
+  const contractItems = CONTRACT_NAV_ITEMS.filter((item) => {
+    if (seen.has(item.href)) return false;
+    seen.add(item.href);
+    return true;
+  });
+
+  if (contractItems.length) {
+    mergedGroups.push({ title: "Navigation", items: contractItems });
+  }
 
   return {
     ...navData,
