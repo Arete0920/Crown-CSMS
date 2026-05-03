@@ -30,6 +30,7 @@ export default {
     name: 'Alex Martinez',
     role: 'Student — Grade 10',
   },
+  dashboardTitle: 'Student Dashboard',
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Alex!',
   subtitle: 'Heritage Christian Academy',

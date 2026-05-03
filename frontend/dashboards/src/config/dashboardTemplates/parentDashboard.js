@@ -30,6 +30,7 @@ export default {
     name: 'Emily Parker',
     role: 'Parent / Guardian',
   },
+  dashboardTitle: 'Parent Dashboard',
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Mrs. Parker!',
   subtitle: 'Heritage Christian Academy',

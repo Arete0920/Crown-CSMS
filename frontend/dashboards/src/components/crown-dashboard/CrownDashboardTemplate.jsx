@@ -68,7 +68,14 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
 
       <CrownFaithCommunityStrip faithCommunity={config.faithCommunity ?? BASE_FAITH_COMMUNITY} />
 
+      {config.note && (
+        <div className="launch-sandbox-banner">{config.note}</div>
+      )}
+
       <div className="launch-content">
+        {config.dashboardTitle && (
+          <h2 className="launch-dashboard-section-title">{config.dashboardTitle}</h2>
+        )}
         {isRichLayout ? (
           <>
             <CrownDashboardMetricGrid className={isSchoolAdminCommandCenter ? 'launch-dashboard-grid-metrics-admin' : undefined}>
