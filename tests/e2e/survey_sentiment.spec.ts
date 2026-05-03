@@ -38,7 +38,14 @@ test.describe('Survey Sentiment Engine - E2E Smoke Tests', () => {
     const payload = await response.json();
     expect(payload.code).toBe('missing_tenant');
   });
-
+  test('Survey / Sentiment Engine: cross-tenant (wrong X-School-Id) is denied on /api/v1/nav/', async ({ page }) => {
+    // Check 23: Cross-tenant mismatch — a non-existent/wrong school ID must not return 200
+    const response = await page.request.get(BASE_URL + '/api/v1/nav/', {
+      headers: { 'X-School-Id': '99999' },
+    });
+    expect(response.status()).not.toBe(200);
+    expect(response.status()).toBeGreaterThanOrEqual(400);
+  });
   test('Survey Sentiment Engine: page loads without critical JS errors', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
