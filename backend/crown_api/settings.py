@@ -55,11 +55,18 @@ CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=not _is_azure)
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = (
-    os.getenv("DJANGO_SECRET_KEY")
-    or os.getenv("SECRET_KEY")
-    or "django-insecure-77tws%k1#a!#aio14%6=4z6wn@_nrnu1d$(bur5-!2$-8+l$d2"
-)
+_secret_key_env = os.getenv("DJANGO_SECRET_KEY") or os.getenv("SECRET_KEY")
+if not _secret_key_env:
+    # In any non-debug / Azure context, refuse to start with the insecure fallback.
+    _would_be_debug = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _env_bool("DEBUG", default=False)
+    if _is_azure or not _would_be_debug:
+        raise ImproperlyConfigured(
+            "Missing required environment variable: DJANGO_SECRET_KEY. "
+            "Set DJANGO_SECRET_KEY in your environment before starting the server."
+        )
+    # Local dev only — insecure fallback is acceptable when DEBUG=True and not on Azure.
+    _secret_key_env = "django-insecure-77tws%k1#a!#aio14%6=4z6wn@_nrnu1d$(bur5-!2$-8+l$d2"
+SECRET_KEY = _secret_key_env
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _env_bool("DJANGO_DEBUG", default=(False if _is_azure else True)) or _env_bool(
