@@ -15,7 +15,7 @@ on:
 
 concurrency:
   group: crown-api-dev-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -36,14 +36,27 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Guard manual ref input
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.ref != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          REF="${{ github.event.inputs.ref }}"
+          if [[ "$REF" =~ ^refs/heads/rc/.+ ]] || [[ "$REF" =~ ^rc/.+ ]] || [[ "$REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Manual ref accepted: $REF"
+          else
+            echo "ERROR: ref must be rc/*, refs/heads/rc/*, or a full 40-char SHA"
+            exit 1
+          fi
+
       - name: Checkout
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || github.sha }}
           fetch-depth: 0
 
       - name: Azure Login
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -58,7 +71,7 @@ jobs:
           echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to Azure Container Registry
         run: az acr login --name crownregistry --only-show-errors
@@ -77,12 +90,10 @@ jobs:
       - name: Appsettings allowlist gate
         shell: pwsh
         run: |
-          $allowed = @(
-            "BUILD_SHA",
-            "DEPLOY_RUN_ID",
-            "DEPLOY_WORKFLOW"
-          )
-          ./tools/appsettings_allowlist_gate.ps1 -AppSettingsJsonPath "appsettings.dev.json" -AllowedKeys $allowed
+          ./tools/appsettings_allowlist_gate.ps1 `
+            -AppSettingsJsonPath "appsettings.dev.json" `
+            -AllowedKeysFile "tools/appsettings_allowlist.keys.json" `
+            -AllowedKeySet "dev"
 
       - name: Apply appsettings (allowlisted only)
         shell: pwsh
@@ -101,7 +112,7 @@ jobs:
           echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
           context: .
           push: true
@@ -142,7 +153,7 @@ jobs:
           set -euo pipefail
           echo "Waiting for app to come up (up to 6 minutes)..."
           for i in $(seq 1 36); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ || true)
+            STATUS=$(curl --max-time 30 -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ || true)
             if [ "$STATUS" = "200" ]; then
               echo " Health check passed (attempt $i)"
               break
@@ -161,7 +172,7 @@ jobs:
           WANT="${{ env.DEPLOY_SHA }}"
           echo "Verifying deployed SHA matches $WANT ..."
           for i in $(seq 1 12); do
-            BODY=$(curl -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ 2>/dev/null || true)
+            BODY=$(curl --max-time 30 -fsS https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/ 2>/dev/null || true)
             GOT=$(echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)
             if [ -z "$GOT" ] || [ "$GOT" = "local-dev" ] || [ "$GOT" = "unknown" ]; then
               echo "  attempt $i: SHA not ready yet (got: ${GOT:-empty})  waiting 15s..."

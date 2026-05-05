@@ -196,6 +196,9 @@
 .launch-rail-card {
   border-radius: 18px;
   padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .launch-rail-list {
@@ -238,6 +241,7 @@
   gap: 14px;
   padding: 12px 14px;
   border-radius: 18px;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
 
@@ -640,6 +644,7 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.15s ease;
   white-space: nowrap;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   flex: 1;
   justify-content: center;
@@ -1355,7 +1360,7 @@
 
 /* ── Rail card variants ────────────────────────────────────── */
 
-.launch-rail-card {
+.launch-rail-card--inner {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1363,7 +1368,7 @@
 
 .launch-rail-card-metric {
   min-height: 200px;
-  background: linear-gradient(135deg, rgba(31, 58, 95, 0.04), rgba(176, 141, 87, 0.04));
+  background: linear-gradient(135deg, rgb(31 58 95 / 4%), rgb(176 141 87 / 4%));
 }
 
 .launch-rail-card-metric .launch-rail-metric-display {
@@ -1372,7 +1377,7 @@
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: rgba(31, 58, 95, 0.06);
+  background: rgb(31 58 95 / 6%);
   border-radius: 12px;
 }
 
@@ -1396,7 +1401,7 @@
 
 .launch-rail-card-gauge {
   min-height: 200px;
-  background: linear-gradient(135deg, rgba(176, 141, 87, 0.04), rgba(31, 58, 95, 0.02));
+  background: linear-gradient(135deg, rgb(176 141 87 / 4%), rgb(31 58 95 / 2%));
 }
 
 .launch-rail-gauge {
@@ -1410,8 +1415,8 @@
 .launch-rail-gauge-arc {
   width: 120px;
   height: 60px;
-  border-radius: 120px 120px 0 0;
-  background: rgba(31, 58, 95, 0.08);
+  border-radius: 120px 120px 0;
+  background: rgb(31 58 95 / 8%);
   overflow: hidden;
   position: relative;
 }
@@ -1449,7 +1454,7 @@
 
 .launch-rail-card-activity {
   min-height: 180px;
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.04), rgba(31, 58, 95, 0.02));
+  background: linear-gradient(135deg, rgb(76 175 80 / 4%), rgb(31 58 95 / 2%));
 }
 
 .launch-rail-activity-badge {
@@ -1459,11 +1464,11 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.08));
+  background: linear-gradient(135deg, rgb(76 175 80 / 15%), rgb(76 175 80 / 8%));
   border-radius: 50%;
   font-size: 18px;
   font-weight: 700;
-  color: #4cab50;
+  color: #1f6f3e;
 }
 
 .launch-rail-list-activity {
@@ -1486,7 +1491,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  background: #4cab50;
+  background: #1f6f3e;
   border-radius: 50%;
   margin-top: 6px;
   flex-shrink: 0;
@@ -1494,7 +1499,7 @@
 
 .launch-rail-card-status {
   min-height: 200px;
-  background: linear-gradient(135deg, rgba(31, 58, 95, 0.04), rgba(0, 0, 0, 0.02));
+  background: linear-gradient(135deg, rgb(31 58 95 / 4%), rgb(0 0 0 / 2%));
 }
 
 .launch-rail-status-items {
@@ -1502,7 +1507,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  background: rgba(31, 58, 95, 0.04);
+  background: rgb(31 58 95 / 4%);
   border-radius: 12px;
 }
 
@@ -1537,7 +1542,7 @@
 .launch-rail-list-compact {
   list-style: none;
   padding: 0;
-  margin: 8px 0 0 0;
+  margin: 8px 0 0;
   font-size: 12px;
   border-top: 1px solid var(--launch-border);
   padding-top: 8px;
@@ -1545,7 +1550,7 @@
 
 .launch-rail-card-alert {
   min-height: 200px;
-  background: linear-gradient(135deg, rgba(217, 83, 79, 0.04), rgba(255, 152, 0, 0.04));
+  background: linear-gradient(135deg, rgb(217 83 79 / 4%), rgb(255 152 0 / 4%));
 }
 
 .launch-rail-alert-badge {
@@ -1555,16 +1560,16 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, rgba(217, 83, 79, 0.15), rgba(217, 83, 79, 0.08));
+  background: linear-gradient(135deg, rgb(217 83 79 / 15%), rgb(217 83 79 / 8%));
   border-radius: 50%;
   font-size: 18px;
   font-weight: 700;
-  color: #d9534f;
+  color: #8f1d1a;
 }
 
 .launch-rail-alert-detail {
   font-size: 12px;
-  color: #d9534f;
+  color: #8f1d1a;
   text-align: center;
   font-weight: 500;
 }
@@ -1580,7 +1585,7 @@
 }
 
 .launch-rail-alert-item {
-  color: #d9534f;
+  color: #8f1d1a;
 }
 
 /* Accent color variants */

@@ -8,10 +8,14 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+concurrency:
+  group: phase3-runtime-proof-ceremony-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   phase3-runtime-proof:
     runs-on: ubuntu-latest
 
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:15
@@ -33,15 +37,15 @@ jobs:
       DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
       CROWN_DEMO_MODE: "true"
       CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
-      # CROWN_DEMO_KEY is intentionally absent â€” Django settings provides the
+      # CROWN_DEMO_KEY is intentionally absent €” Django settings provides the
       # correct default when CROWN_DEMO_MODE=true. Never hardcode it here.
       CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -62,7 +66,7 @@ jobs:
           cd backend
           python manage.py seed_demo_school --wipe
 
-      - name: Seed permissions (role â†’ permission mappings required for authz gates)
+      - name: Seed permissions (role ’ permission mappings required for authz gates)
         run: |
           cd backend
           python manage.py seed_permissions
@@ -80,7 +84,7 @@ jobs:
 
       - name: Health check
         run: |
-          curl -f http://127.0.0.1:8000/health/ || exit 1
+          curl --max-time 30 -f http://127.0.0.1:8000/health/ || exit 1
 
       - name: Run Phase 3 runtime proof ceremony
         run: |

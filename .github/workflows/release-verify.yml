@@ -21,8 +21,8 @@ jobs:
     env:
       DJANGO_SECRET_KEY: ci-test-secret-key
     steps:
-      - uses: actions/checkout@v4.1.1
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.12"
       - name: Install backend dependencies
@@ -50,7 +50,7 @@ jobs:
           fi
       - name: Tenant and URL smoke tests
         run: pytest -q tests/test_release_tenant_and_urls.py
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"
@@ -74,7 +74,7 @@ jobs:
             exit 1
           fi
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-verify-artifacts
           if-no-files-found: error

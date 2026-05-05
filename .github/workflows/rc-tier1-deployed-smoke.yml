@@ -1,7 +1,6 @@
 name: rc-tier1-deployed-smoke
 permissions:
   contents: read
-  id-token: write
 
 
 on:
@@ -23,13 +22,16 @@ on:
       - "tools/demo_contract_t1.lock"
       - ".github/workflows/rc-tier1-deployed-smoke.yml"
 
+concurrency:
+  group: rc-tier1-deployed-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   deployed-smoke:
     name: "Tier-1 Deployed Smoke"
     runs-on: ubuntu-latest
     timeout-minutes: 12
 
-    # Only run if secrets are populated â€” this avoids noisy failures on forks
+    # Only run if secrets are populated €” this avoids noisy failures on forks
     # or when secrets aren't configured yet.
     # The check is: if RC_BASE_URL secret is non-empty, proceed.
     env:
@@ -41,10 +43,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
 
@@ -56,7 +58,7 @@ jobs:
         run: |
           if [ -z "$RC_BASE_URL" ] || [ -z "$RC_SCHOOL_ID" ]; then
             echo "SKIP=true" >> $GITHUB_OUTPUT
-            echo "::warning::RC deployed smoke skipped â€” secrets not configured (RC_BASE_URL, RC_SCHOOL_ID)"
+            echo "::warning::RC deployed smoke skipped €” secrets not configured (RC_BASE_URL, RC_SCHOOL_ID)"
           else
             echo "SKIP=false" >> $GITHUB_OUTPUT
           fi
@@ -103,6 +105,6 @@ jobs:
       - name: Smoke skipped (secrets not set)
         if: steps.secrets-check.outputs.SKIP == 'true'
         run: |
-          echo "Deployed smoke skipped â€” add RC_BASE_URL, RC_SCHOOL_ID as repository secrets to enable."
-          echo "See: Settings â†’ Secrets and variables â†’ Actions"
+          echo "Deployed smoke skipped €” add RC_BASE_URL, RC_SCHOOL_ID as repository secrets to enable."
+          echo "See: Settings ’ Secrets and variables ’ Actions"
 

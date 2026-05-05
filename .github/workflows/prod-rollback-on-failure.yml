@@ -1,0 +1,108 @@
+name: Production Rollback on Deploy Failure
+
+on:
+  workflow_run:
+    workflows:
+      - "Production Deploy"
+      - "Production Deploy (Dispatch v2)"
+    types: [completed]
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+concurrency:
+  group: prod-rollback-on-failure-${{ github.workflow }}-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RESOURCE_GROUP: crown-rg
+      WEBAPP_NAME: crown-api-prod
+      REGISTRY: crownregistry.azurecr.io
+      IMAGE_NAME: crown2026
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Guard trusted upstream context
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC_REPO="${{ github.event.workflow_run.head_repository.full_name }}"
+          THIS_REPO="${{ github.repository }}"
+          SRC_SHA="${{ github.event.workflow_run.head_sha }}"
+          if [[ "$SRC_REPO" != "$THIS_REPO" ]]; then
+            echo "ERROR: upstream workflow_run repository mismatch ($SRC_REPO != $THIS_REPO)"
+            exit 1
+          fi
+          if [[ -z "$SRC_SHA" ]]; then
+            echo "ERROR: missing workflow_run head_sha context"
+            exit 1
+          fi
+          echo "Trusted workflow_run context verified for sha=$SRC_SHA"
+
+      - name: Azure Login
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Roll back to stable image tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          az webapp config container set \
+            --name "$WEBAPP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --docker-registry-server-url "https://$REGISTRY" \
+            --docker-custom-image-name "$REGISTRY/$IMAGE_NAME:latest" \
+            --output none \
+            --only-show-errors
+          az webapp restart --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" --only-show-errors
+
+      - name: Verify rollback health
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 24); do
+            status=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "https://$WEBAPP_NAME.azurewebsites.net/api/health/" || true)
+            if [ "$status" = "200" ]; then
+              echo "Rollback health check succeeded."
+              exit 0
+            fi
+            echo "Rollback health attempt $i/24: HTTP $status"
+            sleep 10
+          done
+          echo "Rollback failed to restore healthy /api/health/."
+          exit 1
+
+      - name: Open incident issue
+        if: always()
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            const title = `[INCIDENT] Prod deploy failed and rollback executed (${new Date().toISOString()})`;
+            const body = [
+              `Upstream workflow: ${context.payload.workflow_run?.name}`,
+              `Run URL: ${context.payload.workflow_run?.html_url}`,
+              `Conclusion: ${context.payload.workflow_run?.conclusion}`,
+              '',
+              'Automatic rollback attempted to image tag: latest.',
+              'Validate app health, data integrity, and deployment logs before closing.'
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['production-alert', 'incident']
+            });

@@ -35,12 +35,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 1
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
 
@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           for i in {1..60}; do
-            if curl -fsS http://127.0.0.1:8000/api/v1/health/ >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/health/ >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/ >/dev/null 2>&1; then
+            if curl --max-time 30 -fsS http://127.0.0.1:8000/api/v1/health/ >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/health/ >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/ >/dev/null 2>&1; then
               echo "Backend API is up."
               exit 0
             fi
@@ -88,7 +88,7 @@ jobs:
           exit 1
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"
@@ -130,7 +130,7 @@ jobs:
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-dashboard-report
           path: frontend/dashboards/playwright-report/
@@ -138,7 +138,7 @@ jobs:
 
       - name: Upload backend proof log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: backend-ui-proof-log
           path: backend-ui-proof.log

@@ -1,7 +1,6 @@
 name: RC Build-SHA Health Proof
 permissions:
   contents: read
-  id-token: write
 
 
 on:
@@ -10,15 +9,19 @@ on:
       - "rc/**"
   workflow_dispatch:
 
+concurrency:
+  group: rc-build-sha-health-proof-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   build-sha-proof:
     name: build-sha-proof
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
 
@@ -42,7 +45,7 @@ jobs:
           python manage.py runserver 127.0.0.1:8001 --noreload &
           # Wait for server to be ready (max 15s)
           for i in $(seq 1 15); do
-            curl -sf http://127.0.0.1:8001/api/health/ > /dev/null 2>&1 && break
+            curl --max-time 30 -f -sf http://127.0.0.1:8001/api/health/ > /dev/null 2>&1 && break
             sleep 1
           done
           echo "Server ready"
@@ -64,7 +67,7 @@ jobs:
         run: |
           if [ -z "$RC_BASE_URL" ] || [ -z "$RC_EXPECT_BUILD_SHA" ]; then
             echo "SKIP=true" >> "$GITHUB_OUTPUT"
-            echo "::warning::RC_BASE_URL or RC_EXPECT_BUILD_SHA not set â€” skipping deployed SHA check"
+            echo "::warning::RC_BASE_URL or RC_EXPECT_BUILD_SHA not set -- skipping deployed SHA check"
           else
             echo "SKIP=false" >> "$GITHUB_OUTPUT"
           fi

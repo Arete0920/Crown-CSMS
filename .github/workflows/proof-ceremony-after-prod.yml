@@ -1,7 +1,6 @@
 name: proof-ceremony-after-prod
 permissions:
   contents: read
-  id-token: write
 
 # Phase 7C— Auto Proof Ceremony
 #
@@ -22,21 +21,44 @@ on:
       - "Production Deploy (Dispatch v2)"
     types: [completed]
 
+concurrency:
+  group: proof-ceremony-after-prod-${{ github.workflow }}-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   proof:
     name: "Auto proof — ${{ github.event.workflow_run.head_branch }}"
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
 
     steps:
       - name: Checkout (full history + tags)
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
+      - name: Guard trusted upstream context
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC_REPO="${{ github.event.workflow_run.head_repository.full_name }}"
+          THIS_REPO="${{ github.repository }}"
+          SRC_EVENT="${{ github.event.workflow_run.event }}"
+          if [[ "$SRC_REPO" != "$THIS_REPO" ]]; then
+            echo "ERROR: upstream workflow_run repository mismatch ($SRC_REPO != $THIS_REPO)"
+            exit 1
+          fi
+          case "$SRC_EVENT" in
+            push|workflow_dispatch|repository_dispatch) ;;
+            *)
+              echo "ERROR: unsupported upstream event type: $SRC_EVENT"
+              exit 1
+              ;;
+          esac
 
-      - name: Resolve deploy tag
+      - name: Resolve deploy tag from head branch or SHA
         shell: bash
         run: |
           set -euo pipefail

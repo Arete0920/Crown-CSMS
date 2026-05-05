@@ -11,9 +11,14 @@ on:
         required: false
         default: "false"
 
+concurrency:
+  group: azure-drift-watchdog-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   actions: read
+  id-token: write
 
 jobs:
   assert-invariants:
@@ -29,8 +34,38 @@ jobs:
       PROD_URL: https://crown-api-prod.azurewebsites.net/api/health/
 
     steps:
-      - name: Azure Login
-        uses: azure/login@v1
+      - name: Resolve Azure auth mode
+        id: auth_guard
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "${AZURE_CLIENT_ID}" ] && [ -n "${AZURE_TENANT_ID}" ] && [ -n "${AZURE_SUBSCRIPTION_ID}" ]; then
+            echo "login_mode=oidc" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -n "${AZURE_CREDENTIALS}" ]; then
+            echo "login_mode=sp" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ERROR: no Azure auth configured. Set OIDC secrets or AZURE_CREDENTIALS."
+          exit 1
+
+      - name: Azure Login (OIDC)
+        if: steps.auth_guard.outputs.login_mode == 'oidc'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Azure Login (Service Principal JSON)
+        if: steps.auth_guard.outputs.login_mode == 'sp'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 

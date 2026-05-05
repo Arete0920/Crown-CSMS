@@ -27,7 +27,7 @@ jobs:
           SCHOOL_ID: ${{ inputs.school_id }}
         run: |
           set -euo pipefail
-          curl -sS -X POST "${API_BASE}/api/v1/system/demo-reset/?verbosity=1" \
+          curl --max-time 30 -f -sS -X POST "${API_BASE}/api/v1/system/demo-reset/?verbosity=1" \
             -H "X-Admin-Ops-Secret: ${OPS_SECRET}" \
             -H "X-School-Id: ${SCHOOL_ID}" \
             -H "Content-Type: application/json" \

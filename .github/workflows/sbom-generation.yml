@@ -1,0 +1,79 @@
+name: SBOM Generation
+
+on:
+  pull_request:
+    paths:
+      - backend/**
+      - frontend/dashboards/**
+      - .github/workflows/sbom-generation.yml
+  push:
+    branches:
+      - main
+    paths:
+      - backend/**
+      - frontend/dashboards/**
+      - .github/workflows/sbom-generation.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sbom-generation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install CycloneDX tool
+        run: python -m pip install --upgrade pip cyclonedx-bom
+
+      - name: Generate backend SBOM
+        run: cyclonedx-py requirements -i requirements.txt -o backend-sbom.cdx.json
+
+      - name: Upload backend SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backend-sbom-${{ github.run_id }}
+          path: backend/backend-sbom.cdx.json
+
+  frontend-sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate frontend SBOM
+        run: npx --yes @cyclonedx/cyclonedx-npm --output-file frontend-sbom.cdx.json
+
+      - name: Upload frontend SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontend-sbom-${{ github.run_id }}
+          path: frontend/dashboards/frontend-sbom.cdx.json

@@ -99,7 +99,7 @@ export default function CrownHeroHeader({
   const hasRouterContext = useInRouterContext();
 
   return (
-    <div className="launch-hero-header" role="banner">
+    <header className="launch-hero-header">
       {/* ── Top utility row ─────────────────────────────────────────── */}
       <div className="launch-hero-topbar">
         <label className="launch-search launch-hero-search" aria-label="Search">
@@ -216,6 +216,6 @@ export default function CrownHeroHeader({
           />
         ) : null}
       </div>
-    </div>
+    </header>
   );
 }

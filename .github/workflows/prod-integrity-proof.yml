@@ -21,15 +21,19 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: prod-integrity-proof-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   prove:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Load defaults from tracked target file (unless manually overridden)
         id: target
@@ -73,7 +77,7 @@ jobs:
           set -euo pipefail
           url="${{ steps.target.outputs.health_url }}"
           echo "Hitting: $url"
-          body="$(curl -sSfL "$url")"
+          body="$(curl --max-time 30 -f -sSfL "$url")"
           echo "$body" | jq . >/dev/null
           echo "body=$body" >> "$GITHUB_OUTPUT"
 

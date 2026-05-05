@@ -7,7 +7,7 @@ class BaseModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         abstract = True
 
@@ -24,7 +24,7 @@ class School(BaseModel):
     name = models.CharField(max_length=255)
     timezone = models.CharField(max_length=50, default='America/New_York')
     is_active = models.BooleanField(default=True)
-    
+
     def __str__(self):
         return self.name
 
@@ -36,11 +36,11 @@ class AcademicYear(BaseModel):
     start_date = models.DateField()
     end_date = models.DateField()
     is_current = models.BooleanField(default=False)
-    
+
     class Meta:
         unique_together = ('school', 'name')
         ordering = ['start_date']
-    
+
     def __str__(self):
         return f"{self.school.name} - {self.name}"
 
@@ -63,16 +63,16 @@ class GradeLevel(BaseModel):
         ('11', 'Grade 11'),
         ('12', 'Grade 12'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='grade_levels')
     code = models.CharField(max_length=3, choices=GRADE_CHOICES)
     label = models.CharField(max_length=50)
     sort_order = models.IntegerField()
-    
+
     class Meta:
         unique_together = ('school', 'code')
         ordering = ['sort_order']
-    
+
     def __str__(self):
         return f"{self.school.name} - {self.label}"
 
@@ -83,7 +83,7 @@ class Family(BaseModel):
         ('ACTIVE', 'Active'),
         ('INACTIVE', 'Inactive'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='families')
     family_name = models.CharField(max_length=255)
     address_line1 = models.CharField(max_length=255, blank=True, null=True)
@@ -92,11 +92,11 @@ class Family(BaseModel):
     state = models.CharField(max_length=2, blank=True, null=True)
     zip_code = models.CharField(max_length=10, blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
-    
+
     class Meta:
         unique_together = ('school', 'family_name')
         ordering = ['family_name']
-    
+
     def __str__(self):
         return f"{self.family_name} ({self.school.name})"
 
@@ -110,7 +110,7 @@ class Guardian(BaseModel):
         ('GUARDIAN', 'Guardian'),
         ('OTHER', 'Other'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='guardians')
     family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='guardians')
     first_name = models.CharField(max_length=100)
@@ -120,11 +120,11 @@ class Guardian(BaseModel):
     relationship = models.CharField(max_length=20, choices=RELATIONSHIP_CHOICES)
     portal_access = models.BooleanField(default=False)
     custody_flag = models.BooleanField(default=False, blank=True, null=True)
-    
+
     class Meta:
         unique_together = ('school', 'email')
         ordering = ['family', 'last_name']
-    
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.family.family_name})"
 
@@ -137,7 +137,7 @@ class Student(BaseModel):
         ('WITHDRAWN', 'Withdrawn'),
         ('ALUMNI', 'Alumni'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='students')
     family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='students')
     student_number = models.CharField(max_length=50)
@@ -146,11 +146,11 @@ class Student(BaseModel):
     dob = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='APPLICANT')
     current_grade_level = models.ForeignKey(GradeLevel, on_delete=models.SET_NULL, blank=True, null=True)
-    
+
     class Meta:
         unique_together = ('school', 'student_number')
         ordering = ['last_name', 'first_name']
-    
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.student_number})"
 
@@ -163,23 +163,23 @@ class Staff(BaseModel):
         ('ADMIN', 'Admin'),
         ('SUPPORT', 'Support'),
     ]
-    
+
     STATUS_CHOICES = [
         ('ACTIVE', 'Active'),
         ('INACTIVE', 'Inactive'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='staff_members')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField()
     role_type = models.CharField(max_length=20, choices=ROLE_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
-    
+
     class Meta:
         unique_together = ('school', 'email')
         ordering = ['last_name', 'first_name']
-    
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.role_type})"
 
@@ -190,10 +190,10 @@ class UserAccount(AbstractUser):
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='user_accounts', null=True, blank=True)
     staff = models.OneToOneField(Staff, on_delete=models.SET_NULL, blank=True, null=True)
     guardian = models.OneToOneField(Guardian, on_delete=models.SET_NULL, blank=True, null=True)
-    
+
     class Meta:
         unique_together = ('school', 'email')
-    
+
     def __str__(self):
         school_name = self.school.name if self.school else "No School"
         return f"{self.email} ({school_name})"
@@ -211,14 +211,14 @@ class UserRole(BaseModel):
         ('STUDENT', 'Student'),
         ('SUPPORT', 'Support'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='user_roles')
     user = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='roles')
     role_code = models.CharField(max_length=50, choices=ROLE_CODE_CHOICES)
-    
+
     class Meta:
         unique_together = ('school', 'user', 'role_code')
-    
+
     def __str__(self):
         return f"{self.user.email} - {self.role_code}"
 
@@ -230,7 +230,7 @@ class Enrollment(BaseModel):
         ('WITHDRAWN', 'Withdrawn'),
         ('GRADUATED', 'Graduated'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='enrollments')
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='enrollments')
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name='enrollments')
@@ -238,11 +238,11 @@ class Enrollment(BaseModel):
     start_date = models.DateField()
     end_date = models.DateField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ENROLLED')
-    
+
     class Meta:
         unique_together = ('school', 'student', 'academic_year')
         ordering = ['student__last_name', 'academic_year']
-    
+
     def __str__(self):
         return f"{self.student.student_number} - {self.academic_year.name}"
 
@@ -254,10 +254,10 @@ class TuitionPlan(BaseModel):
     name = models.CharField(max_length=255)
     annual_amount_cents = models.IntegerField()
     is_active = models.BooleanField(default=True)
-    
+
     class Meta:
         unique_together = ('school', 'academic_year', 'name')
-    
+
     def __str__(self):
         return f"{self.name} - {self.school.name}"
 
@@ -271,10 +271,10 @@ class StudentTuition(BaseModel):
     annual_amount_cents = models.IntegerField()
     discounts_cents = models.IntegerField(default=0)
     net_annual_cents = models.IntegerField()
-    
+
     class Meta:
         unique_together = ('school', 'student', 'academic_year')
-    
+
     def __str__(self):
         return f"{self.student.student_number} - {self.academic_year.name}"
 
@@ -286,7 +286,7 @@ class LedgerEntry(BaseModel):
     SOURCE_FEE = 'FEE'
     SOURCE_PAYMENT = 'PAYMENT'
     SOURCE_ADJUSTMENT = 'ADJUSTMENT'
-    
+
     SOURCE_CHOICES = [
         (SOURCE_TUITION_SET, 'Tuition Set'),
         (SOURCE_AID_AWARD, 'Aid Award'),
@@ -294,7 +294,7 @@ class LedgerEntry(BaseModel):
         (SOURCE_PAYMENT, 'Payment'),
         (SOURCE_ADJUSTMENT, 'Adjustment'),
     ]
-    
+
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='ledger_entries')
     family = models.ForeignKey(Family, on_delete=models.CASCADE, related_name='ledger_entries')
     student = models.ForeignKey(Student, on_delete=models.SET_NULL, blank=True, null=True)
@@ -307,7 +307,7 @@ class LedgerEntry(BaseModel):
     memo = models.TextField(blank=True, default='')
     source = models.CharField(max_length=50, choices=SOURCE_CHOICES)
     created_by_user = models.ForeignKey(UserAccount, on_delete=models.SET_NULL, blank=True, null=True)
-    
+
     # Reversal mechanism for immutable audit trail
     is_reversal = models.BooleanField(default=False)
     reversal_of = models.ForeignKey(
@@ -317,17 +317,17 @@ class LedgerEntry(BaseModel):
         blank=True,
         related_name='reversals'
     )
-    
+
     class Meta:
         ordering = ['-entry_date', '-created_at']
 
     def delete(self, *args, **kwargs):
         raise RuntimeError("LedgerEntry records are immutable. Use create_reversal().")
-    
+
     def __str__(self):
         account_code = self.account.code if self.account_id else 'NoAccount'
         return f"{self.family.family_name} - {account_code} - {self.entry_date}"
-    
+
     @staticmethod
     def create_reversal(original_entry, created_by=None, memo_suffix=" (REVERSAL)"):
         """
@@ -402,7 +402,7 @@ class RolePermission(BaseModel):
 from .models_seed import SeedRun  # noqa: E402,F401
 
 # Data retention policies — registered under core app
-from .models_retention import DataRetentionPolicy  # noqa: E402,F401
+from .models_retention import DataRetentionPolicy, RetentionPurgeAudit  # noqa: E402,F401
 
 
 class HouseholdFamilyLink(BaseModel):

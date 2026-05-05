@@ -211,3 +211,8 @@ local.secrets.ps1.example
 !.env.sample
 .DS_Store
 Thumbs.db
+
+workflow-inventory-report.json
+release-scorecard.json
+workflow-permissions-audit.json
+workflow-secrets-inventory.json
