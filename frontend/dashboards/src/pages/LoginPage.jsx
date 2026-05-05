@@ -50,7 +50,7 @@ const SANDBOX_SCHOOL_NAMES = [
 
 function normalizeSchoolId(name, index) {
   if (index === 0) return DEMO_SCHOOL;
-  return `sandbox-school-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+  return `sandbox-school-${name.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replaceAll(/^-+|-+$/g, "")}`;
 }
 
 function fallbackSandboxSchools() {

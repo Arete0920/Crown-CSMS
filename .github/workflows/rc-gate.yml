@@ -1,7 +1,6 @@
 name: rc-gate
 permissions:
   contents: read
-  id-token: write
 
 
 on:
@@ -12,9 +11,13 @@ on:
     branches:
       - "rc/**"
 
+concurrency:
+  group: rc-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   backend-gates:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       DJANGO_SETTINGS_MODULE: crown_api.settings
       SECRET_KEY: ci-not-secret
@@ -22,10 +25,10 @@ jobs:
       ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: sqlite:///./ci.sqlite3
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Use Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
           cache: "pip"
@@ -55,14 +58,15 @@ jobs:
 
   frontend-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: frontend/dashboards
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Use Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"
@@ -85,8 +89,9 @@ jobs:
 
   ui-static-gates:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: UI Shell Gate
         shell: pwsh

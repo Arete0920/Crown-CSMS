@@ -1,0 +1,69 @@
+name: Frontend Bundle Budget
+
+on:
+  pull_request:
+    paths:
+      - frontend/dashboards/**
+      - .github/workflows/frontend-bundle-budget.yml
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/dashboards/**
+      - .github/workflows/frontend-bundle-budget.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-bundle-budget-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Enforce bundle budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          js_file=$(ls -S dist/assets/*.js | head -1)
+          css_file=$(ls -S dist/assets/*.css | head -1)
+          js_size=$(wc -c < "$js_file")
+          css_size=$(wc -c < "$css_file")
+
+          echo "Largest JS:  $js_file ($js_size bytes)"
+          echo "Largest CSS: $css_file ($css_size bytes)"
+
+          max_js=2200000
+          max_css=180000
+
+          if [ "$js_size" -gt "$max_js" ]; then
+            echo "ERROR: JS bundle exceeds budget ($js_size > $max_js)"
+            exit 1
+          fi
+
+          if [ "$css_size" -gt "$max_css" ]; then
+            echo "ERROR: CSS bundle exceeds budget ($css_size > $max_css)"
+            exit 1
+          fi

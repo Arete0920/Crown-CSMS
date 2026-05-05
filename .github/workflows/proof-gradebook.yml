@@ -1,4 +1,4 @@
-name: Proof â€” Gradebook (UI + API)
+name: Proof €” Gradebook (UI + API)
 permissions:
   contents: read
 
@@ -40,11 +40,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
-      - name: Guardrail â€” print versions
+      - name: Guardrail €” print versions
         run: |
           set -euo pipefail
           echo "Node: $(node -v || true)"
@@ -52,7 +52,7 @@ jobs:
           echo "Pip: $(pip --version || true)"
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
           cache: "pip"
@@ -67,7 +67,7 @@ jobs:
         run: |
           python manage.py migrate --noinput
 
-      - name: Guardrail â€” required env
+      - name: Guardrail €” required env
         env:
           CROWN_DEMO_PASSWORD: "CI-Demo-Password-2026"
         run: |
@@ -96,7 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           for i in {1..60}; do
-            if curl -fsS http://localhost:8000/api/v1/health/ >/dev/null 2>&1 || curl -fsS http://localhost:8000/ >/dev/null 2>&1; then
+            if curl --max-time 30 -fsS http://localhost:8000/api/v1/health/ >/dev/null 2>&1 || curl -fsS http://localhost:8000/ >/dev/null 2>&1; then
               echo "API is up."
               exit 0
             fi
@@ -105,7 +105,7 @@ jobs:
           echo "API never became healthy" && exit 1
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"
@@ -136,7 +136,7 @@ jobs:
         run: |
           set -euo pipefail
           for i in {1..60}; do
-            if curl -fsS http://localhost:3000 >/dev/null 2>&1; then
+            if curl --max-time 30 -fsS http://localhost:3000 >/dev/null 2>&1; then
               echo "UI is up."
               exit 0
             fi
@@ -152,7 +152,7 @@ jobs:
           TOKEN_HTTP=""
           TOKEN_JSON=""
           for i in {1..5}; do
-            TOKEN_HTTP=$(curl -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/dev/token/" \
+            TOKEN_HTTP=$(curl --max-time 30 -sS -o /tmp/token_ready.json -w "%{http_code}" -X POST "http://127.0.0.1:8000/api/dev/token/" \
               -H "Accept: application/json" \
               -H "X-Demo-Key: ${CROWN_DEMO_KEY}" \
               -d '{}' || true)
@@ -188,7 +188,7 @@ jobs:
           echo "Token acquired. Probing gradebook sections endpoint..."
 
           for i in {1..40}; do
-            HTTP=$(curl -s -o /tmp/gb_ready.json -w "%{http_code}" \
+            HTTP=$(curl --max-time 30 -s -o /tmp/gb_ready.json -w "%{http_code}" \
               "http://127.0.0.1:8000/api/v1/gradebook/sections/" \
               -H "Authorization: Bearer ${ACCESS}" \
               -H "X-School-Id: b45b8c5a-6708-4597-aad9-a226627b2962")
@@ -196,7 +196,7 @@ jobs:
               echo "Gradebook API ready (HTTP ${HTTP})."
               exit 0
             fi
-            echo "Attempt ${i}: HTTP ${HTTP} â€” waiting 2s..."
+            echo "Attempt ${i}: HTTP ${HTTP} €” waiting 2s..."
             cat /tmp/gb_ready.json || true
             sleep 2
           done
@@ -226,7 +226,7 @@ jobs:
 
       - name: Upload UI proof screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: gradebook-ui-proof-screenshots
           path: |
@@ -238,7 +238,7 @@ jobs:
 
       - name: Upload Playwright test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-test-results
           path: |

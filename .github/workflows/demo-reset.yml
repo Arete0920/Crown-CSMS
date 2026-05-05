@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: demo-reset-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   reset:
     runs-on: ubuntu-latest
@@ -24,7 +27,7 @@ jobs:
           SCHOOL_ID: ${{ inputs.school_id }}
         run: |
           set -euo pipefail
-          curl -sS -X POST "$API_BASE/api/v1/system/demo-reset/?verbosity=2" \
+          curl --max-time 30 -f -sS -X POST "$API_BASE/api/v1/system/demo-reset/?verbosity=2" \
             -H "X-Admin-Ops-Secret: $OPS_SECRET" \
             -H "X-School-Id: $SCHOOL_ID" \
             -H "Content-Type: application/json" \
@@ -46,11 +49,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          TOKEN=$(curl -s -X POST "$API_BASE/api/v1/auth/token/" \
+          TOKEN=$(curl --max-time 30 -f -s -X POST "$API_BASE/api/v1/auth/token/" \
             -H "Content-Type: application/json" \
             -d "{\"username\":\"$DEMO_USERNAME\",\"password\":\"$DEMO_PASSWORD\"}" | python -c "import sys,json; print(json.load(sys.stdin)['access'])")
 
-          OUT=$(curl -s "$API_BASE/api/v1/admissions/summary/" \
+          OUT=$(curl --max-time 30 -f -s "$API_BASE/api/v1/admissions/summary/" \
             -H "Authorization: Bearer $TOKEN" \
             -H "X-School-Id: $SCHOOL_ID")
 

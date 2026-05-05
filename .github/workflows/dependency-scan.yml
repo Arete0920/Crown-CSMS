@@ -12,40 +12,19 @@ on:
     # Run weekly on Monday at 06:00 UTC regardless of pushes
     - cron: "0 6 * * 1"
 
+concurrency:
+  group: dependency-scan-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  python-safety:
-    name: Python â€” safety check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4.1.1
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        working-directory: backend
-        run: |
-          pip install --upgrade pip
-          pip install safety
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: Run safety check
-        working-directory: backend
-        run: safety check --full-report
-        # Continue on error so we get a report even if vulns found;
-        # treat as informational for now (escalate to blocking when baseline is clean).
-        continue-on-error: true
-
   python-pip-audit:
-    name: Python â€” pip-audit
+    name: Python - pip-audit
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.12"
 
@@ -56,32 +35,33 @@ jobs:
         working-directory: backend
         run: |
           if [ -f requirements.txt ]; then
-            pip-audit -r requirements.txt -f json -o pip-audit-results.json || true
+            pip-audit -r requirements.txt -f json -o pip-audit-results.json
             if [ -f pip-audit-results.json ]; then
               cat pip-audit-results.json
             else
               echo "[]"
             fi
           else
-            echo "No requirements.txt found â€” skipping pip-audit"
+            echo "No requirements.txt found - skipping pip-audit"
           fi
 
       - name: Upload pip-audit results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: pip-audit-results
           path: backend/pip-audit-results.json
           if-no-files-found: ignore
 
   node-audit:
-    name: Node â€” npm audit
+    name: Node - npm audit
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
 
@@ -89,5 +69,5 @@ jobs:
         working-directory: frontend/dashboards
         run: |
           npm ci --prefer-offline 2>/dev/null || npm install
-          npm audit --audit-level=high || true
+          npm audit --audit-level=high
 

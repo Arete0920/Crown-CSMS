@@ -12,18 +12,22 @@ on:
       - "frontend/dashboards/**"
       - ".github/workflows/dashboards-build-gate.yml"
 
+concurrency:
+  group: dashboards-build-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   dashboards-build-gate:
     name: dashboards-build-gate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend/dashboards
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Use Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"

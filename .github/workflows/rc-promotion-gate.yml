@@ -1,13 +1,15 @@
 name: rc-promotion-gate
 permissions:
   contents: read
-  id-token: write
 
 
 on:
   pull_request:
     branches: [ "main" ]
 
+concurrency:
+  group: rc-promotion-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   gate:
     name: rc-promotion-gate
@@ -17,15 +19,15 @@ jobs:
     steps:
       - name: Pass gate (not an RC promotion branch)
         if: ${{ github.event.pull_request.head.ref != 'rc/crown-0.4.0' }}
-        run: echo "Not an RC promotion branch â€” gate passed."
+        run: echo "Not an RC promotion branch €” gate passed."
 
       - name: Checkout
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Python
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
 
@@ -36,7 +38,7 @@ jobs:
           python -m pip install requests
 
       # Preflight: fail loud if any required RC secret is missing
-      - name: Guard â€” RC secrets must be configured
+      - name: Guard €” RC secrets must be configured
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
         shell: bash
         run: |
@@ -47,14 +49,14 @@ jobs:
           [ -z "${{ secrets.RC_SCHOOL_ID }}" ]       && missing="$missing RC_SCHOOL_ID"
           [ -z "${{ secrets.RC_DEMO_KEY }}" ]        && missing="$missing RC_DEMO_KEY"
           if [ -n "$missing" ]; then
-            echo "FAIL: RC promotion gate cannot run â€” missing secrets:$missing"
-            echo "      Configure them in Settings â†’ Secrets and variables â†’ Actions"
+            echo "FAIL: RC promotion gate cannot run €” missing secrets:$missing"
+            echo "      Configure them in Settings ’ Secrets and variables ’ Actions"
             exit 1
           fi
-          echo "âœ“ All required RC secrets are present"
+          echo "“ All required RC secrets are present"
 
       # M6 (deployed): build_sha must match the RC head SHA
-      - name: M6 â€” Build-SHA proof against deployed /api/health/
+      - name: M6 €” Build-SHA proof against deployed /api/health/
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
         env:
           RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
@@ -63,7 +65,7 @@ jobs:
           python tools/verify_build_sha.py
 
       # M5 (deployed): Tier-1 probes must pass against deployed env
-      - name: M5 â€” Login and fetch fresh token for smoke probes
+      - name: M5 €” Login and fetch fresh token for smoke probes
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
         env:
           RC_BASE_URL: ${{ secrets.RC_BASE_URL }}
@@ -98,7 +100,7 @@ jobs:
           )
           echo "RC_TOKEN=$FRESH_TOKEN" >> $GITHUB_ENV
 
-      - name: M5 â€” Tier-1 deployed smoke against deployed env
+      - name: M5 €” Tier-1 deployed smoke against deployed env
         if: ${{ github.event.pull_request.head.ref == 'rc/crown-0.4.0' }}
         env:
           RC_BASE_URL: ${{ secrets.RC_BASE_URL }}

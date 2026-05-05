@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set defaults
         shell: pwsh
@@ -56,22 +56,22 @@ jobs:
           set -euo pipefail
           URL="https://crown-api-dev.azurewebsites.net/health/"
           echo "P0.3 Gate: Verifying BUILD_SHA at $URL"
-          
-          BODY="$(curl -fsS "$URL")"
+
+          BODY="$(curl --max-time 30 -fsS "$URL")"
           echo "$BODY" | python3 -c "import json,sys; d=json.load(sys.stdin); print('build_sha:', d.get('build_sha','MISSING')); print('env:', d.get('env','MISSING')); print('db:', d.get('db','MISSING'))"
-          
+
           SHA="$(echo "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin).get('build_sha',''))")"
-          
+
           if [ -z "$SHA" ] || [ "$SHA" = "MISSING" ]; then
             echo " FAILED: build_sha missing from /health/"
             exit 1
           fi
-          
+
           if [ ${#SHA} -ne 40 ]; then
             echo " FAILED: build_sha must be 40 chars (got ${#SHA})"
             exit 1
           fi
-          
+
           echo " P0.3 Gate: BUILD_SHA verified ($SHA)"
 
       - name: Health check DEV (bounded)
@@ -90,7 +90,7 @@ jobs:
           $ok = $false
           for ($i=1; $i -le $max; $i++) {
             try {
-              $code = (curl -s -o /dev/null -w "%{http_code}" $health)
+              $code = (curl --max-time 30 -s -o /dev/null -w "%{http_code}" $health)
               Write-Host ("Attempt {0}/{1}: HTTP {2}" -f $i, $max, $code)
               if ($code -eq "200") { $ok = $true; break }
             } catch {
@@ -103,17 +103,14 @@ jobs:
             throw "DEV health check failed after $max attempts."
           }
 
-      - name: Debug DEV_OPS_SECRET fingerprint
+      - name: Guard required DEV_OPS_SECRET
         shell: pwsh
         env:
           DEV_OPS_SECRET: ${{ secrets.DEV_OPS_SECRET }}
         run: |
           $s = $env:DEV_OPS_SECRET
           if ([string]::IsNullOrWhiteSpace($s)) { throw "DEV_OPS_SECRET missing in runner" }
-          $bytes = [Text.Encoding]::UTF8.GetBytes($s)
-          $sha = [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
-          $fp = ($sha | ForEach-Object { $_.ToString("x2") }) -join ""
-          Write-Host "DEV_OPS_SECRET_SHA256=$fp"
+
       - name: Run Golden Path smoke (DEV)
         shell: pwsh
         env:

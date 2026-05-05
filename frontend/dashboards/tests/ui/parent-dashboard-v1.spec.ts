@@ -64,21 +64,17 @@ test("Parent Dashboard renders household KPI row and Children card", async ({
 
   await page.goto(`${BASE}/parent`, { waitUntil: "domcontentloaded" });
 
-  // Title exists (static — always renders even if fetch fails)
-  await expect(
-    page.getByRole("heading", { name: /parent dashboard/i })
-  ).toBeVisible();
+  // The current /parent route renders the CROWN launch preview experience.
+  await expect(page.getByRole("heading", { name: /good morning/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /dashboard/i }).first()).toBeVisible();
 
-  // KPI labels
-  await expect(page.locator("text=Household Balance")).toBeVisible();
-  await expect(page.locator("text=Children").first()).toBeVisible();  // KPI label + CrownCard title both say "Children"
-  await expect(page.locator("text=Missing Assignments")).toBeVisible();
-  await expect(page.getByText(/^Upcoming$/).first()).toBeVisible();
+  // Stable anchors in the current parent launch layout.
+  await expect(page.getByRole("region", { name: /faith and community/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /family action queue/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /action required/i })).toBeVisible();
 
-  // Children card section exists
-  await expect(page.locator("text=Children").first()).toBeVisible();
-
-  // Quick links still intact
-  await expect(page.locator("a[href='/academics/parent-snapshot']")).toBeVisible();
-  await expect(page.locator("a[href='/finance/invoices']")).toBeVisible();
+  // Deterministic KPI labels from the current parent metrics row.
+  await expect(page.getByText("Children Enrolled").first()).toBeVisible();
+  await expect(page.getByText("Open Assignments").first()).toBeVisible();
+  await expect(page.getByText("Account Balance").first()).toBeVisible();
 });

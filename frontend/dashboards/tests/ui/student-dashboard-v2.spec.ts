@@ -69,23 +69,17 @@ test("Student Dashboard v2 renders KPI cards and Upcoming Assignments section", 
 
   await page.goto(`${BASE}/student`, { waitUntil: "domcontentloaded" });
 
-  // Title exists
-  await expect(
-    page.getByRole("heading", { name: /student dashboard/i })
-  ).toBeVisible();
+  // The current /student route renders the CROWN launch preview experience.
+  await expect(page.getByRole("heading", { name: /good morning/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /dashboard/i }).first()).toBeVisible();
 
-  // KPI labels
-  await expect(page.getByText(/My GPA|GPA \(est\.\)/).first()).toBeVisible();
-  await expect(page.getByText(/^Current Average$/).first()).toBeVisible();
-  await expect(page.getByText(/^Missing Work$/).first()).toBeVisible();
-  await expect(page.getByText(/^Balance Due$/).first()).toBeVisible();
+  // Stable landmarks and section headings in the current student launch layout.
+  await expect(page.getByRole("region", { name: /faith and community/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /today's student agenda/i })).toBeVisible();
 
-  // Assignments section header
-  await expect(page.locator("text=Upcoming Assignments").first()).toBeVisible();  // card title + empty-state both contain "upcoming assignments"
-
-  // Service Hours card
-  await expect(page.locator("text=Service Hours")).toBeVisible();
-
-  // Quick links still present
-  await expect(page.getByRole("link", { name: "Gradebook", exact: true })).toBeVisible();
+  // Deterministic KPI labels from the current student metrics row.
+  await expect(page.getByText("Current Average").first()).toBeVisible();
+  await expect(page.getByText("Missing Work").first()).toBeVisible();
+  await expect(page.getByText("Service Hours").first()).toBeVisible();
+  await expect(page.getByText("Attendance Rate").first()).toBeVisible();
 });
