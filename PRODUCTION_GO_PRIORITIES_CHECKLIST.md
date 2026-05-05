@@ -30,25 +30,39 @@
 
 **Timeline:** < 30 minutes  
 **Owner:** Release Engineering (with admin GitHub token)  
-**Status:** ⏳ PENDING
+**Status:** ⏳ PENDING — Requires admin credentials
 
-**Steps:**
-- [ ] Obtain admin-level GitHub API token (if not already available)
-- [ ] Run governance control queries:
-  ```bash
-  gh api repos/tcmegahan/Crown2026/rulesets > /tmp/rulesets_proof.json
-  gh api repos/tcmegahan/Crown2026/branches/main/protection > /tmp/branch_protection_proof.json
-  ```
-- [ ] Verify both commands succeed (HTTP 200, no 403 errors)
+**✋ NOTE:** Current integration token lacks admin permissions (403 errors on both queries):
+- Rulesets: "Upgrade to GitHub Pro or make this repository public"
+- Branch protection: "Resource not accessible by integration"
+
+**Required Action:**
+1. **Option A:** Use GitHub CLI with personal admin account:
+   ```bash
+   # Logout current token
+   gh auth logout
+   # Login with admin credentials
+   gh auth login
+   # Run queries
+   gh api repos/tcmegahan/Crown2026/rulesets > 06_RULESETS_PROOF_ADMIN.json
+   gh api repos/tcmegahan/Crown2026/branches/main/protection > 07_BRANCH_PROTECTION_PROOF_ADMIN.json
+   ```
+
+2. **Option B:** Use GitHub web UI with admin account to take screenshots of:
+   - Rulesets page: https://github.com/tcmegahan/Crown2026/settings/rules
+   - Branch protection page: https://github.com/tcmegahan/Crown2026/settings/branches
+
+**After Obtaining Proof:**
 - [ ] Copy outputs to: `audit-artifacts/final-production-release/20260501_153828/`
-- [ ] Rename files to: `06_RULESETS_PROOF_ADMIN.json` and `07_BRANCH_PROTECTION_PROOF_ADMIN.json`
-- [ ] Update `audit-artifacts/final-production-release/20260501_153828/GATE_RESULTS.csv`:
-  - Change "Ruleset proof" status from FAIL to PASS
-  - Change "Branch protection proof" status from REVIEW to PASS
+- [ ] Update `GATE_RESULTS.csv`:
+  - Change "Ruleset proof" from FAIL → PASS
+  - Change "Branch protection proof" from REVIEW → PASS
 - [ ] Commit with message: "docs(release): add admin-level governance control proof (May 5)"
 
 **Evidence Location:** `audit-artifacts/final-production-release/20260501_153828/`  
 **Blocker Resolution:** Once complete, removes MEDIUM-RISK governance API gaps
+
+**⚠️ WHO CAN DO THIS:** Only GitHub account owner or repository admin
 
 ---
 
@@ -56,21 +70,17 @@
 
 **Timeline:** 1–3 hours (passive observation)  
 **Owner:** On-call ops monitoring  
-**Status:** ⏳ IN PROGRESS (automated scheduled checks)
+**Status:** ✅ CONFIRMED — Transient glitch resolved
 
-**Steps:**
-- [ ] Monitor next 3 Production Health Watch scheduled runs
-- [ ] Check: https://github.com/tcmegahan/Crown2026/actions?query=workflow%3A%22Production+Health+Watch%22
-- [ ] If 2+ consecutive runs return **success** → transient glitch confirmed, close signal
-- [ ] If failures persist → escalate as operational risk (P1 blocker)
-
-**Current Status:**
+**Verification Results:**
 - 2026-05-05T14:00-15:00 UTC: 2 consecutive failures (transient window)
-- 2026-05-05T15:45 UTC onwards: all success
-- **Assessment:** High confidence this is benign, but need 1–3 more runs to confirm pattern
+- 2026-05-05T15:45 UTC onwards: **6 consecutive successes** 🟢
+- Most recent run: 2026-05-05T19:12:12Z SUCCESS
+- **Assessment:** Transient glitch confirmed and resolved. No ongoing operational risk.
 
-**Escalation Condition:** If next run fails → investigate production health before deployment  
-**Resolution Condition:** 2+ consecutive success → can proceed with confidence
+**Evidence:** https://github.com/tcmegahan/Crown2026/actions?query=workflow%3A%22Production+Health+Watch%22
+
+**Resolution:** ✅ Health-watch signal is stable. No action required. Cleared for production deployment.
 
 ---
 
