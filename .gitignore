@@ -182,6 +182,10 @@ _PHASE*/
 # Audit / evidence / generated artifacts
 AUDIT_PACK_*/
 audit-artifacts/
+!audit-artifacts/
+audit-artifacts/*
+!audit-artifacts/production-excellence-95-plus/
+!audit-artifacts/production-excellence-95-plus/**
 artifacts/
 docs/audit/evidence/
 docs/audit/reports/
