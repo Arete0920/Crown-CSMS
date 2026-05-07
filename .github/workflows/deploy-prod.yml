@@ -346,10 +346,14 @@ jobs:
 
               if ([string]::IsNullOrWhiteSpace($env:PROBE_TENANT_ID)) {
                 $integrity = Get-Json "$baseUrl$integrityPath" @{ Accept = "application/json" }
-                $code = if ($null -ne $integrity.code) { "$($integrity.code)".ToLowerInvariant() } else { "" }
-                if ($code -ne "missing_tenant") {
+                $status =
+                  if ($null -ne $integrity.status) { "$($integrity.status)".ToLowerInvariant() }
+                  elseif ($null -ne $integrity.ok) { "$($integrity.ok)".ToLowerInvariant() }
+                  else { "" }
+
+                if ($status -notin @("ok", "true")) {
                   $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
-                  throw "Integrity probe without tenant header expected code=missing_tenant. Payload: $payload"
+                  throw "Integrity probe without tenant header did not return ok/true. Payload: $payload"
                 }
               }
               else {
