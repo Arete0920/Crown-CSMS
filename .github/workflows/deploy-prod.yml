@@ -63,31 +63,15 @@ jobs:
           if [ -n "$AZURE_CREDENTIALS" ]; then
             echo "Using AZURE_CREDENTIALS service principal auth path."
             export AZURE_CREDENTIALS
-            python3 - <<'PY'
-            import json
-            import os
-            import re
-            import sys
-
-            raw = os.environ.get("AZURE_CREDENTIALS", "")
-            try:
-              data = json.loads(raw)
-            except Exception:
-              print("ERROR: AZURE_CREDENTIALS is not valid JSON")
-              sys.exit(1)
-
-            required = ["clientId", "clientSecret", "tenantId", "subscriptionId"]
-            missing = [k for k in required if not str(data.get(k, "")).strip()]
-            if missing:
-              print(f"ERROR: AZURE_CREDENTIALS missing required keys: {', '.join(missing)}")
-              sys.exit(1)
-
-            guid_re = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-            for key in ("clientId", "tenantId", "subscriptionId"):
-              if not guid_re.match(str(data.get(key, ""))):
-                print(f"ERROR: AZURE_CREDENTIALS key '{key}' is not a valid GUID format")
-                sys.exit(1)
-            PY
+            python3 -c "import json,os,re,sys; raw=os.environ.get('AZURE_CREDENTIALS','');\
+data=json.loads(raw) if raw else {}; req=['clientId','clientSecret','tenantId','subscriptionId'];\
+missing=[k for k in req if not str(data.get(k,'')).strip()];\
+print('ERROR: AZURE_CREDENTIALS missing required keys: ' + ', '.join(missing)) if missing else None;\
+sys.exit(1) if missing else None;\
+guid=re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');\
+bad=[k for k in ('clientId','tenantId','subscriptionId') if not guid.match(str(data.get(k,'')))];\
+print('ERROR: AZURE_CREDENTIALS key(\'' + '\',\''.join(bad) + '\') is not a valid GUID format') if bad else None;\
+sys.exit(1) if bad else None" || { echo "ERROR: AZURE_CREDENTIALS is not valid JSON"; exit 1; }
             echo "login_mode=sp" >> "$GITHUB_OUTPUT"
             exit 0
           fi
