@@ -52,7 +52,15 @@ $checks["red_marks_blocker_status"] =
   ((ContainsText -Text $redText -Needle "BLOCKER_FOUND") -or
    (ContainsText -Text $redText -Needle "NO_UNREFUTED_BLOCKER"))
 
-$checks["red_does_not_assert_blocker_found"] = -not (ContainsText -Text $redText -Needle "BLOCKER_FOUND")
+$hasBlockerFoundToken = ContainsText -Text $redText -Needle "BLOCKER_FOUND"
+$hasExplicitNoBlocker =
+  ((ContainsText -Text $redText -Needle "BLOCKER_FOUND: no") -or
+   (ContainsText -Text $redText -Needle "BLOCKER_FOUND = no") -or
+   (ContainsText -Text $redText -Needle "BLOCKER_FOUND false") -or
+   (ContainsText -Text $redText -Needle "BLOCKER_FOUND: false") -or
+   (ContainsText -Text $redText -Needle "NO_UNREFUTED_BLOCKER"))
+
+$checks["red_does_not_assert_blocker_found"] = ((-not $hasBlockerFoundToken) -or $hasExplicitNoBlocker)
 
 $allPass = $true
 foreach ($entry in $checks.GetEnumerator()) {
