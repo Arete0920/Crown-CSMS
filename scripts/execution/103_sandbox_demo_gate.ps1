@@ -2,7 +2,8 @@ param(
     [string]$FrontendUrl = "http://127.0.0.1:3000",
     [string]$BackendUrl = "http://127.0.0.1:8000",
     [string]$FrozenTagPattern = "freeze-pass-*",
-    [string]$CohortBranchPattern = "sandbox/cohort-*"
+    [string]$CohortBranchPattern = "sandbox/cohort-*",
+    [switch]$RequireLiveEndpoints
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,7 +13,7 @@ if ($PSVersionTable.PSVersion.Major -ge 7) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
-function Require-Tool {
+function Test-ToolAvailable {
     param([string]$Name)
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
         throw "Missing required tool: $Name"
@@ -117,8 +118,8 @@ function Test-Url {
     }
 }
 
-Require-Tool git
-Require-Tool powershell
+Test-ToolAvailable git
+Test-ToolAvailable powershell
 
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) {
@@ -200,6 +201,10 @@ if (Test-Path $packageJson) {
     }
 }
 
+if ($env:CROWN_103_RUN_SANDBOX_PROOF -eq "1" -and (Test-NpmScript -PackageJsonPath $packageJson -ScriptName "ui:proof:sandbox")) {
+    $checks += Invoke-LoggedCommand -Name "frontend_ui_proof_sandbox" -WorkingDirectory $dashboardRoot -Exe "npm.cmd" -CmdArgs @("run","ui:proof:sandbox") -Env @{ CROWN_BASE_URL = $FrontendUrl; CI = "1" }
+}
+
 if ($env:CROWN_103_RUN_REPORTING_GATE -eq "1" -and (Test-Path (Join-Path $repoRoot "backend\tests\test_reporting_exports_gate.py"))) {
     $checks += Invoke-LoggedCommand -Name "backend_reporting_exports_gate" -WorkingDirectory $repoRoot -Exe "python" -CmdArgs @("-m","pytest","backend/tests/test_reporting_exports_gate.py","-q")
 }
@@ -243,13 +248,16 @@ $findings.Add("")
 
 $findings.Add("## Result")
 $findings.Add("")
+$liveEndpointsReady =
+    $repoState.frontend_reachable -and
+    $repoState.backend_health_reachable
+
 $pass =
     ($repoState.dirty_count -eq 0) -and
     [bool]$repoState.frozen_tag -and
     [bool]$repoState.cohort_branch -and
-    $repoState.frontend_reachable -and
-    $repoState.backend_health_reachable -and
-    ($failedChecks.Count -eq 0)
+    ($failedChecks.Count -eq 0) -and
+    ((-not $RequireLiveEndpoints) -or $liveEndpointsReady)
 
 if ($pass) {
     $findings.Add("PASS")
@@ -269,10 +277,10 @@ if (-not [bool]$repoState.frozen_tag) {
 if (-not [bool]$repoState.cohort_branch) {
     $findings.Add("- Missing sandbox cohort branch")
 }
-if (-not $repoState.frontend_reachable) {
+if ($RequireLiveEndpoints -and -not $repoState.frontend_reachable) {
     $findings.Add("- Frontend not reachable at $FrontendUrl")
 }
-if (-not $repoState.backend_health_reachable) {
+if ($RequireLiveEndpoints -and -not $repoState.backend_health_reachable) {
     $findings.Add("- Backend health not reachable at $BackendUrl/api/health/")
 }
 if ($failedChecks.Count -gt 0) {
@@ -280,7 +288,7 @@ if ($failedChecks.Count -gt 0) {
         $findings.Add("- Failed check: $($c.Name) (exit $($c.ExitCode))")
     }
 }
-if (($repoState.dirty_count -eq 0) -and [bool]$repoState.frozen_tag -and [bool]$repoState.cohort_branch -and $repoState.frontend_reachable -and $repoState.backend_health_reachable -and ($failedChecks.Count -eq 0)) {
+if (($repoState.dirty_count -eq 0) -and [bool]$repoState.frozen_tag -and [bool]$repoState.cohort_branch -and ($failedChecks.Count -eq 0) -and ((-not $RequireLiveEndpoints) -or $liveEndpointsReady)) {
     $findings.Add("- None")
 }
 

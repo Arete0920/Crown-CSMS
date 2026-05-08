@@ -389,12 +389,21 @@ export default function LoginPage() {
         .field-input,
         .field-select {
           width: 100%;
-          border: 1px solid #CBD8E6;
+          border: 1px solid #CBD8E6 !important;
           border-radius: 9px;
           padding: 10px 11px;
           font-size: 14px;
-          color: #102843;
-          background: var(--lp-white);
+          color: #102843 !important;
+          caret-color: #102843 !important;
+          -webkit-text-fill-color: #102843 !important;
+          background: var(--lp-white) !important;
+          background-color: var(--lp-white) !important;
+        }
+
+        .field-input::placeholder {
+          color: #5B6E83 !important;
+          -webkit-text-fill-color: #5B6E83 !important;
+          opacity: 1;
         }
 
         .field-input:focus,
