@@ -1,0 +1,102 @@
+name: Frontend Quality Gates
+
+on:
+  pull_request:
+    paths:
+      - frontend/dashboards/**
+      - .github/workflows/frontend-quality-gates.yml
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/dashboards/**
+      - .github/workflows/frontend-quality-gates.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-quality-gates-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  accessibility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run accessibility release tests
+        run: npm run test:release:a11y
+
+  style:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install stylelint
+        run: npm install --no-save stylelint stylelint-config-standard
+
+      - name: Run stylelint
+        run: npx stylelint "src/**/*.css"
+
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install Lighthouse CI
+        run: npm install --no-save @lhci/cli
+
+      - name: Run Lighthouse budgets
+        run: npx lhci autorun --config=./lighthouserc.json

@@ -12,15 +12,20 @@ on:
       - "tools/verify_backend_gate.py"
       - ".github/workflows/backend-gate.yml"
 
+concurrency:
+  group: backend-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-gate:
     name: backend-gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Use Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
           cache: "pip"
@@ -46,7 +51,7 @@ jobs:
 
       - name: "Tenant tripwires (structural AST checks)"
         run: |
-          # Checks 4+5 from verify_backend_gate.py â€” multi-line-safe AST analysis.
+          # Checks 4+5 from verify_backend_gate.py €” multi-line-safe AST analysis.
           # Replaces grep-based tripwires that could false-positive on multi-line calls.
           python tools/verify_backend_gate.py --tenant-checks-only
 

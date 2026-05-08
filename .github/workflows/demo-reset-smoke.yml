@@ -6,10 +6,14 @@ permissions:
 on:
   workflow_dispatch: {}
 
+concurrency:
+  group: demo-reset-smoke-runtime-proof-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   demo-reset-smoke:
     runs-on: ubuntu-latest
 
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:15
@@ -32,10 +36,10 @@ jobs:
       CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.12"
           cache: "pip"
@@ -68,13 +72,13 @@ jobs:
       - name: Health check
         run: |
           for i in {1..60}; do
-            if curl -fsS http://127.0.0.1:8000/health/ >/dev/null 2>&1; then
+            if curl --max-time 30 -fsS http://127.0.0.1:8000/health/ >/dev/null 2>&1; then
               echo "health ok"
               exit 0
             fi
             sleep 1
           done
-          echo "health timeout â€” last 50 lines of django.log:"
+          echo "health timeout €” last 50 lines of django.log:"
           tail -50 /tmp/django.log || true
           exit 1
 

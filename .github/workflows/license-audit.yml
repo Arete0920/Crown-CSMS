@@ -1,0 +1,81 @@
+name: License Audit
+
+on:
+  pull_request:
+    paths:
+      - backend/**
+      - frontend/dashboards/**
+      - .github/workflows/license-audit.yml
+  push:
+    branches:
+      - main
+    paths:
+      - backend/**
+      - frontend/dashboards/**
+      - .github/workflows/license-audit.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: license-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-licenses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install deps and pip-licenses
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pip-licenses
+
+      - name: Export Python license report
+        run: pip-licenses --format=json --output-file python-licenses.json
+
+      - name: Upload Python license artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: python-license-report-${{ github.run_id }}
+          path: backend/python-licenses.json
+
+  node-licenses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Export Node license report
+        run: npx --yes license-checker --json --out node-licenses.json
+
+      - name: Upload Node license artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: node-license-report-${{ github.run_id }}
+          path: frontend/dashboards/node-licenses.json

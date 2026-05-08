@@ -21,9 +21,9 @@ jobs:
     env:
       DJANGO_SECRET_KEY: ci-test-secret-key
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - uses: actions/setup-python@v4.9.1
+      - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4.9.1
         with:
           python-version: "3.12"
 
@@ -65,7 +65,7 @@ jobs:
         run: pytest -q tests/test_schema_governance_assets.py
 
       - name: Upload schema artifacts
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: schema-governance-artifacts
           if-no-files-found: error

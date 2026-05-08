@@ -15,89 +15,101 @@ def _run_sql(cursor, sql: str, params=None):
 class Command(BaseCommand):
     help = "Fix schema drift: delete ledgers (financial_aid→academics→billing), re-migrate"
 
-    def handle(self, *args, **options):
-        apps_to_fix = ["financial_aid", "academics", "billing"]
+    def _print_before_ledger(self, cursor, apps_to_fix):
+        self.stdout.write("\n=== BEFORE: Migration Ledger ===")
 
-        with connection.cursor() as cursor:
-            self.stdout.write("\n=== BEFORE: Migration Ledger ===")
+        for app in apps_to_fix:
+            _run_sql(
+                cursor,
+                "SELECT app, name FROM django_migrations WHERE app = %s ORDER BY applied;",
+                [app],
+            )
+            rows = cursor.fetchall()
+            if rows:
+                self.stdout.write(f"{app}: {len(rows)} migration(s)")
+                for _, name in rows[:3]:
+                    self.stdout.write(f"  - {name}")
+                if len(rows) > 3:
+                    self.stdout.write(f"  ... and {len(rows) - 3} more")
+            else:
+                self.stdout.write(f"{app}: (none)")
 
-            for app in apps_to_fix:
-                _run_sql(
-                    cursor,
-                    "SELECT app, name FROM django_migrations WHERE app = %s ORDER BY applied;",
-                    [app],
-                )
-                rows = cursor.fetchall()
-                if rows:
-                    self.stdout.write(f"{app}: {len(rows)} migration(s)")
-                    for _, name in rows[:3]:  # Show first 3
-                        self.stdout.write(f"  - {name}")
-                    if len(rows) > 3:
-                        self.stdout.write(f"  ... and {len(rows) - 3} more")
-                else:
-                    self.stdout.write(f"{app}: (none)")
+    def _delete_ledger_entries(self, cursor, apps_to_fix):
+        self.stdout.write("\n=== STEP B.1: Delete Ledger Entries (financial_aid→academics→billing) ===")
 
-            self.stdout.write("\n=== STEP B.1: Delete Ledger Entries (financial_aid→academics→billing) ===")
+        total_deleted = 0
+        for app in apps_to_fix:
+            _run_sql(cursor, "DELETE FROM django_migrations WHERE app = %s;", [app])
+            deleted = cursor.rowcount
+            total_deleted += deleted
+            self.stdout.write(f"✓ Deleted {deleted} {app} ledger entry(ies)")
 
-            total_deleted = 0
-            for app in apps_to_fix:
-                _run_sql(cursor, "DELETE FROM django_migrations WHERE app = %s;", [app])
-                deleted = cursor.rowcount
-                total_deleted += deleted
-                self.stdout.write(f"✓ Deleted {deleted} {app} ledger entry(ies)")
+        self.stdout.write(f"\nTotal deleted: {total_deleted} migration ledger entries")
 
-            self.stdout.write(f"\nTotal deleted: {total_deleted} migration ledger entries")
-
+    def _run_migrations(self, apps_to_fix):
         self.stdout.write("\n=== STEP B.2: Re-run Migrations (dependency order) ===")
 
-        # Migrate in dependency order: financial_aid → academics → billing
         for app in apps_to_fix:
             self.stdout.write(f"\nMigrating {app}...")
             call_command("migrate", app, verbosity=2, interactive=False)
 
-        with connection.cursor() as cursor:
-            self.stdout.write("\n=== AFTER: Migration Ledger ===")
+    def _print_after_ledger(self, cursor):
+        self.stdout.write("\n=== AFTER: Migration Ledger ===")
 
-            _run_sql(
-                cursor,
-                "SELECT app, name FROM django_migrations"
-                " WHERE app IN ('financial_aid', 'academics', 'billing')"
-                " ORDER BY app, applied;"
-            )
-            after_rows = cursor.fetchall()
-            if after_rows:
-                current_app = None
-                count = 0
-                for app, name in after_rows:
-                    if app != current_app:
-                        if current_app:
-                            self.stdout.write(f"{current_app}: {count} migration(s) applied")
-                        current_app = app
-                        count = 1
-                    else:
-                        count += 1
+        _run_sql(
+            cursor,
+            "SELECT app, name FROM django_migrations"
+            " WHERE app IN ('financial_aid', 'academics', 'billing')"
+            " ORDER BY app, applied;"
+        )
+        after_rows = cursor.fetchall()
+        if not after_rows:
+            self.stdout.write("  (no migrations)")
+            return
+
+        current_app = None
+        count = 0
+        for app, _name in after_rows:
+            if app != current_app:
                 if current_app:
                     self.stdout.write(f"{current_app}: {count} migration(s) applied")
+                current_app = app
+                count = 1
             else:
-                self.stdout.write("  (no migrations)")
+                count += 1
+        if current_app:
+            self.stdout.write(f"{current_app}: {count} migration(s) applied")
 
-            self.stdout.write("\n=== STEP B.3: Verify Tables Exist ===")
+    def _verify_tables(self, cursor):
+        self.stdout.write("\n=== STEP B.3: Verify Tables Exist ===")
 
-            tables_to_check = [
-                ("financial_aid_financialaidapplication", "financial_aid"),
-                ("course", "academics"),
-                ("invoice", "billing"),
-            ]
+        tables_to_check = [
+            ("financial_aid_financialaidapplication", "financial_aid"),
+            ("course", "academics"),
+            ("invoice", "billing"),
+        ]
 
-            for table_name, app_name in tables_to_check:
-                # table_name is from hardcoded list above — safe to format here
-                _run_sql(cursor, "SELECT to_regclass(%s) AS tbl;", [f"public.{table_name}"])
-                row = cursor.fetchone()
-                table = row[0] if row else None
+        for table_name, app_name in tables_to_check:
+            _run_sql(cursor, "SELECT to_regclass(%s) AS tbl;", [f"public.{table_name}"])
+            row = cursor.fetchone()
+            table = row[0] if row else None
 
-                if table:
-                    self.stdout.write(f"✓ {app_name} table exists: {table}")
-                else:
-                    self.stdout.write(f"❌ {app_name} table missing: {table_name}")
+            if table:
+                self.stdout.write(f"✓ {app_name} table exists: {table}")
+            else:
+                self.stdout.write(f"❌ {app_name} table missing: {table_name}")
+
+    def handle(self, *args, **options):
+        apps_to_fix = ["financial_aid", "academics", "billing"]
+
+        with connection.cursor() as cursor:
+            self._print_before_ledger(cursor, apps_to_fix)
+            self._delete_ledger_entries(cursor, apps_to_fix)
+
+        self._run_migrations(apps_to_fix)
+
+        with connection.cursor() as cursor:
+            self._print_after_ledger(cursor)
+            self._verify_tables(cursor)
 
         self.stdout.write("\n=== SCHEMA DRIFT FIX COMPLETE ===")

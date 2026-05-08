@@ -60,14 +60,21 @@ test.describe("Nav is permission-derived — sidebar reflects role, not all link
     await expect(page.locator('aside a[href="/integrity"]')).toHaveCount(0);
   });
 
-  test("fallback nav renders at least one link when API fails", async ({ page }) => {
-    // No schoolId set — /api/v1/nav/ will fail → component shows FALLBACK_NAV.
-    await page.goto(`${BASE}/admin`);
-    await page.waitForTimeout(2000);
+  test("sidebar still renders links when nav API fails", async ({ page }) => {
+    await page.route("**/api/v1/nav/**", (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ detail: "nav unavailable" }),
+      }),
+    );
 
-    // FALLBACK_NAV always has the Home link.
+    await seedSession(page, "parent");
+    await page.goto(`${BASE}/parent`);
+    await page.waitForTimeout(1000);
+
     const sidebarLinks = page.locator("aside a");
-    await expect(sidebarLinks).toHaveCount({ minimum: 1 } as any);
+    await expect(sidebarLinks.first()).toBeVisible();
   });
 
   test("sidebar renders group headers for each section", async ({ page }) => {
@@ -77,7 +84,7 @@ test.describe("Nav is permission-derived — sidebar reflects role, not all link
     await page.waitForTimeout(2000);
 
     // Group headers are uppercase divs inside aside.
-    const aside = page.locator("aside");
+    const aside = page.locator("aside.clean-sidebar");
     await expect(aside).toBeVisible();
   });
 

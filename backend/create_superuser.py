@@ -1,36 +1,16 @@
-from django.contrib.auth import get_user_model
-import logging
+import os
 
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+def main() -> int:
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crown_api.settings")
 
-User = get_user_model()
+    import django
+    from django.core.management import call_command
 
-# Delete existing admin if exists
-User.objects.filter(username='admin').delete()
+    django.setup()
+    call_command("bootstrap_superuser")
+    return 0
 
-# Create new superuser
-user = User.objects.create_superuser(
-    username='admin',
-    email='admin@crown.local',
-    password='Crown2026!'
-)
 
-# Attach a school context for tenant-scoped APIs (exports/billing/etc.).
-# Many local flows use a superuser without a School assigned, which will 403.
-try:
-    from core.models import School
-
-    school = School.objects.first()
-    if school is not None and hasattr(user, "school_id"):
-        user.school = school
-        user.save(update_fields=["school"])
-        logger.info("  School: %s (%s)", school.id, school.name)
-except Exception:
-    # If core.School isn't available in this deployment, skip silently.
-    logger.debug("create_superuser: School model unavailable or user school assignment failed")
-
-logger.info("Superuser created: %s", user.username)
-logger.info("  Username: admin")
-logger.info("  Password: Crown2026!")
+if __name__ == "__main__":
+    raise SystemExit(main())

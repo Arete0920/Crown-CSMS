@@ -1,0 +1,2 @@
+v0.4.0-rc1	Latest	v0.4.0-rc1	2026-02-21T19:07:57Z
+gate3-seed-foundation-heritage-v1		gate3-seed-foundation-heritage-v1	2026-02-16T21:20:22Z

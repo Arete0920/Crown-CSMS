@@ -4,8 +4,8 @@ import { PATHS } from '../routes/paths';
 
 // Tier 1
 import AttendanceDashboard from '../pages/AttendanceDashboard';
-import { BillingDashboard } from '../pages/BillingDashboard';
-import { FinancialAidDashboard } from '../pages/FinancialAidDashboard';
+import BillingDashboard from '../pages/BillingDashboard';
+import FinancialAidDashboard from '../pages/FinancialAidDashboard';
 import RegistrarDashboard from '../pages/RegistrarDashboard';
 
 // Tier 2

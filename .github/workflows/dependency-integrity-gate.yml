@@ -1,0 +1,70 @@
+name: Dependency Integrity Gate
+
+on:
+  pull_request:
+    paths:
+      - frontend/dashboards/package.json
+      - frontend/dashboards/package-lock.json
+      - backend/requirements.txt
+      - requirements.txt
+      - .github/workflows/dependency-integrity-gate.yml
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/dashboards/package.json
+      - frontend/dashboards/package-lock.json
+      - backend/requirements.txt
+      - requirements.txt
+      - .github/workflows/dependency-integrity-gate.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-integrity-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Validate dependency lock and requirements contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          CHANGED="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          echo "$CHANGED"
+
+          if echo "$CHANGED" | grep -q '^frontend/dashboards/package.json$'; then
+            if ! echo "$CHANGED" | grep -q '^frontend/dashboards/package-lock.json$'; then
+              echo "ERROR: package.json changed without package-lock.json update"
+              exit 1
+            fi
+          fi
+
+          if [ -f requirements.txt ]; then
+            WANT='-r backend/requirements.txt'
+            GOT="$(tr -d '\r' < requirements.txt | sed '/^\s*$/d')"
+            if [ "$GOT" != "$WANT" ]; then
+              echo "ERROR: requirements.txt must remain a single-source pointer to backend/requirements.txt"
+              exit 1
+            fi
+          fi
+
+          echo "Dependency integrity contracts passed."
