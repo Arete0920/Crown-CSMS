@@ -83,6 +83,10 @@ foreach ($term in $OffScopeTerms) {
 }
 
 $HasApprovedVerdict =
+  (Contains-Term $Review "Overall Verdict: PASS") -or
+  (Contains-Term $Review "Overall Verdict PASS") -or
+  (Contains-Term $Review "Verdict: PASS") -or
+  (Contains-Term $Review "Approved for production use") -or
   (Contains-Term $Review "APPROVED WITH MINOR CAVEATS") -or
   (Contains-Term $Review "Ship it") -or
   (Contains-Term $Review "Approved for production deployment")
