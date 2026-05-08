@@ -166,6 +166,22 @@ CROWN_GRACE_PERIOD_DAYS = int(os.getenv("CROWN_GRACE_PERIOD_DAYS", "30"))
 # Application definition
 
 INSTALLED_APPS = [
+        'academic_year_wizard.apps.AcademicYearWizardConfig',
+    'attendance_codes_wizard.apps.AttendanceCodesWizardConfig',
+    'course_catalog_wizard.apps.CourseCatalogWizardConfig',
+    'enrollment_period_wizard.apps.EnrollmentPeriodWizardConfig',
+    'fee_schedule_wizard.apps.FeeScheduleWizardConfig',
+    'grade_scale_wizard.apps.GradeScaleWizardConfig',
+    'grade_weights_wizard.apps.GradeWeightsWizardConfig',
+    'guardian_household_wizard.apps.GuardianHouseholdWizardConfig',
+    'promotion_wizard.apps.PromotionWizardConfig',
+    'room_setup_wizard.apps.RoomSetupWizardConfig',
+    'section_scheduler_wizard.apps.SectionSchedulerWizardConfig',
+    'section_staffing_wizard.apps.SectionStaffingWizardConfig',
+    'staff_onboarding_wizard.apps.StaffOnboardingWizardConfig',
+    'staff_setup_wizard.apps.StaffSetupWizardConfig',
+    'student_import_wizard.apps.StudentImportWizardConfig',
+    'term_structure_wizard.apps.TermStructureWizardConfig',
 'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
