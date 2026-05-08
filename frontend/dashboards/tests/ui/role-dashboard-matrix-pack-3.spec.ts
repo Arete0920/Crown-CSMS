@@ -44,6 +44,24 @@ async function seedDemoSession(page, role: string) {
   );
 }
 
+async function installMatrixApiStubs(page) {
+  await page.route("**/api/v1/nav/", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ groups: [] }),
+    });
+  });
+
+  await page.route("**/api/v1/**/metrics/**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) });
+  });
+
+  await page.route("**/api/v1/**/summary/**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) });
+  });
+}
+
 // ── 1. Role → Route Redirects (Pack 3 tokens) ────────────────────────────
 // All tokens are in ROLE_ROUTE_MAP — a flat Map<string, string>.
 // Adding a new token never requires updating a Set group; one line per token.
@@ -120,6 +138,10 @@ async function assertPageHealthy(page) {
 
 test.describe("Role Dashboard Matrix — Pack 3", () => {
   const adminSeedRole = IS_SANDBOX ? "school_admin" : "admin";
+
+  test.beforeEach(async ({ page }) => {
+    await installMatrixApiStubs(page);
+  });
 
   // ── 1. Redirects ─────────────────────────────────────────────────────────
   test.describe("Role → route redirects (Pack 3 tokens)", () => {
