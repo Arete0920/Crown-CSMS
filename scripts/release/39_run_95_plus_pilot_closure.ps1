@@ -190,7 +190,9 @@ if ($evidFreezePas)            { $evidScore = 95 }
 elseif ($evidenceAllPresent)   { $evidScore = 85 }
 else                           { $evidScore = 40 }
 
-# External second opinion
+# External second opinion — SUPPLEMENTAL ONLY. AI tool outputs (Grok, Claude, ChatGPT) are
+# informational aids. They are NOT authoritative gate criteria and do NOT block or authorize
+# pilot GO. They are excluded from the hard gate minimum.
 $extScore = switch ($extReviewStatus) {
     "PASS_GROK_DEPLOY_RUNTIME_LANE" { 95 }
     "PASS_EXTERNAL"                 { 95 }
@@ -203,15 +205,22 @@ $complianceScore = 50  # Requires FERPA/COPPA/DPA/retention/support/incident/sub
 $pilotOpsScore   = 55  # Requires scope, tenant list, support owner, rollback, comms, monitoring, escalation
 $founderScore    = 0   # No pilot GO without explicit signed acceptance tied to this proof set
 
+# Hard gate lanes — these determine pilot GO/NO-GO. AI reviews are excluded.
 $scores = [ordered]@{
     technical_runtime              = $techScore
     evidence_freeze                = $evidScore
-    external_second_opinion        = $extScore
     governance_authority           = $govScore
     compliance_customer_readiness  = $complianceScore
     pilot_operations_readiness     = $pilotOpsScore
     founder_product_owner_acceptance = $founderScore
-    overall_minimum_lane_score     = ($techScore, $evidScore, $extScore, $govScore, $complianceScore, $pilotOpsScore, $founderScore | Measure-Object -Minimum).Minimum
+    overall_minimum_lane_score     = ($techScore, $evidScore, $govScore, $complianceScore, $pilotOpsScore, $founderScore | Measure-Object -Minimum).Minimum
+}
+
+# Supplemental signals — recorded for reference only, do not affect gate decision
+$supplemental = [ordered]@{
+    ai_assisted_review_status = $extReviewStatus
+    ai_assisted_review_score  = $extScore
+    note = "AI tool outputs (Grok, Claude, ChatGPT) are supplemental information only. Not authoritative gate criteria unless independently verified against complete, hard-evidence work product."
 }
 
 $allLanes95Plus = ($scores.Values | Where-Object { $_ -lt 95 }).Count -eq 0
@@ -270,11 +279,16 @@ This scorecard intentionally does not average weak lanes into strong lanes. A pi
 |---|---:|---|---|
 | Technical runtime proof | $($scores.technical_runtime) | $(StatusLabel $scores.technical_runtime) | Requires run success, appsettings match, health PASS, integrity PASS |
 | Evidence freeze / manifest | $($scores.evidence_freeze) | $(StatusLabel $scores.evidence_freeze) | Requires required artifacts plus SHA256 manifest |
-| External second opinion | $($scores.external_second_opinion) | $(StatusLabel $scores.external_second_opinion) | Current status: $extReviewStatus |
 | Governance decision authority | $($scores.governance_authority) | $(StatusLabel $scores.governance_authority) | Requires controlling GO/NO-GO document and signed owner decision |
 | Compliance/customer readiness | $($scores.compliance_customer_readiness) | $(StatusLabel $scores.compliance_customer_readiness) | Requires FERPA/COPPA/DPA/retention/support/incident/subprocessor/backup/data posture closure |
 | Pilot operations readiness | $($scores.pilot_operations_readiness) | $(StatusLabel $scores.pilot_operations_readiness) | Requires scope, tenant list, support owner, rollback, comms, monitoring, escalation |
 | Founder/Product Owner final acceptance | $($scores.founder_product_owner_acceptance) | $(StatusLabel $scores.founder_product_owner_acceptance) | No pilot GO without explicit signed acceptance tied to this proof set |
+
+## AI-assisted review (supplemental only — not a hard gate)
+
+| Tool | Status | Note |
+|---|---|---|
+| Grok / Claude / ChatGPT | $extReviewStatus | AI tool outputs are supplemental information only. Not authoritative gate criteria unless independently verified against complete, hard-evidence work product. |
 
 ## Overall pilot score
 
@@ -319,7 +333,7 @@ Decision: **$decision**
 | All lanes 95+ | $allLanes95Plus |
 | Technical runtime PASS | $($scores.technical_runtime -ge 95) |
 | Evidence freeze PASS | $evidFreezePas |
-| External second opinion PASS | $($extReviewStatus -match 'PASS') |
+| AI review supplemental status | $extReviewStatus (supplemental — not a hard gate) |
 | Governance signoff PASS | False — pending owner signature |
 | Compliance PASS | False — pending DPA/FERPA/COPPA closure |
 | Pilot ops PASS | False — pending scope/rollback/support plan |
@@ -339,7 +353,9 @@ Every lane below must reach 95+ before this decision flips to GO:
 Technical runtime and evidence lanes are now at or above 95+:
 - Technical runtime: $techScore
 - Evidence freeze: $evidScore
-- External second opinion: $extScore
+
+AI-assisted review (supplemental only — not a gate): $extReviewStatus
+AI tool outputs (Grok, Claude, ChatGPT) are informational aids, not authoritative criteria.
 
 Technical PASS does not authorize pilot GO. All lanes must reach 95+ independently.
 
@@ -491,12 +507,16 @@ $result = [ordered]@{
     scores = [ordered]@{
         technical_runtime              = $scores.technical_runtime
         evidence_freeze                = $scores.evidence_freeze
-        external_second_opinion        = $scores.external_second_opinion
         governance_authority           = $scores.governance_authority
         compliance_customer_readiness  = $scores.compliance_customer_readiness
         pilot_operations_readiness     = $scores.pilot_operations_readiness
         founder_product_owner_acceptance = $scores.founder_product_owner_acceptance
         overall_minimum_lane_score     = $scores.overall_minimum_lane_score
+    }
+    supplemental = [ordered]@{
+        ai_assisted_review_status = $extReviewStatus
+        ai_assisted_review_score  = $extScore
+        note = "AI tool outputs (Grok, Claude, ChatGPT) are supplemental information only. Not authoritative gate criteria unless independently verified against complete, hard-evidence work product."
     }
     gates = [ordered]@{
         all_lanes_95_plus             = $allLanes95Plus
