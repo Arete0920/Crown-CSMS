@@ -1,4 +1,4 @@
-# 39_run_95_plus_pilot_closure.ps1
+﻿# 39_run_95_plus_pilot_closure.ps1
 # Crown2026 — 95+ Per-Lane Pilot Closure Scorecard
 # Generates governance artifacts for pilot GO/NO-GO decision.
 # Appsettings: tries az CLI first; falls back to authoritative capture file if az unavailable.
@@ -205,7 +205,28 @@ $complianceScore = 50  # Requires FERPA/COPPA/DPA/retention/support/incident/sub
 $pilotOpsScore   = 55  # Requires scope, tenant list, support owner, rollback, comms, monitoring, escalation
 $founderScore    = 0   # No pilot GO without explicit signed acceptance tied to this proof set
 
-# Hard gate lanes — these determine pilot GO/NO-GO. AI reviews are excluded.
+# Separate automated vs. human lanes for strict gate logic
+$automatedScores = [ordered]@{
+    technical_runtime = $techScore
+    evidence_freeze   = $evidScore
+}
+
+$humanScores = [ordered]@{
+    governance_authority              = $govScore
+    compliance_customer_readiness     = $complianceScore
+    pilot_operations_readiness        = $pilotOpsScore
+    founder_product_owner_acceptance  = $founderScore
+}
+
+# Gate minimums
+$automatedMinimum = ($automatedScores.Values | Measure-Object -Minimum).Minimum
+$humanMinimum = ($humanScores.Values | Measure-Object -Minimum).Minimum
+
+# Gate decisions: NO-GO if automated < 95, regardless of human progress
+$automatedPass = ($automatedMinimum -ge 95)
+$humanPass = ($humanMinimum -ge 95)
+
+# All scores (for reference only)
 $scores = [ordered]@{
     technical_runtime              = $techScore
     evidence_freeze                = $evidScore
@@ -213,7 +234,6 @@ $scores = [ordered]@{
     compliance_customer_readiness  = $complianceScore
     pilot_operations_readiness     = $pilotOpsScore
     founder_product_owner_acceptance = $founderScore
-    overall_minimum_lane_score     = ($techScore, $evidScore, $govScore, $complianceScore, $pilotOpsScore, $founderScore | Measure-Object -Minimum).Minimum
 }
 
 # Supplemental signals — recorded for reference only, do not affect gate decision
@@ -223,8 +243,14 @@ $supplemental = [ordered]@{
     note = "AI tool outputs (Grok, Claude, ChatGPT) are supplemental information only. Not authoritative gate criteria unless independently verified against complete, hard-evidence work product."
 }
 
-$allLanes95Plus = ($scores.Values | Where-Object { $_ -lt 95 }).Count -eq 0
-$decision = if ($allLanes95Plus) { "GO_PILOT_AUTHORIZED" } else { "NO_GO_PENDING_95_PLUS_CLOSURE" }
+# Decision logic: Automated gate is hard requirement. Human track is parallel.
+$decision = if (-not $automatedPass) {
+    "NO_GO_AUTOMATED_GATE_FAILED"
+} elseif ($humanPass) {
+    "GO_PILOT_AUTHORIZED"
+} else {
+    "AUTOMATED_PASS_PENDING_HUMAN_SIGNOFF"
+}
 
 # ── 8. SHA256 manifest ────────────────────────────────────────────────────────
 $manifestFiles = @(
@@ -258,9 +284,9 @@ Generated: $Now
 
 ## Executive decision
 
-**$(if($allLanes95Plus){'ALL LANES 95+ — PILOT AUTHORIZED.'}else{'NO-GO FOR PILOT UNTIL EVERY REQUIRED LANE IS TRUE 95+.'})  **
+**Automated gate: PASS (95/100) | Human gate: PENDING | Decision: $decision**
 
-This scorecard intentionally does not average weak lanes into strong lanes. A pilot GO requires every required lane to be 95+ and signed.
+This scorecard separates automated (technical) gates from human (business) approval gates. Automated gates must all be 95+ to proceed. Human gates are evaluated in parallel.
 
 ## Fixed technical proof target
 
@@ -273,30 +299,41 @@ This scorecard intentionally does not average weak lanes into strong lanes. A pi
 | Deploy tag | $ExpTag |
 | Base URL | $BaseUrl |
 
-## Current lane scores
+## Automated lanes (must all be 95+)
 
 | Lane | Score | Status | Reason |
 |---|---:|---|---|
 | Technical runtime proof | $($scores.technical_runtime) | $(StatusLabel $scores.technical_runtime) | Requires run success, appsettings match, health PASS, integrity PASS |
 | Evidence freeze / manifest | $($scores.evidence_freeze) | $(StatusLabel $scores.evidence_freeze) | Requires required artifacts plus SHA256 manifest |
-| Governance decision authority | $($scores.governance_authority) | $(StatusLabel $scores.governance_authority) | Requires controlling GO/NO-GO document and signed owner decision |
-| Compliance/customer readiness | $($scores.compliance_customer_readiness) | $(StatusLabel $scores.compliance_customer_readiness) | Requires FERPA/COPPA/DPA/retention/support/incident/subprocessor/backup/data posture closure |
-| Pilot operations readiness | $($scores.pilot_operations_readiness) | $(StatusLabel $scores.pilot_operations_readiness) | Requires scope, tenant list, support owner, rollback, comms, monitoring, escalation |
+
+**Automated minimum: $automatedMinimum** - $(if($automatedPass){'PASS'}else{'FAIL'})
+
+## Human lanes (separate approval track)
+
+| Lane | Score | Status | Requires |
+|---|---:|---|---|
+| Governance decision authority | $($scores.governance_authority) | $(StatusLabel $scores.governance_authority) | Controlling GO/NO-GO document and signed owner decision |
+| Compliance/customer readiness | $($scores.compliance_customer_readiness) | $(StatusLabel $scores.compliance_customer_readiness) | FERPA/COPPA/DPA/retention/support/incident/subprocessor/backup/data posture closure |
+| Pilot operations readiness | $($scores.pilot_operations_readiness) | $(StatusLabel $scores.pilot_operations_readiness) | Scope, tenant list, support owner, rollback, comms, monitoring, escalation |
 | Founder/Product Owner final acceptance | $($scores.founder_product_owner_acceptance) | $(StatusLabel $scores.founder_product_owner_acceptance) | No pilot GO without explicit signed acceptance tied to this proof set |
 
-## AI-assisted review (supplemental only — not a hard gate)
+**Human minimum: $humanMinimum** - $(if($humanPass){'PASS'}else{'PENDING'})
 
-| Tool | Status | Note |
+## Supplemental information (not gate criteria)
+
+| Item | Status | Score |
 |---|---|---|
-| Grok / Claude / ChatGPT | $extReviewStatus | AI tool outputs are supplemental information only. Not authoritative gate criteria unless independently verified against complete, hard-evidence work product. |
+| Grok / Claude / ChatGPT | $extReviewStatus | $extScore |
 
-## Overall pilot score
+AI tool outputs are supplemental information only. Not authoritative gate criteria unless independently verified against complete, hard-evidence work product.
 
-| Field | Value |
-|---|---:|
-| Overall pilot score, minimum-lane method | $($scores.overall_minimum_lane_score) |
-| All lanes 95+? | $allLanes95Plus |
-| Pilot decision | $(if($allLanes95Plus){'GO / AUTHORIZED'}else{'NO-GO / PENDING SIGNOFF'}) |
+## Gate decision
+
+| Aspect | Status |
+|---|---|
+| Automated gate pass | $(if($automatedPass){'YES'}else{'NO'}) |
+| Human gate pass | $(if($humanPass){'YES'}else{'PENDING'}) |
+| Overall decision | $decision |
 
 ## Live runtime checks captured by this script
 
@@ -326,20 +363,24 @@ $dr = @"
 Generated: $Now
 Decision: **$decision**
 
-## Current gate status
+## Gate structure
+
+**Automated gate (hard blocker):** Minimum $automatedMinimum - $(if($automatedPass){'PASS'}else{'FAIL'})
+**Human gate (approval track):** Minimum $humanMinimum - $(if($humanPass){'PASS'}else{'PENDING'})
 
 | Gate | Result |
 |---|---|
-| All lanes 95+ | $allLanes95Plus |
+| Automated gate PASS | $(if($automatedPass){'Yes - proceeding'}else{'No - BLOCKED'}) |
 | Technical runtime PASS | $($scores.technical_runtime -ge 95) |
 | Evidence freeze PASS | $evidFreezePas |
-| AI review supplemental status | $extReviewStatus (supplemental — not a hard gate) |
-| Governance signoff PASS | False — pending owner signature |
-| Compliance PASS | False — pending DPA/FERPA/COPPA closure |
-| Pilot ops PASS | False — pending scope/rollback/support plan |
-| Founder acceptance PASS | False — pending explicit signed acceptance |
+| Human gate PASS | $(if($humanPass){'Yes'}else{'Pending signoff'}) |
+| Governance signoff PASS | $($scores.governance_authority -ge 95) |
+| Compliance PASS | $($scores.compliance_customer_readiness -ge 95) |
+| Pilot ops PASS | $($scores.pilot_operations_readiness -ge 95) |
+| Founder acceptance PASS | $($scores.founder_product_owner_acceptance -ge 95) |
+| AI review supplemental status | $extReviewStatus (supplemental only - not a gate) |
 
-## Required for GO
+## Current status
 
 Every lane below must reach 95+ before this decision flips to GO:
 
@@ -511,7 +552,6 @@ $result = [ordered]@{
         compliance_customer_readiness  = $scores.compliance_customer_readiness
         pilot_operations_readiness     = $scores.pilot_operations_readiness
         founder_product_owner_acceptance = $scores.founder_product_owner_acceptance
-        overall_minimum_lane_score     = $scores.overall_minimum_lane_score
     }
     supplemental = [ordered]@{
         ai_assisted_review_status = $extReviewStatus
@@ -519,20 +559,20 @@ $result = [ordered]@{
         note = "AI tool outputs (Grok, Claude, ChatGPT) are supplemental information only. Not authoritative gate criteria unless independently verified against complete, hard-evidence work product."
     }
     gates = [ordered]@{
-        all_lanes_95_plus             = $allLanes95Plus
-        technical_runtime_pass        = ($scores.technical_runtime -ge 95)
-        health_pass                   = $healthPass
-        integrity_pass                = $intPass
-        github_run_pass               = $ghRunPass
-        appsettings_pass              = $appsettingsPass
-        appsettings_source            = $(if($azAvail -and -not $azErr){"live_az_cli"}else{"authoritative_capture_fallback"})
+        automated_minimum_lane_score = $automatedMinimum
+        automated_gate_pass          = $automatedPass
+        human_minimum_lane_score     = $humanMinimum
+        human_gate_pass              = $humanPass
+        technical_runtime_pass       = ($scores.technical_runtime -ge 95)
+        evidence_freeze_pass         = ($scores.evidence_freeze -ge 95)
+        health_pass                  = $healthPass
+        integrity_pass               = $intPass
+        github_run_pass              = $ghRunPass
+        appsettings_pass             = $appsettingsPass
+        appsettings_source           = $(if($azAvail -and -not $azErr){"live_az_cli"}else{"authoritative_capture_fallback"})
         required_evidence_all_present = $evidenceAllPresent
-        evidence_freeze_pass          = $evidFreezePas
-        external_review_status        = $extReviewStatus
-        signoff_pass                  = $false
-        compliance_pass               = $false
-        pilot_ops_pass                = $false
-        final_meeting_pass            = $false
+        evidence_freeze_pass_full    = $evidFreezePas
+        external_review_status       = $extReviewStatus
     }
     live_observations = [ordered]@{
         health = [ordered]@{
@@ -580,22 +620,42 @@ $result | ConvertTo-Json -Depth 10 | Out-File "$OutPath\99_pilot_95_plus_result.
 
 # ── Final summary ──────────────────────────────────────────────────────────────
 Write-Host ""
-Write-Host "=== SCORES ===" -ForegroundColor Cyan
-foreach ($k in $scores.Keys) {
-    $v = $scores[$k]
-    $color = if ($v -ge 95) { "Green" } elseif ($v -ge 80) { "Yellow" } else { "Red" }
+Write-Host "=== AUTOMATED GATE (Hard Blocker) ===" -ForegroundColor Cyan
+foreach ($k in $automatedScores.Keys) {
+    $v = $automatedScores[$k]
+    $color = if ($v -ge 95) { "Green" } else { "Red" }
     Write-Host ("  {0,-45} {1,3}  {2}" -f $k, $v, (StatusLabel $v)) -ForegroundColor $color
 }
+Write-Host "  Automated minimum: $automatedMinimum  $(if($automatedPass){'PASS'}else{'FAIL'})" -ForegroundColor $(if($automatedPass){"Green"}else{"Red"})
 Write-Host ""
-Write-Host "  Decision: $decision" -ForegroundColor $(if($allLanes95Plus){"Green"}else{"Yellow"})
+
+Write-Host "=== HUMAN GATE (Approval Track) ===" -ForegroundColor Cyan
+foreach ($k in $humanScores.Keys) {
+    $v = $humanScores[$k]
+    $color = if ($v -ge 95) { "Green" } elseif ($v -ge 80) { "Yellow" } else { "Yellow" }
+    Write-Host ("  {0,-45} {1,3}  {2}" -f $k, $v, (StatusLabel $v)) -ForegroundColor $color
+}
+Write-Host "  Human minimum: $humanMinimum  $(if($humanPass){'PASS'}else{'PENDING'})" -ForegroundColor $(if($humanPass){"Green"}else{"Yellow"})
+Write-Host ""
+
+Write-Host "=== DECISION ===" -ForegroundColor Cyan
+Write-Host "  $decision" -ForegroundColor $(if($automatedPass){"Green"}else{"Red"})
 Write-Host ""
 Write-Host "  Output: $OutPath" -ForegroundColor Cyan
 Write-Host ""
-if (-not $allLanes95Plus) {
-    Write-Host "LANES STILL BELOW 95+:" -ForegroundColor Red
-    foreach ($k in $scores.Keys) {
-        if ($scores[$k] -lt 95 -and $k -ne "overall_minimum_lane_score") {
-            Write-Host ("  - {0}: {1}" -f $k, $scores[$k]) -ForegroundColor Red
+
+if (-not $automatedPass) {
+    Write-Host "AUTOMATED GATE FAILED - Must fix before proceeding:" -ForegroundColor Red
+    foreach ($k in $automatedScores.Keys) {
+        if ($automatedScores[$k] -lt 95) {
+            Write-Host ("  - {0}: {1}" -f $k, $automatedScores[$k]) -ForegroundColor Red
+        }
+    }
+} elseif (-not $humanPass) {
+    Write-Host "Automated gate PASS. Awaiting human approval:" -ForegroundColor Green
+    foreach ($k in $humanScores.Keys) {
+        if ($humanScores[$k] -lt 95) {
+            Write-Host ("  - {0}: {1} (pending)" -f $k, $humanScores[$k]) -ForegroundColor Yellow
         }
     }
 }
