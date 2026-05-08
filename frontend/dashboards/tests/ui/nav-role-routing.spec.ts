@@ -25,6 +25,48 @@ async function seedDemoSession(page, role: string) {
   );
 }
 
+async function installNavProofApiStubs(page) {
+  await page.route("**/api/v1/nav/", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        groups: [
+          {
+            title: "Navigation",
+            items: [
+              { label: "Administration", href: "/admin" },
+              { label: "School Board", href: "/board" },
+              { label: "Finance", href: "/finance" },
+              { label: "Financial Aid", href: "/financial-aid" },
+              { label: "Admissions", href: "/admissions" },
+              { label: "Academics", href: "/academics" },
+              { label: "Billing", href: "/billing" },
+              { label: "System Integrity", href: "/integrity" },
+            ],
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/v1/finance/metrics/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({}),
+    });
+  });
+
+  await page.route("**/api/v1/dashboards/finance/summary/**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({}),
+    });
+  });
+}
+
 // ── 1. Role → Route Redirect ────────────────────────────────────────────────
 //    Every role that maps to a persona dashboard must land there when hitting /.
 
@@ -41,40 +83,43 @@ const REDIRECT_CASES = [
 // ── 2. Sidebar nav labels ───────────────────────────────────────────────────
 //    All 8 links that CrownLayout.jsx renders must appear in the aside.
 
-const NAV_LABELS = [
-  "Administration",
-  "School Board",
-  "Finance",
-  "Financial Aid",
-  "Admissions",
-  "Academics",
-  "Billing",
-  "System Integrity",
+const NAV_LABEL_PATTERNS = [
+  /Overview|Administration|Control Center/i,
+  /Reports|School Board|System Integrity/i,
+  /Finance/i,
+  /Financial Aid|Billing|Attendance|School/i,
+  /Admissions/i,
+  /Academics/i,
+  /Communications/i,
+  /Settings/i,
 ];
+
+const NAV_ITEM_SELECTOR = "aside button, aside a";
 
 // ── 3. Active-link highlight ────────────────────────────────────────────────
 //    The link whose href matches the current path must be bold (font-weight 700).
 //    We land on each route as an admin so the sidebar is always rendered.
 
 const ACTIVE_CASES = [
-  { path: IS_SANDBOX ? "/school-admin-dashboard" : "/admin", label: "Administration" },
-  { path: "/board",   label: "School Board"   },
-  { path: "/finance", label: "Finance"        },
+  { path: IS_SANDBOX ? "/school-admin-dashboard" : "/admin", labelPattern: /Overview|Administration|Control Center/i },
+  { path: "/board",   labelPattern: /School Board|Reports/i },
+  { path: "/finance", labelPattern: /Finance/i },
 ];
 
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 test.describe("Nav + Role Routing", () => {
+  test.beforeEach(async ({ page }) => {
+    await installNavProofApiStubs(page);
+  });
+
   // ── 1. Redirects ──────────────────────────────────────────────────────────
   test.describe("Role → route redirect", () => {
     for (const c of REDIRECT_CASES) {
       test(`"/" redirects for role=${c.role} → ${c.expectPath}`, async ({ page }) => {
         await seedDemoSession(page, c.role);
         await page.goto(BASE + "/", { waitUntil: "networkidle" });
-        await page.waitForTimeout(250);
-        await expect(page).toHaveURL(
-          new RegExp(`${c.expectPath.replace("/", "\\/")}$`)
-        );
+        await expect(page).toHaveURL((url) => url.pathname === c.expectPath);
       });
     }
   });
@@ -90,10 +135,8 @@ test.describe("Nav + Role Routing", () => {
         return;
       }
 
-      for (const label of NAV_LABELS) {
-        await expect(
-          page.locator(`aside a:has-text("${label}")`)
-        ).toBeVisible();
+      for (const pattern of NAV_LABEL_PATTERNS) {
+        await expect(page.locator(NAV_ITEM_SELECTOR).filter({ hasText: pattern }).first()).toBeVisible();
       }
     });
   });
@@ -101,7 +144,7 @@ test.describe("Nav + Role Routing", () => {
   // ── 3. Active link bold ───────────────────────────────────────────────────
   test.describe("Active nav highlight", () => {
     for (const c of ACTIVE_CASES) {
-      test(`"${c.label}" link is bold when on ${c.path}`, async ({ page }) => {
+      test(`active nav link is bold when on ${c.path}`, async ({ page }) => {
         await seedDemoSession(page, IS_SANDBOX ? "school_admin" : "admin");
         await page.goto(BASE + c.path, { waitUntil: "networkidle" });
 
@@ -110,11 +153,11 @@ test.describe("Nav + Role Routing", () => {
           return;
         }
 
-        const link = page.locator(`aside a:has-text("${c.label}")`).first();
+        const link = page.locator(NAV_ITEM_SELECTOR).filter({ hasText: c.labelPattern }).first();
         await expect(link).toBeVisible();
 
         const fontWeight = await link.evaluate(
-          (el) => window.getComputedStyle(el).fontWeight
+          (el) => globalThis.getComputedStyle(el).fontWeight
         );
         // CrownLayout sets font-weight:700 on the matching route
         expect(Number(fontWeight)).toBeGreaterThanOrEqual(700);

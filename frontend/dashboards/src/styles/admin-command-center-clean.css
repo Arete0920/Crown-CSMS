@@ -171,11 +171,13 @@
   width: 100%;
   min-width: 0;
   height: 42px;
-  border: 1px solid #cfe0ff;
+  border: 1px solid #cfe0ff !important;
   border-radius: 15px;
   background: #ffffff !important;
-  color: var(--clean-text);
-  -webkit-text-fill-color: var(--clean-text);
+  background-color: #ffffff !important;
+  color: var(--clean-text) !important;
+  caret-color: var(--clean-text) !important;
+  -webkit-text-fill-color: var(--clean-text) !important;
   padding: 0 15px;
   outline: none;
   font-size: 14px;
@@ -183,7 +185,8 @@
 }
 
 .clean-search input::placeholder {
-  color: #64748b;
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
   opacity: 1;
 }
 
