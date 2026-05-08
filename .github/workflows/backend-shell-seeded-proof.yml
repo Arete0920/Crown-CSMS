@@ -28,15 +28,16 @@ jobs:
   seeded-proof:
     name: seeded-proof
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       DJANGO_SECRET_KEY: ci-test-secret-key
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
 

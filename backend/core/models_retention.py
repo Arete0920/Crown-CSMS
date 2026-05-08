@@ -43,3 +43,26 @@ class DataRetentionPolicy(models.Model):
     def __str__(self) -> str:
         hold = " [LEGAL HOLD]" if self.legal_hold else ""
         return f"{self.model_name} — {self.retention_days}d{hold}"
+
+
+class RetentionPurgeAudit(models.Model):
+    """
+    Immutable audit record for each retention policy evaluation within a purge run.
+    """
+
+    run_id = models.UUIDField(db_index=True)
+    model_name = models.CharField(max_length=100, db_index=True)
+    retention_days = models.IntegerField(default=0)
+    legal_hold = models.BooleanField(default=False)
+    deleted_count = models.IntegerField(default=0)
+    skipped_reason = models.CharField(max_length=255, blank=True, default="")
+    policy_snapshot = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Retention Purge Audit"
+        verbose_name_plural = "Retention Purge Audits"
+        ordering = ["-created_at", "model_name"]
+
+    def __str__(self) -> str:
+        return f"{self.model_name} run={self.run_id} deleted={self.deleted_count}"

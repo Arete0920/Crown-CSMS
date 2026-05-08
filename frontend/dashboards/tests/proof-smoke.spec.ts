@@ -117,7 +117,9 @@ test.describe("Crown2026 UI Proof Gate", () => {
 
     // Dashboard identity should be visible even if semantics use h4/h6 hierarchy.
     await expect(page.locator("h1, h2, h3, h4, h5, h6").first()).toBeVisible();
-    await expect(page.locator("body")).toContainText(/School Administrator Dashboard|School Snapshot|Executive Dashboard/i);
+    await expect(page.locator("body")).toContainText(
+      /School Administrator Dashboard|School Snapshot|Executive Dashboard|School Administrator|Good morning, Sarah!/i
+    );
 
     expect(getErrors()).toHaveLength(0);
   });

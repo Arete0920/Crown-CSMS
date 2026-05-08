@@ -8,11 +8,15 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+concurrency:
+  group: phase3-demo-proof-pack-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   demo-proof-static:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Static demo-surface proof gate
         shell: pwsh

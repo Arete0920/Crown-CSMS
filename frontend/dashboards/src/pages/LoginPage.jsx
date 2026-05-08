@@ -6,7 +6,7 @@ const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9
 const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
 const ENABLE_SANDBOX_STUDENT = import.meta.env.VITE_SANDBOX_ENABLE_STUDENT !== "0";
 const SANDBOX_DEFAULT_EMAIL = "admin@heritage.example.org";
-const SANDBOX_DEFAULT_PASS = import.meta.env.VITE_DEMO_PASS || "demo-password";
+const SANDBOX_DEFAULT_PASS = import.meta.env.VITE_DEMO_PASS || "CrownDemo!2026";
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.local";
 
 const SANDBOX_ROLES = [
@@ -50,7 +50,7 @@ const SANDBOX_SCHOOL_NAMES = [
 
 function normalizeSchoolId(name, index) {
   if (index === 0) return DEMO_SCHOOL;
-  return `sandbox-school-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`;
+  return `sandbox-school-${name.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-").replaceAll(/^-+|-+$/g, "")}`;
 }
 
 function fallbackSandboxSchools() {

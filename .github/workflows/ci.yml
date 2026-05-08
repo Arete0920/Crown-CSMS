@@ -8,15 +8,19 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ci-tests-and-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   verify-immutable-tags:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0  # Need full history to verify tags
           fetch-tags: true
-      
+
       - name: Verify release tags are immutable
         shell: bash
         env:
@@ -26,7 +30,7 @@ jobs:
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git fetch --tags --force origin
           echo "Verifying immutable release tags..."
-          
+
           # Validate registry format: all SHAs must be full 40-char hex
           echo "Validating registry format..."
           while IFS= read -r sha; do
@@ -38,10 +42,10 @@ jobs:
           done < <(jq -r '.[]' docs/RELEASE_TAGS.json)
           echo " Registry format valid (all full SHAs)"
           echo ""
-          
+
           # Read all expected tags from RELEASE_TAGS.json
           tags=$(jq -r 'keys[]' docs/RELEASE_TAGS.json)
-          
+
           failed=0
           for tag in $tags; do
             expected_sha=$(jq -r ".[\"$tag\"]" docs/RELEASE_TAGS.json)
@@ -53,11 +57,11 @@ jobs:
             fi
 
             actual_sha=$(git rev-parse "${tag}^{commit}")
-            
+
             echo "Checking $tag:"
             echo "  Expected: $expected_sha"
             echo "  Actual:   $actual_sha"
-            
+
             if [[ "$actual_sha" != "$expected_sha" ]]; then
               echo "   CRITICAL: Tag $tag has been moved!"
               echo "     Expected commit: $expected_sha"
@@ -69,20 +73,21 @@ jobs:
             fi
             echo ""
           done
-          
+
           if [[ $failed -eq 1 ]]; then
             echo " Tag immutability violated. Create new tags instead of moving existing ones."
             exit 1
           fi
-          
+
           echo " All release tags verified immutable"
 
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: verify-immutable-tags
-    
+
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Guard against forbidden frontend imports
         run: |
@@ -110,7 +115,7 @@ jobs:
           echo " No forbidden imports found"
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: '3.12'
 
@@ -148,19 +153,19 @@ jobs:
           python manage.py runserver 8000 &
           SERVER_PID=$!
           sleep 5
-          
+
           # Test health endpoint
-          response=$(curl -f http://localhost:8000/api/health/ || echo "FAILED")
-          
+          response=$(curl --max-time 30 -f http://localhost:8000/api/health/ || echo "FAILED")
+
           # Kill server
           kill $SERVER_PID || true
-          
+
           # Check response
           if [[ "$response" == "FAILED" ]]; then
             echo " Health endpoint failed"
             exit 1
           fi
-          
+
           echo " Health endpoint responding: $response"
         continue-on-error: false
 

@@ -1,5 +1,24 @@
+import { Link, useInRouterContext } from 'react-router-dom';
 import { useState } from 'react';
 import CrownCard from '../launch/CrownCard.jsx';
+
+function ActionControl({ href, className, children, onClick, type = 'button' }) {
+  const hasRouterContext = useInRouterContext();
+
+  if (href) {
+    return hasRouterContext ? (
+      <Link to={href} className={className}>{children}</Link>
+    ) : (
+      <a href={href} className={className}>{children}</a>
+    );
+  }
+
+  return (
+    <button type={type} className={className} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
 
 export default function CrownDashboardFlipCard({ module }) {
   const [flipped, setFlipped] = useState(false);
@@ -26,10 +45,12 @@ export default function CrownDashboardFlipCard({ module }) {
             ))}
           </ul>
           <div className="launch-inline-actions">
-            <button type="button" className="launch-button launch-button-primary">{module.primaryActionLabel}</button>
-            <button type="button" className="launch-button launch-button-secondary" onClick={() => setFlipped(true)}>
+            <ActionControl href={module.primaryActionHref} className="launch-button launch-button-primary">
+              {module.primaryActionLabel}
+            </ActionControl>
+            <ActionControl className="launch-button launch-button-secondary" onClick={() => setFlipped(true)}>
               View Detail
-            </button>
+            </ActionControl>
           </div>
         </div>
       ) : (
@@ -46,7 +67,9 @@ export default function CrownDashboardFlipCard({ module }) {
             ))}
           </ul>
           <div className="launch-flip-footer">
-            <button type="button" className="launch-button launch-button-primary">{module.backActionLabel || module.primaryActionLabel}</button>
+            <ActionControl href={module.backActionHref || module.primaryActionHref} className="launch-button launch-button-primary">
+              {module.backActionLabel || module.primaryActionLabel}
+            </ActionControl>
             <span>Updated {module.lastUpdated}</span>
           </div>
         </div>

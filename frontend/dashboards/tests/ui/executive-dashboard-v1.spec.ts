@@ -62,23 +62,17 @@ test("School Administrator dashboard renders key workflow and metrics sections",
 
   await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
 
-  // Executive dashboard uses static page headings plus API-fed KPI cards.
-  await expect(
-    page.getByRole("heading", { name: /executive dashboard/i })
-  ).toBeVisible();
-  await expect(page.getByRole("heading", { name: /administration/i })).toBeVisible();
+  // The current /admin route renders the launch preview experience.
+  await expect(page.getByRole("heading", { name: /good morning/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /dashboard/i }).first()).toBeVisible();
 
-  // Stable section anchors in the current admin layout.
-  await expect(page.locator("text=Leadership Action").first()).toBeVisible();
-  await expect(page.locator("text=Executive Insights").first()).toBeVisible();
+  // Stable anchors in the current admin launch layout.
+  await expect(page.getByRole("region", { name: /faith and community/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /execution queue/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /action required/i })).toBeVisible();
 
-  // Deterministic KPI labels from the current admin metric cards.
-  await expect(page.locator("text=Enrolled").first()).toBeVisible();
-  await expect(page.locator("text=Attendance Flags").first()).toBeVisible();
-  await expect(page.locator("text=Discipline").first()).toBeVisible();
-  await expect(page.locator("text=Messages Pending").first()).toBeVisible();
-
-  // Core cards in the current executive layout.
-  await expect(page.locator("text=Academic Risk").first()).toBeVisible();
-  await expect(page.locator("text=Enrollment Trend").first()).toBeVisible();
+  // Deterministic watch-card labels in the current layout.
+  await expect(page.getByRole("heading", { name: /42 open applications/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /96\.2% present today/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /18 students at risk/i })).toBeVisible();
 });

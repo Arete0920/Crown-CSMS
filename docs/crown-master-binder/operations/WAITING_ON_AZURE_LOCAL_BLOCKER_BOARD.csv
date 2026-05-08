@@ -1,0 +1,4 @@
+"Priority","Area","Issue","Owner","Evidence","RequiredFix","Status"
+"P0","Security","624 possible secret/token hits found.","Dev 5","audit-artifacts\waiting-on-azure-local-work\20260430_050946\22b_security_triage_report.md","TRIAGED: 0 real secrets. 574 false positives auto-classified, 50 manually reviewed. All safe. See 22a_secret_triage.csv + 22b_security_triage_report.md.","PASS"
+"P1","Product/UI","3798 placeholder/incomplete markers found.","Dev 4 / Dev 5","audit-artifacts\waiting-on-azure-local-work\20260430_050946\20_placeholder_incomplete_scan.csv","Remove, replace, or formally defer production-facing markers.","Open"
+"P1","UI Polish","60 UI risk hits found.","Dev 4","audit-artifacts\waiting-on-azure-local-work\20260430_050946\21_ui_risk_scan.csv","Fix dead links, dark/off-brand treatments, and hardcoded visual drift.","Open"

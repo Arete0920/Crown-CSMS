@@ -109,6 +109,13 @@ django_out.txt
 student360_test.txt
 tools/_step1a.py
 
+# Screenshot artifacts from design/browser capture sessions
+*.png
+*.jpg
+*.jpeg
+!frontend/dashboards/public/**
+!docs/**/*.png
+
 # PR body scratch files (created by CI agent during PR workflow)
 pr_*.txt
 # Temp agent/automation scratch files
@@ -175,6 +182,10 @@ _PHASE*/
 # Audit / evidence / generated artifacts
 AUDIT_PACK_*/
 audit-artifacts/
+!audit-artifacts/
+audit-artifacts/*
+!audit-artifacts/production-excellence-95-plus/
+!audit-artifacts/production-excellence-95-plus/**
 artifacts/
 docs/audit/evidence/
 docs/audit/reports/
@@ -204,3 +215,8 @@ local.secrets.ps1.example
 !.env.sample
 .DS_Store
 Thumbs.db
+
+workflow-inventory-report.json
+release-scorecard.json
+workflow-permissions-audit.json
+workflow-secrets-inventory.json

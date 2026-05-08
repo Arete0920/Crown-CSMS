@@ -16,16 +16,17 @@ jobs:
   ui-smoke:
     name: Proof Smoke (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend/dashboards
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"
@@ -44,10 +45,12 @@ jobs:
           VITE_DEV_BASE_URL: "http://localhost:4173"
           CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
           CROWN_DEMO_TOKEN: "playwright-demo-token"
+          VITE_SANDBOX_MODE: "1"
+          VITE_DEMO_MODE: "sandbox"
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-report-${{ github.run_id }}
           path: frontend/dashboards/playwright-report/

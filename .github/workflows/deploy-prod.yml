@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: crown-api-prod-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -24,6 +24,7 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     environment: production
     outputs:
       deploy_sha: ${{ steps.vars.outputs.deploy_sha }}
@@ -31,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
@@ -49,6 +50,24 @@ jobs:
         shell: pwsh
         run: |
           ./tools/require_tag_input.ps1 -Tag "${{ github.ref_name }}"
+
+      - name: "Guard: deployment freeze window"
+        shell: bash
+        env:
+          ALLOW_OFF_HOURS: ${{ secrets.ALLOW_OFF_HOURS_PROD_DEPLOY }}
+        run: |
+          set -euo pipefail
+          DOW=$(date -u +%u)
+          HOUR=$(date -u +%H)
+          if [ "$ALLOW_OFF_HOURS" = "true" ]; then
+            echo "Freeze guard override enabled via ALLOW_OFF_HOURS_PROD_DEPLOY=true"
+            exit 0
+          fi
+          if [ "$DOW" -ge 6 ] || [ "$HOUR" -lt 6 ] || [ "$HOUR" -ge 22 ]; then
+            echo "ERROR: production deploy blocked by freeze window (weekends or 22:00-05:59 UTC)."
+            echo "Set ALLOW_OFF_HOURS_PROD_DEPLOY=true for approved emergency override."
+            exit 1
+          fi
 
       - name: "Guard: Azure auth secrets present"
         id: auth_guard
@@ -90,13 +109,13 @@ jobs:
 
       - name: Azure Login (Service Principal JSON)
         if: steps.auth_guard.outputs.login_mode == 'sp'
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Azure Login (OIDC)
         if: steps.auth_guard.outputs.login_mode == 'oidc'
-        uses: azure/login@v2
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -127,7 +146,7 @@ jobs:
           echo "Deploy contract satisfied: TAG=$TAG SHA=${SHA:0:7}"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to Azure Container Registry
         run: |
@@ -169,7 +188,7 @@ jobs:
           echo "OK: Generated build_info.py with SHA: ${{ steps.vars.outputs.deploy_sha_short }}"
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
         with:
           context: .
           push: true
@@ -184,7 +203,7 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
       - name: Run security scan (Trivy)
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
           format: 'sarif'
@@ -201,14 +220,14 @@ jobs:
           fi
 
       - name: Upload Trivy scan results (SARIF)
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@0daab03d71ff584ef619d027a3fd9146679c5d84 # v3
         if: always() && hashFiles('trivy-results.sarif') != ''
-        continue-on-error: true
+        continue-on-error: false
         with:
           sarif_file: 'trivy-results.sarif'
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: '3.12'
 
@@ -247,8 +266,8 @@ jobs:
 
       - name: Upload coverage
         if: always() && hashFiles('backend/coverage.xml') != ''
-        continue-on-error: true
-        uses: codecov/codecov-action@v3
+        continue-on-error: false
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3
         with:
           files: ./backend/coverage.xml
           flags: unittests
@@ -264,7 +283,7 @@ jobs:
           fi
 
       - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v2
+        uses: azure/webapps-deploy@b733af8291ed8f84a5ac5b92f571c2e149f25047 # v2
         with:
           app-name: ${{ env.WEBAPP_NAME }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
@@ -290,15 +309,10 @@ jobs:
       - name: Appsettings allowlist gate
         shell: pwsh
         run: |
-          $allowed = @(
-            "BUILD_SHA",
-            "PROD_DEPLOY_TAG",
-            "APP_VERSION",
-            "RUN_MIGRATIONS",
-            "DEPLOY_RUN_ID",
-            "DEPLOY_WORKFLOW"
-          )
-          ./tools/appsettings_allowlist_gate.ps1 -AppSettingsJsonPath "appsettings.prod.json" -AllowedKeys $allowed
+          ./tools/appsettings_allowlist_gate.ps1 `
+            -AppSettingsJsonPath "appsettings.prod.json" `
+            -AllowedKeysFile "tools/appsettings_allowlist.keys.json" `
+            -AllowedKeySet "prod"
 
       - name: Apply appsettings (allowlisted only)
         shell: pwsh
@@ -329,7 +343,7 @@ jobs:
         run: |
           sleep 30
           for i in {1..30}; do
-            response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
+            response=$(curl --max-time 30 -s -o /dev/null -w "%{http_code}" https://${{ env.WEBAPP_NAME }}.azurewebsites.net/api/health/)
             if [ "$response" == "200" ]; then
               echo "OK: Health check passed"
               exit 0
@@ -475,7 +489,7 @@ jobs:
 
           RESPONSE=""
           for i in {1..30}; do
-            if RESPONSE=$(curl -fsSL "$HEALTH_URL"); then
+            if RESPONSE=$(curl --max-time 30 -fsSL "$HEALTH_URL"); then
               break
             fi
             echo "Waiting for container restart..."
@@ -544,7 +558,7 @@ jobs:
 
           RESPONSE=""
           for i in {1..30}; do
-            if RESPONSE=$(curl -fsS "$HEALTH_URL"); then
+            if RESPONSE=$(curl --max-time 30 -fsS "$HEALTH_URL"); then
               break
             fi
             echo "Waiting for production health..."
@@ -602,6 +616,7 @@ jobs:
   notification:
     needs: build-and-deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: always()
 
     env:
@@ -609,7 +624,7 @@ jobs:
 
     steps:
       - name: Send Slack notification
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
         if: ${{ env.SLACK_WEBHOOK_URL != '' }}
         with:
           payload: |

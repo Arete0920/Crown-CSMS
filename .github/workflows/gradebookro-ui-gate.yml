@@ -20,11 +20,15 @@ on:
       - "tools/verify_gradebookro_ui_gate.ps1"
       - ".github/workflows/gradebookro-ui-gate.yml"
 
+concurrency:
+  group: gradebookro-ui-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   gate:
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Run GradebookRO UI Gate (PowerShell)
         shell: pwsh
         run: |

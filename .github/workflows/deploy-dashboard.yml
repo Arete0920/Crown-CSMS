@@ -1,7 +1,6 @@
 name: Deploy Dashboard (Production)
 permissions:
   contents: read
-  id-token: write
 
 # Phase 8 Frontend proof leg.
 #
@@ -34,10 +33,11 @@ jobs:
   build-and-deploy:
     name: "Build + deploy dashboard  ${{ github.ref_name }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
@@ -63,7 +63,7 @@ jobs:
           echo " Deploy contract: TAG=$TAG SHA=${SHA:0:7}"
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"
@@ -88,8 +88,9 @@ jobs:
       - name: Build
         working-directory: frontend/dashboards
         env:
-          VITE_BUILD_SHA: ${{ env.DEPLOY_SHA }}
-          VITE_DEPLOY_TAG: ${{ env.DEPLOY_TAG }}
+          VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_DEPLOY_TAG: ${{ github.ref_name }}
+          VITE_LAUNCH_UI_TAKEOVER: '1'
         run: npm run build
 
       - name: Verify build.json in dist
@@ -116,8 +117,21 @@ jobs:
           print(f"OK build_sha={d['build_sha'][:7]}  deploy_tag={d['deploy_tag']}")
           PY
 
+      - name: Validate SWA deployment token secret
+        shell: bash
+        env:
+          SWA_TOKEN: ${{ secrets.AZURE_SWA_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SWA_TOKEN:-}" ]]; then
+            echo "ERROR: required secret AZURE_SWA_TOKEN is missing or empty"
+            echo "Fix: GitHub repo Settings > Secrets and variables > Actions > set AZURE_SWA_TOKEN"
+            exit 1
+          fi
+          echo "SWA token secret is present"
+
       - name: Deploy to Azure Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9 # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_SWA_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}

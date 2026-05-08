@@ -42,19 +42,7 @@ jobs:
           fi
 
           STATUS=$(
-            python3 - <<'PY'
-            import json
-            try:
-              with open('/tmp/health_response.json','r',encoding='utf-8') as f:
-                d=json.load(f)
-            except Exception:
-              print('unhealthy')
-              raise SystemExit(0)
-            if d.get('status') == 'healthy' or d.get('ok') is True:
-              print('healthy')
-            else:
-              print(d.get('status','unhealthy'))
-            PY
+            python3 -c "import json; d=json.load(open('/tmp/health_response.json','r',encoding='utf-8')); print('healthy' if (d.get('status') == 'healthy' or d.get('ok') is True) else d.get('status','unhealthy'))" 2>/dev/null || echo "unhealthy"
           )
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
@@ -63,12 +51,40 @@ jobs:
 
       - name: Report unhealthy status
         if: steps.health.outputs.status != 'healthy' && steps.health.outputs.status != 'misconfigured'
-        uses: actions/github-script@v7
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const status = '${{ steps.health.outputs.status }}';
             const httpCode = '${{ steps.health.outputs.http_code }}';
             const now = new Date().toISOString();
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const titlePrefix = '[ALERT] Production health check failed';
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'production-alert',
+              per_page: 100,
+            });
+
+            const existing = openIssues.find((candidate) => candidate.title.startsWith(titlePrefix));
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: [
+                  'Production health alert repeated.',
+                  `Detected: ${now}`,
+                  `HTTP Status: ${httpCode}`,
+                  `Health status: ${status}`,
+                  `Workflow run: ${runUrl}`,
+                ].join('\n'),
+              });
+              return;
+            }
 
             const issueBody = [
               '## Production Health Alert',
@@ -76,6 +92,7 @@ jobs:
               '**Detected:** ' + now,
               '**HTTP Status:** ' + httpCode,
               '**Health status:** ' + status,
+              '**Workflow run:** ' + runUrl,
               '',
               '### Required actions',
               '1. Check Sentry for recent errors.',
@@ -100,7 +117,7 @@ jobs:
 
       - name: Close recovered alert
         if: steps.health.outputs.status == 'healthy'
-        uses: actions/github-script@v7.1.0
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
             const titlePrefix = '[ALERT] Production health check failed';

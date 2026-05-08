@@ -1,2 +1,21 @@
-# Shell scripts must use LF in Linux containers
-*.sh text eol=lf
+# Normalize all text files to LF in the repository.
+# Checked-out files will use LF on all platforms.
+* text=auto eol=lf
+
+# Windows-only scripts that require CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary — never mangle
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.zip binary
+*.sqlite3 binary
