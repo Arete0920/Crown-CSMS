@@ -1,0 +1,17 @@
+﻿{
+    "health_ok":  true,
+    "health_status":  "ok",
+    "health_build_sha":  "500ec09461d583eaf309a852df16d510fb334c81",
+    "health_deploy_run_id":  "25528614282",
+    "health_deploy_tag":  "prod-deploy-20260507-orderfix-195608",
+    "health_version":  "crown-0.4.0-rc1",
+    "health_db":  "ok",
+    "integrity_ok":  true,
+    "integrity_build_sha":  "500ec09461d583eaf309a852df16d510fb334c81",
+    "integrity_deploy_tag":  "prod-deploy-20260507-orderfix-195608",
+    "integrity_version":  "crown-0.4.0-rc1",
+    "expected_run_id":  "25528614282",
+    "expected_head_sha":  "500ec09461d583eaf309a852df16d510fb334c81",
+    "build_sha_matches_run":  true,
+    "deploy_run_matches":  true
+}
