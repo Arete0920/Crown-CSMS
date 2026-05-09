@@ -1,0 +1,31 @@
+# Crown Release Authority Sign-Off
+
+Date: 2026-05-09
+Release Authority: TC (@tcmegahan)
+Status: NO-GO - Non-runtime gates remain incomplete.
+
+## Verified Runtime Gates
+
+| Gate | Status |
+|---|---|
+| Production deploy completed successfully | PASS |
+| Latest successful deploy run | PASS - 25528614282 |
+| Runtime health endpoint | PASS |
+| Runtime integrity endpoint | PASS |
+| Runtime build_sha matches deploy SHA | PASS - 500ec09461d583eaf309a852df16d510fb334c81 |
+| Runtime deploy_run_id matches GitHub Actions run | PASS - 25528614282 |
+
+## Remaining Gates
+
+| Gate | Status |
+|---|---|
+| Merge lineage integrity reconciled | NOT VERIFIED |
+| Full authoritative pytest pass | NOT VERIFIED |
+| Branch protection/ruleset proof verified | NOT VERIFIED |
+| Compliance/customer readiness packet complete | NOT VERIFIED |
+| Controlled pilot entry proof approved | NOT VERIFIED |
+| Founder/Product Owner final GO signoff | NOT RECORDED |
+
+## Decision
+
+Release remains NO-GO until every remaining gate is closed with evidence and final TC signoff is recorded.
