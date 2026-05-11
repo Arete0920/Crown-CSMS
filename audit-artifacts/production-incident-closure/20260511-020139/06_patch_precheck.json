@@ -1,0 +1,8 @@
+﻿{
+    "deploy_workflow_file":  ".github/workflows/deploy-prod.yml",
+    "health_endpoint_present":  true,
+    "incident_labels_present":  false,
+    "branch":  "ops/close-prod-deploy-incidents-20260511-020139",
+    "base_sha":  "c8b6a24231ed2b6ad340a19c5c9b0f86649660bd",
+    "created_at":  "2026-05-11T02:01:44"
+}
