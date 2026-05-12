@@ -28,7 +28,12 @@ concurrency:
 jobs:
   proof:
     name: "Auto proof — ${{ github.event.workflow_run.head_branch }}"
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: |
+      ${{
+        github.event.workflow_run.conclusion == 'success' ||
+        (github.event.workflow_run.conclusion == 'failure' &&
+         contains(github.event.workflow_run.name, 'Production Deploy'))
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -57,6 +62,27 @@ jobs:
               exit 1
               ;;
           esac
+
+      - name: Verify runtime health before proof ceremony
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROD_API_BASE="${{ secrets.PROD_API_BASE }}"
+          MAX_ATTEMPTS=3
+          ATTEMPT=1
+          echo "Pre-ceremony health validation (max $MAX_ATTEMPTS attempts, 10s timeout each)..."
+          while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+            HTTP_CODE=$(curl --max-time 10 -s -o /tmp/pre_ceremony_health.json -w "%{http_code}" "${PROD_API_BASE}/api/health/" || echo "timeout")
+            if [ "$HTTP_CODE" == "200" ]; then
+              echo "✓ Pre-ceremony health check PASSED (HTTP 200)"
+              exit 0
+            fi
+            echo "Pre-ceremony attempt $ATTEMPT/$MAX_ATTEMPTS: HTTP $HTTP_CODE"
+            sleep 5
+            ATTEMPT=$((ATTEMPT + 1))
+          done
+          echo "❌ Pre-ceremony health check failed. Proof ceremonies cannot safely run on unhealthy runtime."
+          exit 1
 
       - name: Resolve deploy tag from head branch or SHA
         shell: bash

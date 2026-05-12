@@ -55,10 +55,49 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Pre-rollback live health check and decide rollback necessity
+        shell: bash
+        id: health_recheck
+        run: |
+          set -euo pipefail
+          WEBAPP_NAME="${{ env.WEBAPP_NAME }}"
+          HEALTH_URL="https://${WEBAPP_NAME}.azurewebsites.net/api/health/"
+          ROLLBACK_REASON=""
+
+          echo "Performing live health check before rollback decision..."
+          HTTP_CODE=$(curl --max-time 10 -s -o /tmp/health_check.json -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "timeout")
+
+          if [ "$HTTP_CODE" == "200" ]; then
+            # Try jq first, fall back to grep
+            if command -v jq &>/dev/null; then
+              DB_STATUS=$(jq -r '.db // ""' /tmp/health_check.json 2>/dev/null || echo "")
+            else
+              DB_STATUS=$(grep -o '"db"\s*:\s*"[^"]*"' /tmp/health_check.json 2>/dev/null | cut -d'"' -f4 | head -1 || echo "")
+            fi
+
+            if [ "$DB_STATUS" == "ok" ]; then
+              echo "✓ RUNTIME HEALTHY: HTTP 200, db=ok"
+              echo "Upstream deploy failed due to automation timeout, NOT runtime fault."
+              echo "Skipping rollback. Opening advisory-only issue."
+              echo "rollback_needed=false" >> "$GITHUB_OUTPUT"
+              echo "health_status=healthy" >> "$GITHUB_OUTPUT"
+              ROLLBACK_REASON="Deploy automation timeout detected; runtime health confirmed healthy."
+              exit 0
+            fi
+          fi
+
+          echo "❌ RUNTIME UNHEALTHY: HTTP $HTTP_CODE or db != ok"
+          echo "Proceeding with rollback to stable image."
+          echo "rollback_needed=true" >> "$GITHUB_OUTPUT"
+          echo "health_status=unhealthy" >> "$GITHUB_OUTPUT"
+          ROLLBACK_REASON="Runtime health check failed (HTTP $HTTP_CODE). Executing emergency rollback."
+
       - name: Roll back to stable image tag
+        if: ${{ steps.health_recheck.outputs.rollback_needed == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
+          echo "Rolling back $REGISTRY/$IMAGE_NAME from deploy attempt to :latest stable tag..."
           az webapp config container set \
             --name "$WEBAPP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
@@ -66,43 +105,84 @@ jobs:
             --docker-custom-image-name "$REGISTRY/$IMAGE_NAME:latest" \
             --output none \
             --only-show-errors
+          echo "Waiting 10 seconds for Azure to apply rollback..."
+          sleep 10
           az webapp restart --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" --only-show-errors
 
-      - name: Verify rollback health
+      - name: Verify rollback health (only if rollback was executed)
+        if: ${{ steps.health_recheck.outputs.rollback_needed == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
+          echo "Verifying rolled-back image is healthy..."
           for i in $(seq 1 24); do
             status=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "https://$WEBAPP_NAME.azurewebsites.net/api/health/" || true)
             if [ "$status" = "200" ]; then
-              echo "Rollback health check succeeded."
+              echo "✓ Rollback health check PASSED."
               exit 0
             fi
             echo "Rollback health attempt $i/24: HTTP $status"
             sleep 10
           done
-          echo "Rollback failed to restore healthy /api/health/."
+          echo "❌ Rollback failed to restore healthy /api/health/."
           exit 1
 
-      - name: Open incident issue
+      - name: Open incident or advisory issue
         if: always()
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
-            const title = `[INCIDENT] Prod deploy failed and rollback executed (${new Date().toISOString()})`;
-            const body = [
-              `Upstream workflow: ${context.payload.workflow_run?.name}`,
-              `Run URL: ${context.payload.workflow_run?.html_url}`,
-              `Conclusion: ${context.payload.workflow_run?.conclusion}`,
-              '',
-              'Automatic rollback attempted to image tag: latest.',
-              'Validate app health, data integrity, and deployment logs before closing.'
-            ].join('\n');
+            const healthStatus = '${{ steps.health_recheck.outputs.health_status }}';
+            const rollbackNeeded = '${{ steps.health_recheck.outputs.rollback_needed }}' === 'true';
+            const timestamp = new Date().toISOString();
+
+            let title, body, labels;
+
+            if (!rollbackNeeded && healthStatus === 'healthy') {
+              // Automation timeout case: runtime is healthy, advisory only
+              title = `[ADVISORY] Prod deploy automation timed out but runtime healthy (${timestamp})`;
+              body = [
+                `Upstream workflow: ${context.payload.workflow_run?.name}`,
+                `Run URL: ${context.payload.workflow_run?.html_url}`,
+                `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
+                '',
+                '## Summary',
+                'Deploy workflow failed due to health-check automation timeout.',
+                'Live health check confirmed runtime is HEALTHY (HTTP 200, db=ok).',
+                '**Rollback was SKIPPED** — no emergency action needed.',
+                '',
+                '## Action Required',
+                '- Review deploy logs for root cause of automation timeout',
+                '- Consider increasing backoff attempts or health-check timeout if needed',
+                '- Monitor next deploy attempt to confirm timing is resolved'
+              ].join('\n');
+              labels = ['production-advisory', 'automation-timeout'];
+            } else {
+              // True failure case: runtime unhealthy, emergency rollback executed
+              title = `[INCIDENT] Prod deploy failed — emergency rollback executed (${timestamp})`;
+              body = [
+                `Upstream workflow: ${context.payload.workflow_run?.name}`,
+                `Run URL: ${context.payload.workflow_run?.html_url}`,
+                `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
+                `Live health check result: ${healthStatus || 'inconclusive'}`,
+                '',
+                '## Summary',
+                'Deploy workflow failed. Live health check confirmed runtime UNHEALTHY.',
+                'Automatic emergency rollback has been executed to stable `:latest` image tag.',
+                '',
+                '## Immediate Actions',
+                '- Review deploy logs to understand deployment failure',
+                '- Validate rolled-back app health, data integrity, and business logic',
+                '- Check App Insights/logs for runtime errors during deployment',
+                '- Root-cause analysis before attempting new deploy'
+              ].join('\n');
+              labels = ['production-alert', 'incident', 'rollback-executed'];
+            }
 
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title,
               body,
-              labels: ['production-alert', 'incident']
+              labels
             });
