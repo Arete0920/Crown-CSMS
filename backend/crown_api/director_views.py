@@ -1246,7 +1246,7 @@ from rest_framework import status
 logger = logging.getLogger(__name__)
 
 def _crown_env() -> str:
-    crown_env = os.environ.get("CROWN_ENV") or getattr(settings, "CROWN_ENV", None)
+    crown_env = getattr(settings, "CROWN_ENV", None) or os.environ.get("CROWN_ENV")
     if crown_env:
         return str(crown_env).strip().lower()
     return "dev" if getattr(settings, "DEBUG", False) else "prod"
