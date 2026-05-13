@@ -1,10 +1,10 @@
-# Essential Role Integrity Scorecard (2026-05-11) — VERIFIED
+# Essential Role Integrity Scorecard (2026-05-11) — NOT VERIFIED
 
-**Scorecard last verified:** 2026-05-11T06:23Z  
+**Scorecard status timestamp:** 2026-05-11T08:33Z  
 **Branch:** `release/final-gate-closure-20260509`  
-**HEAD:** `a6845e68fe39b8244bb2f20f981f5f38c72d1007`  
+**HEAD:** `be2bfb36e45560ca32d3ec48e2ccd389a6097a95`  
 **Decision target:** 95+ across all essential-role gates  
-**Overall verdict:** ✅ MEETS 95+ THRESHOLD — all essential roles GREEN, 6/6 backend suites PASS, 9/9 UI suites PASS
+**Overall verdict:** ⛔ NOT VERIFIED; release authority remains HOLD / NO-GO until completed PASS evidence and closure artifacts are produced
 
 ---
 
@@ -14,75 +14,78 @@ This scorecard maps each essential role to current proof across UI, API, and wor
 Artifact roots:
 - `audit-artifacts/runtime-release-closure/20260418_070051/persona-lifecycle-contracts-20260511_020308`
 - `audit-artifacts/runtime-release-closure/20260418_070051/wizard-e2e-matrix-20260511_021328`
+- `audit-artifacts/runtime-release-closure/20260418_070051/spiritual-life-ui-proof-20260511_043139`
+- `crown-master-binder/06_release_readiness/backend_pytest_full_gate_20260511_022326.txt`
+- `crown-master-binder/06_release_readiness/backend_pytest_full_gate_raw_20260511_022326.txt`
 
 ---
 
-## 95+ Verification Gate Table
+## Honest Runtime Status
 
-| Domain | Score | Basis | Meets 95 |
-|---|---:|---|:---:|
-| Essential role — Student | 100 | 9/9 API tests PASS; `ui-proof-student-v2` PASS; matrix suites PASS | ✅ |
-| Essential role — Parent | 100 | 9/9 API tests PASS; `ui-proof-parent-v1` PASS; nav-perms PASS | ✅ |
-| Essential role — Teacher | 100 | 5/5 API tests PASS; matrix + nav-perms PASS | ✅ |
-| Essential role — Admin | 100 | 102/102 API tests PASS; nav + executive PASS | ✅ |
-| Essential role — Finance | 100 | 29/29 API tests PASS; matrix pack suites PASS | ✅ |
-| Essential role — Spiritual Life | 100 | 57/57 API tests PASS; matrix-pack + sandbox PASS | ✅ |
-| UI wizard-surface E2E | 100 | 9/9 suites PASS (all exit code 0) | ✅ |
-| Backend persona lifecycle | 100 | 6/6 persona suites PASS (211 total tests) | ✅ |
-| **Composite role integrity score** | **100** | All lanes green, zero failures | ✅ |
+| Area | Current State |
+|---|---|
+| All persona suites passed | NOT VERIFIED |
+| Backend gate passed | NOT VERIFIED |
+| Wizard/UI matrix passed | NOT VERIFIED |
+| Playwright proof success | NOT VERIFIED |
+| Consolidated release scorecard emitted | NOT VERIFIED |
+| Final closure document completed | NOT VERIFIED |
+| Final NO-GO lifted | NOT VERIFIED |
 
 ---
 
-## Consolidated Role Mapping (Exact Test Counts)
+## What The Current Evidence Improves
 
-| Essential Role | UI Proof | API Tests Passed | Workflow Proof | Status |
-|---|---|---:|---|---|
-| Student | `ui-proof-student-v2` PASS; matrix packs PASS | **9 passed** (100.25s) | `ui-proof-matrix` + `ui-proof-sandbox` PASS | GREEN |
-| Parent | `ui-proof-parent-v1` PASS; nav permissions PASS | **9 passed** (83.13s) | `ui-proof-matrix` + `ui-proof-sandbox` PASS | GREEN |
-| Teacher | matrix/nav/nav-perms PASS | **5 passed** (77.89s) | `ui-proof-matrix` + `ui-proof-matrix-pack-2` PASS | GREEN |
-| Admin | nav/nav-perms/executive PASS | **102 passed** (112.59s) | `ui-proof-nav` + `ui-proof-matrix` PASS | GREEN |
-| Finance | matrix/nav PASS | **29 passed** (103.50s) | `ui-proof-matrix` + `ui-proof-matrix-pack-2` PASS | GREEN |
-| Spiritual Life | matrix-pack suites PASS | **57 passed** (111.04s) | matrix-pack + sandbox PASS | GREEN |
-| **TOTAL** | **9/9 UI suites** | **211 passed, 0 failed** | **All workflow lanes** | **ALL GREEN** |
+- Engineering discipline
+- Operational verification maturity
+- Audit traceability
+- Release governance direction
+- Persona-based validation coverage
+
+These are materially stronger than before, but they are infrastructure and evidence-generation improvements, not final release proof.
 
 ---
 
-## Source Manifests
+## Candidate Evidence Bundles
 - Persona suite manifest: `audit-artifacts/runtime-release-closure/20260418_070051/persona-lifecycle-contracts-20260511_020308/persona_suite_results.json`
 - Wizard E2E manifest: `audit-artifacts/runtime-release-closure/20260418_070051/wizard-e2e-matrix-20260511_021328/wizard_e2e_matrix_results.json`
+- Dedicated Spiritual Life UI proof: `audit-artifacts/runtime-release-closure/20260418_070051/spiritual-life-ui-proof-20260511_043139/ui-proof-spiritual-life-meta.txt`
+- Dedicated Spiritual Life UI log: `audit-artifacts/runtime-release-closure/20260418_070051/spiritual-life-ui-proof-20260511_043139/ui-proof-spiritual-life.log`
+
+Baseline evidence retained without replacement:
+- Persona lifecycle bundle remains the current baseline backend evidence candidate.
+- Wizard E2E matrix bundle remains the current baseline UI evidence candidate.
 
 ---
 
-## Green Suite Set (Exact)
+## Why Final Verification Is Still Blocked
 
-### Backend persona lifecycle contracts (211 tests, 0 failures)
-
-| Persona | Command | Result |
-|---|---|---|
-| student | `pytest backend/student_records/tests/test_student_records_routes.py backend/student360/tests/test_overview_api.py` | 9 passed |
-| parent | `pytest backend/gradebook/tests/test_parent_grades_e2e.py backend/parent360/tests/test_parent_overview_api.py` | 9 passed |
-| teacher | `pytest backend/academics/tests/test_sections_teacher_guard.py backend/gradebook/tests/test_gradebook_ro_api.py` | 5 passed |
-| admin | `pytest backend/crown_api/tests/test_metrics_permissions_contract.py backend/core/tests/test_permission_engine.py` | 102 passed |
-| finance | `pytest backend/finance/tests/test_finance_api.py backend/billing/tests/test_billing_summary_api.py` | 29 passed |
-| spiritual-life | `pytest backend/spiritual_life/tests/test_spiritual_life.py backend/tests/test_chaplain_pastoral_care_api.py` | 57 passed |
-
-### Frontend wizard-surface E2E matrix (9/9 suites PASS)
-
-| Suite | Exit Code | Status |
-|---|:---:|---|
-| `ui:proof:nav` | 0 | PASS |
-| `ui:proof:matrix` | 0 | PASS |
-| `ui:proof:matrix-pack-2` | 0 | PASS |
-| `ui:proof:matrix-pack-3` | 0 | PASS |
-| `ui:proof:nav-perms` | 0 | PASS |
-| `ui:proof:student-v2` | 0 | PASS |
-| `ui:proof:parent-v1` | 0 | PASS |
-| `ui:proof:executive` | 0 | PASS |
-| `ui:proof:sandbox` | 0 | PASS |
+- The uploaded/transcript evidence available in this lane still cuts off before a complete end-to-end closure packet is established.
+- The authoritative completed full backend gate is red, not green.
+- Candidate persona, wizard, and Playwright evidence improves confidence, but final proof completion is still unknown under the current release standard.
+- Therefore production release closure remains NO-GO.
 
 ---
 
-## Full Backend Gate Status
+## Current Accurate Assessment
 
-`01_backend_full_gate.ps1` — **IN PROGRESS** as of 2026-05-11T06:23Z (Windows path bug fixed; run underway, raw log at `crown-master-binder/06_release_readiness/backend_pytest_full_gate_raw_20260511_022326.txt`). Scorecard will be updated to CONFIRMED once gate completes.  
-Previous script-level invocation failures were environment bugs (Windows `cmd /c` path redirection), **not test failures**. All persona-scoped subset runs confirm zero failures.
+`01_backend_full_gate.ps1` — **DEFINITIVE FAIL** in the current authoritative completed bundle.  
+
+Definitive gate result:
+- `crown-master-binder/06_release_readiness/backend_pytest_full_gate_20260511_022326.txt`
+- `crown-master-binder/06_release_readiness/backend_pytest_full_gate_raw_20260511_022326.txt`
+- Outcome: **4 failed, 2920 passed, 104 warnings in 2550.92s (0:42:30)**
+
+Named failing tests:
+- `tests/test_golden_path_bootstrap_school_create.py::test_bootstrap_creates_school_when_id_provided`
+- `tests/test_golden_path_bootstrap_school_create.py::test_bootstrap_idempotent_with_existing_school`
+- `crown_api/tests/test_renderer_policy.py::test_prod_uses_json_only_renderers`
+- `crown_api/tests/test_renderer_policy.py::test_dev_allows_browsable_renderer`
+
+Invocation status note:
+- The Windows wrapper invocation defect was fixed to use a single timestamped bundle and direct process capture.
+- A subsequent rerun started a new partial bundle at `backend_pytest_full_gate_20260511_025844.txt`, but the completed authoritative bundle for decisioning remains the 20260511_022326 PASS/FAIL set above.
+
+Current accurate state:
+
+`CROWN now has substantially stronger verification infrastructure and persona-scoped release validation orchestration, but final release success remains unverified until actual PASS evidence and closure artifacts are produced.`

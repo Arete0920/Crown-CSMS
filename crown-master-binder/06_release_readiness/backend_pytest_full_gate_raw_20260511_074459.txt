@@ -1,0 +1,81 @@
+
+=== PYTEST DJANGO DIAGNOSTICS (EARLY) ===
+DJANGO_SETTINGS_MODULE env: crown_api.settings
+settings module: crown_api.settings
+INSTALLED_APPS has core?: True
+MIGRATION_MODULES: {}
+MIGRATION_MODULES['core']: None
+MIGRATION_MODULES['finance']: None
+core.__file__: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\core\__init__.py
+core.migrations.__file__: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\core\migrations\__init__.py
+=== END DIAGNOSTICS ===
+
+.......................................ssss............................. [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+......................................................ss................ [ 14%]
+............................ss.......................................... [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+.....................................F.................................. [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 29%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 64%]
+........................................................................ [ 66%]
+..
+================================== FAILURES ===================================
+_______ DirectorActionsAuthRequiredTests.test_force_seed_user_security ________
+crown_api\tests\test_director_actions_auth_required.py:104: in test_force_seed_user_security
+    self.assertEqual(resp.status_code, 403)
+E   AssertionError: 404 != 403
+---------------------------- Captured stderr call -----------------------------
+[11/May/2026 07:51:50,644] WARNING django.request: Not Found: /api/director/force_seed_user/
+[11/May/2026 07:51:50,646] WARNING django.request: Not Found: /api/director/force_seed_user/
+============================== warnings summary ===============================
+backend/crown_api/exports/tests/test_exports_jwt_auth.py: 1 warning
+backend/onboarding/tests/test_views.py: 23 warnings
+backend/reenrollment/tests/test_views.py: 27 warnings
+  C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\jwt\api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 13 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+backend/crown_api/exports/tests/test_exports_jwt_auth.py: 1 warning
+backend/onboarding/tests/test_views.py: 23 warnings
+backend/reenrollment/tests/test_views.py: 27 warnings
+  C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\jwt\api_jwt.py:365: InsecureKeyLengthWarning: The HMAC key is 13 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    decoded = self.decode_complete(
+
+backend/facops/tests/test_facops.py::TestDrills::test_list
+backend/facops/tests/test_facops.py::TestSecuritySummary::test_returns_counts
+  C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Lib\site-packages\django\db\models\fields\__init__.py:1612: RuntimeWarning: DateTimeField Drill.planned_for received a naive datetime (2026-05-11 00:00:00) while time zone support is active.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] academics\tests\test_attendance_hardening_v2.py:41: No Section in DB — run seed first
+SKIPPED [1] academics\tests\test_attendance_hardening_v2.py:89: No Section in DB
+SKIPPED [1] academics\tests\test_lane3_attendance_smoke.py:21: No academics.models.Section in DB — run seed first
+SKIPPED [1] academics\tests\test_lane3_attendance_smoke.py:56: No Section in DB
+SKIPPED [1] billing\tests\test_lane2_billing_smoke.py:25: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+SKIPPED [1] billing\tests\test_lane2_payment_endpoints.py:13: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+SKIPPED [1] classroom\tests\test_classroom_api.py:12: No school in database
+SKIPPED [1] classroom\tests\test_classroom_api.py:30: No school in database
+FAILED crown_api\tests\test_director_actions_auth_required.py::DirectorActionsAuthRequiredTests::test_force_seed_user_security
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\backend\tests\test_crown_compass_tenant.py:82: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+1 failed, 1937 passed, 8 skipped, 104 warnings in 41042.33s (11:24:02)

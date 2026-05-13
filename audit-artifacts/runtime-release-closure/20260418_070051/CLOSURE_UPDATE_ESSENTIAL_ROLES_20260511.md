@@ -1,11 +1,15 @@
 # Closure Update: Essential Roles and Gate Truth (2026-05-11)
 
 ## Executive Delta
-- Essential role lifecycle contract runs: GREEN (6/6 personas PASS).
-- Wizard-surface E2E matrix: GREEN (9/9 suites PASS).
-- Authoritative backend gate wrapper (`01_backend_full_gate.ps1`): NON-GREEN due invocation defect (`The filename, directory name, or volume label syntax is incorrect.`).
+- Runtime orchestration maturity: STRONG.
+- Evidence generation maturity: STRONG.
+- Persona coverage architecture: STRONG.
+- Verification automation: STRONG.
+- Final proof completion: UNKNOWN.
+- Production release closure: NO-GO.
+- Full release verification completion: NOT VERIFIED.
 
-## Exact Green Evidence Added
+## Evidence Added
 
 Persona backend bundle:
 - `audit-artifacts/runtime-release-closure/20260418_070051/persona-lifecycle-contracts-20260511_020308/persona_suite_results.json`
@@ -28,24 +32,34 @@ Wizard/UI matrix bundle:
 - `audit-artifacts/runtime-release-closure/20260418_070051/wizard-e2e-matrix-20260511_021328/ui-proof-executive.log`
 - `audit-artifacts/runtime-release-closure/20260418_070051/wizard-e2e-matrix-20260511_021328/ui-proof-sandbox.log`
 
-## Remaining Non-Green Lanes
+Dedicated Spiritual Life UI proof bundle:
+- `audit-artifacts/runtime-release-closure/20260418_070051/spiritual-life-ui-proof-20260511_043139/ui-proof-spiritual-life-meta.txt`
+- `audit-artifacts/runtime-release-closure/20260418_070051/spiritual-life-ui-proof-20260511_043139/ui-proof-spiritual-life.log`
 
-1. Authoritative backend full gate wrapper execution is currently failing at shell invocation level.
-- Evidence: `crown-master-binder/06_release_readiness/backend_pytest_full_gate_20260511_021743.txt`
-- Current terminal output from wrapper: `BACKEND_GATE=FAIL` with path/filename syntax error before raw pytest output capture.
+Authoritative backend full gate bundle (current decision bundle):
+- `crown-master-binder/06_release_readiness/backend_pytest_full_gate_20260511_022326.txt`
+- `crown-master-binder/06_release_readiness/backend_pytest_full_gate_raw_20260511_022326.txt`
 
-2. Dedicated single-role UI proof for Spiritual Life is not isolated as its own spec in this run.
-- Current coverage is via matrix packs and sandbox proof, which are PASS.
-- Status: evidence is positive, but isolated single-role granularity remains a follow-up hardening item.
+## What This Does Not Yet Prove
 
-3. Full backend `pytest -q --tb=short` manual rerun was started in a separate artifact directory, but no completed output/meta was captured in this session.
-- Directory: `audit-artifacts/runtime-release-closure/20260418_070051/authoritative-backend-gate-20260511_021809`
-- Current state: raw log file exists but empty.
+- All persona suites passed.
+- Backend gate passed.
+- Wizard/UI matrix passed.
+- Playwright proof success.
+- Consolidated release scorecard emitted.
+- Final closure document completed.
+- Final NO-GO lifted.
 
-## Final Priority Todo List
+The transcript/evidence lane currently available here does not close those claims to the standard required for final release truth.
 
-1. Fix `01_backend_full_gate.ps1` command invocation so raw pytest output is reliably captured on Windows PowerShell.
-2. Re-run full backend gate and publish resulting PASS/FAIL artifact set with non-empty raw log and explicit exit code.
-3. Add a dedicated Spiritual Life UI proof spec (single-role, explicit route/assertions) to remove matrix-only caveat.
-4. Recompute closure summary once item 1-3 are complete and update release authority statement accordingly.
-5. Keep current persona and wizard bundles as baseline evidence for all role lifecycle and matrix coverage.
+The completed backend full gate bundle also contains a real FAIL result:
+- Evidence: `crown-master-binder/06_release_readiness/backend_pytest_full_gate_20260511_022326.txt`
+- Result: `4 failed, 2920 passed, 104 warnings in 2550.92s (0:42:30)`
+
+## Honest Outcome After Execution
+
+1. `01_backend_full_gate.ps1` Windows wrapper hardening: DONE.
+2. Dedicated Spiritual Life UI proof spec: DONE.
+3. Persona and wizard bundles preserved as current baseline candidates: DONE.
+4. Final release success: NOT VERIFIED.
+5. Production release closure: NO-GO remains correct.
