@@ -1,0 +1,9 @@
+Error ID,Error Type,Occurrence Count,First Seen,Last Seen,Example Line
+E001,401_Unauthorized,12,2026-04-23T08:15:22Z,2026-04-23T14:35:12Z,"POST /api/v1/auth/token/ - Missing Authorization header"
+E002,404_CrossSchool,8,2026-04-23T09:42:15Z,2026-04-23T14:30:18Z,"GET /api/v1/comms/templates/ - Resource belongs to different school_id"
+E003,403_Forbidden,6,2026-04-23T10:18:45Z,2026-04-23T14:29:05Z,"GET /api/parent/ - User does not have parent role"
+E004,ValidationError,4,2026-04-23T11:05:30Z,2026-04-23T14:31:42Z,"POST /api/v1/comms/templates/ - Missing required variable in template"
+E005,MissingHeader,5,2026-04-23T12:22:11Z,2026-04-23T14:28:31Z,"GET /api/v1/comms/templates/ - X-School-Id header not provided"
+E006,DesignViolation,3,2026-04-23T13:15:00Z,2026-04-23T14:32:15Z,"Dashboard renders fallback data without DEMO label"
+E007,TimeoutError,1,2026-04-23T08:15:22Z,2026-04-23T08:15:22Z,"Health endpoint timeout - database connection pool exhausted"
+E008,IncompleteData,2,2026-04-23T13:45:20Z,2026-04-23T14:27:42Z,"Seed script incomplete - school 12 missing from database"
