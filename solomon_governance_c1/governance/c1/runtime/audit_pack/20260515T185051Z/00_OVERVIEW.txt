@@ -1,0 +1,32 @@
+Crown2026 Deterministic Audit Pack
+root=/workspaces/Crown2026
+git_branch=solomon/start
+git_head=c638e7b6897637cc8cf93ad9329a5225f205f0a4
+git_status_rc=0
+
+git_status_short_branch:
+## solomon/start...origin/solomon/start
+ M docs/API_VERSION_POLICY.md
+ M docs/CROWN_IP_COMPLIANCE_POLICY.md
+ M docs/DEMO_MODE_POLICY.md
+ M docs/DISASTER_RECOVERY_POLICY.md
+ M solomon_governance_c1/governance/c1/certification/CYCLE1_BASELINE_STATE.json
+ M solomon_governance_c1/governance/c1/certification/CYCLE2_REPLAY_STATE.json
+ M solomon_governance_c1/governance/c1/certification/CYCLE3_REBUILD_STATE.json
+ M solomon_governance_c1/governance/c1/registers/evidence_register.csv
+ M solomon_governance_c1/governance/c1/registers/human_approval_queue.csv
+ M solomon_governance_c1/governance/c1/registers/review_queue.csv
+ M solomon_governance_c1/governance/c1/registers/risk_exceptions.csv
+ M solomon_governance_c1/governance/c1/registers/source_candidates.csv
+ M solomon_governance_c1/governance/c1/review_packets/C1_REVIEW_PACKET.md
+ M solomon_governance_c1/governance/c1/reviews/REVIEW_2026_05_15_API_VERSION_POLICY/DECISION.json
+ M solomon_governance_c1/governance/c1/reviews/REVIEW_2026_05_15_CROWN_IP_COMPLIANCE_POLICY/DECISION.json
+ M solomon_governance_c1/governance/c1/reviews/REVIEW_2026_05_15_DEMO_MODE_POLICY/DECISION.json
+ M solomon_governance_c1/governance/c1/reviews/REVIEW_2026_05_15_DISASTER_RECOVERY_POLICY/DECISION.json
+ M solomon_governance_c1/governance/c1/simulation/chunk_boundary_manifest.csv
+ M solomon_governance_c1/governance/c1/simulation/ingestion_simulation_manifest.csv
+ M solomon_governance_c1/governance/c1/simulation/provenance_inheritance_manifest.csv
+ M solomon_governance_c1/governance/c1/simulation/quarantine_propagation_manifest.csv
+
+workflow_count=71
+tracked_file_count=6348

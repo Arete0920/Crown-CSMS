@@ -1,0 +1,21 @@
+{
+  "bundle_id": "20260515T181641Z",
+  "certification_decision": "PASS",
+  "certification_record_present": true,
+  "hash_verification": {
+    "hash_mismatches": 0,
+    "missing_artifacts": 0,
+    "total_files_checked": 15
+  },
+  "integrity_checks": {
+    "certification_present": true,
+    "manifest_present": true,
+    "required_artifacts_count": 15,
+    "required_artifacts_total": 15
+  },
+  "note": "Bundle replayed from certified state; all hashes match.",
+  "replay_decision": "PASS",
+  "replay_verification_version": "1",
+  "replay_verified_at_utc": "UNKNOWN",
+  "source_bundle_path": "solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T181641Z"
+}

@@ -1,0 +1,41 @@
+{
+  "bundle_id": "20260515T185051Z",
+  "file_sha256": {
+    "00_OVERVIEW.txt": "d5a7712525564fda457b5090ec87d01206b0f3c9c6522a8e0d0619b695f26b2a",
+    "01_TREE.txt": "ddb287f6986fa88d3d2758a1eed346e97529756e86ffbefe39048589ca789a3a",
+    "02_WORKFLOWS_INDEX.txt": "855b0590c8788b2ca2489b3a2654ada970f81025b00e73ad0c2a42dde9735f04",
+    "03_WORKFLOWS_TRIGGERS.txt": "b729ef326ff48be8825e86dbdb23a1495f14be887dde37308db233248dd30ca1",
+    "04_JOB_LEVEL_IF.txt": "0ccc05e5c9777ea9b71737cc63565bd1c6ffd560c32bbd0d14a6887f78e2f066",
+    "05_BRANCH_PROTECTION_MAIN.json": "0f6cefff0226d7235aa403c4dbc97633e713681ffb9c4606176c517928f324cc",
+    "06_BACKEND_URLS.txt": "579a777970c2d7a30d36e484bc3941ba276bdc4bd6c1c77575c528407cbf795f",
+    "07_MIGRATIONS.txt": "967d335f0802723291aa30a1a4ee5f1762bddd924385be17dda62d153752346f",
+    "08_PY_DEPS.txt": "3c17539d36d9885a1725f3882e63aa6bbec7e37e23ff0c0a863058b186640d18",
+    "09_NODE_DEPS.txt": "f5a4e9524cdf626cd6b00cc253da968a2d6e52ef821f4f66072584d43d727cd5",
+    "10_SECRET_SCAN_FINDINGS.txt": "3b80f2c59e9e7d53bea250cd96d70b887f70bbf1b56a4eb215b617a5f53f9c49",
+    "11_TRACKED_BINARIES.txt": "17f83b041c0cd0e03b62d525b5ca82284a80fb7ca5d4ca6ef032d044820b4aca",
+    "12_UNTRACKED_ARTIFACTS.txt": "3afc3fb5201a19f88a84ad0c287e1eb263d46e17abee7ba4ccf97d5b67dbbcc2",
+    "13_HEALTH_PROBE.txt": "0432e8b91b60d7d7eb22f1a0f0d35322859cb3c271db762ce53161e8912d7c0f",
+    "14_DEPLOY_PROD_RECENT.txt": "d0a3a2d36c3c330ea00105e757624d8060e0024fc2efc8d1c8b6ef60e94a9e56"
+  },
+  "generated_at_utc": "2026-05-15T18:51:26.877753+00:00",
+  "generator": "solomon_governance_c1/generate_audit_pack.py",
+  "git_branch": "solomon/start",
+  "git_head": "c638e7b6897637cc8cf93ad9329a5225f205f0a4",
+  "required_files": [
+    "00_OVERVIEW.txt",
+    "01_TREE.txt",
+    "02_WORKFLOWS_INDEX.txt",
+    "03_WORKFLOWS_TRIGGERS.txt",
+    "04_JOB_LEVEL_IF.txt",
+    "05_BRANCH_PROTECTION_MAIN.json",
+    "06_BACKEND_URLS.txt",
+    "07_MIGRATIONS.txt",
+    "08_PY_DEPS.txt",
+    "09_NODE_DEPS.txt",
+    "10_SECRET_SCAN_FINDINGS.txt",
+    "11_TRACKED_BINARIES.txt",
+    "12_UNTRACKED_ARTIFACTS.txt",
+    "13_HEALTH_PROBE.txt",
+    "14_DEPLOY_PROD_RECENT.txt"
+  ]
+}
