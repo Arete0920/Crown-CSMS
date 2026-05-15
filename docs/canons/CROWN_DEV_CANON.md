@@ -5,6 +5,14 @@ Owner: TC / Crown Team
 
 ---
 
+## ⚠️ CANONICAL SETUP NOTICE
+
+**Developer setup authority**: See [../engineering/DEV_SETUP.md](../engineering/DEV_SETUP.md)
+
+If this document contains older setup commands or paths that conflict with `DEV_SETUP.md`, the `DEV_SETUP.md` guide controls.
+
+---
+
 ## Purpose
 This document is the single source of truth for starting, validating, troubleshooting, and committing Crown2026 local development.
 If you follow this exactly, you will not spend hours repeating the same problems.
