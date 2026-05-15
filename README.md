@@ -2,6 +2,12 @@
 
 Christian School Management Solution
 
+## Getting started
+
+**For developers:** See [CROWN Developer Setup](docs/engineering/DEV_SETUP.md) for the canonical local development guide.
+
+Do not rely on older duplicated setup instructions if they conflict with that guide.
+
 ## Current public status
 
 CROWN is currently treated as a release-candidate and sandbox-hardening codebase unless a later signed release note explicitly states otherwise.
