@@ -28,7 +28,6 @@
     "ui:proof:student-v2": "npx playwright test tests/ui/student-dashboard-v2.spec.ts --reporter=line",
     "ui:proof:parent-v1": "npx playwright test tests/ui/parent-dashboard-v1.spec.ts --reporter=line",
     "ui:proof:executive": "npx playwright test tests/ui/executive-dashboard-v1.spec.ts --reporter=line",
-    "ui:proof:spiritual-life": "playwright test tests/ui/spiritual-life-ui-proof.spec.ts --reporter=line",
     "check:module-readiness": "vitest run src/config/moduleReadiness.test.js",
     "check:shell-contracts": "vitest run src/auth/roleAccess.test.js src/config/dashboardRegistry.test.js src/routes/wizardRouteAccess.test.jsx src/config/shellOwnership.test.js src/config/shellCertification.test.js src/config/moduleReadiness.test.js",
     "check:shell-certification": "npm run check:shell-contracts && npm run check:module-readiness",
