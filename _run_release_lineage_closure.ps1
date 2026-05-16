@@ -1,18 +1,7 @@
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-param(
-    [string]$RepoRoot = $null
-)
-
-if (-not $RepoRoot) {
-    $RepoRoot = (& git -C $PSScriptRoot rev-parse --show-toplevel 2>$null).Trim()
-    if (-not $RepoRoot) {
-        $RepoRoot = $PSScriptRoot
-    }
-}
-
-Set-Location $RepoRoot
+Set-Location "C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr"
 
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $out = "audit-artifacts\release-lineage-closure\$stamp"

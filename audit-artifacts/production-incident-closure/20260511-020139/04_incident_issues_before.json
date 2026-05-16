@@ -1,0 +1,94 @@
+﻿[
+    {
+        "body":  "Upstream workflow: Production Deploy\nRun URL: https://github.com/tcmegahan/Crown2026/actions/runs/25212248364\nConclusion: failure\n\nAutomatic rollback attempted to image tag: latest.\nValidate app health, data integrity, and deployment logs before closing.",
+        "createdAt":  "2026-05-07T19:17:57Z",
+        "labels":  [
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACgZqLiw",
+                           "name":  "production-alert",
+                           "description":  "",
+                           "color":  "ededed"
+                       },
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACiTGQpA",
+                           "name":  "incident",
+                           "description":  "",
+                           "color":  "ededed"
+                       }
+                   ],
+        "number":  795,
+        "state":  "OPEN",
+        "title":  "[INCIDENT] Prod deploy failed and rollback executed (2026-05-07T19:17:57.107Z)",
+        "updatedAt":  "2026-05-07T19:17:57Z",
+        "url":  "https://github.com/tcmegahan/Crown2026/issues/795"
+    },
+    {
+        "body":  "Upstream workflow: Production Deploy\nRun URL: https://github.com/tcmegahan/Crown2026/actions/runs/25510606881\nConclusion: failure\n\nAutomatic rollback attempted to image tag: latest.\nValidate app health, data integrity, and deployment logs before closing.",
+        "createdAt":  "2026-05-07T19:54:29Z",
+        "labels":  [
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACgZqLiw",
+                           "name":  "production-alert",
+                           "description":  "",
+                           "color":  "ededed"
+                       },
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACiTGQpA",
+                           "name":  "incident",
+                           "description":  "",
+                           "color":  "ededed"
+                       }
+                   ],
+        "number":  796,
+        "state":  "OPEN",
+        "title":  "[INCIDENT] Prod deploy failed and rollback executed (2026-05-07T19:54:29.335Z)",
+        "updatedAt":  "2026-05-07T19:54:29Z",
+        "url":  "https://github.com/tcmegahan/Crown2026/issues/796"
+    },
+    {
+        "body":  "Upstream workflow: Production Deploy\nRun URL: https://github.com/tcmegahan/Crown2026/actions/runs/25526727466\nConclusion: failure\n\nAutomatic rollback attempted to image tag: latest.\nValidate app health, data integrity, and deployment logs before closing.",
+        "createdAt":  "2026-05-07T23:07:38Z",
+        "labels":  [
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACgZqLiw",
+                           "name":  "production-alert",
+                           "description":  "",
+                           "color":  "ededed"
+                       },
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACiTGQpA",
+                           "name":  "incident",
+                           "description":  "",
+                           "color":  "ededed"
+                       }
+                   ],
+        "number":  797,
+        "state":  "OPEN",
+        "title":  "[INCIDENT] Prod deploy failed and rollback executed (2026-05-07T23:07:38.118Z)",
+        "updatedAt":  "2026-05-07T23:07:38Z",
+        "url":  "https://github.com/tcmegahan/Crown2026/issues/797"
+    },
+    {
+        "body":  "Upstream workflow: Production Deploy\nRun URL: https://github.com/tcmegahan/Crown2026/actions/runs/25527638905\nConclusion: failure\n\nAutomatic rollback attempted to image tag: latest.\nValidate app health, data integrity, and deployment logs before closing.",
+        "createdAt":  "2026-05-07T23:47:20Z",
+        "labels":  [
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACgZqLiw",
+                           "name":  "production-alert",
+                           "description":  "",
+                           "color":  "ededed"
+                       },
+                       {
+                           "id":  "LA_kwDOQyw25s8AAAACiTGQpA",
+                           "name":  "incident",
+                           "description":  "",
+                           "color":  "ededed"
+                       }
+                   ],
+        "number":  798,
+        "state":  "OPEN",
+        "title":  "[INCIDENT] Prod deploy failed and rollback executed (2026-05-07T23:47:20.549Z)",
+        "updatedAt":  "2026-05-07T23:47:20Z",
+        "url":  "https://github.com/tcmegahan/Crown2026/issues/798"
+    }
+]

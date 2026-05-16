@@ -6,6 +6,16 @@ This document establishes non-negotiable rules for developing, testing, and depl
 
 ---
 
+## ⚠️ CANONICAL SETUP NOTICE
+
+**Developer setup authority**: See [docs/engineering/DEV_SETUP.md](engineering/DEV_SETUP.md)
+
+If this document contains older local paths, older virtual-environment locations, or duplicated startup commands that conflict with `DEV_SETUP.md`, the `DEV_SETUP.md` guide controls.
+
+This file remains the authority for architecture rules and operating guidelines, but is no longer the primary source for local developer setup commands.
+
+---
+
 ## 1. Directory & File Discipline
 
 ### 1.1 Folder Structure

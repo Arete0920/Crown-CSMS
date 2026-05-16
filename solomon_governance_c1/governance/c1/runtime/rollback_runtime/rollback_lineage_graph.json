@@ -1,0 +1,208 @@
+{
+  "lineage_graph": {
+    "C1-GOV-0001": {
+      "custody_path": "c1_candidate_sources/ADMISSIONS_API_CONTRACT.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0001-5d0bf192220f",
+          "provenance_status": "",
+          "row_hash": "dcc7e5c0787fcb1743eaad3eceea6924d4e30575dbefee14bf012b724b28e83b"
+        }
+      ],
+      "integrity_reference": "0fdd5f576e2532b9953e5db5f6d8bea9bcfef01f484e272a15a8300ccdf29288",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "b8a0efb898b63df465ec7e6b47974e345ad0fe8ae10bac60492fd72b7aeef069",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0001"
+    },
+    "C1-GOV-0002": {
+      "custody_path": "c1_candidate_sources/API_VERSION_POLICY.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0002-fe362b8c0410",
+          "provenance_status": "",
+          "row_hash": "1a33adb4569414878fee71748a2e3447faea0603979fbbbfa0507bf38e449361"
+        }
+      ],
+      "integrity_reference": "6703849b18e659c33281d9e172f8e2a0fdfc23ba44b8199baeff5bc8825af872",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "bd411b52893abc1819fa72d6a2aeb9124f227a2855c4f82513d9d4f2a7c22d56",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0002"
+    },
+    "C1-GOV-0003": {
+      "custody_path": "c1_candidate_sources/BACKUP_RESTORE_POLICY.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0003-e67ca94fa9e4",
+          "provenance_status": "",
+          "row_hash": "f4e41e29271d9de33d4e5faae1a8208be81fc32dffdfd62f3b09411dc7347283"
+        }
+      ],
+      "integrity_reference": "9e65f785b0b6861ac5fb93a4abcf494c5a5231fa8adfba39aa520c95417defb2",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "679dae4be1a5375d41802e786d8f94f2fff78b9c2bfc305a4045d52bff6ebcde",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0003"
+    },
+    "C1-GOV-0004": {
+      "custody_path": "c1_candidate_sources/CROWN_IP_COMPLIANCE_POLICY.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0004-7c94595f53e8",
+          "provenance_status": "",
+          "row_hash": "dafad64ad5c77fd4a79a135d116f42a3d59bc5f8aba717498d454889d6df7900"
+        }
+      ],
+      "integrity_reference": "ef47997a474cba5f44c1b5206824ee2a37e4f4b349ada40c04b1d9be83d59827",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "35c70dbdc4a23da5862b1957a16667618f5b5e1933268c9708864b2da2c980c2",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0004"
+    },
+    "C1-GOV-0005": {
+      "custody_path": "",
+      "derived_artifacts": [],
+      "integrity_reference": "",
+      "quarantine_events": [
+        {
+          "quarantine_status": "",
+          "reason": "",
+          "row_hash": "72a93d606ab3ef5563ffb60339e3864a848cb9feae5aabe6742e994825fc77b7"
+        }
+      ],
+      "rollback_actions": [],
+      "source_id": "C1-GOV-0005"
+    },
+    "C1-GOV-0006": {
+      "custody_path": "c1_candidate_sources/DATA_RETENTION_POLICY.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0006-045429d0abde",
+          "provenance_status": "",
+          "row_hash": "41bbc73b3cd166d3762dc4fd4812f5810890beb1aa7a5b0a46ba6a5ab094b186"
+        }
+      ],
+      "integrity_reference": "26cd0efdc8938b0de54f3e968464e88e7152966a2b92e8692388444f9b96bde9",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "77c8c9df84323e1789bcca29ecacbb3254b6202928827b0604824e8c02ac9078",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0006"
+    },
+    "C1-GOV-0007": {
+      "custody_path": "c1_candidate_sources/DEMO_MODE_POLICY.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0007-da091b3d6160",
+          "provenance_status": "",
+          "row_hash": "292e7ddb2848e8088164f4e98a2a811b9e4d695934ba6229c01820a8be58309e"
+        }
+      ],
+      "integrity_reference": "3fce5d18e260e106f1a1a77a95d8e155c3ce0f5318f4ec6c706c5ce0f773cacf",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "cce7f43f6ad1ed8a525b208b3d905183ad4d59eaa6d6e3c351cab77f902e5199",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0007"
+    },
+    "C1-GOV-0008": {
+      "custody_path": "c1_candidate_sources/DISASTER_RECOVERY_POLICY.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0008-fde720e0cc54",
+          "provenance_status": "",
+          "row_hash": "d3ec4f51075d4c1ecc7a90eb1e9febebd648465b1fbaca938aa931ba7a983e87"
+        }
+      ],
+      "integrity_reference": "e4f0bbd4831deb1e3d84627ea37431fe21bb6c3b8886b46db19b230f0992ead1",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "823303866b969e214a5e02dd5249ec3a02b735c77b53809019f4ad267e4c0e9e",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0008"
+    },
+    "C1-GOV-0009": {
+      "custody_path": "c1_candidate_sources/FINANCIAL_AID_API_CONTRACT.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0009-de88a2111248",
+          "provenance_status": "",
+          "row_hash": "0cf597b2533bc8932ff1b7bf305dcb0e2a32b9b8270e9e565af30cba52244a0e"
+        }
+      ],
+      "integrity_reference": "e644e3841cc8445b25109e2aafde090f9a96802bf2957e18e35e440b0dbea9ce",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "5b29f91874344ea8d955801f13e07416deb762fbaa55e48b165fb7028fb44911",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0009"
+    },
+    "C1-GOV-0010": {
+      "custody_path": "c1_candidate_sources/INCIDENT_RESPONSE_POLICY.md",
+      "derived_artifacts": [
+        {
+          "artifact_id": "SIM-C1-GOV-0010-81f440de0349",
+          "provenance_status": "",
+          "row_hash": "d6ea6b55d8c64b18f37b439daf3d3dd70a607db1ffd62bf3c20e1aec521ed652"
+        }
+      ],
+      "integrity_reference": "e86d41828ec703f873297750a922af23bd054bc97d29353e9a950abe48947798",
+      "quarantine_events": [],
+      "rollback_actions": [
+        {
+          "rollback_action": "remove_derived_artifacts_for_source",
+          "rollback_scope": "dry_run_only",
+          "row_hash": "091037c0aa489168c19fe78868abad5ad6a071d68f4a162727188de0ecec973c",
+          "status": "prepared_not_executed"
+        }
+      ],
+      "source_id": "C1-GOV-0010"
+    }
+  },
+  "lineage_graph_hash": "aeeb4ed38378658ad1fefeb288066b5c269bf3e83d919c10c62ac918b9be4d19"
+}

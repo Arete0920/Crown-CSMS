@@ -25,6 +25,9 @@ export const APP_PERMISSIONS = {
   COMMUNICATIONS_VIEW: 'communications.view',
   COMMUNICATIONS_EDIT: 'communications.edit',
 
+  AFTERCARE_VIEW: 'aftercare.view',
+  AFTERCARE_EDIT: 'aftercare.edit',
+
   REPORTING_VIEW: 'reporting.view',
   SYSTEM_VIEW: 'system.view',
   RELEASE_VIEW: 'release.view',
