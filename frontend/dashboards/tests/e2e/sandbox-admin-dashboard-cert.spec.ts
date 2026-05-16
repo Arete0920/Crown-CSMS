@@ -13,20 +13,7 @@ const primaryPassword = process.env.CERT_SANDBOX_ADMIN_PASSWORD || "CrownDemo!20
 const secondEmail = process.env.CERT_SANDBOX_SECOND_ADMIN_EMAIL || "miriam.caldwell@heritage.example.org";
 const secondPassword = process.env.CERT_SANDBOX_SECOND_ADMIN_PASSWORD || "CrownDemo!2026";
 const schoolAdminRoute = process.env.CERT_SCHOOL_ADMIN_ROUTE || (IS_SANDBOX ? "/school-admin-dashboard" : "/admin");
-
-function escapeForRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-const adminRoutePatterns = Array.from(new Set([
-  schoolAdminRoute,
-  "/admin",
-  "/school-admin",
-]));
-
-const adminRouteExpectation = new RegExp(
-  adminRoutePatterns.map((path) => `${escapeForRegex(path)}\\b`).join("|")
-);
+const adminRouteExpectation = /\/school-admin-dashboard\b|\/admin\b/;
 
 async function login(page: Page, email: string, password: string) {
   await page.goto(`${frontendUrl}/login`, { waitUntil: "networkidle" });

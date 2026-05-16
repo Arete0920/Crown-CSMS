@@ -13,24 +13,6 @@ $ErrorActionPreference = "Stop"
 
 $resolvedOutputDir = (Resolve-Path $OutputDir).Path
 
-function Invoke-PlaywrightSpec {
-  param(
-    [string]$SpecPath,
-    [string]$OutFile,
-    [string]$FailureMessage
-  )
-
-  $previousErrorAction = $ErrorActionPreference
-  $ErrorActionPreference = "Continue"
-  npx playwright test $SpecPath --reporter=line *> $OutFile
-  $exitCode = $LASTEXITCODE
-  $ErrorActionPreference = $previousErrorAction
-
-  if ($exitCode -ne 0) {
-    throw $FailureMessage
-  }
-}
-
 $env:CERT_BASE_URL = $BaseUrl
 $env:CERT_FRONTEND_URL = $FrontendUrl
 $env:CERT_SANDBOX_ADMIN_EMAIL = $SandboxAdminEmail
@@ -59,23 +41,21 @@ if (-not $npx) {
   throw "npx is required for Playwright certification."
 }
 
-Invoke-PlaywrightSpec `
-  -SpecPath "tests/e2e/sandbox-admin-dashboard-cert.spec.ts" `
-  -OutFile (Join-Path $resolvedOutputDir "03_playwright_sandbox_admin.txt") `
-  -FailureMessage "sandbox-admin-dashboard-cert.spec.ts failed"
-
-if (Test-Path "tests/investor-golden-path.spec.ts") {
-  Invoke-PlaywrightSpec `
-    -SpecPath "tests/investor-golden-path.spec.ts" `
-    -OutFile (Join-Path $resolvedOutputDir "03_playwright_investor_golden_path.txt") `
-    -FailureMessage "investor-golden-path.spec.ts failed"
+npx playwright test tests/e2e/sandbox-admin-dashboard-cert.spec.ts --reporter=line *> (Join-Path $resolvedOutputDir "03_playwright_sandbox_admin.txt")
+if ($LASTEXITCODE -ne 0) {
+  throw "sandbox-admin-dashboard-cert.spec.ts failed"
 }
-
+if (Test-Path "tests/investor-golden-path.spec.ts") {
+  npx playwright test tests/investor-golden-path.spec.ts --reporter=line *> (Join-Path $resolvedOutputDir "03_playwright_investor_golden_path.txt")
+  if ($LASTEXITCODE -ne 0) {
+    throw "investor-golden-path.spec.ts failed"
+  }
+}
 if (Test-Path "tests/release-auth-golden-path.spec.ts") {
-  Invoke-PlaywrightSpec `
-    -SpecPath "tests/release-auth-golden-path.spec.ts" `
-    -OutFile (Join-Path $resolvedOutputDir "03_playwright_release_auth.txt") `
-    -FailureMessage "release-auth-golden-path.spec.ts failed"
+  npx playwright test tests/release-auth-golden-path.spec.ts --reporter=line *> (Join-Path $resolvedOutputDir "03_playwright_release_auth.txt")
+  if ($LASTEXITCODE -ne 0) {
+    throw "release-auth-golden-path.spec.ts failed"
+  }
 }
 Pop-Location
 
