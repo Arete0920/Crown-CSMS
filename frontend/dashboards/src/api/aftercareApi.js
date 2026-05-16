@@ -50,6 +50,10 @@ export async function fetchPickupContacts(studentId) {
   return requestJson(`/students/${studentId}/pickup-contacts/`);
 }
 
+export async function createPickupContact(studentId, data) {
+  return requestJson(`/students/${studentId}/pickup-contacts/`, { method: "POST", body: data });
+}
+
 // Today's roster
 export async function fetchRosterToday() {
   return requestJson("/roster/today/");

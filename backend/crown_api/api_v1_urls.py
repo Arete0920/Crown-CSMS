@@ -66,6 +66,9 @@ urlpatterns = [
     # Parent360 explicit v1 route
     path("parent360/", include("parent360.api.urls")),
 
+    # Aftercare / Daycare / Extended Care
+    path("aftercare/", include("aftercare.urls")),
+
     # M365 readiness/status routes (governance.urls at m365/ prefix)
     path("m365/", include("governance.urls")),
 
