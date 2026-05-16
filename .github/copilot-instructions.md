@@ -104,3 +104,32 @@ Use this structure:
 - Next exact command
 
 Do not use vague language such as "should", "probably", "likely fixed", or "seems fine" when reporting completion.
+
+## Accounting Copilot Safety Rules
+
+1. NEVER MODIFY LEDGER IMMUTABILITY.
+
+2. NEVER USE FLOAT TYPES.
+
+3. NEVER STORE DERIVED BALANCES AS SOURCE OF TRUTH.
+
+4. NEVER CREATE SINGLE-ENTRY ACCOUNTING.
+
+5. NEVER GENERATE MOCK ACCOUNTING LOGIC.
+
+6. NEVER BYPASS VALIDATION SERVICES.
+
+7. NEVER CREATE CROSS-TENANT QUERIES.
+
+8. NEVER REMOVE AUDIT LOGGING.
+
+9. NEVER AUTO-GENERATE MIGRATIONS WITHOUT REVIEW.
+
+10. NEVER USE DELETE OPERATIONS ON LEDGER DATA.
+
+11. ALL ACCOUNTING CODE MUST INCLUDE TESTS.
+
+12. ALL ACCOUNTING CHANGES REQUIRE:
+	- reconciliation verification
+	- integrity verification
+	- tenant isolation verification

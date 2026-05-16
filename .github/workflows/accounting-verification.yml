@@ -1,0 +1,46 @@
+name: Accounting Verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - release/accounting-foundation-stage1
+  pull_request:
+    branches:
+      - main
+      - release/**
+
+jobs:
+
+  accounting-verification:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r backend/requirements.txt
+
+      - name: Run Accounting Tests
+        run: |
+          python backend/manage.py test apps.accounting
+
+      - name: Prevent Float Usage
+        run: |
+          ! grep -R "FloatField" backend/apps/accounting
+
+      - name: Prevent Ledger Deletes
+        run: |
+          ! grep -R "CASCADE" backend/apps/accounting/models
+
+      - name: Verify Immutable Ledger
+        run: |
+          grep -R "immutable" docs/accounting

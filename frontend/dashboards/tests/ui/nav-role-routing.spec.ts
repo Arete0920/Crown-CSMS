@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page, type Route } from "@playwright/test";
 
 const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:4173";
 const IS_SANDBOX = process.env.VITE_DEMO_MODE === "sandbox" || process.env.VITE_SANDBOX_MODE === "1";
@@ -6,9 +6,9 @@ const DEMO_SCHOOL_ID =
   process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
 
-async function seedDemoSession(page, role: string) {
+async function seedDemoSession(page: Page, role: string) {
   await page.addInitScript(
-    ({ role, token, schoolId }) => {
+    ({ role, token, schoolId }: { role: string; token: string; schoolId: string }) => {
       try {
         sessionStorage.setItem("crown.jwt.access", token);
         sessionStorage.setItem("crown.role", role);
@@ -25,8 +25,8 @@ async function seedDemoSession(page, role: string) {
   );
 }
 
-async function installNavProofApiStubs(page) {
-  await page.route("**/api/v1/nav/", async (route) => {
+async function installNavProofApiStubs(page: Page) {
+  await page.route("**/api/v1/nav/", async (route: Route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -50,7 +50,7 @@ async function installNavProofApiStubs(page) {
     });
   });
 
-  await page.route("**/api/v1/finance/metrics/**", async (route) => {
+  await page.route("**/api/v1/finance/metrics/**", async (route: Route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -58,7 +58,7 @@ async function installNavProofApiStubs(page) {
     });
   });
 
-  await page.route("**/api/v1/dashboards/finance/summary/**", async (route) => {
+  await page.route("**/api/v1/dashboards/finance/summary/**", async (route: Route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",

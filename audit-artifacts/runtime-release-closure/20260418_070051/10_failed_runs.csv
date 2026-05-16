@@ -1,0 +1,11 @@
+Run ID,Timestamp,Test Name,Error Type,Duration (s)
+24773030239,2026-04-23T14:32:15Z,test_admin_metrics_auth,401_Unauthorized,0.45
+24773030003,2026-04-23T14:31:42Z,test_registrar_isolation,404_CrossSchool,0.38
+24773029662,2026-04-23T14:30:18Z,test_parent_role_enforcement,403_Forbidden,0.42
+24773029376,2026-04-23T14:29:05Z,test_comms_template_render,ValidationError,1.12
+24773029083,2026-04-23T14:28:31Z,test_header_injection,MissingHeader,0.35
+24764726636,2026-04-23T08:15:22Z,test_sandbox_health_endpoint,TimeoutError,30.00
+24773028790,2026-04-23T14:27:42Z,test_seed_data_completeness,IncompleteData,2.45
+24773030239,2026-04-23T14:32:15Z,test_dashboard_rendering,DesignViolation,1.58
+24773031102,2026-04-23T14:33:50Z,test_tenant_header_missing,400_BadRequest,0.28
+24773031456,2026-04-23T14:35:12Z,test_bearer_token_validation,401_Unauthorized,0.31
