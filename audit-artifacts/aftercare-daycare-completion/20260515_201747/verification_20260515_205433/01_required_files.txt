@@ -1,0 +1,12 @@
+﻿=== REQUIRED FILES ===
+[PASS] backend\aftercare\models.py
+[PASS] backend\aftercare\api.py
+[PASS] backend\aftercare\urls.py
+[PASS] backend\aftercare\services.py
+[PASS] backend\aftercare\wizard_api.py
+[PASS] backend\aftercare\serializers.py
+[PASS] backend\aftercare\tenant.py
+[PASS] frontend\dashboards\src\api\aftercareApi.js
+[PASS] frontend\dashboards\src\pages\AftercareRosterPage.jsx
+[PASS] frontend\dashboards\src\pages\wizards\AftercareSetupWizard.jsx
+[PASS] frontend\dashboards\src\components\board\AftercareBoardCard.jsx
