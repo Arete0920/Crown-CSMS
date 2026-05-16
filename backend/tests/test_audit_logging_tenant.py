@@ -75,14 +75,12 @@ class TestAuditLoggingTenantIsolation:
     def test_audit_logging_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Audit Logging module source."""
         from pathlib import Path
-        root = Path(__file__).resolve().parents[2]
-        source_text = ""
-        for p in root.rglob("*.py"):
-            try:
-                source_text += p.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
-                continue
-        isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
-        found = any(kw in source_text for kw in isolation_keywords)
-        assert found, f"Audit Logging: tenant isolation keywords not found in source"
+        root = Path(__file__).resolve().parents[1]
+        audit_model_text = (root / "audit" / "models.py").read_text(encoding="utf-8", errors="ignore")
+        audit_middleware_text = (root / "audit" / "middleware.py").read_text(encoding="utf-8", errors="ignore")
+        audit_helper_text = (root / "crown_api" / "audit.py").read_text(encoding="utf-8", errors="ignore")
+
+        assert "class AuditLog" in audit_model_text
+        assert "AuditLog.objects.create" in audit_middleware_text
+        assert "school_id" in audit_helper_text
 
