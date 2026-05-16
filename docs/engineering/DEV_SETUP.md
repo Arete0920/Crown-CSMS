@@ -215,7 +215,7 @@ docker run -d \
 Update `backend/.env` with:
 
 ```
-DATABASE_URL=postgresql://<db-user>:<db-password>@127.0.0.1:5432/<db-name>
+DATABASE_URL=<local-postgres-connection-string>
 ```
 
 ## 11. Day 1 safety note
