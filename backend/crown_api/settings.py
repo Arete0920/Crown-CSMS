@@ -166,7 +166,7 @@ CROWN_GRACE_PERIOD_DAYS = int(os.getenv("CROWN_GRACE_PERIOD_DAYS", "30"))
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -767,3 +767,4 @@ CSRF_COOKIE_SAMESITE = "Lax"
 # Proxy SSL header for Azure/App Service reverse proxy.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # === CROWN PRODUCTION HARDENING OVERRIDES END ===
+

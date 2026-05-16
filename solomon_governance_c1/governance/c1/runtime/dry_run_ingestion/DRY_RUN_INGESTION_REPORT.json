@@ -1,0 +1,23 @@
+{
+  "boundary_controls": {
+    "no_automation_activation": true,
+    "no_embeddings": true,
+    "no_indexing": true,
+    "no_retrieval_activation": true,
+    "no_source_mutation": true,
+    "no_vector_writes": true
+  },
+  "counts": {
+    "chunk_rows": 15,
+    "ingestion_rows": 9,
+    "provenance_rows": 9,
+    "quarantine_rows": 1
+  },
+  "gate_decision": "ALLOW",
+  "generated_files": [
+    "/workspaces/Crown2026/solomon_governance_c1/governance/c1/runtime/dry_run_ingestion/dry_run_ingestion_plan.csv",
+    "/workspaces/Crown2026/solomon_governance_c1/governance/c1/runtime/rollback/rollback_manifest.csv"
+  ],
+  "mode": "DRY_RUN_ONLY",
+  "real_ingestion_blocked": true
+}

@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import process from "node:process";
+import { URL } from "node:url";
 
 const BASE_URL = process.env.CROWN_BASE_URL ?? "http://127.0.0.1:3000";
 const parsedBaseUrl = new URL(BASE_URL);

@@ -39,6 +39,7 @@
     "check:shell-backend-contract": "node scripts/check-shell-backend-contract-parity.mjs",
     "debug:shell-backend-contract": "node scripts/print-shell-backend-contract.mjs",
     "ci:shell-backend-contract-parity": "npm run check-shell-backend-contract-parity",
+    "verify:full": "node scripts/run-full-verification.mjs",
     "release:verify": "node ../../scripts/release/verify-frontend-rc.mjs",
     "verify:api-contracts": "node ../../scripts/release/verify-api-contracts.mjs",
     "verify:navigation": "node ../../scripts/release/verify-navigation-surface.mjs",

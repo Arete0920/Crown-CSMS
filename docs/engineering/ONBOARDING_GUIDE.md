@@ -4,6 +4,14 @@ Welcome to Crown. This doc gets you from zero to productive in one day.
 
 ---
 
+## ⚠️ CANONICAL SETUP NOTICE
+
+**Developer setup authority**: See [DEV_SETUP.md](DEV_SETUP.md)
+
+If this document contains older setup commands or local paths that conflict with `DEV_SETUP.md`, the `DEV_SETUP.md` guide controls.
+
+---
+
 ## Repo Setup (30 minutes)
 
 ```powershell

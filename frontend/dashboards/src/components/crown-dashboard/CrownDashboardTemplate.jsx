@@ -8,7 +8,6 @@ import CrownQuickActions from './CrownQuickActions.jsx';
 import CrownDashboardActivityFeed from './CrownDashboardActivityFeed.jsx';
 import CrownDashboardStatusPanel from './CrownDashboardStatusPanel.jsx';
 import CrownModuleSection from './CrownModuleSection.jsx';
-import CrownDashboardEmptyState from './CrownDashboardEmptyState.jsx';
 import CrownDashboardErrorState from './CrownDashboardErrorState.jsx';
 import CrownDashboardFlipCard from './CrownDashboardFlipCard.jsx';
 import CrownDashboardRightRail from './CrownDashboardRightRail.jsx';
