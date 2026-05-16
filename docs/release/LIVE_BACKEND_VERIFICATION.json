@@ -1,6 +1,6 @@
 ﻿{
     "summary":  {
-                    "generated_at_utc":  "2026-04-21T11:30:56.9394005Z",
+                    "generated_at_utc":  "2026-05-14T03:42:51.6117827Z",
                     "repo_root":  "C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr",
                     "backend_root":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\backend",
                     "manage_py_exists":  true,
@@ -12,10 +12,10 @@
                     "backend_app_count":  86,
                     "backend_apps_with_models":  74,
                     "backend_apps_with_urls":  54,
-                    "backend_apps_with_tests":  58,
-                    "backend_test_file_count":  222
+                    "backend_apps_with_tests":  59,
+                    "backend_test_file_count":  223
                 },
-    "generated_at_utc":  "2026-04-21T11:30:56.9394005Z",
+    "generated_at_utc":  "2026-05-14T03:42:51.6117827Z",
     "app_inventory":  [
                           {
                               "module_name":  "academic_year_wizard",
@@ -27,9 +27,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "academics",
@@ -41,9 +41,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  38,
-                              "total_file_count":  90,
-                              "last_commit_iso":  "2026-04-18T15:21:56Z"
+                              "test_file_count":  50,
+                              "total_file_count":  102,
+                              "last_commit_iso":  "2026-05-01T13:13:34-04:00"
                           },
                           {
                               "module_name":  "academics_assignments",
@@ -113,7 +113,7 @@
                               "has_tests_dir":  false,
                               "test_file_count":  0,
                               "total_file_count":  24,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "admissions",
@@ -126,7 +126,7 @@
                               "has_migrations":  true,
                               "has_tests_dir":  true,
                               "test_file_count":  0,
-                              "total_file_count":  38,
+                              "total_file_count":  39,
                               "last_commit_iso":  "2026-04-03T17:38:43Z"
                           },
                           {
@@ -139,9 +139,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  17,
-                              "total_file_count":  89,
-                              "last_commit_iso":  "2026-04-14T06:58:59Z"
+                              "test_file_count":  22,
+                              "total_file_count":  94,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "aftercare",
@@ -153,9 +153,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  8,
-                              "total_file_count":  38,
-                              "last_commit_iso":  "2026-04-14T06:58:59Z"
+                              "test_file_count":  10,
+                              "total_file_count":  40,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "aid",
@@ -167,9 +167,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  11,
-                              "total_file_count":  41,
-                              "last_commit_iso":  "2026-04-11T21:39:44-04:00"
+                              "test_file_count":  14,
+                              "total_file_count":  45,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "analytics",
@@ -181,9 +181,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  3,
-                              "total_file_count":  26,
-                              "last_commit_iso":  "2026-04-18T20:25:56Z"
+                              "test_file_count":  4,
+                              "total_file_count":  28,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "applications",
@@ -195,8 +195,8 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  14,
-                              "total_file_count":  38,
+                              "test_file_count":  18,
+                              "total_file_count":  42,
                               "last_commit_iso":  "2026-03-15T18:49:11-04:00"
                           },
                           {
@@ -209,9 +209,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  31,
-                              "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  34,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "attendance",
@@ -237,9 +237,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "attendance_rules_wizard",
@@ -251,9 +251,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "audit",
@@ -266,7 +266,7 @@
                               "has_migrations":  true,
                               "has_tests_dir":  false,
                               "test_file_count":  0,
-                              "total_file_count":  12,
+                              "total_file_count":  13,
                               "last_commit_iso":  "2026-02-15T19:30:03-05:00"
                           },
                           {
@@ -279,9 +279,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  21,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  23,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "billing",
@@ -293,9 +293,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  20,
-                              "total_file_count":  66,
-                              "last_commit_iso":  "2026-04-11T21:39:44-04:00"
+                              "test_file_count":  27,
+                              "total_file_count":  73,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "billing_wizard",
@@ -307,9 +307,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "board_oversight",
@@ -321,9 +321,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  14,
-                              "total_file_count":  42,
-                              "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                              "test_file_count":  18,
+                              "total_file_count":  46,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "classroom",
@@ -335,9 +335,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  31,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  6,
+                              "total_file_count":  33,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "comms",
@@ -351,7 +351,7 @@
                               "has_tests_dir":  true,
                               "test_file_count":  0,
                               "total_file_count":  50,
-                              "last_commit_iso":  "2026-04-19T00:53:56-04:00"
+                              "last_commit_iso":  "2026-04-21T01:09:05-04:00"
                           },
                           {
                               "module_name":  "comms_wizard",
@@ -363,9 +363,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  27,
+                              "last_commit_iso":  "2026-04-25T02:27:38-04:00"
                           },
                           {
                               "module_name":  "core",
@@ -377,9 +377,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  14,
-                              "total_file_count":  128,
-                              "last_commit_iso":  "2026-04-19T00:53:56-04:00"
+                              "test_file_count":  18,
+                              "total_file_count":  137,
+                              "last_commit_iso":  "2026-05-05T06:57:08-04:00"
                           },
                           {
                               "module_name":  "course_catalog_wizard",
@@ -391,9 +391,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "crown_api",
@@ -405,9 +405,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  111,
-                              "total_file_count":  438,
-                              "last_commit_iso":  "2026-04-20T09:22:17Z"
+                              "test_file_count":  150,
+                              "total_file_count":  494,
+                              "last_commit_iso":  "2026-05-12T20:13:55-04:00"
                           },
                           {
                               "module_name":  "curricula",
@@ -419,9 +419,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  31,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  6,
+                              "total_file_count":  32,
+                              "last_commit_iso":  "2026-03-11T22:03:18-04:00"
                           },
                           {
                               "module_name":  "curriculum",
@@ -435,7 +435,7 @@
                               "has_tests_dir":  false,
                               "test_file_count":  0,
                               "total_file_count":  22,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-03-11T22:03:18-04:00"
                           },
                           {
                               "module_name":  "discipline",
@@ -448,8 +448,8 @@
                               "has_migrations":  true,
                               "has_tests_dir":  true,
                               "test_file_count":  0,
-                              "total_file_count":  33,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "total_file_count":  38,
+                              "last_commit_iso":  "2026-04-25T02:27:38-04:00"
                           },
                           {
                               "module_name":  "documents",
@@ -475,9 +475,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "enrollment_period_wizard",
@@ -489,9 +489,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "executive360",
@@ -505,7 +505,7 @@
                               "has_tests_dir":  true,
                               "test_file_count":  0,
                               "total_file_count":  8,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "facops",
@@ -517,9 +517,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  25,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  6,
+                              "total_file_count":  27,
+                              "last_commit_iso":  "2026-03-11T22:03:18-04:00"
                           },
                           {
                               "module_name":  "fee_schedule_wizard",
@@ -531,9 +531,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "finance",
@@ -545,9 +545,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  11,
-                              "total_file_count":  41,
-                              "last_commit_iso":  "2026-04-13T19:06:34-04:00"
+                              "test_file_count":  14,
+                              "total_file_count":  44,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "finance_setup",
@@ -559,9 +559,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  8,
-                              "total_file_count":  34,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  10,
+                              "total_file_count":  37,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "financial_aid",
@@ -573,9 +573,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  20,
-                              "total_file_count":  54,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  26,
+                              "total_file_count":  61,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "financial_aid_wizard",
@@ -587,9 +587,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "governance",
@@ -603,7 +603,7 @@
                               "has_tests_dir":  true,
                               "test_file_count":  0,
                               "total_file_count":  13,
-                              "last_commit_iso":  "2026-04-20T17:27:06Z"
+                              "last_commit_iso":  "2026-04-21T01:09:05-04:00"
                           },
                           {
                               "module_name":  "grade_scale_wizard",
@@ -615,9 +615,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "grade_weights_wizard",
@@ -629,9 +629,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "gradebook",
@@ -643,9 +643,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  29,
-                              "total_file_count":  57,
-                              "last_commit_iso":  "2026-04-13T18:03:15-04:00"
+                              "test_file_count":  38,
+                              "total_file_count":  67,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "gradebook_setup_wizard",
@@ -657,9 +657,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "graduation",
@@ -672,8 +672,8 @@
                               "has_migrations":  true,
                               "has_tests_dir":  false,
                               "test_file_count":  0,
-                              "total_file_count":  24,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "total_file_count":  25,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "guardian_household_wizard",
@@ -685,9 +685,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "households",
@@ -699,9 +699,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  15,
-                              "total_file_count":  37,
-                              "last_commit_iso":  "2026-04-15T06:04:51-04:00"
+                              "test_file_count":  19,
+                              "total_file_count":  42,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "hr",
@@ -715,7 +715,7 @@
                               "has_tests_dir":  false,
                               "test_file_count":  0,
                               "total_file_count":  18,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "imports",
@@ -741,9 +741,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  11,
-                              "total_file_count":  44,
-                              "last_commit_iso":  "2026-04-19T00:53:56-04:00"
+                              "test_file_count":  16,
+                              "total_file_count":  49,
+                              "last_commit_iso":  "2026-04-21T01:09:05-04:00"
                           },
                           {
                               "module_name":  "integrations_real",
@@ -757,7 +757,7 @@
                               "has_tests_dir":  false,
                               "test_file_count":  0,
                               "total_file_count":  16,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "invoice_run_wizard",
@@ -769,9 +769,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "journal",
@@ -783,8 +783,8 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  23,
+                              "test_file_count":  6,
+                              "total_file_count":  24,
                               "last_commit_iso":  "2026-02-25T17:57:39-05:00"
                           },
                           {
@@ -797,9 +797,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  35,
-                              "total_file_count":  83,
-                              "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                              "test_file_count":  46,
+                              "total_file_count":  94,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "msauth",
@@ -813,7 +813,7 @@
                               "has_tests_dir":  false,
                               "test_file_count":  0,
                               "total_file_count":  8,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "onboarding",
@@ -825,9 +825,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  8,
-                              "total_file_count":  36,
-                              "last_commit_iso":  "2026-04-13T20:02:09-04:00"
+                              "test_file_count":  10,
+                              "total_file_count":  39,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "outreach",
@@ -839,9 +839,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  25,
-                              "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  28,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "parent360",
@@ -853,9 +853,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  false,
                               "has_tests_dir":  true,
-                              "test_file_count":  3,
-                              "total_file_count":  11,
-                              "last_commit_iso":  "2026-04-12T18:44:54-04:00"
+                              "test_file_count":  4,
+                              "total_file_count":  12,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "payments",
@@ -867,9 +867,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  23,
-                              "total_file_count":  85,
-                              "last_commit_iso":  "2026-04-13T20:02:09-04:00"
+                              "test_file_count":  30,
+                              "total_file_count":  93,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "pdhub",
@@ -883,7 +883,7 @@
                               "has_tests_dir":  true,
                               "test_file_count":  0,
                               "total_file_count":  18,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-03-18T13:20:29Z"
                           },
                           {
                               "module_name":  "platform_ops",
@@ -896,8 +896,8 @@
                               "has_migrations":  true,
                               "has_tests_dir":  false,
                               "test_file_count":  0,
-                              "total_file_count":  16,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "total_file_count":  17,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "portrait",
@@ -911,7 +911,7 @@
                               "has_tests_dir":  true,
                               "test_file_count":  0,
                               "total_file_count":  16,
-                              "last_commit_iso":  "2026-04-11T21:39:44-04:00"
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "promotion_wizard",
@@ -923,9 +923,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "reenrollment",
@@ -937,9 +937,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "room_setup_wizard",
@@ -951,9 +951,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "safety",
@@ -967,7 +967,7 @@
                               "has_tests_dir":  false,
                               "test_file_count":  0,
                               "total_file_count":  18,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "scheduling_wizard",
@@ -979,9 +979,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "school_subscriptions",
@@ -1007,9 +1007,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "section_scheduler_wizard",
@@ -1021,9 +1021,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  21,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  23,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "section_staffing_wizard",
@@ -1035,9 +1035,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "servicehours",
@@ -1050,8 +1050,8 @@
                               "has_migrations":  true,
                               "has_tests_dir":  true,
                               "test_file_count":  0,
-                              "total_file_count":  30,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "total_file_count":  31,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "signals",
@@ -1063,9 +1063,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  35,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  6,
+                              "total_file_count":  36,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "spiritual_life",
@@ -1077,9 +1077,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  26,
-                              "last_commit_iso":  "2026-04-12T13:52:04-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  29,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "staff_onboarding_wizard",
@@ -1091,9 +1091,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "staff_setup_wizard",
@@ -1105,9 +1105,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "student_import_wizard",
@@ -1119,23 +1119,23 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "student_records",
                               "path":  "backend/student_records",
                               "has_apps_py":  true,
                               "has_models_py":  true,
-                              "has_views_py":  false,
+                              "has_views_py":  true,
                               "has_urls_py":  true,
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  0,
-                              "total_file_count":  15,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  4,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-23T11:25:19Z"
                           },
                           {
                               "module_name":  "student360",
@@ -1147,9 +1147,9 @@
                               "has_admin_py":  true,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  6,
-                              "total_file_count":  24,
-                              "last_commit_iso":  "2026-04-12T18:44:54-04:00"
+                              "test_file_count":  8,
+                              "total_file_count":  26,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "subscriptions",
@@ -1161,9 +1161,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  11,
-                              "total_file_count":  49,
-                              "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                              "test_file_count":  14,
+                              "total_file_count":  53,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "support",
@@ -1176,7 +1176,7 @@
                               "has_migrations":  true,
                               "has_tests_dir":  false,
                               "test_file_count":  0,
-                              "total_file_count":  16,
+                              "total_file_count":  17,
                               "last_commit_iso":  "2026-03-11T19:08:03-04:00"
                           },
                           {
@@ -1190,7 +1190,7 @@
                               "has_migrations":  true,
                               "has_tests_dir":  false,
                               "test_file_count":  0,
-                              "total_file_count":  14,
+                              "total_file_count":  15,
                               "last_commit_iso":  "2026-02-28T10:03:25-05:00"
                           },
                           {
@@ -1203,9 +1203,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  19,
-                              "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                              "test_file_count":  6,
+                              "total_file_count":  21,
+                              "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                           },
                           {
                               "module_name":  "transportation",
@@ -1217,9 +1217,9 @@
                               "has_admin_py":  false,
                               "has_migrations":  true,
                               "has_tests_dir":  true,
-                              "test_file_count":  5,
-                              "total_file_count":  25,
-                              "last_commit_iso":  "2026-04-12T05:59:58Z"
+                              "test_file_count":  6,
+                              "total_file_count":  27,
+                              "last_commit_iso":  "2026-03-11T22:03:18-04:00"
                           }
                       ],
     "test_inventory":  [
@@ -1227,7 +1227,7 @@
                                "module_name":  "academic_year_wizard",
                                "test_path":  "backend/academic_year_wizard/tests/test_views.py",
                                "size_bytes":  20072,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "academic_year_wizard",
@@ -1245,7 +1245,7 @@
                                "module_name":  "academics",
                                "test_path":  "backend/academics/tests/test_academics_readonly_api.py",
                                "size_bytes":  8247,
-                               "last_commit_iso":  "2026-04-14T06:58:59Z"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "academics",
@@ -1305,7 +1305,7 @@
                                "module_name":  "academics",
                                "test_path":  "backend/academics/tests/test_transcript_ro_api.py",
                                "size_bytes":  10087,
-                               "last_commit_iso":  "2026-04-13T18:03:15-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "academics",
@@ -1431,7 +1431,7 @@
                                "module_name":  "athletics",
                                "test_path":  "backend/athletics/tests/test_athletics.py",
                                "size_bytes":  20388,
-                               "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "athletics",
@@ -1443,7 +1443,7 @@
                                "module_name":  "attendance_codes_wizard",
                                "test_path":  "backend/attendance_codes_wizard/tests/test_views.py",
                                "size_bytes":  4741,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "attendance_codes_wizard",
@@ -1455,7 +1455,7 @@
                                "module_name":  "attendance_rules_wizard",
                                "test_path":  "backend/attendance_rules_wizard/tests/test_views.py",
                                "size_bytes":  10303,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "attendance_rules_wizard",
@@ -1467,7 +1467,7 @@
                                "module_name":  "bell_schedule_wizard",
                                "test_path":  "backend/bell_schedule_wizard/tests/test_views.py",
                                "size_bytes":  23821,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "bell_schedule_wizard",
@@ -1521,7 +1521,7 @@
                                "module_name":  "billing_wizard",
                                "test_path":  "backend/billing_wizard/tests/test_views.py",
                                "size_bytes":  15550,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "billing_wizard",
@@ -1533,19 +1533,19 @@
                                "module_name":  "board_oversight",
                                "test_path":  "backend/board_oversight/tests/test_board_get_only.py",
                                "size_bytes":  1156,
-                               "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "board_oversight",
                                "test_path":  "backend/board_oversight/tests/test_board_rbac.py",
                                "size_bytes":  485,
-                               "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "board_oversight",
                                "test_path":  "backend/board_oversight/tests/test_board_tenant_required.py",
                                "size_bytes":  464,
-                               "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "board_oversight",
@@ -1575,7 +1575,7 @@
                                "module_name":  "comms_wizard",
                                "test_path":  "backend/comms_wizard/tests/test_views.py",
                                "size_bytes":  15402,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "comms_wizard",
@@ -1605,7 +1605,7 @@
                                "module_name":  "core",
                                "test_path":  "backend/core/tests/test_scoping.py",
                                "size_bytes":  15176,
-                               "last_commit_iso":  "2026-04-13T20:22:18-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "core",
@@ -1617,7 +1617,7 @@
                                "module_name":  "course_catalog_wizard",
                                "test_path":  "backend/course_catalog_wizard/tests/test_views.py",
                                "size_bytes":  2534,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "course_catalog_wizard",
@@ -1629,13 +1629,13 @@
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_academics_api.py",
                                "size_bytes":  7510,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_admissions_links_api.py",
                                "size_bytes":  3274,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
@@ -1677,13 +1677,13 @@
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_billing_summary_api.py",
                                "size_bytes":  4628,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_comms_api.py",
                                "size_bytes":  7522,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
@@ -1694,7 +1694,7 @@
                            {
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_dashboard_snapshot_summary_api.py",
-                               "size_bytes":  2214,
+                               "size_bytes":  2148,
                                "last_commit_iso":  "2026-03-10T07:19:04-04:00"
                            },
                            {
@@ -1718,14 +1718,14 @@
                            {
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_director_router.py",
-                               "size_bytes":  4338,
+                               "size_bytes":  4226,
                                "last_commit_iso":  "2026-01-04T15:05:26-05:00"
                            },
                            {
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_financial_aid_drilldown.py",
                                "size_bytes":  1761,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
@@ -1737,13 +1737,13 @@
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_health.py",
                                "size_bytes":  1423,
-                               "last_commit_iso":  "2026-04-13T07:33:30-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_households_api.py",
                                "size_bytes":  8165,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
@@ -1815,7 +1815,7 @@
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_scheduling_api.py",
                                "size_bytes":  8385,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
@@ -1827,7 +1827,7 @@
                                "module_name":  "crown_api",
                                "test_path":  "backend/crown_api/tests/test_students_api.py",
                                "size_bytes":  4020,
-                               "last_commit_iso":  "2026-04-13T21:00:13-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "crown_api",
@@ -1863,7 +1863,7 @@
                                "module_name":  "enrollment_conversion_wizard",
                                "test_path":  "backend/enrollment_conversion_wizard/tests/test_views.py",
                                "size_bytes":  9992,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "enrollment_conversion_wizard",
@@ -1875,7 +1875,7 @@
                                "module_name":  "enrollment_period_wizard",
                                "test_path":  "backend/enrollment_period_wizard/tests/test_views.py",
                                "size_bytes":  20811,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "enrollment_period_wizard",
@@ -1899,7 +1899,7 @@
                                "module_name":  "fee_schedule_wizard",
                                "test_path":  "backend/fee_schedule_wizard/tests/test_views.py",
                                "size_bytes":  18475,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "fee_schedule_wizard",
@@ -1983,7 +1983,7 @@
                                "module_name":  "financial_aid",
                                "test_path":  "backend/financial_aid/tests/test_workflows.py",
                                "size_bytes":  3464,
-                               "last_commit_iso":  "2026-04-11T21:39:44-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "financial_aid",
@@ -1995,7 +1995,7 @@
                                "module_name":  "financial_aid_wizard",
                                "test_path":  "backend/financial_aid_wizard/tests/test_views.py",
                                "size_bytes":  16666,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "financial_aid_wizard",
@@ -2007,7 +2007,7 @@
                                "module_name":  "grade_scale_wizard",
                                "test_path":  "backend/grade_scale_wizard/tests/test_views.py",
                                "size_bytes":  23503,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "grade_scale_wizard",
@@ -2019,7 +2019,7 @@
                                "module_name":  "grade_weights_wizard",
                                "test_path":  "backend/grade_weights_wizard/tests/test_views.py",
                                "size_bytes":  4585,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "grade_weights_wizard",
@@ -2043,13 +2043,13 @@
                                "module_name":  "gradebook",
                                "test_path":  "backend/gradebook/tests/test_gradebook_list_endpoints.py",
                                "size_bytes":  10714,
-                               "last_commit_iso":  "2026-04-13T18:03:15-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "gradebook",
                                "test_path":  "backend/gradebook/tests/test_gradebook_ro_api.py",
                                "size_bytes":  5993,
-                               "last_commit_iso":  "2026-04-13T18:03:15-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "gradebook",
@@ -2091,7 +2091,7 @@
                                "module_name":  "gradebook_setup_wizard",
                                "test_path":  "backend/gradebook_setup_wizard/tests/test_views.py",
                                "size_bytes":  11053,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "gradebook_setup_wizard",
@@ -2103,7 +2103,7 @@
                                "module_name":  "guardian_household_wizard",
                                "test_path":  "backend/guardian_household_wizard/tests/test_views.py",
                                "size_bytes":  4001,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "guardian_household_wizard",
@@ -2115,7 +2115,7 @@
                                "module_name":  "households",
                                "test_path":  "backend/households/tests/conftest.py",
                                "size_bytes":  532,
-                               "last_commit_iso":  "2026-04-15T06:04:51-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "households",
@@ -2132,7 +2132,7 @@
                            {
                                "module_name":  "households",
                                "test_path":  "backend/households/tests/test_tenant_isolation.py",
-                               "size_bytes":  8550,
+                               "size_bytes":  8328,
                                "last_commit_iso":  "2026-01-27T17:06:07-05:00"
                            },
                            {
@@ -2175,7 +2175,7 @@
                                "module_name":  "invoice_run_wizard",
                                "test_path":  "backend/invoice_run_wizard/tests/test_views.py",
                                "size_bytes":  10473,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "invoice_run_wizard",
@@ -2205,19 +2205,19 @@
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_gate2b_charge_void_reversal.py",
                                "size_bytes":  2730,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_ledger_allocations_api.py",
                                "size_bytes":  2165,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_ledger_api.py",
                                "size_bytes":  1967,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
@@ -2229,31 +2229,31 @@
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_ledger_invariants.py",
                                "size_bytes":  7663,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_ledger_payments_correctness_api.py",
                                "size_bytes":  3725,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_ledger_statements_api.py",
                                "size_bytes":  2248,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_ledger_void_endpoints_api.py",
                                "size_bytes":  7778,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
                                "test_path":  "backend/ledger/tests/test_ledger_write_safety.py",
                                "size_bytes":  5199,
-                               "last_commit_iso":  "2026-04-13T21:03:33-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "ledger",
@@ -2271,7 +2271,7 @@
                                "module_name":  "onboarding",
                                "test_path":  "backend/onboarding/tests/test_solomon_services.py",
                                "size_bytes":  21719,
-                               "last_commit_iso":  "2026-04-11T21:39:44-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "onboarding",
@@ -2289,7 +2289,7 @@
                                "module_name":  "outreach",
                                "test_path":  "backend/outreach/tests/test_outreach.py",
                                "size_bytes":  18787,
-                               "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "outreach",
@@ -2301,7 +2301,7 @@
                                "module_name":  "parent360",
                                "test_path":  "backend/parent360/tests/test_parent_overview_api.py",
                                "size_bytes":  6918,
-                               "last_commit_iso":  "2026-04-11T21:39:44-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "payments",
@@ -2355,7 +2355,7 @@
                                "module_name":  "promotion_wizard",
                                "test_path":  "backend/promotion_wizard/tests/test_views.py",
                                "size_bytes":  2421,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "promotion_wizard",
@@ -2379,7 +2379,7 @@
                                "module_name":  "room_setup_wizard",
                                "test_path":  "backend/room_setup_wizard/tests/test_views.py",
                                "size_bytes":  2149,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "room_setup_wizard",
@@ -2391,7 +2391,7 @@
                                "module_name":  "scheduling_wizard",
                                "test_path":  "backend/scheduling_wizard/tests/test_views.py",
                                "size_bytes":  16283,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "scheduling_wizard",
@@ -2403,7 +2403,7 @@
                                "module_name":  "section_assign_wizard",
                                "test_path":  "backend/section_assign_wizard/tests/test_views.py",
                                "size_bytes":  21191,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "section_assign_wizard",
@@ -2415,7 +2415,7 @@
                                "module_name":  "section_scheduler_wizard",
                                "test_path":  "backend/section_scheduler_wizard/tests/test_views.py",
                                "size_bytes":  4531,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "section_scheduler_wizard",
@@ -2427,7 +2427,7 @@
                                "module_name":  "section_staffing_wizard",
                                "test_path":  "backend/section_staffing_wizard/tests/test_views.py",
                                "size_bytes":  4106,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "section_staffing_wizard",
@@ -2463,7 +2463,7 @@
                                "module_name":  "staff_onboarding_wizard",
                                "test_path":  "backend/staff_onboarding_wizard/tests/test_views.py",
                                "size_bytes":  12513,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "staff_onboarding_wizard",
@@ -2475,7 +2475,7 @@
                                "module_name":  "staff_setup_wizard",
                                "test_path":  "backend/staff_setup_wizard/tests/test_views.py",
                                "size_bytes":  2574,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "staff_setup_wizard",
@@ -2487,7 +2487,7 @@
                                "module_name":  "student_import_wizard",
                                "test_path":  "backend/student_import_wizard/tests/test_views.py",
                                "size_bytes":  4063,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "student_import_wizard",
@@ -2496,10 +2496,16 @@
                                "last_commit_iso":  "2026-02-28T05:20:02-05:00"
                            },
                            {
+                               "module_name":  "student_records",
+                               "test_path":  "backend/student_records/tests/test_student_records_routes.py",
+                               "size_bytes":  4344,
+                               "last_commit_iso":  "2026-04-23T11:25:19Z"
+                           },
+                           {
                                "module_name":  "student360",
                                "test_path":  "backend/student360/tests/test_overview_api.py",
                                "size_bytes":  2548,
-                               "last_commit_iso":  "2026-04-11T21:39:44-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "student360",
@@ -2523,7 +2529,7 @@
                                "module_name":  "subscriptions",
                                "test_path":  "backend/subscriptions/tests/test_permissions_enforcement.py",
                                "size_bytes":  6705,
-                               "last_commit_iso":  "2026-04-13T20:14:25-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "subscriptions",
@@ -2535,7 +2541,7 @@
                                "module_name":  "term_structure_wizard",
                                "test_path":  "backend/term_structure_wizard/tests/test_views.py",
                                "size_bytes":  24913,
-                               "last_commit_iso":  "2026-04-13T20:35:54-04:00"
+                               "last_commit_iso":  "2026-04-18T06:19:41-04:00"
                            },
                            {
                                "module_name":  "term_structure_wizard",

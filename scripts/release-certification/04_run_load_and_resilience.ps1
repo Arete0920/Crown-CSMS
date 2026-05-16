@@ -49,12 +49,21 @@ if ($Skip) {
 if ([string]::IsNullOrWhiteSpace($LoadHost)) {
   throw "LoadHost is required unless -SkipLoad is used."
 }
+
+$normalizedHost = if ($LoadHost -match "^https?://") { $LoadHost } else { "https://$LoadHost" }
+
 if (-not (Test-Path "scripts/load/locustfile.py")) {
   throw "scripts/load/locustfile.py not found."
 }
 
-python -m pip install locust *> (Join-Path $OutputDir "04_locust_install.txt")
-if ($LASTEXITCODE -ne 0) {
+$installOut = Join-Path $OutputDir "04_locust_install.txt"
+$previousErrorAction = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+python -m pip install locust *> $installOut
+$pipExitCode = $LASTEXITCODE
+$ErrorActionPreference = $previousErrorAction
+
+if ($pipExitCode -ne 0) {
   throw "locust installation failed"
 }
 New-Item -ItemType Directory -Force -Path (Join-Path $OutputDir "load") | Out-Null
@@ -63,7 +72,7 @@ Invoke-LocustRun `
   -Arguments @(
     "-f", "scripts/load/locustfile.py",
     "--headless", "-u", "200", "-r", "20", "--run-time", "120s",
-    "--host", $LoadHost,
+    "--host", $normalizedHost,
     "--html", (Join-Path $OutputDir "load/crown-load-smoke.html")
   ) `
   -OutputPath (Join-Path $OutputDir "04_load_smoke.txt") `
@@ -73,7 +82,7 @@ Invoke-LocustRun `
   -Arguments @(
     "-f", "scripts/load/locustfile.py",
     "--headless", "-u", "200", "-r", "20", "--run-time", "180s",
-    "--host", $LoadHost,
+    "--host", $normalizedHost,
     "--html", (Join-Path $OutputDir "load/crown-load-final.html"),
     "--csv", (Join-Path $OutputDir "load/crown-load-final")
   ) `
@@ -82,5 +91,5 @@ Invoke-LocustRun `
 
 [pscustomobject]@{
   skipped = $false
-  host    = $LoadHost
+  host    = $normalizedHost
 } | ConvertTo-Json -Depth 4 | Out-File $outFile -Encoding utf8
