@@ -7,7 +7,6 @@ param(
 $ErrorActionPreference = "Stop"
 
 $outJson = Join-Path $OutputDir "01_branch_protection.json"
-$rulesetsJson = Join-Path $OutputDir "01_branch_rulesets.json"
 $outTxt  = Join-Path $OutputDir "01_branch_protection_manual.txt"
 
 if ($Skip) {
@@ -21,32 +20,12 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
 
 gh api "/repos/$RepoSlug/branches/main/protection" > $outJson
 if ($LASTEXITCODE -ne 0) {
-  # Some repos enforce governance with rulesets instead of legacy branch protection.
-  gh api "/repos/$RepoSlug/rulesets" > $rulesetsJson
-  if ($LASTEXITCODE -ne 0) {
-    throw "gh api branch protection export failed"
-  }
-
-  $rulesets = Get-Content $rulesetsJson -Raw | ConvertFrom-Json
-  $activeBranchRulesets = @($rulesets | Where-Object {
-    $_.target -eq "branch" -and $_.enforcement -eq "active"
-  })
-
-  if ($activeBranchRulesets.Count -eq 0) {
-    throw "No active branch governance found (branch protection missing and no active branch rulesets)."
-  }
-
-  [pscustomobject]@{
-    mode = "rulesets"
-    repo = $RepoSlug
-    branch_protection = "missing"
-    active_branch_rulesets = $activeBranchRulesets | Select-Object id, name, enforcement, target
-  } | ConvertTo-Json -Depth 6 | Out-File $outJson -Encoding utf8
+  throw "gh api branch protection export failed"
 }
 
 @"
 MANUAL REQUIRED
-1. Open GitHub > Settings > Branches or Rulesets
+1. Open GitHub > Settings > Branches > main
 2. Capture a screenshot showing:
    - required checks
    - include administrators
