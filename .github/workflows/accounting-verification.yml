@@ -23,11 +23,11 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r backend/requirements.txt
 
       - name: Run Accounting Tests
         run: |
-          python manage.py test apps.accounting
+          python backend/manage.py test apps.accounting
 
       - name: Prevent Float Usage
         run: |
