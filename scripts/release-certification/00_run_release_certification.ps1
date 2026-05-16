@@ -131,7 +131,8 @@ try {
 Write-Section "06 Phase 2 gates: transcript, export, reporting, and sandbox role route regression"
 try {
   powershell -ExecutionPolicy Bypass -File "scripts/release-certification/06_run_phase2_gates.ps1" `
-    -OutputDir $runDir
+    -OutputDir $runDir `
+    -FrontendUrl $FrontendUrl
   if ($LASTEXITCODE -ne 0) {
     throw "Phase 2 gates step failed"
   }

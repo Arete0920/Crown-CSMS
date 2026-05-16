@@ -1,5 +1,5 @@
 ﻿{
-    "generated_at_utc":  "2026-04-21T11:30:56.9394005Z",
+    "generated_at_utc":  "2026-05-14T03:42:51.6117827Z",
     "repo_root":  "C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr",
     "backend_root":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\backend",
     "manage_py_exists":  true,
@@ -11,6 +11,6 @@
     "backend_app_count":  86,
     "backend_apps_with_models":  74,
     "backend_apps_with_urls":  54,
-    "backend_apps_with_tests":  58,
-    "backend_test_file_count":  222
+    "backend_apps_with_tests":  59,
+    "backend_test_file_count":  223
 }

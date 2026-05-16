@@ -1,10 +1,14 @@
 param(
-  [string]$OutputDir
+  [string]$OutputDir,
+  [string]$FrontendUrl = "http://127.0.0.1:3000"
 )
 
 $ErrorActionPreference = "Stop"
 
 $resolvedOutputDir = (Resolve-Path $OutputDir).Path
+
+$env:CERT_FRONTEND_URL = $FrontendUrl
+$env:CERT_SANDBOX_MODE = "1"
 
 $backendOut = Join-Path $resolvedOutputDir "06_pytest_reporting_exports_gate.txt"
 pytest backend/tests/test_reporting_exports_gate.py -v *> $backendOut

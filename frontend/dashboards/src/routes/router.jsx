@@ -398,23 +398,23 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.FINANCE,
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
-      : (
-        <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-          <FinanceDashboard />
-        </RoleRouteGuard>
-      )),
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        {IS_LAUNCH_PREVIEW
+          ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
+          : <FinanceDashboard />}
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/finance/dashboard',
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
-      : (
-        <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-          <FinanceDashboard />
-        </RoleRouteGuard>
-      )),
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        {IS_LAUNCH_PREVIEW
+          ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
+          : <FinanceDashboard />}
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.IT,

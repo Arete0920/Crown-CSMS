@@ -88,6 +88,9 @@ comms
  [X] 0002_outbox_message
 comms_wizard
  [X] 0001_initial
+ [X] 0002_message_template
+ [X] 0003_rename_comms_wizar_school__idx1_comms_wizar_school__2f2841_idx_and_more
+ [X] 0004_delete_messagetemplate
 contenttypes
  [X] 0001_initial
  [X] 0002_remove_content_type_name
@@ -102,6 +105,7 @@ core
  [X] 0008_delete_datadestructioncertificate
  [X] 0009_household_family_link
  [X] 0010_backfill_household_family_link
+ [X] 0011_retentionpurgeaudit
 course_catalog_wizard
  [X] 0001_initial
 crown_api
@@ -124,6 +128,8 @@ curriculum
  [X] 0001_initial
 discipline
  [X] 0001_initial
+ [X] 0002_alter_disciplineaction_action_type
+ [X] 0003_alter_disciplineaction_action_type
 enrollment_conversion_wizard
  [X] 0001_initial
 enrollment_period_wizard
