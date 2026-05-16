@@ -1,6 +1,10 @@
 name: Accounting Verification
 
 on:
+  workflow_dispatch:
+  push:
+    branches:
+      - release/accounting-foundation-stage1
   pull_request:
     branches:
       - main
