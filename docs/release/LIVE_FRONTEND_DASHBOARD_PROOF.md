@@ -1,6 +1,6 @@
 ﻿# LIVE FRONTEND DASHBOARD PROOF
 
-Generated UTC: 2026-04-21T11:32:24.5073094Z
+Generated UTC: 2026-05-14T03:44:34.9242040Z
 
 ## Frontend Summary
 - node available: True
@@ -8,10 +8,10 @@ Generated UTC: 2026-04-21T11:32:24.5073094Z
 - packages with build script: 1
 - build attempt count: 1
 - build success count: 1
-- dashboard file count: 625
-- route file count: 213
-- component file count: 252
-- portal file count: 49
+- dashboard file count: 729
+- route file count: 267
+- component file count: 317
+- portal file count: 57
 
 ## Packages
 - crown-dashboards | build=True | test=True | lint=True | manager=npm | dir=frontend/dashboards
