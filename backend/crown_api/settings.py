@@ -180,6 +180,7 @@ INSTALLED_APPS = [
     'crown_api.exports',
     'core',
     'curriculum',
+    'apps.compliance.apps.ComplianceConfig',
     'apps.accounting.apps.AccountingConfig',
     'finance.apps.FinanceConfig',
     'aid.apps.AidConfig',

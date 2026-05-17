@@ -1,5 +1,13 @@
-# Subprocessor Register
+# SUBPROCESSOR REGISTER
 
-Status: Pending
+| Vendor | Purpose | Data Categories |
+|---|---|---|
+| Microsoft Azure | hosting/storage | operational |
+| Stripe | payments | billing |
+| Twilio | messaging | communication |
+| Sentry | error monitoring | operational metadata |
 
-This document must list subprocessors, purposes, data categories, regions, and change-notification commitments before pilot and GA.
+## Governance
+
+All subprocessors must maintain appropriate
+security and privacy protections.
