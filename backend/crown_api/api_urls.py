@@ -54,10 +54,12 @@ from board_oversight import api_governance
 from governance import views as governance_views
 from support import api_support
 from analytics import api_health
+from apps.compliance.api.parent_rights import ParentDataRightsRequestView
 
 urlpatterns = [
     # Permission-derived navigation
     path('nav/',                    nav_view,               name='nav'),
+    path('compliance/parent-rights/', ParentDataRightsRequestView.as_view(), name='parent-rights'),
 
     # Dashboard metrics endpoints (read-only, persona-scoped)
     path('admin/metrics/',          admin_metrics,          name='admin-metrics'),
@@ -96,7 +98,7 @@ urlpatterns = [
     path("aid/", include("aid.api_urls")),
     # financial-aid/ registered in api_v1_urls.py (position 16) — do not re-register here
     path("admissions/", include("admissions.api_urls")),
-    
+
     # New demo pillars (discipline, service hours, Teams integration)
     path("discipline/", include("discipline.api.urls")),
     path("service/", include("servicehours.api.urls")),
@@ -200,7 +202,7 @@ urlpatterns = [
         student_grades_list,
         name="student_grades_list",
     ),
-    
+
     # Legacy unified routes (DEPRECATED - kept for backwards compatibility)
     path("director/aid/summary/", aid_summary, name="aid_summary"),
     path("director/finance/summary/", finance_summary, name="finance_summary"),
