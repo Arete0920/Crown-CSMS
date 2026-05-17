@@ -1,12 +1,12 @@
 ﻿{
-    "generated_at_utc":  "2026-04-21T11:32:24.5073094Z",
+    "generated_at_utc":  "2026-05-14T03:44:34.9242040Z",
     "node_available":  true,
     "package_count":  1,
     "packages_with_build":  1,
     "build_attempt_count":  1,
     "build_success_count":  1,
-    "dashboard_file_count":  625,
-    "route_file_count":  213,
-    "component_file_count":  252,
-    "portal_file_count":  49
+    "dashboard_file_count":  729,
+    "route_file_count":  267,
+    "component_file_count":  317,
+    "portal_file_count":  57
 }

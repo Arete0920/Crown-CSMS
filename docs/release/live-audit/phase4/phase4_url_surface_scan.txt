@@ -18,15 +18,263 @@ backend/crown_api/tests/test_seed_edge_cases.py:67:r = c.get("/api/health/")
 backend/crown_api/tests/test_seed_edge_cases.py:72:pytest.fail(f"/api/health/ response is not valid JSON: {exc}")
 backend/crown_api/tests/test_seed_edge_cases.py:73:assert "status" in data, f"Missing 'status' key in /api/health/ response: {data}"
 backend/tenants/middleware.py:32:"/api/health/",
+backend/tests/test_audit_logging_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_audit_logging_api.py:55:"/api/health/",
+backend/tests/test_audit_logging_negative.py:49:"/api/health/",
+backend/tests/test_audit_logging_negative.py:58:"/api/health/",
+backend/tests/test_audit_logging_negative.py:78:"/api/health/",
+backend/tests/test_audit_logging_tenant.py:62:"/api/health/",
+backend/tests/test_board_governance_suite_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_board_governance_suite_api.py:55:"/api/health/",
+backend/tests/test_board_governance_suite_negative.py:49:"/api/health/",
+backend/tests/test_board_governance_suite_negative.py:58:"/api/health/",
+backend/tests/test_board_governance_suite_negative.py:78:"/api/health/",
+backend/tests/test_board_governance_suite_tenant.py:62:"/api/health/",
+backend/tests/test_chaplain_pastoral_care_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_chaplain_pastoral_care_api.py:55:"/api/health/",
+backend/tests/test_chaplain_pastoral_care_negative.py:49:"/api/health/",
+backend/tests/test_chaplain_pastoral_care_negative.py:58:"/api/health/",
+backend/tests/test_chaplain_pastoral_care_negative.py:78:"/api/health/",
+backend/tests/test_chaplain_pastoral_care_tenant.py:62:"/api/health/",
+backend/tests/test_christian_pd_hub_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_christian_pd_hub_api.py:55:"/api/health/",
+backend/tests/test_christian_pd_hub_negative.py:49:"/api/health/",
+backend/tests/test_christian_pd_hub_negative.py:58:"/api/health/",
+backend/tests/test_christian_pd_hub_negative.py:78:"/api/health/",
+backend/tests/test_christian_pd_hub_tenant.py:62:"/api/health/",
+backend/tests/test_communications_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_communications_api.py:55:"/api/health/",
+backend/tests/test_communications_negative.py:49:"/api/health/",
+backend/tests/test_communications_negative.py:58:"/api/health/",
+backend/tests/test_communications_negative.py:78:"/api/health/",
+backend/tests/test_communications_tenant.py:62:"/api/health/",
+backend/tests/test_crm_marketing_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_crm_marketing_api.py:55:"/api/health/",
+backend/tests/test_crm_marketing_negative.py:49:"/api/health/",
+backend/tests/test_crm_marketing_negative.py:58:"/api/health/",
+backend/tests/test_crm_marketing_negative.py:78:"/api/health/",
+backend/tests/test_crm_marketing_tenant.py:62:"/api/health/",
+backend/tests/test_crown_compass_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_crown_compass_api.py:55:"/api/health/",
+backend/tests/test_crown_compass_negative.py:49:"/api/health/",
+backend/tests/test_crown_compass_negative.py:58:"/api/health/",
+backend/tests/test_crown_compass_negative.py:78:"/api/health/",
+backend/tests/test_crown_compass_tenant.py:62:"/api/health/",
+backend/tests/test_document_file_framework_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_document_file_framework_api.py:55:"/api/health/",
+backend/tests/test_document_file_framework_negative.py:49:"/api/health/",
+backend/tests/test_document_file_framework_negative.py:58:"/api/health/",
+backend/tests/test_document_file_framework_negative.py:78:"/api/health/",
+backend/tests/test_document_file_framework_tenant.py:62:"/api/health/",
+backend/tests/test_emergency_medical_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_emergency_medical_api.py:55:"/api/health/",
+backend/tests/test_emergency_medical_negative.py:49:"/api/health/",
+backend/tests/test_emergency_medical_negative.py:58:"/api/health/",
+backend/tests/test_emergency_medical_negative.py:78:"/api/health/",
+backend/tests/test_emergency_medical_tenant.py:62:"/api/health/",
+backend/tests/test_extended_discipline_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_extended_discipline_api.py:55:"/api/health/",
+backend/tests/test_extended_discipline_negative.py:49:"/api/health/",
+backend/tests/test_extended_discipline_negative.py:58:"/api/health/",
+backend/tests/test_extended_discipline_negative.py:78:"/api/health/",
+backend/tests/test_extended_discipline_tenant.py:62:"/api/health/",
+backend/tests/test_grades_report_cards_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_grades_report_cards_api.py:55:"/api/health/",
+backend/tests/test_grades_report_cards_negative.py:49:"/api/health/",
+backend/tests/test_grades_report_cards_negative.py:58:"/api/health/",
+backend/tests/test_grades_report_cards_negative.py:78:"/api/health/",
+backend/tests/test_grades_report_cards_tenant.py:62:"/api/health/",
+backend/tests/test_grade_levels_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_grade_levels_api.py:55:"/api/health/",
+backend/tests/test_grade_levels_negative.py:49:"/api/health/",
+backend/tests/test_grade_levels_negative.py:58:"/api/health/",
+backend/tests/test_grade_levels_negative.py:78:"/api/health/",
+backend/tests/test_grade_levels_tenant.py:62:"/api/health/",
 backend/tests/test_health_demo_mode.py:10:r = self.client.get("/api/health/")
 backend/tests/test_health_demo_mode.py:18:r = self.client.get("/api/health/")
+backend/tests/test_mission_metrics_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_mission_metrics_api.py:55:"/api/health/",
+backend/tests/test_mission_metrics_negative.py:49:"/api/health/",
+backend/tests/test_mission_metrics_negative.py:58:"/api/health/",
+backend/tests/test_mission_metrics_negative.py:78:"/api/health/",
+backend/tests/test_mission_metrics_tenant.py:62:"/api/health/",
+backend/tests/test_mobile_family_app_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_mobile_family_app_api.py:55:"/api/health/",
+backend/tests/test_mobile_family_app_negative.py:49:"/api/health/",
+backend/tests/test_mobile_family_app_negative.py:58:"/api/health/",
+backend/tests/test_mobile_family_app_negative.py:78:"/api/health/",
+backend/tests/test_mobile_family_app_tenant.py:62:"/api/health/",
+backend/tests/test_notifications_framework_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_notifications_framework_api.py:55:"/api/health/",
+backend/tests/test_notifications_framework_negative.py:49:"/api/health/",
+backend/tests/test_notifications_framework_negative.py:58:"/api/health/",
+backend/tests/test_notifications_framework_negative.py:78:"/api/health/",
+backend/tests/test_notifications_framework_tenant.py:62:"/api/health/",
+backend/tests/test_nurse_health_office_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_nurse_health_office_api.py:55:"/api/health/",
+backend/tests/test_nurse_health_office_negative.py:49:"/api/health/",
+backend/tests/test_nurse_health_office_negative.py:58:"/api/health/",
+backend/tests/test_nurse_health_office_negative.py:78:"/api/health/",
+backend/tests/test_nurse_health_office_tenant.py:62:"/api/health/",
+backend/tests/test_parent_portal_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_parent_portal_api.py:55:"/api/health/",
+backend/tests/test_parent_portal_negative.py:49:"/api/health/",
+backend/tests/test_parent_portal_negative.py:58:"/api/health/",
+backend/tests/test_parent_portal_negative.py:78:"/api/health/",
+backend/tests/test_parent_portal_tenant.py:62:"/api/health/",
+backend/tests/test_portrait_graduate_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_portrait_graduate_api.py:55:"/api/health/",
+backend/tests/test_portrait_graduate_negative.py:49:"/api/health/",
+backend/tests/test_portrait_graduate_negative.py:58:"/api/health/",
+backend/tests/test_portrait_graduate_negative.py:78:"/api/health/",
+backend/tests/test_portrait_graduate_tenant.py:62:"/api/health/",
+backend/tests/test_reporting_data_access_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_reporting_data_access_api.py:55:"/api/health/",
+backend/tests/test_reporting_data_access_negative.py:49:"/api/health/",
+backend/tests/test_reporting_data_access_negative.py:58:"/api/health/",
+backend/tests/test_reporting_data_access_negative.py:78:"/api/health/",
+backend/tests/test_reporting_data_access_tenant.py:62:"/api/health/",
 backend/tests/test_reporting_exports_gate.py:35:candidates = ["/health/", "/api/health/"]
+backend/tests/test_schedule_builder_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_schedule_builder_api.py:55:"/api/health/",
+backend/tests/test_schedule_builder_negative.py:49:"/api/health/",
+backend/tests/test_schedule_builder_negative.py:58:"/api/health/",
+backend/tests/test_schedule_builder_negative.py:78:"/api/health/",
+backend/tests/test_schedule_builder_tenant.py:62:"/api/health/",
+backend/tests/test_school_profile_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_school_profile_api.py:55:"/api/health/",
+backend/tests/test_school_profile_negative.py:49:"/api/health/",
+backend/tests/test_school_profile_negative.py:58:"/api/health/",
+backend/tests/test_school_profile_negative.py:78:"/api/health/",
+backend/tests/test_school_profile_tenant.py:62:"/api/health/",
+backend/tests/test_school_year_term_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_school_year_term_api.py:55:"/api/health/",
+backend/tests/test_school_year_term_negative.py:49:"/api/health/",
+backend/tests/test_school_year_term_negative.py:58:"/api/health/",
+backend/tests/test_school_year_term_negative.py:78:"/api/health/",
+backend/tests/test_school_year_term_tenant.py:62:"/api/health/",
+backend/tests/test_service_outreach_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_service_outreach_api.py:55:"/api/health/",
+backend/tests/test_service_outreach_negative.py:49:"/api/health/",
+backend/tests/test_service_outreach_negative.py:58:"/api/health/",
+backend/tests/test_service_outreach_negative.py:78:"/api/health/",
+backend/tests/test_service_outreach_tenant.py:62:"/api/health/",
+backend/tests/test_shared_design_system_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_shared_design_system_api.py:55:"/api/health/",
+backend/tests/test_shared_design_system_negative.py:49:"/api/health/",
+backend/tests/test_shared_design_system_negative.py:58:"/api/health/",
+backend/tests/test_shared_design_system_negative.py:78:"/api/health/",
+backend/tests/test_shared_design_system_tenant.py:62:"/api/health/",
+backend/tests/test_shared_frontend_shell_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_shared_frontend_shell_api.py:55:"/api/health/",
+backend/tests/test_shared_frontend_shell_negative.py:49:"/api/health/",
+backend/tests/test_shared_frontend_shell_negative.py:58:"/api/health/",
+backend/tests/test_shared_frontend_shell_negative.py:78:"/api/health/",
+backend/tests/test_shared_frontend_shell_tenant.py:62:"/api/health/",
+backend/tests/test_staff_faculty_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_staff_faculty_api.py:55:"/api/health/",
+backend/tests/test_staff_faculty_negative.py:49:"/api/health/",
+backend/tests/test_staff_faculty_negative.py:58:"/api/health/",
+backend/tests/test_staff_faculty_negative.py:78:"/api/health/",
+backend/tests/test_staff_faculty_tenant.py:62:"/api/health/",
+backend/tests/test_student_care_discipline_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_student_care_discipline_api.py:55:"/api/health/",
+backend/tests/test_student_care_discipline_negative.py:49:"/api/health/",
+backend/tests/test_student_care_discipline_negative.py:58:"/api/health/",
+backend/tests/test_student_care_discipline_negative.py:78:"/api/health/",
+backend/tests/test_student_care_discipline_tenant.py:62:"/api/health/",
+backend/tests/test_student_master_record_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_student_master_record_api.py:55:"/api/health/",
+backend/tests/test_student_master_record_negative.py:49:"/api/health/",
+backend/tests/test_student_master_record_negative.py:58:"/api/health/",
+backend/tests/test_student_master_record_negative.py:78:"/api/health/",
+backend/tests/test_student_master_record_tenant.py:62:"/api/health/",
+backend/tests/test_survey_sentiment_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_survey_sentiment_api.py:55:"/api/health/",
+backend/tests/test_survey_sentiment_negative.py:49:"/api/health/",
+backend/tests/test_survey_sentiment_negative.py:58:"/api/health/",
+backend/tests/test_survey_sentiment_negative.py:78:"/api/health/",
+backend/tests/test_survey_sentiment_tenant.py:62:"/api/health/",
+backend/tests/test_transportation_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_transportation_api.py:55:"/api/health/",
+backend/tests/test_transportation_negative.py:49:"/api/health/",
+backend/tests/test_transportation_negative.py:58:"/api/health/",
+backend/tests/test_transportation_negative.py:78:"/api/health/",
+backend/tests/test_transportation_tenant.py:62:"/api/health/",
+backend/tests/test_volunteer_family_engagement_api.py:48:response = self.client.get("/api/health/")
+backend/tests/test_volunteer_family_engagement_api.py:55:"/api/health/",
+backend/tests/test_volunteer_family_engagement_negative.py:49:"/api/health/",
+backend/tests/test_volunteer_family_engagement_negative.py:58:"/api/health/",
+backend/tests/test_volunteer_family_engagement_negative.py:78:"/api/health/",
+backend/tests/test_volunteer_family_engagement_tenant.py:62:"/api/health/",
 
 ===== /api/integrity/ =====
 backend/core/tenant_header_middleware.py:26:/api/integrity/*, /api/schema/*, /api/docs/*
 backend/crown_api/tests/test_health.py:39:response = client.get('/api/integrity/')
 backend/tenants/middleware.py:33:"/api/integrity/",
+backend/tests/test_audit_logging_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_audit_logging_tenant.py:52:"/api/integrity/",
+backend/tests/test_board_governance_suite_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_board_governance_suite_tenant.py:52:"/api/integrity/",
+backend/tests/test_chaplain_pastoral_care_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_chaplain_pastoral_care_tenant.py:52:"/api/integrity/",
+backend/tests/test_christian_pd_hub_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_christian_pd_hub_tenant.py:52:"/api/integrity/",
+backend/tests/test_communications_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_communications_tenant.py:52:"/api/integrity/",
+backend/tests/test_crm_marketing_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_crm_marketing_tenant.py:52:"/api/integrity/",
+backend/tests/test_crown_compass_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_crown_compass_tenant.py:52:"/api/integrity/",
+backend/tests/test_document_file_framework_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_document_file_framework_tenant.py:52:"/api/integrity/",
+backend/tests/test_emergency_medical_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_emergency_medical_tenant.py:52:"/api/integrity/",
+backend/tests/test_extended_discipline_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_extended_discipline_tenant.py:52:"/api/integrity/",
+backend/tests/test_grades_report_cards_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_grades_report_cards_tenant.py:52:"/api/integrity/",
+backend/tests/test_grade_levels_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_grade_levels_tenant.py:52:"/api/integrity/",
+backend/tests/test_mission_metrics_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_mission_metrics_tenant.py:52:"/api/integrity/",
+backend/tests/test_mobile_family_app_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_mobile_family_app_tenant.py:52:"/api/integrity/",
+backend/tests/test_notifications_framework_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_notifications_framework_tenant.py:52:"/api/integrity/",
+backend/tests/test_nurse_health_office_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_nurse_health_office_tenant.py:52:"/api/integrity/",
+backend/tests/test_parent_portal_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_parent_portal_tenant.py:52:"/api/integrity/",
+backend/tests/test_portrait_graduate_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_portrait_graduate_tenant.py:52:"/api/integrity/",
+backend/tests/test_reporting_data_access_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_reporting_data_access_tenant.py:52:"/api/integrity/",
 backend/tests/test_reporting_exports_gate.py:48:candidates = ["/api/integrity/", "/integrity/"]
+backend/tests/test_schedule_builder_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_schedule_builder_tenant.py:52:"/api/integrity/",
+backend/tests/test_school_profile_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_school_profile_tenant.py:52:"/api/integrity/",
+backend/tests/test_school_year_term_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_school_year_term_tenant.py:52:"/api/integrity/",
+backend/tests/test_service_outreach_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_service_outreach_tenant.py:52:"/api/integrity/",
+backend/tests/test_shared_design_system_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_shared_design_system_tenant.py:52:"/api/integrity/",
+backend/tests/test_shared_frontend_shell_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_shared_frontend_shell_tenant.py:52:"/api/integrity/",
+backend/tests/test_staff_faculty_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_staff_faculty_tenant.py:52:"/api/integrity/",
+backend/tests/test_student_care_discipline_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_student_care_discipline_tenant.py:52:"/api/integrity/",
+backend/tests/test_student_master_record_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_student_master_record_tenant.py:52:"/api/integrity/",
+backend/tests/test_survey_sentiment_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_survey_sentiment_tenant.py:52:"/api/integrity/",
+backend/tests/test_transportation_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_transportation_tenant.py:52:"/api/integrity/",
+backend/tests/test_volunteer_family_engagement_api.py:72:response = client.get("/api/integrity/")
+backend/tests/test_volunteer_family_engagement_tenant.py:52:"/api/integrity/",
 
 ===== urlpatterns =====
 backend/academics/urls.py:59:urlpatterns = [
@@ -53,11 +301,11 @@ backend/crown_api/dashboards/urls.py:10:urlpatterns = [
 backend/crown_api/exports/urls.py:18:urlpatterns = [
 backend/crown_api/api_urls.py:58:urlpatterns = [
 backend/crown_api/api_v1_urls.py:20:urlpatterns = [
-backend/crown_api/urls.py:13:from crown_api.wizard_registry import get_wizard_urlpatterns  # single source of truth
-backend/crown_api/urls.py:29:urlpatterns = [
-backend/crown_api/urls.py:35:*get_wizard_urlpatterns(),  # wizard SDK: single source of truth in wizard_registry.py
-backend/crown_api/urls.py:134:urlpatterns.append(path("admin/", site.urls))
-backend/crown_api/urls.py:138:urlpatterns += [
+backend/crown_api/urls.py:14:from crown_api.wizard_registry import get_wizard_urlpatterns  # single source of truth
+backend/crown_api/urls.py:30:urlpatterns = [
+backend/crown_api/urls.py:36:*get_wizard_urlpatterns(),  # wizard SDK: single source of truth in wizard_registry.py
+backend/crown_api/urls.py:135:urlpatterns.append(path("admin/", site.urls))
+backend/crown_api/urls.py:139:urlpatterns += [
 backend/crown_api/wizard_registry.py:6:settings.py pulls WIZARD_INSTALLED_APPS; urls.py calls get_wizard_urlpatterns().
 backend/crown_api/wizard_registry.py:18:get_wizard_urlpatterns() uses a deferred import of path/include so it is only
 backend/crown_api/wizard_registry.py:269:def get_wizard_urlpatterns() -> list:
@@ -108,7 +356,7 @@ backend/staff_onboarding_wizard/urls.py:5:urlpatterns = [
 backend/staff_setup_wizard/urls.py:4:urlpatterns = [
 backend/student360/api/urls.py:4:urlpatterns = [
 backend/student_import_wizard/urls.py:4:urlpatterns = [
-backend/student_records/urls.py:3:urlpatterns = []
+backend/student_records/urls.py:5:urlpatterns = [
 backend/subscriptions/api/urls.py:16:urlpatterns = [
 backend/subscriptions/urls.py:5:urlpatterns = [
 backend/term_structure_wizard/urls.py:5:urlpatterns = [
@@ -426,51 +674,51 @@ backend/crown_api/lifecycle_contract_probe.py:73:"path": normalize_path(entry.ge
 backend/crown_api/seeded_contract_probe.py:12:ROOT = Path(__file__).resolve().parents[2]
 backend/crown_api/seeded_contract_probe.py:22:def normalize_path(value):
 backend/crown_api/seeded_contract_probe.py:60:"path": normalize_path(entry.get("path")),
-backend/crown_api/settings.py:45:BASE_DIR = Path(__file__).resolve().parent.parent
-backend/crown_api/urls.py:30:path("", RedirectView.as_view(url="director/", permanent=False)),
-backend/crown_api/urls.py:31:path("api/v1/graduation/", include("graduation.urls")),
-backend/crown_api/urls.py:32:path(
-backend/crown_api/urls.py:36:path("health/", health, name="health"),
-backend/crown_api/urls.py:37:path("api/health/", health, name="api_health"),
-backend/crown_api/urls.py:38:path("api/integrity/", integrity, name="api_integrity"),
-backend/crown_api/urls.py:39:path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-backend/crown_api/urls.py:40:path(
-backend/crown_api/urls.py:45:path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-backend/crown_api/urls.py:46:path("api/system/health/", system_health, name="system_health"),
-backend/crown_api/urls.py:47:path("health/version/", health_version, name="health_version"),
-backend/crown_api/urls.py:49:path("api/system/whoami/", whoami, name="system_whoami"),
-backend/crown_api/urls.py:51:path("api/v1/version/", version, name="version"),
-backend/crown_api/urls.py:53:path("api/ops/summary/", ops_summary, name="ops_summary"),
-backend/crown_api/urls.py:55:path("api/ops/alerts/", ops_alerts, name="ops_alerts"),
-backend/crown_api/urls.py:57:path(
-backend/crown_api/urls.py:63:path("api/system/audit/recent/", recent_audit_events, name="recent_audit_events"),
-backend/crown_api/urls.py:65:path("api/auth/login/", login, name="auth_login"),
-backend/crown_api/urls.py:66:path("api/auth/refresh/", refresh, name="auth_refresh"),
-backend/crown_api/urls.py:67:path("api/auth/me/", me, name="auth_me"),
-backend/crown_api/urls.py:69:path("api/dev/token/", dev_token, name="dev_token"),
-backend/crown_api/urls.py:71:path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
-backend/crown_api/urls.py:72:path("api/v1/", include("crown_api.api_v1_urls")),
-backend/crown_api/urls.py:74:path("api/", include("crown_api.api_v1_urls")),
-backend/crown_api/urls.py:76:path("api/dashboards/", include("crown_api.dashboards.urls")),
-backend/crown_api/urls.py:78:path("api/curriculum/", include("curriculum.urls")),
-backend/crown_api/urls.py:80:path("api/classroom/", include("classroom.urls")),
-backend/crown_api/urls.py:82:path("api/student360/", include("student360.api.urls")),
-backend/crown_api/urls.py:84:path("api/executive360/", include("executive360.api.urls")),
-backend/crown_api/urls.py:86:path("api/finance/", include("finance.api_urls")),
-backend/crown_api/urls.py:88:path("api/platform/", include("platform_ops.urls")),
-backend/crown_api/urls.py:90:path("api/v1/subscriptions/", include("subscriptions.api.urls")),
-backend/crown_api/urls.py:92:path("api/v1/admin/modules/", include("subscriptions.urls")),
-backend/crown_api/urls.py:94:path("api/integrations/", include("integrations.urls")),
-backend/crown_api/urls.py:96:path("auth/", include("msauth.urls")),
-backend/crown_api/urls.py:99:path("api/iam/", include("core.auth.urls")),
-backend/crown_api/urls.py:101:path("accounts/", include("django.contrib.auth.urls")),
-backend/crown_api/urls.py:103:path("director/", director_router, name="director_router"),
-backend/crown_api/urls.py:104:path(
-backend/crown_api/urls.py:110:path(
-backend/crown_api/urls.py:116:path(
-backend/crown_api/urls.py:122:path(
-backend/crown_api/urls.py:134:urlpatterns.append(path("admin/", site.urls))
-backend/crown_api/urls.py:139:path("", include("release_closeout.urls")),
+backend/crown_api/settings.py:47:BASE_DIR = Path(__file__).resolve().parent.parent
+backend/crown_api/urls.py:31:path("", RedirectView.as_view(url="director/", permanent=False)),
+backend/crown_api/urls.py:32:path("api/v1/graduation/", include("graduation.urls")),
+backend/crown_api/urls.py:33:path(
+backend/crown_api/urls.py:37:path("health/", health, name="health"),
+backend/crown_api/urls.py:38:path("api/health/", health, name="api_health"),
+backend/crown_api/urls.py:39:path("api/integrity/", integrity, name="api_integrity"),
+backend/crown_api/urls.py:40:path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+backend/crown_api/urls.py:41:path(
+backend/crown_api/urls.py:46:path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+backend/crown_api/urls.py:47:path("api/system/health/", system_health, name="system_health"),
+backend/crown_api/urls.py:48:path("health/version/", health_version, name="health_version"),
+backend/crown_api/urls.py:50:path("api/system/whoami/", whoami, name="system_whoami"),
+backend/crown_api/urls.py:52:path("api/v1/version/", version, name="version"),
+backend/crown_api/urls.py:54:path("api/ops/summary/", ops_summary, name="ops_summary"),
+backend/crown_api/urls.py:56:path("api/ops/alerts/", ops_alerts, name="ops_alerts"),
+backend/crown_api/urls.py:58:path(
+backend/crown_api/urls.py:64:path("api/system/audit/recent/", recent_audit_events, name="recent_audit_events"),
+backend/crown_api/urls.py:66:path("api/auth/login/", login, name="auth_login"),
+backend/crown_api/urls.py:67:path("api/auth/refresh/", refresh, name="auth_refresh"),
+backend/crown_api/urls.py:68:path("api/auth/me/", me, name="auth_me"),
+backend/crown_api/urls.py:70:path("api/dev/token/", dev_token, name="dev_token"),
+backend/crown_api/urls.py:72:path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:73:path("api/v1/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:75:path("api/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:77:path("api/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:79:path("api/curriculum/", include("curriculum.urls")),
+backend/crown_api/urls.py:81:path("api/classroom/", include("classroom.urls")),
+backend/crown_api/urls.py:83:path("api/student360/", include("student360.api.urls")),
+backend/crown_api/urls.py:85:path("api/executive360/", include("executive360.api.urls")),
+backend/crown_api/urls.py:87:path("api/finance/", include("finance.api_urls")),
+backend/crown_api/urls.py:89:path("api/platform/", include("platform_ops.urls")),
+backend/crown_api/urls.py:91:path("api/v1/subscriptions/", include("subscriptions.api.urls")),
+backend/crown_api/urls.py:93:path("api/v1/admin/modules/", include("subscriptions.urls")),
+backend/crown_api/urls.py:95:path("api/integrations/", include("integrations.urls")),
+backend/crown_api/urls.py:97:path("auth/", include("msauth.urls")),
+backend/crown_api/urls.py:100:path("api/iam/", include("core.auth.urls")),
+backend/crown_api/urls.py:102:path("accounts/", include("django.contrib.auth.urls")),
+backend/crown_api/urls.py:104:path("director/", director_router, name="director_router"),
+backend/crown_api/urls.py:105:path(
+backend/crown_api/urls.py:111:path(
+backend/crown_api/urls.py:117:path(
+backend/crown_api/urls.py:123:path(
+backend/crown_api/urls.py:135:urlpatterns.append(path("admin/", site.urls))
+backend/crown_api/urls.py:142:[path("", include("release_closeout.urls"))]
 backend/crown_api/version_view.py:19:version_path = Path(__file__).resolve().parents[2] / "VERSION"
 backend/crown_api/version_views.py:29:version_path = Path(__file__).resolve().parents[2] / "VERSION"
 backend/crown_api/views_integrity.py:61:version_path = Path(__file__).resolve().parents[2] / "VERSION"
@@ -714,6 +962,8 @@ backend/student_import_wizard/urls.py:6:path("<uuid:session_id>/configure/", vie
 backend/student_import_wizard/urls.py:7:path("<uuid:session_id>/preview/", views.preview_session, name="student_import_wizard_preview"),
 backend/student_import_wizard/urls.py:8:path("<uuid:session_id>/commit/", views.commit_session, name="student_import_wizard_commit"),
 backend/student_import_wizard/urls.py:9:path("<uuid:session_id>/verify/", views.verify_session, name="student_import_wizard_verify"),
+backend/student_records/urls.py:6:path("", StudentRecordListView.as_view(), name="student-records-list"),
+backend/student_records/urls.py:7:path("<uuid:student_id>/", StudentRecordDetailView.as_view(), name="student-records-detail"),
 backend/subscriptions/api/urls.py:17:path("me/entitlements/", views.me_entitlements, name="subscriptions_me_entitlements"),
 backend/subscriptions/api/urls.py:18:path("plans/", views.plan_list, name="subscriptions_plan_list"),
 backend/subscriptions/api/urls.py:19:path("features/", views.feature_list, name="subscriptions_feature_list"),
@@ -729,9 +979,71 @@ backend/term_structure_wizard/urls.py:7:path("<uuid:session_id>/configure/", vie
 backend/term_structure_wizard/urls.py:8:path("<uuid:session_id>/periods/",   views.set_periods,       name="ts-periods"),
 backend/term_structure_wizard/urls.py:9:path("<uuid:session_id>/commit/",    views.commit_session,    name="ts-commit"),
 backend/term_structure_wizard/urls.py:10:path("<uuid:session_id>/verify/",    views.verify_session,    name="ts-verify"),
+backend/tests/test_audit_logging_tenant.py:78:root = Path(__file__).resolve().parents[1]
+backend/tests/test_audit_logging_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_board_governance_suite_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_board_governance_suite_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_chaplain_pastoral_care_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_chaplain_pastoral_care_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_christian_pd_hub_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_christian_pd_hub_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_communications_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_communications_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_crm_marketing_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_crm_marketing_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_crown_compass_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_crown_compass_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_document_file_framework_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_document_file_framework_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_emergency_medical_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_emergency_medical_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_extended_discipline_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_extended_discipline_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_grades_report_cards_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_grades_report_cards_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_grade_levels_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_grade_levels_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_mission_metrics_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_mission_metrics_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_mobile_family_app_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_mobile_family_app_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_notifications_framework_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_notifications_framework_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_nurse_health_office_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_nurse_health_office_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_parent_portal_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_parent_portal_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_portrait_graduate_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_portrait_graduate_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_reporting_data_access_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_reporting_data_access_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_schedule_builder_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_schedule_builder_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_school_profile_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_school_profile_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_school_year_term_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_school_year_term_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_service_outreach_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_service_outreach_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_shared_design_system_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_shared_design_system_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_shared_frontend_shell_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_shared_frontend_shell_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
 backend/tests/test_shell_backend_contract_parity.py:10:REPO_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_staff_faculty_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_staff_faculty_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_student_care_discipline_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_student_care_discipline_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_student_master_record_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_student_master_record_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_survey_sentiment_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_survey_sentiment_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
 backend/tests/test_tenant_lifecycle_cleanup.py:18:path("_test/ok/", ok_view),
 backend/tests/test_tenant_lifecycle_cleanup.py:19:path("_test/boom/", boom_view),
+backend/tests/test_transportation_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_transportation_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
+backend/tests/test_volunteer_family_engagement_tenant.py:78:root = Path(__file__).resolve().parents[2]
+backend/tests/test_volunteer_family_engagement_unit.py:10:PROJECT_ROOT = Path(__file__).resolve().parents[2]
 backend/transportation/api/urls.py:27:urlpatterns = [path("", include(router.urls))]
 
 ===== include( =====
@@ -773,24 +1085,24 @@ backend/crown_api/api_v1_urls.py:65:path("student-records/", include("student_re
 backend/crown_api/api_v1_urls.py:67:path("parent360/", include("parent360.api.urls")),
 backend/crown_api/api_v1_urls.py:70:path("m365/", include("governance.urls")),
 backend/crown_api/api_v1_urls.py:73:path("", include("crown_api.api_urls")),
-backend/crown_api/urls.py:31:path("api/v1/graduation/", include("graduation.urls")),
-backend/crown_api/urls.py:71:path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
-backend/crown_api/urls.py:72:path("api/v1/", include("crown_api.api_v1_urls")),
-backend/crown_api/urls.py:74:path("api/", include("crown_api.api_v1_urls")),
-backend/crown_api/urls.py:76:path("api/dashboards/", include("crown_api.dashboards.urls")),
-backend/crown_api/urls.py:78:path("api/curriculum/", include("curriculum.urls")),
-backend/crown_api/urls.py:80:path("api/classroom/", include("classroom.urls")),
-backend/crown_api/urls.py:82:path("api/student360/", include("student360.api.urls")),
-backend/crown_api/urls.py:84:path("api/executive360/", include("executive360.api.urls")),
-backend/crown_api/urls.py:86:path("api/finance/", include("finance.api_urls")),
-backend/crown_api/urls.py:88:path("api/platform/", include("platform_ops.urls")),
-backend/crown_api/urls.py:90:path("api/v1/subscriptions/", include("subscriptions.api.urls")),
-backend/crown_api/urls.py:92:path("api/v1/admin/modules/", include("subscriptions.urls")),
-backend/crown_api/urls.py:94:path("api/integrations/", include("integrations.urls")),
-backend/crown_api/urls.py:96:path("auth/", include("msauth.urls")),
-backend/crown_api/urls.py:99:path("api/iam/", include("core.auth.urls")),
-backend/crown_api/urls.py:101:path("accounts/", include("django.contrib.auth.urls")),
-backend/crown_api/urls.py:139:path("", include("release_closeout.urls")),
+backend/crown_api/urls.py:32:path("api/v1/graduation/", include("graduation.urls")),
+backend/crown_api/urls.py:72:path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:73:path("api/v1/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:75:path("api/", include("crown_api.api_v1_urls")),
+backend/crown_api/urls.py:77:path("api/dashboards/", include("crown_api.dashboards.urls")),
+backend/crown_api/urls.py:79:path("api/curriculum/", include("curriculum.urls")),
+backend/crown_api/urls.py:81:path("api/classroom/", include("classroom.urls")),
+backend/crown_api/urls.py:83:path("api/student360/", include("student360.api.urls")),
+backend/crown_api/urls.py:85:path("api/executive360/", include("executive360.api.urls")),
+backend/crown_api/urls.py:87:path("api/finance/", include("finance.api_urls")),
+backend/crown_api/urls.py:89:path("api/platform/", include("platform_ops.urls")),
+backend/crown_api/urls.py:91:path("api/v1/subscriptions/", include("subscriptions.api.urls")),
+backend/crown_api/urls.py:93:path("api/v1/admin/modules/", include("subscriptions.urls")),
+backend/crown_api/urls.py:95:path("api/integrations/", include("integrations.urls")),
+backend/crown_api/urls.py:97:path("auth/", include("msauth.urls")),
+backend/crown_api/urls.py:100:path("api/iam/", include("core.auth.urls")),
+backend/crown_api/urls.py:102:path("accounts/", include("django.contrib.auth.urls")),
+backend/crown_api/urls.py:142:[path("", include("release_closeout.urls"))]
 backend/crown_api/wizard_registry.py:30:urls_module: str    # dotted module path for include(), e.g. "myapp.urls"
 backend/crown_api/wizard_registry.py:276:return [path(w["url_prefix"], include(w["urls_module"])) for w in WIZARDS]
 backend/curriculum/urls.py:13:path("", include(router.urls)),
