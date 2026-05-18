@@ -4,6 +4,7 @@
     "pytestmark",
     "testpaths",
     "vitest",
-    "Passw"
+    "Passw",
+    "tcmegahan"
   ]
 }
