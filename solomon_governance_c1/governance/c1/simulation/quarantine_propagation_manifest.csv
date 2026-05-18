@@ -1,0 +1,2 @@
+source_id,decision,quarantine_reason,propagation_action
+C1-GOV-0005,QUARANTINED_PENDING_REVIEW,Owner attestation required before canonical promotion,exclude_from_simulated_ingestion

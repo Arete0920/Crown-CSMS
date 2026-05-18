@@ -3,13 +3,17 @@ onboarding/solomon_services.py
 
 Service layer for Solomon contextual help and content search.
 """
+from django.conf import settings
 from onboarding.models_tasks import HelpArticle, SolomonPlaybook
 from django.db.models import Q
 from typing import Any, cast
+from solomon.adapters import OnboardingAdapter, SolomonContextRequest
 
 
 HELP_ARTICLE_MANAGER = cast(Any, HelpArticle).objects
 SOLOMON_PLAYBOOK_MANAGER = cast(Any, SolomonPlaybook).objects
+
+SOLOMON_CONTEXT_ALLOWED_STATUSES = {"resolved", "empty", "disabled", "error"}
 
 
 def _visibility_qs(request):
@@ -54,6 +58,70 @@ def _serialize_playbook(playbook):
         "summary": playbook.summary,
         "module": playbook.module,
     }
+
+
+def _solomon_consumption_enabled() -> bool:
+    return bool(
+        getattr(settings, "CROWN_SOLOMON_API_ENABLED", False)
+        and getattr(settings, "CROWN_SOLOMON_CONTEXT_ENABLED", False)
+    )
+
+
+def _normalized_context_payload(payload_dict: dict[str, Any]) -> dict[str, Any] | None:
+    status = payload_dict.get("status")
+    if status not in SOLOMON_CONTEXT_ALLOWED_STATUSES:
+        return None
+
+    resources = payload_dict.get("resources", [])
+    playbooks = payload_dict.get("playbooks", [])
+    context_rules = payload_dict.get("context_rules", [])
+
+    if not isinstance(resources, list) or not isinstance(playbooks, list) or not isinstance(context_rules, list):
+        return None
+
+    return {
+        "status": status,
+        "resources": resources,
+        "playbooks": playbooks,
+        "context_rules": context_rules,
+    }
+
+
+def get_parent_enrollment_guidance(request):
+    """Return optional parent enrollment guidance payload or None (silent noop)."""
+    if not _solomon_consumption_enabled():
+        return None
+
+    try:
+        adapter = OnboardingAdapter()
+        payload = adapter.get_context(
+            SolomonContextRequest(
+                module="onboarding",
+                route="/students/enrollment",
+                audience="parent",
+                scope="school",
+                request=request,
+            )
+        )
+    except Exception:
+        return None
+
+    if hasattr(payload, "to_dict"):
+        payload_dict = payload.to_dict()
+    elif isinstance(payload, dict):
+        payload_dict = payload
+    else:
+        return None
+
+    normalized = _normalized_context_payload(payload_dict)
+    if not normalized:
+        return None
+
+    # Silent noop behavior for disabled state.
+    if normalized["status"] == "disabled":
+        return None
+
+    return normalized
 
 
 def get_contextual_solomon_help(

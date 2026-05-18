@@ -142,7 +142,7 @@ az webapp config appsettings list --name crown-api-dev --resource-group crown-rg
 $env:DATABASE_URL
 
 # BAD: Shows password
-psql "postgresql://user:example_pass@host/db" -c "SELECT 1;"
+psql "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}" -c "SELECT 1;"
 
 # BAD: Logs token
 $token = "Bearer abc..."

@@ -1,0 +1,109 @@
+{
+  "artifact_drift": [
+    {
+      "certified_sha256": "6e63e6ba85c2c10ccd16326e8b7f527b137c41e0d0dd72b496290142258b796d",
+      "current_sha256": "4ebaaf1ff938db73b5ca82beea854739e19c608b6a964398f418bacc6441e4da",
+      "drift_type": "ARTIFACT_CHANGED",
+      "recommendation": "ARTIFACT_REFRESH_NEEDED",
+      "rel_path": "registers/evidence_register.csv"
+    },
+    {
+      "certified_sha256": "763461de27e6458f5f396255fdb6fe271e02c2aaff0ec58af19eed4f58009f02",
+      "current_sha256": "a5ac2a4171c915607f1dd8f2514bf305a2a3f67694a34795359e19994af2567c",
+      "drift_type": "ARTIFACT_CHANGED",
+      "recommendation": "ARTIFACT_REFRESH_NEEDED",
+      "rel_path": "registers/human_approval_queue.csv"
+    },
+    {
+      "certified_sha256": "763461de27e6458f5f396255fdb6fe271e02c2aaff0ec58af19eed4f58009f02",
+      "current_sha256": "a5ac2a4171c915607f1dd8f2514bf305a2a3f67694a34795359e19994af2567c",
+      "drift_type": "ARTIFACT_CHANGED",
+      "recommendation": "ARTIFACT_REFRESH_NEEDED",
+      "rel_path": "registers/review_queue.csv"
+    },
+    {
+      "certified_sha256": "970f413532254d3112da52dbb13b6b1d1daf667f452983361bf41e39735748d0",
+      "current_sha256": "a017019b84eae8a01c88055a64f06622839a836b074e3c17d23b351da369975a",
+      "drift_type": "ARTIFACT_CHANGED",
+      "recommendation": "ARTIFACT_REFRESH_NEEDED",
+      "rel_path": "registers/source_candidates.csv"
+    },
+    {
+      "certified_sha256": "6dadd790fcc495ba047d7f4ebffe9056d1c9e2de2749959211b92d27642d5105",
+      "current_sha256": "1edd70faf65c4102b6bad0227b0d27f84379534d9f79c23071a4191386bf8331",
+      "drift_type": "ARTIFACT_CHANGED",
+      "recommendation": "ARTIFACT_REFRESH_NEEDED",
+      "rel_path": "simulation/chunk_boundary_manifest.csv"
+    },
+    {
+      "certified_sha256": "df15bfdf6fdd5f8f2cab0769937f6c7095533f140f2ac8e8083debf32d6fff6a",
+      "current_sha256": "20f041fa688a310a315bd290c320ced3382dd1faa4c9421ce6a0d04eaee04cfc",
+      "drift_type": "ARTIFACT_CHANGED",
+      "recommendation": "ARTIFACT_REFRESH_NEEDED",
+      "rel_path": "simulation/ingestion_simulation_manifest.csv"
+    },
+    {
+      "certified_sha256": "d38c7bb131a2d1706af895fa837333cd81f9097008b41addf80c30f0c5136ed8",
+      "current_sha256": "0e25534a67783bdb6cc3f8cff0a83acad821ece5b65fdcc6087ab02749c4ebf5",
+      "drift_type": "ARTIFACT_CHANGED",
+      "recommendation": "ARTIFACT_REFRESH_NEEDED",
+      "rel_path": "simulation/provenance_inheritance_manifest.csv"
+    }
+  ],
+  "artifact_drift_count": 7,
+  "baseline_refresh_approved": false,
+  "corpus_drift": [
+    {
+      "certified_sha256": "c683b3ea7ad11709463474da492f58f2894b87184c410a6445de5392aef473ae",
+      "certified_size_bytes": 1392,
+      "current_sha256": "6703849b18e659c33281d9e172f8e2a0fdfc23ba44b8199baeff5bc8825af872",
+      "current_size_bytes": 1338,
+      "drift_type": "CONTENT_REDUCED",
+      "governance_decision": "APPROVED_CANONICAL",
+      "recommendation": "FLAG_FOR_INVESTIGATION",
+      "rel_path": "API_VERSION_POLICY.md",
+      "size_delta_bytes": -54,
+      "source_id": "C1-GOV-0002"
+    },
+    {
+      "certified_sha256": "ad88836b9b60140fc56b824473d9990af08d2f38a233eb79c72eb7e594e3a770",
+      "certified_size_bytes": 7387,
+      "current_sha256": "ef47997a474cba5f44c1b5206824ee2a37e4f4b349ada40c04b1d9be83d59827",
+      "current_size_bytes": 7169,
+      "drift_type": "CONTENT_REDUCED",
+      "governance_decision": "APPROVED_CANONICAL",
+      "recommendation": "FLAG_FOR_INVESTIGATION",
+      "rel_path": "CROWN_IP_COMPLIANCE_POLICY.md",
+      "size_delta_bytes": -218,
+      "source_id": "C1-GOV-0004"
+    },
+    {
+      "certified_sha256": "0b3561188c330a2ca699ddad0f5759331e32b7c93fa3484bc9b7acedbced004e",
+      "certified_size_bytes": 4066,
+      "current_sha256": "3fce5d18e260e106f1a1a77a95d8e155c3ce0f5318f4ec6c706c5ce0f773cacf",
+      "current_size_bytes": 3955,
+      "drift_type": "CONTENT_REDUCED",
+      "governance_decision": "APPROVED_CANONICAL",
+      "recommendation": "FLAG_FOR_INVESTIGATION",
+      "rel_path": "DEMO_MODE_POLICY.md",
+      "size_delta_bytes": -111,
+      "source_id": "C1-GOV-0007"
+    },
+    {
+      "certified_sha256": "a18a0f3ec6840cd01665120c143dac9238c56ea0704bcf346b8fac2d0e87dfa4",
+      "certified_size_bytes": 2083,
+      "current_sha256": "e4f0bbd4831deb1e3d84627ea37431fe21bb6c3b8886b46db19b230f0992ead1",
+      "current_size_bytes": 2000,
+      "drift_type": "CONTENT_REDUCED",
+      "governance_decision": "APPROVED_CANONICAL",
+      "recommendation": "FLAG_FOR_INVESTIGATION",
+      "rel_path": "DISASTER_RECOVERY_POLICY.md",
+      "size_delta_bytes": -83,
+      "source_id": "C1-GOV-0008"
+    }
+  ],
+  "corpus_drift_count": 4,
+  "gate_result": "INVESTIGATION_REQUIRED",
+  "note": "Baseline refresh is GATED. Set baseline_refresh_approved=true only after explicit governance board sign-off on every finding above.",
+  "reviewed_at": "2026-05-15T17:12:37.207901+00:00"
+}

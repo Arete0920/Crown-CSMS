@@ -1,0 +1,12 @@
+{
+  "algorithm": "Ed25519",
+  "attested_at_utc": "2026-05-15T19:50:30.105420+00:00",
+  "bundle_id": "20260515T185051Z",
+  "bundle_path": "solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z",
+  "manifest_file": "crypto_attestation/AUDIT_PACK_MANIFEST.json",
+  "manifest_sha256": "743d9a5742fff3a82c1abcd99a9088065767ddaa16afe1bf39c61b92b4dd5fc7",
+  "public_key_file": "crypto_attestation/ed25519_public_key.pem",
+  "public_key_sha256": "<public-key-sha256-nonsecret>",
+  "signature_file": "crypto_attestation/AUDIT_PACK_MANIFEST.ed25519.sig",
+  "status": "ATTESTED"
+}

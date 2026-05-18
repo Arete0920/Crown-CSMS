@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "C1 Evidence Record",
+  "type": "object",
+  "required": [
+    "evidence_id",
+    "source_id",
+    "evidence_type",
+    "description",
+    "origin",
+    "recorded_by",
+    "recorded_at"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "evidence_type": {
+      "type": "string",
+      "enum": [
+        "OWNER_ATTESTATION",
+        "SYSTEM_EXPORT",
+        "POLICY_REFERENCE",
+        "LEGAL_OR_RIGHTS_RECORD",
+        "HASH_RECORD",
+        "CHANGE_LOG",
+        "REVIEW_NOTE",
+        "CONFLICT_RECORD"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "origin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recorded_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "evidence_location": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

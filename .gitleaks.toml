@@ -13,6 +13,7 @@ paths = [
   '''(^|/)coverage($|/)''',
   '''(^|/)AUDIT_PACK_[^/]+($|/)''',
   '''(^|/)audit-artifacts($|/)''',
+  '''(^|/)solomon_governance_c1/governance/c1/runtime/audit_pack($|/)''',
   '''(^|/)\.pytest_cache($|/)''',
   '''(^|/)htmlcov($|/)''',
   '''(^|/)docs/audit/scans($|/)''',

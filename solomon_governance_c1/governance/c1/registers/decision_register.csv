@@ -1,0 +1,11 @@
+decision_id,source_id,decision,reviewer,decision_date,rationale,conditions
+C1-DEC-0001,C1-GOV-0001,APPROVED_CANONICAL,governance_board,2026-05-15,Authoritative admissions API contract with complete provenance,none
+C1-DEC-0002,C1-GOV-0002,APPROVED_CANONICAL,governance_board,2026-05-15,Approved technical policy with deterministic hash provenance,none
+C1-DEC-0003,C1-GOV-0003,APPROVED_CANONICAL,governance_board,2026-05-15,Approved backup and restore policy authoritative copy,none
+C1-DEC-0004,C1-GOV-0004,APPROVED_CANONICAL,governance_board,2026-05-15,Approved compliance policy canonical source,none
+C1-DEC-0005,C1-GOV-0005,QUARANTINED_PENDING_REVIEW,governance_board,2026-05-15,Owner attestation required before canonical promotion,owner_attestation_required
+C1-DEC-0006,C1-GOV-0006,APPROVED_CANONICAL,governance_board,2026-05-15,Approved data retention policy with clean risk profile,none
+C1-DEC-0007,C1-GOV-0007,APPROVED_CANONICAL,governance_board,2026-05-15,Approved demo mode policy with complete metadata,none
+C1-DEC-0008,C1-GOV-0008,APPROVED_CANONICAL,governance_board,2026-05-15,Approved disaster recovery policy with deterministic provenance,none
+C1-DEC-0009,C1-GOV-0009,APPROVED_CANONICAL,governance_board,2026-05-15,Authoritative financial aid API contract approved,none
+C1-DEC-0010,C1-GOV-0010,APPROVED_CANONICAL,governance_board,2026-05-15,Approved incident response policy authoritative source,none

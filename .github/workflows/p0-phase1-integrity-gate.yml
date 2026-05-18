@@ -1,4 +1,4 @@
-﻿name: P0 Phase1 Integrity Gate
+name: P0 Phase1 Integrity Gate
 
 on:
   pull_request:

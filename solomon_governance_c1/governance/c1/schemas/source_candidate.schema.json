@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "C1 Source Candidate",
+  "type": "object",
+  "required": [
+    "source_id",
+    "title",
+    "source_type",
+    "origin_owner",
+    "acquisition_method",
+    "acquired_by",
+    "acquired_at",
+    "custody_path",
+    "rights_basis",
+    "provenance_tier",
+    "review_status"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "policy",
+        "procedure",
+        "legal",
+        "technical",
+        "operational",
+        "training",
+        "reference",
+        "system_export",
+        "other"
+      ]
+    },
+    "origin_owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "acquisition_method": {
+      "type": "string",
+      "minLength": 1
+    },
+    "acquired_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "acquired_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "custody_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version_or_date": {
+      "type": "string"
+    },
+    "integrity_reference": {
+      "type": "string"
+    },
+    "rights_basis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provenance_tier": {
+      "type": "string",
+      "enum": [
+        "P0",
+        "P1",
+        "P2",
+        "P3",
+        "P4",
+        "P5"
+      ]
+    },
+    "review_status": {
+      "type": "string",
+      "enum": [
+        "NOT_REVIEWED",
+        "APPROVED_CANONICAL",
+        "APPROVED_REFERENCE_ONLY",
+        "QUARANTINED_PENDING_REVIEW",
+        "REJECTED",
+        "ESCALATED"
+      ]
+    },
+    "reviewer": {
+      "type": "string"
+    },
+    "decision_date": {
+      "type": "string"
+    },
+    "decision_rationale": {
+      "type": "string"
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "privacy",
+          "security",
+          "legal",
+          "rights_unclear",
+          "conflict",
+          "deprecated",
+          "sensitive",
+          "unknown_origin"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

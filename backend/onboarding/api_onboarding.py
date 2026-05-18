@@ -27,7 +27,15 @@ from onboarding.models_tasks import (
     seed_onboarding_tasks,
 )
 from onboarding.solomon_seed import ensure_solomon_seed_data
-from onboarding.solomon_services import get_contextual_solomon_help, search_solomon_content
+from onboarding.solomon_services import (
+    get_contextual_solomon_help,
+    get_parent_enrollment_guidance,
+    search_solomon_content,
+)
+
+
+def _query_param_true(value) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 @api_view(["GET"])
@@ -52,13 +60,21 @@ def onboarding_progress(request, school_id):
     total = tasks.count()
     completed = tasks.filter(status=OnboardingTask.STATUS_COMPLETE).count()
 
-    return Response({
+    response_payload = {
         "school_id": str(school_id),
         "total_tasks": total,
         "completed": completed,
         "percent_complete": round((completed / total) * 100 if total else 0, 2),
         "tasks": list(tasks.values("id", "task_name", "status", "order", "completed_at")),
-    })
+    }
+
+    include_parent_guidance = _query_param_true(request.query_params.get("include_parent_guidance"))
+    if include_parent_guidance:
+        guidance_payload = get_parent_enrollment_guidance(request)
+        if guidance_payload is not None:
+            response_payload["parent_enrollment_guidance"] = guidance_payload
+
+    return Response(response_payload)
 
 
 @api_view(["POST"])

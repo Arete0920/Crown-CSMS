@@ -1,0 +1,10 @@
+source_id,source_sha256,simulated_artifact_id,inherited_provenance_tier,inherited_rights_basis,inheritance_mode
+C1-GOV-0001,0fdd5f576e2532b9953e5db5f6d8bea9bcfef01f484e272a15a8300ccdf29288,SIM-C1-GOV-0001-5d0bf192220f,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0002,c683b3ea7ad11709463474da492f58f2894b87184c410a6445de5392aef473ae,SIM-C1-GOV-0002-1103e153768e,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0003,9e65f785b0b6861ac5fb93a4abcf494c5a5231fa8adfba39aa520c95417defb2,SIM-C1-GOV-0003-e67ca94fa9e4,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0004,ad88836b9b60140fc56b824473d9990af08d2f38a233eb79c72eb7e594e3a770,SIM-C1-GOV-0004-b9a4559606f4,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0006,26cd0efdc8938b0de54f3e968464e88e7152966a2b92e8692388444f9b96bde9,SIM-C1-GOV-0006-045429d0abde,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0007,0b3561188c330a2ca699ddad0f5759331e32b7c93fa3484bc9b7acedbced004e,SIM-C1-GOV-0007-eb15122c2eb1,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0008,a18a0f3ec6840cd01665120c143dac9238c56ea0704bcf346b8fac2d0e87dfa4,SIM-C1-GOV-0008-1e716b7da088,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0009,e644e3841cc8445b25109e2aafde090f9a96802bf2957e18e35e440b0dbea9ce,SIM-C1-GOV-0009-de88a2111248,P1,Pending human confirmation,deterministic_copy
+C1-GOV-0010,e86d41828ec703f873297750a922af23bd054bc97d29353e9a950abe48947798,SIM-C1-GOV-0010-81f440de0349,P1,Pending human confirmation,deterministic_copy

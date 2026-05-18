@@ -1,0 +1,71 @@
+{
+  "active_bundle": "20260515T185051Z",
+  "certified_bundles": [
+    {
+      "bundle_id": "20260515T181936Z",
+      "certified_at_utc": "2026-05-15T18:19:00Z",
+      "reason": "initial certified bundle",
+      "revoked_at_utc": "2026-05-15T18:23:40.740021+00:00",
+      "revoked_reason": "simulated: tampering detected during audit replay",
+      "status": "revoked",
+      "superseded_at_utc": "2026-05-15T18:23:30.254189+00:00",
+      "superseded_by": "20260515T182250Z"
+    },
+    {
+      "bundle_id": "20260515T182250Z",
+      "certified_at_utc": "2026-05-15T18:23:30.254207+00:00",
+      "reason": "new generation, supersedes prior bundle",
+      "status": "superseded",
+      "superseded_at_utc": "2026-05-15T19:50:29.067751+00:00",
+      "superseded_by": "20260515T185051Z"
+    },
+    {
+      "bundle_id": "20260515T185051Z",
+      "certified_at_utc": "2026-05-15T19:50:29.067774+00:00",
+      "cryptographic_attestation": {
+        "algorithm": "Ed25519",
+        "attested_at_utc": "2026-05-15T19:50:30.105420+00:00",
+        "manifest_sha256": "743d9a5742fff3a82c1abcd99a9088065767ddaa16afe1bf39c61b92b4dd5fc7",
+        "public_key_sha256": "<public-key-sha256-nonsecret>",
+        "status": "ATTESTED"
+      },
+      "reason": "LF-normalized certified bundle promoted before cryptographic attestation",
+      "status": "active"
+    }
+  ],
+  "created_at_utc": "2026-05-15T18:21:47.345966+00:00",
+  "cryptographic_attestation": {
+    "algorithm": "Ed25519",
+    "attestation_file": "solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/CRYPTOGRAPHIC_ATTESTATION.json",
+    "bundle_id": "20260515T185051Z",
+    "manifest_file": "solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/AUDIT_PACK_MANIFEST.json",
+    "public_key_file": "solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_public_key.pem",
+    "signature_file": "solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/AUDIT_PACK_MANIFEST.ed25519.sig",
+    "status": "ATTESTED",
+    "updated_at_utc": "2026-05-15T19:50:30.109624+00:00"
+  },
+  "governance_notes": "Append-only bundle retention. Never delete. Mark as superseded or revoked instead.",
+  "index_version": "1",
+  "last_updated_utc": "2026-05-15T19:50:30.109624+00:00",
+  "revoked_bundles": [
+    {
+      "bundle_id": "20260515T181936Z",
+      "reason": "simulated: tampering detected during audit replay",
+      "revoked_at_utc": "2026-05-15T18:23:40.740030+00:00"
+    }
+  ],
+  "superseded_bundles": [
+    {
+      "bundle_id": "20260515T181936Z",
+      "reason": "replaced by newer certified bundle",
+      "superseded_at_utc": "2026-05-15T18:23:30.254202+00:00",
+      "superseded_by": "20260515T182250Z"
+    },
+    {
+      "bundle_id": "20260515T182250Z",
+      "reason": "replaced by newer certified bundle",
+      "superseded_at_utc": "2026-05-15T19:50:29.067768+00:00",
+      "superseded_by": "20260515T185051Z"
+    }
+  ]
+}

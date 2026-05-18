@@ -50,6 +50,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 _is_azure = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
 CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=not _is_azure)
 
+# SOLOMON read-only API gate. Keep closed until Phase 3 is explicitly enabled.
+CROWN_SOLOMON_API_ENABLED = _env_bool("CROWN_SOLOMON_API_ENABLED", default=False)
+
+# SOLOMON internal context consumption gate. Separate from API gate.
+CROWN_SOLOMON_CONTEXT_ENABLED = _env_bool("CROWN_SOLOMON_CONTEXT_ENABLED", default=False)
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -198,6 +204,7 @@ INSTALLED_APPS = [
     'gradebook',
     'billing',
     'audit',  # Production audit logging
+    'solomon',
     'discipline',  # Discipline incidents & actions
     'servicehours',  # Service hours tracking & approvals
     'comms',

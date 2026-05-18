@@ -1,0 +1,15 @@
+{
+  "policy_name": "DISASTER_RECOVERY_POLICY",
+  "review_generated_utc": "2026-05-15T18:42:40.841315+00:00",
+  "canonical_source": "/workspaces/Crown2026/docs/DISASTER_RECOVERY_POLICY.md",
+  "current_source": "/workspaces/Crown2026/solomon_governance_c1/c1_candidate_sources/DISASTER_RECOVERY_POLICY.md",
+  "classification": "NO_DRIFT",
+  "byte_diff_count": 0,
+  "line_diff_count": 0,
+  "reduction_magnitude": 0.0,
+  "expansion_magnitude": 0.0,
+  "original_size_bytes": 1994,
+  "current_size_bytes": 1994,
+  "original_lines": 83,
+  "current_lines": 83
+}
