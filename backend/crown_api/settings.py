@@ -769,3 +769,23 @@ CSRF_COOKIE_SAMESITE = "Lax"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # === CROWN PRODUCTION HARDENING OVERRIDES END ===
 
+
+
+# Crown structured request logging
+LOGGING = globals().get("LOGGING", {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {},
+})
+
+LOGGING.setdefault("handlers", {}).setdefault("console", {"class": "logging.StreamHandler"})
+LOGGING.setdefault("loggers", {})["crown.request"] = {
+    "handlers": ["console"],
+    "level": "INFO",
+    "propagate": False,
+}

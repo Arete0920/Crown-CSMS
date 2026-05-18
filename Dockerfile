@@ -25,3 +25,10 @@ ENV DJANGO_SETTINGS_MODULE=crown_api.settings
 EXPOSE 8000
 
 CMD ["/app/entrypoint.sh"]
+
+
+# Crown production hardening: run as non-root.
+RUN addgroup --system crownapp || true \
+    && adduser --system --ingroup crownapp crownapp || true
+USER crownapp
+
