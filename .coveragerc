@@ -1,0 +1,17 @@
+[run]
+source = 
+    backend/core
+    backend/crown_api
+    backend/apps
+    tenant/security/runtime
+omit =
+    */migrations/*
+    */tests/*
+    */quarantine_old_tests/*
+    */venv/*
+    */node_modules/*
+
+[report]
+show_missing = True
+skip_covered = True
+fail_under = 75
