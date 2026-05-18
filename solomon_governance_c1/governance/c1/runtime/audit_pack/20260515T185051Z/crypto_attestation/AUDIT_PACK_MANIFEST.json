@@ -1,0 +1,98 @@
+{
+  "algorithm": "Ed25519",
+  "bundle_id": "20260515T185051Z",
+  "bundle_path": "solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z",
+  "files": [
+    {
+      "path": "00_OVERVIEW.txt",
+      "sha256": "d5a7712525564fda457b5090ec87d01206b0f3c9c6522a8e0d0619b695f26b2a",
+      "size_bytes": 1794
+    },
+    {
+      "path": "01_TREE.txt",
+      "sha256": "ddb287f6986fa88d3d2758a1eed346e97529756e86ffbefe39048589ca789a3a",
+      "size_bytes": 453458
+    },
+    {
+      "path": "02_WORKFLOWS_INDEX.txt",
+      "sha256": "855b0590c8788b2ca2489b3a2654ada970f81025b00e73ad0c2a42dde9735f04",
+      "size_bytes": 2892
+    },
+    {
+      "path": "03_WORKFLOWS_TRIGGERS.txt",
+      "sha256": "b729ef326ff48be8825e86dbdb23a1495f14be887dde37308db233248dd30ca1",
+      "size_bytes": 23470
+    },
+    {
+      "path": "04_JOB_LEVEL_IF.txt",
+      "sha256": "0ccc05e5c9777ea9b71737cc63565bd1c6ffd560c32bbd0d14a6887f78e2f066",
+      "size_bytes": 799
+    },
+    {
+      "path": "05_BRANCH_PROTECTION_MAIN.json",
+      "sha256": "0f6cefff0226d7235aa403c4dbc97633e713681ffb9c4606176c517928f324cc",
+      "size_bytes": 1013
+    },
+    {
+      "path": "06_BACKEND_URLS.txt",
+      "sha256": "579a777970c2d7a30d36e484bc3941ba276bdc4bd6c1c77575c528407cbf795f",
+      "size_bytes": 145946
+    },
+    {
+      "path": "07_MIGRATIONS.txt",
+      "sha256": "967d335f0802723291aa30a1a4ee5f1762bddd924385be17dda62d153752346f",
+      "size_bytes": 12373
+    },
+    {
+      "path": "08_PY_DEPS.txt",
+      "sha256": "3c17539d36d9885a1725f3882e63aa6bbec7e37e23ff0c0a863058b186640d18",
+      "size_bytes": 568
+    },
+    {
+      "path": "09_NODE_DEPS.txt",
+      "sha256": "f5a4e9524cdf626cd6b00cc253da968a2d6e52ef821f4f66072584d43d727cd5",
+      "size_bytes": 829
+    },
+    {
+      "path": "10_SECRET_SCAN_FINDINGS.txt",
+      "sha256": "3b80f2c59e9e7d53bea250cd96d70b887f70bbf1b56a4eb215b617a5f53f9c49",
+      "size_bytes": 4886
+    },
+    {
+      "path": "11_TRACKED_BINARIES.txt",
+      "sha256": "17f83b041c0cd0e03b62d525b5ca82284a80fb7ca5d4ca6ef032d044820b4aca",
+      "size_bytes": 2409
+    },
+    {
+      "path": "12_UNTRACKED_ARTIFACTS.txt",
+      "sha256": "3afc3fb5201a19f88a84ad0c287e1eb263d46e17abee7ba4ccf97d5b67dbbcc2",
+      "size_bytes": 21
+    },
+    {
+      "path": "13_HEALTH_PROBE.txt",
+      "sha256": "0432e8b91b60d7d7eb22f1a0f0d35322859cb3c271db762ce53161e8912d7c0f",
+      "size_bytes": 38250126
+    },
+    {
+      "path": "14_DEPLOY_PROD_RECENT.txt",
+      "sha256": "d0a3a2d36c3c330ea00105e757624d8060e0024fc2efc8d1c8b6ef60e94a9e56",
+      "size_bytes": 3297
+    },
+    {
+      "path": "99_BUNDLE_MANIFEST.json",
+      "sha256": "434597ad1ed0d9a46e1349c36774aaaea1e8a764e404863c93ae74a36a8e54cf",
+      "size_bytes": 2175
+    },
+    {
+      "path": "AUDIT_PACK_CERTIFICATION.json",
+      "sha256": "1646e23d6a1bae52c07d1ff2d5b54ed03013bc66bec55398d6d7f704dae0ff70",
+      "size_bytes": 3757
+    },
+    {
+      "path": "AUDIT_PACK_SHA256SUMS.txt",
+      "sha256": "751bd5d3d01503e68ab5f9b9182eb7411941fb53bd1e6eaee8752bcfe773c4ba",
+      "size_bytes": 1313
+    }
+  ],
+  "generated_at_utc": "2026-05-15T19:50:29.782157+00:00"
+}

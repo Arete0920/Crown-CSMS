@@ -1,0 +1,48 @@
+{
+  "checks": [
+    {
+      "details": "SUCCESS: C1 governance control plane validation passed.",
+      "name": "validator_pass",
+      "passed": true,
+      "required": true
+    },
+    {
+      "details": "Boundary preserved: manifests only; no ingestion/indexing/enrichment/activation.",
+      "name": "simulation_pass",
+      "passed": true,
+      "required": true
+    },
+    {
+      "details": "OK: all required artifacts are byte-identical to baseline",
+      "name": "reproducibility_confirmation",
+      "passed": true,
+      "required": true
+    },
+    {
+      "details": "OK: golden corpus verification passed (file set and hashes identical)",
+      "name": "golden_corpus_stable",
+      "passed": true,
+      "required": true
+    },
+    {
+      "details": "APPROVED_CANONICAL count=9",
+      "name": "human_approval_record",
+      "passed": true,
+      "required": true
+    },
+    {
+      "details": "unresolved_risk_exception_rows=0",
+      "name": "clean_quarantine_state",
+      "passed": true,
+      "required": true
+    },
+    {
+      "details": "final_result=TRUSTED",
+      "name": "deterministic_certification",
+      "passed": true,
+      "required": true
+    }
+  ],
+  "decision": "ALLOW",
+  "requested_capability": "ingestion"
+}

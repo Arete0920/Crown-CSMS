@@ -1,0 +1,15 @@
+{
+  "policy_name": "DEMO_MODE_POLICY",
+  "review_generated_utc": "2026-05-15T18:42:40.831617+00:00",
+  "canonical_source": "/workspaces/Crown2026/docs/DEMO_MODE_POLICY.md",
+  "current_source": "/workspaces/Crown2026/solomon_governance_c1/c1_candidate_sources/DEMO_MODE_POLICY.md",
+  "classification": "NO_DRIFT",
+  "byte_diff_count": 0,
+  "line_diff_count": 0,
+  "reduction_magnitude": 0.0,
+  "expansion_magnitude": 0.0,
+  "original_size_bytes": 3911,
+  "current_size_bytes": 3911,
+  "original_lines": 111,
+  "current_lines": 111
+}

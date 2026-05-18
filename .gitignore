@@ -91,11 +91,19 @@ pr_smoke_404.txt
 test_student360_auth.ps1
 
 # Audit pack outputs (generated locally, never commit)
+AUDIT_PACK/
 AUDIT_PACK_*/
 AUDIT_*.txt
 DEPLOYMENT_CONTRACT_*.txt
 pytest_out.txt
 _local_artifacts/
+
+# Governance runtime bundles (generated, never commit - permanent freeze)
+# These are runtime-generated, untracked evidence bundles
+# Canonical governance state is in solomon_governance_c1/governance/c1/
+# Runtime bundles are ephemeral governance evidence, managed by SUPERSESSION_INDEX.json
+solomon_governance_c1/governance/c1/runtime/audit_pack/
+runtime/audit_pack/
 
 # Test coverage
 coverage/
@@ -221,4 +229,5 @@ release-scorecard.json
 workflow-permissions-audit.json
 workflow-secrets-inventory.json
 
-solomon_governance_c1/governance/c1/runtime/audit_pack/
+# SOLOMON C1 runtime artifacts
+solomon_governance_c1/governance/c1/runtime/

@@ -1,0 +1,225 @@
+--- /workspaces/Crown2026/docs/DEMO_MODE_POLICY.md	2026-05-15 13:25:37.957789072 +0000
++++ /workspaces/Crown2026/solomon_governance_c1/c1_candidate_sources/DEMO_MODE_POLICY.md	2026-05-15 14:01:43.132828063 +0000
+@@ -1,111 +1,111 @@
+-# Crown2026 — DEMO_MODE Policy
+-
+-> **Phase 7.1 artifact** · Locked 2026-02-25 · Do not modify without Director sign-off.
+-
+----
+-
+-## 1. What DEMO_MODE is
+-
+-DEMO_MODE is a **runtime environment flag** that enables a live-backend presentation of Crown2026
+-for investor and partner demos. It is **not** a fallback data layer; the API must be reachable and
+-returning real (seeded) data.
+-
+----
+-
+-## 2. The flag — single source of truth
+-
+-### Backend
+-
+-| Item | Value |
+-|------|-------|
+-| Setting | `settings.CROWN_DEMO_MODE` |
+-| Type | `bool` |
+-| Default | `False` |
+-| Env variable | `CROWN_DEMO_MODE=true` |
+-| Production guard | `_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)` in `settings.py` |
+-| Write-block middleware | `backend/core/middleware.py` — blocks all mutating HTTP methods |
+-
+-All backend code **must** read `getattr(settings, "CROWN_DEMO_MODE", False)`.
+-Direct `os.environ.get("CROWN_DEMO_MODE")` reads are **prohibited** (inconsistent parse,
+-bypasses the prod-guard assertion).
+-
+-### Frontend
+-
+-| Item | Value |
+-|------|-------|
+-| Vite env var | `VITE_DEMO_MODE=1` |
+-| Auto-login | `VITE_DEMO_AUTO_LOGIN=1` (only with `VITE_DEMO_MODE=1`) |
+-| Demo credentials | `VITE_DEMO_USER`, `VITE_DEMO_PASS`, `VITE_DEMO_SCHOOL_ID` |
+-
+----
+-
+-## 3. Prohibited pattern — silent demo fallback (REMOVED)
+-
+-The following pattern was present in `StudentDashboard.jsx` and `ParentDashboard.jsx` and has been
+-**permanently removed** as of this phase:
+-
+-```jsx
+-// PROHIBITED — silent catch swallows API failure and renders fake data
+-.catch((err) => {
+-  if (IS_DEMO_MODE) {
+-    setData(DEMO_STATIC_DATA); // silently uses hardcoded data
+-  } else {
+-    setError(err.message);
+-  }
+-});
+-```
+-
+-**Why it was dangerous:** An API failure in a demo or production environment would silently render
+-stale hardcoded numbers to users (or investors), with no indication that the data was not live.
+-If the API is down, the user must see an error — in every mode.
+-
+----
+-
+-## 4. Required pattern — error-first
+-
+-All dashboard fetch hooks must follow this pattern:
+-
+-```jsx
+-useEffect(() => {
+-  fetchData()
+-    .then(setData)
+-    .catch((err) => {
+-      setError(`Dashboard unavailable — API error: ${err.message}`);
+-    });
+-}, []);
+-```
+-
+-The `<ErrorBanner>` component (already present in all dashboards) renders when `error` is non-empty.
+-There is no silent fallback — not in demo mode, not in production.
+-
+----
+-
+-## 5. Permitted DEMO_MODE uses
+-
+-| File | What it does | Permitted |
+-|------|-------------|-----------|
+-| `backend/core/middleware.py` | Blocks POST/PUT/PATCH/DELETE | ✅ Yes |
+-| `backend/crown_api/dev_token_views.py` | Demo JWT endpoint (gated to CROWN_DEMO_MODE + localhost) | ✅ Yes |
+-| `backend/crown_api/health_views.py` | Exposes `demo_mode: bool` in `/api/health/` | ✅ Yes |
+-| `backend/graduation/views_breakdown.py` | Returns deterministic breakdown for demo | ✅ Yes — explicit, not a fallback |
+-| `frontend/dashboards/src/utils/demoAutoLogin.ts` | Auto-login gate (`VITE_DEMO_MODE=1 && VITE_DEMO_AUTO_LOGIN=1`) | ✅ Yes |
+-| `frontend/dashboards/src/components/AutoLoginGate.jsx` | Wrapper for auto-login gate | ✅ Yes |
+-| `frontend/dashboards/src/components/DevJwtPanel.jsx` | Shows dev JWT panel only in demo mode | ✅ Yes |
+-| `frontend/dashboards/src/pages/GradebookRO.jsx` | Hides dev panels when `isDemoMode` | ✅ Yes |
+-| Any dashboard catch block silently rendering static data | — | ❌ **PROHIBITED** |
+-
+----
+-
+-## 6. Prod guard
+-
+-`settings.py` calls `_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)` at import time.
+-If `CROWN_DEMO_MODE=true` is set while `CROWN_IS_PROD=true`, Django will **refuse to start**.
+-This is intentional and must never be bypassed.
+-
+----
+-
+-## 7. Change log
+-
+-| Date | PR | Author | Change |
+-|------|----|--------|--------|
+-| 2026-02-25 | #425 | Phase 7.1 | Initial policy; removed `catch→setDemoData` from StudentDashboard + ParentDashboard; fixed ops_views.py to use settings instead of os.environ |
++# Crown2026 — DEMO_MODE Policy
++
++> **Phase 7.1 artifact** · Locked 2026-02-25 · Do not modify without Director sign-off.
++
++---
++
++## 1. What DEMO_MODE is
++
++DEMO_MODE is a **runtime environment flag** that enables a live-backend presentation of Crown2026
++for investor and partner demos. It is **not** a fallback data layer; the API must be reachable and
++returning real (seeded) data.
++
++---
++
++## 2. The flag — single source of truth
++
++### Backend
++
++| Item | Value |
++|------|-------|
++| Setting | `settings.CROWN_DEMO_MODE` |
++| Type | `bool` |
++| Default | `False` |
++| Env variable | `CROWN_DEMO_MODE=true` |
++| Production guard | `_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)` in `settings.py` |
++| Write-block middleware | `backend/core/middleware.py` — blocks all mutating HTTP methods |
++
++All backend code **must** read `getattr(settings, "CROWN_DEMO_MODE", False)`.
++Direct `os.environ.get("CROWN_DEMO_MODE")` reads are **prohibited** (inconsistent parse,
++bypasses the prod-guard assertion).
++
++### Frontend
++
++| Item | Value |
++|------|-------|
++| Vite env var | `VITE_DEMO_MODE=1` |
++| Auto-login | `VITE_DEMO_AUTO_LOGIN=1` (only with `VITE_DEMO_MODE=1`) |
++| Demo credentials | `VITE_DEMO_USER`, `VITE_DEMO_PASS`, `VITE_DEMO_SCHOOL_ID` |
++
++---
++
++## 3. Prohibited pattern — silent demo fallback (REMOVED)
++
++The following pattern was present in `StudentDashboard.jsx` and `ParentDashboard.jsx` and has been
++**permanently removed** as of this phase:
++
++```jsx
++// PROHIBITED — silent catch swallows API failure and renders fake data
++.catch((err) => {
++  if (IS_DEMO_MODE) {
++    setData(DEMO_STATIC_DATA); // silently uses hardcoded data
++  } else {
++    setError(err.message);
++  }
++});
++```
++
++**Why it was dangerous:** An API failure in a demo or production environment would silently render
++stale hardcoded numbers to users (or investors), with no indication that the data was not live.
++If the API is down, the user must see an error — in every mode.
++
++---
++
++## 4. Required pattern — error-first
++
++All dashboard fetch hooks must follow this pattern:
++
++```jsx
++useEffect(() => {
++  fetchData()
++    .then(setData)
++    .catch((err) => {
++      setError(`Dashboard unavailable — API error: ${err.message}`);
++    });
++}, []);
++```
++
++The `<ErrorBanner>` component (already present in all dashboards) renders when `error` is non-empty.
++There is no silent fallback — not in demo mode, not in production.
++
++---
++
++## 5. Permitted DEMO_MODE uses
++
++| File | What it does | Permitted |
++|------|-------------|-----------|
++| `backend/core/middleware.py` | Blocks POST/PUT/PATCH/DELETE | ✅ Yes |
++| `backend/crown_api/dev_token_views.py` | Demo JWT endpoint (gated to CROWN_DEMO_MODE + localhost) | ✅ Yes |
++| `backend/crown_api/health_views.py` | Exposes `demo_mode: bool` in `/api/health/` | ✅ Yes |
++| `backend/graduation/views_breakdown.py` | Returns deterministic breakdown for demo | ✅ Yes — explicit, not a fallback |
++| `frontend/dashboards/src/utils/demoAutoLogin.ts` | Auto-login gate (`VITE_DEMO_MODE=1 && VITE_DEMO_AUTO_LOGIN=1`) | ✅ Yes |
++| `frontend/dashboards/src/components/AutoLoginGate.jsx` | Wrapper for auto-login gate | ✅ Yes |
++| `frontend/dashboards/src/components/DevJwtPanel.jsx` | Shows dev JWT panel only in demo mode | ✅ Yes |
++| `frontend/dashboards/src/pages/GradebookRO.jsx` | Hides dev panels when `isDemoMode` | ✅ Yes |
++| Any dashboard catch block silently rendering static data | — | ❌ **PROHIBITED** |
++
++---
++
++## 6. Prod guard
++
++`settings.py` calls `_assert_not_prod_true("CROWN_DEMO_MODE", CROWN_DEMO_MODE)` at import time.
++If `CROWN_DEMO_MODE=true` is set while `CROWN_IS_PROD=true`, Django will **refuse to start**.
++This is intentional and must never be bypassed.
++
++---
++
++## 7. Change log
++
++| Date | PR | Author | Change |
++|------|----|--------|--------|
++| 2026-02-25 | #425 | Phase 7.1 | Initial policy; removed `catch→setDemoData` from StudentDashboard + ParentDashboard; fixed ops_views.py to use settings instead of os.environ |

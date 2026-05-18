@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "C1 Review Decision",
+  "type": "object",
+  "required": [
+    "decision_id",
+    "source_id",
+    "decision",
+    "reviewer",
+    "decision_date",
+    "rationale"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 3
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "APPROVED_CANONICAL",
+        "APPROVED_REFERENCE_ONLY",
+        "QUARANTINED_PENDING_REVIEW",
+        "REJECTED",
+        "ESCALATED"
+      ]
+    },
+    "reviewer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "conditions": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,59 @@
+{
+  "artifact_states": [
+    {
+      "rel_path": "registers/evidence_register.csv",
+      "row_count": 10,
+      "sha256": "4ebaaf1ff938db73b5ca82beea854739e19c608b6a964398f418bacc6441e4da",
+      "size_bytes": 2672
+    },
+    {
+      "rel_path": "registers/human_approval_queue.csv",
+      "row_count": 10,
+      "sha256": "a5ac2a4171c915607f1dd8f2514bf305a2a3f67694a34795359e19994af2567c",
+      "size_bytes": 2341
+    },
+    {
+      "rel_path": "registers/review_queue.csv",
+      "row_count": 10,
+      "sha256": "a5ac2a4171c915607f1dd8f2514bf305a2a3f67694a34795359e19994af2567c",
+      "size_bytes": 2341
+    },
+    {
+      "rel_path": "registers/risk_exceptions.csv",
+      "row_count": 0,
+      "sha256": "11b43ba049803de0dd4d86e9ecc4eafdd6d1e58b630aefbeb35e1b3b62331ae9",
+      "size_bytes": 68
+    },
+    {
+      "rel_path": "registers/source_candidates.csv",
+      "row_count": 10,
+      "sha256": "a017019b84eae8a01c88055a64f06622839a836b074e3c17d23b351da369975a",
+      "size_bytes": 3897
+    },
+    {
+      "rel_path": "simulation/chunk_boundary_manifest.csv",
+      "row_count": 15,
+      "sha256": "1edd70faf65c4102b6bad0227b0d27f84379534d9f79c23071a4191386bf8331",
+      "size_bytes": 2318
+    },
+    {
+      "rel_path": "simulation/ingestion_simulation_manifest.csv",
+      "row_count": 9,
+      "sha256": "20f041fa688a310a315bd290c320ced3382dd1faa4c9421ce6a0d04eaee04cfc",
+      "size_bytes": 2331
+    },
+    {
+      "rel_path": "simulation/provenance_inheritance_manifest.csv",
+      "row_count": 9,
+      "sha256": "0e25534a67783bdb6cc3f8cff0a83acad821ece5b65fdcc6087ab02749c4ebf5",
+      "size_bytes": 1517
+    },
+    {
+      "rel_path": "simulation/quarantine_propagation_manifest.csv",
+      "row_count": 1,
+      "sha256": "de0fd25bf3f0ee70f1ee88136105c785f416dd31fda58fbb7d57effd92fd7181",
+      "size_bytes": 184
+    }
+  ],
+  "cycle": "CYCLE_1_BASELINE"
+}

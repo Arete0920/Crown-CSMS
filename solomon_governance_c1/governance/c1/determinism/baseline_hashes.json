@@ -1,0 +1,11 @@
+{
+  "registers/evidence_register.csv": "6e63e6ba85c2c10ccd16326e8b7f527b137c41e0d0dd72b496290142258b796d",
+  "registers/human_approval_queue.csv": "763461de27e6458f5f396255fdb6fe271e02c2aaff0ec58af19eed4f58009f02",
+  "registers/review_queue.csv": "763461de27e6458f5f396255fdb6fe271e02c2aaff0ec58af19eed4f58009f02",
+  "registers/risk_exceptions.csv": "11b43ba049803de0dd4d86e9ecc4eafdd6d1e58b630aefbeb35e1b3b62331ae9",
+  "registers/source_candidates.csv": "970f413532254d3112da52dbb13b6b1d1daf667f452983361bf41e39735748d0",
+  "simulation/chunk_boundary_manifest.csv": "6dadd790fcc495ba047d7f4ebffe9056d1c9e2de2749959211b92d27642d5105",
+  "simulation/ingestion_simulation_manifest.csv": "df15bfdf6fdd5f8f2cab0769937f6c7095533f140f2ac8e8083debf32d6fff6a",
+  "simulation/provenance_inheritance_manifest.csv": "d38c7bb131a2d1706af895fa837333cd81f9097008b41addf80c30f0c5136ed8",
+  "simulation/quarantine_propagation_manifest.csv": "de0fd25bf3f0ee70f1ee88136105c785f416dd31fda58fbb7d57effd92fd7181"
+}

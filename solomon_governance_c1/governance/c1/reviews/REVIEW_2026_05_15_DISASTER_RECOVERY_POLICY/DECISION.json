@@ -1,0 +1,11 @@
+{
+  "decision_state": "ACCEPT_DRIFT",
+  "drift_type": "FORMAT_NORMALIZATION",
+  "canonical_format": "LF",
+  "security_impact": "NONE",
+  "semantic_drift": false,
+  "justification": "Content identical after CRLF/LF normalization. Governance board standardizes LF as canonical deterministic policy format.",
+  "baseline_refresh_authorized": true,
+  "decision_utc": "2026-05-15T18:50:00Z",
+  "adjudicated_by": "Crown2026 Governance Board"
+}
