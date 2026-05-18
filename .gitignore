@@ -220,3 +220,5 @@ workflow-inventory-report.json
 release-scorecard.json
 workflow-permissions-audit.json
 workflow-secrets-inventory.json
+
+solomon_governance_c1/governance/c1/runtime/audit_pack/
