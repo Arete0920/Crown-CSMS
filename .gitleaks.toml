@@ -16,5 +16,8 @@ paths = [
   '''(^|/)\.pytest_cache($|/)''',
   '''(^|/)htmlcov($|/)''',
   '''(^|/)docs/audit/scans($|/)''',
-  '''(^|/)docs/crown-master-binder/inventory($|/)'''
+  '''(^|/)docs/crown-master-binder/inventory($|/)''',
+  # Governance cryptographic attestation - Ed25519 keys are audit proofs, not secrets
+  '''(^|/)solomon_governance_c1/governance/c1/runtime/audit_pack/.*/CRYPTOGRAPHIC_ATTESTATION\.json$''',
+  '''(^|/)solomon_governance_c1/governance/c1/runtime/audit_pack/SUPERSESSION_INDEX\.json$'''
 ]
