@@ -231,3 +231,16 @@ workflow-secrets-inventory.json
 
 # SOLOMON C1 runtime artifacts
 solomon_governance_c1/governance/c1/runtime/
+
+# GitHub CLI audit temp files (session investigation artifacts — never commit)
+_tmp_pr*.json
+pr_*.json
+pr*.json
+checks*.json
+checks*.txt
+*_checks.txt
+audit-pr-*.diff
+run_*.json
+runs.json
+pr_threads.json
+gitleaks-sarif/
