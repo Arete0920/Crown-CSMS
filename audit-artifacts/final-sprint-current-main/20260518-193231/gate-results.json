@@ -1,0 +1,12 @@
+﻿[
+    {
+        "exitCode":  0,
+        "name":  "inventory",
+        "exists":  true
+    },
+    {
+        "exitCode":  1,
+        "name":  "coverage",
+        "exists":  true
+    }
+]

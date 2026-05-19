@@ -1,0 +1,9 @@
+﻿{
+    "name":  "frontend verify full",
+    "command":  "npm --prefix frontend/dashboards run verify:full",
+    "executable":  "C:\\Program Files\\nodejs\\npm.cmd",
+    "exit_code":  0,
+    "timeout_seconds":  1800,
+    "stdout":  "audit-artifacts\\final-release-gate\\20260518-203526\\frontend-verify-full.stdout.txt",
+    "stderr":  "audit-artifacts\\final-release-gate\\20260518-203526\\frontend-verify-full.stderr.txt"
+}
