@@ -76,6 +76,7 @@ def _require_school(request):
 
 class DonorViewSet(viewsets.ModelViewSet):
     serializer_class = DonorSerializer
+    queryset = Donor.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -107,6 +108,7 @@ class DonorViewSet(viewsets.ModelViewSet):
 
 class CampaignViewSet(viewsets.ModelViewSet):
     serializer_class = CampaignSerializer
+    queryset = Campaign.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -138,6 +140,7 @@ class CampaignViewSet(viewsets.ModelViewSet):
 
 class SponsorshipPackageViewSet(viewsets.ModelViewSet):
     serializer_class = SponsorshipPackageSerializer
+    queryset = SponsorshipPackage.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -157,6 +160,7 @@ class SponsorshipPackageViewSet(viewsets.ModelViewSet):
 
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
+    queryset = Event.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -179,6 +183,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
 class TicketViewSet(viewsets.ModelViewSet):
     serializer_class = TicketSerializer
+    queryset = Ticket.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -209,6 +214,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
 class StoreItemViewSet(viewsets.ModelViewSet):
     serializer_class = StoreItemSerializer
+    queryset = StoreItem.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -378,6 +384,7 @@ def advancement_summary(request):
 
 class GiftViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GiftSerializer
+    queryset = Gift.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -395,6 +402,7 @@ class GiftViewSet(viewsets.ReadOnlyModelViewSet):
 
 class PledgeViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PledgeSerializer
+    queryset = Pledge.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -412,6 +420,7 @@ class PledgeViewSet(viewsets.ReadOnlyModelViewSet):
 
 class SponsorshipAgreementViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SponsorshipAgreementSerializer
+    queryset = SponsorshipAgreement.objects.none()
     permission_classes = [CrownModulePermission("advancement.view", write_code="advancement.edit")]
 
     def get_queryset(self):
@@ -611,6 +620,7 @@ _PERM_S3 = CrownModulePermission("advancement.view", write_code="advancement.edi
 
 class RelationshipViewSet(viewsets.ModelViewSet):
     serializer_class = RelationshipSerializer
+    queryset = Relationship.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -624,6 +634,7 @@ class RelationshipViewSet(viewsets.ModelViewSet):
 
 class ProspectViewSet(viewsets.ModelViewSet):
     serializer_class = ProspectSerializer
+    queryset = Prospect.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -640,6 +651,7 @@ class ProspectViewSet(viewsets.ModelViewSet):
 
 class MoveViewSet(viewsets.ModelViewSet):
     serializer_class = MoveSerializer
+    queryset = Move.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -660,6 +672,7 @@ class MoveViewSet(viewsets.ModelViewSet):
 
 class AlumniCohortViewSet(viewsets.ModelViewSet):
     serializer_class = AlumniCohortSerializer
+    queryset = AlumniCohort.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -673,6 +686,7 @@ class AlumniCohortViewSet(viewsets.ModelViewSet):
 
 class AlumniCohortMemberViewSet(viewsets.ModelViewSet):
     serializer_class = AlumniCohortMemberSerializer
+    queryset = AlumniCohortMember.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -693,6 +707,7 @@ class AlumniCohortMemberViewSet(viewsets.ModelViewSet):
 
 class MembershipTierViewSet(viewsets.ModelViewSet):
     serializer_class = MembershipTierSerializer
+    queryset = MembershipTier.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -709,6 +724,7 @@ class MembershipTierViewSet(viewsets.ModelViewSet):
 
 class MembershipViewSet(viewsets.ModelViewSet):
     serializer_class = MembershipSerializer
+    queryset = Membership.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -730,6 +746,7 @@ class MembershipViewSet(viewsets.ModelViewSet):
 
 class VenueViewSet(viewsets.ModelViewSet):
     serializer_class = VenueSerializer
+    queryset = Venue.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -743,6 +760,7 @@ class VenueViewSet(viewsets.ModelViewSet):
 
 class SeatingMapViewSet(viewsets.ModelViewSet):
     serializer_class = SeatingMapSerializer
+    queryset = SeatingMap.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -756,6 +774,7 @@ class SeatingMapViewSet(viewsets.ModelViewSet):
 
 class EventSeatingViewSet(viewsets.ModelViewSet):
     serializer_class = EventSeatingSerializer
+    queryset = EventSeating.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -769,6 +788,7 @@ class EventSeatingViewSet(viewsets.ModelViewSet):
 
 class SeatViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SeatSerializer
+    queryset = Seat.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -782,6 +802,7 @@ class SeatViewSet(viewsets.ReadOnlyModelViewSet):
 
 class SeatHoldViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SeatHoldSerializer
+    queryset = SeatHold.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -795,6 +816,7 @@ class SeatHoldViewSet(viewsets.ReadOnlyModelViewSet):
 
 class SponsorshipDeliverableViewSet(viewsets.ModelViewSet):
     serializer_class = SponsorshipDeliverableSerializer
+    queryset = SponsorshipDeliverable.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
@@ -812,6 +834,7 @@ class SponsorshipDeliverableViewSet(viewsets.ModelViewSet):
 
 class SponsorImpressionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = SponsorImpressionSerializer
+    queryset = SponsorImpression.objects.none()
     permission_classes = [_PERM_S3]
 
     def get_queryset(self):
