@@ -1,0 +1,20 @@
+﻿273461a9 ci: skip CodeQL javascript-typescript when JS/TS paths are absent (#823)
+56bcd318 docs: add solo-maintainer branch protection governance artifacts (#824)
+3d587623 SOLOMON C1: Add certified audit-pack cryptographic attestation (#811)
+0a1b69f1 security: exclude audit_pack artifacts containing private keys (#813)
+2ad66194 chore: add gitleaks allowlist for governance cryptographic attestation (#822)
+afe16004 fix: surgical corrections for PR #818 production hardening (#821)
+5619a7fa feat(compliance): add FERPA/COPPA/faith-data compliance foundation (#819)
+73def92c fix: 95-plus release blocker hygiene and verification evidence (#815)
+480f9fb4 fix: trim PR 815 to release evidence and hygiene scope
+163e851c fix: 95-plus release blocker hygiene and verification evidence
+57ef0676 stage1: accounting foundation architecture and governance (#814)
+a1cbd5d8 Sanitize remaining audit-pack health probe artifacts for secret-scan compliance
+239c56cf Redact remaining secret-scan artifacts and sanitize local DB doc placeholder
+eed74458 Fix verified PR gate failures: redact key artifact, sanitize DB URL doc example, and remove unmatched package.json-only script change
+fff65396 Merge origin/main into release/accounting-foundation-stage1 and resolve conflicts by preferring origin/main
+8fcaa970 stage1: stabilize immutable ledger verification gate
+5d68c1a6 stage1: enable manual accounting verification trigger
+dc8cab0f stage1: include accounting event contract artifacts
+0d9598d4 stage1: align accounting workflow to backend paths
+586aa7be stage1: accounting foundation architecture and governance

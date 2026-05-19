@@ -1,0 +1,9 @@
+﻿{
+    "name":  "frontend build",
+    "command":  "npm --prefix frontend/dashboards run build",
+    "executable":  "C:\\Program Files\\nodejs\\npm.cmd",
+    "exit_code":  0,
+    "timeout_seconds":  1200,
+    "stdout":  "audit-artifacts\\final-release-gate\\20260518-203526\\frontend-build.stdout.txt",
+    "stderr":  "audit-artifacts\\final-release-gate\\20260518-203526\\frontend-build.stderr.txt"
+}

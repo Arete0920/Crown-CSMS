@@ -1,0 +1,20 @@
+﻿cba629a6 audit: capture hardened gate run without null-expression failures
+edd0255e fix: repair gate script encoding/parser line and keep strict execution
+ae6fdc27 fix: stabilize gate command wrapper to remove null-expression failures
+071a4bb0 audit: capture hardened final release gate no-go scorecard
+9f703f1d fix: harden final release gate and add anti-stub validation
+dd587568 fix: harden final release gate command execution
+15b219c0 fix: harden final release gate command execution
+ec5d771c fix: harden final release gate command execution
+3c325021 fix: harden final release gate command execution
+c2e49def fix: harden final release gate command execution
+e9054f50 fix: harden final release gate command execution
+fc0ddc25 fix: replace simulated final release gate with real blocking checks
+ceb28399 release: add strict final release gate runner
+7103abe0 audit: capture current-main final sprint truth check
+273461a9 ci: skip CodeQL javascript-typescript when JS/TS paths are absent (#823)
+56bcd318 docs: add solo-maintainer branch protection governance artifacts (#824)
+3d587623 SOLOMON C1: Add certified audit-pack cryptographic attestation (#811)
+0a1b69f1 security: exclude audit_pack artifacts containing private keys (#813)
+2ad66194 chore: add gitleaks allowlist for governance cryptographic attestation (#822)
+afe16004 fix: surgical corrections for PR #818 production hardening (#821)

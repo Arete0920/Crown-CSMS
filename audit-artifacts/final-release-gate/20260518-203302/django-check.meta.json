@@ -1,0 +1,9 @@
+﻿{
+    "name":  "django check",
+    "command":  "python backend/manage.py check",
+    "executable":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\audit-artifacts\\runtime-release-closure\\20260418_070051\\.venv\\Scripts\\python.exe",
+    "exit_code":  null,
+    "timeout_seconds":  600,
+    "stdout":  "audit-artifacts\\final-release-gate\\20260518-203302\\django-check.stdout.txt",
+    "stderr":  "audit-artifacts\\final-release-gate\\20260518-203302\\django-check.stderr.txt"
+}

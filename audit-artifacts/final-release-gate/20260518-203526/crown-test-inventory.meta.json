@@ -1,0 +1,9 @@
+﻿{
+    "name":  "crown test inventory",
+    "command":  "node scripts/testing/check-crown-test-inventory.mjs",
+    "executable":  "C:\\Program Files\\nodejs\\node.exe",
+    "exit_code":  0,
+    "timeout_seconds":  300,
+    "stdout":  "audit-artifacts\\final-release-gate\\20260518-203526\\crown-test-inventory.stdout.txt",
+    "stderr":  "audit-artifacts\\final-release-gate\\20260518-203526\\crown-test-inventory.stderr.txt"
+}
