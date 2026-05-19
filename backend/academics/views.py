@@ -226,6 +226,7 @@ class TermViewSet(PaginatedReadOnlyViewSet):
 
 class CourseViewSet(PaginatedReadOnlyViewSet):
     serializer_class = CourseSerializer
+    queryset = Course.objects.none()
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request, required=True)
@@ -269,6 +270,7 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
       - TEACHER may only query teacher_id matching their own staff id.
     """
     serializer_class = SectionListSerializer
+    queryset = Section.objects.none()
 
     def get_serializer_class(self):
         if self.action == "retrieve":

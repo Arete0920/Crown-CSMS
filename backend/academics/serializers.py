@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
 from core.models import AcademicYear
 from households.models import Student
@@ -194,9 +195,11 @@ class CurriculumSourceSerializer(serializers.ModelSerializer):
             "is_supported_publisher",
         ]
 
+    @extend_schema_field(serializers.CharField())
     def get_canonical_publisher(self, obj):
         return normalize_curriculum_publisher(obj.name)
 
+    @extend_schema_field(serializers.BooleanField())
     def get_is_supported_publisher(self, obj):
         return is_supported_curriculum_publisher(obj.name)
 
@@ -254,6 +257,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["status", "submitted_at"]
 
+    @extend_schema_field(serializers.CharField())
     def get_student_name(self, obj):
         student = obj.enrollment.student
         return f"{student.first_name} {student.last_name}"
@@ -268,11 +272,11 @@ class SubmissionCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         from .services import mark_submission_submitted
-        
+
         submission = super().create(validated_data)
         submission.school_id = submission.assignment.school_id
         submission.save()
-        
+
         mark_submission_submitted(submission)
         return submission
 
@@ -291,6 +295,7 @@ class GradeSerializer(serializers.ModelSerializer):
             "teacher_feedback", "graded_at"
         ]
 
+    @extend_schema_field(serializers.CharField(allow_null=True))
     def get_graded_by_name(self, obj):
         if obj.graded_by:
             return f"{obj.graded_by.first_name} {obj.graded_by.last_name}"
@@ -327,6 +332,7 @@ class MasteryRecordSerializer(serializers.ModelSerializer):
             "evidence_assignment_id"
         ]
 
+    @extend_schema_field(serializers.CharField())
     def get_student_name(self, obj):
         return f"{obj.student.first_name} {obj.student.last_name}"
 
@@ -352,6 +358,7 @@ class TranscriptEntrySerializer(serializers.ModelSerializer):
             "provider", "dual_enrollment_label"
         ]
 
+    @extend_schema_field(serializers.CharField())
     def get_student_name(self, obj):
         return f"{obj.student.first_name} {obj.student.last_name}"
 
