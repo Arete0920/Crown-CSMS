@@ -89,7 +89,7 @@ function Invoke-GateCommand {
             return
         }
 
-        $exePath = $resolved.Path ?? $resolved.Source
+        $exePath = if ($resolved.Path) { $resolved.Path } else { $resolved.Source }
         if ([string]::IsNullOrWhiteSpace($exePath)) {
             Write-ArtifactText -Path $stderr -Value "Cannot resolve path for: $FileName"
             Add-Gate -Name $Name -Status "FAIL" `
@@ -132,7 +132,7 @@ function Invoke-GateCommand {
         }
     }
     catch {
-        $msg = $_.Exception?.Message ?? "Unknown error"
+        $msg = if ($_.Exception -and $_.Exception.Message) { $_.Exception.Message } else { "Unknown error" }
         Write-ArtifactText -Path $stderr -Value $msg
         Add-Gate -Name $Name -Status "FAIL" -Detail $msg -Artifact $stderr
     }
