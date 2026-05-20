@@ -174,13 +174,20 @@ if ([string]::IsNullOrWhiteSpace($dirty)) {
 
 $originMain = ""
 try {
-    git fetch origin main 2>&1 | Out-Null
     $originMain = (git rev-parse origin/main).Trim()
-    if ($head -eq $originMain) {
-        Add-Gate -Name "main sync" -Status "PASS" -Detail "HEAD matches origin/main: $head"
-    } else {
-        Add-Gate -Name "main sync" -Status "FAIL" `
-                 -Detail "HEAD $head does not match origin/main $originMain"
+    $syncCounts = (git rev-list --left-right --count HEAD...origin/main 2>$null).Trim()
+    if ($syncCounts -notmatch '^\d+\s+\d+$') {
+        Add-Gate -Name "main sync" -Status "FAIL" -Detail "Unable to compute ahead/behind counts vs origin/main"
+    }
+    else {
+        $parts  = $syncCounts -split '\s+'
+        $ahead  = [int]$parts[0]
+        $behind = [int]$parts[1]
+        if ($ahead -eq 0 -and $behind -eq 0) {
+            Add-Gate -Name "main sync" -Status "PASS" -Detail "HEAD matches origin/main: $head"
+        } else {
+            Add-Gate -Name "main sync" -Status "FAIL" -Detail "Branch diverged from origin/main (ahead=$ahead, behind=$behind)"
+        }
     }
 }
 catch {
@@ -231,7 +238,7 @@ if (Test-Path $authorityFile) {
 }
 
 # ---------------------------------------------------------------------------
-# Gate 6 — Founder acceptance signed
+# Gate 6 - Founder acceptance signed
 # ---------------------------------------------------------------------------
 
 $founderFile = "docs/release/FOUNDER_ACCEPTANCE.md"
@@ -240,12 +247,10 @@ if (Test-Path $founderFile) {
     if ($founderContent -match "SIGNED") {
         Add-Gate -Name "founder acceptance" -Status "PASS" -Detail "Founder acceptance signed"
     } else {
-        Add-Gate -Name "founder acceptance" -Status "FAIL" `
-                 -Detail "$founderFile exists but does not contain SIGNED"
+        Add-Gate -Name "founder acceptance" -Status "FAIL" -Detail "$founderFile exists but does not contain SIGNED"
     }
 } else {
-    Add-Gate -Name "founder acceptance" -Status "FAIL" `
-             -Detail "$founderFile missing — founder acceptance not on record"
+    Add-Gate -Name "founder acceptance" -Status "FAIL" -Detail "$founderFile missing - founder acceptance not on record"
 }
 
 # ---------------------------------------------------------------------------
