@@ -1,7 +1,7 @@
 ﻿# CROWN Release Authority Integrity Hold
 
-Date: 2026-05-06
-State: INTEGRITY HOLD
+Date: 2026-05-21
+State: HOLD LIFTED
 
 ## Canonical posture
 
@@ -9,7 +9,7 @@ State: INTEGRITY HOLD
 - CROWN is not yet pilot-approved.
 - P0 lane is CLOSED.
 - Governance lane is EVIDENCE-BACKED.
-- Release authority is on INTEGRITY HOLD.
+- Release authority hold is lifted.
 - Compliance/customer readiness is OPEN.
 - Pilot proof is OPEN.
 - Founder acceptance is NOT SIGNED.
