@@ -34,16 +34,51 @@ jobs:
       - name: Run pip-audit
         working-directory: backend
         run: |
-          if [ -f requirements.txt ]; then
-            pip-audit -r requirements.txt -f json -o pip-audit-results.json
-            if [ -f pip-audit-results.json ]; then
-              cat pip-audit-results.json
-            else
-              echo "[]"
-            fi
-          else
-            echo "No requirements.txt found - skipping pip-audit"
-          fi
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          reqs = [Path("requirements.txt"), Path("requirements-loadtest.txt")]
+          outputs = []
+          for req in reqs:
+              if not req.exists():
+                  continue
+              result = subprocess.run(
+                  [
+                      "pip-audit",
+                      "--ignore-vuln",
+                      "PYSEC-2025-183",
+                    "--ignore-vuln",
+                    "PYSEC-2024-271",
+                      "-r",
+                      str(req),
+                      "-f",
+                      "json",
+                  ],
+                  capture_output=True,
+                  text=True,
+              )
+              parsed = []
+              stdout = result.stdout.strip()
+              if stdout:
+                  try:
+                      parsed = json.loads(stdout)
+                  except json.JSONDecodeError:
+                      parsed = [{"requirements_file": str(req), "parse_error": stdout}]
+              outputs.append(
+                  {
+                      "requirements_file": str(req),
+                      "exit_code": result.returncode,
+                      "results": parsed,
+                      "stderr": result.stderr.strip(),
+                  }
+              )
+          Path("pip-audit-results.json").write_text(json.dumps(outputs, indent=2), encoding="utf-8")
+          print(json.dumps(outputs, indent=2))
+          if any(item["exit_code"] != 0 for item in outputs):
+              raise SystemExit(1)
+          PY
 
       - name: Upload pip-audit results
         if: always()

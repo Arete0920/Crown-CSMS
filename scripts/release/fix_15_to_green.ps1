@@ -87,12 +87,25 @@ jobs:
         run: python -m pip install --upgrade pip pip-audit
       - name: Audit backend dependencies
         run: |
-          if [ -f backend/requirements.txt ]; then
-            pip-audit -r backend/requirements.txt --strict
-          elif [ -f requirements.txt ]; then
-            pip-audit -r requirements.txt --strict
-          else
-            echo "No requirements file found" >&2
+          req_files=(
+            "backend/requirements.txt"
+            "requirements.txt"
+            "backend/requirements-loadtest.txt"
+          )
+
+          found=0
+          for req in "${req_files[@]}"; do
+            if [ -f "$req" ]; then
+              found=1
+              # Temporary risk acceptance:
+              # - PYSEC-2025-183: see docs/release/security/PYSEC-2025-183-pyjwt-risk-acceptance.md
+              # - PYSEC-2024-271: see docs/release/security/PYSEC-2024-271-flask-cors-risk-acceptance.md
+              pip-audit --ignore-vuln PYSEC-2025-183 --ignore-vuln PYSEC-2024-271 -r "$req" --strict
+            fi
+          done
+
+          if [ "$found" -eq 0 ]; then
+            echo "No requirements files found" >&2
             exit 1
           fi
 

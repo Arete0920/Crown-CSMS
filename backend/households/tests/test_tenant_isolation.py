@@ -2,7 +2,7 @@
 Tenant isolation tests per TENANT_PRIVACY_CANON.md
 
 Tests the contract:
-- Missing tenant context → 400
+- Missing tenant context → fail-closed deny (400/401/403)
 - Wrong tenant context → 404 (non-staff)
 - Correct tenant context → 200
 - Querysets never return cross-tenant rows
@@ -10,10 +10,9 @@ Tests the contract:
 import uuid
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient  # type: ignore[import-untyped]
 from core.models import School
 from households.models import Household, Student
-from households.scoping import MissingSchoolContext, get_request_school_id
 
 
 User = get_user_model()
@@ -35,7 +34,6 @@ class TenantIsolationTestCase(TestCase):
         self.user_a = User.objects.create_user(
             username="usera",
             email="usera@test.com",
-            password="test123",
             school_id=self.school_a.id
         )
 
@@ -43,7 +41,6 @@ class TenantIsolationTestCase(TestCase):
         self.user_b = User.objects.create_user(
             username="userb",
             email="userb@test.com",
-            password="test123",
             school_id=self.school_b.id
         )
 
@@ -51,7 +48,6 @@ class TenantIsolationTestCase(TestCase):
         self.staff_user = User.objects.create_user(
             username="staff",
             email="staff@test.com",
-            password="test123",
             is_staff=True,
             school_id=self.school_a.id
         )
@@ -80,27 +76,29 @@ class TenantIsolationTestCase(TestCase):
             last_name="FamilyB"
         )
 
-        self.client = APIClient()
+        self.api_client = APIClient()
 
-    def test_missing_tenant_returns_400(self):
+    def test_missing_tenant_fails_closed_or_empty_scope(self):
         """
-        CANON Rule 1: Missing tenant context MUST return 400
+        Missing tenant context must fail closed (400/401/403), and
+        no-school authenticated requests must not leak cross-tenant data.
         """
         # Anonymous request (no auth, no tenant)
-        response = self.client.get("/api/households/")
-        self.assertIn(response.status_code, [401, 403])  # Either is acceptable for auth
+        response = self.api_client.get("/api/households/")
+        # Missing tenant context may be denied by auth layer (401/403)
+        # or tenant middleware (400), all of which are fail-closed outcomes.
+        self.assertIn(response.status_code, [400, 401, 403])
 
         # Authenticated but user has no school_id
         user_no_school = User.objects.create_user(
             username="noschool",
-            email="noschool@test.com",
-            password="test123"
+            email="noschool@test.com"
         )
-        self.client.force_authenticate(user=user_no_school)
-        
+        self.api_client.force_authenticate(user=user_no_school)
+
         # Endpoints using get_request_school_id(required=True) should return 400
         # For now, test that it returns empty results (existing behavior)
-        response = self.client.get("/api/households/")
+        response = self.api_client.get("/api/households/")
         # This should be 400 once we update views to use required=True
         self.assertIn(response.status_code, [200, 400])
         if response.status_code == 200:
@@ -111,24 +109,24 @@ class TenantIsolationTestCase(TestCase):
         """
         CANON Rule 3: Non-staff cross-tenant access MUST return 404 (not 403)
         """
-        self.client.force_authenticate(user=self.user_a)
+        self.api_client.force_authenticate(user=self.user_a)
 
         # Try to access School B's household (should return 404)
-        response = self.client.get(f"/api/households/{self.household_b.id}/")
+        response = self.api_client.get(f"/api/households/{self.household_b.id}/")
         self.assertEqual(response.status_code, 404)
 
         # Try to access School B's student (should return 404)
-        response = self.client.get(f"/api/students/{self.student_b.id}/")
+        response = self.api_client.get(f"/api/students/{self.student_b.id}/")
         self.assertEqual(response.status_code, 404)
 
     def test_correct_tenant_returns_200(self):
         """
         CANON Rule 6: Correct tenant context MUST return 200 and scoped data
         """
-        self.client.force_authenticate(user=self.user_a)
+        self.api_client.force_authenticate(user=self.user_a)
 
         # List households - should see only School A
-        response = self.client.get("/api/households/")
+        response = self.api_client.get("/api/households/")
         self.assertEqual(response.status_code, 200)
         # response.data is a list directly (not {"results": [...]})
         results = response.data if isinstance(response.data, list) else response.data.get("results", [])
@@ -136,12 +134,12 @@ class TenantIsolationTestCase(TestCase):
         self.assertEqual(results[0]["id"], str(self.household_a.id))
 
         # Detail household - should see School A household
-        response = self.client.get(f"/api/households/{self.household_a.id}/")
+        response = self.api_client.get(f"/api/households/{self.household_a.id}/")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["id"], str(self.household_a.id))
 
         # List students - should see only School A
-        response = self.client.get("/api/students/")
+        response = self.api_client.get("/api/students/")
         self.assertEqual(response.status_code, 200)
         results = response.data if isinstance(response.data, list) else response.data.get("results", [])
         self.assertEqual(len(results), 1)
@@ -151,10 +149,10 @@ class TenantIsolationTestCase(TestCase):
         """
         CANON Rule 2: Staff may use X-School-Id header to override
         """
-        self.client.force_authenticate(user=self.staff_user)
+        self.api_client.force_authenticate(user=self.staff_user)
 
         # Access School B data via header override
-        response = self.client.get(
+        response = self.api_client.get(
             "/api/households/",
             HTTP_X_SCHOOL_ID=str(self.school_b.id)
         )
@@ -167,9 +165,9 @@ class TenantIsolationTestCase(TestCase):
         """
         Invalid UUID in tenant header MUST return 400
         """
-        self.client.force_authenticate(user=self.staff_user)
+        self.api_client.force_authenticate(user=self.staff_user)
 
-        response = self.client.get(
+        response = self.api_client.get(
             "/api/households/",
             HTTP_X_SCHOOL_ID="not-a-uuid"
         )
@@ -179,10 +177,10 @@ class TenantIsolationTestCase(TestCase):
         """
         Valid UUID but nonexistent school MUST return 404
         """
-        self.client.force_authenticate(user=self.staff_user)
+        self.api_client.force_authenticate(user=self.staff_user)
 
         fake_uuid = str(uuid.uuid4())
-        response = self.client.get(
+        response = self.api_client.get(
             "/api/households/",
             HTTP_X_SCHOOL_ID=fake_uuid
         )
@@ -192,10 +190,10 @@ class TenantIsolationTestCase(TestCase):
         """
         CANON Rule 6: Querysets MUST NOT return cross-tenant rows
         """
-        self.client.force_authenticate(user=self.user_a)
+        self.api_client.force_authenticate(user=self.user_a)
 
         # List all households
-        response = self.client.get("/api/households/")
+        response = self.api_client.get("/api/households/")
         self.assertEqual(response.status_code, 200)
         results = response.data if isinstance(response.data, list) else response.data.get("results", [])
 
@@ -208,15 +206,15 @@ class TenantIsolationTestCase(TestCase):
         """
         Sensitive endpoints (finance) MUST enforce tenant isolation
         """
-        self.client.force_authenticate(user=self.user_a)
+        self.api_client.force_authenticate(user=self.user_a)
 
         # This endpoint should only return School A data
         # Adjust URL based on actual finance endpoint
-        response = self.client.get("/api/billing/summary/")
-        
+        response = self.api_client.get("/api/billing/summary/")
+
         # Should either succeed with School A data or require explicit tenant
         self.assertIn(response.status_code, [200, 400, 404])
-        
+
         if response.status_code == 200:
             # Verify it's School A's data (structure depends on endpoint)
             self.assertIsNotNone(response.data)
