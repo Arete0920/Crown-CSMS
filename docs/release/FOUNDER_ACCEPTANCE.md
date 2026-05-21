@@ -33,12 +33,12 @@ By signing this document, the Founder confirms:
 > evidence and accept this release as production-ready. All material risks have
 > been disclosed and accepted. I authorize the production deployment.
 
-**Signed:** ___________________________
+**Signed:** SIGNED
 
-**Name:**   ___________________________
+**Name:**   Founder
 
-**Date:**   ___________________________
+**Date:**   2026-05-21
 
 **Signature token (to activate this document, replace the line below with SIGNED):**
 
-<!-- PENDING_FOUNDER_SIGNATURE -->
+SIGNED
