@@ -39,3 +39,7 @@ jobs:
         run: |
           python tools/ci/check_workflow_step_names.py
 
+      - name: Enforce "requirements-loadtest coverage in hardened workflows"
+        run: |
+          python tools/ci/check_dependency_audit_loadtest.py
+

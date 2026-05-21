@@ -6,6 +6,7 @@ on:
       - frontend/dashboards/package.json
       - frontend/dashboards/package-lock.json
       - backend/requirements.txt
+      - backend/requirements-loadtest.txt
       - requirements.txt
       - .github/workflows/dependency-integrity-gate.yml
   push:
@@ -15,6 +16,7 @@ on:
       - frontend/dashboards/package.json
       - frontend/dashboards/package-lock.json
       - backend/requirements.txt
+      - backend/requirements-loadtest.txt
       - requirements.txt
       - .github/workflows/dependency-integrity-gate.yml
 

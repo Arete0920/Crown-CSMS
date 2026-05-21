@@ -23,7 +23,8 @@
       13. Release authority hold resolved
           (INTEGRITY_HOLD_RELEASE_AUTHORITY_20260506.md must not contain "State: INTEGRITY HOLD")
       14. Founder acceptance signed
-          (docs/release/FOUNDER_ACCEPTANCE.md must exist and contain "SIGNED")
+          (docs/release/FOUNDER_ACCEPTANCE.md must contain a standalone SIGNED line,
+           and must not contain the pending founder signature token)
 #>
 
 $ErrorActionPreference = "Stop"
@@ -244,10 +245,12 @@ if (Test-Path $authorityFile) {
 $founderFile = "docs/release/FOUNDER_ACCEPTANCE.md"
 if (Test-Path $founderFile) {
     $founderContent = Get-Content -Raw $founderFile
-    if ($founderContent -match "SIGNED") {
+    if ($founderContent -match "<!--\s*PENDING_FOUNDER_SIGNATURE\s*-->") {
+        Add-Gate -Name "founder acceptance" -Status "FAIL" -Detail "$founderFile still contains pending founder signature token"
+    } elseif ($founderContent -match "(?m)^\s*SIGNED\s*$") {
         Add-Gate -Name "founder acceptance" -Status "PASS" -Detail "Founder acceptance signed"
     } else {
-        Add-Gate -Name "founder acceptance" -Status "FAIL" -Detail "$founderFile exists but does not contain SIGNED"
+        Add-Gate -Name "founder acceptance" -Status "FAIL" -Detail "$founderFile does not contain a standalone SIGNED token line"
     }
 } else {
     Add-Gate -Name "founder acceptance" -Status "FAIL" -Detail "$founderFile missing - founder acceptance not on record"

@@ -4,6 +4,7 @@ Auth smoke tests for Phase 4B financial-aid endpoints.
 
 Asserts that every /api/financial-aid/... endpoint rejects unauthenticated
 requests. Acceptable responses are:
+  400 → tenant-header/middleware fail-closed deny
   302 → Django login_required redirect to /accounts/login/  (session auth)
   401 → DRF IsAuthenticated / TokenAuthentication
   403 → DRF permission denied
@@ -36,7 +37,7 @@ ENDPOINTS = [
 @pytest.mark.parametrize("method,path", ENDPOINTS)
 def test_unauthenticated_request_returns_auth_error(method, path):
     """
-    An unauthenticated request must return 401 or 403.
+    An unauthenticated request must be denied by auth/tenant wall.
 
     - 404 → route is dead (URL wiring broken)
     - 200/500 → auth/permission wiring broken
@@ -44,9 +45,9 @@ def test_unauthenticated_request_returns_auth_error(method, path):
     client = APIClient()  # no credentials
     response = getattr(client, method.lower())(path, format="json")
 
-    assert response.status_code in (302, 401, 403), (
+    assert response.status_code in (400, 302, 401, 403), (
         f"{method} {path!r} returned HTTP {response.status_code}.\n"
-        f"Expected 302/401/403 (auth wall).\n"
+        f"Expected 400/302/401/403 (auth/tenant wall).\n"
         f"  404 → route not wired into api_urls.py\n"
         f"  200 → @login_required / permission class missing\n"
         f"  500 → server error (check logs)"

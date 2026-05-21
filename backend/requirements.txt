@@ -14,6 +14,7 @@ pytest==9.0.3
 pytest-django==4.7.0
 # JWT auth (alongside sessions)
 djangorestframework-simplejwt>=5.3.1
+PyJWT==2.12.0
 # CORS headers for frontend integration
 django-cors-headers==4.3.1
 drf-spectacular>=0.27.2
@@ -21,19 +22,16 @@ drf-spectacular-sidecar>=2025.3.1
 # Microsoft 365 SSO (OAuth2 via Authlib)
 authlib>=1.6.8
 requests>=2.32.0
-# Microsoft JWT validation (Entra ID Bearer tokens from MSAL frontend)
-PyJWT>=2.8.0
 cryptography>=43.0.0
 # Sentry error telemetry (production only; loaded conditionally in settings.py)
 sentry-sdk>=2.0.0
 # Celery task queue (outbox drain, background jobs)
 celery>=5.4.0
 redis>=5.0.0
-# Communications — Twilio SMS (optional; only needed if SMS channel enabled)
-twilio>=8.0.0
 # Payment orchestration — Stripe Connect (optional; only needed if payment_provider=stripe)
 stripe>=10.0.0
+# SMS provider client (used by comms/sms_service.py when SMS is enabled)
+twilio>=9.0.0
 # Board Packet PDF generation (Stage 4)
 reportlab>=4.2.0
 numpy>=1.26.4
-locust==2.31.8

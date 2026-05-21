@@ -10,8 +10,12 @@ BACKEND_REQUIRED = [
     "drf-spectacular",
     "drf-spectacular-sidecar",
     "reportlab",
-    "locust",
     "pytest-django",
+]
+
+# Load-test-only requirements (not backend runtime)
+LOADTEST_REQUIRED = [
+    "locust",
 ]
 
 FRONTEND_REQUIRED_DEV = {
@@ -45,6 +49,26 @@ def ensure_backend_requirements() -> list[str]:
     return touched
 
 
+def ensure_loadtest_requirements() -> list[str]:
+    touched = []
+    target = ROOT / "backend" / "requirements-loadtest.txt"
+    if not target.exists():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("# Load testing / release readiness\n", encoding="utf-8")
+
+    text = target.read_text(encoding="utf-8", errors="ignore")
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    lowered = {ln.lower().split("==")[0].split(">=")[0].strip(): ln for ln in lines}
+
+    for pkg in LOADTEST_REQUIRED:
+        if pkg not in lowered:
+            lines.append(pkg)
+            touched.append(pkg)
+
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return touched
+
+
 def ensure_frontend_package() -> list[str]:
     touched = []
     pkg_path = ROOT / "frontend" / "dashboards" / "package.json"
@@ -69,6 +93,7 @@ def ensure_frontend_package() -> list[str]:
 def main() -> None:
     report = {
         "backend_added": ensure_backend_requirements(),
+        "loadtest_added": ensure_loadtest_requirements(),
         "frontend_added": ensure_frontend_package(),
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)
