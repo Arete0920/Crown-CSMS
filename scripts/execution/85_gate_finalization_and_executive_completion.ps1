@@ -366,6 +366,7 @@ function Evaluate-Phase4 {
             CandidateCount = 0
             DeletedCount = 0
             FailCount = 1
+            BootstrapMissing = 1
             Approved = $false
             Notes = "Phase3Approved=" + $Phase3Approved + ";ArtifactMissing=True"
         }

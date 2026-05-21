@@ -134,9 +134,14 @@ function Get-RepoFiles {
                 ($_ -match '^(backend/|frontend/|docs/|scripts/|[.]github/)')
             } |
             ForEach-Object {
-                $full = Join-Path $Root ($_ -replace '/', '\\')
+                $full = Join-Path $Root $_
                 if (Test-Path $full) {
-                    Get-Item $full
+                    try {
+                        Get-Item -LiteralPath $full -ErrorAction Stop
+                    }
+                    catch {
+                        throw ("Get-RepoFiles could not materialize tracked path: {0}. Error: {1}" -f $full, $_.Exception.Message)
+                    }
                 }
             } |
             Sort-Object FullName
@@ -352,6 +357,7 @@ $coreGaps | Export-Csv -Path (Join-Path $phase5Root "core_gaps.csv") -NoTypeInfo
 
 $djangoCheckPath = Join-Path $phase5Root "django_check.txt"
 $migrationsPath  = Join-Path $phase5Root "django_showmigrations.txt"
+$managePyPath    = Join-Path $root "backend/manage.py"
 
 $originalSecretKey = $env:SECRET_KEY
 $originalDjangoSecretKey = $env:DJANGO_SECRET_KEY
@@ -364,26 +370,32 @@ if ([string]::IsNullOrWhiteSpace($env:SECRET_KEY) -and [string]::IsNullOrWhiteSp
     $usingAuditSecret = $true
 }
 
-if (Test-Path ".\backend\manage.py") {
+if (Test-Path $managePyPath) {
     try {
-        cmd /c "python .\backend\manage.py check 2>&1" | Set-Content -Path $djangoCheckPath -Encoding utf8
-        $global:LASTEXITCODE = 0
+        $checkOutput = & python $managePyPath check 2>&1
+        $checkOutput | Set-Content -Path $djangoCheckPath -Encoding utf8
+        if ($LASTEXITCODE -ne 0) {
+            throw "python manage.py check exited with code $LASTEXITCODE"
+        }
     }
     catch {
         $_ | Out-String | Set-Content -Path $djangoCheckPath -Encoding utf8
     }
 
     try {
-        cmd /c "python .\backend\manage.py showmigrations 2>&1" | Set-Content -Path $migrationsPath -Encoding utf8
-        $global:LASTEXITCODE = 0
+        $migrationsOutput = & python $managePyPath showmigrations 2>&1
+        $migrationsOutput | Set-Content -Path $migrationsPath -Encoding utf8
+        if ($LASTEXITCODE -ne 0) {
+            throw "python manage.py showmigrations exited with code $LASTEXITCODE"
+        }
     }
     catch {
         $_ | Out-String | Set-Content -Path $migrationsPath -Encoding utf8
     }
 }
 else {
-    "backend\manage.py not found." | Set-Content -Path $djangoCheckPath -Encoding utf8
-    "backend\manage.py not found." | Set-Content -Path $migrationsPath -Encoding utf8
+    "backend/manage.py not found." | Set-Content -Path $djangoCheckPath -Encoding utf8
+    "backend/manage.py not found." | Set-Content -Path $migrationsPath -Encoding utf8
 }
 
 Write-Utf8File -Path (Join-Path $phase5Root "SUMMARY.md") -Content (@(

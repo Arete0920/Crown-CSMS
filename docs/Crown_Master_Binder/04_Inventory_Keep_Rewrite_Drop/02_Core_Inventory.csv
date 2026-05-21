@@ -1,4 +1,4 @@
-﻿"ItemID","Item","Lane","Category","Owner","CurrentState","CoreModuleAddon","KeepRewriteDrop","FinalDecision","Priority","Notes"
+"ItemID","Item","Lane","Category","Owner","CurrentState","CoreModuleAddon","KeepRewriteDrop","FinalDecision","Priority","Notes"
 "I-001","Crown Core Canon","Canons","Document","Dev 1","Draft","Core","Keep","Keep","P0","docs/Crown_Master_Binder/02_Architecture_and_Canons/01_Crown_Core_Canon.md;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
 "I-002","SIS Canon","Canons","Document","Dev 2","Draft","Core","Keep","Keep","P0","docs/Crown_Master_Binder/02_Architecture_and_Canons/04_SIS_Canon.md;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
 "I-004","Frontend Shell Canon","Canons","Document","Dev 4","Draft","Core","Keep","Keep","P0","docs/Crown_Master_Binder/02_Architecture_and_Canons/09_Frontend_Shell_Canon.md;AutoCloseKRD:Keep;AutoCloseDecision:Keep"

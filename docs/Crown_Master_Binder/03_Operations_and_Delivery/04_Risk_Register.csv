@@ -1,4 +1,4 @@
-﻿"RiskID","Phase","Risk","Owner","Severity","Probability","Mitigation","GateImpact","Status","Notes"
+"RiskID","Phase","Risk","Owner","Severity","Probability","Mitigation","GateImpact","Status","Notes"
 "R-001","Phase 1","Inventory incomplete before classification","Dev 5","High","Medium","No classification until master inventory is materially complete","Blocks Gate 1","Open",""
 "R-002","Phase 2","Shadow truth reintroduced by modules","Dev 1","High","Medium","Enforce core truth and API canon","Blocks Gate 2","Open",""
 "R-003","Phase 3","Archive package incomplete before purge readiness","Dev 5","High","Medium","No purge readiness approval without restore confidence","Blocks Gate 3","Open",""

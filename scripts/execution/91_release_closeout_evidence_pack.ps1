@@ -170,11 +170,11 @@ $copyLedger | Export-Csv -Path (Join-Path $artifactRoot "copy_ledger.csv") -NoTy
 # ------------------------------------------------------------
 # 2) SNAPSHOT GIT STATE
 # ------------------------------------------------------------
-cmd /c "git rev-parse HEAD 2>&1" | Set-Content -Path (Join-Path $artifactRoot "git_HEAD.txt") -Encoding utf8
-cmd /c "git status --short 2>&1" | Set-Content -Path (Join-Path $artifactRoot "git_status_short.txt") -Encoding utf8
-cmd /c "git branch --show-current 2>&1" | Set-Content -Path (Join-Path $artifactRoot "git_branch.txt") -Encoding utf8
-cmd /c "git log --oneline -20 2>&1" | Set-Content -Path (Join-Path $artifactRoot "git_log_last20.txt") -Encoding utf8
-cmd /c "git diff --stat 2>&1" | Set-Content -Path (Join-Path $artifactRoot "git_diff_stat.txt") -Encoding utf8
+(& git rev-parse HEAD 2>&1) | Set-Content -Path (Join-Path $artifactRoot "git_HEAD.txt") -Encoding utf8
+(& git status --short 2>&1) | Set-Content -Path (Join-Path $artifactRoot "git_status_short.txt") -Encoding utf8
+(& git branch --show-current 2>&1) | Set-Content -Path (Join-Path $artifactRoot "git_branch.txt") -Encoding utf8
+(& git log --oneline -20 2>&1) | Set-Content -Path (Join-Path $artifactRoot "git_log_last20.txt") -Encoding utf8
+(& git diff --stat 2>&1) | Set-Content -Path (Join-Path $artifactRoot "git_diff_stat.txt") -Encoding utf8
 
 $headSha = (Get-Content -Raw -Path (Join-Path $artifactRoot "git_HEAD.txt")).Trim()
 $currentBranch = (Get-Content -Raw -Path (Join-Path $artifactRoot "git_branch.txt")).Trim()
