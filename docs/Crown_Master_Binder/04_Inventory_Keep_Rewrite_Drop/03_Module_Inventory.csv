@@ -1,4 +1,4 @@
-﻿"ItemID","Item","Lane","Category","Owner","CurrentState","CoreModuleAddon","KeepRewriteDrop","FinalDecision","Priority","Notes"
+"ItemID","Item","Lane","Category","Owner","CurrentState","CoreModuleAddon","KeepRewriteDrop","FinalDecision","Priority","Notes"
 "I-003","Admissions Module","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P0","backend/admissions;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
 "I-009","Re-enrollment Module","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P0","backend/reenrollment;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
 "I-010","Billing, Tuition, and Payments","Modules","Module","Dev 3","Inventory Needed","Module","Keep","Keep","P0","backend/billing;backend/payments;backend/finance;AutoCloseKRD:Keep;AutoCloseDecision:Keep"
