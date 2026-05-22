@@ -1,6 +1,15 @@
 ﻿import { apiGet, apiGetList, apiPost } from './request';
 import { buildApiPath } from '../utils/apiContracts';
 
+function createRequestIdentity() {
+  const seed = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+  const key = String(seed);
+  return {
+    requestId: key,
+    idempotencyKey: `admissions-submit-${key}`,
+  };
+}
+
 /**
  * Fetch admissions applications list (staff-only)
  * @returns {Promise<Array>} - array of application objects
@@ -45,6 +54,10 @@ export function fetchAdmissionsDrilldown(params = {}) {
   return fetchAdmissionsEndpoint("/api/v1/admissions/drilldown/", params);
 }
 
+export function fetchAdmissionsPublicConfig() {
+  return fetchAdmissionsEndpoint("/api/v1/admissions/public-config/");
+}
+
 export function fetchAdmissionsPriorityQueue(params = {}) {
   return fetchAdmissionsEndpoint("/api/admissions/priority-queue/", params);
 }
@@ -55,5 +68,15 @@ export function fetchAdmissionsMetrics(params = {}) {
 
 export function fetchAdmissionsTimeline(params = {}) {
   return fetchAdmissionsEndpoint("/api/admissions/timeline/", params);
+}
+
+export function submitAdmissionsIntake(payload = {}) {
+  const identity = createRequestIdentity();
+  return apiPost("/api/v1/admissions/submit/", payload, {
+    headers: {
+      'X-Request-Id': identity.requestId,
+      'Idempotency-Key': identity.idempotencyKey,
+    },
+  });
 }
 

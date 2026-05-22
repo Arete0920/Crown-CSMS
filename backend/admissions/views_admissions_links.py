@@ -1,5 +1,6 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -23,6 +24,10 @@ def _require_staff(request) -> Response | None:
     return None
 
 
+@extend_schema(
+    responses=AdmissionsApplicationLinkReadSerializer(many=True),
+    tags=["Admissions"],
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_applications_list(request):
@@ -46,6 +51,18 @@ def admissions_applications_list(request):
     return Response(AdmissionsApplicationLinkReadSerializer(qs, many=True).data)
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="application_id",
+            location=OpenApiParameter.PATH,
+            required=True,
+            type=OpenApiTypes.UUID,
+        )
+    ],
+    responses=AdmissionsApplicationLinkReadSerializer,
+    tags=["Admissions"],
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admissions_application_detail(request, application_id):

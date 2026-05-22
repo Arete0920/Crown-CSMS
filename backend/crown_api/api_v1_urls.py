@@ -7,7 +7,12 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from applications.views_admissions import admissions_summary, admissions_drilldown
+from applications.views_admissions import (
+    admissions_summary,
+    admissions_drilldown,
+    admissions_submit,
+    admissions_public_config,
+)
 from crown_api.system_views import SeedStatusView, demo_reset_view, diagnose_db_tables_view, fix_schema_drift_view
 from crown_api.ops_views import ensure_ci_user, demo_school
 from crown_api.release_gate_views import (
@@ -27,8 +32,10 @@ urlpatterns = [
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="v1_token_refresh"),
 
     # Admissions funnel (frozen contract)
+    path("admissions/public-config/", admissions_public_config, name="admissions_public_config"),
     path("admissions/summary/", admissions_summary, name="admissions_summary"),
     path("admissions/drilldown/", admissions_drilldown, name="admissions_drilldown"),
+    path("admissions/submit/", admissions_submit, name="admissions_submit"),
     # System telemetry
     path("system/seed-status/", SeedStatusView.as_view(), name="seed_status"),
     path("system/demo-reset/", demo_reset_view, name="system-demo-reset"),

@@ -53,6 +53,10 @@ class TenantHeaderRequiredMiddleware:
         "/api/schema",
         "/api/docs",
         "/api/director/force_seed_user",  # dev-only admin utility; predates tenant scoping
+        "/api/v1/admissions/submit",
+        "/api/admissions/submit",
+        "/api/v1/admissions/public-config",
+        "/api/admissions/public-config",
     )
 
     def __init__(self, get_response):
