@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownDataTable from '../components/data/CrownDataTable.jsx';
 import Drawer from '../components/Drawer';
@@ -27,8 +27,184 @@ const STATUS_LABELS = {
   ENROLLED: 'Enrolled',
 };
 
+function mapAdmissionsApp(app) {
+  return {
+    id: app.id,
+    applicant_name: app.applicant_name || '',
+    student_first_name: app.student_first_name || '',
+    student_last_name: app.student_last_name || '',
+    status: app.status || 'DRAFT',
+    household_id: app.household_id || '',
+    household_name: app.household_name || '',
+    created_at: app.created_at || '',
+    updated_at: app.updated_at || '',
+    guardian_contacts: Array.isArray(app.guardian_contacts) ? app.guardian_contacts : [],
+    primary_guardian_name: app.primary_guardian_name || '',
+    primary_guardian_email: app.primary_guardian_email || '',
+    primary_guardian_phone: app.primary_guardian_phone || '',
+  };
+}
+
+function getHouseholdApplications(selected, rows) {
+  if (!selected) return [];
+  const source = Array.isArray(rows) ? rows : [];
+  const householdId = selected.household_id || '';
+  const householdName = selected.household_name || '';
+
+  const grouped = source.filter((row) => {
+    if (householdId && row.household_id) {
+      return row.household_id === householdId;
+    }
+    return householdName && row.household_name === householdName;
+  });
+
+  return grouped.length > 0 ? grouped : [selected];
+}
+
+function getContactRail(selected, householdApplications) {
+  for (const app of householdApplications) {
+    if (Array.isArray(app.guardian_contacts) && app.guardian_contacts.length > 0) {
+      return app.guardian_contacts;
+    }
+  }
+
+  if (!selected) return [];
+  if (!(selected.primary_guardian_name || selected.primary_guardian_email || selected.primary_guardian_phone)) {
+    return [];
+  }
+
+  return [
+    {
+      name: selected.primary_guardian_name,
+      email: selected.primary_guardian_email,
+      phone: selected.primary_guardian_phone,
+      is_primary: true,
+      role: 'PRIMARY_GUARDIAN',
+    },
+  ];
+}
+
+function HouseholdReviewDrawer({
+  selected,
+  setSelected,
+  expandedChildren,
+  setExpandedChildren,
+  enrollResult,
+  enrollError,
+  enrolling,
+  householdApplications,
+  contactRail,
+  onEnroll,
+}) {
+  if (!selected) return null;
+
+  function toggleChildCard(applicationId) {
+    setExpandedChildren((prev) => ({
+      ...prev,
+      [applicationId]: !prev[applicationId],
+    }));
+  }
+
+  function closeDrawer() {
+    setSelected(null);
+    setExpandedChildren({});
+  }
+
+  return (
+    <Drawer open={Boolean(selected)} onClose={closeDrawer} width={640}>
+      <div style={{ padding: '24px' }}>
+        <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Household Admissions Review</h6>
+
+        {enrollResult ? (
+          <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? '#e8f5e9' : '#ffebee', color: enrollResult.ok ? '#1b5e20' : '#b71c1c', border: `1px solid ${enrollResult.ok ? '#81c784' : '#ef9a9a'}`, marginBottom: '8px' }}>
+            {enrollResult.message}
+          </div>
+        ) : null}
+
+        {enrollError ? (
+          <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: '#ffebee', color: '#b71c1c', border: '1px solid #ef9a9a', marginBottom: '8px' }}>
+            {enrollError.message}
+          </div>
+        ) : null}
+
+        <div style={{ display: 'grid', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ border: '1px solid var(--crown-border)', borderRadius: 8, padding: 12, background: 'var(--crown-subtle)' }}>
+            <p style={LABEL}><strong>Household:</strong> {selected.household_name || selected.applicant_name || '—'}</p>
+            <p style={LABEL}><strong>Applications:</strong> {householdApplications.length}</p>
+          </div>
+
+          <div style={{ border: '1px solid var(--crown-border)', borderRadius: 8, padding: 12 }}>
+            <p style={{ ...LABEL, marginBottom: 8 }}><strong>Guardian / Contact Rail</strong></p>
+            {contactRail.length === 0 ? (
+              <p style={LABEL}>No guardian contacts on file for this household.</p>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                {contactRail.map((contact, index) => (
+                  <div key={`${contact.name}-${index}`} style={{ border: '1px solid var(--crown-border)', borderRadius: 6, padding: '8px 10px' }}>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                      {contact.name || 'Guardian'} {contact.is_primary ? '(Primary)' : ''}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--crown-muted)' }}>
+                      {contact.email || 'No email'} · {contact.phone || 'No phone'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gap: 10, marginBottom: 16 }}>
+          {householdApplications.map((appRow) => {
+            const expanded = Boolean(expandedChildren[appRow.id]);
+            const studentName = `${appRow.student_first_name || ''} ${appRow.student_last_name || ''}`.trim() || 'Student record pending';
+
+            return (
+              <div key={appRow.id} style={{ border: '1px solid var(--crown-border)', borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 10, gap: 10 }}>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{studentName}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--crown-muted)' }}>
+                      {STATUS_LABELS[appRow.status] || appRow.status}
+                    </div>
+                  </div>
+                  <button type="button" style={SM} onClick={() => toggleChildCard(appRow.id)}>
+                    {expanded ? 'Hide details' : 'Show details'}
+                  </button>
+                </div>
+
+                {expanded ? (
+                  <div style={{ borderTop: '1px solid var(--crown-border)', padding: 10, display: 'grid', gap: 8 }}>
+                    <p style={LABEL}><strong>Submitted:</strong> {appRow.created_at ? new Date(appRow.created_at).toLocaleString() : '—'}</p>
+                    <p style={LABEL}><strong>Updated:</strong> {appRow.updated_at ? new Date(appRow.updated_at).toLocaleString() : '—'}</p>
+                    <div style={ROW}>
+                      <button
+                        type="button"
+                        style={BTN_FILLED}
+                        onClick={() => onEnroll(appRow.id)}
+                        disabled={enrolling || appRow.status === 'ENROLLED'}
+                      >
+                        {enrolling ? 'Enrolling...' : 'Enroll Child'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={ROW}>
+          <button type="button" style={BTN} onClick={closeDrawer}>Close</button>
+        </div>
+      </div>
+    </Drawer>
+  );
+}
+
 export function AdmissionsPipelineList() {
   const [selected, setSelected] = useState(null);
+  const [expandedChildren, setExpandedChildren] = useState({});
   const [enrollResult, setEnrollResult] = useState(null);
 
   const {
@@ -48,19 +224,12 @@ export function AdmissionsPipelineList() {
     rowsPerPage: 10,
   });
 
-  const { loading, error, data, reload } = useAsyncPageData(async () => {
+  const loadAdmissionsApplications = useCallback(async () => {
     const source = await getAdmissionsApplications();
-    return (source || []).map((app) => ({
-      id: app.id,
-      applicant_name: app.applicant_name || '',
-      student_first_name: app.student_first_name || '',
-      student_last_name: app.student_last_name || '',
-      status: app.status || 'DRAFT',
-      household_name: app.household_name || '',
-      created_at: app.created_at || '',
-      updated_at: app.updated_at || '',
-    }));
+    return (source || []).map(mapAdmissionsApp);
   }, []);
+
+  const { loading, error, data, reload } = useAsyncPageData(loadAdmissionsApplications, []);
 
   const { run: runEnroll, loading: enrolling, error: enrollError } = useApiAction(
     async (applicationId) => {
@@ -143,12 +312,15 @@ export function AdmissionsPipelineList() {
     </div>
   );
 
-  async function handleEnrollSelected() {
-    if (!selected) return;
+  const householdApplications = useMemo(() => getHouseholdApplications(selected, rows), [rows, selected]);
+  const contactRail = useMemo(() => getContactRail(selected, householdApplications), [householdApplications, selected]);
+
+  async function handleEnrollSelected(applicationId) {
+    if (!applicationId) return;
     setEnrollResult(null);
 
     try {
-      const result = await runEnroll(selected.id);
+      const result = await runEnroll(applicationId);
       setEnrollResult({ ok: true, message: result.message || 'Applicant enrolled.' });
       await reload();
     } catch {
@@ -179,38 +351,18 @@ export function AdmissionsPipelineList() {
         emptyMessage="Admissions applications will appear here once submitted."
       />
 
-      {selected ? (
-        <Drawer onClose={() => setSelected(null)} width={520}>
-          <div style={{ padding: '24px' }}>
-            <h6 style={{ margin: 0, marginBottom: '1rem', fontWeight: 700, fontSize: '1.25rem' }}>Application Detail</h6>
-
-            {enrollResult ? (
-              <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: enrollResult.ok ? '#e8f5e9' : '#ffebee', color: enrollResult.ok ? '#1b5e20' : '#b71c1c', border: `1px solid ${enrollResult.ok ? '#81c784' : '#ef9a9a'}`, marginBottom: '8px' }}>
-                {enrollResult.message}
-              </div>
-            ) : null}
-
-            {enrollError ? (
-              <div role="alert" style={{ padding: '8px 16px', borderRadius: '4px', background: '#ffebee', color: '#b71c1c', border: '1px solid #ef9a9a', marginBottom: '8px' }}>
-                {enrollError.message}
-              </div>
-            ) : null}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              <p style={LABEL}><strong>Applicant:</strong> {selected.applicant_name}</p>
-              <p style={LABEL}><strong>Status:</strong> {STATUS_LABELS[selected.status] || selected.status}</p>
-              <p style={LABEL}><strong>Household:</strong> {selected.household_name || '—'}</p>
-            </div>
-
-            <div style={ROW}>
-              <button type="button" style={BTN_FILLED} onClick={handleEnrollSelected} disabled={enrolling || selected.status === 'ENROLLED'}>
-                {enrolling ? 'Enrolling...' : 'Enroll Applicant'}
-              </button>
-              <button type="button" style={BTN} onClick={() => setSelected(null)}>Close</button>
-            </div>
-          </div>
-        </Drawer>
-      ) : null}
+      <HouseholdReviewDrawer
+        selected={selected}
+        setSelected={setSelected}
+        expandedChildren={expandedChildren}
+        setExpandedChildren={setExpandedChildren}
+        enrollResult={enrollResult}
+        enrollError={enrollError}
+        enrolling={enrolling}
+        householdApplications={householdApplications}
+        contactRail={contactRail}
+        onEnroll={handleEnrollSelected}
+      />
     </CrownLayout>
   );
 }

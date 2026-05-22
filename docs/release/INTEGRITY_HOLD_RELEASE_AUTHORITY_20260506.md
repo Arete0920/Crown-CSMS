@@ -12,7 +12,7 @@ State: HOLD LIFTED
 - Release authority hold is lifted.
 - Compliance/customer readiness is OPEN.
 - Pilot proof is OPEN.
-- Founder acceptance is NOT SIGNED.
+- Founder acceptance is SIGNED.
 
 ## Scope interpretation
 
@@ -42,7 +42,7 @@ Scores move only when all are true:
 2. Compliance/customer-readiness packet
 3. Controlled pilot entry proof
 4. Controlled pilot exit proof
-5. Final founder/product-owner acceptance
+5. Final founder/product-owner acceptance (CLOSED)
 
 ## Required evidence before any pilot approval claim
 

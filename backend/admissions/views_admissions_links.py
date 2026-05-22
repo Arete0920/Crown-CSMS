@@ -44,6 +44,7 @@ def admissions_applications_list(request):
             "household",
             "sis_student__person",
         )
+        .prefetch_related("household__members__person")
         .filter(school=school)
         .order_by("-created_at")
     )
@@ -77,7 +78,7 @@ def admissions_application_detail(request, application_id):
         "family",
         "household",
         "sis_student__person",
-    )
+    ).prefetch_related("household__members__person")
 
     obj = get_object_or_404(qs, id=application_id, school=school)
     return Response(AdmissionsApplicationLinkReadSerializer(obj).data)

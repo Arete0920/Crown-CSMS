@@ -7,6 +7,8 @@ Tests the contract:
 - Correct tenant context → 200
 - Querysets never return cross-tenant rows
 """
+# pyright: reportMissingImports=false, reportUnknownMemberType=false, reportUnknownVariableType=false, reportUnknownArgumentType=false, reportUnknownParameterType=false, reportAttributeAccessIssue=false
+
 import uuid
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
