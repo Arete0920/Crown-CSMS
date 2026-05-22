@@ -5,31 +5,48 @@ export function useWizardDraft(wizardKey, initialValue) {
 
   const [value, setValue] = useState(initialValue);
   const [loaded, setLoaded] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(storageKey);
+      const raw = globalThis.localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
-        setValue(parsed);
+        if (parsed && typeof parsed === 'object' && parsed.__draftVersion === 2) {
+          setValue(parsed.value ?? initialValue);
+          setLastSavedAt(parsed.savedAt || null);
+        } else {
+          setValue(parsed);
+          setLastSavedAt(null);
+        }
       }
     } catch {
       // Ignore malformed local draft payloads.
     } finally {
       setLoaded(true);
     }
-  }, [storageKey]);
+  }, [initialValue, storageKey]);
 
   const saveDraft = useCallback(
     (nextValue) => {
       const toSave = nextValue ?? value;
-      window.localStorage.setItem(storageKey, JSON.stringify(toSave));
+      const savedAt = new Date().toISOString();
+      globalThis.localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          __draftVersion: 2,
+          value: toSave,
+          savedAt,
+        }),
+      );
+      setLastSavedAt(savedAt);
     },
     [storageKey, value],
   );
 
   const clearDraft = useCallback(() => {
-    window.localStorage.removeItem(storageKey);
+    globalThis.localStorage.removeItem(storageKey);
+    setLastSavedAt(null);
   }, [storageKey]);
 
   return {
@@ -38,5 +55,6 @@ export function useWizardDraft(wizardKey, initialValue) {
     saveDraft,
     clearDraft,
     loaded,
+    lastSavedAt,
   };
 }

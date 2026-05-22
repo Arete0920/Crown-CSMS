@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * CrownWizard
@@ -16,6 +16,7 @@ export default function CrownWizard({
   initialContext = {},
   onContextChange,
   onStepChange,
+  stepProps = {},
 }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [context, setContext] = useState(initialContext);
@@ -44,17 +45,20 @@ export default function CrownWizard({
   }
 
   function applyContext(nextValue) {
-    setContext((previous) => {
-      const resolved = typeof nextValue === 'function' ? nextValue(previous) : nextValue;
-      if (typeof onContextChange === 'function') {
-        onContextChange(resolved);
-      }
-      return resolved;
-    });
+    setContext((previous) => (
+      typeof nextValue === 'function' ? nextValue(previous) : nextValue
+    ));
   }
+
+  useEffect(() => {
+    if (typeof onContextChange === 'function') {
+      onContextChange(context);
+    }
+  }, [context, onContextChange]);
 
   return (
     <StepComponent
+      {...stepProps}
       context={context}
       setContext={applyContext}
       stepIndex={stepIndex}

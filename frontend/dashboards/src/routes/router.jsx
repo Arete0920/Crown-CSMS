@@ -26,6 +26,7 @@ import RoleHomeRedirect from "../pages/RoleHomeRedirect.jsx";
 import TeacherAttendancePage from "../pages/TeacherAttendancePage.jsx";
 import ParentAttendancePage from "../pages/ParentAttendancePage.jsx";
 import AttendanceDashboard from "../pages/AttendanceDashboard.jsx";
+import ProspectiveFamilyAdmissionsWizard from "../pages/ProspectiveFamilyAdmissionsWizard.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
 import LogoutPage from "../pages/LogoutPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
@@ -128,6 +129,14 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: PATHS.ADMISSIONS_APPLY,
+    element: <ProspectiveFamilyAdmissionsWizard />,
+  },
+  {
+    path: PATHS.APPLY,
+    element: <Navigate to={PATHS.ADMISSIONS_APPLY} replace />,
   },
   {
     path: '/logout',
