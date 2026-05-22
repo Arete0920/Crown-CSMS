@@ -16,7 +16,7 @@ import uuid
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import CrownPermission, RolePermission, School, UserRole
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -65,6 +65,29 @@ def _make_authed_client(school):
     c = APIClient()
     c.force_authenticate(user=user)
     return c
+
+
+def _make_authed_client_with_user(school):
+    user = User.objects.create_user(
+        username=f"contract_{uuid.uuid4().hex[:8]}", password="pw"
+    )
+    c = APIClient()
+    c.force_authenticate(user=user)
+    return c, user
+
+
+def _grant_enrollment_conversion_access(user, school, role_code="REGISTRAR"):
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    perm, _ = CrownPermission.objects.get_or_create(
+        code="admissions.edit",
+        defaults={"description": "Edit admissions records"},
+    )
+    RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
+
+
+def _grant_wizard_access_if_required(description, user, school):
+    if description == "enrollment_conversion":
+        _grant_enrollment_conversion_access(user, school)
 
 
 def _headers(school_id):
@@ -138,9 +161,10 @@ class TestWizardCreateSession(TestCase):
 
     def setUp(self):
         self.school = _make_school("Create Session School")
-        self.client = _make_authed_client(self.school)
+        self.client, self.user = _make_authed_client_with_user(self.school)
 
     def _assert_201(self, description, url):
+        _grant_wizard_access_if_required(description, self.user, self.school)
         r = self.client.post(url, **_headers(self.school.id))
         self.assertEqual(
             r.status_code, 201,
@@ -170,10 +194,13 @@ class TestWizardTenantIsolation(TestCase):
     def setUp(self):
         self.school_a = _make_school("Tenant A")
         self.school_b = _make_school("Tenant B")
-        self.client_a = _make_authed_client(self.school_a)
-        self.client_b = _make_authed_client(self.school_b)
+        self.client_a, self.user_a = _make_authed_client_with_user(self.school_a)
+        self.client_b, self.user_b = _make_authed_client_with_user(self.school_b)
 
     def _assert_tenant_isolation(self, description, url):
+        _grant_wizard_access_if_required(description, self.user_a, self.school_a)
+        _grant_wizard_access_if_required(description, self.user_b, self.school_b)
+
         # Create session under school_a
         r = self.client_a.post(url, **_headers(self.school_a.id))
         self.assertEqual(r.status_code, 201, f"{description}: session creation failed {r.status_code}")

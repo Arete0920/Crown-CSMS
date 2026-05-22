@@ -11,6 +11,7 @@ from admissions.models import AdmissionsApplication
 from households.scoping import get_request_school_id
 
 from .models import EnrollmentConversionWizardSession
+from .permissions import require_enrollment_conversion_access
 from drf_spectacular.utils import extend_schema
 from drf_spectacular.types import OpenApiTypes
 
@@ -39,6 +40,11 @@ def create_session(request):
     school_id = get_request_school_id(request)
     from core.models import School
     school = get_object_or_404(School, id=school_id)
+
+    denied = require_enrollment_conversion_access(request, school)
+    if denied is not None:
+        return denied
+
     session = EnrollmentConversionWizardSession.objects.create(
         school=school,
         created_by=request.user if request.user.is_authenticated else None,
@@ -57,6 +63,10 @@ def create_session(request):
 def configure_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
+
+    denied = require_enrollment_conversion_access(request, session.school)
+    if denied is not None:
+        return denied
 
     academic_year_label = (request.data.get("academic_year_label") or "").strip()
     if not academic_year_label:
@@ -92,6 +102,10 @@ def configure_session(request, session_id):
 def load_applicants(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
+
+    denied = require_enrollment_conversion_access(request, session.school)
+    if denied is not None:
+        return denied
 
     if session.status not in (
         EnrollmentConversionWizardSession.STATUS_CONFIGURED,
@@ -131,6 +145,10 @@ def commit_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
 
+    denied = require_enrollment_conversion_access(request, session.school)
+    if denied is not None:
+        return denied
+
     if session.status not in (
         EnrollmentConversionWizardSession.STATUS_APPLICANTS_LOADED,
         EnrollmentConversionWizardSession.STATUS_COMMITTED,
@@ -167,6 +185,10 @@ def commit_session(request, session_id):
 def verify_session(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
+
+    denied = require_enrollment_conversion_access(request, session.school)
+    if denied is not None:
+        return denied
 
     if session.status not in (
         EnrollmentConversionWizardSession.STATUS_COMMITTED,

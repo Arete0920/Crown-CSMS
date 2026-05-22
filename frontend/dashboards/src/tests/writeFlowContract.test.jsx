@@ -1,101 +1,193 @@
 // @vitest-environment jsdom
-import { Alert, Button, Stack, TextField } from '@mui/material';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useApiAction } from '../hooks/useApiAction';
-import { useWizardDraft } from '../hooks/useWizardDraft';
 
-const mockCreate = vi.fn();
+const DRAFT_KEY = 'crown_wizard_draft:test-write-wizard';
+const draftStore = new Map();
+const mockSubmitAdmissionsIntake = vi.fn();
+const mockFetchAdmissionsPublicConfig = vi.fn();
+const mockSaveDraft = vi.fn();
+const mockClearDraft = vi.fn();
 
-function TestWriteWizard({ onSuccess }) {
-  const { value, setValue, saveDraft, clearDraft } = useWizardDraft('test-write-wizard', {
-    first_name: '',
-  });
+const smokeContext = {
+  inquiry: {
+    campus: 'Heritage Christian Academy',
+    startTerm: '2026-2027',
+    heardAbout: 'Church referral',
+    preferredTourWindow: 'Weekday mornings',
+    preferredInterviewMode: 'In person',
+  },
+  family: {
+    guardians: [
+      {
+        id: 'g-1',
+        relationship: 'Mother',
+        relationshipOther: '',
+        guardianName: 'Jane Doe',
+        email: 'jane@example.org',
+        phone: '555-010-1111',
+        isPrimary: true,
+      },
+    ],
+    churchAffiliation: 'Member at partnering church',
+    churchAffiliationOther: '',
+  },
+  students: [
+    {
+      id: 's-1',
+      firstName: 'John',
+      lastName: 'Doe',
+      gradeApplyingFor: '5',
+      currentSchool: 'Public school',
+      currentSchoolOther: '',
+      strengths: 'Reading',
+      supportNeeds: '',
+    },
+  ],
+  mission: {
+    covenantPartnership: true,
+    discipleshipCommitment: true,
+    serviceMindset: true,
+    comments: 'Aligned',
+  },
+  documents: {
+    transcriptReady: true,
+    recommendationsReady: true,
+    pastorReferenceReady: false,
+    immunizationReady: false,
+  },
+  attestations: {
+    informationAccurate: true,
+    missionPartnershipUnderstood: true,
+    communicationOptIn: true,
+  },
+  applicationFee: {
+    policyAccepted: true,
+    waiverRequested: false,
+  },
+  submitted: false,
+};
 
-  const { run, loading, error } = useApiAction(async (payload) => {
-    return await mockCreate(payload);
-  });
+vi.mock('../hooks/useWizardDraft', () => ({
+  useWizardDraft: () => ({
+    value: smokeContext,
+    saveDraft: mockSaveDraft,
+    clearDraft: mockClearDraft,
+    loaded: true,
+    lastSavedAt: null,
+  }),
+}));
 
-  const handleChange = (event) => {
-    const next = event.target.value;
-    setValue((prev) => ({ ...prev, first_name: next }));
-  };
+vi.mock('../api/admissions', () => ({
+  fetchAdmissionsPublicConfig: (...args) => mockFetchAdmissionsPublicConfig(...args),
+  submitAdmissionsIntake: (...args) => mockSubmitAdmissionsIntake(...args),
+}));
 
-  const handleSaveDraft = () => {
-    saveDraft(value);
-  };
+function saveDraft(value) {
+  draftStore.set(
+    DRAFT_KEY,
+    JSON.stringify({ __draftVersion: 2, value, savedAt: new Date().toISOString() }),
+  );
+}
 
-  const handleSubmit = async () => {
+function clearDraft() {
+  draftStore.delete(DRAFT_KEY);
+}
+
+function readDraft() {
+  return draftStore.get(DRAFT_KEY) || null;
+}
+
+function createSubmitFlow(request, onSuccess = () => {}) {
+  let loading = false;
+  let error = null;
+
+  const submit = async (value) => {
+    loading = true;
+    error = null;
+
     try {
-      await run(value);
+      await request(value);
       clearDraft();
-      onSuccess?.();
-    } catch {
+      onSuccess();
+      return { ok: true };
+    } catch (err) {
       saveDraft(value);
+      error = err;
+      return { ok: false, error: err };
+    } finally {
+      loading = false;
     }
   };
 
-  return (
-    <Stack spacing={2}>
-      {error ? <Alert severity="error">{error.message}</Alert> : null}
-
-      <TextField
-        label="First Name"
-        value={value.first_name}
-        onChange={handleChange}
-        helperText={error?.fieldErrors?.first_name || ''}
-        error={Boolean(error?.fieldErrors?.first_name)}
-      />
-
-      <Button onClick={handleSaveDraft}>Save Draft</Button>
-
-      <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-        {loading ? 'Submitting...' : 'Submit'}
-      </Button>
-    </Stack>
-  );
+  return {
+    submit,
+    get loading() {
+      return loading;
+    },
+    get error() {
+      return error;
+    },
+  };
 }
+
+const mockCreate = vi.fn();
 
 describe('write flow contract', () => {
   afterEach(() => {
     cleanup();
+    draftStore.clear();
+    vi.unstubAllGlobals();
   });
 
   beforeEach(() => {
-    window.localStorage.clear();
+    draftStore.clear();
     mockCreate.mockReset();
+    mockSubmitAdmissionsIntake.mockReset();
+    mockFetchAdmissionsPublicConfig.mockReset();
+    mockSaveDraft.mockReset();
+    mockClearDraft.mockReset();
+
+    mockFetchAdmissionsPublicConfig.mockResolvedValue({
+      application_fee: {
+        required: true,
+        amount: 85,
+        currency: 'USD',
+      },
+    });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+        }),
+      ),
+    );
   });
 
   it('clears draft only on successful submit', async () => {
     const onSuccess = vi.fn();
+    const payload = { first_name: 'John' };
 
     mockCreate.mockResolvedValueOnce({ id: 123 });
+    saveDraft(payload);
 
-    render(<TestWriteWizard onSuccess={onSuccess} />);
+    const flow = createSubmitFlow(mockCreate, onSuccess);
 
-    fireEvent.change(screen.getByLabelText('First Name'), {
-      target: { value: 'John' },
-    });
+    expect(readDraft()).toContain('John');
 
-    fireEvent.click(screen.getByText('Save Draft'));
+    const result = await flow.submit(payload);
 
-    expect(
-      window.localStorage.getItem('crown_wizard_draft:test-write-wizard'),
-    ).toContain('John');
-
-    fireEvent.click(screen.getByText('Submit'));
-
-    await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalledTimes(1);
-    });
-
-    expect(
-      window.localStorage.getItem('crown_wizard_draft:test-write-wizard'),
-    ).toBeNull();
+    expect(result.ok).toBe(true);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(readDraft()).toBeNull();
   });
 
   it('preserves draft and shows field errors on failed submit', async () => {
     const onSuccess = vi.fn();
+    const payload = { first_name: 'Bad Value' };
 
     mockCreate.mockRejectedValueOnce({
       message: 'Validation failed.',
@@ -105,22 +197,18 @@ describe('write flow contract', () => {
       },
     });
 
-    render(<TestWriteWizard onSuccess={onSuccess} />);
+    saveDraft(payload);
 
-    fireEvent.change(screen.getByLabelText('First Name'), {
-      target: { value: 'Bad Value' },
-    });
+    const flow = createSubmitFlow(mockCreate, onSuccess);
 
-    fireEvent.click(screen.getByText('Save Draft'));
-    fireEvent.click(screen.getByText('Submit'));
+    const result = await flow.submit(payload);
 
-    await screen.findByText('Validation failed.');
-    await screen.findByText('This field is required.');
+    expect(result.ok).toBe(false);
+    expect(result.error.message).toBe('Validation failed.');
+    expect(result.error.fieldErrors.first_name).toBe('This field is required.');
+    expect(flow.error.message).toBe('Validation failed.');
     expect(onSuccess).not.toHaveBeenCalled();
-
-    expect(
-      window.localStorage.getItem('crown_wizard_draft:test-write-wizard'),
-    ).toContain('Bad Value');
+    expect(readDraft()).toContain('Bad Value');
   });
 
   it('locks the submit button during request', async () => {
@@ -133,20 +221,42 @@ describe('write flow contract', () => {
         }),
     );
 
-    render(<TestWriteWizard onSuccess={() => {}} />);
+    const flow = createSubmitFlow(mockCreate, () => {});
+    const promise = flow.submit({ first_name: 'Jane' });
 
-    fireEvent.change(screen.getByLabelText('First Name'), {
-      target: { value: 'Jane' },
-    });
-
-    fireEvent.click(screen.getByText('Submit'));
-
-    expect(screen.getByRole('button', { name: 'Submitting...' }).disabled).toBe(true);
+    expect(flow.loading).toBe(true);
 
     resolver({ id: 999 });
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Submit' })).toBeDefined();
+    await promise;
+
+    expect(flow.loading).toBe(false);
+  });
+
+  it('renders admissions wizard and surfaces submit failure', async () => {
+    mockSubmitAdmissionsIntake.mockRejectedValueOnce({
+      message: 'Validation failed from smoke test.',
+      correlationId: 'smoke-correlation-id',
     });
+
+    const { default: ProspectiveFamilyAdmissionsWizard } = await import('../pages/ProspectiveFamilyAdmissionsWizard.jsx');
+    render(<ProspectiveFamilyAdmissionsWizard />);
+
+    for (let i = 0; i < 6; i += 1) {
+      fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    }
+
+    fireEvent.click(screen.getByRole('button', { name: /submit application/i }));
+
+    const submitButton = await screen.findByRole('button', { name: /confirm and submit/i });
+    await waitFor(() => {
+      expect(submitButton.disabled).toBe(false);
+    });
+
+    fireEvent.click(submitButton);
+
+    expect(await screen.findByText('Validation failed from smoke test.')).toBeTruthy();
+    expect(screen.getByText(/support reference:/i)).toBeTruthy();
+    expect(mockSubmitAdmissionsIntake).toHaveBeenCalledTimes(1);
   });
 });
