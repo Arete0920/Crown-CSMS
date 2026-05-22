@@ -3,17 +3,21 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from rest_framework.test import APITestCase
 
 from applications.models import Application, Applicant, ApplicationEvent
 from core.models import AcademicYear, CrownPermission, RolePermission, School, UserRole
+from finance.models import FinanceInvoice, FinanceObligation
 from households.models import Household
 
 
 class AdmissionsEndpointsTests(APITestCase):
     def setUp(self):
-        User = get_user_model()
-        self.user = User.objects.create_user(username="test@crown-demo.local", password="pass1234")
+        user_model = get_user_model()
+        self.user = user_model.objects.create(username="test@crown-demo.local")
+        self.user.set_password("pass1234")
+        self.user.save(update_fields=["password"])
 
         # Grant admissions.view so these contract tests reach the business logic.
         # Permission gate tests live in test_admissions_authz.py (Layer C).
@@ -94,6 +98,61 @@ class AdmissionsEndpointsTests(APITestCase):
             source="google",
             flags={"duplicate_suspected": False, "bot_suspected": False},
         )
+
+    def _submit_payload(self):
+        return {
+            "inquiry": {
+                "campus": "Test School",
+                "startTerm": "2026-2027",
+                "heardAbout": "Church referral",
+            },
+            "family": {
+                "guardians": [
+                    {
+                        "relationship": "Mother",
+                        "relationshipOther": "",
+                        "guardianName": "Maria Parent",
+                        "email": "maria.parent@example.com",
+                        "phone": "555-0101",
+                        "isPrimary": True,
+                    }
+                ],
+                "churchAffiliation": "Attend regularly",
+                "churchAffiliationOther": "",
+            },
+            "students": [
+                {
+                    "firstName": "Ava",
+                    "lastName": "Parent",
+                    "gradeApplyingFor": "5",
+                    "currentSchool": "Public school",
+                    "currentSchoolOther": "",
+                    "strengths": "Reading",
+                    "supportNeeds": "",
+                }
+            ],
+            "mission": {
+                "covenantPartnership": True,
+                "discipleshipCommitment": True,
+                "serviceMindset": True,
+                "comments": "Aligned with mission.",
+            },
+            "documents": {
+                "transcriptReady": True,
+                "recommendationsReady": True,
+                "pastorReferenceReady": False,
+                "immunizationReady": True,
+            },
+            "attestations": {
+                "informationAccurate": True,
+                "missionPartnershipUnderstood": True,
+                "communicationOptIn": True,
+            },
+            "applicationFee": {
+                "policyAccepted": True,
+                "waiverRequested": False,
+            },
+        }
 
     def test_summary_requires_school_header(self):
         """Missing X-School-Id should return 400."""
@@ -304,3 +363,209 @@ class AdmissionsEndpointsTests(APITestCase):
             HTTP_X_SCHOOL_ID=str(self.school_id),
         )
         self.assertEqual(r.status_code, 401)
+
+    def test_submit_public_happy_path_creates_records(self):
+        """Public submit persists application/applicant/event records."""
+        self.client.force_authenticate(user=None)
+        before_apps = Application.objects.filter(school_id=self.school_id).count()
+        before_applicants = Applicant.objects.filter(school_id=self.school_id).count()
+        before_events = ApplicationEvent.objects.filter(school_id=self.school_id).count()
+        before_fee_obligations = FinanceObligation.objects.filter(school_id=self.school_id).count()
+        before_fee_invoices = FinanceInvoice.objects.filter(school_id=self.school_id).count()
+
+        r = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+
+        self.assertEqual(r.status_code, 201, r.data)
+        self.assertTrue(r.data.get("ok"))
+        self.assertEqual(r.data.get("stage"), "application_submitted")
+        self.assertEqual(r.data.get("application_count"), 1)
+        self.assertIn("status_center", r.data)
+        self.assertIn("documents_lifecycle", r.data)
+        self.assertIn("enrollment_continuity", r.data)
+        self.assertIn("reviewer_summary", r.data)
+        self.assertIn("application_fee", r.data)
+        self.assertIsInstance(r.data["status_center"].get("milestones"), list)
+        self.assertIsInstance(r.data["documents_lifecycle"], list)
+        self.assertIsInstance(r.data["enrollment_continuity"].get("checklist"), list)
+        self.assertIn(r.data["application_fee"].get("status"), ["pending", "waiver_requested", "not_required"])
+        self.assertEqual(r.data["application_fee"].get("finance", {}).get("state"), "invoiced")
+        self.assertEqual(r.data["application_fee"].get("payment_handoff", {}).get("state"), "ready")
+        self.assertEqual(r.data["application_fee"].get("payment_handoff", {}).get("requires_auth"), True)
+
+        self.assertEqual(
+            Application.objects.filter(school_id=self.school_id).count(),
+            before_apps + 1,
+        )
+        self.assertEqual(
+            Applicant.objects.filter(school_id=self.school_id).count(),
+            before_applicants + 1,
+        )
+        self.assertEqual(
+            ApplicationEvent.objects.filter(school_id=self.school_id).count(),
+            before_events + 3,
+        )
+        self.assertEqual(
+            FinanceObligation.objects.filter(school_id=self.school_id).count(),
+            before_fee_obligations + 1,
+        )
+        self.assertEqual(
+            FinanceInvoice.objects.filter(school_id=self.school_id).count(),
+            before_fee_invoices + 1,
+        )
+
+    def test_submit_requires_campus_when_no_tenant_header(self):
+        """Public submit must include inquiry.campus when no tenant header is provided."""
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["inquiry"]["campus"] = ""
+
+        r = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data.get("code"), "missing_tenant")
+
+    def test_submit_requires_fee_policy_or_waiver(self):
+        """When fee is enabled, submit requires fee policy acceptance or waiver request."""
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["applicationFee"] = {
+            "policyAccepted": False,
+            "waiverRequested": False,
+        }
+
+        r = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("applicationFee", r.data.get("detail", ""))
+
+    def test_submit_rejects_fee_policy_and_waiver_both_true(self):
+        """Submit should reject conflicting fee flags when both policy and waiver are true."""
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["applicationFee"] = {
+            "policyAccepted": True,
+            "waiverRequested": True,
+        }
+
+        r = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("cannot both be true", r.data.get("detail", ""))
+
+    def test_submit_waiver_request_skips_finance_invoice(self):
+        """Waiver requested should not create finance obligation/invoice records."""
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["applicationFee"] = {
+            "policyAccepted": False,
+            "waiverRequested": True,
+        }
+        before_fee_obligations = FinanceObligation.objects.filter(school_id=self.school_id).count()
+        before_fee_invoices = FinanceInvoice.objects.filter(school_id=self.school_id).count()
+
+        r = self.client.post("/api/v1/admissions/submit/", payload, format="json")
+
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data["application_fee"].get("finance", {}).get("state"), "waiver_requested")
+        self.assertEqual(
+            FinanceObligation.objects.filter(school_id=self.school_id).count(),
+            before_fee_obligations,
+        )
+        self.assertEqual(
+            FinanceInvoice.objects.filter(school_id=self.school_id).count(),
+            before_fee_invoices,
+        )
+
+    def test_submit_idempotency_replay_does_not_create_duplicates(self):
+        """Same Idempotency-Key should replay the original result and avoid duplicate records."""
+        self.client.force_authenticate(user=None)
+        key = "admissions-submit-fixed-key"
+
+        before_apps = Application.objects.filter(school_id=self.school_id).count()
+        before_applicants = Applicant.objects.filter(school_id=self.school_id).count()
+
+        first = self.client.post(
+            "/api/v1/admissions/submit/",
+            self._submit_payload(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=key,
+            HTTP_X_REQUEST_ID="req-submit-1",
+        )
+        second = self.client.post(
+            "/api/v1/admissions/submit/",
+            self._submit_payload(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=key,
+            HTTP_X_REQUEST_ID="req-submit-2",
+        )
+
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second["X-Idempotent-Replay"], "true")
+        self.assertEqual(first.data.get("application_id"), second.data.get("application_id"))
+        self.assertIn("status_center", second.data)
+
+        self.assertEqual(
+            Application.objects.filter(school_id=self.school_id).count(),
+            before_apps + 1,
+        )
+        self.assertEqual(
+            Applicant.objects.filter(school_id=self.school_id).count(),
+            before_applicants + 1,
+        )
+
+    def test_submit_validation_error_includes_correlation(self):
+        """Validation errors should include a correlation id in both header and body."""
+        self.client.force_authenticate(user=None)
+        payload = self._submit_payload()
+        payload["students"][0]["gradeApplyingFor"] = ""
+
+        r = self.client.post(
+            "/api/v1/admissions/submit/",
+            payload,
+            format="json",
+            HTTP_X_REQUEST_ID="corr-test-123",
+        )
+
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r["X-Correlation-Id"], "corr-test-123")
+        self.assertEqual(r.data.get("correlation_id"), "corr-test-123")
+        self.assertIsInstance(r.data.get("message"), str)
+
+    def test_submit_rate_limit_returns_429(self):
+        """Abuse controls should return 429 once email bucket exceeds threshold."""
+        self.client.force_authenticate(user=None)
+        cache.set(
+            f"admissions_submit_rl:email:{self.school_id}:maria.parent@example.com",
+            6,
+            timeout=60 * 60,
+        )
+
+        r = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+
+        self.assertEqual(r.status_code, 429)
+        self.assertEqual(r.data.get("code"), "rate_limited")
+        self.assertIn("Retry-After", r)
+
+    def test_public_config_returns_fee_source_of_truth(self):
+        """Public config endpoint should expose backend fee configuration."""
+        self.client.force_authenticate(user=None)
+
+        r = self.client.get(
+            "/api/v1/admissions/public-config/",
+            HTTP_X_SCHOOL_ID=str(self.school_id),
+        )
+
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("application_fee", r.data)
+        self.assertEqual(r.data["application_fee"].get("currency"), "USD")
+        self.assertIn("required", r.data["application_fee"])
+
+    def test_public_config_allows_missing_tenant_header(self):
+        """Public config must be reachable without X-School-Id for public funnel bootstrap."""
+        self.client.force_authenticate(user=None)
+
+        r = self.client.get("/api/v1/admissions/public-config/")
+
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("application_fee", r.data)
