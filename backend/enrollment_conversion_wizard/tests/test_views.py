@@ -6,7 +6,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 
 from admissions.models import AdmissionsApplication
-from core.models import AcademicYear, Family, School
+from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
 
 
@@ -25,13 +25,25 @@ def _make_user():
     return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
 
 
+def _grant_enrollment_conversion_access(user, school, role_code="REGISTRAR"):
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    perm, _ = CrownPermission.objects.get_or_create(
+        code="admissions.edit",
+        defaults={"description": "Edit admissions records"},
+    )
+    RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
+
+
 def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-def _client_for():
+def _client_for(school, with_access=True):
     c = APIClient()
-    c.force_authenticate(user=_make_user())
+    user = _make_user()
+    if with_access:
+        _grant_enrollment_conversion_access(user, school)
+    c.force_authenticate(user=user)
     return c
 
 
@@ -98,10 +110,16 @@ class EnrollmentConversionAuthTest(TestCase):
 class EnrollmentConversionCreateTest(TestCase):
     def test_create_returns_201(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data["status"], EnrollmentConversionWizardSession.STATUS_DRAFT)
+
+    def test_create_forbidden_without_role_permission(self):
+        school = _make_school()
+        c = _client_for(school, with_access=False)
+        r = c.post(BASE_URL, **_headers(school.id))
+        self.assertEqual(r.status_code, 403)
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +129,7 @@ class EnrollmentConversionCreateTest(TestCase):
 class EnrollmentConversionConfigureTest(TestCase):
     def test_configure_ok(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -125,7 +143,7 @@ class EnrollmentConversionConfigureTest(TestCase):
 
     def test_configure_missing_academic_year_label(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -138,7 +156,7 @@ class EnrollmentConversionConfigureTest(TestCase):
 
     def test_configure_invalid_from_status(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -152,7 +170,7 @@ class EnrollmentConversionConfigureTest(TestCase):
     def test_configure_wrong_school_returns_404(self):
         school = _make_school()
         other = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -175,7 +193,7 @@ class EnrollmentConversionLoadTest(TestCase):
         _make_application(school, ay, status="ACCEPTED")
         _make_application(school, ay, status="ACCEPTED")
         _make_application(school, ay, status="WAITLISTED")  # not included
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_configured(c, school.id)
         r = c.post(f"{BASE_URL}{sid}/load/", {}, format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -184,7 +202,7 @@ class EnrollmentConversionLoadTest(TestCase):
 
     def test_load_from_draft_rejected(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(f"{BASE_URL}{sid}/load/", {}, format="json", **_headers(school.id))
@@ -192,7 +210,7 @@ class EnrollmentConversionLoadTest(TestCase):
 
     def test_load_zero_applicants_ok(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_configured(c, school.id)
         r = c.post(f"{BASE_URL}{sid}/load/", {}, format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -209,7 +227,7 @@ class EnrollmentConversionCommitTest(TestCase):
         ay = _make_academic_year(school)
         _make_application(school, ay, status="ACCEPTED")
         _make_application(school, ay, status="ACCEPTED")
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_loaded(c, school.id)
         r = c.post(
             f"{BASE_URL}{sid}/commit/",
@@ -227,7 +245,7 @@ class EnrollmentConversionCommitTest(TestCase):
 
     def test_commit_requires_confirm(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_loaded(c, school.id)
         r = c.post(f"{BASE_URL}{sid}/commit/", {}, format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
@@ -236,7 +254,7 @@ class EnrollmentConversionCommitTest(TestCase):
         school = _make_school()
         ay = _make_academic_year(school)
         _make_application(school, ay, status="ACCEPTED")
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_committed(c, school.id)
         r2 = c.post(
             f"{BASE_URL}{sid}/commit/",
@@ -257,7 +275,7 @@ class EnrollmentConversionVerifyTest(TestCase):
         school = _make_school()
         ay = _make_academic_year(school)
         _make_application(school, ay, status="ACCEPTED")
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_committed(c, school.id)
         r = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -266,7 +284,7 @@ class EnrollmentConversionVerifyTest(TestCase):
 
     def test_verify_from_draft_rejected(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
