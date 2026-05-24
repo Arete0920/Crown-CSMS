@@ -111,3 +111,61 @@ TBD
 TBD
 
 ---
+
+---
+
+## Slice 7 Closure Record
+
+### Status
+
+CLOSED - VERIFIED
+
+### Branch
+
+stage2-slice7-proof-sparseclean
+
+### Evidence Commit
+
+725bc36916b26a38698fffb51a05df51f56b5d78
+
+### Scope
+
+Admissions-to-Finance Handoff Proof
+
+### Proof Artifact
+
+audit-artifacts/stage2-admissions-finance-handoff-proof.md
+
+### Supporting Evidence Files
+
+- audit-artifacts/stage2-slice7-admissions-finance-handoff/17_admissions_raw_cmd_capture.txt
+- audit-artifacts/stage2-slice7-admissions-finance-handoff/18_scope_hygiene_blockers.txt
+- audit-artifacts/stage2-slice7-admissions-finance-handoff/19_admissions_execution_classification.txt
+
+### Verification Summary
+
+- Admissions test raw cmd capture path passed.
+- PowerShell NativeCommandError was classified as wrapper behavior, not proof of underlying DB setup failure.
+- Sparse-clean scope isolation passed.
+- Commit-gate preview passed.
+- Slice 7 evidence commit was pushed.
+- Local and remote HEAD matched.
+
+### Required Markers Achieved
+
+- STAGE2_SLICE7_CLASSIFICATION_NORMALIZED_LOCAL_ONLY
+- SLICE7_SPARSE_SCOPE_PASS
+- STAGE2_SLICE7_COMMIT_GATE_PREVIEW_PASS
+- STAGE2_SLICE7_PUSHED
+- STAGE2_SLICE7_REMOTE_VERIFY_PASS
+
+### Verified Heads
+
+- LOCAL_HEAD=725bc36916b26a38698fffb51a05df51f56b5d78
+- REMOTE_HEAD=725bc36916b26a38698fffb51a05df51f56b5d78
+
+### Final Decision
+
+Stage 2 Slice 7 is closed as verified.
+
+---
