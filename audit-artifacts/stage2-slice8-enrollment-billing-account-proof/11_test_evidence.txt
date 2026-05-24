@@ -1,0 +1,99 @@
+=== TEST EVIDENCE: reenrollment/tests/test_views.py ===
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:11:- Commit: configure-required guard, confirm-required guard, no-students guard,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:12:idempotency, response shape + billing records created in DB
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:13:- Verify: committed-required guard, advances status once, idempotent
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:24:from billing.models import BillingRun, Invoice, InvoiceLine
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:105:assert res.status_code == 401
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:112:assert res.status_code in (400, 403)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:128:assert res.status_code == 404
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:134:assert res.status_code == 404
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:140:assert res.status_code == 404
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:142:def test_commit_wrong_school_404(self, client_b, school_a):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:145:res = client_b.post(f"{BASE}{session.id}/commit/", {"confirm": True}, format="json")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:146:assert res.status_code == 404
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:149:session = _make_session(school_a, status=ReenrollmentSession.STATUS_COMMITTED,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:151:commit_result={"billing_run_id": str(uuid.uuid4()),
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:153:"households_invoiced": 1,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:154:"invoices_created": 1,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:157:assert res.status_code == 404
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:168:assert res.status_code == 201
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:170:assert "session_id" in data
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:171:assert data["status"] == ReenrollmentSession.STATUS_DRAFT
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:172:assert ReenrollmentSession.objects.filter(pk=data["session_id"]).exists()
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:188:assert res.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:190:assert data["ok"] is True
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:191:assert data["target_year_label"] == "2026-2027"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:192:assert data["enrollment_fee"] == "500.00"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:193:assert "candidates_total" in data
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:198:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:204:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:219:assert session.excluded_ids == []
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:220:assert session.target_year_label == "2027-2028"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:232:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:242:assert res.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:244:assert data["total"] >= 3
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:245:assert len(data["candidates"]) >= 3
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:257:assert res.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:259:assert by_id[student_id]["excluded"] is True
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:278:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:284:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:293:assert res.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:295:assert data["ok"] is True
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:296:assert data["excluded_count"] == 1
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:297:assert data["selected_count"] >= 2
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:305:assert res.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:306:assert res.json()["excluded_count"] == 0
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:310:# 7. Commit
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:314:class TestCommit:
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:315:def _commit_ready_session(self, client_a, school_a, n_students=2, fee="200.00"):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:324:res = client_a.post(f"{BASE}{session.id}/commit/", {"confirm": True}, format="json")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:325:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:328:sid = self._commit_ready_session(client_a, school_a)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:329:res = client_a.post(f"{BASE}{sid}/commit/", {}, format="json")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:330:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:343:res = client_a.post(f"{BASE}{sid}/commit/", {"confirm": True}, format="json")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:344:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:346:def test_commit_creates_billing_records(self, client_a, school_a):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:351:res = client_a.post(f"{BASE}{sid}/commit/", {"confirm": True}, format="json")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:352:assert res.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:354:assert data["ok"] is True
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:355:assert data["students_reenrolled"] == 2
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:356:assert data["households_invoiced"] == 1
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:357:assert data["invoices_created"] == 1
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:358:assert data["total_amount"] == "600.00"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:360:run = BillingRun.objects.get(pk=data["billing_run_id"])
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:361:assert run.term == "2026-2027"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:362:assert run.run_type == "ENROLLMENT_FEE"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:363:assert Invoice.objects.filter(billing_run=run).count() == 1
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:364:assert InvoiceLine.objects.filter(school_id=school_a.id).count() == 2
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:366:def test_commit_idempotent_second_call(self, client_a, school_a):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:371:client_a.post(f"{BASE}{sid}/commit/", {"confirm": True}, format="json")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:372:res2 = client_a.post(f"{BASE}{sid}/commit/", {"confirm": True}, format="json")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:373:assert res2.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:374:assert res2.json()["already_committed"] is True
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:375:# No duplicate billing runs
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:376:assert BillingRun.objects.filter(school_id=school_a.id).count() == 1
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:385:def _committed_session(self, school_a):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:387:"billing_run_id": str(uuid.uuid4()),
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:389:"households_invoiced": 4,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:390:"invoices_created": 4,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:395:status=ReenrollmentSession.STATUS_COMMITTED,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:398:commit_result=result,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:401:def test_not_committed_blocked(self, client_a, school_a):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:404:assert res.status_code == 400
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:407:session = self._committed_session(school_a)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:409:assert res.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:411:assert data["status"] == ReenrollmentSession.STATUS_VERIFIED
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:413:assert session.status == ReenrollmentSession.STATUS_VERIFIED
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:415:def test_verify_idempotent(self, client_a, school_a):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:416:session = self._committed_session(school_a)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:419:assert res2.status_code == 200
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:420:assert res2.json()["status"] == ReenrollmentSession.STATUS_VERIFIED
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:423:session = self._committed_session(school_a)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:426:assert data["ok"] is True
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:427:assert data["target_year_label"] == "2026-2027"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:428:assert data["enrollment_fee"] == "500.00"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:429:assert data["students_reenrolled"] == 5
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:430:assert data["households_invoiced"] == 4
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:431:assert data["total_amount"] == "2500.00"
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\tests\test_views.py:432:assert "billing_run_id" in data
