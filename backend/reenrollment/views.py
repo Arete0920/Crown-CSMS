@@ -29,6 +29,7 @@ from households.models import Household, Student as HouseholdStudent
 from households.scoping import get_request_school_id
 
 from .models import ReenrollmentSession
+from .permissions import require_reenrollment_access
 
 # ---------------------------------------------------------------------------
 # Auth stack — mirrors onboarding wizard exactly
@@ -60,6 +61,10 @@ def create_session(request):
     from core.models import School
     school = get_object_or_404(School, id=school_id)
 
+    denied = require_reenrollment_access(request, school)
+    if denied is not None:
+        return denied
+
     session = ReenrollmentSession.objects.create(
         school=school,
         created_by=request.user if request.user.is_authenticated else None,
@@ -86,6 +91,10 @@ def configure_session(request, session_id):
     """
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
+
+    denied = require_reenrollment_access(request, session.school)
+    if denied is not None:
+        return denied
 
     target_year_label = (request.data.get("target_year_label") or "").strip()
     if not target_year_label:
@@ -148,6 +157,10 @@ def list_candidates(request, session_id):
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
 
+    denied = require_reenrollment_access(request, session.school)
+    if denied is not None:
+        return denied
+
     if session.status == ReenrollmentSession.STATUS_DRAFT:
         return Response({"detail": "Session must be configured before listing candidates."}, status=400)
 
@@ -182,6 +195,10 @@ def select_students(request, session_id):
     """
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
+
+    denied = require_reenrollment_access(request, session.school)
+    if denied is not None:
+        return denied
 
     if session.status not in (
         ReenrollmentSession.STATUS_CONFIGURED,
@@ -232,6 +249,10 @@ def commit_session(request, session_id):
     """
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
+
+    denied = require_reenrollment_access(request, session.school)
+    if denied is not None:
+        return denied
 
     # Idempotency guard — must check BEFORE confirm flag
     if session.status == ReenrollmentSession.STATUS_COMMITTED:
@@ -343,6 +364,10 @@ def verify_session(request, session_id):
     """
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
+
+    denied = require_reenrollment_access(request, session.school)
+    if denied is not None:
+        return denied
 
     if session.status not in (
         ReenrollmentSession.STATUS_COMMITTED,
