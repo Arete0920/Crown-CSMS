@@ -2,7 +2,7 @@
  * FinanceSetupWizard.jsx
  * ======================
  * Year-locked financial canon wizard: Tuition ? Discounts ? Aid ? Plans ? Extended Care ? Review.
- * Crown component library only � no @mui/material.
+ * Crown component library only ï¿½ no @mui/material.
  */
 
 import { useEffect, useState } from "react";
@@ -36,14 +36,21 @@ function StepCard({ label, children }) {
   );
 }
 
-function FieldRow({ label, hint, children }) {
+function FieldRow({ label, hint, error, children }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 12, marginBottom: 14, alignItems: "start" }}>
       <div>
         <div style={{ fontSize: 13, fontWeight: 500, color: "var(--crown-ink)" }}>{label}</div>
         {hint && <div style={{ fontSize: 11, color: "var(--crown-muted)", marginTop: 2 }}>{hint}</div>}
       </div>
-      <div>{children}</div>
+      <div>
+        {children}
+        {error && (
+          <div style={{ fontSize: 11, color: "var(--crown-danger)", marginTop: 4 }}>
+            {error}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -193,10 +200,10 @@ function defaults() {
 
 // -- Step renderers ------------------------------------------------------------
 
-function StepTuition({ data, onChange, locked }) {
+function StepTuition({ data, onChange, locked, validationErrors }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 1 � Tuition Structure">
+    <StepCard label="Step 1 ï¿½ Tuition Structure">
       <FieldRow label="Tuition Mode">
         <Select
           value={data.tuition_mode}
@@ -219,7 +226,7 @@ function StepTuition({ data, onChange, locked }) {
           ]}
         />
       </FieldRow>
-      <FieldRow label="Flat Annual Tuition" hint="Used when mode is 'flat'">
+      <FieldRow label="Flat Annual Tuition" hint="Used when mode is 'flat'" error={validationErrors.flat_annual_tuition_cents}>
         <MoneyCentsInput value={data.flat_annual_tuition_cents} onChange={set("flat_annual_tuition_cents")} disabled={locked} />
       </FieldRow>
       <FieldRow label="Fees apply to Aid">
@@ -232,10 +239,10 @@ function StepTuition({ data, onChange, locked }) {
   );
 }
 
-function StepDiscounts({ data, onChange, locked }) {
+function StepDiscounts({ data, onChange, locked, validationErrors }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 2 � Discount Policy">
+    <StepCard label="Step 2 ï¿½ Discount Policy">
       <FieldRow label="Discounts apply to">
         <Select
           value={data.discounts_apply_to}
@@ -279,18 +286,18 @@ function StepDiscounts({ data, onChange, locked }) {
           <NumInput value={data.ministry_discount_percent_bp} onChange={set("ministry_discount_percent_bp")} disabled={locked} />
         </FieldRow>
       )}
-      <FieldRow label="Max combined discount (bp)">
+      <FieldRow label="Max combined discount (bp)" error={validationErrors.max_discount_percent_bp}>
         <NumInput value={data.max_discount_percent_bp} onChange={set("max_discount_percent_bp")} disabled={locked} />
       </FieldRow>
     </StepCard>
   );
 }
 
-function StepAid({ data, onChange, locked }) {
+function StepAid({ data, onChange, locked, validationErrors }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 3 � Financial Aid Policy">
-      <FieldRow label="Application fee">
+    <StepCard label="Step 3 ï¿½ Financial Aid Policy">
+      <FieldRow label="Application fee" error={validationErrors.application_fee_cents}>
         <MoneyCentsInput value={data.application_fee_cents} onChange={set("application_fee_cents")} disabled={locked} />
       </FieldRow>
       <FieldRow label="Aid applies to">
@@ -307,20 +314,20 @@ function StepAid({ data, onChange, locked }) {
       <FieldRow label="Distribute aid evenly">
         <Toggle value={data.distribute_aid_evenly} onChange={set("distribute_aid_evenly")} disabled={locked} />
       </FieldRow>
-      <FieldRow label="Max aid per student" hint="0 = no cap">
+      <FieldRow label="Max aid per student" hint="0 = no cap" error={validationErrors.max_aid_per_student_cents}>
         <MoneyCentsInput value={data.max_aid_per_student_cents} onChange={set("max_aid_per_student_cents")} disabled={locked} />
       </FieldRow>
-      <FieldRow label="Max aid per family" hint="0 = no cap">
+      <FieldRow label="Max aid per family" hint="0 = no cap" error={validationErrors.max_aid_per_family_cents}>
         <MoneyCentsInput value={data.max_aid_per_family_cents} onChange={set("max_aid_per_family_cents")} disabled={locked} />
       </FieldRow>
     </StepCard>
   );
 }
 
-function StepPlans({ data, onChange, locked }) {
+function StepPlans({ data, onChange, locked, validationErrors }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 4 � Payment Plans">
+    <StepCard label="Step 4 ï¿½ Payment Plans">
       {[
         ["allow_pay_in_full", "Pay in full"],
         ["allow_semi_annual", "Semi-annual (2 payments)"],
@@ -341,17 +348,17 @@ function StepPlans({ data, onChange, locked }) {
       <FieldRow label="Late fee grace days">
         <NumInput value={data.late_fee_grace_days} onChange={set("late_fee_grace_days")} disabled={locked} min={0} />
       </FieldRow>
-      <FieldRow label="Late fee (flat)">
+      <FieldRow label="Late fee (flat)" error={validationErrors.late_fee_flat_cents}>
         <MoneyCentsInput value={data.late_fee_flat_cents} onChange={set("late_fee_flat_cents")} disabled={locked} />
       </FieldRow>
     </StepCard>
   );
 }
 
-function StepExtendedCare({ data, onChange, locked }) {
+function StepExtendedCare({ data, onChange, locked, validationErrors }) {
   const set = (k) => (v) => onChange({ ...data, [k]: v });
   return (
-    <StepCard label="Step 5 � Extended Care / Before & After School">
+    <StepCard label="Step 5 ï¿½ Extended Care / Before & After School">
       {[
         ["supports_annual", "Annual plan"],
         ["supports_monthly", "Monthly plan"],
@@ -366,10 +373,10 @@ function StepExtendedCare({ data, onChange, locked }) {
       <FieldRow label="Late pickup grace (min)">
         <NumInput value={data.late_pickup_grace_minutes} onChange={set("late_pickup_grace_minutes")} disabled={locked} min={0} />
       </FieldRow>
-      <FieldRow label="Late pickup flat fee">
+      <FieldRow label="Late pickup flat fee" error={validationErrors.late_pickup_fee_cents}>
         <MoneyCentsInput value={data.late_pickup_fee_cents} onChange={set("late_pickup_fee_cents")} disabled={locked} />
       </FieldRow>
-      <FieldRow label="Late pickup per-minute fee">
+      <FieldRow label="Late pickup per-minute fee" error={validationErrors.late_pickup_per_minute_cents}>
         <MoneyCentsInput value={data.late_pickup_per_minute_cents} onChange={set("late_pickup_per_minute_cents")} disabled={locked} />
       </FieldRow>
       <FieldRow label="Post to ledger automatically">
@@ -384,12 +391,12 @@ function StepExtendedCare({ data, onChange, locked }) {
 
 function StepReview({ academicYear, policy, locked, onSave, onLock, saving, locking, error, success }) {
   return (
-    <StepCard label={`Step 6 � Review & ${locked ? "Snapshot" : "Lock"}`}>
+    <StepCard label={`Step 6 ï¿½ Review & ${locked ? "Snapshot" : "Lock"}`}>
       <p style={{ fontSize: 13, color: "var(--crown-ink)", marginBottom: 16 }}>
         Academic year: <strong>{academicYear}</strong>&nbsp;
         {locked && (
           <span style={{ color: "var(--crown-danger)", fontWeight: 600 }}>
-            ? LOCKED � read only
+            ? LOCKED ï¿½ read only
           </span>
         )}
       </p>
@@ -442,7 +449,7 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
               opacity: saving ? 0.6 : 1,
             }}
           >
-            {saving ? "Saving�" : "Save Draft"}
+            {saving ? "Savingï¿½" : "Save Draft"}
           </button>
           <button
             onClick={onLock}
@@ -459,7 +466,7 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
               opacity: locking ? 0.6 : 1,
             }}
           >
-            {locking ? "Locking�" : "Lock Policy (irreversible)"}
+            {locking ? "Lockingï¿½" : "Lock Policy (irreversible)"}
           </button>
         </div>
       )}
@@ -497,6 +504,49 @@ function StepReview({ academicYear, policy, locked, onSave, onLock, saving, lock
 // -- Step tab nav --------------------------------------------------------------
 
 const STEPS = ["Tuition", "Discounts", "Aid", "Plans", "Extended Care", "Review & Lock"];
+
+const FIELD_STEP_INDEX = {
+  flat_annual_tuition_cents: 0,
+  max_discount_percent_bp: 1,
+  application_fee_cents: 2,
+  max_aid_per_student_cents: 2,
+  max_aid_per_family_cents: 2,
+  late_fee_flat_cents: 3,
+  late_pickup_fee_cents: 4,
+  late_pickup_per_minute_cents: 4,
+};
+
+function validateNumericPolicyFields(data) {
+  const errors = {};
+
+  const maxDiscountBp = Number(data.discounts?.max_discount_percent_bp);
+  if (Number.isFinite(maxDiscountBp) && (maxDiscountBp < 0 || maxDiscountBp > 10000)) {
+    errors.max_discount_percent_bp = "Max combined discount must be between 0 and 10000 basis points.";
+  }
+
+  const nonNegativeMoneyFields = [
+    ["flat_annual_tuition_cents", data.tuition?.flat_annual_tuition_cents, "Flat annual tuition must be 0 or greater."],
+    ["application_fee_cents", data.aid?.application_fee_cents, "Application fee must be 0 or greater."],
+    ["max_aid_per_student_cents", data.aid?.max_aid_per_student_cents, "Max aid per student must be 0 or greater."],
+    ["max_aid_per_family_cents", data.aid?.max_aid_per_family_cents, "Max aid per family must be 0 or greater."],
+    ["late_fee_flat_cents", data.payment_plans?.late_fee_flat_cents, "Late fee must be 0 or greater."],
+    ["late_pickup_fee_cents", data.extended_care?.late_pickup_fee_cents, "Late pickup flat fee must be 0 or greater."],
+    [
+      "late_pickup_per_minute_cents",
+      data.extended_care?.late_pickup_per_minute_cents,
+      "Late pickup per-minute fee must be 0 or greater.",
+    ],
+  ];
+
+  for (const [key, value, message] of nonNegativeMoneyFields) {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue) && numericValue < 0) {
+      errors[key] = message;
+    }
+  }
+
+  return errors;
+}
 
 function StepNav({ current, onSelect }) {
   return (
@@ -539,6 +589,7 @@ export default function FinanceSetupWizard() {
   const [locking, setLocking] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Load existing policy on mount
   useEffect(() => {
@@ -569,17 +620,41 @@ export default function FinanceSetupWizard() {
     return (val) => setWizardData((prev) => ({ ...prev, [key]: val }));
   }
 
+  function validateBeforePersist() {
+    const nextErrors = validateNumericPolicyFields(wizardData);
+    setValidationErrors(nextErrors);
+
+    const errorKeys = Object.keys(nextErrors);
+    if (errorKeys.length === 0) {
+      return true;
+    }
+
+    const firstErrorStep = FIELD_STEP_INDEX[errorKeys[0]];
+    if (Number.isInteger(firstErrorStep)) {
+      setStep(firstErrorStep);
+    }
+
+    setError("Fix validation errors before saving.");
+    setSuccess(null);
+    return false;
+  }
+
   async function handleSave() {
-    setSaving(true);
     setError(null);
     setSuccess(null);
+    if (!validateBeforePersist()) {
+      return;
+    }
+
+    setSaving(true);
     try {
       const payload = { academic_year: academicYear, ...wizardData };
       const result = await saveFinancePolicy(payload);
       setSnapshot(result.data);
       setSuccess("Policy saved successfully.");
+      setValidationErrors({});
     } catch (e) {
-      setError(e.status === 409 ? "Policy is locked � no changes allowed." : e.message);
+      setError(e.status === 409 ? "Policy is locked ï¿½ no changes allowed." : e.message);
     } finally {
       setSaving(false);
     }
@@ -593,9 +668,13 @@ export default function FinanceSetupWizard() {
     )
       return;
 
-    setLocking(true);
     setError(null);
     setSuccess(null);
+    if (!validateBeforePersist()) {
+      return;
+    }
+
+    setLocking(true);
     try {
       // Save first, then lock
       const payload = { academic_year: academicYear, ...wizardData };
@@ -603,6 +682,7 @@ export default function FinanceSetupWizard() {
       const lockResult = await lockFinancePolicy(academicYear, "wizard-ui");
       setLocked(true);
       setSuccess(`Policy locked at ${lockResult.locked_at ?? "now"}.`);
+      setValidationErrors({});
     } catch (e) {
       setError(e.message);
     } finally {
@@ -613,13 +693,13 @@ export default function FinanceSetupWizard() {
   if (loading) {
     return (
       <WizardShell title="Finance Setup Wizard">
-        <p style={{ color: "var(--crown-muted)", fontSize: 14 }}>Loading policy�</p>
+        <p style={{ color: "var(--crown-muted)", fontSize: 14 }}>Loading policyï¿½</p>
       </WizardShell>
     );
   }
 
   return (
-    <WizardShell title={`Finance Setup Wizard � ${academicYear}`}>
+    <WizardShell title={`Finance Setup Wizard ï¿½ ${academicYear}`}>
       {locked && (
         <div
           style={{
@@ -640,19 +720,39 @@ export default function FinanceSetupWizard() {
       <StepNav current={step} onSelect={setStep} />
 
       {step === 0 && (
-        <StepTuition data={wizardData.tuition} onChange={setSection("tuition")} locked={locked} />
+        <StepTuition
+          data={wizardData.tuition}
+          onChange={setSection("tuition")}
+          locked={locked}
+          validationErrors={validationErrors}
+        />
       )}
       {step === 1 && (
-        <StepDiscounts data={wizardData.discounts} onChange={setSection("discounts")} locked={locked} />
+        <StepDiscounts
+          data={wizardData.discounts}
+          onChange={setSection("discounts")}
+          locked={locked}
+          validationErrors={validationErrors}
+        />
       )}
       {step === 2 && (
-        <StepAid data={wizardData.aid} onChange={setSection("aid")} locked={locked} />
+        <StepAid data={wizardData.aid} onChange={setSection("aid")} locked={locked} validationErrors={validationErrors} />
       )}
       {step === 3 && (
-        <StepPlans data={wizardData.payment_plans} onChange={setSection("payment_plans")} locked={locked} />
+        <StepPlans
+          data={wizardData.payment_plans}
+          onChange={setSection("payment_plans")}
+          locked={locked}
+          validationErrors={validationErrors}
+        />
       )}
       {step === 4 && (
-        <StepExtendedCare data={wizardData.extended_care} onChange={setSection("extended_care")} locked={locked} />
+        <StepExtendedCare
+          data={wizardData.extended_care}
+          onChange={setSection("extended_care")}
+          locked={locked}
+          validationErrors={validationErrors}
+        />
       )}
       {step === 5 && (
         <StepReview
