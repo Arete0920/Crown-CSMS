@@ -1,0 +1,46 @@
+=== SOURCE EVIDENCE: reenrollment/views.py ===
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:14:All endpoints are tenant-scoped via X-School-Id ? get_request_school_id().
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:15:Tenant isolation: every ReenrollmentSession lookup uses school=school on the FK.
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:27:from billing.models import BillingRun, Invoice, InvoiceLine
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:29:from households.scoping import get_request_school_id
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:45:def _get_session(session_id, school_id):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:46:"""Return ReenrollmentSession scoped to school; 404 if not found or wrong school."""
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:47:return get_object_or_404(ReenrollmentSession, id=session_id, school__id=school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:59:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:60:from core.models import School
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:61:school = get_object_or_404(School, id=school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:64:school=school,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:65:created_by=request.user if request.user.is_authenticated else None,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:87:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:88:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:104:# Snapshot active students for this school
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:106:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:148:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:149:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:183:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:184:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:226:def commit_session(request, session_id):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:230:Creates BillingRun + Invoice (per household) + InvoiceLine (per student).
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:233:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:234:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:238:return Response({"ok": True, "already_committed": True, **session.commit_result})
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:258:# Fetch actual Student objects (needed for FK in InvoiceLine)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:261:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:281:# Create one BillingRun for this re-enrollment cycle
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:282:billing_run = BillingRun.objects.create(
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:283:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:290:invoices_created = 0
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:298:invoice = Invoice.objects.create(
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:299:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:300:billing_run=billing_run,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:304:invoices_created += 1
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:308:InvoiceLine.objects.create(
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:309:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:310:invoice=invoice,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:317:"billing_run_id": str(billing_run.id),
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:319:"households_invoiced": len(by_household),
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:320:"invoices_created": invoices_created,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:344:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:345:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:367:"households_invoiced": session.commit_result.get("households_invoiced"),
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice8_verify\backend\reenrollment\views.py:369:"billing_run_id": session.commit_result.get("billing_run_id"),

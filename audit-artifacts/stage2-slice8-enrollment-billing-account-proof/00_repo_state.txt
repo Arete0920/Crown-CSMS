@@ -1,0 +1,4 @@
+=== SLICE 8 REPO STATE ===
+## stage2-slice8-enrollment-billing-proof...origin/stage2-slice7-proof-sparseclean
+stage2-slice8-enrollment-billing-proof
+e668c84a2d304e515e5bbfb9e6ce7b317af8b771
