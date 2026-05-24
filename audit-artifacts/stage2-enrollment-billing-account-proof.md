@@ -2,7 +2,7 @@
 
 ## Status
 
-OPEN / NOT VERIFIED - PROOF UPDATE PREVIEW ONLY
+CLOSED - VERIFIED
 
 ## Slice
 
@@ -16,53 +16,50 @@ Enrollment-to-Billing Account Creation Proof
 
 stage2-slice8-enrollment-billing-proof
 
-## Current HEAD
+## Evidence Commit
 
-e668c84a2d304e515e5bbfb9e6ce7b317af8b771
+ab791206d8727b9957bf06b740ef56c475fcd75c
 
-## Purpose
+## Closure Basis
 
-Verify that enrollment or accepted family/student state exposes the correct billing/account readiness path without creating shadow finance records.
+Slice 8 closure is based on pushed remote evidence showing:
 
-## Selected Paths
+- source path identified: backend/reenrollment/views.py
+- selected implementation identified: commit_session
+- test path identified: backend/reenrollment/tests/test_views.py
+- tenant/role guard path identified: backend/reenrollment/views.py
+- supporting tenant isolation test identified: backend/tests/test_tenant_isolation.py
+- implementation creates BillingRun, Invoice, and InvoiceLine
+- implementation includes idempotency/no-duplicate guard behavior
+- raw test execution passed
+- raw execution output showed 28 passed in 101.61s
+- proof-pack commit gate passed
+- proof-pack commit was created and pushed
+- local and remote HEAD were verified to match
 
-| Evidence Type | Path | Result |
-|---|---|---|
-| Source path | backend/reenrollment/views.py | PASS |
-| Test path | backend/reenrollment/tests/test_views.py | PASS |
-| Tenant/role guard path | backend/reenrollment/views.py | PASS |
-| Supporting tenant isolation test | backend/tests/test_tenant_isolation.py | REVIEW_SUPPORT |
+## Required Markers Achieved
 
-## Selected Implementation
+- SLICE8_PREFLIGHT_PASS_SLICE7_REMOTE_CLOSED
+- STAGE2_SLICE8_LOCAL_SCOPE_PASS
+- STAGE2_SLICE8_LOCAL_SCAFFOLD_CREATED
+- STAGE2_SLICE8_PATH_SELECTION_REVIEW_CREATED
+- STAGE2_SLICE8_PROOF_UPDATE_SCOPE_PASS
+- STAGE2_SLICE8_PROOF_UPDATE_PREVIEW_CREATED
+- STAGE2_SLICE8_RAW_EXECUTION_PASS
+- STAGE2_SLICE8_RAW_EXECUTION_SCOPE_PASS
+- STAGE2_SLICE8_COMMIT_PREVIEW_PASS
+- STAGE2_SLICE8_COMMIT_GATE_PASS
+- STAGE2_SLICE8_COMMIT_CREATED
+- STAGE2_SLICE8_PUSHED
+- STAGE2_SLICE8_REMOTE_VERIFY_PASS
 
-- commit_session is the selected enrollment-to-billing handoff implementation.
-- It creates billing artifacts through BillingRun, Invoice, and InvoiceLine.
-- The proof lane must verify no duplicate or shadow finance records are created.
+## Remote Verification
 
-## Generated Evidence Files
+- LOCAL_HEAD=ab791206d8727b9957bf06b740ef56c475fcd75c
+- REMOTE_HEAD=ab791206d8727b9957bf06b740ef56c475fcd75c
+- REMOTE_MATCH=YES
 
-- audit-artifacts\stage2-slice8-enrollment-billing-account-proof\08_path_selection_review.txt
-- audit-artifacts\stage2-slice8-enrollment-billing-account-proof\09_selected_paths.txt
-- audit-artifacts\stage2-slice8-enrollment-billing-account-proof\10_source_evidence.txt
-- audit-artifacts\stage2-slice8-enrollment-billing-account-proof\11_test_evidence.txt
-- audit-artifacts\stage2-slice8-enrollment-billing-account-proof\12_tenant_guard_evidence.txt
+## Closure Decision
 
-## Verification Results
+Stage 2 Slice 8 is closed as verified evidence for the enrollment-to-billing account creation proof lane.
 
-| Check | Result |
-|---|---|
-| Source path identified | PASS |
-| Test path identified | PASS |
-| Tenant/role guard identified | PASS |
-
-## Closure Rules
-
-Slice 8 remains OPEN until raw execution passes, sparse scope passes, commit gate passes, commit is pushed, remote HEAD verifies, and remote closure language verifies.
-
-## Current Decision
-
-Slice 8 is OPEN / NOT VERIFIED.
-
-## Marker
-
-STAGE2_SLICE8_PROOF_UPDATE_PREVIEW_CREATED

@@ -169,3 +169,78 @@ audit-artifacts/stage2-admissions-finance-handoff-proof.md
 Stage 2 Slice 7 is closed as verified.
 
 ---
+<!-- STAGE2_SLICE8_CLOSURE_RECORD_START -->
+
+---
+
+## Slice 8 Closure Record
+
+### Status
+
+CLOSED - VERIFIED
+
+### Branch
+
+stage2-slice8-enrollment-billing-proof
+
+### Evidence Commit
+
+ab791206d8727b9957bf06b740ef56c475fcd75c
+
+### Scope
+
+Enrollment-to-Billing Account Creation Proof
+
+### Proof Artifact
+
+audit-artifacts/stage2-enrollment-billing-account-proof.md
+
+### Supporting Evidence Files
+
+- audit-artifacts/stage2-slice8-enrollment-billing-account-proof/09_selected_paths.txt
+- audit-artifacts/stage2-slice8-enrollment-billing-account-proof/10_source_evidence.txt
+- audit-artifacts/stage2-slice8-enrollment-billing-account-proof/11_test_evidence.txt
+- audit-artifacts/stage2-slice8-enrollment-billing-account-proof/12_tenant_guard_evidence.txt
+- audit-artifacts/stage2-slice8-enrollment-billing-account-proof/13_reenrollment_tests_raw_cmd_capture.txt
+- audit-artifacts/stage2-slice8-enrollment-billing-account-proof/14_raw_execution_marker.txt
+
+### Verification Summary
+
+- Source path identified.
+- Test path identified.
+- Tenant/role guard identified.
+- Raw execution passed.
+- Reenrollment test output showed 28 passed in 101.61s.
+- Commit-gate preview passed.
+- Proof-pack commit was created.
+- Proof-pack commit was pushed.
+- Local and remote HEAD matched.
+
+### Required Markers Achieved
+
+- SLICE8_PREFLIGHT_PASS_SLICE7_REMOTE_CLOSED
+- STAGE2_SLICE8_LOCAL_SCOPE_PASS
+- STAGE2_SLICE8_LOCAL_SCAFFOLD_CREATED
+- STAGE2_SLICE8_PATH_SELECTION_REVIEW_CREATED
+- STAGE2_SLICE8_PROOF_UPDATE_SCOPE_PASS
+- STAGE2_SLICE8_PROOF_UPDATE_PREVIEW_CREATED
+- STAGE2_SLICE8_RAW_EXECUTION_PASS
+- STAGE2_SLICE8_RAW_EXECUTION_SCOPE_PASS
+- STAGE2_SLICE8_COMMIT_PREVIEW_PASS
+- STAGE2_SLICE8_COMMIT_GATE_PASS
+- STAGE2_SLICE8_COMMIT_CREATED
+- STAGE2_SLICE8_PUSHED
+- STAGE2_SLICE8_REMOTE_VERIFY_PASS
+
+### Verified Heads
+
+- LOCAL_HEAD=ab791206d8727b9957bf06b740ef56c475fcd75c
+- REMOTE_HEAD=ab791206d8727b9957bf06b740ef56c475fcd75c
+
+### Final Decision
+
+Stage 2 Slice 8 is closed as verified.
+
+---
+
+<!-- STAGE2_SLICE8_CLOSURE_RECORD_END -->
