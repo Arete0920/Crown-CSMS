@@ -13,30 +13,50 @@ from .models import (
 # ── Individual policy serializers ─────────────────────────────────────────────
 
 class TuitionPolicySerializer(serializers.ModelSerializer):
+    flat_annual_tuition_cents = serializers.IntegerField(min_value=0)
+
     class Meta:
         model = TuitionPolicy
         exclude = ("id", "version")
 
 
 class DiscountPolicySerializer(serializers.ModelSerializer):
+    sibling_discount_percent_bp = serializers.IntegerField(min_value=0, max_value=10000)
+    sibling_discount_applies_from_child = serializers.IntegerField(min_value=1)
+    staff_discount_percent_bp = serializers.IntegerField(min_value=0, max_value=10000)
+    ministry_discount_percent_bp = serializers.IntegerField(min_value=0, max_value=10000)
+    max_discount_percent_bp = serializers.IntegerField(min_value=0, max_value=10000)
+
     class Meta:
         model = DiscountPolicy
         exclude = ("id", "version")
 
 
 class FinancialAidPolicySerializer(serializers.ModelSerializer):
+    application_fee_cents = serializers.IntegerField(min_value=0)
+    max_aid_per_student_cents = serializers.IntegerField(min_value=0)
+    max_aid_per_family_cents = serializers.IntegerField(min_value=0)
+
     class Meta:
         model = FinancialAidPolicy
         exclude = ("id", "version")
 
 
 class PaymentPlanPolicySerializer(serializers.ModelSerializer):
+    pay_in_full_discount_percent_bp = serializers.IntegerField(min_value=0, max_value=10000)
+    late_fee_grace_days = serializers.IntegerField(min_value=0)
+    late_fee_flat_cents = serializers.IntegerField(min_value=0)
+
     class Meta:
         model = PaymentPlanPolicy
         exclude = ("id", "version")
 
 
 class ExtendedCarePolicySerializer(serializers.ModelSerializer):
+    late_pickup_grace_minutes = serializers.IntegerField(min_value=0)
+    late_pickup_fee_cents = serializers.IntegerField(min_value=0)
+    late_pickup_per_minute_cents = serializers.IntegerField(min_value=0)
+
     class Meta:
         model = ExtendedCarePolicy
         exclude = ("id", "version")
