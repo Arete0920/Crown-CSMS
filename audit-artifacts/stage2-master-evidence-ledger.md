@@ -20,6 +20,8 @@ No slice is considered closed unless it has:
 | Slice | Scope | Branch | Commit | Proof Artifact | Gate Marker | Push Marker | Remote Verify Marker | Status |
 |---:|---|---|---|---|---|---|---|---|
 | 6 | Finance setup validation proof | stage2-model-work-clean | 6468968d69c5703249b7b88529ef842fb63f57c5 | audit-artifacts/stage2-finance-setup-validation-proof.md | STAGE2_COMMIT_GATE_PASS | STAGE2_SLICE6_PROOF_PACK_PUSHED | STAGE2_SLICE6_REMOTE_VERIFY_PASS | CLOSED - 100% VERIFIED |
+| 7 | Admissions-to-Finance Handoff Proof | stage2-slice7-proof-sparseclean | e668c84a2d304e515e5bbfb9e6ce7b317af8b771 | audit-artifacts/stage2-admissions-finance-handoff-proof.md | STAGE2_SLICE7_CLOSURE_COMMIT_GATE_PASS | STAGE2_SLICE7_CLOSURE_PUSHED | STAGE2_SLICE7_CLOSURE_REMOTE_VERIFY_PASS | CLOSED - VERIFIED |
+| 8 | Enrollment-to-Billing Account Creation Proof | stage2-slice8-enrollment-billing-proof | d99dc0a51835c69683de95dd1dfaaa56e9cbaea9 | audit-artifacts/stage2-enrollment-billing-account-proof.md | STAGE2_SLICE8_CLOSURE_COMMIT_GATE_PASS | STAGE2_SLICE8_CLOSURE_PUSHED | STAGE2_SLICE8_CLOSURE_REMOTE_VERIFY_PASS | CLOSED - VERIFIED |
 
 ---
 
