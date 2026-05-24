@@ -1,0 +1,46 @@
+=== ROLE GAP EVIDENCE ===
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:6:# CrownPermission / RolePermission models keyed on role_code strings that
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:7:# match core.models.UserRole.role_code.
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:10:#   from core.permissions import require_permission, user_has_permission
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:12:#   @require_permission("finance.view")
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:16:#   if user_has_permission(request.user, "health.view", school=request.school):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:25:def user_has_permission(user, permission_code, school=None):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:37:# user.roles is the reverse FK from UserRole (role_code CharField ? UserAccount).
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:42:role_codes = qs.values_list("role_code", flat=True)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:43:if not role_codes:
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:50:role_code__in=role_codes,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:55:def require_permission(permission_code):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:68:if not user_has_permission(request.user, permission_code, school=school):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:79:class CrownModulePermission:
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:84:from core.permissions import CrownModulePermission
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:86:permission_classes = [CrownModulePermission("hr.view")]
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:89:permission_classes = [CrownModulePermission("hr.view", write_code="hr.edit")]
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:100:def has_permission(self, request, view):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:107:return user_has_permission(request.user, code, school=school)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:118:permission_classes = [RoleRequired]
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\core\permissions.py:124:def has_permission(self, request, view):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:22:from rest_framework.decorators import api_view, authentication_classes, permission_classes
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:23:from rest_framework.permissions import IsAuthenticated
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:38:PERM_CLASSES = [IsAuthenticated]
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:56:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:79:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:142:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:176:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:225:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:337:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:7:from rest_framework.decorators import api_view, authentication_classes, permission_classes
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:8:from rest_framework.permissions import IsAuthenticated
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:22:_PERM = [IsAuthenticated]
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:106:@permission_classes(_PERM)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:124:@permission_classes(_PERM)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:153:@permission_classes(_PERM)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:188:@permission_classes(_PERM)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:222:@permission_classes(_PERM)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing_wizard\views.py:286:@permission_classes(_PERM)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing\api.py:12:from rest_framework.decorators import api_view, permission_classes
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing\api.py:13:from rest_framework.permissions import IsAuthenticated
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing\api.py:47:@permission_classes([IsAuthenticated])
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing\api.py:154:@permission_classes([IsAuthenticated])
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing\api.py:209:@permission_classes([IsAuthenticated])
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing\api.py:272:@permission_classes([IsAuthenticated])
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\billing\api.py:289:@permission_classes([IsAuthenticated])
