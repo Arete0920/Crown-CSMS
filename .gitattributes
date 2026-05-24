@@ -1,21 +1,22 @@
-# Normalize all text files to LF in the repository.
-# Checked-out files will use LF on all platforms.
+# CROWN repository EOL policy
+# Prevent Windows clone settings from creating false diff churn.
+
 * text=auto eol=lf
 
-# Windows-only scripts that require CRLF
+# Windows scripts stay CRLF.
+*.ps1 text eol=crlf
 *.bat text eol=crlf
 *.cmd text eol=crlf
 
-# Binary — never mangle
+# Binary files are never normalized.
 *.png binary
 *.jpg binary
 *.jpeg binary
 *.gif binary
+*.webp binary
 *.ico binary
-*.woff binary
-*.woff2 binary
-*.ttf binary
-*.eot binary
-*.otf binary
+*.pdf binary
+*.docx binary
+*.pptx binary
+*.xlsx binary
 *.zip binary
-*.sqlite3 binary
