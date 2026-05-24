@@ -1,0 +1,29 @@
+=== SLICE 9 SELECTED PATHS AND ROLE GAP ===
+Approved executable scope:
+Tenant Isolation Proof for Enrollment/Billing Flow
+
+Original requested scope:
+Tenant + Role Guard Proof for Enrollment/Billing Flow
+
+Reason for rescope:
+Role/permission system exists through CrownModulePermission, but reenrollment/billing commit flow currently shows IsAuthenticated rather than a distinct finance/staff/director role-code guard.
+
+Selected source guard path:
+backend/reenrollment/views.py
+
+Selected tenant test path:
+backend/reenrollment/tests/test_views.py
+
+Supplemental tenant isolation evidence:
+backend/tests/test_tenant_isolation.py
+
+Role/permission implementation reference:
+backend/core/permissions.py
+
+Role gap comparison paths:
+backend/reenrollment/views.py
+backend/billing_wizard/views.py
+backend/billing/api.py
+
+Documented gap:
+CrownModulePermission appears available and used elsewhere, but it is not proven on the reenrollment-to-billing commit flow in this slice.

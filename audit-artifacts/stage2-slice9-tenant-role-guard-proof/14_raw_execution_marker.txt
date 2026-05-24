@@ -1,0 +1,8 @@
+=== SLICE 9 RAW EXECUTION MARKER ===
+Scope=Tenant Isolation Proof for Enrollment/Billing Flow
+RoleGuardStatus=DOCUMENTED_GAP_NOT_CLAIMED
+TestPath=backend\reenrollment\tests\test_views.py
+KExpr=TestTenantIsolation or TestAuth or wrong_school or tenant or isolation or 404 or forbidden or unauthorized
+COLLECT_EXIT_CODE=0
+CMD_EXIT_CODE=0
+STAGE2_SLICE9_RAW_EXECUTION_PASS
