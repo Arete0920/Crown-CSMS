@@ -46,6 +46,10 @@ def _plan_to_dict(p: InstallmentPlan):
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def installment_plans(request: HttpRequest):
+    forbidden = _finance_role_forbidden_response(request)
+    if forbidden is not None:
+        return forbidden
+
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
@@ -116,6 +120,12 @@ def _envelope(data, status: int = 200) -> JsonResponse:
     return JsonResponse({"ok": True, "data": data}, status=status, safe=False)
 
 
+def _finance_role_forbidden_response(request: HttpRequest):
+    if has_finance_runtime_role(request.user):
+        return None
+    return Response({"detail": "You do not have permission to access billing."}, status=403)
+
+
 def _parse_json(request: HttpRequest):
     try:
         if not request.body:
@@ -153,6 +163,10 @@ def _run_to_dict(r: BillingRun):
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def billing_runs(request: HttpRequest):
+    forbidden = _finance_role_forbidden_response(request)
+    if forbidden is not None:
+        return forbidden
+
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
@@ -208,6 +222,10 @@ def billing_runs(request: HttpRequest):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def billing_run_detail(request: HttpRequest, billing_run_id: str):
+    forbidden = _finance_role_forbidden_response(request)
+    if forbidden is not None:
+        return forbidden
+
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
@@ -271,6 +289,10 @@ def billing_run_detail(request: HttpRequest, billing_run_id: str):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def billing_run_summary_view(request: HttpRequest, billing_run_id: str):
+    forbidden = _finance_role_forbidden_response(request)
+    if forbidden is not None:
+        return forbidden
+
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
