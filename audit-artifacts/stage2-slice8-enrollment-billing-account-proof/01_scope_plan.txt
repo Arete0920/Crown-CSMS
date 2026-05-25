@@ -1,0 +1,27 @@
+=== SLICE 8 SCOPE PLAN ===
+Slice: 8
+Name: Enrollment-to-Billing Account Creation Proof
+Status: LOCAL SCAFFOLD ONLY - NOT COMMITTED
+
+Purpose:
+Prove that enrollment/accepted student or family state exposes the correct billing/account readiness path without creating shadow finance records.
+
+Strict Scope:
+- evidence discovery
+- source path identification
+- test path identification
+- tenant/role guard identification
+- raw execution plan
+- no product-code change
+- no closure claim
+
+Required Future Markers:
+- STAGE2_SLICE8_SOURCE_PATH_IDENTIFIED
+- STAGE2_SLICE8_TEST_PATH_IDENTIFIED
+- STAGE2_SLICE8_TENANT_ROLE_GUARD_IDENTIFIED
+- STAGE2_SLICE8_RAW_EXECUTION_PASS
+- SLICE8_SPARSE_SCOPE_PASS
+- STAGE2_SLICE8_COMMIT_GATE_PASS
+- STAGE2_SLICE8_PUSHED
+- STAGE2_SLICE8_REMOTE_VERIFY_PASS
+- STAGE2_SLICE8_REMOTE_CLOSURE_LANGUAGE_PASS
