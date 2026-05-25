@@ -1,0 +1,51 @@
+=== TENANT SOURCE EVIDENCE ===
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:10:POST /api/v1/reenrollment/sessions/<id>/commit/              ? commit_session
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:14:All endpoints are tenant-scoped via X-School-Id ? get_request_school_id().
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:15:Tenant isolation: every ReenrollmentSession lookup uses school=school on the FK.
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:20:from django.shortcuts import get_object_or_404
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:23:from rest_framework.permissions import IsAuthenticated
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:29:from households.scoping import get_request_school_id
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:31:from .models import ReenrollmentSession
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:38:PERM_CLASSES = [IsAuthenticated]
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:45:def _get_session(session_id, school_id):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:46:"""Return ReenrollmentSession scoped to school; 404 if not found or wrong school."""
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:47:return get_object_or_404(ReenrollmentSession, id=session_id, school__id=school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:56:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:58:"""POST /api/v1/reenrollment/sessions/  — create a new ReenrollmentSession."""
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:59:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:60:from core.models import School
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:61:school = get_object_or_404(School, id=school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:63:session = ReenrollmentSession.objects.create(
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:64:school=school,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:79:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:87:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:88:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:104:# Snapshot active students for this school
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:106:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:125:session.status = ReenrollmentSession.STATUS_CONFIGURED
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:142:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:148:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:149:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:151:if session.status == ReenrollmentSession.STATUS_DRAFT:
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:176:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:183:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:184:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:187:ReenrollmentSession.STATUS_CONFIGURED,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:225:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:226:def commit_session(request, session_id):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:233:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:234:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:237:if session.status == ReenrollmentSession.STATUS_COMMITTED:
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:240:if session.status != ReenrollmentSession.STATUS_CONFIGURED:
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:261:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:283:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:299:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:309:school_id=school_id,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:325:session.status = ReenrollmentSession.STATUS_COMMITTED
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:337:@permission_classes(PERM_CLASSES)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:344:school_id = get_request_school_id(request)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:345:session = _get_session(session_id, school_id)
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:348:ReenrollmentSession.STATUS_COMMITTED,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:349:ReenrollmentSession.STATUS_VERIFIED,
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:357:if session.status == ReenrollmentSession.STATUS_COMMITTED:
+C:\Users\JMega\OneDrive\Desktop\Crown2026_stage2_slice9_verify\backend\reenrollment\views.py:358:session.status = ReenrollmentSession.STATUS_VERIFIED

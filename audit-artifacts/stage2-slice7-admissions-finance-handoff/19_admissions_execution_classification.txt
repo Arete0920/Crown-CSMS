@@ -1,0 +1,5 @@
+=== ADMISSIONS EXECUTION CLASSIFICATION ===
+Raw cmd capture file found: audit-artifacts\stage2-slice7-admissions-finance-handoff\17_admissions_raw_cmd_capture.txt
+AdmissionsTestRawCmd=PASS
+Classification=Underlying admissions test is runnable through raw cmd capture path.
+PowerShellNativeCommandError=WRAPPER_BEHAVIOR_NOT_DB_SETUP_PROOF

@@ -1,0 +1,30 @@
+=== SLICE 8 SELECTED SOURCE PATHS ===
+Source path:
+backend/reenrollment/views.py
+
+Primary implementation:
+commit_session
+
+Observed behavior:
+- Creates BillingRun
+- Creates Invoice
+- Creates InvoiceLine
+- Uses idempotency guard to prevent duplicate/shadow finance creation
+
+Test path:
+backend/reenrollment/tests/test_views.py
+
+Primary test:
+test_commit_creates_billing_records
+
+Supporting test:
+idempotency test in backend/reenrollment/tests/test_views.py
+
+Tenant/role guard path:
+backend/reenrollment/views.py
+
+Primary guard:
+_get_session enforces school/tenant scoping on session lookup.
+
+Supporting tenant isolation test:
+backend/tests/test_tenant_isolation.py

@@ -22,6 +22,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from billing.models import BillingRun, Invoice, InvoiceLine
+from core.models import CrownPermission, RolePermission, UserRole
 from core.models import School
 from households.models import Household
 from households.models import Student as HouseholdStudent
@@ -60,12 +61,20 @@ def _authed_client(user, school):
 
 @pytest.fixture
 def client_a(user, school_a):
+    _grant_permission(user, school_a, role_code="REGISTRAR", permission_code="admissions.edit")
     return _authed_client(user, school_a)
 
 
 @pytest.fixture
 def client_b(user, school_b):
+    _grant_permission(user, school_b, role_code="REGISTRAR", permission_code="admissions.edit")
     return _authed_client(user, school_b)
+
+
+@pytest.fixture
+def client_unprivileged(school_a):
+    plain_user = User.objects.create_user(username=f"plain_{uuid.uuid4().hex[:6]}", password="pass")
+    return _authed_client(plain_user, school_a)
 
 
 def _make_session(school, status=ReenrollmentSession.STATUS_DRAFT, **kwargs):
@@ -90,6 +99,15 @@ def _make_household_and_students(school_id, n=2, active=True):
         for i in range(n)
     ]
     return household, students
+
+
+def _grant_permission(user, school, role_code="REGISTRAR", permission_code="admissions.edit"):
+    permission, _ = CrownPermission.objects.get_or_create(
+        code=permission_code,
+        defaults={"description": "test permission"},
+    )
+    UserRole.objects.get_or_create(school=school, user=user, role_code=role_code)
+    RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
 
 
 # ---------------------------------------------------------------------------
@@ -430,3 +448,117 @@ class TestVerify:
         assert data["households_invoiced"] == 4
         assert data["total_amount"] == "2500.00"
         assert "billing_run_id" in data
+
+
+# ---------------------------------------------------------------------------
+# 9. Role guard
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestRoleGuard:
+    def _allowed_client(self, school):
+        allowed_user = User.objects.create_user(
+            username=f"allowed_{uuid.uuid4().hex[:6]}",
+            password="pass",
+        )
+        _grant_permission(allowed_user, school, role_code="REGISTRAR", permission_code="admissions.edit")
+        return _authed_client(allowed_user, school)
+
+    def _configured_session_with_snapshot(self, school, n_students=2):
+        _, students = _make_household_and_students(school.id, n=n_students)
+        snapshot = [
+            {
+                "id": str(s.id),
+                "first_name": s.first_name,
+                "last_name": s.last_name,
+                "grade_level": s.grade_level,
+                "household_id": str(s.household_id),
+            }
+            for s in students
+        ]
+        return _make_session(
+            school,
+            status=ReenrollmentSession.STATUS_CONFIGURED,
+            target_year_label="2026-2027",
+            enrollment_fee="100.00",
+            candidates_snapshot=snapshot,
+            excluded_ids=[],
+        )
+
+    def _committed_session(self, school):
+        return _make_session(
+            school,
+            status=ReenrollmentSession.STATUS_COMMITTED,
+            target_year_label="2026-2027",
+            enrollment_fee="100.00",
+            commit_result={
+                "billing_run_id": str(uuid.uuid4()),
+                "students_reenrolled": 1,
+                "households_invoiced": 1,
+                "invoices_created": 1,
+                "total_amount": "100.00",
+            },
+        )
+
+    def test_configure_forbidden_without_role_permission(self, client_unprivileged, school_a):
+        session = _make_session(school_a, status=ReenrollmentSession.STATUS_DRAFT)
+        res = client_unprivileged.post(
+            f"{BASE}{session.id}/configure/",
+            {"target_year_label": "2026-2027", "enrollment_fee": "100"},
+            format="json",
+        )
+        assert res.status_code == 403
+
+    def test_candidates_forbidden_without_role_permission(self, client_unprivileged, school_a):
+        session = self._configured_session_with_snapshot(school_a)
+        res = client_unprivileged.get(f"{BASE}{session.id}/candidates/")
+        assert res.status_code == 403
+
+    def test_select_forbidden_without_role_permission(self, client_unprivileged, school_a):
+        session = self._configured_session_with_snapshot(school_a)
+        res = client_unprivileged.post(f"{BASE}{session.id}/select/", {"excluded_ids": []}, format="json")
+        assert res.status_code == 403
+
+    def test_commit_forbidden_without_role_permission(self, client_unprivileged, school_a):
+        session = self._configured_session_with_snapshot(school_a)
+        res = client_unprivileged.post(f"{BASE}{session.id}/commit/", {"confirm": True}, format="json")
+        assert res.status_code == 403
+
+    def test_verify_forbidden_without_role_permission(self, client_unprivileged, school_a):
+        session = self._committed_session(school_a)
+        res = client_unprivileged.get(f"{BASE}{session.id}/verify/")
+        assert res.status_code == 403
+
+    def test_configure_allowed_with_role_permission(self, school_a):
+        client_allowed = self._allowed_client(school_a)
+        session = _make_session(school_a, status=ReenrollmentSession.STATUS_DRAFT)
+        res = client_allowed.post(
+            f"{BASE}{session.id}/configure/",
+            {"target_year_label": "2026-2027", "enrollment_fee": "100"},
+            format="json",
+        )
+        assert res.status_code == 200
+
+    def test_candidates_allowed_with_role_permission(self, school_a):
+        client_allowed = self._allowed_client(school_a)
+        session = self._configured_session_with_snapshot(school_a)
+        res = client_allowed.get(f"{BASE}{session.id}/candidates/")
+        assert res.status_code == 200
+
+    def test_select_allowed_with_role_permission(self, school_a):
+        client_allowed = self._allowed_client(school_a)
+        session = self._configured_session_with_snapshot(school_a)
+        res = client_allowed.post(f"{BASE}{session.id}/select/", {"excluded_ids": []}, format="json")
+        assert res.status_code == 200
+
+    def test_commit_allowed_with_role_permission(self, school_a):
+        client_allowed = self._allowed_client(school_a)
+        session = self._configured_session_with_snapshot(school_a)
+        res = client_allowed.post(f"{BASE}{session.id}/commit/", {"confirm": True}, format="json")
+        assert res.status_code == 200
+
+    def test_verify_allowed_with_role_permission(self, school_a):
+        client_allowed = self._allowed_client(school_a)
+        session = self._committed_session(school_a)
+        res = client_allowed.get(f"{BASE}{session.id}/verify/")
+        assert res.status_code == 200

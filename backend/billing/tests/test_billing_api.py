@@ -52,7 +52,7 @@ def test_tuition_billing_run_creates_invoices_and_ledger_charge():
     Enrollment.objects.create(school_id=school.id, section=sec, student=st1)
     Enrollment.objects.create(school_id=school.id, section=sec, student=st2)
 
-    user = _mk_user_with_school(school)
+    user = _mk_user_with_school(school, role_groups=("finance_admin",))
     c = Client()
     c.force_login(user)
 
@@ -227,3 +227,144 @@ def test_invoices_list_endpoint_denies_non_staff():
     )
 
     assert resp.status_code == 403
+
+
+def _create_billing_run_with_invoice(school: School):
+    hh = Household.objects.create(school_id=school.id, name="Billing Household")
+    billing_run = BillingRun.objects.create(
+        school_id=school.id,
+        term="2026-TEST",
+        amount_per_student=Decimal("500.00"),
+    )
+    Invoice.objects.create(
+        school_id=school.id,
+        household=hh,
+        billing_run=billing_run,
+        total_amount=Decimal("500.00"),
+        due_on="2026-03-01",
+    )
+    return billing_run
+
+
+def test_billing_runs_denies_authenticated_non_privileged_user():
+    school = School.objects.create(name="Billing Deny School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("admissions_team",))
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        "/api/v1/billing/runs/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_installment_plans_denies_authenticated_non_privileged_user():
+    school = School.objects.create(name="Installment Deny School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("admissions_team",))
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        "/api/v1/billing/installment-plans/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_billing_run_detail_denies_authenticated_non_privileged_user():
+    school = School.objects.create(name="Billing Detail Deny School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("admissions_team",))
+    billing_run = _create_billing_run_with_invoice(school)
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        f"/api/v1/billing/runs/{billing_run.id}/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_billing_run_summary_denies_authenticated_non_privileged_user():
+    school = School.objects.create(name="Billing Summary Deny School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("admissions_team",))
+    billing_run = _create_billing_run_with_invoice(school)
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        f"/api/v1/billing/runs/{billing_run.id}/summary/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_billing_runs_allows_authenticated_finance_user():
+    school = School.objects.create(name="Billing Allow School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("finance_admin",))
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        "/api/v1/billing/runs/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 200
+
+
+def test_installment_plans_allows_authenticated_finance_user():
+    school = School.objects.create(name="Installment Allow School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("finance_admin",))
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        "/api/v1/billing/installment-plans/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 200
+
+
+def test_billing_run_detail_allows_authenticated_finance_user():
+    school = School.objects.create(name="Billing Detail Allow School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("finance_admin",))
+    billing_run = _create_billing_run_with_invoice(school)
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        f"/api/v1/billing/runs/{billing_run.id}/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 200
+
+
+def test_billing_run_summary_allows_authenticated_finance_user():
+    school = School.objects.create(name="Billing Summary Allow School")
+    user = _mk_user_with_school(school, is_staff=False, role_groups=("finance_admin",))
+    billing_run = _create_billing_run_with_invoice(school)
+
+    c = Client()
+    c.force_login(user)
+
+    resp = c.get(
+        f"/api/v1/billing/runs/{billing_run.id}/summary/",
+        **{"HTTP_X_SCHOOL_ID": str(school.id)},
+    )
+
+    assert resp.status_code == 200
