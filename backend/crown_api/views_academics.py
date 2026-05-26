@@ -90,6 +90,37 @@ def section_attendance_submit(request, section_id):
     if not roles.intersection(allowed):
         return Response({"detail": "Forbidden: requires TEACHER, ADMIN, or HEAD_OF_SCHOOL role."}, status=403)
 
+    from academics.models import Section, TeacherAssignment
+
+    # Resolve section early to enforce school scoping and assignment rules.
+    section = get_object_or_404(Section, id=section_id, school_id=school_id)
+
+    is_admin_or_head = bool(roles.intersection({"ADMIN", "HEAD_OF_SCHOOL"}))
+    if "TEACHER" in roles and not is_admin_or_head:
+        section_has_assignment_metadata = bool(getattr(section, "teacher_id", None)) or TeacherAssignment.objects.filter(
+            school_id=school_id,
+            section_id=section.id,
+        ).exists()
+
+        if section_has_assignment_metadata:
+            teacher_assigned = False
+            staff_id = getattr(request.user, "staff_id", None)
+            if staff_id:
+                teacher_assigned = TeacherAssignment.objects.filter(
+                    school_id=school_id,
+                    section_id=section.id,
+                    staff_id=staff_id,
+                ).exists()
+
+            if not teacher_assigned and getattr(section, "teacher_id", None):
+                teacher_assigned = str(section.teacher_id) == str(request.user.id)
+
+            if not teacher_assigned:
+                return Response(
+                    {"detail": "Forbidden: assigned teacher required for this section."},
+                    status=403,
+                )
+
     payload = request.data or {}
 
     # Accept both "items" (existing callers) and "records" (new convention)
@@ -107,10 +138,6 @@ def section_attendance_submit(request, section_id):
     else:
         day = timezone.localdate()
 
-    # Resolve section to verify it exists and belongs to this school
-    from academics.models import Section
-    section = get_object_or_404(Section, id=section_id, school_id=school_id)
-
     VALID_STATUSES = {"PRESENT", "ABSENT", "TARDY", "EXCUSED"}
     created = 0
     updated = 0
@@ -127,7 +154,7 @@ def section_attendance_submit(request, section_id):
         get_object_or_404(Student, id=sid, school_id=school_id)
 
         try:
-            obj, was_created = AttendanceRecord.objects.update_or_create(
+            _, was_created = AttendanceRecord.objects.update_or_create(
                 student_id=sid,
                 course=None,
                 date=day,

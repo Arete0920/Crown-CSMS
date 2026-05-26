@@ -24,6 +24,7 @@ import json
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -140,8 +141,8 @@ class AdmissionsEnrollRbacTests(_RbacWriteBase):
 
 class BillingInstallmentPlansRbacTests(_RbacWriteBase):
     """
-    POST /api/v1/billing/installment-plans/ — IsAuthenticated only.
-    Any authenticated user can attempt; unauthenticated must get 401.
+    POST /api/v1/billing/installment-plans/ — IsAuthenticated + finance runtime role.
+    Unauthenticated must get 401; authenticated non-finance users must get 403.
     """
 
     _VALID_PAYLOAD = {
@@ -165,11 +166,9 @@ class BillingInstallmentPlansRbacTests(_RbacWriteBase):
         )
         self.assertNotEqual(resp.status_code, 500)
 
-    def test_non_staff_can_post_installment_plan(self):
+    def test_non_staff_cannot_post_installment_plan_without_finance_role(self):
         """
-        Non-staff authenticated user: endpoint is IsAuthenticated only,
-        so non-staff is allowed. Expect 201 (success) or 4xx (bad payload).
-        Must NOT return 401 or 403.
+        Non-staff authenticated user without finance runtime role is denied.
         """
         self.client.force_authenticate(user=self.non_staff)
         resp = self.client.post(
@@ -178,13 +177,16 @@ class BillingInstallmentPlansRbacTests(_RbacWriteBase):
             format="json",
             HTTP_X_SCHOOL_ID=str(self.school.id),
         )
-        self.assertNotIn(
-            resp.status_code, (401, 403, 500),
-            msg=f"Non-staff installment plan POST unexpectedly blocked: {resp.status_code}.",
+        self.assertEqual(
+            resp.status_code, 403,
+            msg=f"Non-staff installment plan POST returned {resp.status_code}, expected 403.",
         )
+        self.assertNotEqual(resp.status_code, 500)
 
-    def test_staff_can_post_installment_plan(self):
-        """Staff: same as non-staff — endpoint is not staff-gated."""
+    def test_finance_role_can_post_installment_plan(self):
+        """Authenticated user with finance runtime role can pass authz gate."""
+        finance_group, _ = Group.objects.get_or_create(name="finance_admin")
+        self.staff.groups.add(finance_group)
         self.client.force_authenticate(user=self.staff)
         resp = self.client.post(
             INSTALLMENT_PLANS_URL,
@@ -194,7 +196,7 @@ class BillingInstallmentPlansRbacTests(_RbacWriteBase):
         )
         self.assertNotIn(
             resp.status_code, (401, 403, 500),
-            msg=f"Staff installment plan POST failed unexpectedly: {resp.status_code}.",
+            msg=f"Finance-runtime user installment plan POST failed unexpectedly: {resp.status_code}.",
         )
 
 

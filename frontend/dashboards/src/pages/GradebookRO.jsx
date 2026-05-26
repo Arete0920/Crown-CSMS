@@ -14,7 +14,7 @@ const keyOf = (name) => String(name ?? "").trim();
 const HEADER_ROW_HEIGHT = 40;
 
 function formatScore(earned, possible) {
-  if (earned === null || earned === undefined || earned === "") return "—";
+  if (earned === null || earned === undefined || earned === "") return "ï¿½";
   const e = Number(earned);
   const p = Number(possible);
   if (!Number.isFinite(e) || !Number.isFinite(p) || p <= 0) return `${earned} / ${possible}`;
@@ -44,7 +44,7 @@ const calcRowTotals = (row, assignments) => {
 };
 
 const formatTotals = ({ earned, possible, pct }) => {
-  if (!possible) return "—";
+  if (!possible) return "ï¿½";
   return `${fmt2(earned)} / ${possible}\n(${pct ?? 0}%)`;
 };
 
@@ -559,7 +559,7 @@ export function GradebookRO() {
   return (
     <CrownLayout
       title="Gradebook"
-      subtitle="Read Only"
+      subtitle="Teacher Workflow"
       right={<button className="crown-btn" onClick={() => window.print()}>Print</button>}
     >
       <h1 className="text-2xl font-semibold tracking-tight">Gradebook</h1>
@@ -584,7 +584,7 @@ export function GradebookRO() {
                 disabled={lane4Saving}
                 style={{ padding: '3px 10px', fontSize: 13, cursor: lane4Saving ? 'not-allowed' : 'pointer', fontWeight: 600, border: '1px solid var(--crown-brand)', borderRadius: 3, background: 'var(--crown-brand)', color: 'var(--crown-surface)' }}
               >
-                {lane4Saving ? 'Saving…' : 'Save Grades'}
+                {lane4Saving ? 'Savingï¿½' : 'Save Grades'}
               </button>
               <button
                 onClick={() => { setLane4Edits({}); setLane4EditMode(false); setLane4Msg(null); }}
@@ -662,7 +662,7 @@ export function GradebookRO() {
       {/* Sections chooser */}
       <div style={{ marginBottom: 12 }}>
         {loadingSections ? (
-          <div>Loading sections…</div>
+          <div>Loading sectionsï¿½</div>
         ) : sections.length === 0 ? (
           <div className="empty-state">
             <h3>No sections available</h3>
@@ -681,7 +681,7 @@ export function GradebookRO() {
                 }}
                 style={{ padding: 6, minWidth: 300, fontSize: 14 }}
               >
-                <option value="">— Select a Section —</option>
+                <option value="">ï¿½ Select a Section ï¿½</option>
                 {sections.map((s) => (
                   <option key={s.section_id} value={s.section_id}>
                     {s.course_name || s.name || s.section_id} {s.roster_count > 0 ? `(${s.roster_count} students)` : "(empty)"}
@@ -694,7 +694,7 @@ export function GradebookRO() {
       </div>
 
       {/* Grades states */}
-      {selectedSectionId && loadingGrades && <div>Loading grades…</div>}
+      {selectedSectionId && loadingGrades && <div>Loading gradesï¿½</div>}
       {selectedSectionId && !loadingGrades && gradesError ? (
         <ErrorBanner title="Failed to load grades" message={gradesError} />
       ) : null}
@@ -939,7 +939,7 @@ export function GradebookRO() {
                   const key = a?._key ?? a?.id;
                   const s = assignmentAverages.get(key);
                   const label =
-                    s && s.pct != null ? `Avg: ${s.pct}% (n=${s.n})` : "Avg: —";
+                    s && s.pct != null ? `Avg: ${s.pct}% (n=${s.n})` : "Avg: ï¿½";
 
                   return (
                     <th
@@ -1008,7 +1008,7 @@ export function GradebookRO() {
                     >
                       <div style={{ fontWeight: 500 }}>{label || "Unnamed Student"}</div>
                       <div style={{ fontSize: 12, opacity: 0.7 }}>
-                        Grade {s.grade_level ?? "—"}
+                        Grade {s.grade_level ?? "ï¿½"}
                       </div>
                     </td>
 
@@ -1151,7 +1151,7 @@ export function GradebookRO() {
                           }}
                         >
                           <div>
-                            <strong>{row.student_name}</strong> —{" "}
+                            <strong>{row.student_name}</strong> ï¿½{" "}
                             <span
                               style={{
                                 background:
@@ -1165,8 +1165,8 @@ export function GradebookRO() {
                           </div>
                           <div style={{ color: "var(--crown-muted)", marginTop: "0.25rem", fontSize: "0.75rem" }}>
                             {row.total_points_earned} / {row.total_points_possible} points
-                            {row.missing_count > 0 && ` • ${row.missing_count} missing`}
-                            {row.status !== "normal" && ` • [${row.status}]`}
+                            {row.missing_count > 0 && ` ï¿½ ${row.missing_count} missing`}
+                            {row.status !== "normal" && ` ï¿½ [${row.status}]`}
                           </div>
                         </div>
                       ))}

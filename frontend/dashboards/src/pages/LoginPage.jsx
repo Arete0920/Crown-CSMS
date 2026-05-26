@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import CrownLogo from "../components/brand/CrownLogo";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
@@ -107,25 +108,6 @@ async function fetchSchools(sandboxMode) {
   } catch {
     return buildSchoolList([], sandboxMode);
   }
-}
-
-function CrownMark() {
-  return (
-    <svg viewBox="0 0 120 92" width="42" height="32" aria-hidden="true">
-      <defs>
-        <linearGradient id="crownFill" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.88)" />
-        </linearGradient>
-      </defs>
-      <rect x="7" y="66" width="106" height="18" rx="5" fill="url(#crownFill)" />
-      <polygon points="7,66 7,30 35,52 60,5 85,52 113,30 113,66" fill="url(#crownFill)" />
-      <rect x="7" y="68" width="106" height="3" rx="1.5" fill="#C6A54A" />
-      <circle cx="60" cy="5" r="8" fill="#C6A54A" />
-      <circle cx="7" cy="30" r="6" fill="#C6A54A" />
-      <circle cx="113" cy="30" r="6" fill="#C6A54A" />
-    </svg>
-  );
 }
 
 export default function LoginPage() {
@@ -258,6 +240,20 @@ export default function LoginPage() {
           align-items: center;
           gap: 10px;
           margin-bottom: 30px;
+        }
+
+        .brand-mark .crown-logo-loginBrand {
+          max-width: 240px;
+          width: 100%;
+        }
+
+        .brand-mark .crown-brand-text-fallback {
+          color: #FFFFFF;
+        }
+
+        .brand-mark .crown-brand-text-fallback strong,
+        .brand-mark .crown-brand-text-fallback span {
+          color: #FFFFFF;
         }
 
         .brand-title {
@@ -528,11 +524,11 @@ export default function LoginPage() {
         <section className="login-brand" aria-label="Crown guidance">
           <div className="brand-top">
             <div className="brand-mark">
-              <CrownMark />
-              <div>
-                <div className="brand-title">CROWN</div>
-                <div className="brand-subtitle">Christian School Management Solution</div>
-              </div>
+              <CrownLogo placement="loginBrand" />
+              <span className="crown-brand-sr-only">
+                <span>CROWN</span>
+                <span>Christian School Management Solution</span>
+              </span>
             </div>
 
             <h1 className="brand-heading">{IS_SANDBOX ? "CROWN Sandbox Access" : "CROWN Access"}</h1>

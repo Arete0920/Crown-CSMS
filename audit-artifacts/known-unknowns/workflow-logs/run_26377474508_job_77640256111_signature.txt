@@ -1,0 +1,120 @@
+﻿===== MATCH: line 474 =====
+pytest	UNKNOWN STEP	2026-05-25T01:00:42.6826497Z ........................................................................ [ 93%]
+pytest	UNKNOWN STEP	2026-05-25T01:00:44.8147367Z ........................................................................ [ 95%]
+pytest	UNKNOWN STEP	2026-05-25T01:01:20.8911600Z ........................................................................ [ 98%]
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1739321Z ..........................................................               [100%]
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1740175Z =================================== FAILURES ===================================
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1740957Z ____________________ test_billing_run_summary_gross_aid_net ____________________
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1741534Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1741799Z     def test_billing_run_summary_gross_aid_net():
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1742448Z         school = School.objects.create(name="Test School")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1743218Z         hh = Household.objects.create(school_id=school.id, name="Household")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1743890Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1745065Z         run = BillingRun.objects.create(school_id=school.id, term="2026-FALL", run_type="TUITION", description="Run", amount_per_student=Decimal("0.00"))
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1746614Z         inv = Invoice.objects.create(school_id=school.id, billing_run=run, household=hh, total_amount=Decimal("1000.00"))
+
+===== MATCH: line 501 =====
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1757442Z >       assert resp.status_code == 200
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1757960Z E       assert 403 == 200
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1758591Z E        +  where 403 = <Response status_code=403, "application/json">.status_code
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1759169Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1759511Z billing/tests/test_billing_summary_api.py:45: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1760314Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1761560Z [24/May/2026 20:48:09,163] WARNING django.request: Forbidden: /api/v1/billing/runs/752b75f2-59ec-480d-9317-9254feab3969/summary/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1762836Z __ BillingInstallmentPlansRbacTests.test_non_staff_can_post_installment_plan ___
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1763471Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1764358Z self = <crown_api.tests.test_rbac_matrix_writes.BillingInstallmentPlansRbacTests testMethod=test_non_staff_can_post_installment_plan>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1765349Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1765651Z     def test_non_staff_can_post_installment_plan(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1766179Z         """
+
+===== MATCH: line 523 =====
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1771677Z             HTTP_X_SCHOOL_ID=str(self.school.id),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772169Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772513Z >       self.assertNotIn(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772952Z             resp.status_code, (401, 403, 500),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1773705Z             msg=f"Non-staff installment plan POST unexpectedly blocked: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1774536Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1775348Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Non-staff installment plan POST unexpectedly blocked: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776085Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776438Z crown_api/tests/test_rbac_matrix_writes.py:181: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1777261Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1778250Z [24/May/2026 20:50:18,954] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1779369Z ____ BillingInstallmentPlansRbacTests.test_staff_can_post_installment_plan _____
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1780046Z 
+
+===== MATCH: line 525 =====
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772513Z >       self.assertNotIn(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772952Z             resp.status_code, (401, 403, 500),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1773705Z             msg=f"Non-staff installment plan POST unexpectedly blocked: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1774536Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1775348Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Non-staff installment plan POST unexpectedly blocked: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776085Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776438Z crown_api/tests/test_rbac_matrix_writes.py:181: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1777261Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1778250Z [24/May/2026 20:50:18,954] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1779369Z ____ BillingInstallmentPlansRbacTests.test_staff_can_post_installment_plan _____
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1780046Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1780844Z self = <crown_api.tests.test_rbac_matrix_writes.BillingInstallmentPlansRbacTests testMethod=test_staff_can_post_installment_plan>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1781824Z 
+
+===== MATCH: line 527 =====
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1773705Z             msg=f"Non-staff installment plan POST unexpectedly blocked: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1774536Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1775348Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Non-staff installment plan POST unexpectedly blocked: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776085Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776438Z crown_api/tests/test_rbac_matrix_writes.py:181: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1777261Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1778250Z [24/May/2026 20:50:18,954] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1779369Z ____ BillingInstallmentPlansRbacTests.test_staff_can_post_installment_plan _____
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1780046Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1780844Z self = <crown_api.tests.test_rbac_matrix_writes.BillingInstallmentPlansRbacTests testMethod=test_staff_can_post_installment_plan>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1781824Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1782084Z     def test_staff_can_post_installment_plan(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1783064Z         """Staff: same as non-staff ΓÇö endpoint is not staff-gated."""
+
+===== MATCH: line 545 =====
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1786335Z             HTTP_X_SCHOOL_ID=str(self.school.id),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1786842Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1787200Z >       self.assertNotIn(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1787830Z             resp.status_code, (401, 403, 500),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1788759Z             msg=f"Staff installment plan POST failed unexpectedly: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1789490Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1790244Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Staff installment plan POST failed unexpectedly: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791018Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791350Z crown_api/tests/test_rbac_matrix_writes.py:195: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1792105Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1793103Z [24/May/2026 20:50:19,561] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794180Z ______ test_billing_run_creation_generates_invoice_for_enrolled_students _______
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794786Z 
+
+===== MATCH: line 547 =====
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1787200Z >       self.assertNotIn(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1787830Z             resp.status_code, (401, 403, 500),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1788759Z             msg=f"Staff installment plan POST failed unexpectedly: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1789490Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1790244Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Staff installment plan POST failed unexpectedly: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791018Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791350Z crown_api/tests/test_rbac_matrix_writes.py:195: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1792105Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1793103Z [24/May/2026 20:50:19,561] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794180Z ______ test_billing_run_creation_generates_invoice_for_enrolled_students _______
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794786Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1795167Z     def test_billing_run_creation_generates_invoice_for_enrolled_students():
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1795909Z         school = School.objects.create(name="Billing School")
+
+===== MATCH: line 549 =====
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1788759Z             msg=f"Staff installment plan POST failed unexpectedly: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1789490Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1790244Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Staff installment plan POST failed unexpectedly: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791018Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791350Z crown_api/tests/test_rbac_matrix_writes.py:195: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1792105Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1793103Z [24/May/2026 20:50:19,561] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794180Z ______ test_billing_run_creation_generates_invoice_for_enrolled_students _______
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794786Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1795167Z     def test_billing_run_creation_generates_invoice_for_enrolled_students():
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1795909Z         school = School.objects.create(name="Billing School")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1796812Z         household = Household.objects.create(school_id=school.id, name="Billing Household")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1798271Z         student_one = Student.objects.create(school_id=school.id, household=household, first_name="A", last_name="One", grade_level="5", is_active=True)
+

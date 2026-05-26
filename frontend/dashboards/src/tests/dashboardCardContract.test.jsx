@@ -36,8 +36,8 @@ describe('dashboard registry contract', () => {
     for (const path of paths) {
       const view = render(<CrownLaunchDashboardPage activePath={path} />);
 
-      expect(screen.getByText('CROWN')).toBeTruthy();
-      expect(screen.getAllByText('Christian School Management Solution').length).toBeGreaterThan(0);
+      expect(screen.getByAltText('CROWN Christian School Management Solution')).toBeTruthy();
+      expect(screen.getByAltText('CROWN - Christian School Management Solution')).toBeTruthy();
       expect(screen.getByText('Good morning, Sarah!')).toBeTruthy();
       expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Sandbox preview data shown. Connect backend for live records.').length).toBeGreaterThan(0);
@@ -81,8 +81,8 @@ describe('dashboard registry contract', () => {
   it('module launch pages render through the same template shell', () => {
     render(<CrownLaunchModulePage moduleKey="gradebook" activePath="/gradebook" />);
 
-    expect(screen.getByText('CROWN')).toBeTruthy();
-    expect(screen.getAllByText('Christian School Management Solution').length).toBeGreaterThan(0);
+    expect(screen.getByAltText('CROWN Christian School Management Solution')).toBeTruthy();
+    expect(screen.getByAltText('CROWN - Christian School Management Solution')).toBeTruthy();
     expect(screen.getByText('Academic Performance View')).toBeTruthy();
     expect(screen.getByText('Assignments Graded')).toBeTruthy();
   });

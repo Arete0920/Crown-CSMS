@@ -5,6 +5,7 @@ permissions:
 
 on:
   pull_request:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
     paths:
@@ -12,7 +13,12 @@ on:
       - "frontend/dashboards/src/**"
       - "frontend/dashboards/scripts/**"
       - "tools/verify_contract_gate.py"
+      - "tools/verify_public_surface_policy.py"
       - "tools/strip_bom.py"
+      - "docs/security/public_endpoint_policy_matrix.json"
+      - "docs/security/csrf_exception_policy_matrix.json"
+      - "docs/security/PUBLIC_ENDPOINT_POLICY_MATRIX.md"
+      - "docs/security/CSRF_EXCEPTION_POLICY_MATRIX.md"
       - ".github/workflows/contract-gate.yml"
 
 concurrency:
@@ -61,7 +67,7 @@ jobs:
       - name: Use Node.js 20
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
 
@@ -73,6 +79,10 @@ jobs:
         uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.11"
+
+      - name: Contract - public endpoint and CSRF policy matrix
+        run: |
+          python tools/verify_public_surface_policy.py
 
       - name: Contract - no UTF-8 BOM
         run: |

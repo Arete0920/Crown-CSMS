@@ -91,6 +91,8 @@ def _is_staffish(user, roles: set[str]) -> bool:
         getattr(user, "is_staff", False)
         or getattr(user, "is_superuser", False)
         or ("HEAD_OF_SCHOOL" in roles)
+        or ("ADMIN" in roles)
+        or ("DIRECTOR" in roles)
     )
 
 

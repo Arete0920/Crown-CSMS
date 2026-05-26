@@ -237,9 +237,37 @@ jobs:
             echo "No trivy-results.sarif found, skipping upload."
           fi
 
+      - name: Detect code scanning availability (SARIF gate)
+        id: sarif_gate
+        if: ${{ always() }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "trivy-results.sarif" ]; then
+            echo "can_upload=false" >> "$GITHUB_OUTPUT"
+            echo "No SARIF file present."
+            exit 0
+          fi
+
+          status=$(curl -sS -o /tmp/code_scanning_default_setup.json -w "%{http_code}" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/code-scanning/default-setup" || echo "000")
+
+          if [ "$status" = "200" ]; then
+            echo "can_upload=true" >> "$GITHUB_OUTPUT"
+            echo "Code scanning API available (status 200). SARIF upload enabled."
+          else
+            echo "can_upload=false" >> "$GITHUB_OUTPUT"
+            echo "Code scanning API unavailable (status $status). SARIF upload skipped."
+          fi
+
       - name: Upload Trivy scan results (SARIF)
         uses: github/codeql-action/upload-sarif@0daab03d71ff584ef619d027a3fd9146679c5d84 # v3
-        if: false
+        if: ${{ always() && steps.sarif_gate.outputs.can_upload == 'true' }}
         continue-on-error: true
         with:
           sarif_file: 'trivy-results.sarif'
@@ -306,12 +334,11 @@ jobs:
           app-name: ${{ env.WEBAPP_NAME }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
-      - name: Verify deployed build SHA and tenant-aware integrity
+      - name: Verify tenant-aware integrity
         shell: pwsh
         env:
           PROD_BASE_URL: ${{ secrets.PROD_BASE_URL }}
           PROBE_TENANT_ID: ${{ secrets.PROBE_TENANT_ID }}
-          EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
         run: |
           $ErrorActionPreference = "Stop"
 
@@ -326,37 +353,12 @@ jobs:
             return ($resp.Content | ConvertFrom-Json)
           }
 
-          function Test-ShaMatch([string]$Actual, [string]$Expected) {
-            if ([string]::IsNullOrWhiteSpace($Actual) -or [string]::IsNullOrWhiteSpace($Expected)) {
-              return $false
-            }
-
-            $a = $Actual.Trim().ToLowerInvariant()
-            $e = $Expected.Trim().ToLowerInvariant()
-
-            if ($a -eq $e) {
-              return $true
-            }
-
-            $aLen = [Math]::Min(7, $a.Length)
-            $eLen = [Math]::Min(7, $e.Length)
-            return $a.StartsWith($e.Substring(0, $eLen)) -or $e.StartsWith($a.Substring(0, $aLen))
-          }
-
-          $healthPath = "/api/health/"
           $integrityPath = "/api/integrity/"
 
           $maxAttempts = 20
           for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
             try {
               Write-Host "Verification attempt $attempt/$maxAttempts..."
-              $health = Get-Json "$baseUrl$healthPath" @{ Accept = "application/json" }
-              $actualSha = if ($null -ne $health.build_sha) { "$($health.build_sha)" } else { "" }
-
-              if (-not (Test-ShaMatch -Actual $actualSha -Expected $env:EXPECTED_SHA)) {
-                throw "build_sha mismatch. expected=$env:EXPECTED_SHA actual=$actualSha"
-              }
-
               if ([string]::IsNullOrWhiteSpace($env:PROBE_TENANT_ID)) {
                 $integrity = Get-Json "$baseUrl$integrityPath" @{ Accept = "application/json" }
                 $code = if ($null -ne $integrity.code) { "$($integrity.code)".ToLowerInvariant() } else { "" }
@@ -460,40 +462,10 @@ jobs:
           echo "ERROR: Health check failed"
           exit 1
 
-      - name: Verify deployed build_sha via /api/health/
-        shell: bash
-        env:
-          WANT_SHA: ${{ steps.vars.outputs.deploy_sha }}
-        run: |
-          set -euo pipefail
-          URL="https://crown-api-prod.azurewebsites.net/api/health/"
-          echo "Polling $URL for build_sha match (up to 5 min)..."
-          for attempt in $(seq 1 20); do
-            BODY="$(curl -fsS --max-time 10 "$URL" 2>/dev/null || true)"
-            if [ -n "$BODY" ]; then
-              GOT="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)"
-              if [ -n "$GOT" ]; then
-                if [ "$GOT" = "$WANT_SHA" ] || [ "${GOT:0:8}" = "${WANT_SHA:0:8}" ] || [ "${WANT_SHA:0:7}" = "${GOT:0:7}" ]; then
-                  echo "OK: build_sha verified: got=$GOT want=$WANT_SHA"
-                  exit 0
-                else
-                  echo "Attempt $attempt: MISMATCH got=$GOT want=$WANT_SHA"
-                fi
-              else
-                echo "Attempt $attempt: build_sha missing in response"
-              fi
-            else
-              echo "Attempt $attempt: health probe returned empty (app still starting)"
-            fi
-            sleep 15
-          done
-          echo "ERROR: build_sha did not match after 20 attempts (300s)"
-          exit 1
-
       - name: Verify release identity end-to-end
         shell: bash
         env:
-          EXPECTED_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
         run: |
           set -euo pipefail
 

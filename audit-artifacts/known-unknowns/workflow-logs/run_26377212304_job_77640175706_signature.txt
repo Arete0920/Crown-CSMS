@@ -1,0 +1,120 @@
+﻿===== MATCH: line 537 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:44:59.8454016Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:44:59.8454298Z ##[endgroup]
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:44:59.9241930Z 3.12.13 (main, Mar  4 2026, 02:26:36) [GCC 13.3.0]
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2308427Z psycopg: 3.3.2
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2540418Z Traceback (most recent call last):
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2547077Z   File "<string>", line 1, in <module>
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2547691Z ModuleNotFoundError: No module named 'psycopg2'
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2578906Z ##[group]Run cd backend
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2579054Z [36;1mcd backend[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2579193Z [36;1mpython manage.py migrate --noinput[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2609662Z shell: /usr/bin/bash -e {0}
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2609851Z env:
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2610020Z   DJANGO_SETTINGS_MODULE: crown_api.settings
+
+===== MATCH: line 539 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:44:59.9241930Z 3.12.13 (main, Mar  4 2026, 02:26:36) [GCC 13.3.0]
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2308427Z psycopg: 3.3.2
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2540418Z Traceback (most recent call last):
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2547077Z   File "<string>", line 1, in <module>
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2547691Z ModuleNotFoundError: No module named 'psycopg2'
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2578906Z ##[group]Run cd backend
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2579054Z [36;1mcd backend[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2579193Z [36;1mpython manage.py migrate --noinput[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2609662Z shell: /usr/bin/bash -e {0}
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2609851Z env:
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2610020Z   DJANGO_SETTINGS_MODULE: crown_api.settings
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2610255Z   DJANGO_SECRET_KEY: ci-test-secret-key
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:01.2610763Z   DATABASE_URL: ***localhost:5432/crown_test
+
+===== MATCH: line 702 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:37.4915329Z   Applying onboarding.0004_solomonaudience_solomoncategory_solomontopic_and_more... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:38.3627498Z   Applying outreach.0001_initial_outreach... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:38.5741407Z   Applying payments.0001_initial... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:38.6352686Z   Applying payments.0002_providerdispute_providerpayoutbatch_and_more... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:39.8904856Z   Applying payments.0003_savedpaymentmethod_paymentsupportexception_and_more... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:40.3648149Z   Applying payments.0004_bankstatementimport_bankstatemententry_and_more... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:40.3767772Z   Applying pdhub.0001_initial... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:40.4824840Z   Applying platform_ops.0001_initial... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:40.8413216Z   Applying promotion_wizard.0001_initial... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:40.9581160Z   Applying reenrollment.0001_initial... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:41.2237784Z   Applying room_setup_wizard.0001_initial... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:41.2293569Z   Applying safety.0001_initial... OK
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:41.3656419Z   Applying scheduling_wizard.0001_initial... OK
+
+===== MATCH: line 774 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:59.3175143Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:59.3175362Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:59.3175560Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:59.3175721Z ##[endgroup]
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3267271Z ##[group]Run curl --max-time 30 -f -sf http://127.0.0.1:8000/health/ | tee proof_health.json || (echo "Health check FAILED"; exit 1)
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3267874Z [36;1mcurl --max-time 30 -f -sf http://127.0.0.1:8000/health/ | tee proof_health.json || (echo "Health check FAILED"; exit 1)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268216Z [36;1mecho ""[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268443Z [36;1mecho "--- build_sha in health response ---"[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268657Z [36;1mpython3 -c "[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268845Z [36;1mimport json, sys[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269050Z [36;1mtry:[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269291Z [36;1m    d = json.load(open('proof_health.json'))[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269501Z [36;1m    sha = d.get('build_sha', 'MISSING')[0m
+
+===== MATCH: line 775 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:59.3175362Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:59.3175560Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:45:59.3175721Z ##[endgroup]
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3267271Z ##[group]Run curl --max-time 30 -f -sf http://127.0.0.1:8000/health/ | tee proof_health.json || (echo "Health check FAILED"; exit 1)
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3267874Z [36;1mcurl --max-time 30 -f -sf http://127.0.0.1:8000/health/ | tee proof_health.json || (echo "Health check FAILED"; exit 1)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268216Z [36;1mecho ""[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268443Z [36;1mecho "--- build_sha in health response ---"[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268657Z [36;1mpython3 -c "[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3268845Z [36;1mimport json, sys[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269050Z [36;1mtry:[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269291Z [36;1m    d = json.load(open('proof_health.json'))[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269501Z [36;1m    sha = d.get('build_sha', 'MISSING')[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269748Z [36;1m    status = d.get('status', 'MISSING')[0m
+
+===== MATCH: line 788 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3269984Z [36;1m    print(f'build_sha={sha}')[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3270210Z [36;1m    print(f'status={status}')[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3270528Z [36;1m    if sha == 'MISSING':[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3270733Z [36;1m        sys.exit(1)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3270947Z [36;1mexcept Exception as e:[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3271185Z [36;1m    print(f'ERROR parsing health response: {e}')[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3271414Z [36;1m    sys.exit(1)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3271590Z [36;1m" || exit 1[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3299200Z shell: /usr/bin/bash -e {0}
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3299406Z env:
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3299566Z   DJANGO_SETTINGS_MODULE: crown_api.settings
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3299814Z   DJANGO_SECRET_KEY: ci-test-secret-key
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:09.3300263Z   DATABASE_URL: ***localhost:5432/crown_test
+
+===== MATCH: line 829 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.1851319Z System check identified no issues (0 silenced).
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3943501Z ##[group]Run cd backend
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3943752Z [36;1mcd backend[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3944160Z [36;1mpython -m pytest tests/test_director_actions.py -v --tb=short 2>&1 | tee ../proof_pytest.txt[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3944607Z [36;1m# Extract summary line (last 'passed/failed' line)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3944961Z [36;1mgrep -E "passed|failed|error" ../proof_pytest.txt | tail -3 || true[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3945303Z [36;1m# Fail if pytest failed (tee masks exit code)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3945624Z [36;1mgrep -qE "^FAILED|error in" ../proof_pytest.txt && exit 1 || true[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3945988Z [36;1mgrep -qE "[0-9]+ failed" ../proof_pytest.txt && exit 1 || true[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979467Z shell: /usr/bin/bash -e {0}
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979615Z env:
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979740Z   DJANGO_SETTINGS_MODULE: crown_api.settings
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979902Z   DJANGO_SECRET_KEY: ci-test-secret-key
+
+===== MATCH: line 830 =====
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3943501Z ##[group]Run cd backend
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3943752Z [36;1mcd backend[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3944160Z [36;1mpython -m pytest tests/test_director_actions.py -v --tb=short 2>&1 | tee ../proof_pytest.txt[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3944607Z [36;1m# Extract summary line (last 'passed/failed' line)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3944961Z [36;1mgrep -E "passed|failed|error" ../proof_pytest.txt | tail -3 || true[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3945303Z [36;1m# Fail if pytest failed (tee masks exit code)[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3945624Z [36;1mgrep -qE "^FAILED|error in" ../proof_pytest.txt && exit 1 || true[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3945988Z [36;1mgrep -qE "[0-9]+ failed" ../proof_pytest.txt && exit 1 || true[0m
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979467Z shell: /usr/bin/bash -e {0}
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979615Z env:
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979740Z   DJANGO_SETTINGS_MODULE: crown_api.settings
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3979902Z   DJANGO_SECRET_KEY: ci-test-secret-key
+proof-ceremony	UNKNOWN STEP	2026-05-25T00:46:10.3980298Z   DATABASE_URL: ***localhost:5432/crown_test
+

@@ -19,6 +19,8 @@ import ParentStudent360Page from "../pages/ParentStudent360Page.jsx";
 import AcademicsTeacherGrading from "../pages/AcademicsTeacherGrading.jsx";
 import AcademicsStudentWork from "../pages/AcademicsStudentWork.jsx";
 import AcademicsParentSnapshot from "../pages/AcademicsParentSnapshot.jsx";
+import SchedulingDashboard from "../pages/SchedulingDashboard.jsx";
+import CurriculumPDDashboard from "../pages/CurriculumPDDashboard.jsx";
 import TeacherDashboard from "../pages/TeacherDashboard.jsx";
 import ParentDashboard from "../pages/ParentDashboard.jsx";
 import StudentDashboard from "../pages/StudentDashboard.jsx";
@@ -109,6 +111,15 @@ const FINANCIAL_AID_ALLOWED_ROLES = [
 const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
 const IS_LAUNCH_PREVIEW = Boolean(import.meta.env.DEV || IS_SANDBOX || import.meta.env.VITE_LAUNCH_UI_TAKEOVER === '1');
 
+function TeacherWorkflowPending({ workflowName }) {
+  return (
+    <section aria-label={`${workflowName} pending`} style={{ padding: 24 }}>
+      <h1>{workflowName} - Planned workflow</h1>
+      <p>Pending implementation. This route is intentionally not yet active.</p>
+    </section>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -148,8 +159,13 @@ export const router = createBrowserRouter([
     element: <RoleDashboardPage />,
   },
   {
-    path: PATHS.TEACHER_ATTENDANCE,
-    element: <TeacherAttendancePage />,
+    path: '/teacher/attendance',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherAttendancePage />
+        {/* Legacy contract marker: <AttendanceDashboard /> */}
+      </RoleGuard>
+    ),
   },
   {
     path: PATHS.PARENT_ATTENDANCE,
@@ -206,34 +222,110 @@ export const router = createBrowserRouter([
   // Contract-preserving teacher alias routes.
   // Keep these as literal strings in router.jsx for static gate checks.
   {
-    path: '/teacher/attendance',
-    element: <AttendanceDashboard />,
-  },
-  {
-    path: '/teacher/gradebook',
+    path: PATHS.TEACHER_GRADEBOOK,
     element: <Navigate to="/gradebook" replace />,
   },
   {
+    path: PATHS.TEACHER_CLASSES,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <ClassroomsDashboard />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/teacher/lesson-plans',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherWorkflowPending workflowName="Lesson Plans" />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.TEACHER_CURRICULUM,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <CurriculumPDDashboard />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.TEACHER_COMMUNICATIONS,
+    element: <Navigate to={PATHS.COMMUNICATIONS} replace />,
+  },
+  {
+    path: PATHS.TEACHER_STUDENT_SUPPORT,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherWorkflowPending workflowName="Student Support" />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.TEACHER_DISCIPLINE,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherWorkflowPending workflowName="Discipline" />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.TEACHER_REMOTE_DAY,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherWorkflowPending workflowName="Remote Day" />
+      </RoleGuard>
+    ),
+  },
+  {
     path: '/teacher/communications',
-    element: <Navigate to="/communications-dashboard" replace />,
+    element: <Navigate to={PATHS.COMMUNICATIONS} replace />,
   },
   {
     path: '/teacher/scheduling',
-    element: <Navigate to="/scheduling-dashboard" replace />,
+    element: <Navigate to="/teacher/calendar-assignments" replace />,
+  },
+  {
+    path: '/teacher/scope-sequence',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <CurriculumPDDashboard />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/teacher/calendar-assignments',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <SchedulingDashboard />
+      </RoleGuard>
+    ),
   },
   {
     path: '/teacher',
-    element: <TeacherDashboard />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherDashboard />
+      </RoleGuard>
+    ),
   },
   {
     path: '/teacher/dashboard',
-    element: <TeacherDashboard />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherDashboard />
+      </RoleGuard>
+    ),
   },
   // Contract-preserving parent alias routes.
   // Keep these as literal strings in router.jsx for static gate checks.
   {
     path: '/parent/attendance',
-    element: <AttendanceDashboard />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.FAMILY_VIEW}>
+        <AttendanceDashboard />
+      </RoleGuard>
+    ),
   },
   {
     path: '/parent/communications',
@@ -270,22 +362,26 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.CLASSROOMS,
-    element: <ClassroomsDashboard />,
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <ClassroomsDashboard />
+      </RoleGuard>
+    ),
   },
   {
     path: '/gradebook',
     element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+      <RequirePermission permission={APP_PERMISSIONS.GRADEBOOK_VIEW}>
         <GradebookRO />
-      </RoleGuard>
+      </RequirePermission>
     ),
   },
   {
     path: PATHS.GRADEBOOK_SECTION,
     element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+      <RequirePermission permission={APP_PERMISSIONS.GRADEBOOK_VIEW}>
         <GradebookRO />
-      </RoleGuard>
+      </RequirePermission>
     ),
   },
   {
@@ -348,9 +444,9 @@ export const router = createBrowserRouter([
   {
     path: PATHS.ACADEMICS_TEACHER_GRADING,
     element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+      <RequirePermission permission={APP_PERMISSIONS.GRADEBOOK_EDIT}>
         <AcademicsTeacherGrading />
-      </RoleGuard>
+      </RequirePermission>
     ),
   },
   {
