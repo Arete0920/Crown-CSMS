@@ -35,7 +35,7 @@ from rest_framework.response import Response
 from core.models import UserRole
 from households.scoping import get_request_school_id
 
-from .models import Lesson, LessonPlan, LessonResource, Section
+from .models import Lesson, LessonPlan, LessonResource, Section, TeacherAssignment
 from .serializers import (
     LessonPlanPublicSerializer,
     LessonPlanSerializer,
@@ -47,8 +47,8 @@ from .serializers import (
 # Permission helpers
 # ---------------------------------------------------------------------------
 
-def _can_write(user, school_id) -> bool:
-    """Write access: superuser OR ADMIN/DIRECTOR role."""
+def _can_write(user, school_id, section: Section | None = None) -> bool:
+    """Write access: superuser, ADMIN/DIRECTOR, or assigned TEACHER for the section."""
     if getattr(user, "is_superuser", False):
         return True
     if not getattr(user, "is_authenticated", False):
@@ -56,7 +56,26 @@ def _can_write(user, school_id) -> bool:
     roles = set(
         UserRole.objects.filter(user_id=user.id, school_id=school_id).values_list("role_code", flat=True)
     )
-    return "ADMIN" in roles or "DIRECTOR" in roles
+    if "ADMIN" in roles or "DIRECTOR" in roles:
+        return True
+
+    if section is None or "TEACHER" not in roles:
+        return False
+
+    # Primary teacher link on section.
+    if getattr(section, "teacher_id", None) and str(section.teacher_id) == str(user.id):
+        return True
+
+    # Assignment-based fallback for sections using TeacherAssignment records.
+    staff = getattr(user, "staff", None)
+    if staff is not None:
+        return TeacherAssignment.objects.filter(
+            school_id=school_id,
+            section=section,
+            staff=staff,
+        ).exists()
+
+    return False
 
 
 def _can_read_private(user, school_id) -> bool:
@@ -137,8 +156,11 @@ def lesson_plan_list_create(request, section_id):
         ser_class = LessonPlanSerializer if include_private else LessonPlanPublicSerializer
         return Response(ser_class(qs, many=True).data)
 
-    if not _can_write(request.user, school_id):
-        return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+    if not _can_write(request.user, school_id, section):
+        return Response(
+            {"detail": "Write access requires ADMIN, DIRECTOR, or assigned TEACHER role."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     plan_date = request.data.get("plan_date")
     if not plan_date:
@@ -185,8 +207,11 @@ def lesson_plan_detail(request, plan_id):
         ser_class = LessonPlanSerializer if include_private else LessonPlanPublicSerializer
         return Response(ser_class(plan).data)
 
-    if not _can_write(request.user, school_id):
-        return Response({"detail": "Write access requires ADMIN or DIRECTOR role."}, status=status.HTTP_403_FORBIDDEN)
+    if not _can_write(request.user, school_id, plan.section):
+        return Response(
+            {"detail": "Write access requires ADMIN, DIRECTOR, or assigned TEACHER role."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
     try:
         _validate_lesson_ids_for_section(

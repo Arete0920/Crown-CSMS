@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tenant isolation tests for the Mobile Family App module.
 Module keywords: MobileApp, family_app, push_notification, mobile, mobile_login
 Covers check 23: Tenant Isolation Tested.
@@ -75,14 +75,16 @@ class TestMobileFamilyAppTenantIsolation:
     def test_mobile_family_app_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Mobile Family App module source."""
         from pathlib import Path
-        root = Path(__file__).resolve().parents[2]
-        source_text = ""
-        for p in root.rglob("*.py"):
+        backend_root = Path(__file__).resolve().parents[1]
+        isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
+        found = False
+        for p in backend_root.rglob("*.py"):
             try:
-                source_text += p.read_text(encoding="utf-8", errors="ignore")
+                source_text = p.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 continue
-        isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
-        found = any(kw in source_text for kw in isolation_keywords)
+            if any(kw in source_text for kw in isolation_keywords):
+                found = True
+                break
         assert found, f"Mobile Family App: tenant isolation keywords not found in source"
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tenant isolation tests for the Reporting Data Access Standards module.
 Module keywords: reporting, reports, export, analytics, data_access
 Covers check 23: Tenant Isolation Tested.
@@ -75,14 +75,16 @@ class TestReportingDataAccessTenantIsolation:
     def test_reporting_data_access_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the Reporting Data Access Standards module source."""
         from pathlib import Path
-        root = Path(__file__).resolve().parents[2]
-        source_text = ""
-        for p in root.rglob("*.py"):
+        backend_root = Path(__file__).resolve().parents[1]
+        isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
+        found = False
+        for p in backend_root.rglob("*.py"):
             try:
-                source_text += p.read_text(encoding="utf-8", errors="ignore")
+                source_text = p.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 continue
-        isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
-        found = any(kw in source_text for kw in isolation_keywords)
+            if any(kw in source_text for kw in isolation_keywords):
+                found = True
+                break
         assert found, f"Reporting Data Access Standards: tenant isolation keywords not found in source"
 

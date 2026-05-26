@@ -1,4 +1,4 @@
-﻿"""
+"""
 Tenant isolation tests for the School Year Term module.
 Module keywords: SchoolYear, Term, academic_year, semester, rollover
 Covers check 23: Tenant Isolation Tested.
@@ -75,14 +75,16 @@ class TestSchoolYearTermTenantIsolation:
     def test_school_year_term_isolation_keyword_present_in_source(self):
         """Tenant isolation keywords exist in the School Year Term module source."""
         from pathlib import Path
-        root = Path(__file__).resolve().parents[2]
-        source_text = ""
-        for p in root.rglob("*.py"):
+        backend_root = Path(__file__).resolve().parents[1]
+        isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
+        found = False
+        for p in backend_root.rglob("*.py"):
             try:
-                source_text += p.read_text(encoding="utf-8", errors="ignore")
+                source_text = p.read_text(encoding="utf-8", errors="ignore")
             except Exception:
                 continue
-        isolation_keywords = ["school_id", "TenantScoped", "tenant", "X-School-ID", "403", "404"]
-        found = any(kw in source_text for kw in isolation_keywords)
+            if any(kw in source_text for kw in isolation_keywords):
+                found = True
+                break
         assert found, f"School Year Term: tenant isolation keywords not found in source"
 

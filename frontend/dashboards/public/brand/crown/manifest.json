@@ -1,0 +1,49 @@
+{
+  "brand": "CROWN",
+  "descriptor": "Christian School Management Solution",
+  "version": "1.0.0",
+  "theme": "light-royal",
+  "assets": {
+    "primaryStacked": {
+      "path": "/brand/crown/logo/crown-logo-primary-stacked-full-color.svg",
+      "usage": ["login", "onboarding", "publicLanding", "brandGuide"]
+    },
+    "horizontal": {
+      "path": "/brand/crown/logo/crown-logo-horizontal-full-color.svg",
+      "usage": ["topNav", "hero", "reports", "journeyPages"]
+    },
+    "compact": {
+      "path": "/brand/crown/logo/crown-logo-compact-full-color.svg",
+      "usage": ["sidebarExpanded", "compactHeader"]
+    },
+    "wordmark": {
+      "path": "/brand/crown/logo/crown-logo-wordmark-full-color.svg",
+      "usage": ["formalDocs", "exports", "print"]
+    },
+    "mark": {
+      "path": "/brand/crown/logo/crown-logo-mark-crown-only.svg",
+      "usage": ["sidebarCollapsed", "favicon", "appIcon"]
+    },
+    "shield": {
+      "path": "/brand/crown/logo/crown-logo-mark-shield.svg",
+      "usage": ["governance", "security", "formalReports"]
+    },
+    "squareMark": {
+      "path": "/brand/crown/logo/crown-logo-mark-square.svg",
+      "usage": ["pwa", "mobileIcon", "launcherTile"]
+    }
+  },
+  "colors": {
+    "royalBlue": "#1E3A8A",
+    "deepNavy": "#0F1F4A",
+    "gold": "#D4AF37",
+    "lightGold": "#F6D77A",
+    "ivory": "#FFFDF7",
+    "lightGray": "#F5F7FA",
+    "skyBlue": "#E6F0FF",
+    "softLavender": "#F1E9FF",
+    "emerald": "#22B573",
+    "rose": "#F46D8D",
+    "slate": "#667085"
+  }
+}

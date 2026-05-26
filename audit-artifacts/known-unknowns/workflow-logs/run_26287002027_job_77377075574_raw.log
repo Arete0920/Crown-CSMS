@@ -1,0 +1,568 @@
+﻿pytest	Set up job	∩╗┐2026-05-22T12:12:19.5541527Z Current runner version: '2.334.0'
+pytest	Set up job	2026-05-22T12:12:19.5569687Z ##[group]Runner Image Provisioner
+pytest	Set up job	2026-05-22T12:12:19.5570603Z Hosted Compute Agent
+pytest	Set up job	2026-05-22T12:12:19.5571167Z Version: 20260213.493
+pytest	Set up job	2026-05-22T12:12:19.5571768Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+pytest	Set up job	2026-05-22T12:12:19.5572571Z Build Date: 2026-02-13T00:28:41Z
+pytest	Set up job	2026-05-22T12:12:19.5573293Z Worker ID: {57f202ca-2c54-4ff0-a8e7-85ebe71ef362}
+pytest	Set up job	2026-05-22T12:12:19.5573949Z Azure Region: eastus2
+pytest	Set up job	2026-05-22T12:12:19.5574557Z ##[endgroup]
+pytest	Set up job	2026-05-22T12:12:19.5575894Z ##[group]Operating System
+pytest	Set up job	2026-05-22T12:12:19.5576508Z Ubuntu
+pytest	Set up job	2026-05-22T12:12:19.5577008Z 24.04.4
+pytest	Set up job	2026-05-22T12:12:19.5577551Z LTS
+pytest	Set up job	2026-05-22T12:12:19.5577990Z ##[endgroup]
+pytest	Set up job	2026-05-22T12:12:19.5578776Z ##[group]Runner Image
+pytest	Set up job	2026-05-22T12:12:19.5579367Z Image: ubuntu-24.04
+pytest	Set up job	2026-05-22T12:12:19.5579847Z Version: 20260518.149.1
+pytest	Set up job	2026-05-22T12:12:19.5580901Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260518.149/images/ubuntu/Ubuntu2404-Readme.md
+pytest	Set up job	2026-05-22T12:12:19.5582594Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260518.149
+pytest	Set up job	2026-05-22T12:12:19.5583578Z ##[endgroup]
+pytest	Set up job	2026-05-22T12:12:19.5584546Z ##[group]GITHUB_TOKEN Permissions
+pytest	Set up job	2026-05-22T12:12:19.5586341Z Contents: read
+pytest	Set up job	2026-05-22T12:12:19.5587078Z Metadata: read
+pytest	Set up job	2026-05-22T12:12:19.5587553Z ##[endgroup]
+pytest	Set up job	2026-05-22T12:12:19.5589791Z Secret source: Actions
+pytest	Set up job	2026-05-22T12:12:19.5591196Z Prepare workflow directory
+pytest	Set up job	2026-05-22T12:12:19.5986000Z Prepare all required actions
+pytest	Set up job	2026-05-22T12:12:19.6023834Z Getting action download info
+pytest	Set up job	2026-05-22T12:12:20.0165572Z Download action repository 'actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11' (SHA:b4ffde65f46336ab88eb53be808477a3936bae11)
+pytest	Set up job	2026-05-22T12:12:20.2196360Z Download action repository 'actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c' (SHA:7f4fc3e22c37d6ff65e88745f38bd3157c663f7c)
+pytest	Set up job	2026-05-22T12:12:20.4459803Z Complete job name: pytest
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	∩╗┐2026-05-22T12:12:20.5181399Z ##[group]Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5182604Z with:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5183043Z   repository: tcmegahan/Crown2026
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5183765Z   token: ***
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5184196Z   ssh-strict: true
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5184646Z   persist-credentials: true
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5185140Z   clean: true
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5185572Z   sparse-checkout-cone-mode: true
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5186106Z   fetch-depth: 1
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5186526Z   fetch-tags: false
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5186961Z   show-progress: true
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5187411Z   lfs: false
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5187813Z   submodules: false
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5188255Z   set-safe-directory: true
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.5189191Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6136906Z Syncing repository: tcmegahan/Crown2026
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6140034Z ##[group]Getting Git version info
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6140861Z Working directory is '/home/runner/work/Crown2026/Crown2026'
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6141911Z [command]/usr/bin/git version
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6187404Z git version 2.54.0
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6212313Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6225575Z Temporarily overriding HOME='/home/runner/work/_temp/7295d165-f5b2-4ebc-ad57-ab446c78cd29' before making global git config changes
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6227071Z Adding repository directory to the temporary git global config as a safe directory
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6229152Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Crown2026/Crown2026
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6271053Z Deleting the contents of '/home/runner/work/Crown2026/Crown2026'
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6275203Z ##[group]Initializing the repository
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6279067Z [command]/usr/bin/git init /home/runner/work/Crown2026/Crown2026
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6352463Z hint: Using 'master' as the name for the initial branch. This default branch name
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6354306Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6356420Z hint: to use in all of your new repositories, which will suppress this warning,
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6358354Z hint: call:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6359137Z hint:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6359793Z hint: 	git config --global init.defaultBranch <name>
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6360749Z hint:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6361469Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6362639Z hint: 'development'. The just-created branch can be renamed via this command:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6363415Z hint:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6363818Z hint: 	git branch -m <name>
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6364296Z hint:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6364910Z hint: Disable this message with "git config set advice.defaultBranchName false"
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6366459Z Initialized empty Git repository in /home/runner/work/Crown2026/Crown2026/.git/
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6377322Z [command]/usr/bin/git remote add origin https://github.com/tcmegahan/Crown2026
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6417893Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6420411Z ##[group]Disabling automatic garbage collection
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6421860Z [command]/usr/bin/git config --local gc.auto 0
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6462163Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6463430Z ##[group]Setting up auth
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6466818Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6498346Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6824708Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.6852140Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.7082398Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.7115634Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.7116455Z ##[group]Fetching the repository
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:20.7123697Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +d9f05eb25fc253c79cc9bc3362230ccdcf05b88f:refs/remotes/pull/842/merge
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:22.5111499Z From https://github.com/tcmegahan/Crown2026
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:22.5113969Z  * [new ref]         d9f05eb25fc253c79cc9bc3362230ccdcf05b88f -> pull/842/merge
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:22.5140808Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:22.5141953Z ##[group]Determining the checkout info
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:22.5143299Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:22.5144269Z ##[group]Checking out the ref
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:22.5146716Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/842/merge
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3692200Z Note: switching to 'refs/remotes/pull/842/merge'.
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3692925Z 
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3693278Z You are in 'detached HEAD' state. You can look around, make experimental
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3694120Z changes and commit them, and you can discard any commits you make in this
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3694641Z state without impacting any branches by switching back to a branch.
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3694967Z 
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3695220Z If you want to create a new branch to retain commits you create, you may
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3695757Z do so (now or later) by using -c with the switch command. Example:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3696089Z 
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3696219Z   git switch -c <new-branch-name>
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3696410Z 
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3696537Z Or undo this operation with:
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3698598Z 
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3698786Z   git switch -
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3698938Z 
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3699182Z Turn off this advice by setting config variable advice.detachedHead to false
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3699499Z 
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3699859Z HEAD is now at d9f05eb Merge 82c2b0f38baa3ff44c1df1d9ede72bf21120a4a6 into 515a375c4f575d80cbee56ae7e2669916e096009
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3744134Z ##[endgroup]
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3787126Z [command]/usr/bin/git log -1 --format='%H'
+pytest	Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:12:23.3810810Z 'd9f05eb25fc253c79cc9bc3362230ccdcf05b88f'
+pytest	Runner env probe	∩╗┐2026-05-22T12:12:23.3996747Z ##[group]Run echo "HOST=$(hostname)"
+pytest	Runner env probe	2026-05-22T12:12:23.3997155Z [36;1mecho "HOST=$(hostname)"[0m
+pytest	Runner env probe	2026-05-22T12:12:23.3997442Z [36;1mecho "WHO=$(whoami)"[0m
+pytest	Runner env probe	2026-05-22T12:12:23.3997768Z [36;1mpython3 --version || python --version || true[0m
+pytest	Runner env probe	2026-05-22T12:12:23.3998087Z [36;1mnode --version || true[0m
+pytest	Runner env probe	2026-05-22T12:12:23.3998350Z [36;1mnpm --version || true[0m
+pytest	Runner env probe	2026-05-22T12:12:23.3998830Z [36;1mdocker --version || true[0m
+pytest	Runner env probe	2026-05-22T12:12:23.3999075Z [36;1mdf -h || true[0m
+pytest	Runner env probe	2026-05-22T12:12:23.4041115Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+pytest	Runner env probe	2026-05-22T12:12:23.4041541Z ##[endgroup]
+pytest	Runner env probe	2026-05-22T12:12:23.4128702Z HOST=runnervmg397c
+pytest	Runner env probe	2026-05-22T12:12:23.4145682Z WHO=runner
+pytest	Runner env probe	2026-05-22T12:12:23.4157481Z Python 3.12.3
+pytest	Runner env probe	2026-05-22T12:12:23.4593129Z v22.22.3
+pytest	Runner env probe	2026-05-22T12:12:23.6382769Z 10.9.8
+pytest	Runner env probe	2026-05-22T12:12:23.6946600Z Docker version 28.0.4, build b8034c0
+pytest	Runner env probe	2026-05-22T12:12:23.7068918Z Filesystem      Size  Used Avail Use% Mounted on
+pytest	Runner env probe	2026-05-22T12:12:23.7069426Z /dev/root       145G   56G   90G  39% /
+pytest	Runner env probe	2026-05-22T12:12:23.7069797Z tmpfs           7.9G   84K  7.9G   1% /dev/shm
+pytest	Runner env probe	2026-05-22T12:12:23.7070086Z tmpfs           3.2G 1020K  3.2G   1% /run
+pytest	Runner env probe	2026-05-22T12:12:23.7070371Z tmpfs           5.0M     0  5.0M   0% /run/lock
+pytest	Runner env probe	2026-05-22T12:12:23.7070710Z efivarfs        128M   32K  128M   1% /sys/firmware/efi/efivars
+pytest	Runner env probe	2026-05-22T12:12:23.7071038Z /dev/sda16      881M   64M  756M   8% /boot
+pytest	Runner env probe	2026-05-22T12:12:23.7071323Z /dev/sda15      105M  6.2M   99M   6% /boot/efi
+pytest	Runner env probe	2026-05-22T12:12:23.7072129Z tmpfs           1.6G   12K  1.6G   1% /run/user/1001
+pytest	Set up Python	∩╗┐2026-05-22T12:12:23.7170717Z ##[group]Run actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+pytest	Set up Python	2026-05-22T12:12:23.7171144Z with:
+pytest	Set up Python	2026-05-22T12:12:23.7171336Z   python-version: 3.12
+pytest	Set up Python	2026-05-22T12:12:23.7171565Z   check-latest: false
+pytest	Set up Python	2026-05-22T12:12:23.7171907Z   token: ***
+pytest	Set up Python	2026-05-22T12:12:23.7172108Z   update-environment: true
+pytest	Set up Python	2026-05-22T12:12:23.7172365Z   allow-prereleases: false
+pytest	Set up Python	2026-05-22T12:12:23.7172576Z ##[endgroup]
+pytest	Set up Python	2026-05-22T12:12:23.8892506Z ##[group]Installed versions
+pytest	Set up Python	2026-05-22T12:12:23.8988119Z Successfully set up CPython (3.12.13)
+pytest	Set up Python	2026-05-22T12:12:23.8988953Z ##[endgroup]
+pytest	Install deps	∩╗┐2026-05-22T12:12:23.9094718Z ##[group]Run python -m pip install --upgrade pip
+pytest	Install deps	2026-05-22T12:12:23.9095124Z [36;1mpython -m pip install --upgrade pip[0m
+pytest	Install deps	2026-05-22T12:12:23.9143001Z shell: /usr/bin/bash -e {0}
+pytest	Install deps	2026-05-22T12:12:23.9143271Z env:
+pytest	Install deps	2026-05-22T12:12:23.9143543Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install deps	2026-05-22T12:12:23.9143982Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	Install deps	2026-05-22T12:12:23.9144402Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install deps	2026-05-22T12:12:23.9144776Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install deps	2026-05-22T12:12:23.9145129Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install deps	2026-05-22T12:12:23.9145487Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	Install deps	2026-05-22T12:12:23.9145803Z ##[endgroup]
+pytest	Install deps	2026-05-22T12:12:24.5310100Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages (26.1.1)
+pytest	Verify requirements single source of truth	∩╗┐2026-05-22T12:12:24.6917830Z ##[group]Run set -euo pipefail
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6918159Z [36;1mset -euo pipefail[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6918423Z [36;1mWANT='-r backend/requirements.txt'[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6919031Z [36;1mGOT="$(tr -d '\r' < requirements.txt | sed '/^\s*$/d')"[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6919363Z [36;1mif [ "$GOT" != "$WANT" ]; then[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6919657Z [36;1m  echo "requirements.txt MUST be exactly:"[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6919933Z [36;1m  echo "  $WANT"[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6920148Z [36;1m  echo "Got:"[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6920351Z [36;1m  echo "  $GOT"[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6920557Z [36;1m  exit 1[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6920743Z [36;1mfi[0m
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6956743Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6957272Z env:
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6957537Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6957951Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6958351Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6958965Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6959314Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6959663Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	Verify requirements single source of truth	2026-05-22T12:12:24.6959958Z ##[endgroup]
+pytest	Install requirements	∩╗┐2026-05-22T12:12:24.7064749Z ##[group]Run pip install -r requirements.txt
+pytest	Install requirements	2026-05-22T12:12:24.7065088Z [36;1mpip install -r requirements.txt[0m
+pytest	Install requirements	2026-05-22T12:12:24.7097223Z shell: /usr/bin/bash -e {0}
+pytest	Install requirements	2026-05-22T12:12:24.7097458Z env:
+pytest	Install requirements	2026-05-22T12:12:24.7097709Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install requirements	2026-05-22T12:12:24.7098132Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	Install requirements	2026-05-22T12:12:24.7098756Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install requirements	2026-05-22T12:12:24.7099118Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install requirements	2026-05-22T12:12:24.7099466Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Install requirements	2026-05-22T12:12:24.7099821Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	Install requirements	2026-05-22T12:12:24.7100118Z ##[endgroup]
+pytest	Install requirements	2026-05-22T12:12:25.2496201Z Collecting Django==5.2.14 (from -r requirements.txt (line 3))
+pytest	Install requirements	2026-05-22T12:12:25.3136277Z   Downloading django-5.2.14-py3-none-any.whl.metadata (4.1 kB)
+pytest	Install requirements	2026-05-22T12:12:25.3384729Z Collecting djangorestframework==3.15.2 (from -r requirements.txt (line 4))
+pytest	Install requirements	2026-05-22T12:12:25.3460512Z   Downloading djangorestframework-3.15.2-py3-none-any.whl.metadata (10 kB)
+pytest	Install requirements	2026-05-22T12:12:25.3718143Z Collecting django-extensions==4.1 (from -r requirements.txt (line 5))
+pytest	Install requirements	2026-05-22T12:12:25.3788847Z   Downloading django_extensions-4.1-py3-none-any.whl.metadata (6.1 kB)
+pytest	Install requirements	2026-05-22T12:12:25.3972077Z Collecting python-dotenv==1.2.2 (from -r requirements.txt (line 6))
+pytest	Install requirements	2026-05-22T12:12:25.4043227Z   Downloading python_dotenv-1.2.2-py3-none-any.whl.metadata (27 kB)
+pytest	Install requirements	2026-05-22T12:12:25.4290993Z Collecting gunicorn==22.0.0 (from -r requirements.txt (line 7))
+pytest	Install requirements	2026-05-22T12:12:25.4364072Z   Downloading gunicorn-22.0.0-py3-none-any.whl.metadata (4.4 kB)
+pytest	Install requirements	2026-05-22T12:12:25.4518480Z Collecting dj-database-url==2.3.0 (from -r requirements.txt (line 8))
+pytest	Install requirements	2026-05-22T12:12:25.4595224Z   Downloading dj_database_url-2.3.0-py3-none-any.whl.metadata (12 kB)
+pytest	Install requirements	2026-05-22T12:12:25.4900617Z Collecting psycopg==3.3.2 (from psycopg[binary]==3.3.2->-r requirements.txt (line 11))
+pytest	Install requirements	2026-05-22T12:12:25.4984680Z   Downloading psycopg-3.3.2-py3-none-any.whl.metadata (4.3 kB)
+pytest	Install requirements	2026-05-22T12:12:25.5287520Z Collecting pytest==9.0.3 (from -r requirements.txt (line 13))
+pytest	Install requirements	2026-05-22T12:12:25.5363082Z   Downloading pytest-9.0.3-py3-none-any.whl.metadata (7.6 kB)
+pytest	Install requirements	2026-05-22T12:12:25.5554294Z Collecting pytest-django==4.7.0 (from -r requirements.txt (line 14))
+pytest	Install requirements	2026-05-22T12:12:25.5636505Z   Downloading pytest_django-4.7.0-py3-none-any.whl.metadata (8.3 kB)
+pytest	Install requirements	2026-05-22T12:12:25.5809635Z Collecting djangorestframework-simplejwt>=5.3.1 (from -r requirements.txt (line 16))
+pytest	Install requirements	2026-05-22T12:12:25.5879388Z   Downloading djangorestframework_simplejwt-5.5.1-py3-none-any.whl.metadata (4.6 kB)
+pytest	Install requirements	2026-05-22T12:12:25.6077194Z Collecting PyJWT==2.12.0 (from -r requirements.txt (line 17))
+pytest	Install requirements	2026-05-22T12:12:25.6146576Z   Downloading pyjwt-2.12.0-py3-none-any.whl.metadata (4.0 kB)
+pytest	Install requirements	2026-05-22T12:12:25.6327669Z Collecting django-cors-headers==4.3.1 (from -r requirements.txt (line 19))
+pytest	Install requirements	2026-05-22T12:12:25.6405918Z   Downloading django_cors_headers-4.3.1-py3-none-any.whl.metadata (16 kB)
+pytest	Install requirements	2026-05-22T12:12:25.6596434Z Collecting drf-spectacular>=0.27.2 (from -r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:25.6677470Z   Downloading drf_spectacular-0.29.0-py3-none-any.whl.metadata (14 kB)
+pytest	Install requirements	2026-05-22T12:12:25.6872909Z Collecting drf-spectacular-sidecar>=2025.3.1 (from -r requirements.txt (line 21))
+pytest	Install requirements	2026-05-22T12:12:25.6955225Z   Downloading drf_spectacular_sidecar-2026.5.1-py3-none-any.whl.metadata (3.6 kB)
+pytest	Install requirements	2026-05-22T12:12:25.7140028Z Collecting authlib>=1.6.8 (from -r requirements.txt (line 23))
+pytest	Install requirements	2026-05-22T12:12:25.7219700Z   Downloading authlib-1.7.2-py2.py3-none-any.whl.metadata (10 kB)
+pytest	Install requirements	2026-05-22T12:12:25.7458969Z Collecting requests>=2.32.0 (from -r requirements.txt (line 24))
+pytest	Install requirements	2026-05-22T12:12:25.7529456Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+pytest	Install requirements	2026-05-22T12:12:25.9245237Z Collecting cryptography>=43.0.0 (from -r requirements.txt (line 25))
+pytest	Install requirements	2026-05-22T12:12:25.9319851Z   Downloading cryptography-48.0.0-cp311-abi3-manylinux_2_34_x86_64.whl.metadata (4.3 kB)
+pytest	Install requirements	2026-05-22T12:12:25.9776636Z Collecting sentry-sdk>=2.0.0 (from -r requirements.txt (line 27))
+pytest	Install requirements	2026-05-22T12:12:25.9847083Z   Downloading sentry_sdk-2.60.0-py3-none-any.whl.metadata (10 kB)
+pytest	Install requirements	2026-05-22T12:12:26.0215801Z Collecting celery>=5.4.0 (from -r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:26.0286212Z   Downloading celery-5.6.3-py3-none-any.whl.metadata (23 kB)
+pytest	Install requirements	2026-05-22T12:12:26.0646974Z Collecting redis>=5.0.0 (from -r requirements.txt (line 30))
+pytest	Install requirements	2026-05-22T12:12:26.0719704Z   Downloading redis-7.4.0-py3-none-any.whl.metadata (12 kB)
+pytest	Install requirements	2026-05-22T12:12:26.1306231Z Collecting stripe>=10.0.0 (from -r requirements.txt (line 32))
+pytest	Install requirements	2026-05-22T12:12:26.1380002Z   Downloading stripe-15.1.0-py3-none-any.whl.metadata (18 kB)
+pytest	Install requirements	2026-05-22T12:12:26.1759439Z Collecting twilio>=9.0.0 (from -r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:26.1840541Z   Downloading twilio-9.10.9-py2.py3-none-any.whl.metadata (13 kB)
+pytest	Install requirements	2026-05-22T12:12:26.2850889Z Collecting reportlab>=4.2.0 (from -r requirements.txt (line 36))
+pytest	Install requirements	2026-05-22T12:12:26.2924037Z   Downloading reportlab-4.5.1-py3-none-any.whl.metadata (1.7 kB)
+pytest	Install requirements	2026-05-22T12:12:26.4866617Z Collecting numpy>=1.26.4 (from -r requirements.txt (line 37))
+pytest	Install requirements	2026-05-22T12:12:26.4940374Z   Downloading numpy-2.4.6-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+pytest	Install requirements	2026-05-22T12:12:26.5142842Z Collecting asgiref>=3.8.1 (from Django==5.2.14->-r requirements.txt (line 3))
+pytest	Install requirements	2026-05-22T12:12:26.5215878Z   Downloading asgiref-3.11.1-py3-none-any.whl.metadata (9.3 kB)
+pytest	Install requirements	2026-05-22T12:12:26.5376333Z Collecting sqlparse>=0.3.1 (from Django==5.2.14->-r requirements.txt (line 3))
+pytest	Install requirements	2026-05-22T12:12:26.5450187Z   Downloading sqlparse-0.5.5-py3-none-any.whl.metadata (4.7 kB)
+pytest	Install requirements	2026-05-22T12:12:26.5672526Z Collecting packaging (from gunicorn==22.0.0->-r requirements.txt (line 7))
+pytest	Install requirements	2026-05-22T12:12:26.5742697Z   Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+pytest	Install requirements	2026-05-22T12:12:26.5923896Z Collecting typing-extensions>=3.10.0.0 (from dj-database-url==2.3.0->-r requirements.txt (line 8))
+pytest	Install requirements	2026-05-22T12:12:26.5999997Z   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+pytest	Install requirements	2026-05-22T12:12:26.6154428Z Collecting iniconfig>=1.0.1 (from pytest==9.0.3->-r requirements.txt (line 13))
+pytest	Install requirements	2026-05-22T12:12:26.6224147Z   Downloading iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+pytest	Install requirements	2026-05-22T12:12:26.6382096Z Collecting pluggy<2,>=1.5 (from pytest==9.0.3->-r requirements.txt (line 13))
+pytest	Install requirements	2026-05-22T12:12:26.6451109Z   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+pytest	Install requirements	2026-05-22T12:12:26.6645516Z Collecting pygments>=2.7.2 (from pytest==9.0.3->-r requirements.txt (line 13))
+pytest	Install requirements	2026-05-22T12:12:26.6715420Z   Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+pytest	Install requirements	2026-05-22T12:12:26.8128863Z Collecting psycopg-binary==3.3.2 (from psycopg[binary]==3.3.2->-r requirements.txt (line 11))
+pytest	Install requirements	2026-05-22T12:12:26.8215090Z   Downloading psycopg_binary-3.3.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.7 kB)
+pytest	Install requirements	2026-05-22T12:12:26.8417284Z Collecting uritemplate>=2.0.0 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:26.8486857Z   Downloading uritemplate-4.2.0-py3-none-any.whl.metadata (2.6 kB)
+pytest	Install requirements	2026-05-22T12:12:26.8826606Z Collecting PyYAML>=5.1 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:26.8899494Z   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+pytest	Install requirements	2026-05-22T12:12:26.9128427Z Collecting jsonschema>=2.6.0 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:26.9197237Z   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+pytest	Install requirements	2026-05-22T12:12:26.9344011Z Collecting inflection>=0.3.1 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:26.9414226Z   Downloading inflection-0.5.1-py2.py3-none-any.whl.metadata (1.7 kB)
+pytest	Install requirements	2026-05-22T12:12:26.9579474Z Collecting joserfc>=1.6.0 (from authlib>=1.6.8->-r requirements.txt (line 23))
+pytest	Install requirements	2026-05-22T12:12:26.9662151Z   Downloading joserfc-1.6.5-py3-none-any.whl.metadata (3.2 kB)
+pytest	Install requirements	2026-05-22T12:12:27.0506412Z Collecting charset_normalizer<4,>=2 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	Install requirements	2026-05-22T12:12:27.0579493Z   Downloading charset_normalizer-3.4.7-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+pytest	Install requirements	2026-05-22T12:12:27.0763913Z Collecting idna<4,>=2.5 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	Install requirements	2026-05-22T12:12:27.0832906Z   Downloading idna-3.16-py3-none-any.whl.metadata (6.4 kB)
+pytest	Install requirements	2026-05-22T12:12:27.1045980Z Collecting urllib3<3,>=1.26 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	Install requirements	2026-05-22T12:12:27.1123567Z   Downloading urllib3-2.7.0-py3-none-any.whl.metadata (6.9 kB)
+pytest	Install requirements	2026-05-22T12:12:27.1313453Z Collecting certifi>=2023.5.7 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	Install requirements	2026-05-22T12:12:27.1385501Z   Downloading certifi-2026.5.20-py3-none-any.whl.metadata (2.5 kB)
+pytest	Install requirements	2026-05-22T12:12:27.2269634Z Collecting cffi>=2.0.0 (from cryptography>=43.0.0->-r requirements.txt (line 25))
+pytest	Install requirements	2026-05-22T12:12:27.2342774Z   Downloading cffi-2.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.6 kB)
+pytest	Install requirements	2026-05-22T12:12:27.2561889Z Collecting billiard<5.0,>=4.2.1 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.2631310Z   Downloading billiard-4.2.4-py3-none-any.whl.metadata (4.8 kB)
+pytest	Install requirements	2026-05-22T12:12:27.2863577Z Collecting kombu>=5.6.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.2936992Z   Downloading kombu-5.6.2-py3-none-any.whl.metadata (3.5 kB)
+pytest	Install requirements	2026-05-22T12:12:27.3117514Z Collecting vine<6.0,>=5.1.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.3195242Z   Downloading vine-5.1.0-py3-none-any.whl.metadata (2.7 kB)
+pytest	Install requirements	2026-05-22T12:12:27.3391934Z Collecting click<9.0,>=8.1.2 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.3461106Z   Downloading click-8.4.1-py3-none-any.whl.metadata (2.6 kB)
+pytest	Install requirements	2026-05-22T12:12:27.3588998Z Collecting click-didyoumean>=0.3.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.3658917Z   Downloading click_didyoumean-0.3.1-py3-none-any.whl.metadata (3.9 kB)
+pytest	Install requirements	2026-05-22T12:12:27.3793066Z Collecting click-repl>=0.2.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.3862259Z   Downloading click_repl-0.3.0-py3-none-any.whl.metadata (3.6 kB)
+pytest	Install requirements	2026-05-22T12:12:27.3995917Z Collecting click-plugins>=1.1.1 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.4065442Z   Downloading click_plugins-1.1.1.2-py2.py3-none-any.whl.metadata (6.5 kB)
+pytest	Install requirements	2026-05-22T12:12:27.4214995Z Collecting python-dateutil>=2.8.2 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.4282951Z   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+pytest	Install requirements	2026-05-22T12:12:27.4778888Z Collecting tzlocal (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:27.4851641Z   Downloading tzlocal-5.3.1-py3-none-any.whl.metadata (7.6 kB)
+pytest	Install requirements	2026-05-22T12:12:27.9056562Z Collecting aiohttp>=3.8.4 (from twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:27.9131945Z   Downloading aiohttp-3.13.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+pytest	Install requirements	2026-05-22T12:12:27.9302134Z Collecting aiohttp-retry>=2.8.3 (from twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:27.9372710Z   Downloading aiohttp_retry-2.9.1-py3-none-any.whl.metadata (8.8 kB)
+pytest	Install requirements	2026-05-22T12:12:28.0800639Z Collecting pillow>=9.0.0 (from reportlab>=4.2.0->-r requirements.txt (line 36))
+pytest	Install requirements	2026-05-22T12:12:28.0874672Z   Downloading pillow-12.2.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (8.8 kB)
+pytest	Install requirements	2026-05-22T12:12:28.1082915Z Collecting aiohappyeyeballs>=2.5.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:28.1152875Z   Downloading aiohappyeyeballs-2.6.2-py3-none-any.whl.metadata (5.9 kB)
+pytest	Install requirements	2026-05-22T12:12:28.1286825Z Collecting aiosignal>=1.4.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:28.1357601Z   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+pytest	Install requirements	2026-05-22T12:12:28.1527814Z Collecting attrs>=17.3.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:28.1603514Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+pytest	Install requirements	2026-05-22T12:12:28.2537074Z Collecting frozenlist>=1.1.1 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:28.2612011Z   Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+pytest	Install requirements	2026-05-22T12:12:28.4610178Z Collecting multidict<7.0,>=4.5 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:28.4684231Z   Downloading multidict-6.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.3 kB)
+pytest	Install requirements	2026-05-22T12:12:28.5216348Z Collecting propcache>=0.2.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:28.5288041Z   Downloading propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (16 kB)
+pytest	Install requirements	2026-05-22T12:12:28.7374560Z Collecting yarl<2.0,>=1.17.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	Install requirements	2026-05-22T12:12:28.7456167Z   Downloading yarl-1.24.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (94 kB)
+pytest	Install requirements	2026-05-22T12:12:28.7835162Z Collecting pycparser (from cffi>=2.0.0->cryptography>=43.0.0->-r requirements.txt (line 25))
+pytest	Install requirements	2026-05-22T12:12:28.7921417Z   Downloading pycparser-3.0-py3-none-any.whl.metadata (8.2 kB)
+pytest	Install requirements	2026-05-22T12:12:28.8211700Z Collecting prompt-toolkit>=3.0.36 (from click-repl>=0.2.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:28.8286208Z   Downloading prompt_toolkit-3.0.52-py3-none-any.whl.metadata (6.4 kB)
+pytest	Install requirements	2026-05-22T12:12:28.8519903Z Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=2.6.0->drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:28.8596872Z   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+pytest	Install requirements	2026-05-22T12:12:28.8807378Z Collecting referencing>=0.28.4 (from jsonschema>=2.6.0->drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:28.8885176Z   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+pytest	Install requirements	2026-05-22T12:12:29.1477655Z Collecting rpds-py>=0.25.0 (from jsonschema>=2.6.0->drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	Install requirements	2026-05-22T12:12:29.1554617Z   Downloading rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+pytest	Install requirements	2026-05-22T12:12:29.1771318Z Collecting amqp<6.0.0,>=5.1.1 (from kombu>=5.6.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:29.1841303Z   Downloading amqp-5.3.1-py3-none-any.whl.metadata (8.9 kB)
+pytest	Install requirements	2026-05-22T12:12:29.1999540Z Collecting tzdata>=2025.2 (from kombu>=5.6.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:29.2072134Z   Downloading tzdata-2026.2-py2.py3-none-any.whl.metadata (1.4 kB)
+pytest	Install requirements	2026-05-22T12:12:29.2270677Z Collecting wcwidth (from prompt-toolkit>=3.0.36->click-repl>=0.2.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:29.2340684Z   Downloading wcwidth-0.7.0-py3-none-any.whl.metadata (36 kB)
+pytest	Install requirements	2026-05-22T12:12:29.2534477Z Collecting six>=1.5 (from python-dateutil>=2.8.2->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	Install requirements	2026-05-22T12:12:29.2605864Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+pytest	Install requirements	2026-05-22T12:12:29.2802876Z Downloading django-5.2.14-py3-none-any.whl (8.3 MB)
+pytest	Install requirements	2026-05-22T12:12:29.3444939Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 8.3/8.3 MB 144.6 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.3602195Z Downloading djangorestframework-3.15.2-py3-none-any.whl (1.1 MB)
+pytest	Install requirements	2026-05-22T12:12:29.3718154Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 1.1/1.1 MB 193.1 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.3790840Z Downloading django_extensions-4.1-py3-none-any.whl (232 kB)
+pytest	Install requirements	2026-05-22T12:12:29.3891094Z Downloading python_dotenv-1.2.2-py3-none-any.whl (22 kB)
+pytest	Install requirements	2026-05-22T12:12:29.3979485Z Downloading gunicorn-22.0.0-py3-none-any.whl (84 kB)
+pytest	Install requirements	2026-05-22T12:12:29.4082762Z Downloading dj_database_url-2.3.0-py3-none-any.whl (7.8 kB)
+pytest	Install requirements	2026-05-22T12:12:29.4169260Z Downloading psycopg-3.3.2-py3-none-any.whl (212 kB)
+pytest	Install requirements	2026-05-22T12:12:29.4260967Z Downloading pytest-9.0.3-py3-none-any.whl (375 kB)
+pytest	Install requirements	2026-05-22T12:12:29.4374675Z Downloading pytest_django-4.7.0-py3-none-any.whl (23 kB)
+pytest	Install requirements	2026-05-22T12:12:29.4462639Z Downloading pyjwt-2.12.0-py3-none-any.whl (29 kB)
+pytest	Install requirements	2026-05-22T12:12:29.4550957Z Downloading django_cors_headers-4.3.1-py3-none-any.whl (12 kB)
+pytest	Install requirements	2026-05-22T12:12:29.4647483Z Downloading psycopg_binary-3.3.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.1 MB)
+pytest	Install requirements	2026-05-22T12:12:29.5007799Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 5.1/5.1 MB 162.3 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.5077944Z Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+pytest	Install requirements	2026-05-22T12:12:29.5167125Z Downloading djangorestframework_simplejwt-5.5.1-py3-none-any.whl (107 kB)
+pytest	Install requirements	2026-05-22T12:12:29.5262747Z Downloading drf_spectacular-0.29.0-py3-none-any.whl (105 kB)
+pytest	Install requirements	2026-05-22T12:12:29.5374072Z Downloading drf_spectacular_sidecar-2026.5.1-py3-none-any.whl (2.5 MB)
+pytest	Install requirements	2026-05-22T12:12:29.5484369Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.5/2.5 MB 259.2 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.5556353Z Downloading authlib-1.7.2-py2.py3-none-any.whl (259 kB)
+pytest	Install requirements	2026-05-22T12:12:29.5651195Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+pytest	Install requirements	2026-05-22T12:12:29.5744826Z Downloading charset_normalizer-3.4.7-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (216 kB)
+pytest	Install requirements	2026-05-22T12:12:29.5838368Z Downloading idna-3.16-py3-none-any.whl (74 kB)
+pytest	Install requirements	2026-05-22T12:12:29.5926785Z Downloading urllib3-2.7.0-py3-none-any.whl (131 kB)
+pytest	Install requirements	2026-05-22T12:12:29.6015876Z Downloading cryptography-48.0.0-cp311-abi3-manylinux_2_34_x86_64.whl (4.7 MB)
+pytest	Install requirements	2026-05-22T12:12:29.6165517Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 4.7/4.7 MB 352.2 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.6239343Z Downloading sentry_sdk-2.60.0-py3-none-any.whl (475 kB)
+pytest	Install requirements	2026-05-22T12:12:29.6344775Z Downloading celery-5.6.3-py3-none-any.whl (451 kB)
+pytest	Install requirements	2026-05-22T12:12:29.6443971Z Downloading billiard-4.2.4-py3-none-any.whl (87 kB)
+pytest	Install requirements	2026-05-22T12:12:29.6543467Z Downloading click-8.4.1-py3-none-any.whl (116 kB)
+pytest	Install requirements	2026-05-22T12:12:29.6636797Z Downloading vine-5.1.0-py3-none-any.whl (9.6 kB)
+pytest	Install requirements	2026-05-22T12:12:29.6725652Z Downloading redis-7.4.0-py3-none-any.whl (409 kB)
+pytest	Install requirements	2026-05-22T12:12:29.6821694Z Downloading stripe-15.1.0-py3-none-any.whl (2.1 MB)
+pytest	Install requirements	2026-05-22T12:12:29.6928034Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.1/2.1 MB 241.5 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.7026849Z Downloading twilio-9.10.9-py2.py3-none-any.whl (2.5 MB)
+pytest	Install requirements	2026-05-22T12:12:29.7213308Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.5/2.5 MB 172.7 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.7286280Z Downloading reportlab-4.5.1-py3-none-any.whl (2.0 MB)
+pytest	Install requirements	2026-05-22T12:12:29.7367483Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.0/2.0 MB 288.2 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.7439421Z Downloading numpy-2.4.6-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.6 MB)
+pytest	Install requirements	2026-05-22T12:12:29.7935535Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 16.6/16.6 MB 349.1 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.8010026Z Downloading aiohttp-3.13.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+pytest	Install requirements	2026-05-22T12:12:29.8091377Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 1.8/1.8 MB 259.1 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:29.8166783Z Downloading multidict-6.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (256 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8268953Z Downloading yarl-1.24.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (105 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8359865Z Downloading aiohappyeyeballs-2.6.2-py3-none-any.whl (15 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8451778Z Downloading aiohttp_retry-2.9.1-py3-none-any.whl (10.0 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8541573Z Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8629801Z Downloading asgiref-3.11.1-py3-none-any.whl (24 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8717369Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8806598Z Downloading certifi-2026.5.20-py3-none-any.whl (134 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8898341Z Downloading cffi-2.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (219 kB)
+pytest	Install requirements	2026-05-22T12:12:29.8990799Z Downloading click_didyoumean-0.3.1-py3-none-any.whl (3.6 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9078200Z Downloading click_plugins-1.1.1.2-py2.py3-none-any.whl (11 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9166802Z Downloading click_repl-0.3.0-py3-none-any.whl (10 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9257673Z Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (242 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9349933Z Downloading inflection-0.5.1-py2.py3-none-any.whl (9.5 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9436146Z Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9520057Z Downloading joserfc-1.6.5-py3-none-any.whl (70 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9607884Z Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9707528Z Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9794435Z Downloading kombu-5.6.2-py3-none-any.whl (214 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9887838Z Downloading amqp-5.3.1-py3-none-any.whl (50 kB)
+pytest	Install requirements	2026-05-22T12:12:29.9976701Z Downloading packaging-26.2-py3-none-any.whl (100 kB)
+pytest	Install requirements	2026-05-22T12:12:30.0076329Z Downloading pillow-12.2.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (7.1 MB)
+pytest	Install requirements	2026-05-22T12:12:30.0294331Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 7.1/7.1 MB 349.8 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:30.0365826Z Downloading prompt_toolkit-3.0.52-py3-none-any.whl (391 kB)
+pytest	Install requirements	2026-05-22T12:12:30.0464684Z Downloading propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (61 kB)
+pytest	Install requirements	2026-05-22T12:12:30.0555242Z Downloading pygments-2.20.0-py3-none-any.whl (1.2 MB)
+pytest	Install requirements	2026-05-22T12:12:30.0620946Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 1.2/1.2 MB 227.2 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:30.0693992Z Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+pytest	Install requirements	2026-05-22T12:12:30.0810533Z Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+pytest	Install requirements	2026-05-22T12:12:30.0863392Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 807.9/807.9 kB 174.5 MB/s  0:00:00
+pytest	Install requirements	2026-05-22T12:12:30.0933962Z Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1024666Z Downloading rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (394 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1129485Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1230424Z Downloading sqlparse-0.5.5-py3-none-any.whl (46 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1334883Z Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1426884Z Downloading tzdata-2026.2-py2.py3-none-any.whl (349 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1527556Z Downloading uritemplate-4.2.0-py3-none-any.whl (11 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1616184Z Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1716160Z Downloading tzlocal-5.3.1-py3-none-any.whl (18 kB)
+pytest	Install requirements	2026-05-22T12:12:30.1807449Z Downloading wcwidth-0.7.0-py3-none-any.whl (110 kB)
+pytest	Install requirements	2026-05-22T12:12:30.4644765Z Installing collected packages: wcwidth, vine, urllib3, uritemplate, tzlocal, tzdata, typing-extensions, sqlparse, six, rpds-py, redis, PyYAML, python-dotenv, PyJWT, pygments, pycparser, psycopg-binary, propcache, pluggy, pillow, packaging, numpy, multidict, iniconfig, inflection, idna, frozenlist, click, charset_normalizer, certifi, billiard, attrs, asgiref, aiohappyeyeballs, yarl, sentry-sdk, requests, reportlab, referencing, python-dateutil, pytest, psycopg, prompt-toolkit, gunicorn, Django, click-plugins, click-didyoumean, cffi, amqp, aiosignal, stripe, pytest-django, kombu, jsonschema-specifications, drf-spectacular-sidecar, djangorestframework, django-extensions, django-cors-headers, dj-database-url, cryptography, click-repl, aiohttp, jsonschema, joserfc, djangorestframework-simplejwt, celery, aiohttp-retry, twilio, drf-spectacular, authlib
+pytest	Install requirements	2026-05-22T12:12:44.5521344Z 
+pytest	Install requirements	2026-05-22T12:12:44.5578129Z Successfully installed Django-5.2.14 PyJWT-2.12.0 PyYAML-6.0.3 aiohappyeyeballs-2.6.2 aiohttp-3.13.5 aiohttp-retry-2.9.1 aiosignal-1.4.0 amqp-5.3.1 asgiref-3.11.1 attrs-26.1.0 authlib-1.7.2 billiard-4.2.4 celery-5.6.3 certifi-2026.5.20 cffi-2.0.0 charset_normalizer-3.4.7 click-8.4.1 click-didyoumean-0.3.1 click-plugins-1.1.1.2 click-repl-0.3.0 cryptography-48.0.0 dj-database-url-2.3.0 django-cors-headers-4.3.1 django-extensions-4.1 djangorestframework-3.15.2 djangorestframework-simplejwt-5.5.1 drf-spectacular-0.29.0 drf-spectacular-sidecar-2026.5.1 frozenlist-1.8.0 gunicorn-22.0.0 idna-3.16 inflection-0.5.1 iniconfig-2.3.0 joserfc-1.6.5 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 kombu-5.6.2 multidict-6.7.1 numpy-2.4.6 packaging-26.2 pillow-12.2.0 pluggy-1.6.0 prompt-toolkit-3.0.52 propcache-0.5.2 psycopg-3.3.2 psycopg-binary-3.3.2 pycparser-3.0 pygments-2.20.0 pytest-9.0.3 pytest-django-4.7.0 python-dateutil-2.9.0.post0 python-dotenv-1.2.2 redis-7.4.0 referencing-0.37.0 reportlab-4.5.1 requests-2.34.2 rpds-py-0.30.0 sentry-sdk-2.60.0 six-1.17.0 sqlparse-0.5.5 stripe-15.1.0 twilio-9.10.9 typing-extensions-4.15.0 tzdata-2026.2 tzlocal-5.3.1 uritemplate-4.2.0 urllib3-2.7.0 vine-5.1.0 wcwidth-0.7.0 yarl-1.24.2
+pytest	Run tests	∩╗┐2026-05-22T12:12:44.7510066Z ##[group]Run python -m pytest -q
+pytest	Run tests	2026-05-22T12:12:44.7510386Z [36;1mpython -m pytest -q[0m
+pytest	Run tests	2026-05-22T12:12:44.7546487Z shell: /usr/bin/bash -e {0}
+pytest	Run tests	2026-05-22T12:12:44.7546730Z env:
+pytest	Run tests	2026-05-22T12:12:44.7546989Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Run tests	2026-05-22T12:12:44.7547405Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	Run tests	2026-05-22T12:12:44.7547803Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Run tests	2026-05-22T12:12:44.7548160Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Run tests	2026-05-22T12:12:44.7548640Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	Run tests	2026-05-22T12:12:44.7549012Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	Run tests	2026-05-22T12:12:44.7549338Z   DJANGO_SETTINGS_MODULE: crown_api.settings
+pytest	Run tests	2026-05-22T12:12:44.7549613Z   DJANGO_SECRET_KEY: ci-test-secret-key
+pytest	Run tests	2026-05-22T12:12:44.7550110Z   BUILD_SHA: d9f05eb25fc253c79cc9bc3362230ccdcf05b88f
+pytest	Run tests	2026-05-22T12:12:44.7550434Z   PYTHONPATH: /home/runner/work/Crown2026/Crown2026
+pytest	Run tests	2026-05-22T12:12:44.7550743Z ##[endgroup]
+pytest	Run tests	2026-05-22T12:13:43.1207122Z 
+pytest	Run tests	2026-05-22T12:13:43.1207675Z === PYTEST DJANGO DIAGNOSTICS (EARLY) ===
+pytest	Run tests	2026-05-22T12:13:43.1208223Z DJANGO_SETTINGS_MODULE env: crown_api.settings
+pytest	Run tests	2026-05-22T12:13:43.1208995Z settings module: crown_api.settings
+pytest	Run tests	2026-05-22T12:13:43.1209422Z INSTALLED_APPS has core?: True
+pytest	Run tests	2026-05-22T12:13:43.1209782Z MIGRATION_MODULES: {}
+pytest	Run tests	2026-05-22T12:13:43.1210128Z MIGRATION_MODULES['core']: None
+pytest	Run tests	2026-05-22T12:13:43.1210472Z MIGRATION_MODULES['finance']: None
+pytest	Run tests	2026-05-22T12:13:43.1211023Z core.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/__init__.py
+pytest	Run tests	2026-05-22T12:13:43.1211862Z core.migrations.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/migrations/__init__.py
+pytest	Run tests	2026-05-22T12:13:43.1212540Z === END DIAGNOSTICS ===
+pytest	Run tests	2026-05-22T12:13:43.1212738Z 
+pytest	Run tests	2026-05-22T12:14:02.8779522Z .......................................ssss............................. [  2%]
+pytest	Run tests	2026-05-22T12:14:06.4099700Z ........................................................................ [  4%]
+pytest	Run tests	2026-05-22T12:14:08.4454840Z ........................................................................ [  7%]
+pytest	Run tests	2026-05-22T12:14:16.8796111Z ........................................................................ [  9%]
+pytest	Run tests	2026-05-22T12:14:35.7779775Z ........................................................................ [ 11%]
+pytest	Run tests	2026-05-22T12:14:56.9095603Z ........................................................................ [ 14%]
+pytest	Run tests	2026-05-22T12:15:17.4447538Z ss............................................ss........................ [ 16%]
+pytest	Run tests	2026-05-22T12:15:44.2065259Z ........................................................................ [ 18%]
+pytest	Run tests	2026-05-22T12:16:02.0171251Z ........................................................................ [ 21%]
+pytest	Run tests	2026-05-22T12:16:30.9689519Z ........................................................................ [ 23%]
+pytest	Run tests	2026-05-22T12:16:46.7038951Z ........................................................................ [ 26%]
+pytest	Run tests	2026-05-22T12:17:00.7479576Z ........................................................................ [ 28%]
+pytest	Run tests	2026-05-22T12:17:01.5965557Z ........................................................................ [ 30%]
+pytest	Run tests	2026-05-22T12:17:25.5876059Z ........................................................................ [ 33%]
+pytest	Run tests	2026-05-22T12:17:46.0137798Z ........................................................................ [ 35%]
+pytest	Run tests	2026-05-22T12:18:16.8735562Z ........................................................................ [ 37%]
+pytest	Run tests	2026-05-22T12:18:32.3360941Z ........................................................................ [ 40%]
+pytest	Run tests	2026-05-22T12:18:53.0298899Z ........................................................................ [ 42%]
+pytest	Run tests	2026-05-22T12:19:06.9743938Z ........................................................................ [ 45%]
+pytest	Run tests	2026-05-22T12:19:25.9150079Z ........................................................................ [ 47%]
+pytest	Run tests	2026-05-22T12:19:31.0040184Z ........................................................................ [ 49%]
+pytest	Run tests	2026-05-22T12:19:50.0324233Z ........................................................................ [ 52%]
+pytest	Run tests	2026-05-22T12:20:11.7069556Z ........................................................................ [ 54%]
+pytest	Run tests	2026-05-22T12:20:31.7530052Z ........................................................................ [ 56%]
+pytest	Run tests	2026-05-22T12:20:54.3302867Z ........................................................................ [ 59%]
+pytest	Run tests	2026-05-22T12:21:16.0609022Z ........................................................................ [ 61%]
+pytest	Run tests	2026-05-22T12:21:32.4667738Z ........................................................................ [ 63%]
+pytest	Run tests	2026-05-22T12:22:04.6102485Z ........................................................................ [ 66%]
+pytest	Run tests	2026-05-22T12:22:33.5189873Z ........................................................................ [ 68%]
+pytest	Run tests	2026-05-22T12:23:04.4620155Z ........................................................................ [ 71%]
+pytest	Run tests	2026-05-22T12:23:31.2959807Z ........................................................................ [ 73%]
+pytest	Run tests	2026-05-22T12:24:21.1330201Z ........................................................................ [ 75%]
+pytest	Run tests	2026-05-22T12:24:48.6201832Z ........................................................................ [ 78%]
+pytest	Run tests	2026-05-22T12:25:17.5246952Z ........................................................................ [ 80%]
+pytest	Run tests	2026-05-22T12:25:49.6742727Z ........................................................................ [ 82%]
+pytest	Run tests	2026-05-22T12:26:13.0612847Z ........................................................................ [ 85%]
+pytest	Run tests	2026-05-22T12:26:30.0182935Z ........................................................ [ 87%]
+pytest	Run tests	2026-05-22T12:26:37.1324742Z ........................................................................ [ 89%]
+pytest	Run tests	2026-05-22T12:26:37.2137978Z ........................................................................ [ 91%]
+pytest	Run tests	2026-05-22T12:26:37.2847742Z ........................................................................ [ 94%]
+pytest	Run tests	2026-05-22T12:26:46.7524209Z ........................................................................ [ 96%]
+pytest	Run tests	2026-05-22T12:27:06.3230507Z ........................................................................ [ 99%]
+pytest	Run tests	2026-05-22T12:27:14.7639476Z ..............................                                           [100%]
+pytest	Run tests	2026-05-22T12:27:14.7640093Z =================================== FAILURES ===================================
+pytest	Run tests	2026-05-22T12:27:14.7640835Z _ TestWizardCreateSession.test_all_wizards_create_session (wizard='enrollment_conversion') _
+pytest	Run tests	2026-05-22T12:27:14.7641400Z 
+pytest	Run tests	2026-05-22T12:27:14.7641845Z self = <tests.test_wizard_contract.TestWizardCreateSession testMethod=test_all_wizards_create_session>
+pytest	Run tests	2026-05-22T12:27:14.7642447Z 
+pytest	Run tests	2026-05-22T12:27:14.7642599Z     def test_all_wizards_create_session(self):
+pytest	Run tests	2026-05-22T12:27:14.7643088Z         for description, url in WIZARD_ENDPOINTS:
+pytest	Run tests	2026-05-22T12:27:14.7643517Z             with self.subTest(wizard=description):
+pytest	Run tests	2026-05-22T12:27:14.7643969Z >               self._assert_201(description, url)
+pytest	Run tests	2026-05-22T12:27:14.7644246Z 
+pytest	Run tests	2026-05-22T12:27:14.7644396Z tests/test_wizard_contract.py:157: 
+pytest	Run tests	2026-05-22T12:27:14.7644835Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pytest	Run tests	2026-05-22T12:27:14.7645350Z tests/test_wizard_contract.py:145: in _assert_201
+pytest	Run tests	2026-05-22T12:27:14.7645769Z     self.assertEqual(
+pytest	Run tests	2026-05-22T12:27:14.7646740Z E   AssertionError: 403 != 201 : enrollment_conversion (/api/v1/enrollment-conversion-wizard/sessions/): expected 201, got 403. Body: {'detail': 'Permission denied.'}
+pytest	Run tests	2026-05-22T12:27:14.7647659Z _ TestWizardTenantIsolation.test_all_wizards_isolate_tenants (wizard='enrollment_conversion') _
+pytest	Run tests	2026-05-22T12:27:14.7648021Z 
+pytest	Run tests	2026-05-22T12:27:14.7648323Z self = <tests.test_wizard_contract.TestWizardTenantIsolation testMethod=test_all_wizards_isolate_tenants>
+pytest	Run tests	2026-05-22T12:27:14.7649015Z 
+pytest	Run tests	2026-05-22T12:27:14.7649130Z     def test_all_wizards_isolate_tenants(self):
+pytest	Run tests	2026-05-22T12:27:14.7649774Z         for description, url in WIZARD_ENDPOINTS:
+pytest	Run tests	2026-05-22T12:27:14.7650079Z             with self.subTest(wizard=description):
+pytest	Run tests	2026-05-22T12:27:14.7650454Z >               self._assert_tenant_isolation(description, url)
+pytest	Run tests	2026-05-22T12:27:14.7650738Z 
+pytest	Run tests	2026-05-22T12:27:14.7650834Z tests/test_wizard_contract.py:194: 
+pytest	Run tests	2026-05-22T12:27:14.7651128Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pytest	Run tests	2026-05-22T12:27:14.7651501Z tests/test_wizard_contract.py:179: in _assert_tenant_isolation
+pytest	Run tests	2026-05-22T12:27:14.7651987Z     self.assertEqual(r.status_code, 201, f"{description}: session creation failed {r.status_code}")
+pytest	Run tests	2026-05-22T12:27:14.7652523Z E   AssertionError: 403 != 201 : enrollment_conversion: session creation failed 403
+pytest	Run tests	2026-05-22T12:27:14.7652929Z =============================== warnings summary ===============================
+pytest	Run tests	2026-05-22T12:27:14.7653514Z backend/crown_api/exports/tests/test_exports_jwt_auth.py: 1 warning
+pytest	Run tests	2026-05-22T12:27:14.7653952Z backend/onboarding/tests/test_parent_enrollment_guidance.py: 8 warnings
+pytest	Run tests	2026-05-22T12:27:14.7654335Z backend/onboarding/tests/test_views.py: 23 warnings
+pytest	Run tests	2026-05-22T12:27:14.7654672Z backend/reenrollment/tests/test_views.py: 27 warnings
+pytest	Run tests	2026-05-22T12:27:14.7654993Z backend/tests/test_ensure_ci_user_api.py: 2 warnings
+pytest	Run tests	2026-05-22T12:27:14.7655912Z   /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 18 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+pytest	Run tests	2026-05-22T12:27:14.7656798Z     return self._jws.encode(
+pytest	Run tests	2026-05-22T12:27:14.7656946Z 
+pytest	Run tests	2026-05-22T12:27:14.7657110Z backend/crown_api/exports/tests/test_exports_jwt_auth.py: 1 warning
+pytest	Run tests	2026-05-22T12:27:14.7657531Z backend/onboarding/tests/test_parent_enrollment_guidance.py: 8 warnings
+pytest	Run tests	2026-05-22T12:27:14.7657901Z backend/onboarding/tests/test_views.py: 23 warnings
+pytest	Run tests	2026-05-22T12:27:14.7658211Z backend/reenrollment/tests/test_views.py: 27 warnings
+pytest	Run tests	2026-05-22T12:27:14.7659330Z   /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/jwt/api_jwt.py:365: InsecureKeyLengthWarning: The HMAC key is 18 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+pytest	Run tests	2026-05-22T12:27:14.7660194Z     decoded = self.decode_complete(
+pytest	Run tests	2026-05-22T12:27:14.7660352Z 
+pytest	Run tests	2026-05-22T12:27:14.7660608Z backend/facops/tests/test_facops.py::TestDrills::test_list
+pytest	Run tests	2026-05-22T12:27:14.7661046Z backend/facops/tests/test_facops.py::TestSecuritySummary::test_returns_counts
+pytest	Run tests	2026-05-22T12:27:14.7662074Z   /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1612: RuntimeWarning: DateTimeField Drill.planned_for received a naive datetime (2026-05-22 00:00:00) while time zone support is active.
+pytest	Run tests	2026-05-22T12:27:14.7662951Z     warnings.warn(
+pytest	Run tests	2026-05-22T12:27:14.7663066Z 
+pytest	Run tests	2026-05-22T12:27:14.7663283Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+pytest	Run tests	2026-05-22T12:27:14.7663746Z =========================== short test summary info ============================
+pytest	Run tests	2026-05-22T12:27:14.7664299Z SKIPPED [1] analytics/tests/test_predictor_integrations.py:9: could not import 'pandas': No module named 'pandas'
+pytest	Run tests	2026-05-22T12:27:14.7665265Z SKIPPED [1] academics/tests/test_attendance_hardening_v2.py:41: No Section in DB ΓÇö run seed first
+pytest	Run tests	2026-05-22T12:27:14.7665820Z SKIPPED [1] academics/tests/test_attendance_hardening_v2.py:89: No Section in DB
+pytest	Run tests	2026-05-22T12:27:14.7666505Z SKIPPED [1] academics/tests/test_lane3_attendance_smoke.py:21: No academics.models.Section in DB ΓÇö run seed first
+pytest	Run tests	2026-05-22T12:27:14.7667081Z SKIPPED [1] academics/tests/test_lane3_attendance_smoke.py:56: No Section in DB
+pytest	Run tests	2026-05-22T12:27:14.7667751Z SKIPPED [1] billing/tests/test_lane2_billing_smoke.py:25: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+pytest	Run tests	2026-05-22T12:27:14.7668826Z SKIPPED [1] billing/tests/test_lane2_payment_endpoints.py:13: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+pytest	Run tests	2026-05-22T12:27:14.7669645Z SKIPPED [1] classroom/tests/test_classroom_api.py:12: No school in database
+pytest	Run tests	2026-05-22T12:27:14.7670089Z SKIPPED [1] classroom/tests/test_classroom_api.py:30: No school in database
+pytest	Run tests	2026-05-22T12:27:14.7671282Z SUBFAILED(wizard='enrollment_conversion') tests/test_wizard_contract.py::TestWizardCreateSession::test_all_wizards_create_session - AssertionError: 403 != 201 : enrollment_conversion (/api/v1/enrollment-conversion-wizard/sessions/): expected 201, got 403. Body: {'detail': 'Permission denied.'}
+pytest	Run tests	2026-05-22T12:27:14.7672902Z SUBFAILED(wizard='enrollment_conversion') tests/test_wizard_contract.py::TestWizardTenantIsolation::test_all_wizards_isolate_tenants - AssertionError: 403 != 201 : enrollment_conversion: session creation failed 403
+pytest	Run tests	2026-05-22T12:27:14.7673972Z 2 failed, 3030 passed, 9 skipped, 122 warnings, 86 subtests passed in 865.93s (0:14:25)
+pytest	Run tests	2026-05-22T12:27:16.1371037Z ##[error]Process completed with exit code 1.
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	∩╗┐2026-05-22T12:27:16.1484069Z Post job cleanup.
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2276594Z [command]/usr/bin/git version
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2314622Z git version 2.54.0
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2356856Z Temporarily overriding HOME='/home/runner/work/_temp/7ded0d89-b05c-473f-92d8-e938d7356926' before making global git config changes
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2358075Z Adding repository directory to the temporary git global config as a safe directory
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2361830Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Crown2026/Crown2026
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2395634Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2427039Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2697990Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2725512Z http.https://github.com/.extraheader
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2737233Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+pytest	Post Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11	2026-05-22T12:27:16.2769622Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+pytest	Complete job	∩╗┐2026-05-22T12:27:16.3152450Z Cleaning up orphan processes
+pytest	Complete job	2026-05-22T12:27:16.3439091Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11, actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

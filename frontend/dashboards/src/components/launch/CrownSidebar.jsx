@@ -1,6 +1,7 @@
 import { Link, useInRouterContext } from 'react-router-dom';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { hasAnyRole } from '../../auth/roleAccess';
+import CrownLogo from '../brand/CrownLogo';
 
 const NAV_ITEMS = [
   {
@@ -109,23 +110,11 @@ function resolveActiveNavKey(pathname = '') {
 function BrandLockup() {
   return (
     <div className="launch-brand-lockup">
-      <div className="launch-brand-crest" aria-hidden="true">
-        <svg viewBox="0 0 64 64" role="presentation" focusable="false">
-          <defs>
-            <linearGradient id="crownCrest" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#1D4ED8" />
-              <stop offset="100%" stopColor="#60A5FA" />
-            </linearGradient>
-          </defs>
-          <path d="M32 5 L52 13 L49 39 C48 48 41 55 32 58 C23 55 16 48 15 39 L12 13 Z" fill="url(#crownCrest)" />
-          <path d="M21 24 L27 19 L32 25 L37 19 L43 24 L41 35 H23 Z" fill="#FBBF24" opacity="0.96" />
-          <rect x="23" y="36" width="18" height="4" rx="2" fill="#FFFFFF" opacity="0.9" />
-        </svg>
-      </div>
-      <div>
-        <div className="launch-brand-title">CROWN</div>
-        <div className="launch-brand-tagline">Christian School Management Solution</div>
-      </div>
+      <CrownLogo
+        placement="sidebarExpanded"
+        className="launch-brand-logo"
+        alt="CROWN Christian School Management Solution"
+      />
     </div>
   );
 }

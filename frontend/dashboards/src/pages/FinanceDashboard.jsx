@@ -43,9 +43,35 @@ function KpiCard({ title, value, subtitle }) {
   );
 }
 
+function truthPillClasses(dataState) {
+  if (dataState === "live") {
+    return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  }
+  if (dataState === "loading") {
+    return "bg-sky-50 text-sky-700 border border-sky-200";
+  }
+  return "bg-amber-50 text-amber-700 border border-amber-200";
+}
+
 export default function FinanceDashboard() {
   const { loading, error, metrics, summary, invoices, reload } =
     useFinanceDashboardData();
+  let dataState = "live";
+  if (loading) {
+    dataState = "loading";
+  } else if (error) {
+    dataState = "unavailable";
+  }
+
+  let dataStateLabel = "Live finance data";
+  if (dataState === "loading") {
+    dataStateLabel = "Loading finance data";
+  } else if (dataState === "unavailable") {
+    dataStateLabel = "Finance data unavailable";
+  }
+
+  const dataSourceLabel =
+    dataState === "unavailable" ? "Finance API unavailable" : "Finance metrics API";
 
   return (
     <CrownLayout
@@ -57,6 +83,12 @@ export default function FinanceDashboard() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Finance Dashboard</h1>
             <p className="text-sm text-slate-600">Live finance metrics and invoice visibility.</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium">
+              <span className={`inline-flex items-center rounded-full px-2.5 py-1 ${truthPillClasses(dataState)}`}>
+                {dataStateLabel}
+              </span>
+              <span className="text-slate-500">{dataSourceLabel}</span>
+            </div>
           </div>
 
           <button
@@ -109,9 +141,7 @@ export default function FinanceDashboard() {
               <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
                 <h2 className="text-lg font-semibold text-slate-900">Finance Summary</h2>
                 <hr className="my-3 border-slate-200" />
-                      {!summary ? (
-                        <p className="text-sm text-slate-600">No summary data available.</p>
-                      ) : (
+                      {summary ? (
                         <div className="space-y-2">
                           {Object.entries(summary).map(([key, value]) => (
                             <div
@@ -127,6 +157,8 @@ export default function FinanceDashboard() {
                             </div>
                           ))}
                         </div>
+                      ) : (
+                        <p className="text-sm text-slate-600">No summary data available.</p>
                       )}
               </section>
 

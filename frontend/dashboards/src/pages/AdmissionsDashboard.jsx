@@ -22,6 +22,19 @@ function cloneConfig(template) {
   return JSON.parse(JSON.stringify(template));
 }
 
+function getDataSourceLabel(dataState) {
+  if (dataState === 'live') {
+    return 'Admissions summary API';
+  }
+  if (dataState === 'loading') {
+    return 'Admissions summary API loading';
+  }
+  if (dataState === 'unavailable') {
+    return 'Admissions summary API unavailable';
+  }
+  return 'Admissions template fallback';
+}
+
 export default function AdmissionsDashboard() {
   const baseConfig = getDashboardTemplate('admissions');
   const { loading, error, summary, rawSummary, timeline } = useAdmissionsDashboardData();
@@ -36,6 +49,7 @@ export default function AdmissionsDashboard() {
       : dataState === 'unavailable'
         ? 'Admissions data unavailable'
         : 'Fallback admissions data';
+  const dataSourceLabel = getDataSourceLabel(dataState);
 
   const total = toInt(rawSummary?.pipeline?.total ?? summary?.total);
   const inquiry = toInt(byStage.inquiry);
@@ -71,24 +85,32 @@ export default function AdmissionsDashboard() {
       value: String(openApplications),
       detail: `Total pipeline: ${total}. Excludes enrolled and declined.`,
       accent: 'blue',
+      dataState,
+      sourceLabel: dataSourceLabel,
     },
     {
       label: 'Inquiries',
       value: String(inquiry),
       detail: 'Prospective families at inquiry stage.',
       accent: 'navy',
+      dataState,
+      sourceLabel: dataSourceLabel,
     },
     {
       label: 'Accepted Students',
       value: String(accepted),
       detail: `${enrolled} already enrolled from accepted cohort.`,
       accent: 'gold',
+      dataState,
+      sourceLabel: dataSourceLabel,
     },
     {
       label: 'Accepted to Enrolled',
       value: acceptedToEnrolled,
       detail: 'Conversion from accepted to enrolled.',
       accent: 'emerald',
+      dataState,
+      sourceLabel: dataSourceLabel,
     },
   ];
 
@@ -147,6 +169,8 @@ export default function AdmissionsDashboard() {
         `Top source: ${topSourceLabel}`,
         velocityLabel,
       ],
+      dataState,
+      sourceLabel: dataSourceLabel,
       primaryActionLabel: 'Review Pipeline',
       backActionLabel: 'All Applications',
       primaryActionHref: '/admissions/pipeline',
@@ -173,6 +197,8 @@ export default function AdmissionsDashboard() {
         `Primary source cohort: ${topSourceLabel}`,
         velocityLabel,
       ],
+      dataState,
+      sourceLabel: dataSourceLabel,
       primaryActionLabel: 'Open Enrollment',
       backActionLabel: 'Pipeline View',
       primaryActionHref: '/reenrollment',

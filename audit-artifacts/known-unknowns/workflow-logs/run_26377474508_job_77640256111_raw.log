@@ -1,0 +1,735 @@
+﻿pytest	UNKNOWN STEP	∩╗┐2026-05-25T00:45:27.2336913Z Current runner version: '2.334.0'
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2361106Z ##[group]Runner Image Provisioner
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2361864Z Hosted Compute Agent
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2362460Z Version: 20260213.493
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2363014Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2363670Z Build Date: 2026-02-13T00:28:41Z
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2364458Z Worker ID: {85515749-8160-47c6-a599-893ea12502a5}
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2365111Z Azure Region: southcentralus
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2365635Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2366978Z ##[group]Operating System
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2367537Z Ubuntu
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2367947Z 24.04.4
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2368443Z LTS
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2368841Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2369317Z ##[group]Runner Image
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2369841Z Image: ubuntu-24.04
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2370336Z Version: 20260518.149.1
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2371415Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260518.149/images/ubuntu/Ubuntu2404-Readme.md
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2372769Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260518.149
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2373644Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2374712Z ##[group]GITHUB_TOKEN Permissions
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2376619Z Contents: read
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2377102Z Metadata: read
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2377668Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2379607Z Secret source: Actions
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2380216Z Prepare workflow directory
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2802901Z Prepare all required actions
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.2839561Z Getting action download info
+pytest	UNKNOWN STEP	2026-05-25T00:45:27.6354579Z Download action repository 'actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11' (SHA:b4ffde65f46336ab88eb53be808477a3936bae11)
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.5717606Z Download action repository 'actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c' (SHA:7f4fc3e22c37d6ff65e88745f38bd3157c663f7c)
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.7647987Z Complete job name: pytest
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8328825Z ##[group]Run actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8330236Z with:
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8330895Z   repository: tcmegahan/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8331816Z   token: ***
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8332479Z   ssh-strict: true
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8333136Z   persist-credentials: true
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8333793Z   clean: true
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8334680Z   sparse-checkout-cone-mode: true
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8335387Z   fetch-depth: 1
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8336017Z   fetch-tags: false
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8336634Z   show-progress: true
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8337301Z   lfs: false
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8337938Z   submodules: false
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8338584Z   set-safe-directory: true
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.8339846Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9316971Z Syncing repository: tcmegahan/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9320247Z ##[group]Getting Git version info
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9322046Z Working directory is '/home/runner/work/Crown2026/Crown2026'
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9324635Z [command]/usr/bin/git version
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9330574Z git version 2.54.0
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9487855Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9497734Z Temporarily overriding HOME='/home/runner/work/_temp/e6cd8e31-489e-47bc-8225-6800e40f9b83' before making global git config changes
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9501282Z Adding repository directory to the temporary git global config as a safe directory
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9504208Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Crown2026/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9511098Z Deleting the contents of '/home/runner/work/Crown2026/Crown2026'
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9514835Z ##[group]Initializing the repository
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9518038Z [command]/usr/bin/git init /home/runner/work/Crown2026/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9554845Z hint: Using 'master' as the name for the initial branch. This default branch name
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9557232Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9558653Z hint: to use in all of your new repositories, which will suppress this warning,
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9562706Z hint: call:
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9564892Z hint:
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9585627Z hint: 	git config --global init.defaultBranch <name>
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9591900Z hint:
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9593673Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9595441Z hint: 'development'. The just-created branch can be renamed via this command:
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9596614Z hint:
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9597466Z hint: 	git branch -m <name>
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9598562Z hint:
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9600517Z hint: Disable this message with "git config set advice.defaultBranchName false"
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9602796Z Initialized empty Git repository in /home/runner/work/Crown2026/Crown2026/.git/
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9609108Z [command]/usr/bin/git remote add origin https://github.com/tcmegahan/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9615808Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9617470Z ##[group]Disabling automatic garbage collection
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9619553Z [command]/usr/bin/git config --local gc.auto 0
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9644438Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9646559Z ##[group]Setting up auth
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9649877Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9678291Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9961232Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+pytest	UNKNOWN STEP	2026-05-25T00:45:28.9980998Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+pytest	UNKNOWN STEP	2026-05-25T00:45:29.0151529Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+pytest	UNKNOWN STEP	2026-05-25T00:45:29.0181221Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:29.0183580Z ##[group]Fetching the repository
+pytest	UNKNOWN STEP	2026-05-25T00:45:29.0191898Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +7af6c4917cd820d0402b0a98442b1e4986c6cd1d:refs/remotes/origin/main
+pytest	UNKNOWN STEP	2026-05-25T00:45:31.8212439Z From https://github.com/tcmegahan/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T00:45:31.8214207Z  * [new ref]         7af6c4917cd820d0402b0a98442b1e4986c6cd1d -> origin/main
+pytest	UNKNOWN STEP	2026-05-25T00:45:31.8246072Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:31.8246945Z ##[group]Determining the checkout info
+pytest	UNKNOWN STEP	2026-05-25T00:45:31.8247988Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:31.8248821Z ##[group]Checking out the ref
+pytest	UNKNOWN STEP	2026-05-25T00:45:31.8252521Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.6838124Z Switched to a new branch 'main'
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.6838739Z branch 'main' set up to track 'origin/main'.
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.6887716Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7309021Z [command]/usr/bin/git log -1 --format='%H'
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7335693Z '7af6c4917cd820d0402b0a98442b1e4986c6cd1d'
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7525351Z ##[group]Run echo "HOST=$(hostname)"
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7525745Z [36;1mecho "HOST=$(hostname)"[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7526031Z [36;1mecho "WHO=$(whoami)"[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7526393Z [36;1mpython3 --version || python --version || true[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7526745Z [36;1mnode --version || true[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7527000Z [36;1mnpm --version || true[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7527222Z [36;1mdocker --version || true[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7527462Z [36;1mdf -h || true[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7553572Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7553910Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7629224Z HOST=runnervmg397c
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7650171Z WHO=runner
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.7659474Z Python 3.12.3
+pytest	UNKNOWN STEP	2026-05-25T00:45:32.8354522Z v22.22.3
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.0934292Z 10.9.8
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1602504Z Docker version 28.0.4, build b8034c0
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1736564Z Filesystem      Size  Used Avail Use% Mounted on
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1738146Z /dev/root        72G   56G   17G  77% /
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1739100Z tmpfs           3.9G   84K  3.9G   1% /dev/shm
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1739571Z tmpfs           1.6G 1020K  1.6G   1% /run
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1740043Z tmpfs           5.0M     0  5.0M   0% /run/lock
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1740562Z efivarfs        128M   32K  128M   1% /sys/firmware/efi/efivars
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1741373Z /dev/sda16      881M   64M  756M   8% /boot
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1741826Z /dev/sda15      105M  6.2M   99M   6% /boot/efi
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1742266Z tmpfs           794M   12K  794M   1% /run/user/1001
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1821830Z ##[group]Run actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1822215Z with:
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1822393Z   python-version: 3.12
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1822604Z   check-latest: false
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1822915Z   token: ***
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1823094Z   update-environment: true
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1823338Z   allow-prereleases: false
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.1823543Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.3813344Z ##[group]Installed versions
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.3927161Z Successfully set up CPython (3.12.13)
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.3928049Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4009855Z ##[group]Run python -m pip install --upgrade pip
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4010210Z [36;1mpython -m pip install --upgrade pip[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4039254Z shell: /usr/bin/bash -e {0}
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4039493Z env:
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4039748Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4040165Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4040564Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4040911Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4041258Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4041609Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	UNKNOWN STEP	2026-05-25T00:45:33.4041911Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.1032316Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages (26.1.1)
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2852252Z ##[group]Run set -euo pipefail
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2852558Z [36;1mset -euo pipefail[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2852810Z [36;1mWANT='-r backend/requirements.txt'[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2853164Z [36;1mGOT="$(tr -d '\r' < requirements.txt | sed '/^\s*$/d')"[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2853471Z [36;1mif [ "$GOT" != "$WANT" ]; then[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2853742Z [36;1m  echo "requirements.txt MUST be exactly:"[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2854272Z [36;1m  echo "  $WANT"[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2854575Z [36;1m  echo "Got:"[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2854771Z [36;1m  echo "  $GOT"[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2854958Z [36;1m  exit 1[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2855130Z [36;1mfi[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2875847Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2876153Z env:
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2876411Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2876804Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2877253Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2877599Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2877953Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2878313Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2878603Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2959340Z ##[group]Run pip install -r requirements.txt
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2959664Z [36;1mpip install -r requirements.txt[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2977986Z shell: /usr/bin/bash -e {0}
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2978216Z env:
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2978466Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2978860Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2979371Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2979713Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2980061Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2980415Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.2980706Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.8819497Z Collecting Django==5.2.14 (from -r requirements.txt (line 3))
+pytest	UNKNOWN STEP	2026-05-25T00:45:34.9844776Z   Downloading django-5.2.14-py3-none-any.whl.metadata (4.1 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.0303108Z Collecting djangorestframework==3.15.2 (from -r requirements.txt (line 4))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.0431820Z   Downloading djangorestframework-3.15.2-py3-none-any.whl.metadata (10 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.0905314Z Collecting django-extensions==4.1 (from -r requirements.txt (line 5))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.1084375Z   Downloading django_extensions-4.1-py3-none-any.whl.metadata (6.1 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.1394954Z Collecting python-dotenv==1.2.2 (from -r requirements.txt (line 6))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.1516594Z   Downloading python_dotenv-1.2.2-py3-none-any.whl.metadata (27 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.1849663Z Collecting gunicorn==22.0.0 (from -r requirements.txt (line 7))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.1981769Z   Downloading gunicorn-22.0.0-py3-none-any.whl.metadata (4.4 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.2228583Z Collecting dj-database-url==2.3.0 (from -r requirements.txt (line 8))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.2376842Z   Downloading dj_database_url-2.3.0-py3-none-any.whl.metadata (12 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.2781945Z Collecting psycopg==3.3.2 (from psycopg[binary]==3.3.2->-r requirements.txt (line 11))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.2924641Z   Downloading psycopg-3.3.2-py3-none-any.whl.metadata (4.3 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.3330184Z Collecting pytest==9.0.3 (from -r requirements.txt (line 13))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.3462275Z   Downloading pytest-9.0.3-py3-none-any.whl.metadata (7.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.3761579Z Collecting pytest-django==4.7.0 (from -r requirements.txt (line 14))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.3906682Z   Downloading pytest_django-4.7.0-py3-none-any.whl.metadata (8.3 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.4176655Z Collecting djangorestframework-simplejwt>=5.3.1 (from -r requirements.txt (line 16))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.4322207Z   Downloading djangorestframework_simplejwt-5.5.1-py3-none-any.whl.metadata (4.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.4633387Z Collecting PyJWT==2.12.0 (from -r requirements.txt (line 17))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.4763540Z   Downloading pyjwt-2.12.0-py3-none-any.whl.metadata (4.0 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.5051334Z Collecting django-cors-headers==4.3.1 (from -r requirements.txt (line 19))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.5197568Z   Downloading django_cors_headers-4.3.1-py3-none-any.whl.metadata (16 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.5496027Z Collecting drf-spectacular>=0.27.2 (from -r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.5653152Z   Downloading drf_spectacular-0.29.0-py3-none-any.whl.metadata (14 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.5958905Z Collecting drf-spectacular-sidecar>=2025.3.1 (from -r requirements.txt (line 21))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.6123374Z   Downloading drf_spectacular_sidecar-2026.5.1-py3-none-any.whl.metadata (3.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.6400195Z Collecting authlib>=1.6.8 (from -r requirements.txt (line 23))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.6524551Z   Downloading authlib-1.7.2-py2.py3-none-any.whl.metadata (10 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.6854481Z Collecting requests>=2.32.0 (from -r requirements.txt (line 24))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.6985495Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.9025813Z Collecting cryptography>=43.0.0 (from -r requirements.txt (line 25))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.9155065Z   Downloading cryptography-48.0.0-cp311-abi3-manylinux_2_34_x86_64.whl.metadata (4.3 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.9716944Z Collecting sentry-sdk>=2.0.0 (from -r requirements.txt (line 27))
+pytest	UNKNOWN STEP	2026-05-25T00:45:35.9845514Z   Downloading sentry_sdk-2.60.0-py3-none-any.whl.metadata (10 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.0317164Z Collecting celery>=5.4.0 (from -r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.0446283Z   Downloading celery-5.6.3-py3-none-any.whl.metadata (23 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.0894523Z Collecting redis>=5.0.0 (from -r requirements.txt (line 30))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.1041294Z   Downloading redis-7.4.0-py3-none-any.whl.metadata (12 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.1833874Z Collecting stripe>=10.0.0 (from -r requirements.txt (line 32))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.1964642Z   Downloading stripe-15.1.0-py3-none-any.whl.metadata (18 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.2501083Z Collecting twilio>=9.0.0 (from -r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.2637647Z   Downloading twilio-9.10.9-py2.py3-none-any.whl.metadata (13 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.3823785Z Collecting reportlab>=4.2.0 (from -r requirements.txt (line 36))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.3952191Z   Downloading reportlab-4.5.1-py3-none-any.whl.metadata (1.7 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.6080637Z Collecting numpy>=1.26.4 (from -r requirements.txt (line 37))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.6218991Z   Downloading numpy-2.4.6-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.6482650Z Collecting asgiref>=3.8.1 (from Django==5.2.14->-r requirements.txt (line 3))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.6611646Z   Downloading asgiref-3.11.1-py3-none-any.whl.metadata (9.3 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.6854845Z Collecting sqlparse>=0.3.1 (from Django==5.2.14->-r requirements.txt (line 3))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.6971779Z   Downloading sqlparse-0.5.5-py3-none-any.whl.metadata (4.7 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.7261588Z Collecting packaging (from gunicorn==22.0.0->-r requirements.txt (line 7))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.7391603Z   Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.7656278Z Collecting typing-extensions>=3.10.0.0 (from dj-database-url==2.3.0->-r requirements.txt (line 8))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.7783670Z   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.8013875Z Collecting iniconfig>=1.0.1 (from pytest==9.0.3->-r requirements.txt (line 13))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.8139876Z   Downloading iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.8365743Z Collecting pluggy<2,>=1.5 (from pytest==9.0.3->-r requirements.txt (line 13))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.8494735Z   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.8763037Z Collecting pygments>=2.7.2 (from pytest==9.0.3->-r requirements.txt (line 13))
+pytest	UNKNOWN STEP	2026-05-25T00:45:36.8887830Z   Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.0428133Z Collecting psycopg-binary==3.3.2 (from psycopg[binary]==3.3.2->-r requirements.txt (line 11))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.0575332Z   Downloading psycopg_binary-3.3.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.7 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.0857729Z Collecting uritemplate>=2.0.0 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.0984416Z   Downloading uritemplate-4.2.0-py3-none-any.whl.metadata (2.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.1412335Z Collecting PyYAML>=5.1 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.1542373Z   Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.1862535Z Collecting jsonschema>=2.6.0 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.1988778Z   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.2202411Z Collecting inflection>=0.3.1 (from drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.2339368Z   Downloading inflection-0.5.1-py2.py3-none-any.whl.metadata (1.7 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.2579776Z Collecting joserfc>=1.6.0 (from authlib>=1.6.8->-r requirements.txt (line 23))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.2704420Z   Downloading joserfc-1.6.7-py3-none-any.whl.metadata (3.2 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.3662326Z Collecting charset_normalizer<4,>=2 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.3790411Z   Downloading charset_normalizer-3.4.7-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.4069100Z Collecting idna<4,>=2.5 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.4195146Z   Downloading idna-3.16-py3-none-any.whl.metadata (6.4 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.4482838Z Collecting urllib3<3,>=1.26 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.4623852Z   Downloading urllib3-2.7.0-py3-none-any.whl.metadata (6.9 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.4879537Z Collecting certifi>=2023.5.7 (from requests>=2.32.0->-r requirements.txt (line 24))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.5005988Z   Downloading certifi-2026.5.20-py3-none-any.whl.metadata (2.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.6017498Z Collecting cffi>=2.0.0 (from cryptography>=43.0.0->-r requirements.txt (line 25))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.6154801Z   Downloading cffi-2.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.6440662Z Collecting billiard<5.0,>=4.2.1 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.6568390Z   Downloading billiard-4.2.4-py3-none-any.whl.metadata (4.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.6893595Z Collecting kombu>=5.6.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.7019454Z   Downloading kombu-5.6.2-py3-none-any.whl.metadata (3.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.7251316Z Collecting vine<6.0,>=5.1.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.7375825Z   Downloading vine-5.1.0-py3-none-any.whl.metadata (2.7 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.7626201Z Collecting click<9.0,>=8.1.2 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.7756219Z   Downloading click-8.4.1-py3-none-any.whl.metadata (2.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.7978871Z Collecting click-didyoumean>=0.3.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.8103631Z   Downloading click_didyoumean-0.3.1-py3-none-any.whl.metadata (3.9 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.8317165Z Collecting click-repl>=0.2.0 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.8443149Z   Downloading click_repl-0.3.0-py3-none-any.whl.metadata (3.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.8648471Z Collecting click-plugins>=1.1.1 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.8778180Z   Downloading click_plugins-1.1.1.2-py2.py3-none-any.whl.metadata (6.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.8997827Z Collecting python-dateutil>=2.8.2 (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.9125685Z   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.9615940Z Collecting tzlocal (from celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:37.9746010Z   Downloading tzlocal-5.3.1-py3-none-any.whl.metadata (7.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:38.4479982Z Collecting aiohttp>=3.8.4 (from twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:38.4607640Z   Downloading aiohttp-3.13.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.2411343Z Collecting aiohttp-retry>=2.8.3 (from twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.2543222Z   Downloading aiohttp_retry-2.9.1-py3-none-any.whl.metadata (8.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.4533584Z Collecting pillow>=9.0.0 (from reportlab>=4.2.0->-r requirements.txt (line 36))
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.4663324Z   Downloading pillow-12.2.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (8.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.5422220Z Collecting aiohappyeyeballs>=2.5.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.5571687Z   Downloading aiohappyeyeballs-2.6.2-py3-none-any.whl.metadata (5.9 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.6342043Z Collecting aiosignal>=1.4.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:39.6469867Z   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.4599207Z Collecting attrs>=17.3.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.4730888Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.5743057Z Collecting frozenlist>=1.1.1 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.5870787Z   Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.7930565Z Collecting multidict<7.0,>=4.5 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.8059690Z   Downloading multidict-6.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.3 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.8652928Z Collecting propcache>=0.2.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:40.8784397Z   Downloading propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (16 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.0958798Z Collecting yarl<2.0,>=1.17.0 (from aiohttp>=3.8.4->twilio>=9.0.0->-r requirements.txt (line 34))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.1087242Z   Downloading yarl-1.24.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (94 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.1579688Z Collecting pycparser (from cffi>=2.0.0->cryptography>=43.0.0->-r requirements.txt (line 25))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.1710392Z   Downloading pycparser-3.0-py3-none-any.whl.metadata (8.2 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.2067142Z Collecting prompt-toolkit>=3.0.36 (from click-repl>=0.2.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.2197375Z   Downloading prompt_toolkit-3.0.52-py3-none-any.whl.metadata (6.4 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.2502766Z Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=2.6.0->drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.2633051Z   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.2913461Z Collecting referencing>=0.28.4 (from jsonschema>=2.6.0->drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.3040242Z   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.5517012Z Collecting rpds-py>=0.25.0 (from jsonschema>=2.6.0->drf-spectacular>=0.27.2->-r requirements.txt (line 20))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.5648020Z   Downloading rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.5925303Z Collecting amqp<6.0.0,>=5.1.1 (from kombu>=5.6.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.6052236Z   Downloading amqp-5.3.1-py3-none-any.whl.metadata (8.9 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.6291195Z Collecting tzdata>=2025.2 (from kombu>=5.6.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.6416471Z   Downloading tzdata-2026.2-py2.py3-none-any.whl.metadata (1.4 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.6688662Z Collecting wcwidth (from prompt-toolkit>=3.0.36->click-repl>=0.2.0->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.6814648Z   Downloading wcwidth-0.7.0-py3-none-any.whl.metadata (36 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.7068474Z Collecting six>=1.5 (from python-dateutil>=2.8.2->celery>=5.4.0->-r requirements.txt (line 29))
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.7195176Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.7464860Z Downloading django-5.2.14-py3-none-any.whl (8.3 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.8531223Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 8.3/8.3 MB 88.7 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.8692776Z Downloading djangorestframework-3.15.2-py3-none-any.whl (1.1 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.8755000Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 1.1/1.1 MB 208.3 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.8883460Z Downloading django_extensions-4.1-py3-none-any.whl (232 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.9037641Z Downloading python_dotenv-1.2.2-py3-none-any.whl (22 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.9189272Z Downloading gunicorn-22.0.0-py3-none-any.whl (84 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.9354481Z Downloading dj_database_url-2.3.0-py3-none-any.whl (7.8 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.9510916Z Downloading psycopg-3.3.2-py3-none-any.whl (212 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.9664435Z Downloading pytest-9.0.3-py3-none-any.whl (375 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.9823681Z Downloading pytest_django-4.7.0-py3-none-any.whl (23 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:41.9975812Z Downloading pyjwt-2.12.0-py3-none-any.whl (29 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.0128286Z Downloading django_cors_headers-4.3.1-py3-none-any.whl (12 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.0314757Z Downloading psycopg_binary-3.3.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.1 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.0562508Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 5.1/5.1 MB 218.8 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.0692681Z Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.0838067Z Downloading djangorestframework_simplejwt-5.5.1-py3-none-any.whl (107 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.0991671Z Downloading drf_spectacular-0.29.0-py3-none-any.whl (105 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.1160893Z Downloading drf_spectacular_sidecar-2026.5.1-py3-none-any.whl (2.5 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.1369520Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.5/2.5 MB 121.8 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.1498036Z Downloading authlib-1.7.2-py2.py3-none-any.whl (259 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.1648873Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.1799861Z Downloading charset_normalizer-3.4.7-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (216 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.1955033Z Downloading idna-3.16-py3-none-any.whl (74 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.2104140Z Downloading urllib3-2.7.0-py3-none-any.whl (131 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.2254356Z Downloading cryptography-48.0.0-cp311-abi3-manylinux_2_34_x86_64.whl (4.7 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.2447765Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 4.7/4.7 MB 264.8 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.2582759Z Downloading sentry_sdk-2.60.0-py3-none-any.whl (475 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.2742391Z Downloading celery-5.6.3-py3-none-any.whl (451 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.2894306Z Downloading billiard-4.2.4-py3-none-any.whl (87 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.3040279Z Downloading click-8.4.1-py3-none-any.whl (116 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.3184285Z Downloading vine-5.1.0-py3-none-any.whl (9.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.3337473Z Downloading redis-7.4.0-py3-none-any.whl (409 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.3490271Z Downloading stripe-15.1.0-py3-none-any.whl (2.1 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.3689404Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.1/2.1 MB 107.4 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.3830318Z Downloading twilio-9.10.9-py2.py3-none-any.whl (2.5 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.3966030Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.5/2.5 MB 196.9 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.4093207Z Downloading reportlab-4.5.1-py3-none-any.whl (2.0 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.4208783Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 2.0/2.0 MB 187.4 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.4340127Z Downloading numpy-2.4.6-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.6 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.4811978Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 16.6/16.6 MB 367.4 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.4942534Z Downloading aiohttp-3.13.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.5017566Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 1.8/1.8 MB 299.0 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.5148580Z Downloading multidict-6.7.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (256 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.5303781Z Downloading yarl-1.24.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (105 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.5455721Z Downloading aiohappyeyeballs-2.6.2-py3-none-any.whl (15 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.5599699Z Downloading aiohttp_retry-2.9.1-py3-none-any.whl (10.0 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.5755163Z Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.5897043Z Downloading asgiref-3.11.1-py3-none-any.whl (24 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.6046994Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.6199585Z Downloading certifi-2026.5.20-py3-none-any.whl (134 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.6351441Z Downloading cffi-2.0.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (219 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.6505071Z Downloading click_didyoumean-0.3.1-py3-none-any.whl (3.6 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.6650338Z Downloading click_plugins-1.1.1.2-py2.py3-none-any.whl (11 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.6794499Z Downloading click_repl-0.3.0-py3-none-any.whl (10 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.6953278Z Downloading frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (242 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.7105232Z Downloading inflection-0.5.1-py2.py3-none-any.whl (9.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.7251269Z Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.7396702Z Downloading joserfc-1.6.7-py3-none-any.whl (70 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.7546807Z Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.7702375Z Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.7853677Z Downloading kombu-5.6.2-py3-none-any.whl (214 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.8008361Z Downloading amqp-5.3.1-py3-none-any.whl (50 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.8154702Z Downloading packaging-26.2-py3-none-any.whl (100 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.8304614Z Downloading pillow-12.2.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (7.1 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.8512414Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 7.1/7.1 MB 377.8 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.8643963Z Downloading prompt_toolkit-3.0.52-py3-none-any.whl (391 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.8804392Z Downloading propcache-0.5.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (61 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.8954674Z Downloading pygments-2.20.0-py3-none-any.whl (1.2 MB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9020033Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 1.2/1.2 MB 240.8 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9192142Z Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9348567Z Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9400678Z    ΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöüΓöü 807.9/807.9 kB 175.9 MB/s  0:00:00
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9525638Z Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9680867Z Downloading rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (394 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9832376Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:42.9977939Z Downloading sqlparse-0.5.5-py3-none-any.whl (46 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:43.0128618Z Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:43.0278909Z Downloading tzdata-2026.2-py2.py3-none-any.whl (349 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:43.0433057Z Downloading uritemplate-4.2.0-py3-none-any.whl (11 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:43.0579730Z Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:43.0724996Z Downloading tzlocal-5.3.1-py3-none-any.whl (18 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:43.0871566Z Downloading wcwidth-0.7.0-py3-none-any.whl (110 kB)
+pytest	UNKNOWN STEP	2026-05-25T00:45:43.3588552Z Installing collected packages: wcwidth, vine, urllib3, uritemplate, tzlocal, tzdata, typing-extensions, sqlparse, six, rpds-py, redis, PyYAML, python-dotenv, PyJWT, pygments, pycparser, psycopg-binary, propcache, pluggy, pillow, packaging, numpy, multidict, iniconfig, inflection, idna, frozenlist, click, charset_normalizer, certifi, billiard, attrs, asgiref, aiohappyeyeballs, yarl, sentry-sdk, requests, reportlab, referencing, python-dateutil, pytest, psycopg, prompt-toolkit, gunicorn, Django, click-plugins, click-didyoumean, cffi, amqp, aiosignal, stripe, pytest-django, kombu, jsonschema-specifications, drf-spectacular-sidecar, djangorestframework, django-extensions, django-cors-headers, dj-database-url, cryptography, click-repl, aiohttp, jsonschema, joserfc, djangorestframework-simplejwt, celery, aiohttp-retry, twilio, drf-spectacular, authlib
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.4854623Z 
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.4935083Z Successfully installed Django-5.2.14 PyJWT-2.12.0 PyYAML-6.0.3 aiohappyeyeballs-2.6.2 aiohttp-3.13.5 aiohttp-retry-2.9.1 aiosignal-1.4.0 amqp-5.3.1 asgiref-3.11.1 attrs-26.1.0 authlib-1.7.2 billiard-4.2.4 celery-5.6.3 certifi-2026.5.20 cffi-2.0.0 charset_normalizer-3.4.7 click-8.4.1 click-didyoumean-0.3.1 click-plugins-1.1.1.2 click-repl-0.3.0 cryptography-48.0.0 dj-database-url-2.3.0 django-cors-headers-4.3.1 django-extensions-4.1 djangorestframework-3.15.2 djangorestframework-simplejwt-5.5.1 drf-spectacular-0.29.0 drf-spectacular-sidecar-2026.5.1 frozenlist-1.8.0 gunicorn-22.0.0 idna-3.16 inflection-0.5.1 iniconfig-2.3.0 joserfc-1.6.7 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 kombu-5.6.2 multidict-6.7.1 numpy-2.4.6 packaging-26.2 pillow-12.2.0 pluggy-1.6.0 prompt-toolkit-3.0.52 propcache-0.5.2 psycopg-3.3.2 psycopg-binary-3.3.2 pycparser-3.0 pygments-2.20.0 pytest-9.0.3 pytest-django-4.7.0 python-dateutil-2.9.0.post0 python-dotenv-1.2.2 redis-7.4.0 referencing-0.37.0 reportlab-4.5.1 requests-2.34.2 rpds-py-0.30.0 sentry-sdk-2.60.0 six-1.17.0 sqlparse-0.5.5 stripe-15.1.0 twilio-9.10.9 typing-extensions-4.15.0 tzdata-2026.2 tzlocal-5.3.1 uritemplate-4.2.0 urllib3-2.7.0 vine-5.1.0 wcwidth-0.7.0 yarl-1.24.2
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7107111Z ##[group]Run python -m pytest -q
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7107403Z [36;1mpython -m pytest -q[0m
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7127522Z shell: /usr/bin/bash -e {0}
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7127750Z env:
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7128001Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7128395Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7128794Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7129148Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7129487Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7129852Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7130165Z   DJANGO_SETTINGS_MODULE: crown_api.settings
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7130434Z   DJANGO_SECRET_KEY: ci-test-secret-key
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7130714Z   BUILD_SHA: 7af6c4917cd820d0402b0a98442b1e4986c6cd1d
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7131076Z   PYTHONPATH: /home/runner/work/Crown2026/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T00:45:55.7131346Z ##[endgroup]
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0496690Z 
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0497407Z === PYTEST DJANGO DIAGNOSTICS (EARLY) ===
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0498285Z DJANGO_SETTINGS_MODULE env: crown_api.settings
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0498952Z settings module: crown_api.settings
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0499571Z INSTALLED_APPS has core?: True
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0500105Z MIGRATION_MODULES: {}
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0500566Z MIGRATION_MODULES['core']: None
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0501094Z MIGRATION_MODULES['finance']: None
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0501810Z core.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/__init__.py
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0502891Z core.migrations.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/migrations/__init__.py
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0503805Z === END DIAGNOSTICS ===
+pytest	UNKNOWN STEP	2026-05-25T00:46:51.0504455Z 
+pytest	UNKNOWN STEP	2026-05-25T00:47:11.6256227Z .......................................ssss............................. [  2%]
+pytest	UNKNOWN STEP	2026-05-25T00:47:15.3723386Z ........................................................................ [  4%]
+pytest	UNKNOWN STEP	2026-05-25T00:47:17.4624969Z ........................................................................ [  7%]
+pytest	UNKNOWN STEP	2026-05-25T00:47:26.2184858Z ........................................................................ [  9%]
+pytest	UNKNOWN STEP	2026-05-25T00:47:45.7092244Z ........................................................................ [ 11%]
+pytest	UNKNOWN STEP	2026-05-25T00:48:07.3311832Z ........................................................................ [ 14%]
+pytest	UNKNOWN STEP	2026-05-25T00:48:27.7961638Z .....F..ss............................................ss................ [ 16%]
+pytest	UNKNOWN STEP	2026-05-25T00:48:55.5607266Z ........................................................................ [ 18%]
+pytest	UNKNOWN STEP	2026-05-25T00:49:14.6273503Z ........................................................................ [ 21%]
+pytest	UNKNOWN STEP	2026-05-25T00:49:42.7851708Z ........................................................................ [ 23%]
+pytest	UNKNOWN STEP	2026-05-25T00:49:59.2696983Z ........................................................................ [ 25%]
+pytest	UNKNOWN STEP	2026-05-25T00:50:16.2438458Z ............................................s........................... [ 28%]
+pytest	UNKNOWN STEP	2026-05-25T00:50:16.5216686Z ........................................................................ [ 30%]
+pytest	UNKNOWN STEP	2026-05-25T00:50:39.4302137Z ..........FF............................................................ [ 32%]
+pytest	UNKNOWN STEP	2026-05-25T00:51:01.0387932Z ........................................................................ [ 35%]
+pytest	UNKNOWN STEP	2026-05-25T00:51:30.8312375Z ........................................................................ [ 37%]
+pytest	UNKNOWN STEP	2026-05-25T00:51:47.2073065Z ........................................................................ [ 39%]
+pytest	UNKNOWN STEP	2026-05-25T00:52:08.3173944Z ........................................................................ [ 42%]
+pytest	UNKNOWN STEP	2026-05-25T00:52:25.3000495Z ........................................................................ [ 44%]
+pytest	UNKNOWN STEP	2026-05-25T00:52:43.1046482Z ........................................................................ [ 46%]
+pytest	UNKNOWN STEP	2026-05-25T00:52:48.6823756Z ........................................................................ [ 49%]
+pytest	UNKNOWN STEP	2026-05-25T00:53:08.5635475Z ........................................................................ [ 51%]
+pytest	UNKNOWN STEP	2026-05-25T00:53:29.1630176Z ........................................................................ [ 54%]
+pytest	UNKNOWN STEP	2026-05-25T00:53:50.9736978Z ........................................................................ [ 56%]
+pytest	UNKNOWN STEP	2026-05-25T00:54:13.0386299Z ........................................................................ [ 58%]
+pytest	UNKNOWN STEP	2026-05-25T00:54:34.9160648Z ........................................................................ [ 61%]
+pytest	UNKNOWN STEP	2026-05-25T00:54:49.8151631Z ........................................................................ [ 63%]
+pytest	UNKNOWN STEP	2026-05-25T00:55:23.4848647Z ........................................................................ [ 65%]
+pytest	UNKNOWN STEP	2026-05-25T00:55:59.7336197Z ........................................................................ [ 68%]
+pytest	UNKNOWN STEP	2026-05-25T00:56:32.7795369Z ...................................................................F.... [ 70%]
+pytest	UNKNOWN STEP	2026-05-25T00:57:04.9072682Z ........................................................................ [ 72%]
+pytest	UNKNOWN STEP	2026-05-25T00:57:47.8785298Z ..................................................................FF.F.. [ 75%]
+pytest	UNKNOWN STEP	2026-05-25T00:58:30.1978879Z ........................................................................ [ 77%]
+pytest	UNKNOWN STEP	2026-05-25T00:59:03.2881818Z ........................................................................ [ 79%]
+pytest	UNKNOWN STEP	2026-05-25T00:59:39.6304257Z ........................................................................ [ 82%]
+pytest	UNKNOWN STEP	2026-05-25T01:00:06.1376087Z .....................................................F.................. [ 84%]
+pytest	UNKNOWN STEP	2026-05-25T01:00:28.8136841Z ........................................................ [ 86%]
+pytest	UNKNOWN STEP	2026-05-25T01:00:42.5135364Z ........................................................................ [ 88%]
+pytest	UNKNOWN STEP	2026-05-25T01:00:42.6059085Z ........................................................................ [ 91%]
+pytest	UNKNOWN STEP	2026-05-25T01:00:42.6826497Z ........................................................................ [ 93%]
+pytest	UNKNOWN STEP	2026-05-25T01:00:44.8147367Z ........................................................................ [ 95%]
+pytest	UNKNOWN STEP	2026-05-25T01:01:20.8911600Z ........................................................................ [ 98%]
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1739321Z ..........................................................               [100%]
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1740175Z =================================== FAILURES ===================================
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1740957Z ____________________ test_billing_run_summary_gross_aid_net ____________________
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1741534Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1741799Z     def test_billing_run_summary_gross_aid_net():
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1742448Z         school = School.objects.create(name="Test School")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1743218Z         hh = Household.objects.create(school_id=school.id, name="Household")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1743890Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1745065Z         run = BillingRun.objects.create(school_id=school.id, term="2026-FALL", run_type="TUITION", description="Run", amount_per_student=Decimal("0.00"))
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1746614Z         inv = Invoice.objects.create(school_id=school.id, billing_run=run, household=hh, total_amount=Decimal("1000.00"))
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1747506Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1748044Z         acct = LedgerAccount.objects.create(school_id=school.id, household=hh)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1749142Z         ch = Charge.objects.create(school_id=school.id, account=acct, description="Tuition", amount=Decimal("1000.00"))
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1750057Z         inv.ledger_charge_id = ch.id
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1750581Z         inv.save(update_fields=["ledger_charge_id"])
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1751095Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1751984Z         aid = Payment.objects.create(school_id=school.id, account=acct, amount=Decimal("400.00"), source="FINANCIAL_AID", reference="award:x")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1753703Z         PaymentAllocation.objects.create(school_id=school.id, payment=aid, charge=ch, amount=Decimal("400.00"))
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1754705Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1755067Z         user = _mk_user_with_school(school)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1755568Z         c = Client()
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1755969Z         c.force_login(user)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1756326Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1756796Z         resp = c.get(f"/api/v1/billing/runs/{run.id}/summary/")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1757442Z >       assert resp.status_code == 200
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1757960Z E       assert 403 == 200
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1758591Z E        +  where 403 = <Response status_code=403, "application/json">.status_code
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1759169Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1759511Z billing/tests/test_billing_summary_api.py:45: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1760314Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1761560Z [24/May/2026 20:48:09,163] WARNING django.request: Forbidden: /api/v1/billing/runs/752b75f2-59ec-480d-9317-9254feab3969/summary/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1762836Z __ BillingInstallmentPlansRbacTests.test_non_staff_can_post_installment_plan ___
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1763471Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1764358Z self = <crown_api.tests.test_rbac_matrix_writes.BillingInstallmentPlansRbacTests testMethod=test_non_staff_can_post_installment_plan>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1765349Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1765651Z     def test_non_staff_can_post_installment_plan(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1766179Z         """
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1766702Z         Non-staff authenticated user: endpoint is IsAuthenticated only,
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1767497Z         so non-staff is allowed. Expect 201 (success) or 4xx (bad payload).
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1768128Z         Must NOT return 401 or 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1768570Z         """
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1769006Z         self.client.force_authenticate(user=self.non_staff)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1769589Z         resp = self.client.post(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1770048Z             INSTALLMENT_PLANS_URL,
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1770761Z             data=self._VALID_PAYLOAD,
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1771231Z             format="json",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1771677Z             HTTP_X_SCHOOL_ID=str(self.school.id),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772169Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772513Z >       self.assertNotIn(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1772952Z             resp.status_code, (401, 403, 500),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1773705Z             msg=f"Non-staff installment plan POST unexpectedly blocked: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1774536Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1775348Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Non-staff installment plan POST unexpectedly blocked: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776085Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1776438Z crown_api/tests/test_rbac_matrix_writes.py:181: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1777261Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1778250Z [24/May/2026 20:50:18,954] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1779369Z ____ BillingInstallmentPlansRbacTests.test_staff_can_post_installment_plan _____
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1780046Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1780844Z self = <crown_api.tests.test_rbac_matrix_writes.BillingInstallmentPlansRbacTests testMethod=test_staff_can_post_installment_plan>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1781824Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1782084Z     def test_staff_can_post_installment_plan(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1783064Z         """Staff: same as non-staff ΓÇö endpoint is not staff-gated."""
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1783747Z         self.client.force_authenticate(user=self.staff)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1784436Z         resp = self.client.post(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1784916Z             INSTALLMENT_PLANS_URL,
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1785419Z             data=self._VALID_PAYLOAD,
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1785880Z             format="json",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1786335Z             HTTP_X_SCHOOL_ID=str(self.school.id),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1786842Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1787200Z >       self.assertNotIn(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1787830Z             resp.status_code, (401, 403, 500),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1788759Z             msg=f"Staff installment plan POST failed unexpectedly: {resp.status_code}.",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1789490Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1790244Z E       AssertionError: 403 unexpectedly found in (401, 403, 500) : Staff installment plan POST failed unexpectedly: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791018Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1791350Z crown_api/tests/test_rbac_matrix_writes.py:195: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1792105Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1793103Z [24/May/2026 20:50:19,561] WARNING django.request: Forbidden: /api/v1/billing/installment-plans/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794180Z ______ test_billing_run_creation_generates_invoice_for_enrolled_students _______
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1794786Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1795167Z     def test_billing_run_creation_generates_invoice_for_enrolled_students():
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1795909Z         school = School.objects.create(name="Billing School")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1796812Z         household = Household.objects.create(school_id=school.id, name="Billing Household")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1798271Z         student_one = Student.objects.create(school_id=school.id, household=household, first_name="A", last_name="One", grade_level="5", is_active=True)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1800032Z         student_two = Student.objects.create(school_id=school.id, household=household, first_name="B", last_name="Two", grade_level="5", is_active=True)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1801391Z         course = Course.objects.create(school_id=school.id, code="MATH5", name="Math 5")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1802648Z         section = Section.objects.create(school_id=school.id, course=course, term="2026-FALL", teacher_name="Teacher", grade_band="5")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1803883Z         Enrollment.objects.create(school_id=school.id, section=section, student=student_one)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1811442Z         Enrollment.objects.create(school_id=school.id, section=section, student=student_two)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1812502Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1812981Z         user = _staff_user(school, username=f"billing-{uuid.uuid4()}")
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1813614Z         client = APIClient()
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1814265Z         client.force_authenticate(user=user)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1814795Z         response = client.post(
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1815246Z             "/api/v1/billing/runs/",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1815777Z             {"term": "2026-FALL", "amount_per_student": "1000.00"},
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1816369Z             format="json",
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1816852Z             HTTP_X_SCHOOL_ID=str(school.id),
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1817364Z         )
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1817719Z     
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1818108Z >       assert response.status_code == 201
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1818573Z E       assert 403 == 201
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1819161Z E        +  where 403 = <Response status_code=403, "application/json">.status_code
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1819730Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1820000Z tests/test_golden_path.py:144: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1820723Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1821614Z [24/May/2026 20:56:30,588] WARNING django.request: Forbidden: /api/v1/billing/runs/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1822632Z ________ Phase72BillingRunsTenantTests.test_correct_school_returns_200 _________
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1823287Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1824172Z self = <tests.test_phase72_tenant_isolation.Phase72BillingRunsTenantTests testMethod=test_correct_school_returns_200>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1825116Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1825391Z     def test_correct_school_returns_200(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1826111Z         """Correct school header -> HTTP 200 (empty list acceptable)."""
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1826887Z         self.client.force_authenticate(user=self.user_a)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1827694Z         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1828693Z >       self.assertEqual(resp.status_code, 200)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1829302Z E       AssertionError: 403 != 200
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1829677Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1830018Z tests/test_phase72_tenant_isolation.py:160: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1830831Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1831739Z [24/May/2026 20:57:42,033] WARNING django.request: Forbidden: /api/v1/billing/runs/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1832743Z ________ Phase72BillingRunsTenantTests.test_missing_header_returns_400 _________
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1833400Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1834220Z self = <tests.test_phase72_tenant_isolation.Phase72BillingRunsTenantTests testMethod=test_missing_header_returns_400>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1835435Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1835755Z     def test_missing_header_returns_400(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1836337Z         """
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1836899Z         No X-School-Id -> MissingSchoolContext (HTTP 400).
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1837693Z         Must use user_noschool (no school_id attribute) so tenant resolver
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1838547Z         does not auto-derive the school from the user profile (which would
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1839433Z         bypass the missing-header guard and return 200 for billing).
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1840123Z         """
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1840669Z         self.client.force_authenticate(user=self.user_noschool)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1841345Z         resp = self.client.get(self.URL)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1841973Z >       self.assertEqual(resp.status_code, 400)
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1842601Z E       AssertionError: 403 != 400
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1843008Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1843385Z tests/test_phase72_tenant_isolation.py:154: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1844385Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1845349Z [24/May/2026 20:57:43,201] WARNING django.request: Forbidden: /api/v1/billing/runs/
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1846415Z _____ Phase72BillingRunsTenantTests.test_wrong_school_nonstaff_returns_404 _____
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1847332Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1848158Z self = <tests.test_phase72_tenant_isolation.Phase72BillingRunsTenantTests testMethod=test_wrong_school_nonstaff_returns_404>
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1849162Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1849506Z     def test_wrong_school_nonstaff_returns_404(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1850114Z         """
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1850593Z         Non-staff user_a supplies school_b's ID.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1851423Z         get_request_school_id() ├óΓÇáΓÇÖ HTTP 404.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1852196Z         Canonical cross-tenant prevention confirmed for billing module.
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1852892Z         """
+pytest	UNKNOWN STEP	2026-05-25T01:01:45.1853421Z         self.client.force_authenticate(user=self.user_a)
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1675805Z         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_b.id))
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1676599Z >       self.assertEqual(resp.status_code, 404)
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1677073Z E       AssertionError: 403 != 404
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1677419Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1677713Z tests/test_phase72_tenant_isolation.py:170: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1678349Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1679054Z [24/May/2026 20:57:45,538] WARNING django.request: Forbidden: /api/v1/billing/runs/
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1679832Z ________ TestTenantIsolation.test_billing_runs_cross_tenant_returns_404 ________
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1680328Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1680703Z self = <tests.test_tenant_isolation.TestTenantIsolation object at 0x7f1fbe301ac0>
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1681209Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1681447Z     def test_billing_runs_cross_tenant_returns_404(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1681993Z         self.client.force_authenticate(user=self.user_a)
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1682705Z         response = self.client.get("/api/v1/billing/runs/", HTTP_X_SCHOOL_ID=str(self.school_b.id))
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1683373Z >       assert response.status_code == 404
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1683830Z E       assert 403 == 404
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1684899Z E        +  where 403 = <Response status_code=403, "application/json">.status_code
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1685368Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1685590Z tests/test_tenant_isolation.py:52: AssertionError
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1686181Z ----------------------------- Captured stderr call -----------------------------
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1686874Z [24/May/2026 20:59:59,616] WARNING django.request: Forbidden: /api/v1/billing/runs/
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1687661Z _ TestWizardCreateSession.test_all_wizards_create_session (wizard='reenrollment') _
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1688167Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1688653Z self = <tests.test_wizard_contract.TestWizardCreateSession testMethod=test_all_wizards_create_session>
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1689265Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1689466Z     def test_all_wizards_create_session(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1689940Z         for description, url in WIZARD_ENDPOINTS:
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1690425Z             with self.subTest(wizard=description):
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1690901Z >               self._assert_201(description, url)
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1691235Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1691446Z tests/test_wizard_contract.py:181: 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1691908Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1692440Z tests/test_wizard_contract.py:169: in _assert_201
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1692880Z     self.assertEqual(
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1693658Z E   AssertionError: 403 != 201 : reenrollment (/api/v1/reenrollment/sessions/): expected 201, got 403. Body: {'detail': 'Permission denied.'}
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1695021Z _ TestWizardTenantIsolation.test_all_wizards_isolate_tenants (wizard='reenrollment') _
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1695562Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1696134Z self = <tests.test_wizard_contract.TestWizardTenantIsolation testMethod=test_all_wizards_isolate_tenants>
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1696760Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1696965Z     def test_all_wizards_isolate_tenants(self):
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1697446Z         for description, url in WIZARD_ENDPOINTS:
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1698129Z             with self.subTest(wizard=description):
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1698625Z >               self._assert_tenant_isolation(description, url)
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1698973Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1699165Z tests/test_wizard_contract.py:221: 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1699610Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1700172Z tests/test_wizard_contract.py:206: in _assert_tenant_isolation
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1700905Z     self.assertEqual(r.status_code, 201, f"{description}: session creation failed {r.status_code}")
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1701672Z E   AssertionError: 403 != 201 : reenrollment: session creation failed 403
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1702278Z =============================== warnings summary ===============================
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1702879Z backend/crown_api/exports/tests/test_exports_jwt_auth.py: 1 warning
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1703536Z backend/onboarding/tests/test_parent_enrollment_guidance.py: 8 warnings
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1704340Z backend/onboarding/tests/test_views.py: 23 warnings
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1704853Z backend/reenrollment/tests/test_views.py: 37 warnings
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1705369Z backend/tests/test_ensure_ci_user_api.py: 2 warnings
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1706738Z   /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/jwt/api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 18 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1708058Z     return self._jws.encode(
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1708323Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1708611Z backend/crown_api/exports/tests/test_exports_jwt_auth.py: 1 warning
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1709286Z backend/onboarding/tests/test_parent_enrollment_guidance.py: 8 warnings
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1709879Z backend/onboarding/tests/test_views.py: 23 warnings
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1710401Z backend/reenrollment/tests/test_views.py: 37 warnings
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1711903Z   /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/jwt/api_jwt.py:365: InsecureKeyLengthWarning: The HMAC key is 18 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1713223Z     decoded = self.decode_complete(
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1713512Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1713896Z backend/facops/tests/test_facops.py::TestDrills::test_list
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1714748Z backend/facops/tests/test_facops.py::TestSecuritySummary::test_returns_counts
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1716337Z   /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1612: RuntimeWarning: DateTimeField Drill.planned_for received a naive datetime (2026-05-24 00:00:00) while time zone support is active.
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1717684Z     warnings.warn(
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1717909Z 
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1718263Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1718913Z =========================== short test summary info ============================
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1719791Z SKIPPED [1] analytics/tests/test_predictor_integrations.py:9: could not import 'pandas': No module named 'pandas'
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1721250Z SKIPPED [1] academics/tests/test_attendance_hardening_v2.py:41: No Section in DB ΓÇö run seed first
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1722222Z SKIPPED [1] academics/tests/test_attendance_hardening_v2.py:89: No Section in DB
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1723455Z SKIPPED [1] academics/tests/test_lane3_attendance_smoke.py:21: No academics.models.Section in DB ΓÇö run seed first
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1724548Z SKIPPED [1] academics/tests/test_lane3_attendance_smoke.py:56: No Section in DB
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1725693Z SKIPPED [1] billing/tests/test_lane2_billing_smoke.py:25: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1727217Z SKIPPED [1] billing/tests/test_lane2_payment_endpoints.py:13: DEMO school id not available (set settings.DEMO_SCHOOL_ID or env CROWN_DEMO_SCHOOL_ID)
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1728565Z SKIPPED [1] classroom/tests/test_classroom_api.py:12: No school in database
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1729335Z SKIPPED [1] classroom/tests/test_classroom_api.py:30: No school in database
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1730541Z SKIPPED [1] crown_api/tests/test_object_level_permissions.py:272: Plan creation returned 403 ΓÇö skipping shared access test.
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1731735Z FAILED billing/tests/test_billing_summary_api.py::test_billing_run_summary_gross_aid_net - assert 403 == 200
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1732668Z  +  where 403 = <Response status_code=403, "application/json">.status_code
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1734543Z FAILED crown_api/tests/test_rbac_matrix_writes.py::BillingInstallmentPlansRbacTests::test_non_staff_can_post_installment_plan - AssertionError: 403 unexpectedly found in (401, 403, 500) : Non-staff installment plan POST unexpectedly blocked: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1737314Z FAILED crown_api/tests/test_rbac_matrix_writes.py::BillingInstallmentPlansRbacTests::test_staff_can_post_installment_plan - AssertionError: 403 unexpectedly found in (401, 403, 500) : Staff installment plan POST failed unexpectedly: 403.
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1739358Z FAILED tests/test_golden_path.py::test_billing_run_creation_generates_invoice_for_enrolled_students - assert 403 == 201
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1740446Z  +  where 403 = <Response status_code=403, "application/json">.status_code
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1741662Z FAILED tests/test_phase72_tenant_isolation.py::Phase72BillingRunsTenantTests::test_correct_school_returns_200 - AssertionError: 403 != 200
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1743333Z FAILED tests/test_phase72_tenant_isolation.py::Phase72BillingRunsTenantTests::test_missing_header_returns_400 - AssertionError: 403 != 400
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1745142Z FAILED tests/test_phase72_tenant_isolation.py::Phase72BillingRunsTenantTests::test_wrong_school_nonstaff_returns_404 - AssertionError: 403 != 404
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1746702Z FAILED tests/test_tenant_isolation.py::TestTenantIsolation::test_billing_runs_cross_tenant_returns_404 - assert 403 == 404
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1747974Z  +  where 403 = <Response status_code=403, "application/json">.status_code
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1749867Z SUBFAILED(wizard='reenrollment') tests/test_wizard_contract.py::TestWizardCreateSession::test_all_wizards_create_session - AssertionError: 403 != 201 : reenrollment (/api/v1/reenrollment/sessions/): expected 201, got 403. Body: {'detail': 'Permission denied.'}
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1752468Z SUBFAILED(wizard='reenrollment') tests/test_wizard_contract.py::TestWizardTenantIsolation::test_all_wizards_isolate_tenants - AssertionError: 403 != 201 : reenrollment: session creation failed 403
+pytest	UNKNOWN STEP	2026-05-25T01:01:46.1754164Z 10 failed, 3049 passed, 10 skipped, 142 warnings, 86 subtests passed in 947.91s (0:15:47)
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.1633546Z ##[error]Process completed with exit code 1.
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.1729345Z Post job cleanup.
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.2491855Z [command]/usr/bin/git version
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.2527078Z git version 2.54.0
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.2567649Z Temporarily overriding HOME='/home/runner/work/_temp/b4a3d9c2-f7e5-4b09-8cb0-1a73b77c4ab8' before making global git config changes
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.2569113Z Adding repository directory to the temporary git global config as a safe directory
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.2572536Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Crown2026/Crown2026
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.2602622Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.2629680Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.3305043Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.3323494Z http.https://github.com/.extraheader
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.3326097Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.3328638Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.3409801Z Cleaning up orphan processes
+pytest	UNKNOWN STEP	2026-05-25T01:01:47.3768154Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11, actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

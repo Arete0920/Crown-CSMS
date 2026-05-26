@@ -271,6 +271,43 @@ class TestLessonPlanCreate:
 
         assert r.status_code == 403
 
+    def test_assigned_teacher_can_create_lesson_plan(self):
+        school = _mk_school()
+        teacher = _mk_user(school=school, email="teacher.assigned@school.com")
+        _assign_role(user=teacher, school=school, role_code="TEACHER")
+        section = _seed_section(school)
+        section.teacher = teacher
+        section.save(update_fields=["teacher"])
+
+        c = _client_auth(teacher, school)
+        r = c.post(f"/api/academics/sections/{section.id}/lesson-plans/", {
+            "plan_date": "2026-09-06",
+            "objectives": "Teacher-authored lesson plan",
+        }, format="json")
+
+        assert r.status_code == 201, r.data
+        assert r.data["objectives"] == "Teacher-authored lesson plan"
+
+    def test_unassigned_teacher_cannot_create_lesson_plan(self):
+        school = _mk_school()
+        assigned_teacher = _mk_user(school=school, email="teacher.assigned2@school.com")
+        _assign_role(user=assigned_teacher, school=school, role_code="TEACHER")
+
+        unassigned_teacher = _mk_user(school=school, email="teacher.unassigned@school.com")
+        _assign_role(user=unassigned_teacher, school=school, role_code="TEACHER")
+
+        section = _seed_section(school)
+        section.teacher = assigned_teacher
+        section.save(update_fields=["teacher"])
+
+        c = _client_auth(unassigned_teacher, school)
+        r = c.post(f"/api/academics/sections/{section.id}/lesson-plans/", {
+            "plan_date": "2026-09-07",
+            "objectives": "Unauthorized teacher write",
+        }, format="json")
+
+        assert r.status_code == 403
+
     def test_unauthenticated_returns_401_or_403(self):
         school = _mk_school()
         section = _seed_section(school)

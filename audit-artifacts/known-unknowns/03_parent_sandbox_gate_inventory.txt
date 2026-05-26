@@ -1,0 +1,28 @@
+﻿=== PARENT SANDBOX GATE INVENTORY ===
+tools\run_parent_sandbox_demo_gate.ps1:80:$jsonPath = Join-Path $artifactDir "PARENT_SANDBOX_GATE_RESULT_${stamp}.json"
+tools\run_parent_sandbox_demo_gate.ps1:81:$mdPath = Join-Path $artifactDir "PARENT_SANDBOX_GATE_RESULT_${stamp}.md"
+tools\run_parent_sandbox_demo_gate.ps1:221:  Write-Host "PARENT_SANDBOX_GATE=PASS" -ForegroundColor Green
+tools\run_parent_sandbox_demo_gate.ps1:225:Write-Host "PARENT_SANDBOX_GATE=FAIL" -ForegroundColor Red
+tools\dev_scripts\run_parent_release_closeout_check.ps1:17:$latestGate = Get-ChildItem -File $GateArtifactDir -Filter "PARENT_SANDBOX_GATE_RESULT_*.md" |
+audit-artifacts\brand-integration\00_repo_state.txt:58:?? tools/run_parent_sandbox_demo_gate.ps1
+audit-artifacts\parent-journey-hardening\23_stability_envelope_20260525.md:11:2. Parent sandbox gate
+audit-artifacts\parent-journey-hardening\23_stability_envelope_20260525.md:12:- Run A artifact: audit-artifacts/runtime-release-closure/20260418_070051/PARENT_SANDBOX_GATE_RESULT_20260525_133208.md (PASS)
+audit-artifacts\parent-journey-hardening\23_stability_envelope_20260525.md:13:- Run B artifact: audit-artifacts/runtime-release-closure/20260418_070051/PARENT_SANDBOX_GATE_RESULT_20260525_141334.md (PASS)
+audit-artifacts\parent-journey-hardening\22_release_closeout_snapshot.json:9:    "latest_gate_artifact":  "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_deploypr\\audit-artifacts\\runtime-release-closure\\20260418_070051\\PARENT_SANDBOX_GATE_RESULT_20260525_141334.md",
+audit-artifacts\parent-journey-hardening\19_release_artifact_index_20260525.md:25:- audit-artifacts/runtime-release-closure/20260418_070051/PARENT_SANDBOX_GATE_RESULT_20260525_133208.md
+audit-artifacts\parent-journey-hardening\19_release_artifact_index_20260525.md:26:- audit-artifacts/runtime-release-closure/20260418_070051/PARENT_SANDBOX_GATE_RESULT_20260525_141334.md
+audit-artifacts\parent-journey-hardening\18_gate_contract_annotation_20260525.md:4:File: tools/run_parent_sandbox_demo_gate.ps1
+audit-artifacts\parent-journey-hardening\18_execution_status_20260525_1416.md:16:  - git status --short => only ?? tools/run_parent_sandbox_demo_gate.ps1
+audit-artifacts\parent-journey-hardening\18_execution_status_20260525_1416.md:30:  - audit-artifacts/runtime-release-closure/20260418_070051/PARENT_SANDBOX_GATE_RESULT_20260525_141334.md
+audit-artifacts\parent-journey-hardening\17_scope_classification_20260525_1402.md:8:- release-critical: required to preserve parent sandbox gate and closure artifacts.
+audit-artifacts\parent-journey-hardening\17_scope_classification_20260525_1402.md:13:- tools/run_parent_sandbox_demo_gate.ps1
+audit-artifacts\parent-journey-hardening\16_scope_inventory_20260525_140122.txt:54:?? tools/run_parent_sandbox_demo_gate.ps1
+audit-artifacts\parent-journey-hardening\15_production_release_punch_list.md:48:- Action: rerun tools/run_parent_sandbox_demo_gate.ps1 after scope isolation and merge normalization.
+audit-artifacts\parent-journey-hardening\15_production_release_punch_list.md:49:- Evidence: latest PARENT_SANDBOX_GATE_RESULT_*.md shows Overall PASS.
+audit-artifacts\parent-journey-hardening\14_final_parent_journey_closure.md:12:1. Parent sandbox gate script hardening
+audit-artifacts\parent-journey-hardening\14_final_parent_journey_closure.md:13:- File: tools/run_parent_sandbox_demo_gate.ps1
+audit-artifacts\parent-journey-hardening\14_final_parent_journey_closure.md:18:- Artifact: audit-artifacts/runtime-release-closure/20260418_070051/PARENT_SANDBOX_GATE_RESULT_20260525_133208.md
+audit-artifacts\parent-journey-hardening\08_ten_stage_closure_decision.md:26:- Evidence artifact: audit-artifacts/runtime-release-closure/20260418_070051/PARENT_SANDBOX_GATE_RESULT_20260525_133208.md
+rg: audit-artifacts\known-unknowns\03_parent_sandbox_gate_inventory.txt: The process cannot access the file because it is being used by another process. (os error 32)
+audit-artifacts\known-unknowns\02_local_vs_github_gap_inventory.txt:73:?? tools/run_parent_sandbox_demo_gate.ps1
+audit-artifacts\known-unknowns\02_local_vs_github_gap_inventory.txt:122:tools/run_

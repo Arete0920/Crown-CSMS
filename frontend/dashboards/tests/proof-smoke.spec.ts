@@ -38,6 +38,15 @@ async function seedDemoSession(page: Page, role: string): Promise<void> {
         localStorage.setItem("crown.role", role);
         localStorage.setItem("crown.school.id", schoolId);
         localStorage.setItem("crown.demo.role", role);
+
+        const user = {
+          role,
+          roles: [role],
+          school_id: schoolId,
+        };
+        localStorage.setItem("crown_user", JSON.stringify(user));
+        localStorage.setItem("crown_current_user", JSON.stringify(user));
+        sessionStorage.setItem("crown_user", JSON.stringify(user));
       } catch {
         // storage blocked in some contexts — non-fatal
       }

@@ -30,6 +30,15 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
       localStorage.setItem("crown.school.id", schoolId);
       localStorage.setItem("crown.role", role);
       localStorage.setItem("crown.demo.role", role);
+
+      const user = {
+        role,
+        roles: [role],
+        school_id: schoolId,
+      };
+      localStorage.setItem("crown_user", JSON.stringify(user));
+      localStorage.setItem("crown_current_user", JSON.stringify(user));
+      sessionStorage.setItem("crown_user", JSON.stringify(user));
     },
     { token, schoolId: TEST_SCHOOL_ID, role: TEST_ROLE }
   );

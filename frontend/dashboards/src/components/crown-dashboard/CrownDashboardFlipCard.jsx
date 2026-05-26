@@ -2,6 +2,24 @@ import { Link, useInRouterContext } from 'react-router-dom';
 import { useState } from 'react';
 import CrownCard from '../launch/CrownCard.jsx';
 
+function getTruthLabel(dataState) {
+  const state = String(dataState || '').toLowerCase();
+  if (state === 'live') return 'Live';
+  if (state === 'fallback') return 'Fallback';
+  if (state === 'sample') return 'Sample';
+  if (state === 'loading') return 'Loading';
+  if (state === 'unavailable') return 'Unavailable';
+  if (state === 'none') return 'None';
+  return '';
+}
+
+function getTruthClass(dataState) {
+  const state = String(dataState || '').toLowerCase();
+  if (state === 'live') return 'is-good';
+  if (state === 'loading') return 'is-info';
+  return 'is-warn';
+}
+
 function ActionControl({ href, className, children, onClick, type = 'button' }) {
   const hasRouterContext = useInRouterContext();
 
@@ -22,6 +40,9 @@ function ActionControl({ href, className, children, onClick, type = 'button' }) 
 
 export default function CrownDashboardFlipCard({ module }) {
   const [flipped, setFlipped] = useState(false);
+  const truthLabel = getTruthLabel(module?.dataState);
+  const truthClass = getTruthClass(module?.dataState);
+  const truthTitle = module?.sourceLabel ? `${truthLabel} · ${module.sourceLabel}` : truthLabel;
 
   return (
     <CrownCard className={`launch-flip-card ${flipped ? 'is-flipped' : ''}`}>
@@ -29,9 +50,16 @@ export default function CrownDashboardFlipCard({ module }) {
         <div className="launch-flip-face launch-flip-face-front">
           <div className="launch-flip-head">
             <span className="launch-module-icon" aria-hidden="true">{module.icon || 'OP'}</span>
-            <span className={`launch-status-pill ${module.statusTone === 'warn' ? 'is-warn' : 'is-good'}`}>
-              {module.status}
-            </span>
+            <div className="launch-flip-pill-stack">
+              {truthLabel ? (
+                <span className={`launch-data-truth-pill ${truthClass}`} title={truthTitle}>
+                  {truthLabel}
+                </span>
+              ) : null}
+              <span className={`launch-status-pill ${module.statusTone === 'warn' ? 'is-warn' : 'is-good'}`}>
+                {module.status}
+              </span>
+            </div>
           </div>
           <div className="launch-section-kicker">{module.title}</div>
           <h3>{module.mainKpi}</h3>
