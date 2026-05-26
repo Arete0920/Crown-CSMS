@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from academics.models import Course, Enrollment, Section
@@ -132,6 +133,8 @@ def test_billing_run_creation_generates_invoice_for_enrolled_students():
     Enrollment.objects.create(school_id=school.id, section=section, student=student_two)
 
     user = _staff_user(school, username=f"billing-{uuid.uuid4()}")
+    finance_group, _ = Group.objects.get_or_create(name="finance_admin")
+    user.groups.add(finance_group)
     client = APIClient()
     client.force_authenticate(user=user)
     response = client.post(
