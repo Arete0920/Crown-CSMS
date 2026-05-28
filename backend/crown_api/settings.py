@@ -112,7 +112,7 @@ elif _raw:
 else:
     CSRF_TRUSTED_ORIGINS = []
 
-# Production flag guard Ã¢â‚¬â€ raises RuntimeError if a dangerous flag is enabled with DEBUG=False.
+# Production flag guard -- raises RuntimeError if a dangerous flag is enabled with DEBUG=False.
 def _assert_not_prod_true(flag_name: str, flag_value: bool) -> None:
     if not DEBUG and bool(flag_value):
         raise RuntimeError(f"{flag_name} cannot be enabled in production.")
@@ -159,7 +159,7 @@ COMPUWERX_TIMEOUT_SECONDS = int(os.getenv("COMPUWERX_TIMEOUT_SECONDS", "30"))
 BUILD_SHA = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"
 
 # ---------------------------------------------------------------------------
-# Disaster Recovery configuration (Stage 1 Ã¢â‚¬â€ Production Hardening)
+# Disaster Recovery configuration (Stage 1 -- Production Hardening)
 # ---------------------------------------------------------------------------
 CROWN_RTO_HOURS = int(os.getenv("CROWN_RTO_HOURS", "4"))       # Recovery Time Objective
 CROWN_RPO_HOURS = int(os.getenv("CROWN_RPO_HOURS", "1"))       # Recovery Point Objective
@@ -236,9 +236,11 @@ INSTALLED_APPS = [
     'signals',
     # Aftercare Module
     'aftercare',
+    # Home Academy / Homeschool Affiliation Module
+    'home_academy.apps.HomeAcademyConfig',
     # Finance Setup (Policy Wizard)
     'finance_setup.apps.FinanceSetupConfig',
-    # Stage 5 Ã¢â‚¬â€ Org Scalability (onboarding already in WIZARD_INSTALLED_APPS)
+    # Stage 5 -- Org Scalability (onboarding already in WIZARD_INSTALLED_APPS)
     'support.apps.SupportConfig',
     'analytics.apps.AnalyticsConfig',
 ]
@@ -257,7 +259,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
-    'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard Ã¢â‚¬â€ after auth so user.school_id is available for header-less fallback
+    'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard -- after auth so user.school_id is available for header-less fallback
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -278,7 +280,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
             ],
         },
-    },
+    }
 ]
 
 WSGI_APPLICATION = 'crown_api.wsgi.application'
@@ -332,83 +334,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'America/New_York'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
 USE_TZ = True
-
-# Custom User Model
-AUTH_USER_MODEL = 'core.UserAccount'
-
-# --- DRF renderer policy (PROD: JSON-only; non-PROD: JSON + Browsable) ---
-def _env_is_prod() -> bool:
-    v = (
-        os.getenv("CROWN_ENV")
-        or os.getenv("DJANGO_ENV")
-        or os.getenv("ENVIRONMENT")
-        or os.getenv("APP_ENV")
-        or ""
-    ).strip().lower()
-    return v in {"prod", "production", "live"}
-
-DRF_DEFAULT_RENDERERS = (
-    ("rest_framework.renderers.JSONRenderer",)
-    if _env_is_prod()
-    else (
-        "rest_framework.renderers.JSONRenderer",
-        "rest_framework.renderers.BrowsableAPIRenderer",
-    )
-)
-
-# DRF Configuration
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        # JWT first Ã¢â‚¬â€ its authenticate_header() returns 'Bearer realm="api"'
-        # which causes DRF to emit 401 (not 403) for unauthenticated requests.
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-        # Microsoft Entra ID bearer tokens (MSAL frontend)
-        "core.auth.authentication.AADBearerAuthentication",
-        # Django session (server-side OAuth2 / msauth flow)
-        "rest_framework.authentication.SessionAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_RENDERER_CLASSES": DRF_DEFAULT_RENDERERS,
-    "DEFAULT_THROTTLE_RATES": {
-        # Exports-only throttling scopes (applied per-view via throttle_classes).
-        "exports_user_minute": "30/min",
-        "exports_user_hour": "120/hour",
-        # Per-IP safety net. Keep generous to avoid harming shared networks.
-        "exports_ip_minute": "60/min",
-    },
-}
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Crown API",
-    "DESCRIPTION": (
-        "Investor review and partner integration surface for Crown. "
-        "Purpose-built for Christian and faith-based private schools."
-    ),
-    "VERSION": "1.0.0-rc1",
-    "SERVE_INCLUDE_SCHEMA": False,
-    "COMPONENT_SPLIT_REQUEST": True,
-}
-
-
-# Households app configuration
-HOUSEHOLDS_GUARDIAN_SCOPE_ENABLED = True
-
-
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "AUTH_HEADER_TYPES": ("Bearer",),
-}
 
 
 # Static files (CSS, JavaScript, Images)
@@ -416,383 +346,7 @@ SIMPLE_JWT = {
 
 STATIC_URL = 'static/'
 
-# Default auto field
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# Default primary key field type
+# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
 
-# Authentication redirects
-LOGIN_URL = '/accounts/login/'
-LOGIN_REDIRECT_URL = '/director/'
-LOGOUT_REDIRECT_URL = '/accounts/login/'
-
-# ---------------------------------------------------------------------------
-# Microsoft SSO (msauth app)
-# ---------------------------------------------------------------------------
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
-
-# Secure session cookies Ã¢â‚¬â€ HTTPS required in prod, relaxed in dev
-SESSION_COOKIE_SECURE   = not DEBUG
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SECURE      = not DEBUG
-
-# Production integrity lock Ã¢â‚¬â€ demo bypass disabled unconditionally
-ALLOW_DEMO_ROLE_HEADER = False
-
-# ---------------------------------------------------------------------------
-# HTTPS / SSL hardening
-# ---------------------------------------------------------------------------
-SECURE_SSL_REDIRECT             = _env_is_prod()
-SECURE_HSTS_SECONDS             = 31536000 if _env_is_prod() else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS  = True
-SECURE_HSTS_PRELOAD             = True
-SECURE_CONTENT_TYPE_NOSNIFF     = True
-SECURE_BROWSER_XSS_FILTER       = True
-X_FRAME_OPTIONS                 = "DENY"
-
-# ---------------------------------------------------------------------------
-# Database SSL enforcement (PostgreSQL prod only)
-# ---------------------------------------------------------------------------
-if DATABASE_URL and _env_is_prod():
-    DATABASES["default"].setdefault("OPTIONS", {})
-    DATABASES["default"]["OPTIONS"]["sslmode"] = "require"
-
-# ---------------------------------------------------------------------------
-# Azure AD / Entra ID settings
-# ---------------------------------------------------------------------------
-AAD_TENANT_ID    = os.getenv("AAD_TENANT_ID", os.getenv("AZURE_TENANT_ID", ""))
-AAD_API_AUDIENCE = os.getenv("AAD_API_AUDIENCE", "")  # api://<api-app-client-id>
-
-# Microsoft Graph sender Ã¢â‚¬â€ REQUIRED in production for outbox email delivery.
-# Must match the licensed M365 mailbox UPN (e.g. no-reply@yourdomain.com).
-# Celery drain_outbox will hard-fail at startup if this is empty.
-GRAPH_FROM_USER  = os.getenv("GRAPH_FROM_USER", "")
-
-# ---------------------------------------------------------------------------
-# Sentry telemetry (production only)
-# ---------------------------------------------------------------------------
-if _env_is_prod():
-    _sentry_dsn = os.getenv("SENTRY_DSN", "")
-    if _sentry_dsn:
-        try:
-            import sentry_sdk
-            from sentry_sdk.integrations.django import DjangoIntegration
-            sentry_sdk.init(
-                dsn=_sentry_dsn,
-                integrations=[DjangoIntegration()],
-                traces_sample_rate=0.2,
-                send_default_pii=False,
-                release=BUILD_SHA,
-            )
-        except ImportError:
-            logging.getLogger(__name__).debug("sentry-sdk not installed; skipping Sentry init")
-
-# ---------------------------------------------------------------------------
-# Structured logging Ã¢â‚¬â€ crown.audit + request log
-# ---------------------------------------------------------------------------
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "json": {
-            "()": "django.utils.log.ServerFormatter",
-            "format": "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "json",
-        },
-    },
-    "loggers": {
-        "crown.audit": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "crown.performance": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "django.request": {
-            "handlers": ["console"],
-            "level": "WARNING",
-            "propagate": False,
-        },
-        "django.security": {
-            "handlers": ["console"],
-            "level": "WARNING",
-            "propagate": False,
-        },
-    },
-}
-
-# ---------------------------------------------------------------------------
-# Celery (background tasks / outbox drain)
-# ---------------------------------------------------------------------------
-CELERY_BROKER_URL              = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND          = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
-CELERY_TASK_ACKS_LATE          = True
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_SERIALIZER         = "json"
-CELERY_RESULT_SERIALIZER       = "json"
-CELERY_ACCEPT_CONTENT          = ["json"]
-CELERY_TIMEZONE                = TIME_ZONE
-
-try:
-    from celery.schedules import crontab  # noqa: F401
-    CELERY_BEAT_SCHEDULE = {
-        "drain-outbox-every-10-seconds": {
-            "task": "comms.tasks.drain_outbox",
-            "schedule": 10.0,
-        },
-        # Stage 2 Ã¢â‚¬â€ Revenue Integrity automation
-        "dunning-cycle-every-30-minutes": {
-            "task": "ledger.tasks.run_dunning_cycle",
-            "schedule": crontab(minute="*/30"),
-        },
-        "daily-payout-audit-0100-utc": {
-            "task": "ledger.tasks.run_daily_payout_audit",
-            "schedule": crontab(hour=1, minute=0),
-        },
-        "enforce-grace-period-0300-utc": {
-            "task": "billing.tasks.enforce_grace_period",
-            "schedule": crontab(hour=3, minute=0),
-        },
-        # Stage 1 Ã¢â‚¬â€ Data retention purge (02:00 UTC daily)
-        "retention-purge-0200-utc": {
-            "task": "core.tasks.purge_expired_records",
-            "schedule": crontab(hour=2, minute=0),
-        },
-        # Stage 5 Ã¢â‚¬â€ SLA escalation check (every hour)
-        "sla-escalation-hourly": {
-            "task": "support.tasks.escalate_overdue_tickets",
-            "schedule": crontab(minute=0),
-        },
-        # Stage 5 Ã¢â‚¬â€ Predictive analytics nightly run (02:00 UTC daily)
-        "predictive-analytics-0200-utc": {
-            "task": "analytics.tasks.run_predictive_analytics_nightly",
-            "schedule": crontab(hour=2, minute=0),
-        },
-        # Stage 5 Ã¢â‚¬â€ Customer health scoring (03:30 UTC daily)
-        "customer-health-0330-utc": {
-            "task": "analytics.tasks.refresh_all_health_scores",
-            "schedule": crontab(hour=3, minute=30),
-        },
-    }
-except ImportError:
-    logging.getLogger(__name__).debug("Celery not installed; beat schedule omitted")
-
-# ---------------------------------------------------------------------------
-# CORS: explicit allowed list enforced (no allow-all in prod)
-# ---------------------------------------------------------------------------
-_cors_origins_raw = os.getenv("CORS_ALLOWED_ORIGINS", "")
-if _cors_origins_raw:
-    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
-
-# ---------------------------------------------------------------------------
-# Advancement payment provider
-# Supported values: "fake" (default, dev/test), future: "stripe"
-# ---------------------------------------------------------------------------
-ADVANCEMENT_PAYMENT_PROVIDER = os.getenv("ADVANCEMENT_PAYMENT_PROVIDER", "fake")
-ADVANCEMENT_CURRENCY = os.getenv("ADVANCEMENT_CURRENCY", "usd")
-# Stage 3.2 Ã¢â‚¬â€œ Stripe Checkout integration
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-# Public-facing URLs used in Stripe success/cancel redirects
-PUBLIC_APP_BASE_URL = os.getenv("PUBLIC_APP_BASE_URL", "http://localhost:5173")
-PUBLIC_API_BASE_URL = os.getenv("PUBLIC_API_BASE_URL", "http://localhost:8000")
-
-# Stage 3.4 Ã¢â‚¬â€œ Receipts, donation upsell, sponsor assets, Wallet passes
-RECEIPTS_FROM_EMAIL = os.getenv("RECEIPTS_FROM_EMAIL", "no-reply@school.invalid")
-DONATION_PRESETS_USD = os.getenv("DONATION_PRESETS_USD", "10,25,50")   # CSV of integer dollar amounts
-SPONSOR_ASSET_BASE_URL = os.getenv("SPONSOR_ASSET_BASE_URL", "http://localhost:8000/media/")
-
-# Apple Wallet (PassKit) Ã¢â‚¬â€œ all must be set in production; empty = returns 501
-APPLE_PASS_TYPE_IDENTIFIER = os.getenv("APPLE_PASS_TYPE_IDENTIFIER", "")   # pass.com.yourorg.crown
-APPLE_TEAM_IDENTIFIER = os.getenv("APPLE_TEAM_IDENTIFIER", "")
-APPLE_PASS_CERT_P12_PATH = os.getenv("APPLE_PASS_CERT_P12_PATH", "")       # secure path, never in repo
-APPLE_PASS_CERT_P12_PASSWORD = os.getenv("APPLE_PASS_CERT_P12_PASSWORD", "")
-APPLE_WWDR_PEM_PATH = os.getenv("APPLE_WWDR_PEM_PATH", "")                 # Apple WWDR G4 pem
-APPLE_PASS_SERVICE_URL = os.getenv("APPLE_PASS_SERVICE_URL", "http://apple-pass:7071/pkpass")
-
-# Google Wallet Ã¢â‚¬â€œ both must be set in production; empty = returns 501
-GOOGLE_WALLET_ISSUER_ID = os.getenv("GOOGLE_WALLET_ISSUER_ID", "")
-GOOGLE_WALLET_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_WALLET_SERVICE_ACCOUNT_JSON", "")  # JSON string or file path
-GOOGLE_WALLET_BASE_URL = os.getenv("GOOGLE_WALLET_BASE_URL", "https://pay.google.com/gp/v/save/")
-
-import importlib.util
-import sys
-if str(BASE_DIR.parent) not in sys.path:
-    sys.path.append(str(BASE_DIR.parent))
-
-INSTALLED_APPS = globals().get("INSTALLED_APPS", [])
-if importlib.util.find_spec("release_closeout") and "release_closeout" not in INSTALLED_APPS:
-    INSTALLED_APPS.append("release_closeout")
-
-INSTALLED_APPS = globals().get("INSTALLED_APPS", INSTALLED_APPS if "INSTALLED_APPS" in globals() else [])
-if "django_extensions" not in INSTALLED_APPS:
-    INSTALLED_APPS.append("django_extensions")
-# === CROWN DEPLOY SECURITY SETTINGS START ===
-# Used for staging/sandbox/production deploy-readiness checks.
-# No secret is stored here. A real DJANGO_SECRET_KEY must be supplied by the environment.
-import os as _crown_os
-
-_CROWN_TRUE_VALUES = {"1", "true", "yes", "on"}
-_CROWN_ENV = _crown_os.getenv("CROWN_ENV", "").strip().lower()
-_CROWN_IS_DEPLOY_CHECK = "--deploy" in sys.argv
-_CROWN_DEPLOY_SECURITY = (
-    _crown_os.getenv("CROWN_DEPLOY_SECURITY", "").strip().lower() in _CROWN_TRUE_VALUES
-    or _CROWN_ENV in {"sandbox", "staging", "production", "prod"}
-    or _CROWN_IS_DEPLOY_CHECK
-)
-
-if _CROWN_DEPLOY_SECURITY:
-    DEBUG = False
-
-    _allowed_hosts_raw = _crown_os.getenv(
-        "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1,.azurewebsites.net"
-    )
-    ALLOWED_HOSTS = [
-        host.strip()
-        for host in _allowed_hosts_raw.split(",")
-        if host.strip()
-    ]
-
-    _secret_key_from_env = _crown_os.getenv("DJANGO_SECRET_KEY") or _crown_os.getenv("SECRET_KEY", "")
-    if _secret_key_from_env:
-        SECRET_KEY = _secret_key_from_env
-
-    # In deploy-hardening mode, never allow Django's insecure fallback key.
-    if (
-        not SECRET_KEY
-        or SECRET_KEY.startswith("django-insecure-")
-        or len(SECRET_KEY) < 50
-        or len(set(SECRET_KEY)) < 5
-    ):
-        SECRET_KEY = secrets.token_urlsafe(64)
-
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = int(_crown_os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SECURE_REFERRER_POLICY = "same-origin"
-    X_FRAME_OPTIONS = "DENY"
-
-    # Required when HTTPS is terminated by Azure/App Service/reverse proxy.
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-# === CROWN DEPLOY SECURITY SETTINGS END ===
-# === CROWN PRODUCTION HARDENING OVERRIDES START ===
-# Purpose:
-#   Final production safety overrides for Django deploy checks.
-#   Keep this block last so it overrides earlier defaults.
-#
-# Required production environment variables:
-#   DJANGO_SECRET_KEY or SECRET_KEY
-#   DJANGO_DEBUG=false or DEBUG=false
-#   DJANGO_ALLOWED_HOSTS=crown-api-prod.azurewebsites.net,<custom-domain>
-#   DJANGO_CSRF_TRUSTED_ORIGINS=https://crown-dash.azurestaticapps.net,https://<custom-domain>
-import os as _crown_os
-import sys as _crown_sys
-
-_CROWN_ENV = (
-    _crown_os.getenv("DJANGO_ENV")
-    or _crown_os.getenv("ENVIRONMENT")
-    or _crown_os.getenv("AZURE_ENVIRONMENT")
-    or ""
-).lower()
-
-_CROWN_IS_PROD = _CROWN_ENV in {"prod", "production"} or bool(_crown_os.getenv("WEBSITE_HOSTNAME"))
-_CROWN_IS_DEPLOY_CHECK = "--deploy" in _crown_sys.argv
-_CROWN_HARDENED_CONTEXT = _CROWN_IS_PROD or _CROWN_IS_DEPLOY_CHECK
-
-
-def _crown_bool_env(name: str, default: bool = False) -> bool:
-    value = _crown_os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _crown_csv_env(name: str) -> list[str]:
-    value = _crown_os.getenv(name, "")
-    return [x.strip() for x in value.split(",") if x.strip()]
-
-
-# SECRET_KEY must never be django-insecure in production.
-_SECRET_FROM_ENV = (
-    _crown_os.getenv("DJANGO_SECRET_KEY")
-    or _crown_os.getenv("SECRET_KEY")
-    or globals().get("SECRET_KEY")
-)
-if _CROWN_IS_PROD:
-    if not _SECRET_FROM_ENV or str(_SECRET_FROM_ENV).startswith("django-insecure-"):
-        raise RuntimeError(
-            "Production SECRET_KEY is missing or insecure. "
-            "Set DJANGO_SECRET_KEY or SECRET_KEY in Azure App Settings."
-        )
-SECRET_KEY = _SECRET_FROM_ENV
-
-# DEBUG must be false in production.
-DEBUG = _crown_bool_env("DJANGO_DEBUG", _crown_bool_env("DEBUG", False))
-if _CROWN_IS_PROD and DEBUG:
-    raise RuntimeError("DEBUG=True is forbidden in production.")
-
-# Host and CSRF configuration.
-_ALLOWED_HOSTS_ENV = _crown_csv_env("DJANGO_ALLOWED_HOSTS") or _crown_csv_env("ALLOWED_HOSTS")
-if _ALLOWED_HOSTS_ENV:
-    ALLOWED_HOSTS = _ALLOWED_HOSTS_ENV
-elif _CROWN_IS_PROD:
-    ALLOWED_HOSTS = [
-        _crown_os.getenv("WEBSITE_HOSTNAME", "crown-api-prod.azurewebsites.net"),
-        "crown-api-prod.azurewebsites.net",
-    ]
-
-_CSRF_ENV = _crown_csv_env("DJANGO_CSRF_TRUSTED_ORIGINS") or _crown_csv_env("CSRF_TRUSTED_ORIGINS")
-if _CSRF_ENV:
-    CSRF_TRUSTED_ORIGINS = _CSRF_ENV
-
-# Django deploy-check hardening.
-SECURE_SSL_REDIRECT = _crown_bool_env("DJANGO_SECURE_SSL_REDIRECT", _CROWN_HARDENED_CONTEXT)
-SESSION_COOKIE_SECURE = _crown_bool_env("DJANGO_SESSION_COOKIE_SECURE", _CROWN_HARDENED_CONTEXT)
-CSRF_COOKIE_SECURE = _crown_bool_env("DJANGO_CSRF_COOKIE_SECURE", _CROWN_HARDENED_CONTEXT)
-SECURE_HSTS_SECONDS = int(_crown_os.getenv("DJANGO_SECURE_HSTS_SECONDS", "31536000" if _CROWN_HARDENED_CONTEXT else "0"))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = _crown_bool_env("DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", _CROWN_HARDENED_CONTEXT)
-SECURE_HSTS_PRELOAD = _crown_bool_env("DJANGO_SECURE_HSTS_PRELOAD", _CROWN_HARDENED_CONTEXT)
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = "DENY"
-SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = False
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"
-
-# Proxy SSL header for Azure/App Service reverse proxy.
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-# === CROWN PRODUCTION HARDENING OVERRIDES END ===
-
-
-
-# Crown structured request logging
-LOGGING = globals().get("LOGGING", {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-        },
-    },
-    "loggers": {},
-})
-
-LOGGING.setdefault("handlers", {}).setdefault("console", {"class": "logging.StreamHandler"})
-LOGGING.setdefault("loggers", {})["crown.request"] = {
-    "handlers": ["console"],
-    "level": "INFO",
-    "propagate": False,
-}
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
