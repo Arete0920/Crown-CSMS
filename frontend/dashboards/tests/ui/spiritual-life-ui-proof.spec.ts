@@ -55,16 +55,22 @@ test.describe("Spiritual Life UI proof", () => {
     });
   }
 
-  test("spiritual life dashboard renders the expected command center", async ({ page }) => {
+  test("spiritual life dashboard renders the biblical formation command center", async ({ page }) => {
     await seedDemoSession(page, "spiritual_life");
     await page.goto(BASE + "/spiritual-life", { waitUntil: "networkidle" });
 
     await expect(page.locator("main")).toBeVisible();
     await expect(page.locator("body")).toContainText(/Good morning, Chaplain!/i);
+    await expect(page.locator("body")).toContainText(/Spiritual Life & Biblical Formation Command Center/i);
     await expect(page.locator("body")).toContainText(/Chapel Attendance/i);
-    await expect(page.locator("body")).toContainText(/Service Hours/i);
-    await expect(page.locator("body")).toContainText(/Pastoral priorities/i);
+    await expect(page.locator("body")).toContainText(/Daily Devotion Publishing/i);
+    await expect(page.locator("body")).toContainText(/Spiritual Counseling & Care/i);
+    await expect(page.locator("body")).toContainText(/Biblical Worldview Priorities/i);
+    await expect(page.locator("body")).toContainText(/Portrait of the Graduate Alignment/i);
+    await expect(page.locator("body")).toContainText(/Church & Pastor Relations/i);
+    await expect(page.locator("body")).toContainText(/Christian Education Sundays/i);
+    await expect(page.locator("body")).toContainText(/Christian College & Calling Pathways/i);
+    await expect(page.locator("body")).toContainText(/Formation Evidence & Reports/i);
     await expect(page.locator("a[href='/spiritual-life']").first()).toBeVisible();
-    await expect(page.locator("a[href='/service-hours']").first()).toBeVisible();
   });
 });
