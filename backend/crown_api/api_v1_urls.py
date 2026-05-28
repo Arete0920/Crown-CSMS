@@ -76,6 +76,9 @@ urlpatterns = [
     # Aftercare / Daycare / Extended Care
     path("aftercare/", include("aftercare.urls")),
 
+    # Home Academy / Homeschool Affiliation
+    path("home-academy/", include("home_academy.urls")),
+
     # M365 readiness/status routes (governance.urls at m365/ prefix)
     path("m365/", include("governance.urls")),
 
