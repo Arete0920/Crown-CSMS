@@ -1,0 +1,39 @@
+{
+  "track": "camp",
+  "pack": "cedar_ridge_summer_camp",
+  "display_name": "Cedar Ridge Summer Camp Demo",
+  "status": "implementation_baseline",
+  "description": "Deterministic camp and summer program sandbox scenario for session registration, rosters, attendance, payments, family communication, and staff workflow using fictional demo records only.",
+  "organization": {
+    "name": "Cedar Ridge Summer Camp",
+    "archetype": "Seasonal Camp / Summer Program",
+    "participants": 260,
+    "demo_domain": "cedar-camp.example.org"
+  },
+  "default_mode": "self-guided-after-intro",
+  "personas": [
+    { "key": "school_admin", "label": "Program Director", "email": "admin@heritage.example.org", "route": "/school-admin-dashboard" },
+    { "key": "admissions_director", "label": "Registration Director", "email": "admin@heritage.example.org", "route": "/admissions-dashboard" },
+    { "key": "finance_director", "label": "Finance Director", "email": "admin@heritage.example.org", "route": "/finance" },
+    { "key": "teacher", "label": "Camp Staff", "email": "teacher.lower@heritage.example.org", "route": "/teacher" },
+    { "key": "parent", "label": "Parent / Guardian", "email": "parent.reed@heritage.example.org", "route": "/parent" },
+    { "key": "student", "label": "Camper", "email": "student.avery.reed11@heritage.example.org", "route": "/student" }
+  ],
+  "guided_story": [
+    "Program Director reviews session capacity and roster health.",
+    "Registration Director reviews registration statuses.",
+    "Staff reviews attendance or group roster workflow.",
+    "Parent reviews schedule, message, and payment context.",
+    "Finance Director reviews camp fees and open balances."
+  ],
+  "expected_metrics": {
+    "participants": 260,
+    "families": 190,
+    "sessions": 12,
+    "active_registrations": 248,
+    "waitlist_count": 16,
+    "open_family_balances": 28
+  },
+  "reset_required": true,
+  "demo_data_only": true
+}
