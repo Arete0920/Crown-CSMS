@@ -35,6 +35,7 @@ These files are remaining low-ambiguity operational/policy artifacts that may me
 - docs/admissions/ADMISSIONS_DELIVERY_PROCESS_PLAYBOOK_20260522.md (Authority Scope Notice added)
 - docs/completion/02-MODULE-ACCEPTANCE-MATRIX.md (Authority Scope Notice added)
 - docs/plan/RELEASE_SIGNOFF_CHECKLIST_RC.md (Authority Scope Notice added)
+- docs/release/MODULE_INVENTORY.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
