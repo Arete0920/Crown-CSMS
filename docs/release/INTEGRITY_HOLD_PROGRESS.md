@@ -95,19 +95,19 @@ Gate 6 will PASS only when the founder/product-owner:
 
 ---
 
-## Current Closeout Proof Gate Status (point-in-time and subject to latest run evidence)
+## Current Closeout Proof Gate Status (historical capture point-in-time)
 
 - PASS: 17
 - FAIL: 6
-- Decision: NO-GO
+- Decision at capture: NO-GO
 
 Related failing gates tracked by this document (not direct gate inputs):
 - Gate 5: INTEGRITY HOLD active
 - Gate 6: FOUNDER_ACCEPTANCE.md not signed (template pending PR #830)
 
-Other failing gates (independent of hold):
-- Working tree has uncommitted changes (clears after PR #829 merges and worktree resets)
-- Main sync drift (clears after fetch+reset post-merge)
-- Open PR backlog (clears after #828, #829, #830 all merge)
+Other failing gates at capture time (historical snapshot):
+- Working tree had uncommitted changes (cleared in later cleanup)
+- Main sync drift (cleared in later cleanup)
+- Open PR backlog (tracked separately)
 - Production build_sha mismatch (requires authorized production deploy)
 
