@@ -50,6 +50,7 @@ Protected-spine runtime/policy gate status: BLOCKED.
 
 - Latest protected-spine attempt stalls in auth/security baseline immediately after Django early diagnostics.
 - First-blocker triage artifact: `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`.
+- Deterministic first timed-out test from bisect: `backend/core/tests/test_permission_engine.py`.
 - Captured stalled stdout: `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_MANUAL_20260529_042753.txt`.
 - No fresh protected-spine packet has been produced for this run, so P0-3 remains OPEN.
 
