@@ -15,12 +15,11 @@ Purpose: explicit residual queue after superseded/scope-notice hardening.
 
 ## Current Residual Set (Review Required)
 
-Workspace residual queue status: one pending normalization item remains in a currently dirty local file.
+Workspace residual queue status: no remaining active-doc authority-labeling gaps identified in the current workspace scan.
 
 Notes:
 - Legacy path variant `docs/crown-master-binder/operations/06_Communication_Rules.md` is not present in this workspace snapshot.
-- Remaining operational/policy artifacts in scope now carry Authority Scope Notice labels, except for one in-progress local edit noted below.
-- Pending local normalization item: `docs/release/PRODUCTION_RELEASE_NO_GO_EXCLUSIONS_20260528.md` (already dirty in working tree).
+- Remaining operational/policy artifacts in scope now carry Authority Scope Notice labels.
 
 ## Completed In This Pass
 
@@ -57,6 +56,7 @@ Notes:
 - docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md (Authority Scope Notice added)
 - docs/release/SECURITY_GATES_EVIDENCE.md (Authority Scope Notice added)
 - docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md (Authority Scope Notice added)
+- docs/release/PRODUCTION_RELEASE_NO_GO_EXCLUSIONS_20260528.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
