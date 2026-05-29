@@ -1,5 +1,13 @@
 # Investor Demo Runbook
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational runbook for demo readiness and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Non-negotiable rule
 
 Do not begin the investor demo unless the preflight has been run successfully on the exact build being shown.
