@@ -83,6 +83,9 @@ These files are historical and not controlling current repository-level release 
 
 ## Closure Required Before Unrestricted Repository-Wide GO
 
+Execution board for these closure items:
+- `docs/release/P0_EXECUTION_BOARD_20260528.md`
+
 1. Publish explicit deploy target SHA parity evidence for the current head or approved release commit.
    Current parity packet: `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md`.
    Runner (live mode): `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthUrl <health-url> -IntegrityUrl <integrity-url> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`.
