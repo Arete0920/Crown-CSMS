@@ -23,14 +23,17 @@ Purpose: deterministic first-blocker evidence for P0-3 protected-spine rerun.
   - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_SUBBATCH_TARGETS_auth_security_baseline_20260529_042439.txt`
 - Runtime triage copy in artifact folder:
   - `audit-artifacts/runtime-release-closure/20260418_070051/PROTECTED_SPINE_HANG_TRIAGE_20260529_042753.md`
+- Single-test bisect summary:
+  - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_BISECT_20260529_043903.md`
 
 ## First Blocker
 
 - Blocker class: runtime hang/stall in auth/security baseline lane.
+- First timed-out test from deterministic bisect: `backend/core/tests/test_permission_engine.py` (240s timeout).
 - Gate impact: P0-3 remains OPEN and blocked until hang isolation plus fresh packet proof.
 
 ## Required Follow-up
 
-1. Bisect auth/security target list into bounded sub-batches.
-2. Capture first hanging test identifier with timeout evidence.
+1. Isolate root cause inside `backend/core/tests/test_permission_engine.py` with bounded fixtures/dependency checks.
+2. Re-run auth/security baseline after fix and confirm completion beyond first test.
 3. Re-run full protected-spine wrapper and publish fresh packet artifacts.

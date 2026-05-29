@@ -119,7 +119,9 @@ If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and
   - `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`
   - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_MANUAL_20260529_042753.txt`
   - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_SUBBATCH_TARGETS_auth_security_baseline_20260529_042439.txt`
+  - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_BISECT_20260529_043903.md`
 - Evaluation result:
   - protected-spine auth/security baseline stalls immediately after Django early diagnostics.
+  - deterministic first timed-out test: `backend/core/tests/test_permission_engine.py` (240s timeout).
   - no new protected-spine packet produced for current run stamp.
   - P0-3 remains OPEN and is currently blocked by runtime hang isolation.
