@@ -37,6 +37,7 @@ These files are remaining low-ambiguity operational/policy artifacts that may me
 - docs/plan/RELEASE_SIGNOFF_CHECKLIST_RC.md (Authority Scope Notice added)
 - docs/release/MODULE_INVENTORY.md (Authority Scope Notice added)
 - docs/release/CROWN_FINANCE_TUITION_SUPERIORITY_EXECUTION_PROGRAM_20260528.md (Authority Scope Notice added)
+- docs/release/INVESTOR_DEMO_RUNBOOK.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
