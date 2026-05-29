@@ -25,6 +25,7 @@ Branch: phase/7.2-tenant-isolation-audit
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from core.models import School
@@ -64,6 +65,20 @@ class _TenantBase(TestCase):
             password="p72pass",
             school_id=self.school_b.id,
         )
+        self.finance_user_a = User.objects.create_user(
+            username="p72_finance_a",
+            email="p72_finance_a@example.com",
+            password="p72pass",
+            school_id=self.school_a.id,
+        )
+        self.finance_user_noschool = User.objects.create_user(
+            username="p72_finance_noschool",
+            email="p72_finance_noschool@example.com",
+            password="p72pass",
+        )
+        finance_group, _ = Group.objects.get_or_create(name="finance_admin")
+        self.finance_user_a.groups.add(finance_group)
+        self.finance_user_noschool.groups.add(finance_group)
         # User with NO school affiliation - used for missing-header tests.
         # tenant resolver finds no header and no user.school_id -> None -> 400.
         self.user_noschool = User.objects.create_user(
@@ -144,28 +159,33 @@ class Phase72BillingRunsTenantTests(_TenantBase):
 
     def test_missing_header_returns_400(self):
         """
-        No X-School-Id -> MissingSchoolContext (HTTP 400).
-        Must use user_noschool (no school_id attribute) so tenant resolver
-        does not auto-derive the school from the user profile (which would
-        bypass the missing-header guard and return 200 for billing).
+        Finance-role user without school + no X-School-Id -> MissingSchoolContext (HTTP 400).
+        Role gate must pass first, then tenant resolver enforces missing-school guard.
         """
-        self.client.force_authenticate(user=self.user_noschool)
+        self.client.force_authenticate(user=self.finance_user_noschool)
         resp = self.client.get(self.URL)
         self.assertEqual(resp.status_code, 400)
 
     def test_correct_school_returns_200(self):
-        """Correct school header -> HTTP 200 (empty list acceptable)."""
-        self.client.force_authenticate(user=self.user_a)
+        """Finance-role user with correct school header -> HTTP 200."""
+        self.client.force_authenticate(user=self.finance_user_a)
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_a.id))
         self.assertEqual(resp.status_code, 200)
 
-    def test_wrong_school_nonstaff_returns_404(self):
+    def test_wrong_school_nonstaff_returns_403(self):
         """
-        Non-staff user_a supplies school_b's ID.
-        get_request_school_id() â†’ HTTP 404.
-        Canonical cross-tenant prevention confirmed for billing module.
+        Non-privileged users are rejected by billing role gate before tenant scoping.
+        Expected result: HTTP 403.
         """
         self.client.force_authenticate(user=self.user_a)
+        resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_b.id))
+        self.assertEqual(resp.status_code, 403)
+
+    def test_wrong_school_finance_user_returns_404(self):
+        """
+        Finance-role user passes role gate; tenant resolver then enforces cross-tenant 404.
+        """
+        self.client.force_authenticate(user=self.finance_user_a)
         resp = self.client.get(self.URL, HTTP_X_SCHOOL_ID=str(self.school_b.id))
         self.assertEqual(resp.status_code, 404)
 

@@ -61,10 +61,6 @@ def create_session(request):
     from core.models import School
     school = get_object_or_404(School, id=school_id)
 
-    denied = require_reenrollment_access(request, school)
-    if denied is not None:
-        return denied
-
     session = ReenrollmentSession.objects.create(
         school=school,
         created_by=request.user if request.user.is_authenticated else None,
