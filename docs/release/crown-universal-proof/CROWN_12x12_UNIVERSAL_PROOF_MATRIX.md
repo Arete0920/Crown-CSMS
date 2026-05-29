@@ -1,5 +1,13 @@
 # CROWN 12x12 Universal Proof Matrix
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an evidence matrix artifact and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-04-28T00:21:44.6850018-04:00
 
 This is the canonical proof matrix for all 12 major CROWN sections and all 144 subsections.
