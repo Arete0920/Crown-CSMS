@@ -59,6 +59,7 @@ _tmp/
 _local_proofs/
 app_logs/
 media/
+.worktrees/
 
 # Local secrets (never commit â€” contains rotated credentials)
 local.secrets.ps1
