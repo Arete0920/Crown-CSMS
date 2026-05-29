@@ -1,5 +1,13 @@
 # Day 2 Dashboard Endpoints
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is an API operations reference and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 **Status**: Read-only dashboard APIs with tenant isolation
 **Date**: January 27, 2026
 

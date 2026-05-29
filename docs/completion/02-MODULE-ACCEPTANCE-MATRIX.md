@@ -1,5 +1,13 @@
 # Crown2026 — Module Acceptance Matrix
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is a module evidence matrix and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Status legend
 
 - COMPLETE
