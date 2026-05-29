@@ -1,5 +1,13 @@
 # Admissions Delivery Process Playbook
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is an operational delivery playbook and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Date: 2026-05-22
 Purpose: operationalize the admissions funnel improvement roadmap into daily execution, governance, and measurable outcomes.
 
