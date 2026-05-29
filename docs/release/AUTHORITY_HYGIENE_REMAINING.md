@@ -25,8 +25,6 @@ These files are remaining low-ambiguity operational/policy artifacts that may me
 | docs/Crown_Master_Binder/05_Runbooks_and_Checklists/12_Phase_7_Hardening_Integration_and_Release_Readiness.md | leave-as-operational (optional scope-notice) | Phase runbook snapshot |
 | docs/Crown_Master_Binder/05_Runbooks_and_Checklists/13_Completion_Gate_Master_Checklist.md | leave-as-operational (optional scope-notice) | Checklist artifact, non-authoritative |
 | docs/governance/SOLO_MAINTAINER_BRANCH_PROTECTION_POLICY.md | leave-as-policy | Policy document; not a release status source |
-| docs/release/CROWN_FINANCE_TUITION_SUPERIORITY_EXECUTION_PROGRAM_20260528.md | leave-as-operational | Strategy execution plan |
-| docs/release/MODULE_INVENTORY.md | leave-as-operational | Inventory artifact |
 | docs/release/crown-universal-proof/CROWN_12x12_UNIVERSAL_PROOF_MATRIX.md | leave-as-operational | Evidence matrix artifact |
 
 ## Completed In This Pass
@@ -41,6 +39,7 @@ These files are remaining low-ambiguity operational/policy artifacts that may me
 - docs/release/NEXT_ACTION_SUMMARY.md (Authority Scope Notice added)
 - docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md (Authority Scope Notice added)
 - docs/release/PRODUCTION_RELEASE_TOP_10_REMAINING_TASKS_20260528.md (Authority Scope Notice added)
+- docs/release/CROWN_MASTER_BINDER.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
