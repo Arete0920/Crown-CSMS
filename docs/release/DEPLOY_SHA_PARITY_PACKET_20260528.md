@@ -4,9 +4,9 @@ Purpose: authoritative parity evidence between repository SHAs and latest captur
 
 ## Git SHA Snapshot (captured 2026-05-29)
 
-- Local branch HEAD: `6f2ee509e471d5c79b89194882c86206be186d0b`
+- Local branch HEAD: `1febb85a160eb2430c300335c366953ac5f17174`
 - `origin/main`: `d793766b6640d88a4bfdb87c999f429e06cd87ec`
-- Ahead/behind (`git rev-list --left-right --count origin/main...HEAD`): `50 11`
+- Ahead/behind (`git rev-list --left-right --count origin/main...HEAD`): `50 19`
 
 ## Latest Captured Deployed Runtime SHA Evidence (from repository artifacts)
 
@@ -42,8 +42,12 @@ Purpose: authoritative parity evidence between repository SHAs and latest captur
 ## Required Closure Commands (next proof run)
 
 1. Run the parity capture runner:
+
   - Live endpoint mode: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthUrl <health-url> -IntegrityUrl <integrity-url> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`
   - Offline artifact mode: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath <path-to-02_health.json> -IntegrityJsonPath <path-to-02_integrity.json> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`
+
 2. Review generated artifacts in:
+
   - `docs/release/live-audit/deploy-sha-parity/`
+
 3. Promote latest generated parity result into this packet and `docs/CURRENT_RELEASE_STATUS.md`.
