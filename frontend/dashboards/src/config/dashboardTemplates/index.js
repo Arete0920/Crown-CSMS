@@ -30,6 +30,7 @@ import transportationDashboard from './transportationDashboard.js';
 import fineArtsDashboard from './fineArtsDashboard.js';
 import libraryMediaDashboard from './libraryMediaDashboard.js';
 import extendedCareDashboard from './extendedCareDashboard.js';
+import summerCampDashboard from './summerCampDashboard.js';
 import safetySecurityDashboard from './safetySecurityDashboard.js';
 import curriculumPDDashboard from './curriculumPDDashboard.js';
 import volunteerManagementDashboard from './volunteerManagementDashboard.js';
@@ -79,6 +80,7 @@ export const DASHBOARD_TEMPLATE_MAP = {
   fineArts: fineArtsDashboard,
   libraryMedia: libraryMediaDashboard,
   extendedCare: extendedCareDashboard,
+  summerCamp: summerCampDashboard,
   safetySecurity: safetySecurityDashboard,
   curriculumPD: curriculumPDDashboard,
   volunteerManagement: volunteerManagementDashboard,

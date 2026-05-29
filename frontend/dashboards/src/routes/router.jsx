@@ -11,6 +11,7 @@ import { TranscriptRO } from "../pages/TranscriptRO.jsx";
 import { CategoryWeightsEditor } from "../pages/CategoryWeightsEditor.jsx";
 import { AdmissionsPipelineList } from "../pages/AdmissionsPipelineList.jsx";
 import FinanceInvoicesList from "../pages/FinanceInvoicesList.jsx";
+import ParentApplicationFeePaymentPage from "../pages/ParentApplicationFeePaymentPage.jsx";
 import CommunicationsThreadsList from "../pages/CommunicationsThreadsList.jsx";
 import ClassroomsDashboard from "../pages/ClassroomsDashboard.jsx";
 import ServiceHoursPage from "../pages/ServiceHoursPage.jsx";
@@ -19,16 +20,17 @@ import ParentStudent360Page from "../pages/ParentStudent360Page.jsx";
 import AcademicsTeacherGrading from "../pages/AcademicsTeacherGrading.jsx";
 import AcademicsStudentWork from "../pages/AcademicsStudentWork.jsx";
 import AcademicsParentSnapshot from "../pages/AcademicsParentSnapshot.jsx";
-import SchedulingDashboard from "../pages/SchedulingDashboard.jsx";
-import CurriculumPDDashboard from "../pages/CurriculumPDDashboard.jsx";
 import TeacherDashboard from "../pages/TeacherDashboard.jsx";
 import ParentDashboard from "../pages/ParentDashboard.jsx";
+import ParentFinancialAidPreparationPage from "../pages/ParentFinancialAidPreparationPage.jsx";
+import ParentLifecycleStatusCenterPage from "../pages/ParentLifecycleStatusCenterPage.jsx";
 import StudentDashboard from "../pages/StudentDashboard.jsx";
 import RoleHomeRedirect from "../pages/RoleHomeRedirect.jsx";
 import TeacherAttendancePage from "../pages/TeacherAttendancePage.jsx";
 import ParentAttendancePage from "../pages/ParentAttendancePage.jsx";
-import AttendanceDashboard from "../pages/AttendanceDashboard.jsx";
+import AdmissionsStartPage from "../pages/AdmissionsStartPage.jsx";
 import ProspectiveFamilyAdmissionsWizard from "../pages/ProspectiveFamilyAdmissionsWizard.jsx";
+import AdmissionsChecklistHubPage from "../pages/AdmissionsChecklistHubPage.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
 import LogoutPage from "../pages/LogoutPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
@@ -44,6 +46,8 @@ import HealthDashboard from "../pages/HealthDashboard.jsx";
 import CounselingDashboard from "../pages/CounselingDashboard.jsx";
 import FoodDashboard from "../pages/FoodDashboard.jsx";
 import AthleticsDashboard from "../pages/AthleticsDashboard.jsx";
+import SchedulingDashboard from "../pages/SchedulingDashboard.jsx";
+import CurriculumPDDashboard from "../pages/CurriculumPDDashboard.jsx";
 import AdvancementDashboard from "../pages/AdvancementDashboard.jsx";
 import TransportationDashboard from "../pages/TransportationDashboard.jsx";
 import FacilitiesDashboard from "../pages/FacilitiesDashboard.jsx";
@@ -52,6 +56,7 @@ import AcademicSupportDashboard from "../pages/AcademicSupportDashboard.jsx";
 import FineArtsDashboard from "../pages/FineArtsDashboard.jsx";
 import LibraryDashboard from "../pages/LibraryDashboard.jsx";
 import ExtendedCareDashboard from "../pages/ExtendedCareDashboard.jsx";
+import SummerCampRosterPage from "../pages/SummerCampRosterPage.jsx";
 import RegistrarDashboard from "../pages/RegistrarDashboard.jsx";
 import CommunicationsDirectorDashboard from "../pages/CommunicationsDirectorDashboard.jsx";
 import PDDashboard from "../pages/PDDashboard.jsx";
@@ -61,9 +66,11 @@ import SafetyDashboard from "../pages/SafetyDashboard.jsx";
 import BoardExecutiveDashboard from "../pages/BoardExecutiveDashboard.jsx";
 import AftercareRosterPage from "../pages/AftercareRosterPage.jsx";
 import AftercareSetupWizard from "../pages/wizards/AftercareSetupWizard.jsx";
+import SummerCampSetupWizard from "../pages/wizards/SummerCampSetupWizard.jsx";
 import FinanceSetupWizard from "../pages/wizards/FinanceSetupWizard.jsx";
 import NotAuthorized from "../pages/NotAuthorized.jsx";
 import RoleRouteGuard from "../components/routing/RoleRouteGuard.jsx";
+import ParentJourneyRouteGuard from "../components/routing/ParentJourneyRouteGuard.jsx";
 import RoleGuard from "./RoleGuard.jsx";
 import RequirePermission from "../components/auth/RequirePermission.jsx";
 import { APP_PERMISSIONS } from "../auth/permissions";
@@ -88,6 +95,16 @@ import FamilyStatementExportPage from "../pages/FamilyStatementExportPage.jsx";
 import CompuwerxDisputeWorkbench from "../pages/CompuwerxDisputeWorkbench.jsx";
 import PaymentExceptionsQueue from "../pages/PaymentExceptionsQueue.jsx";
 import CompuwerxBankReconciliation from "../pages/CompuwerxBankReconciliation.jsx";
+import {
+  CurriculumImportPage,
+  DualEnrollmentTrackerPage,
+  InterventionCoursesPage,
+  MicrosoftEducationHealthPage,
+  OnlineLearningCommandCenter,
+  ParentLearningStatusPage,
+  StudentTodayPage,
+  TeacherDailyCockpitPage,
+} from "../pages/LearningContinuityWorkflows.jsx";
 
 const FINANCE_ALLOWED_ROLES = [
   "super_admin",
@@ -108,17 +125,38 @@ const FINANCIAL_AID_ALLOWED_ROLES = [
   "financial_aid",
 ];
 
+const LEARNING_COMMAND_ALLOWED_ROLES = [
+  "super_admin",
+  "school_admin",
+  "head_of_school",
+  "principal",
+  "academic_admin",
+  "registrar",
+  "admin",
+];
+
+const STUDENT_LEARNING_ALLOWED_ROLES = [
+  "super_admin",
+  "school_admin",
+  "head_of_school",
+  "academic_admin",
+  "teacher",
+  "registrar",
+  "parent",
+  "student",
+];
+
+const MICROSOFT_EDUCATION_ALLOWED_ROLES = [
+  "super_admin",
+  "school_admin",
+  "head_of_school",
+  "academic_admin",
+  "it_admin",
+  "admin",
+];
+
 const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
 const IS_LAUNCH_PREVIEW = Boolean(import.meta.env.DEV || IS_SANDBOX || import.meta.env.VITE_LAUNCH_UI_TAKEOVER === '1');
-
-function TeacherWorkflowPending({ workflowName }) {
-  return (
-    <section aria-label={`${workflowName} pending`} style={{ padding: 24 }}>
-      <h1>{workflowName} - Planned workflow</h1>
-      <p>Pending implementation. This route is intentionally not yet active.</p>
-    </section>
-  );
-}
 
 export const router = createBrowserRouter([
   {
@@ -142,12 +180,28 @@ export const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
+    path: PATHS.ADMISSIONS_START,
+    element: <AdmissionsStartPage />,
+  },
+  {
+    path: PATHS.PARENT_ADMISSIONS_START,
+    element: <AdmissionsStartPage />,
+  },
+  {
+    path: '/parent/admissions',
+    element: <Navigate to={PATHS.PARENT_ADMISSIONS_START} replace />,
+  },
+  {
     path: PATHS.ADMISSIONS_APPLY,
     element: <ProspectiveFamilyAdmissionsWizard />,
   },
   {
+    path: PATHS.ADMISSIONS_CHECKLIST,
+    element: <AdmissionsChecklistHubPage />,
+  },
+  {
     path: PATHS.APPLY,
-    element: <Navigate to={PATHS.ADMISSIONS_APPLY} replace />,
+    element: <Navigate to={PATHS.ADMISSIONS_START} replace />,
   },
   {
     path: '/logout',
@@ -163,13 +217,144 @@ export const router = createBrowserRouter([
     element: (
       <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
         <TeacherAttendancePage />
-        {/* Legacy contract marker: <AttendanceDashboard /> */}
       </RoleGuard>
     ),
   },
   {
-    path: PATHS.PARENT_ATTENDANCE,
-    element: <ParentAttendancePage />,
+    path: '/parent/attendance',
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentAttendancePage />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: '/operations/online-learning-command',
+    element: (
+      <RoleGuard allowedRoles={LEARNING_COMMAND_ALLOWED_ROLES}>
+        <OnlineLearningCommandCenter />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/teacher/daily-cockpit',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherDailyCockpitPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/teacher/lesson-plans/today',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <TeacherDailyCockpitPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/parent/learning-status',
+    element: (
+      <RoleGuard allowedRoles={STUDENT_LEARNING_ALLOWED_ROLES}>
+        <ParentLearningStatusPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/student/today',
+    element: (
+      <RoleGuard allowedRoles={STUDENT_LEARNING_ALLOWED_ROLES}>
+        <StudentTodayPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/student/assignments',
+    element: (
+      <RoleGuard allowedRoles={STUDENT_LEARNING_ALLOWED_ROLES}>
+        <StudentTodayPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/curriculum/import',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <CurriculumImportPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/integrations/microsoft-education/health',
+    element: (
+      <RoleGuard allowedRoles={MICROSOFT_EDUCATION_ALLOWED_ROLES}>
+        <MicrosoftEducationHealthPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/academics/dual-enrollment',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <DualEnrollmentTrackerPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/academics/interventions',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <InterventionCoursesPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/academics/interventions/new',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <InterventionCoursesPage />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: PATHS.PARENT_BILLING,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentJourneyRouteGuard stage="billing">
+          <FinanceInvoicesList />
+        </ParentJourneyRouteGuard>
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.PARENT_BILLING_PAY,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentJourneyRouteGuard stage="billingPay">
+          <ParentApplicationFeePaymentPage />
+        </ParentJourneyRouteGuard>
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.PARENT_FINANCIAL_AID,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentJourneyRouteGuard stage="aid">
+          <ParentFinancialAidPreparationPage />
+        </ParentJourneyRouteGuard>
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.PARENT_ADMISSIONS_STATUS,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentJourneyRouteGuard stage="status">
+          <ParentLifecycleStatusCenterPage />
+        </ParentJourneyRouteGuard>
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.NOT_AUTHORIZED,
@@ -222,84 +407,16 @@ export const router = createBrowserRouter([
   // Contract-preserving teacher alias routes.
   // Keep these as literal strings in router.jsx for static gate checks.
   {
-    path: PATHS.TEACHER_GRADEBOOK,
+    path: '/teacher/gradebook',
     element: <Navigate to="/gradebook" replace />,
   },
   {
-    path: PATHS.TEACHER_CLASSES,
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <ClassroomsDashboard />
-      </RoleGuard>
-    ),
-  },
-  {
-    path: '/teacher/lesson-plans',
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <TeacherWorkflowPending workflowName="Lesson Plans" />
-      </RoleGuard>
-    ),
-  },
-  {
-    path: PATHS.TEACHER_CURRICULUM,
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <CurriculumPDDashboard />
-      </RoleGuard>
-    ),
-  },
-  {
-    path: PATHS.TEACHER_COMMUNICATIONS,
-    element: <Navigate to={PATHS.COMMUNICATIONS} replace />,
-  },
-  {
-    path: PATHS.TEACHER_STUDENT_SUPPORT,
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <TeacherWorkflowPending workflowName="Student Support" />
-      </RoleGuard>
-    ),
-  },
-  {
-    path: PATHS.TEACHER_DISCIPLINE,
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <TeacherWorkflowPending workflowName="Discipline" />
-      </RoleGuard>
-    ),
-  },
-  {
-    path: PATHS.TEACHER_REMOTE_DAY,
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <TeacherWorkflowPending workflowName="Remote Day" />
-      </RoleGuard>
-    ),
-  },
-  {
     path: '/teacher/communications',
-    element: <Navigate to={PATHS.COMMUNICATIONS} replace />,
+    element: <Navigate to="/communications-dashboard" replace />,
   },
   {
     path: '/teacher/scheduling',
-    element: <Navigate to="/teacher/calendar-assignments" replace />,
-  },
-  {
-    path: '/teacher/scope-sequence',
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <CurriculumPDDashboard />
-      </RoleGuard>
-    ),
-  },
-  {
-    path: '/teacher/calendar-assignments',
-    element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <SchedulingDashboard />
-      </RoleGuard>
-    ),
+    element: <Navigate to="/scheduling-dashboard" replace />,
   },
   {
     path: '/teacher',
@@ -317,16 +434,40 @@ export const router = createBrowserRouter([
       </RoleGuard>
     ),
   },
-  // Contract-preserving parent alias routes.
-  // Keep these as literal strings in router.jsx for static gate checks.
   {
-    path: '/parent/attendance',
+    path: '/teacher/classes',
     element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.FAMILY_VIEW}>
-        <AttendanceDashboard />
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <ClassroomsDashboard />
       </RoleGuard>
     ),
   },
+  {
+    path: '/teacher/lesson-plans',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <ClassroomsDashboard />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/teacher/curriculum',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <CurriculumPDDashboard />
+      </RoleGuard>
+    ),
+  },
+  {
+    path: '/teacher/calendar-assignments',
+    element: (
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
+        <SchedulingDashboard />
+      </RoleGuard>
+    ),
+  },
+  // Contract-preserving parent alias routes.
+  // Keep these as literal strings in router.jsx for static gate checks.
   {
     path: '/parent/communications',
     element: <Navigate to="/communications-dashboard" replace />,
@@ -346,11 +487,19 @@ export const router = createBrowserRouter([
   },
   {
     path: '/parent',
-    element: <ParentDashboard />,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/parent/dashboard',
-    element: <ParentDashboard />,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.STUDENT,
@@ -363,25 +512,27 @@ export const router = createBrowserRouter([
   {
     path: PATHS.CLASSROOMS,
     element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
-        <ClassroomsDashboard />
-      </RoleGuard>
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentJourneyRouteGuard stage="classAssignment">
+          <ClassroomsDashboard />
+        </ParentJourneyRouteGuard>
+      </RoleRouteGuard>
     ),
   },
   {
     path: '/gradebook',
     element: (
-      <RequirePermission permission={APP_PERMISSIONS.GRADEBOOK_VIEW}>
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
         <GradebookRO />
-      </RequirePermission>
+      </RoleGuard>
     ),
   },
   {
     path: PATHS.GRADEBOOK_SECTION,
     element: (
-      <RequirePermission permission={APP_PERMISSIONS.GRADEBOOK_VIEW}>
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
         <GradebookRO />
-      </RequirePermission>
+      </RoleGuard>
     ),
   },
   {
@@ -444,9 +595,9 @@ export const router = createBrowserRouter([
   {
     path: PATHS.ACADEMICS_TEACHER_GRADING,
     element: (
-      <RequirePermission permission={APP_PERMISSIONS.GRADEBOOK_EDIT}>
+      <RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>
         <AcademicsTeacherGrading />
-      </RequirePermission>
+      </RoleGuard>
     ),
   },
   {
@@ -460,9 +611,11 @@ export const router = createBrowserRouter([
   {
     path: PATHS.ACADEMICS_PARENT_SNAPSHOT,
     element: (
-      <RoleGuard allowedRoles={ROLE_GROUPS.FAMILY_VIEW}>
-        <AcademicsParentSnapshot />
-      </RoleGuard>
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentJourneyRouteGuard stage="activeStudent">
+          <AcademicsParentSnapshot />
+        </ParentJourneyRouteGuard>
+      </RoleRouteGuard>
     ),
   },
   {
@@ -471,7 +624,13 @@ export const router = createBrowserRouter([
   },
   {
     path: '/parent/students/:id',
-    element: <ParentStudent360Page />,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentJourneyRouteGuard stage="activeStudent">
+          <ParentStudent360Page />
+        </ParentJourneyRouteGuard>
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.REPORTING,
@@ -503,23 +662,23 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.FINANCE,
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
-      : (
-        <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-          <FinanceDashboard />
-        </RoleRouteGuard>
-      )),
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        {IS_LAUNCH_PREVIEW
+          ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
+          : <FinanceDashboard />}
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/finance/dashboard',
-    element: (IS_LAUNCH_PREVIEW
-      ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
-      : (
-        <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-          <FinanceDashboard />
-        </RoleRouteGuard>
-      )),
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
+        {IS_LAUNCH_PREVIEW
+          ? <CrownLaunchModulePage moduleKey="finance" activePath="/finance" />
+          : <FinanceDashboard />}
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.IT,
@@ -612,6 +771,22 @@ export const router = createBrowserRouter([
   {
     path: PATHS.EXTENDED_CARE,
     element: <ExtendedCareDashboard />,
+  },
+  {
+    path: PATHS.SUMMER_CAMP_ROSTER,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.SUMMER_CAMP_TEAM}>
+        <SummerCampRosterPage />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.SUMMER_CAMP_SETUP,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.SUMMER_CAMP_TEAM}>
+        <SummerCampSetupWizard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.REGISTRAR,
@@ -774,4 +949,8 @@ export const router = createBrowserRouter([
   { path: '/staff', element: <Navigate to={PATHS.STAFF} replace /> },
   { path: '/reports', element: <Navigate to={PATHS.REPORTING} replace /> },
   { path: '/enrollment', element: <Navigate to={PATHS.ENROLLMENT} replace /> },
-]);
+], {
+  future: {
+    v7_startTransition: true,
+  },
+});

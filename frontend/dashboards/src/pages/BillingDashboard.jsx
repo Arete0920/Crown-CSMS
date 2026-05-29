@@ -17,10 +17,10 @@ import { getDashboardTemplate } from '../config/dashboardTemplates/index.js';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
-// Dev-mode regression guard: catch missing API_BASE before it breaks exports.
-// Skip this warning under tests to avoid noisy stderr that obscures true failures.
+// Dev-mode regression guard: exports use the configured API client, so a missing
+// API base should not block the demo shell itself.
 if (import.meta.env.DEV && import.meta.env.MODE !== "test" && !API_BASE) {
-  console.warn("?? BillingDashboard: API_BASE is empty. Exports will fail. Set VITE_API_BASE_URL in .env.local");
+  console.info("BillingDashboard: using same-origin API base in development.");
 }
 
 export default function BillingDashboard() {
