@@ -46,10 +46,10 @@ class TestTenantIsolation:
         response = self.client.get("/api/v1/gradebook/sections/", HTTP_X_SCHOOL_ID=str(self.school_b.id))
         assert response.status_code == 404
 
-    def test_billing_runs_cross_tenant_returns_404(self):
+    def test_billing_runs_cross_tenant_returns_403_for_non_privileged_user(self):
         self.client.force_authenticate(user=self.user_a)
         response = self.client.get("/api/v1/billing/runs/", HTTP_X_SCHOOL_ID=str(self.school_b.id))
-        assert response.status_code == 404
+        assert response.status_code == 403
 
     def test_admissions_applications_cross_tenant_returns_404(self):
         self.client.force_authenticate(user=self.user_a)

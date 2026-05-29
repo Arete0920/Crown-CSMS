@@ -193,6 +193,7 @@ INSTALLED_APPS = [
     'admissions.apps.AdmissionsConfig',
     'households',
     'applications',
+    'learning_continuity.apps.LearningContinuityConfig',
     'ledger.apps.LedgerConfig',
     'journal',
     'integrations',
@@ -236,6 +237,8 @@ INSTALLED_APPS = [
     'signals',
     # Aftercare Module
     'aftercare',
+    # Summer Camp Module
+    'summer_camp',
     # Finance Setup (Policy Wizard)
     'finance_setup.apps.FinanceSetupConfig',
     # Stage 5 Ã¢â‚¬â€ Org Scalability (onboarding already in WIZARD_INSTALLED_APPS)
