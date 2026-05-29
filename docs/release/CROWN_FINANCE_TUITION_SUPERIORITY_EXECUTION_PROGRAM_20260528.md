@@ -1,5 +1,13 @@
 # CROWN Finance and Tuition Superiority Execution Program (2026-05-28)
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational execution plan and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Purpose
 This program converts strategy into an implementation sequence that can be executed with high integrity, minimal rework, and production-grade evidence.
 
