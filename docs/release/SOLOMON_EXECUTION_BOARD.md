@@ -18,7 +18,7 @@ Primary strategy reference: `docs/solomon/SOLOMON_COMPREHENSIVE_PLATFORM_BUILD_P
 | S-101 | Phase 4B human architecture review | Review signoff captured with accepted changes and explicit open questions | `docs/solomon/SOLOMON_PHASE4B_PROVENANCE_ATTRIBUTION_ARCHITECTURE.md` update + `docs/solomon/SOLOMON_PHASE4B_REVIEW_SIGNOFF_20260529.md` | COMPLETE (2026-05-29) |
 | S-102 | Corpus expansion tranche 1 | Manifest entries added for governance/admissions/finance sources with owner/trust/lifecycle fields complete | `solomon-source-corpus/source_manifest.csv` delta | COMPLETE (2026-05-29) |
 | S-103 | BJU metadata-only POC | BJU entry set includes only metadata and official links with license-required flags | New BJU metadata manifest under `solomon-source-corpus/` | COMPLETE (2026-05-29) |
-| S-104 | Publisher outreach packet | Rights-safe partnership packet drafted and reviewed | New packet under `docs/solomon/` | OPEN |
+| S-104 | Publisher outreach packet | Rights-safe partnership packet drafted and reviewed | `docs/solomon/SOLOMON_PUBLISHER_OUTREACH_PACKET_20260529.md` | COMPLETE (2026-05-29) |
 | S-105 | Source review checklist | Checklist finalized for intake, trust classification, licensing, and review cadence | New checklist under `docs/solomon/` | OPEN |
 | S-106 | Canonical vs advisory rubric | Decision rubric codified and mapped to lifecycle states | New rubric under `docs/solomon/` | OPEN |
 | S-107 | Provenance preflight gate | Preflight gate spec drafted with fail-closed rules for missing provenance fields | New gate spec under `docs/solomon/` | OPEN |
