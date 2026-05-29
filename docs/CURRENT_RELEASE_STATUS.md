@@ -18,7 +18,7 @@ Decision meaning:
 - Backend and frontend proof lanes are green for currently validated slices.
 - Repository-wide unrestricted GA language is still blocked pending full authority hygiene convergence and deploy parity closure.
 
-## Current Proof Snapshot (2026-05-28)
+## Current Proof Snapshot (2026-05-29)
 
 Backend proof status: PASS.
 - `python backend/manage.py check` -> PASS.
@@ -33,10 +33,11 @@ Frontend proof status: PASS.
 - `npm run test -- --run` (frontend/dashboards) -> PASS (`37 passed` files, `341 passed` tests, `1 skipped` file).
 
 Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
-- Current local HEAD: `9920f22b06ed9d60cf8966703552b3ce726cb845`.
+- Current local HEAD: `6f2ee509e471d5c79b89194882c86206be186d0b`.
 - Current `origin/main`: `d793766b6640d88a4bfdb87c999f429e06cd87ec`.
-- Git parity delta (`origin/main...HEAD`): `50 0` (ahead 0, behind 50).
+- Git parity delta (`origin/main...HEAD`): `50 11`.
 - See `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md` for captured deployed runtime SHA evidence and parity evaluation.
+- Latest parity run artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.json`.
 - Current runtime/deploy target parity for latest local commit is not yet evidenced in this authority stack.
 
 Operational readiness status: CONDITIONAL.

@@ -77,3 +77,15 @@ If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and
 	- degraded optional-import behavior for admissions dependencies.
 - Validation evidence:
 	- `python -m pytest parent360 -q` -> `6 passed in 82.66s`.
+
+### 2026-05-29 - P0-1 execution evidence (status remains OPEN)
+
+- Runner executed: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath audit-artifacts/release-certification/20260513_223241/02_health.json -IntegrityJsonPath audit-artifacts/release-certification/20260513_223241/02_integrity.json`
+- Output artifacts:
+	- `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.md`
+	- `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.json`
+- Evaluation result:
+	- `parity_status=OPEN`
+	- `matches_approved_release_sha=false`
+	- `matches_local_head_sha=false`
+	- `evidence_count=2`
