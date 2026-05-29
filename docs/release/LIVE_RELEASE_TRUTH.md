@@ -1,5 +1,13 @@
 # LIVE RELEASE TRUTH
 
+> Superseded Authority Notice (2026-05-28)
+>
+> This document is historical and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated UTC: 2026-04-11T11:48:52.1149037Z
 
 ## Current Public Repo State

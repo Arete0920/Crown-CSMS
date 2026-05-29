@@ -1,5 +1,13 @@
 # PR: Runtime Governance Gate + Dashboard Truth Disclosure Closure
 
+> Superseded Authority Notice (2026-05-29)
+>
+> This document is a historical PR summary and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Summary
 
 This change set closes the main code-side release-governance gaps by enforcing policy-backed public endpoint review, blocking unmanaged `AllowAny` and `csrf_exempt` additions in CI, and completing truthful data-state disclosure across the current known dashboard surfaces.

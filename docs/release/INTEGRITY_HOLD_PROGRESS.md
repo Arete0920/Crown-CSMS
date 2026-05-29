@@ -1,5 +1,13 @@
 ﻿# CROWN Release Authority Integrity Hold - Progress Tracker
 
+> Superseded Authority Notice (2026-05-29)
+>
+> This document is a historical hold-era tracker and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Date: 2026-05-19
 State: INTEGRITY HOLD (unchanged - see INTEGRITY_HOLD_RELEASE_AUTHORITY_20260506.md)
 
