@@ -1,6 +1,6 @@
 # CROWN Current Release Status
 
-Date: 2026-05-28
+Date: 2026-05-29
 Purpose: Single canonical authority for repository-level release posture.
 
 ## Canonical Authority
@@ -15,24 +15,29 @@ Purpose: Single canonical authority for repository-level release posture.
 Repository-wide decision: CONDITIONAL GO.
 
 Decision meaning:
+
 - Backend and frontend proof lanes are green for currently validated slices.
 - Repository-wide unrestricted GA language is still blocked pending full authority hygiene convergence and deploy parity closure.
 
 ## Current Proof Snapshot (2026-05-29)
 
 Backend proof status: PASS.
+
 - `python backend/manage.py check` -> PASS.
 - `pytest backend/applications/tests/test_admissions_endpoints.py -q -s` -> PASS (`24 passed`).
 - `pytest backend/aftercare -q` -> PASS (`17 passed`).
 
 Tenant/RBAC proof status: PASS.
+
 - `pytest backend/tests/test_tenant_isolation.py -q` -> PASS (`7 passed`).
 
 Frontend proof status: PASS.
+
 - `npm run build` (frontend/dashboards) -> PASS.
 - `npm run test -- --run` (frontend/dashboards) -> PASS (`37 passed` files, `341 passed` tests, `1 skipped` file).
 
 Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
+
 - Current local HEAD: `6f2ee509e471d5c79b89194882c86206be186d0b`.
 - Current `origin/main`: `d793766b6640d88a4bfdb87c999f429e06cd87ec`.
 - Git parity delta (`origin/main...HEAD`): `50 11`.
@@ -41,8 +46,10 @@ Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
 - Current runtime/deploy target parity for latest local commit is not yet evidenced in this authority stack.
 
 Operational readiness status: CONDITIONAL.
+
 - Proven green for validated backend/frontend/tenant slices above.
 - Still requires final reconciliation across legacy authority docs and explicit deploy parity proof to promote to unrestricted GO.
+- SOLOMON strategy and execution artifacts are tracked separately under `docs/solomon/` and do not alter this release authority posture.
 
 ## Superseded Authority Labels
 
@@ -85,6 +92,7 @@ These files are historical and not controlling current repository-level release 
 ## Closure Required Before Unrestricted Repository-Wide GO
 
 Execution board for these closure items:
+
 - `docs/release/P0_EXECUTION_BOARD_20260528.md`
 
 1. Publish explicit deploy target SHA parity evidence for the current head or approved release commit.
@@ -97,8 +105,10 @@ Execution board for these closure items:
 ## Language Guardrail
 
 Allowed now:
+
 - "Validated slices are green; repository-level posture is CONDITIONAL GO pending final parity and authority convergence."
 
 Not allowed now:
+
 - "Repository is unrestricted GA-ready across all lanes."
-- "All deployment targets are parity-verified for latest head." 
+- "All deployment targets are parity-verified for latest head."

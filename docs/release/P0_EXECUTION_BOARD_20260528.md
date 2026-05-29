@@ -1,8 +1,9 @@
-# P0 Execution Board - 2026-05-28
+# P0 Execution Board - 2026-05-29
 
 Purpose: close only the blockers that prevent transition from CONDITIONAL GO to unrestricted GO.
 
 Canonical authority baseline:
+
 - Repository-wide decision is CONDITIONAL GO (`docs/CURRENT_RELEASE_STATUS.md`).
 - Deploy SHA parity is PARTIAL / NOT YET CLOSED (`docs/CURRENT_RELEASE_STATUS.md`).
 - Current scorecard marks Deploy SHA parity and Release authority convergence as PARTIAL (`docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`).
@@ -66,26 +67,26 @@ If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and
 - File updated: `backend/parent360/api/views.py`
 - Added centralized degraded-path instrumentation helper and wired broad exception handlers to stage-specific warnings.
 - Validation evidence:
-	- `python manage.py check` -> `System check identified no issues (0 silenced).`
-	- `python -m pytest parent360 -q` -> `4 passed in 75.24s`.
+  - `python manage.py check` -> `System check identified no issues (0 silenced).`
+  - `python -m pytest parent360 -q` -> `4 passed in 75.24s`.
 
 ### 2026-05-28 - P0-5 completion evidence
 
 - File updated: `backend/parent360/tests/test_parent_overview_api.py`
 - Added regression tests covering:
-	- admissions continuity payload shape and zero-state summary counters,
-	- degraded optional-import behavior for admissions dependencies.
+  - admissions continuity payload shape and zero-state summary counters,
+  - degraded optional-import behavior for admissions dependencies.
 - Validation evidence:
-	- `python -m pytest parent360 -q` -> `6 passed in 82.66s`.
+  - `python -m pytest parent360 -q` -> `6 passed in 82.66s`.
 
 ### 2026-05-29 - P0-1 execution evidence (status remains OPEN)
 
 - Runner executed: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath audit-artifacts/release-certification/20260513_223241/02_health.json -IntegrityJsonPath audit-artifacts/release-certification/20260513_223241/02_integrity.json`
 - Output artifacts:
-	- `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.md`
-	- `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.json`
+  - `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.md`
+  - `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.json`
 - Evaluation result:
-	- `parity_status=OPEN`
-	- `matches_approved_release_sha=false`
-	- `matches_local_head_sha=false`
-	- `evidence_count=2`
+  - `parity_status=OPEN`
+  - `matches_approved_release_sha=false`
+  - `matches_local_head_sha=false`
+  - `evidence_count=2`
