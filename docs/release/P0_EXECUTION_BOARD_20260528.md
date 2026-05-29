@@ -109,3 +109,17 @@ If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and
   - `matches_approved_release_sha=false`
   - `matches_local_head_sha=false`
   - `evidence_count=3`
+
+### 2026-05-29 - P0-3 first-blocker evidence (status remains OPEN)
+
+- Runner attempted:
+  - `pwsh -File audit-artifacts/runtime-release-closure/20260418_070051/72_run_protected_spine_subbatches.ps1 -RepoRoot C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr -EvidenceRoot C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr/audit-artifacts/runtime-release-closure/20260418_070051 -TimeoutSeconds 1200`
+  - direct auth/security batch run with explicit target list and stdout capture.
+- Output artifacts:
+  - `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`
+  - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_MANUAL_20260529_042753.txt`
+  - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_SUBBATCH_TARGETS_auth_security_baseline_20260529_042439.txt`
+- Evaluation result:
+  - protected-spine auth/security baseline stalls immediately after Django early diagnostics.
+  - no new protected-spine packet produced for current run stamp.
+  - P0-3 remains OPEN and is currently blocked by runtime hang isolation.
