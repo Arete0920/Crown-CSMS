@@ -1,5 +1,13 @@
 # Investor Repo Review Guide
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an investor review runbook and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Estimated review time: 5 minutes
 
 This guide gives an outside reviewer a fast, structured walkthrough of Crown's product scope, controls, and readiness evidence.

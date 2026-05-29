@@ -1,5 +1,13 @@
 # PR, Issues, and Concerns Action Plan
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational action-plan artifact and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-04-02
 Branch: `chore/github-cleanup-phase3-investor-evidence`
 

@@ -2,6 +2,14 @@
 
 # Security Gates Evidence
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is a security evidence artifact and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-04-11
 
 This document records the current evidence state for CodeQL, dependency audit, and secret scanning controls.
