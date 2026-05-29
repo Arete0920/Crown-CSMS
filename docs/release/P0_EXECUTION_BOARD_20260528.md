@@ -125,3 +125,15 @@ If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and
   - deterministic first timed-out test: `backend/core/tests/test_permission_engine.py` (240s timeout).
   - no new protected-spine packet produced for current run stamp.
   - P0-3 remains OPEN and is currently blocked by runtime hang isolation.
+
+### 2026-05-29 - P0-3 auth/security rerun evidence (timeout narrative superseded)
+
+- Runner executed:
+  - `.venv/Scripts/python.exe -u -m pytest backend/core/tests/test_permission_engine.py backend/core/tests/test_rbac_contract.py backend/crown_api/tests/test_auth_jwt.py backend/crown_api/tests/test_gate1c_auth_tenant_proof.py backend/crown_api/tests/test_metrics_permissions_contract.py backend/crown_api/tests/test_middleware_api_exceptions.py backend/crown_api/tests/test_object_level_permissions.py backend/crown_api/tests/test_prod_flag_guards.py backend/crown_api/tests/test_rbac_matrix_readonly.py backend/crown_api/tests/test_rbac_matrix_writes.py backend/crown_api/tests/test_rbac_proof.py backend/crown_api/tests/test_renderer_policy.py backend/crown_api/tests/test_role_escalation.py backend/crown_api/tests/test_wave3_alias_auth_parity.py backend/tests/test_tenant_bulk_ops_guard.py backend/tests/test_tenant_context_guardrails.py backend/tests/test_tenant_write_guard.py -q -x`
+- Output artifacts:
+  - `docs/release/live-audit/protected-spine/protected_spine_auth_security_batch_direct_20260529_044421.md`
+  - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_BATCH_DIRECT_20260529_044421.txt`
+- Evaluation result:
+  - `268 passed, 1 skipped in 173.09s`.
+  - auth/security subbatch is GREEN on rerun.
+  - P0-3 remains OPEN pending full protected-spine packet refresh and policy-gate packet linkage on candidate SHA.

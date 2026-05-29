@@ -2,6 +2,12 @@
 
 Purpose: deterministic first-blocker evidence for P0-3 protected-spine rerun.
 
+> Superseded Evidence Note (2026-05-29)
+>
+> This triage snapshot captured an interrupted/hung attempt and is retained for audit history only.
+> Current auth/security lane truth is in:
+> `docs/release/live-audit/protected-spine/protected_spine_auth_security_batch_direct_20260529_044421.md`.
+
 ## Runner
 
 - Wrapper attempt:
