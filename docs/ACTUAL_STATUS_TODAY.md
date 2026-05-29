@@ -1,4 +1,13 @@
 ﻿# ACTUAL_STATUS_TODAY.md
+
+> Superseded Authority Notice (2026-05-29)
+>
+> This document is a historical snapshot and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-04-23 04:17:19
 Branch: copilot/fix-issues-with-pr-730
 Commit: 5c0729a3

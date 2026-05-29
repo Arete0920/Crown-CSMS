@@ -1,5 +1,13 @@
 ﻿# Crown2026 — Investor Readiness Checklist
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is a historical investor-readiness checklist snapshot and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Purpose
 
 This checklist defines exactly what must be true before Crown2026 is described as investor-ready.
