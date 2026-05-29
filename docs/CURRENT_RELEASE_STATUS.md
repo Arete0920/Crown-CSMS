@@ -38,11 +38,12 @@ Frontend proof status: PASS.
 
 Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
 
-- Current local HEAD: `1febb85a160eb2430c300335c366953ac5f17174`.
+- Current local HEAD: `f3732959d6edc3ee9cfeb9ac501a3bd1576b577b`.
 - Current `origin/main`: `d793766b6640d88a4bfdb87c999f429e06cd87ec`.
-- Git parity delta (`origin/main...HEAD`): `50 19`.
+- Git parity delta (`origin/main...HEAD`): `50 30`.
 - See `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md` for captured deployed runtime SHA evidence and parity evaluation.
-- Latest parity run artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.json`.
+- Latest parity run artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json`.
+- Latest parity run was executed with explicit `DeployTargetSha` and `ApprovedReleaseSha` equal to `origin/main`.
 - Current runtime/deploy target parity for latest local commit is not yet evidenced in this authority stack.
 
 Operational readiness status: CONDITIONAL.

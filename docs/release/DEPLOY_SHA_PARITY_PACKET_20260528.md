@@ -4,9 +4,9 @@ Purpose: authoritative parity evidence between repository SHAs and latest captur
 
 ## Git SHA Snapshot (captured 2026-05-29)
 
-- Local branch HEAD: `1febb85a160eb2430c300335c366953ac5f17174`
+- Local branch HEAD: `f3732959d6edc3ee9cfeb9ac501a3bd1576b577b`
 - `origin/main`: `d793766b6640d88a4bfdb87c999f429e06cd87ec`
-- Ahead/behind (`git rev-list --left-right --count origin/main...HEAD`): `50 19`
+- Ahead/behind (`git rev-list --left-right --count origin/main...HEAD`): `50 30`
 
 ## Latest Captured Deployed Runtime SHA Evidence (from repository artifacts)
 
@@ -23,15 +23,16 @@ Purpose: authoritative parity evidence between repository SHAs and latest captur
 ## Latest Runner Execution
 
 - Runner: `scripts/release/44_capture_deploy_sha_parity.ps1`
-- Execution timestamp (UTC): `2026-05-29T02:20:49.5689489Z`
-- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.md`
-- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_022049.json`
-- Result: `parity_status=OPEN`, `matches_approved_release_sha=false`, `matches_local_head_sha=false`, `evidence_count=2`
+- Execution timestamp (UTC): `2026-05-29T08:16:38.3285416Z`
+- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.md`
+- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json`
+- Result: `parity_status=OPEN`, `matches_approved_release_sha=false`, `matches_local_head_sha=false`, `evidence_count=3`
 
 ## Current P0-1 Status
 
 - P0-1 remains OPEN.
 - Latest parity capture is now current and authoritative for this packet.
+- Latest run explicitly set `DeployTargetSha` to `origin/main` (`d793766b6640d88a4bfdb87c999f429e06cd87ec`).
 - Closure still requires runtime/deploy evidence to match either approved release SHA or local HEAD SHA.
 
 ## Decision Impact

@@ -97,3 +97,15 @@ If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and
 - Added: `docs/release/PRODUCTION_RELEASE_TOP_10_REMAINING_TASKS_20260528.md`
 - Purpose: ranked, evidence-oriented closure queue aligned to P0 blockers and 95+ readiness controls.
 - Scope guardrail: no production claim expansion to draft/unmerged modules.
+
+### 2026-05-29 - P0-1 rerun evidence (status remains OPEN)
+
+- Runner executed: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath audit-artifacts/release-certification/20260513_223241/02_health.json -IntegrityJsonPath audit-artifacts/release-certification/20260513_223241/02_integrity.json -DeployTargetSha d793766b6640d88a4bfdb87c999f429e06cd87ec -ApprovedReleaseSha d793766b6640d88a4bfdb87c999f429e06cd87ec`
+- Output artifacts:
+  - `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.md`
+  - `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json`
+- Evaluation result:
+  - `parity_status=OPEN`
+  - `matches_approved_release_sha=false`
+  - `matches_local_head_sha=false`
+  - `evidence_count=3`
