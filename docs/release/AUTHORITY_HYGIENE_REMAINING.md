@@ -38,6 +38,8 @@ These files are remaining low-ambiguity operational/policy artifacts that may me
 - docs/release/MODULE_INVENTORY.md (Authority Scope Notice added)
 - docs/release/CROWN_FINANCE_TUITION_SUPERIORITY_EXECUTION_PROGRAM_20260528.md (Authority Scope Notice added)
 - docs/release/INVESTOR_DEMO_RUNBOOK.md (Authority Scope Notice added)
+- docs/release/NEXT_ACTION_SUMMARY.md (Authority Scope Notice added)
+- docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
