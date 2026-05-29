@@ -40,6 +40,10 @@ Notes:
 - docs/Crown_Master_Binder/05_Runbooks_and_Checklists/13_Completion_Gate_Master_Checklist.md (Authority Scope Notice added)
 - docs/governance/SOLO_MAINTAINER_BRANCH_PROTECTION_POLICY.md (Authority Scope Notice added)
 - docs/release/crown-universal-proof/CROWN_12x12_UNIVERSAL_PROOF_MATRIX.md (Authority Scope Notice added)
+- docs/release/current-authority/CROWN_CURRENT_AUTHORITY_BRIEF_20260526.md (Superseded Authority Notice added)
+- docs/release/current-authority/CROWN_CURRENT_AUTHORITY_BRIEF_EXEC_20260526.md (Superseded Authority Notice added)
+- docs/release/FINAL_RELEASE_GATE.md (Superseded Authority Notice added)
+- docs/release/BRANCH_PROTECTION_EVIDENCE.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
