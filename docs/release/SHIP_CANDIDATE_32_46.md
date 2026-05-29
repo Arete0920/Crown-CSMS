@@ -1,5 +1,13 @@
 ﻿# SHIP CANDIDATE 32Ã¢â‚¬â€œ46
 
+> Superseded Authority Notice (2026-05-29)
+>
+> This document is historical and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-04-12T01:13:48
 
 Artifacts:

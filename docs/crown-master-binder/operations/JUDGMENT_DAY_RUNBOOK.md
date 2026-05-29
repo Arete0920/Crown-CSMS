@@ -1,4 +1,13 @@
 ﻿# CROWN Judgment Day Release Gauntlet Runbook
+
+> Authority Scope Notice (2026-05-29)
+>
+> This file is an operational runbook and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-05-01T13:54:10
 
 ## Purpose

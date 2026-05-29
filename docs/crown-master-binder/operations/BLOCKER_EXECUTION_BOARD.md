@@ -1,5 +1,13 @@
 # Crown 2026 — Blocker Execution Board
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is an operational blocker board and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 **Generated:** 2026-05-01
 **Branch:** `readiness/sandbox-operator-freeze-20260427_222113`
 **Production Status:** NO-GO — all P0 blockers below must close before GO

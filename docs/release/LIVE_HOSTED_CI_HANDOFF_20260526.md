@@ -1,5 +1,13 @@
 # Live Hosted CI Handoff (2026-05-26)
 
+> Superseded Authority Notice (2026-05-29)
+>
+> This document is historical and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Purpose
 
 - Move the current local green state to hosted proof with the minimum necessary steps.
