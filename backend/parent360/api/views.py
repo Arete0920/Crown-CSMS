@@ -25,6 +25,16 @@ ADMISSIONS_ASSESSMENT_REQUIRED = str(os.getenv("ADMISSIONS_ASSESSMENT_REQUIRED",
 }
 
 
+def _log_degraded_path(stage: str, **context: Any) -> None:
+    # Keep endpoint behavior unchanged while making degraded-path causes visible in logs.
+    logger.warning(
+        "parent360 degraded path: %s",
+        stage,
+        extra={"parent360_context": context},
+        exc_info=True,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Helpers  (mirrors student360 helpers so behaviour is consistent)
 # ---------------------------------------------------------------------------
@@ -68,6 +78,7 @@ def _try_get_core_student(households_student: Any, school_id: Any = None) -> Any
     try:
         from core.models import Student as CoreStudent
     except Exception:
+        _log_degraded_path("core_student_import_unavailable", school_id=school_id)
         return None
 
     first = getattr(households_student, "first_name", None)
@@ -106,7 +117,7 @@ def _resolve_household_for_user(user: Any) -> Any | None:
         if guardian and getattr(guardian, "household_id", None):
             return guardian.household
     except Exception:
-        logger.debug("guardian email bridge unavailable", exc_info=True)
+        _log_degraded_path("guardian_email_bridge_unavailable", email=email)
 
     return None
 
@@ -116,6 +127,7 @@ def _get_children_for_household(household: Any) -> list[Any]:
     try:
         from households.models import Student as HHStudent
     except Exception:
+        _log_degraded_path("households_student_import_unavailable")
         return []
 
     try:
@@ -124,6 +136,7 @@ def _get_children_for_household(household: Any) -> list[Any]:
             qs = qs.filter(is_active=True)
         return list(qs.order_by("last_name", "first_name"))
     except Exception:
+        _log_degraded_path("household_children_query_failed", household_id=getattr(household, "id", None))
         return []
 
 
@@ -139,6 +152,11 @@ def _build_admissions_continuity(household: Any) -> dict[str, Any]:
             EnrollmentContract,
         )
     except Exception:
+        _log_degraded_path(
+            "admissions_dependencies_unavailable",
+            household_id=getattr(household, "id", None),
+            school_id=getattr(household, "school_id", None),
+        )
         return {
             "available": False,
             "applications": [],
@@ -417,7 +435,7 @@ def _get_household_balance_cents(household: Any, invoice_model: Any, invoice_lin
             raw = inv_qs.aggregate(total=Coalesce(Sum("amount_due"), Decimal("0")))["total"]
             return int((_safe_decimal(raw) * Decimal("100")).quantize(Decimal("1")))
     except Exception:
-        logger.debug("household balance unavailable", exc_info=True)
+        _log_degraded_path("household_balance_unavailable", household_id=getattr(household, "id", None))
 
     return 0
 
@@ -485,7 +503,7 @@ def _build_child_grade_summary(
         missing_total = summary["missing_assignments"]
         upcoming_total = len(summary["upcoming_assignments"])
     except Exception:
-        logger.debug("optional assignment data unavailable for child", exc_info=True)
+        _log_degraded_path("child_grade_summary_unavailable", student_id=getattr(student, "id", None))
 
     return summary, missing_total, upcoming_total
 
@@ -518,7 +536,7 @@ def _build_child_service_hours_summary(student: Any, service_entry_model: Any, s
                 "required": 30,
             }
     except Exception:
-        logger.debug("optional service hours unavailable for child", exc_info=True)
+        _log_degraded_path("child_service_hours_unavailable", student_id=getattr(student, "id", None))
 
     return summary
 
@@ -545,7 +563,7 @@ def _build_child_financial_summary(student: Any, invoice_model: Any, invoice_lin
             "balance_cents": int((_safe_decimal(total_amount) * Decimal("100")).quantize(Decimal("1"))),
         }
     except Exception:
-        logger.debug("optional finance data unavailable for child", exc_info=True)
+        _log_degraded_path("child_financial_summary_unavailable", student_id=getattr(student, "id", None))
 
     return summary
 
@@ -817,17 +835,17 @@ class ParentSelfOverview(APIView):
             from gradebook.models import GradeEntry as grade_entry_model
             from academics.models import Assignment as assignment_model, Enrollment as enrollment_model
         except Exception:
-            logger.debug("gradebook/academics optional imports unavailable", exc_info=True)
+            _log_degraded_path("gradebook_academics_imports_unavailable")
 
         try:
             from billing.models import Invoice as invoice_model, InvoiceLine as invoice_line_model
         except Exception:
-            logger.debug("billing optional imports unavailable", exc_info=True)
+            _log_degraded_path("billing_imports_unavailable")
 
         try:
             from servicehours.models import ServiceEntry as service_entry_model
         except Exception:
-            logger.debug("servicehours optional imports unavailable", exc_info=True)
+            _log_degraded_path("servicehours_imports_unavailable")
 
         now = timezone.now().date()
         seven_days = now + timezone.timedelta(days=7)
