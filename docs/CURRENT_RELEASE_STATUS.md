@@ -46,6 +46,13 @@ Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
 - Latest parity run was executed with explicit `DeployTargetSha` and `ApprovedReleaseSha` equal to `origin/main`.
 - Current runtime/deploy target parity for latest local commit is not yet evidenced in this authority stack.
 
+Protected-spine runtime/policy gate status: BLOCKED.
+
+- Latest protected-spine attempt stalls in auth/security baseline immediately after Django early diagnostics.
+- First-blocker triage artifact: `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`.
+- Captured stalled stdout: `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_MANUAL_20260529_042753.txt`.
+- No fresh protected-spine packet has been produced for this run, so P0-3 remains OPEN.
+
 Operational readiness status: CONDITIONAL.
 
 - Proven green for validated backend/frontend/tenant slices above.
@@ -101,7 +108,8 @@ Execution board for these closure items:
    Runner (live mode): `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthUrl <health-url> -IntegrityUrl <integrity-url> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`.
    Runner (artifact mode): `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath <path-to-02_health.json> -IntegrityJsonPath <path-to-02_integrity.json> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`.
 2. Complete authority hygiene convergence so legacy GO/PARTIAL/FAIL docs are non-ambiguous and clearly historical.
-3. Keep this file and `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md` synchronized for every material release-state change.
+3. Resolve the protected-spine auth/security hang and publish a fresh protected-spine packet on the candidate SHA.
+4. Keep this file and `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md` synchronized for every material release-state change.
 
 ## Language Guardrail
 

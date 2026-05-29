@@ -18,12 +18,14 @@ Canonical linkage:
 | Frontend operational proof | PASS | 90 | `npm run build` (PASS); `npm run test -- --run` (PASS: `37 passed` files, `341 passed` tests, `1 skipped`) |
 | Route guard and permission posture | PASS | 89 | Guarded route wiring in `frontend/dashboards/src/routes/router.jsx`; role groups in `frontend/dashboards/src/routes/routeGroups.js`; nav permission scoping in `frontend/dashboards/src/components/navigation/navItems.js` |
 | Tenant/RBAC proof | PASS | 90 | `pytest backend/tests/test_tenant_isolation.py -q` (`7 passed`) |
+| Protected-spine runtime/policy packet | BLOCKED | 40 | auth/security baseline stalls after Django early diagnostics; no fresh packet produced; triage artifact `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`; stalled stdout `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_MANUAL_20260529_042753.txt` |
 | Deploy SHA parity | PARTIAL | 65 | local HEAD `f3732959d6edc3ee9cfeb9ac501a3bd1576b577b`; `origin/main` `d793766b6640d88a4bfdb87c999f429e06cd87ec`; `git rev-list --left-right --count origin/main...HEAD` -> `50 30`; latest parity artifact `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json` remains OPEN (`matches_approved_release_sha=false`, `matches_local_head_sha=false`); see `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md` |
 | Release authority convergence | PARTIAL | 72 | Canonical authority now consolidated in `docs/CURRENT_RELEASE_STATUS.md`; legacy docs still present and require continued hygiene labeling |
-| Operational readiness | CONDITIONAL | 83 | Composite of above; unresolved parity + authority convergence prevent unrestricted GO |
+| Operational readiness | CONDITIONAL | 74 | Composite of above; unresolved parity + protected-spine runtime blocker + authority convergence prevent unrestricted GO |
 
 ## Required to Move from CONDITIONAL GO to Unrestricted GO
 
 1. Add deploy-target parity proof for the approved release SHA (or current head) across active environments.
-2. Complete supersession hygiene across legacy GO/PARTIAL/FAIL artifacts and keep only canonical authority + scorecard as controlling sources.
-3. Keep backend/frontend/tenant proofs fresh when material code changes occur.
+2. Resolve the protected-spine auth/security hang and publish a fresh protected-spine packet proving runtime/policy gates on the candidate SHA.
+3. Complete supersession hygiene across legacy GO/PARTIAL/FAIL artifacts and keep only canonical authority + scorecard as controlling sources.
+4. Keep backend/frontend/tenant proofs fresh when material code changes occur.
