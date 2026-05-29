@@ -2,6 +2,14 @@
 
 # Branch Protection Evidence
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is a branch-protection evidence artifact and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-04-11
 
 This document records the live `main` branch-protection proof currently committed in-repo and the small amount of evidence that still requires manual capture.
