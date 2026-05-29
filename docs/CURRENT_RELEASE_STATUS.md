@@ -46,13 +46,13 @@ Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
 - Latest parity run was executed with explicit `DeployTargetSha` and `ApprovedReleaseSha` equal to `origin/main`.
 - Current runtime/deploy target parity for latest local commit is not yet evidenced in this authority stack.
 
-Protected-spine runtime/policy gate status: BLOCKED.
+Protected-spine runtime/policy gate status: PARTIAL.
 
-- Latest protected-spine attempt stalls in auth/security baseline immediately after Django early diagnostics.
-- First-blocker triage artifact: `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`.
-- Deterministic first timed-out test from bisect: `backend/core/tests/test_permission_engine.py`.
-- Captured stalled stdout: `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_MANUAL_20260529_042753.txt`.
-- No fresh protected-spine packet has been produced for this run, so P0-3 remains OPEN.
+- Auth/security protected-spine subbatch rerun is green: `268 passed, 1 skipped in 173.09s`.
+- Auth/security rerun artifact: `docs/release/live-audit/protected-spine/protected_spine_auth_security_batch_direct_20260529_044421.md`.
+- Captured auth/security stdout: `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_BATCH_DIRECT_20260529_044421.txt`.
+- Earlier hang triage is retained as superseded history: `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`.
+- Full protected-spine packet and policy-gate packet still need refreshed candidate-SHA publication, so P0-3 remains OPEN.
 
 Operational readiness status: CONDITIONAL.
 
