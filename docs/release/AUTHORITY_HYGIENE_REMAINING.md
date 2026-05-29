@@ -15,11 +15,12 @@ Purpose: explicit residual queue after superseded/scope-notice hardening.
 
 ## Current Residual Set (Review Required)
 
-Workspace residual queue status: no high-ambiguity release-authority artifacts remain unresolved in the currently present file set.
+Workspace residual queue status: one pending normalization item remains in a currently dirty local file.
 
 Notes:
 - Legacy path variant `docs/crown-master-binder/operations/06_Communication_Rules.md` is not present in this workspace snapshot.
-- Remaining operational/policy artifacts in scope now carry Authority Scope Notice labels.
+- Remaining operational/policy artifacts in scope now carry Authority Scope Notice labels, except for one in-progress local edit noted below.
+- Pending local normalization item: `docs/release/PRODUCTION_RELEASE_NO_GO_EXCLUSIONS_20260528.md` (already dirty in working tree).
 
 ## Completed In This Pass
 
@@ -44,6 +45,18 @@ Notes:
 - docs/release/current-authority/CROWN_CURRENT_AUTHORITY_BRIEF_EXEC_20260526.md (Superseded Authority Notice added)
 - docs/release/FINAL_RELEASE_GATE.md (Superseded Authority Notice added)
 - docs/release/BRANCH_PROTECTION_EVIDENCE.md (Authority Scope Notice added)
+- docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md (Authority Scope Notice added)
+- docs/release/INVESTOR_REPO_REVIEW_GUIDE.md (Authority Scope Notice added)
+- docs/release/MOAT_COMPOUNDING_EXECUTION_PLAYBOOK.md (Authority Scope Notice added)
+- docs/release/OPERATING_COMPANY_SYSTEM_BLUEPRINT.md (Authority Scope Notice added)
+- docs/release/PARTNERSHIP_CHANNEL_EXECUTION_PLAYBOOK.md (Authority Scope Notice added)
+- docs/release/PILOT_INVESTOR_READINESS_PROOF_PACK.md (Authority Scope Notice added)
+- docs/release/PR_ISSUES_CONCERNS_ACTION_PLAN.md (Authority Scope Notice added)
+- docs/release/PR_OVERLAP_RECONCILIATION.md (Authority Scope Notice added)
+- docs/release/PRIORITY_16_31_TO_GREEN.md (Authority Scope Notice added)
+- docs/release/PRIORITY_9_MOAT_PROTECTION_CANON.md (Authority Scope Notice added)
+- docs/release/SECURITY_GATES_EVIDENCE.md (Authority Scope Notice added)
+- docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
