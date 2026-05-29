@@ -7,6 +7,7 @@ Canonical authority baseline:
 - Repository-wide decision is CONDITIONAL GO (`docs/CURRENT_RELEASE_STATUS.md`).
 - Deploy SHA parity is PARTIAL / NOT YET CLOSED (`docs/CURRENT_RELEASE_STATUS.md`).
 - Current scorecard marks Deploy SHA parity and Release authority convergence as PARTIAL (`docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`).
+- Supporting ranked closure backlog: `docs/release/PRODUCTION_RELEASE_TOP_10_REMAINING_TASKS_20260528.md`.
 
 ## Scope and Guardrails
 
@@ -90,3 +91,9 @@ If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and
   - `matches_approved_release_sha=false`
   - `matches_local_head_sha=false`
   - `evidence_count=2`
+
+### 2026-05-29 - Ranked closure backlog artifact added
+
+- Added: `docs/release/PRODUCTION_RELEASE_TOP_10_REMAINING_TASKS_20260528.md`
+- Purpose: ranked, evidence-oriented closure queue aligned to P0 blockers and 95+ readiness controls.
+- Scope guardrail: no production claim expansion to draft/unmerged modules.

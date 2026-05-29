@@ -40,6 +40,7 @@ These files are remaining low-ambiguity operational/policy artifacts that may me
 - docs/release/INVESTOR_DEMO_RUNBOOK.md (Authority Scope Notice added)
 - docs/release/NEXT_ACTION_SUMMARY.md (Authority Scope Notice added)
 - docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md (Authority Scope Notice added)
+- docs/release/PRODUCTION_RELEASE_TOP_10_REMAINING_TASKS_20260528.md (Authority Scope Notice added)
 
 ## Files Intentionally Unmarked (Current Authority Artifacts)
 
