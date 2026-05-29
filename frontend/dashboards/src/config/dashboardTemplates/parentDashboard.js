@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const ACADEMIC_TREND = [
   { month: 'Sep', value: 89 },
   { month: 'Oct', value: 90 },
@@ -34,7 +32,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Mrs. Parker!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: 'Family preview experience active. Cards show seeded household examples until live parent data sync completes for each area.',
 
   metrics: [
     { label: 'Children Enrolled', value: '2', detail: 'Aiden (8th) and Sophie (5th) — both active.', accent: 'blue' },

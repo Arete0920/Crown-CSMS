@@ -27,6 +27,23 @@ export default defineConfig(({ mode }) => {
     build: {
       // Keep warning signal meaningful while avoiding noisy false alarms for this bundle profile.
       chunkSizeWarningLimit: 2000,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+
+            if (
+              id.includes('/src/')
+            ) {
+              return 'app-shell';
+            }
+
+            return undefined;
+          },
+        },
+      },
     },
     optimizeDeps: {
       exclude: ['@playwright/test'],

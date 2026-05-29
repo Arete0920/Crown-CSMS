@@ -12,8 +12,19 @@ import CrownDashboardErrorState from './CrownDashboardErrorState.jsx';
 import CrownDashboardFlipCard from './CrownDashboardFlipCard.jsx';
 import CrownDashboardRightRail from './CrownDashboardRightRail.jsx';
 import CrownFaithCommunityStrip from './CrownFaithCommunityStrip.jsx';
+import CrownDashboardCommunicationsStrip from './CrownDashboardCommunicationsStrip.jsx';
+import CrownDashboardDataTruthStatus from './CrownDashboardDataTruthStatus.jsx';
+import CrownDashboardDecisionPanel from './CrownDashboardDecisionPanel.jsx';
 import { Link, useInRouterContext } from 'react-router-dom';
-import { BASE_FAITH_COMMUNITY } from '../../config/dashboardTemplates/_baseData.js';
+import { BASE_COMMUNICATIONS, BASE_FAITH_COMMUNITY, BASE_NOTE } from '../../config/dashboardTemplates/_baseData.js';
+
+function getDefaultLastSyncLabel(dataState) {
+  const state = String(dataState || '').toLowerCase();
+  if (state === 'live') return 'Last synced just now';
+  if (state === 'loading') return 'Sync in progress';
+  if (state === 'unavailable') return 'Last sync unavailable';
+  return 'Using configured fallback data';
+}
 
 function renderActionsByRole(actions, roleKey) {
   const safeActions = Array.isArray(actions) ? actions : [];
@@ -47,6 +58,7 @@ function buildDashboardModel(config, roleKey) {
     priorities: Array.isArray(config.priorities) ? config.priorities : [],
     alerts: Array.isArray(config.alerts) ? config.alerts : [],
     commandModules: applyDataTruth(config.commandModules, defaultDataState, defaultSourceLabel),
+    decisionPanel: config.decisionPanel || null,
     rightRailSections: Array.isArray(config.rightRailSections) ? config.rightRailSections : [],
   };
 }
@@ -98,10 +110,12 @@ function renderOperationsTable(config, operations, hasRouterContext, isSchoolAdm
 }
 
 function renderRichLayout(config, model, hasRouterContext, isSchoolAdminCommandCenter) {
-  const { metrics, priorities, alerts, commandModules, trendPanels, activities, operations, actions, statuses } = model;
+  const { metrics, priorities, alerts, commandModules, trendPanels, activities, operations, actions, statuses, decisionPanel } = model;
 
   return (
     <>
+      <CrownDashboardDecisionPanel panel={decisionPanel} />
+
       <CrownDashboardMetricGrid className={isSchoolAdminCommandCenter ? 'launch-dashboard-grid-metrics-admin' : undefined}>
         {metrics.map((card) => (
           <CrownDashboardMetricCard key={card.label} {...card} />
@@ -241,6 +255,11 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
 
   const model = buildDashboardModel(config, roleKey);
   const { commandModules, rightRailSections } = model;
+  const dataState = config.dataState || 'fallback';
+  const sourceLabel = config.sourceLabel || 'Dashboard template data';
+  const lastSyncLabel = config.lastSyncLabel || getDefaultLastSyncLabel(dataState);
+  const communications = config.communications ?? BASE_COMMUNICATIONS;
+  const isGenericBaseNote = config.note === BASE_NOTE;
 
   // Admin command center: SchoolAdministrator gets admin metric grid + right rail.
   // Rich layout: any dashboard with commandModules gets priorities/alerts/flip-cards/trends.
@@ -268,7 +287,15 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
 
       <CrownFaithCommunityStrip faithCommunity={config.faithCommunity ?? BASE_FAITH_COMMUNITY} />
 
-      {config.note && (
+      <CrownDashboardCommunicationsStrip communications={communications} />
+
+      <CrownDashboardDataTruthStatus
+        dataState={dataState}
+        sourceLabel={sourceLabel}
+        lastSyncLabel={lastSyncLabel}
+      />
+
+      {config.note && !isGenericBaseNote && (
         <div className="launch-sandbox-banner">{config.note}</div>
       )}
 
