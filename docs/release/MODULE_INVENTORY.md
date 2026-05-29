@@ -1,5 +1,13 @@
 # Crown Module Inventory
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational module/status registry and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Production Status Registry - Updated April 1, 2026
 
 Status definitions:
