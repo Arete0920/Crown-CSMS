@@ -1,0 +1,4 @@
+bju_id,title,grade_band,subject,edition,resource_type,official_source_url,availability_flag,license_required,partnership_status,trust_level,canonical_status,lifecycle_state,review_interval,notes
+BJU-001,BJU Press Curriculum Catalog,K-12,Multiple,Current,catalog,https://www.bjupress.com/,available,yes,required,B,advisory,active,quarterly,Metadata-only placeholder for official catalog reference
+BJU-002,BJU Press Publisher Overview,K-12,General,Current,overview,https://www.bjupress.com/,available,yes,required,B,advisory,active,quarterly,Official link only; no copyrighted content or bulk ingestion
+BJU-003,BJU Press Ordering and Support,K-12,Operations,Current,support,https://www.bjupress.com/,available,yes,required,B,advisory,active,quarterly,Official link only; rights-safe metadata entry
