@@ -117,11 +117,11 @@ Status legend:
 
 | ID | Priority | Task | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| 081 | High | Define pass criteria for complete/proven certification status | NOT_STARTED | |
-| 082 | High | Define fail criteria for fake-ready/placeholder status | NOT_STARTED | |
-| 083 | High | Define certification expiry and revalidation cadence | NOT_STARTED | |
-| 084 | High | Enforce evidence artifact naming standard | NOT_STARTED | |
-| 085 | High | Publish evidence packet index for active proof artifacts | NOT_STARTED | |
+| 081 | High | Define pass criteria for complete/proven certification status | COMPLETE | docs/release/CERTIFICATION_PASS_CRITERIA_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass) |
+| 082 | High | Define fail criteria for fake-ready/placeholder status | COMPLETE | docs/release/CERTIFICATION_FAIL_CRITERIA_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass) |
+| 083 | High | Define certification expiry and revalidation cadence | COMPLETE | docs/release/CERTIFICATION_EXPIRY_REVALIDATION_CADENCE_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass) |
+| 084 | High | Enforce evidence artifact naming standard | COMPLETE | docs/release/EVIDENCE_ARTIFACT_NAMING_STANDARD_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass: bad_names=0) |
+| 085 | High | Publish evidence packet index for active proof artifacts | COMPLETE | docs/release/EVIDENCE_PACKET_INDEX_ACTIVE_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass: index_rows=15) |
 | 086 | Critical | Run full backend targeted gate suite on candidate SHA | NOT_STARTED | |
 | 087 | Critical | Run frontend build + full unit/contract gates on candidate SHA | NOT_STARTED | |
 | 088 | Critical | Run API contract parity suite on candidate SHA | NOT_STARTED | |
