@@ -45,11 +45,11 @@ Status legend:
 | 021 | Critical | Add ownership metadata for all release authority artifacts | NOT_STARTED | |
 | 022 | High | Add authority-doc change-control log and review checklist | NOT_STARTED | |
 | 023 | High | Add pre-push warning for authority edits without scorecard sync | NOT_STARTED | |
-| 024 | High | Add scorecard sync validator versus canonical fields | NOT_STARTED | |
-| 025 | High | Add P0 board sync validator versus canonical fields | NOT_STARTED | |
+| 024 | High | Add scorecard sync validator versus canonical fields | COMPLETE | frontend/dashboards/src/tests/releaseAuthorityConsistencyContract.test.js |
+| 025 | High | Add P0 board sync validator versus canonical fields | COMPLETE | frontend/dashboards/src/tests/releaseAuthorityConsistencyContract.test.js |
 | 026 | Critical | Inventory all student-facing routes and guard strategy | NOT_STARTED | |
 | 027 | Critical | Guard direct student dashboard paths | COMPLETE | frontend/dashboards/src/routes/router.jsx |
-| 028 | Critical | Add route-level test asserting all student routes guarded | NOT_STARTED | |
+| 028 | Critical | Add route-level test asserting all student routes guarded | COMPLETE | frontend/dashboards/src/tests/releaseHardeningContracts.test.jsx |
 | 029 | High | Add deny-by-default guard policy for sensitive route groups | NOT_STARTED | |
 | 030 | High | Add route guard matrix tests for all role groups | NOT_STARTED | |
 | 031 | High | Add route alias audit and deprecate non-essential aliases | NOT_STARTED | |
