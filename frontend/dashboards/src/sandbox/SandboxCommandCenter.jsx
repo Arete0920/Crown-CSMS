@@ -121,7 +121,9 @@ export default function SandboxCommandCenter({ compact = false }) {
         <div className="sandbox-command-actions">
           <a className="primary" href="/sandbox">Switch track</a>
           {personas.slice(0, 4).map((entry) => (
-            <a key={entry.value} href={getSandboxLoginHref(entry.value, school.id, track.key, guidance)}>{entry.label}</a>
+            <a key={entry.value} href={getSandboxLoginHref(entry.value, school.id, track.key, guidance)}>
+              {entry.value === "school_admin" ? (entry.loginLabel || entry.label) : entry.label}
+            </a>
           ))}
           {schools.slice(0, 3).map((entry) => (
             <a key={entry.key} href={getSandboxLoginHref(persona.value, entry.id, track.key, guidance)}>{entry.name}</a>
@@ -132,7 +134,7 @@ export default function SandboxCommandCenter({ compact = false }) {
         {showFeedback && (
           <form className="sandbox-feedback-form" onSubmit={handleFeedbackSubmit}>
             <label>
-              Rating
+              <span>Rating</span>{" "}
               <select name="rating" defaultValue="clear">
                 <option value="clear">Clear</option>
                 <option value="unclear">Unclear</option>
@@ -141,7 +143,7 @@ export default function SandboxCommandCenter({ compact = false }) {
               </select>
             </label>
             <label>
-              Note
+              <span>Note</span>{" "}
               <textarea name="note" rows="3" placeholder="Do not enter real student, family, financial, health, safety, or disciplinary data." />
             </label>
             <label>

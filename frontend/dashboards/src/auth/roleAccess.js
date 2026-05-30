@@ -1,6 +1,6 @@
 export const ROLE_EQUIVALENCE_GROUPS = [
   ["super_admin"],
-  ["head_of_school", "school_admin"],
+  ["head_of_school", "school_admin", "admin"],
   [
     "finance",
     "finance_admin",
