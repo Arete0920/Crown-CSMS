@@ -266,11 +266,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
-<<<<<<< HEAD
     'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard -- after auth so user.school_id is available for header-less fallback
-=======
-    'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â after auth so user.school_id is available for header-less fallback
->>>>>>> d000972e (Wire sandbox launch routes and telemetry)
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -360,8 +356,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-<<<<<<< HEAD
-=======
 # Custom User Model
 AUTH_USER_MODEL = 'core.UserAccount'
 
@@ -434,8 +428,6 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
->>>>>>> d000972e (Wire sandbox launch routes and telemetry)
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
@@ -444,9 +436,7 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
 
-<<<<<<< HEAD
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-=======
 # Authentication redirects
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/director/'
@@ -830,5 +820,3 @@ CROWN_SANDBOX_ALLOW_OPEN_SESSION = _env_bool("CROWN_SANDBOX_ALLOW_OPEN_SESSION",
 CROWN_SANDBOX_ACCESS_TTL_SECONDS = int(os.getenv("CROWN_SANDBOX_ACCESS_TTL_SECONDS", "7200"))
 CROWN_SANDBOX_REFRESH_TTL_SECONDS = int(os.getenv("CROWN_SANDBOX_REFRESH_TTL_SECONDS", "43200"))
 CROWN_SANDBOX_FALLBACK_PASSWORD = os.getenv("CROWN_SANDBOX_FALLBACK_PASSWORD", "")
-
->>>>>>> d000972e (Wire sandbox launch routes and telemetry)
