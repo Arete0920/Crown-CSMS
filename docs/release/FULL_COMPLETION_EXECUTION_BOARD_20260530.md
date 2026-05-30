@@ -44,7 +44,7 @@ Status legend:
 | --- | --- | --- | --- | --- |
 | 021 | Critical | Add ownership metadata for all release authority artifacts | NOT_STARTED | |
 | 022 | High | Add authority-doc change-control log and review checklist | NOT_STARTED | |
-| 023 | High | Add pre-push warning for authority edits without scorecard sync | NOT_STARTED | |
+| 023 | High | Add pre-push warning for authority edits without scorecard sync | COMPLETE | scripts/release/check_authority_edit_sync.ps1 |
 | 024 | High | Add scorecard sync validator versus canonical fields | COMPLETE | frontend/dashboards/src/tests/releaseAuthorityConsistencyContract.test.js |
 | 025 | High | Add P0 board sync validator versus canonical fields | COMPLETE | frontend/dashboards/src/tests/releaseAuthorityConsistencyContract.test.js |
 | 026 | Critical | Inventory all student-facing routes and guard strategy | NOT_STARTED | |
