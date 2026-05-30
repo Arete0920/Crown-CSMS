@@ -30,13 +30,13 @@ Status legend:
 | 011 | High | Decide release branch policy (temporary vs candidate authority branch) | NOT_STARTED | |
 | 012 | High | If temporary, merge authority stack to main | NOT_STARTED | |
 | 013 | High | If candidate branch, publish freeze criteria | NOT_STARTED | |
-| 014 | High | Enforce branch parity script as pre-merge check | NOT_STARTED | |
-| 015 | High | Add drift threshold alert for ahead/behind deltas | NOT_STARTED | |
-| 016 | High | Require every release claim to name branch and SHA | NOT_STARTED | |
+| 014 | High | Enforce branch parity script as pre-merge check | COMPLETE | scripts/release/verify_branch_parity.ps1 (pass on release branch: ahead=0 behind=0) |
+| 015 | High | Add drift threshold alert for ahead/behind deltas | COMPLETE | scripts/release/check_branch_drift_threshold.ps1 (currently failing against origin/main: ahead=62 behind=52 over thresholds) |
+| 016 | High | Require every release claim to name branch and SHA | COMPLETE | scripts/release/verify_release_claim_branch_sha.ps1 (currently failing with branch/SHA metadata violations) |
 | 017 | High | Add automated detection of authority files missing on main | COMPLETE | scripts/release/verify_authority_files_on_main.ps1 (currently failing on origin/main: files missing) |
 | 018 | High | Add release-claim linter for contradictory wording | COMPLETE | scripts/release/scan_release_claim_wording.ps1 |
 | 019 | High | Add stale-claim scanner for historical ship/go language | COMPLETE | scripts/release/scan_release_claim_wording.ps1 |
-| 020 | High | Add superseded-doc watermark template and backfill | NOT_STARTED | |
+| 020 | High | Add superseded-doc watermark template and backfill | COMPLETE | docs/release/SUPERSEDED_AUTHORITY_WATERMARK_TEMPLATE_20260530.md; scripts/release/verify_superseded_authority_watermarks.ps1; backfilled INTEGRITY_HOLD_RELEASE_AUTHORITY_20260506.md and PROGRAM_SCORECARD_20260506.md |
 
 ## Priority 021-040 (Routing + Security + Permission Integrity)
 
