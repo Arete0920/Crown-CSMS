@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='aftercareincident',
             name='discipline_record_id',
-            field=models.UUIDField(blank=True, null=True),
+            field=models.IntegerField(blank=True, null=True),
         ),
     ]
