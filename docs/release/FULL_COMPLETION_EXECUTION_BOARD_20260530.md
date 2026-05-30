@@ -67,11 +67,11 @@ Status legend:
 
 | ID | Priority | Task | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| 041 | High | Add dangerous setting toggle regression tests | NOT_STARTED | |
-| 042 | High | Add CSRF/public-surface policy drift tests | NOT_STARTED | |
-| 043 | High | Add JWT/session/AAD endpoint contract tests | NOT_STARTED | |
-| 044 | High | Add security log presence assertions for protected failures | NOT_STARTED | |
-| 045 | High | Add replay-safety tests for admissions lifecycle endpoints | NOT_STARTED | |
+| 041 | High | Add dangerous setting toggle regression tests | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_041_dangerous_toggle_demo_mode_blocks_writes + ::test_041_dangerous_toggle_tenant_header_enforced_on_scoped_read (pass) |
+| 042 | High | Add CSRF/public-surface policy drift tests | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_042_csrf_public_surface_policy_contracts_hold (pass) |
+| 043 | High | Add JWT/session/AAD endpoint contract tests | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_043_jwt_session_aad_contracts_fail_closed_for_bad_auth (pass) |
+| 044 | High | Add security log presence assertions for protected failures | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_044_security_log_presence_on_protected_failure_configuration (pass) |
+| 045 | High | Add replay-safety tests for admissions lifecycle endpoints | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_045_admissions_submit_idempotency_replay_contract + ::test_045_admissions_event_replay_requires_authentication (pass) |
 | 046 | Critical | Remove dashboard ready-by-default behavior | NOT_STARTED | |
 | 047 | Critical | Remove wizard route ready-by-default behavior | NOT_STARTED | |
 | 048 | Critical | Require evidence object for ready dashboard entries | NOT_STARTED | |
