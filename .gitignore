@@ -247,3 +247,7 @@ run_*.json
 runs.json
 pr_threads.json
 gitleaks-sarif/
+
+# Sandbox pack local extraction and generated script backups
+_sandbox_pack/
+*.best-sandbox-backup-*
