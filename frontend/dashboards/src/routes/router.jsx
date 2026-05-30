@@ -33,6 +33,7 @@ import ProspectiveFamilyAdmissionsWizard from "../pages/ProspectiveFamilyAdmissi
 import AdmissionsChecklistHubPage from "../pages/AdmissionsChecklistHubPage.jsx";
 import LoginPage from "../pages/LoginPage.jsx";
 import LogoutPage from "../pages/LogoutPage.jsx";
+import SandboxLandingPage from "../pages/SandboxLandingPage.jsx";
 import IntegrityDashboard from "../pages/IntegrityDashboard.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import SchoolAdministratorDashboard from "../pages/SchoolAdministratorDashboard.jsx";
@@ -81,6 +82,7 @@ import DemoReadinessPage from "../pages/DemoReadinessPage.jsx";
 import NotFoundPage from "../pages/NotFoundPage.jsx";
 import CrownLaunchDashboardPage from "../pages/CrownLaunchDashboardPage.jsx";
 import CrownLaunchModulePage from "../pages/CrownLaunchModulePage.jsx";
+import SandboxCommandCenter from "../sandbox/SandboxCommandCenter.jsx";
 import { dashboardRoutes } from "./dashboardRoutes";
 import { wizardRoutes } from "./wizards.js";
 import { PATHS } from "./paths";
@@ -162,6 +164,14 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <RoleHomeRedirect />,
+  },
+  {
+    path: PATHS.SANDBOX,
+    element: <SandboxLandingPage />,
+  },
+  {
+    path: PATHS.SANDBOX_COMMAND_CENTER,
+    element: <SandboxCommandCenter />,
   },
   {
     path: PATHS.DASHBOARD,

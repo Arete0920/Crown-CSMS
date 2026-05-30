@@ -75,28 +75,36 @@ def compute_late_fee(config: AftercareProgramConfig, attendance_date: date, chec
 
 def create_ledger_charge_aftercare(school_id: int, student_id: int, amount_cents: int, description: str) -> int:
     """
-    CANON_LEDGER_CHARGE_HOOK:
-    Replace with your actual ledger service, e.g.:
-        from ledger.services import create_charge
-        from decimal import Decimal
-        charge = create_charge(
-            school_id=school_id, student_id=student_id,
-            amount=Decimal(amount_cents) / 100, description=description
-        )
-        return charge.id
+    Real Aftercare -> Finance hook.
+
+    Creates a FinanceObligation and returns its ID.
+    Fails closed if canonical school/student/payer mapping is missing.
     """
-    return 0
+    from .integrations import create_aftercare_finance_obligation
+
+    return create_aftercare_finance_obligation(
+        school_id=school_id,
+        student_id=student_id,
+        amount_cents=amount_cents,
+        description=description,
+    )
 
 
-def create_discipline_record_for_incident(school_id: int, student_id: int, description: str, severity: str) -> int:
+def create_discipline_record_for_incident(school_id: int, student_id: int, description: str, severity: str):
     """
-    CANON_DISCIPLINE_HOOK:
-    Replace with your discipline record creation, e.g.:
-        from discipline.services import create_incident
-        rec = create_incident(school_id=school_id, student_id=student_id, ...)
-        return rec.id
+    Real Aftercare -> Discipline hook.
+
+    Creates a DisciplineIncident and returns its UUID.
+    Fails closed if canonical school/student mapping is missing.
     """
-    return 0
+    from .integrations import create_aftercare_discipline_incident
+
+    return create_aftercare_discipline_incident(
+        school_id=school_id,
+        student_id=student_id,
+        description=description,
+        severity=severity,
+    )
 
 
 # ---------------------------------------------------------------------------

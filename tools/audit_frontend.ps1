@@ -29,8 +29,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 
 $fe = "frontend/dashboards"
 if (-not (Test-Path $fe)) {
-  Write-Host "frontend/dashboards not found; skipping frontend audit" -ForegroundColor Yellow
-  exit 0
+  throw "frontend/dashboards not found; frontend audit cannot pass until the frontend source of truth is present."
 }
 
 Step "Node / npm version" {
