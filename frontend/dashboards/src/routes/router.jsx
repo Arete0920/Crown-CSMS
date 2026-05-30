@@ -660,11 +660,15 @@ export const router = createBrowserRouter([
   },
   {
     path: '/admin',
-    element: <Navigate to="/school-admin" replace />,
+    element: <Navigate to="/school-admin-dashboard" replace />,
   },
   {
     path: '/admin/dashboard',
-    element: <Navigate to="/school-admin" replace />,
+    element: <Navigate to="/school-admin-dashboard" replace />,
+  },
+  {
+    path: '/school-admin-dashboard',
+    element: <SchoolAdministratorDashboard />,
   },
   {
     path: '/school-admin',
