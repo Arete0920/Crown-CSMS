@@ -1,4 +1,4 @@
-# backend/core/tenant_header_middleware.py
+﻿# backend/core/tenant_header_middleware.py
 from __future__ import annotations
 
 from django.conf import settings
@@ -40,6 +40,8 @@ class TenantHeaderRequiredMiddleware:
         "/api/system/",
         "/api/auth",
         "/api/v1/auth",
+        "/api/v1/sandbox",
+        "/api/sandbox",
         "/api/billing/",
         "/api/director/",
         "/api/v1/gradebook/",
@@ -140,3 +142,4 @@ class TenantHeaderRequiredMiddleware:
         finally:
             # Always clear thread-local tenant context, even on exceptions
             clear_current_school()
+
