@@ -97,10 +97,10 @@ Status legend:
 | 063 | High | Add wizard role access tests per wizard slug | COMPLETE | frontend/dashboards/src/tests/wizardResilienceContracts.test.js::063 (per-slug role contract across WIZARD_MANIFEST/WIZARD_REGISTRY, pass) |
 | 064 | High | Add dashboard data-source declaration per card/widget | COMPLETE | frontend/dashboards/src/config/dashboardTemplates/index.js (dataSource annotation for template + card/widget collections) + frontend/dashboards/src/config/dashboardDataSourceContracts.test.js::064 (pass) |
 | 065 | High | Add no-placeholder-copy tests for ready dashboards | COMPLETE | frontend/dashboards/src/config/dashboardDataSourceContracts.test.js::065 (ready dashboard placeholder-copy gate, pass) |
-| 066 | Critical | Build canonical ownership map for student/household/guardian/enrollment | NOT_STARTED | |
-| 067 | Critical | Build canonical ownership map for invoice/payment/ledger | NOT_STARTED | |
-| 068 | Critical | Build canonical ownership map for assignment/grade entry | NOT_STARTED | |
-| 069 | Critical | Add duplicate-truth detectors for overlap tables/models | NOT_STARTED | |
+| 066 | Critical | Build canonical ownership map for student/household/guardian/enrollment | COMPLETE | docs/release/CANONICAL_OWNERSHIP_MAP_STUDENT_HOUSEHOLD_GUARDIAN_ENROLLMENT_20260530.md + scripts/release/verify_canonical_data_ownership_maps.ps1 (pass) |
+| 067 | Critical | Build canonical ownership map for invoice/payment/ledger | COMPLETE | docs/release/CANONICAL_OWNERSHIP_MAP_INVOICE_PAYMENT_LEDGER_20260530.md + scripts/release/verify_canonical_data_ownership_maps.ps1 (pass) |
+| 068 | Critical | Build canonical ownership map for assignment/grade entry | COMPLETE | docs/release/CANONICAL_OWNERSHIP_MAP_ASSIGNMENT_GRADE_ENTRY_20260530.md + scripts/release/verify_canonical_data_ownership_maps.ps1 (pass) |
+| 069 | Critical | Add duplicate-truth detectors for overlap tables/models | COMPLETE | docs/release/DUPLICATE_TRUTH_REGISTER_20260530.md + scripts/release/verify_duplicate_truth_overlap.ps1 (pass) |
 | 070 | High | Add enrollment reconciliation jobs and tests | NOT_STARTED | |
 | 071 | High | Add billing-ledger reconciliation jobs and tests | NOT_STARTED | |
 | 072 | High | Add idempotency tests for payment and invoice writes | NOT_STARTED | |
