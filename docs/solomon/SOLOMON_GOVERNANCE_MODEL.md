@@ -1,6 +1,11 @@
 ﻿# SOLOMON Governance Model
 
 Status: Planning Only
+Authority: Core governance field model for SOLOMON
+
+## Schema Companion
+
+The canonical intake shape for governance corpus records is defined in `docs/solomon/SOLOMON_GOVERNANCE_CORPUS_SCHEMA_20260529.md`.
 
 ## Required Governance Fields
 
@@ -28,7 +33,8 @@ Every future SOLOMON resource should support:
 
 ## Status Values
 
-- draft
+- proposed
+- review_pending
 - approved
 - published
 - archived

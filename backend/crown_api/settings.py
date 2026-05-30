@@ -70,8 +70,8 @@ if not _secret_key_env:
             "Missing required environment variable: DJANGO_SECRET_KEY. "
             "Set DJANGO_SECRET_KEY in your environment before starting the server."
         )
-    # Local dev only — insecure fallback is acceptable when DEBUG=True and not on Azure.
-    _secret_key_env = "django-insecure-77tws%k1#a!#aio14%6=4z6wn@_nrnu1d$(bur5-!2$-8+l$d2"
+    # Local dev only — generate an ephemeral secret for this process.
+    _secret_key_env = secrets.token_urlsafe(50)
 SECRET_KEY = _secret_key_env
 
 # SECURITY WARNING: don't run with debug turned on in production!

@@ -1,5 +1,7 @@
 # SOLOMON Phase 4B Review Signoff - 2026-05-29
 
+Supersession note: integration status authority has moved to `docs/solomon/SOLOMON_ACTIVE_COMPLETION_INTEGRATION_20260529.md`.
+
 Status: Approved (Architecture Only)
 Scope: Provenance and attribution architecture boundaries
 Reference: `docs/solomon/SOLOMON_PHASE4B_PROVENANCE_ATTRIBUTION_ARCHITECTURE.md`

@@ -8,13 +8,22 @@ from pathlib import Path
 
 pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = PROJECT_ROOT / "backend"
+
+
+def _iter_backend_py_files():
+    """Yield backend Python files while skipping known non-source trees for speed."""
+    skip_parts = {".venv", "venv", "node_modules", "__pycache__", ".git", "audit-artifacts", "docs"}
+    for p in BACKEND_ROOT.rglob("*.py"):
+        if any(part in skip_parts for part in p.parts):
+            continue
+        yield p
 
 
 def test_nurse_health_office_module_source_exists():
     """Verify Nurse Health Office implementation source is present in the repository."""
-    all_py = list(PROJECT_ROOT.rglob("*.py"))
     source_text = ""
-    for p in all_py:
+    for p in _iter_backend_py_files():
         try:
             source_text += p.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -34,14 +43,14 @@ def test_nurse_health_office_pytest_config_present():
 
 def test_nurse_health_office_no_placeholder_in_source():
     """Verify Nurse Health Office source does not consist entirely of placeholder stubs."""
-    all_py = list(PROJECT_ROOT.rglob("*.py"))
+    all_py = list(_iter_backend_py_files())
     assert len(all_py) > 10, "Fewer than 10 Python files found — likely wrong root"
 
 
 def test_nurse_health_office_school_keyword_in_source():
     """Verify tenant/school scoping keywords appear in the Nurse Health Office source tree."""
     source_text = ""
-    for p in PROJECT_ROOT.rglob("*.py"):
+    for p in _iter_backend_py_files():
         try:
             source_text += p.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -50,4 +59,4 @@ def test_nurse_health_office_school_keyword_in_source():
         "school_id" in source_text
         or "TenantScoped" in source_text
         or "school" in source_text.lower()
-    ), f"Nurse Health Office: tenant/school scoping not found in source"
+    ), "Nurse Health Office: tenant/school scoping not found in source"
