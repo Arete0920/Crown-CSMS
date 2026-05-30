@@ -16,16 +16,16 @@ function Require-Tool {
     }
 }
 
-function Resolve-ShellCommand {
-    if (Get-Command powershell -ErrorAction SilentlyContinue) { return "powershell" }
+function Resolve-PowerShellCommand {
     if (Get-Command pwsh -ErrorAction SilentlyContinue) { return "pwsh" }
+    if (Get-Command powershell -ErrorAction SilentlyContinue) { return "powershell" }
     throw "Missing required tool: powershell/pwsh"
 }
 
 function Resolve-NpmCommand {
-    if ($IsWindows -and (Get-Command npm.cmd -ErrorAction SilentlyContinue)) { return "npm.cmd" }
-    if (Get-Command npm -ErrorAction SilentlyContinue) { return "npm" }
+    # Windows PowerShell needs npm.cmd; pwsh on Unix uses npm.
     if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { return "npm.cmd" }
+    if (Get-Command npm -ErrorAction SilentlyContinue) { return "npm" }
     throw "Missing required tool: npm"
 }
 
@@ -161,7 +161,7 @@ function Get-PlaceholderHits {
 }
 
 Require-Tool git
-$shellExe = Resolve-ShellCommand
+$shellExe = Resolve-PowerShellCommand
 
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) {

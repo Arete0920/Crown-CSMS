@@ -16,9 +16,9 @@ function Require-Tool {
     }
 }
 
-function Resolve-ShellCommand {
-    if (Get-Command powershell -ErrorAction SilentlyContinue) { return "powershell" }
+function Resolve-PowerShellCommand {
     if (Get-Command pwsh -ErrorAction SilentlyContinue) { return "pwsh" }
+    if (Get-Command powershell -ErrorAction SilentlyContinue) { return "powershell" }
     throw "Missing required tool: powershell/pwsh"
 }
 
@@ -68,7 +68,7 @@ function Test-KeywordsInFiles {
 }
 
 Require-Tool git
-$shellExe = Resolve-ShellCommand
+$shellExe = Resolve-PowerShellCommand
 
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) {
@@ -94,10 +94,6 @@ $run105Passed = $false
 
 if (Test-Path $script105) {
     $cmdArgs = @("-NoProfile", "-File", $script105, "-Deep")
-    if (-not $Deep) {
-        # 106 always executes the deep 105 gate to satisfy release evidence requirements.
-        $null = $Deep
-    }
 
     $global:LASTEXITCODE = 0
     & $shellExe @cmdArgs 1> $run105Log 2>&1
@@ -115,30 +111,40 @@ if (-not (Test-Path $manifestPath)) { throw "Missing wizard manifest: $manifestP
 if (-not (Test-Path $routesPath)) { throw "Missing wizard route registry: $routesPath" }
 
 $manifestRows = @()
-foreach ($line in Get-Content $manifestPath) {
-    if ($line -match 'slug:\s*"([^"]+)".*title:\s*"([^"]+)".*path:\s*"([^"]+)"') {
+$manifestText = Get-Content $manifestPath -Raw
+$manifestBlocks = [regex]::Matches($manifestText, "(?s)\{[^{}]*\}")
+foreach ($block in $manifestBlocks) {
+    $slugMatch = [regex]::Match($block.Value, 'slug\s*:\s*["'']([^"'']+)["'']')
+    $titleMatch = [regex]::Match($block.Value, 'title\s*:\s*["'']([^"'']+)["'']')
+    $pathMatch = [regex]::Match($block.Value, 'path\s*:\s*["'']([^"'']+)["'']')
+    if ($slugMatch.Success -and $titleMatch.Success -and $pathMatch.Success) {
         $manifestRows += [pscustomobject]@{
-            Slug = $Matches[1]
-            Title = $Matches[2]
-            Path = $Matches[3]
+            Slug = $slugMatch.Groups[1].Value
+            Title = $titleMatch.Groups[1].Value
+            Path = $pathMatch.Groups[1].Value
         }
     }
 }
 
 $routeMap = @{}
 $routeText = Get-Content $routesPath -Raw
-$routeMatches = [regex]::Matches(
-    $routeText,
-    "(?s)\{\s*path:\s*'(?<path>[^']+)'.*?component:\s*(?<component>[A-Za-z0-9_]+),.*?name:\s*'(?<name>[^']+)'.*?roles:\s*\[(?<roles>[^\]]*)\]"
-)
+$rawDefsMatch = [regex]::Match($routeText, "(?s)RAW_WIZARD_ROUTE_DEFINITIONS\s*=\s*\[(?<body>.*?)\]\s*;")
+$routeBlockText = if ($rawDefsMatch.Success) { $rawDefsMatch.Groups["body"].Value } else { $routeText }
+$routeMatches = [regex]::Matches($routeBlockText, "(?s)\{[^{}]*\}")
 foreach ($m in $routeMatches) {
+    $pathMatch = [regex]::Match($m.Value, 'path\s*:\s*["'']([^"'']+)["'']')
+    $componentMatch = [regex]::Match($m.Value, 'component\s*:\s*([A-Za-z0-9_]+)')
+    $nameMatch = [regex]::Match($m.Value, 'name\s*:\s*["'']([^"'']+)["'']')
+    $rolesMatch = [regex]::Match($m.Value, '(?s)roles\s*:\s*\[(?<roles>[^\]]*)\]')
+    if (-not ($pathMatch.Success -and $componentMatch.Success -and $nameMatch.Success)) { continue }
+
     $roles = @()
-    foreach ($rm in [regex]::Matches($m.Groups["roles"].Value, "'([^']+)'")) {
+    foreach ($rm in [regex]::Matches($rolesMatch.Groups["roles"].Value, '["'']([^"'']+)["'']')) {
         $roles += $rm.Groups[1].Value
     }
-    $routeMap[$m.Groups["path"].Value] = [pscustomobject]@{
-        Name = $m.Groups["name"].Value
-        Component = $m.Groups["component"].Value
+    $routeMap[$pathMatch.Groups[1].Value] = [pscustomobject]@{
+        Name = $nameMatch.Groups[1].Value
+        Component = $componentMatch.Groups[1].Value
         Roles = $roles
     }
 }
@@ -176,11 +182,11 @@ foreach ($wiz in $manifestRows) {
     }
 
     $slugToken = $wiz.Slug.ToLowerInvariant()
-    $titleToken = $wiz.Title.ToLowerInvariant()
+    $componentToken = if ($null -ne $route) { $route.Component.ToLowerInvariant() } else { "" }
     $related = @(
         $evidenceFiles | Where-Object {
             $p = $_.FullName.ToLowerInvariant()
-            $p -like "*$slugToken*" -or $p -like "*$($titleToken -replace '[^a-z0-9]+','')*"
+            $p -like "*$slugToken*" -or (-not [string]::IsNullOrWhiteSpace($componentToken) -and $p -like "*$componentToken*")
         } | ForEach-Object { $_.FullName }
     )
     if (($null -eq $related -or $related.Count -eq 0) -and $null -ne $componentPath) {
@@ -233,8 +239,8 @@ foreach ($wiz in $manifestRows) {
     }
 }
 
-$unknownStateRows = @($rows | Where-Object { $_.RuntimeState -eq "UNKNOWN" })
 $incompleteRows = @($rows | Where-Object { $_.RuntimeState -ne "COMPLETE" })
+$unknownRows = @($rows | Where-Object { $_.RuntimeState -eq "UNKNOWN" })
 $allComplete = ($incompleteRows.Count -eq 0)
 
 Write-CsvSafe -Path (Join-Path $outDir "20_wizard_completion_matrix.csv") -Rows $rows
@@ -244,14 +250,15 @@ $summary.Add("# Crown Full Completion Truth Gate Summary")
 $summary.Add("")
 $summary.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 $summary.Add("- 105 dashboard gate deep pass: $run105Passed")
+$summary.Add("- Evidence model: heuristic static scan (keywords + test/artifact traces)")
 $summary.Add("- Wizard rows: $($rows.Count)")
 $summary.Add("- COMPLETE rows: $(@($rows | Where-Object { $_.RuntimeState -eq 'COMPLETE' }).Count)")
 $summary.Add("- INCOMPLETE rows: $($incompleteRows.Count)")
-$summary.Add("- UNKNOWN rows: $($unknownStateRows.Count)")
+$summary.Add("- UNKNOWN rows: $($unknownRows.Count)")
 $summary.Add("")
 $summary.Add("## Verdict")
 $summary.Add("")
-if ($run105Passed -and $allComplete -and $unknownStateRows.Count -eq 0) {
+if ($run105Passed -and $allComplete) {
     $summary.Add("PASS")
 } else {
     $summary.Add("REVIEW REQUIRED")
@@ -281,8 +288,8 @@ $status = [ordered]@{
     wizard_rows = $rows
     complete_count = @($rows | Where-Object { $_.RuntimeState -eq "COMPLETE" }).Count
     incomplete_count = $incompleteRows.Count
-    unknown_count = $unknownStateRows.Count
-    pass = ($run105Passed -and $allComplete -and $unknownStateRows.Count -eq 0)
+    unknown_count = $unknownRows.Count
+    pass = ($run105Passed -and $allComplete)
 }
 
 Write-JsonFile -Path (Join-Path $outDir "99_STATUS.json") -Object $status
