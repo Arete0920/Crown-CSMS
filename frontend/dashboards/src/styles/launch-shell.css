@@ -339,14 +339,6 @@
   gap: 8px;
 }
 
-.launch-chart-card {
-  min-height: 320px;
-}
-
-.launch-chart-wrap {
-  min-height: 240px;
-}
-
 .launch-school-chip {
   max-width: min(45vw, 320px);
   overflow: hidden;
@@ -1240,6 +1232,7 @@
 }
 
 .launch-chart-card {
+  min-height: 320px;
   background:
     radial-gradient(circle at 100% -30%, rgba(37, 99, 235, 0.1), transparent 42%),
     #ffffff;
