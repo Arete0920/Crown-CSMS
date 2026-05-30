@@ -59,7 +59,7 @@ _tmp/
 _local_proofs/
 app_logs/
 media/
-.worktrees/
+WING.worktrees/
 
 # Local secrets (never commit â€” contains rotated credentials)
 local.secrets.ps1
@@ -218,6 +218,7 @@ local.secrets.ps1.example
 *.bak
 *.backup
 *.tmp
+backend/crown_api/settings.py.phase*
 .env
 .env.*
 !.env.example
