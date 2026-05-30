@@ -19,7 +19,7 @@ Status legend:
 | --- | --- | --- | --- | --- |
 | 001 | Critical | Resolve authority contradiction between conditional-go and unrestricted-go wording | COMPLETE | P0 wording convergence updates in docs/release/P0_EXECUTION_BOARD_20260528.md |
 | 002 | Critical | Publish single controlling truth table for authority precedence | COMPLETE | docs/release/RELEASE_AUTHORITY_PRECEDENCE_TABLE_20260530.md |
-| 003 | Critical | Enforce non-canonical docs cannot declare go/no-go | COMPLETE | scripts/release/verify_noncanonical_authority_claims.ps1 (currently failing with 3 violations for non-canonical claim docs) |
+| 003 | Critical | Enforce non-canonical docs cannot declare go/no-go | COMPLETE | scripts/release/verify_noncanonical_authority_claims.ps1 (pass: violations=0 after authority scope labeling) |
 | 004 | Critical | Add canonical status checksum block updated on release-state change | NOT_STARTED | |
 | 005 | Critical | Add candidate SHA field in canonical status | NOT_STARTED | |
 | 006 | Critical | Add approved deploy SHA field in canonical status | NOT_STARTED | |
@@ -31,8 +31,8 @@ Status legend:
 | 012 | High | If temporary, merge authority stack to main | NOT_STARTED | |
 | 013 | High | If candidate branch, publish freeze criteria | NOT_STARTED | |
 | 014 | High | Enforce branch parity script as pre-merge check | COMPLETE | scripts/release/verify_branch_parity.ps1 (pass on release branch: ahead=0 behind=0) |
-| 015 | High | Add drift threshold alert for ahead/behind deltas | COMPLETE | scripts/release/check_branch_drift_threshold.ps1 (currently failing against origin/main: ahead=62 behind=52 over thresholds) |
-| 016 | High | Require every release claim to name branch and SHA | COMPLETE | scripts/release/verify_release_claim_branch_sha.ps1 (currently failing with branch/SHA metadata violations) |
+| 015 | High | Add drift threshold alert for ahead/behind deltas | COMPLETE | scripts/release/check_branch_drift_threshold.ps1 (currently failing against origin/main: ahead=64 behind=52 over thresholds) |
+| 016 | High | Require every release claim to name branch and SHA | COMPLETE | scripts/release/verify_release_claim_branch_sha.ps1 (pass: violations=0 after branch/SHA metadata and scope labeling updates) |
 | 017 | High | Add automated detection of authority files missing on main | COMPLETE | scripts/release/verify_authority_files_on_main.ps1 (currently failing on origin/main: files missing) |
 | 018 | High | Add release-claim linter for contradictory wording | COMPLETE | scripts/release/scan_release_claim_wording.ps1 |
 | 019 | High | Add stale-claim scanner for historical ship/go language | COMPLETE | scripts/release/scan_release_claim_wording.ps1 |

@@ -1,5 +1,13 @@
 # Production Release First-Blocker Queue (2026-05-29)
 
+> Authority Scope Notice (2026-05-30)
+>
+> This document is an operational blocker queue and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Purpose: convert the seven local-check failures from the remote-clean mainline reconcile packet (`20260529_212250`) into a minimal, evidence-first closure queue.
 
 Evidence source:

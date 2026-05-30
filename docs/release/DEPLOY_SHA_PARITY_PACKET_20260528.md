@@ -1,5 +1,13 @@
 # Deploy SHA Parity Packet - 2026-05-29
 
+> Authority Scope Notice (2026-05-30)
+>
+> This document is an operational evidence packet and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Purpose: authoritative parity evidence between repository SHAs and latest captured deployed runtime SHA evidence.
 
 ## Git SHA Snapshot (captured 2026-05-29)
