@@ -31,6 +31,13 @@ from crown_api.release_gate_views import (
     TranscriptRouteProbeView,
 )
 
+
+def _optional_module_exists(module_path: str) -> bool:
+    try:
+        return find_spec(module_path) is not None
+    except (ModuleNotFoundError, ValueError):
+        return False
+
 urlpatterns = [
     # DEV-only ops endpoints (must come early before includes)
     path("system/ensure-ci-user/", ensure_ci_user, name="system-ensure-ci-user"),
@@ -129,6 +136,6 @@ urlpatterns = [
     path("", include("crown_api.api_urls")),
 ]
 
-if find_spec("crm_marketing.api.urls"):
+if _optional_module_exists("crm_marketing.api.urls"):
     # CRM Marketing add-on (non-canonical core truth)
     urlpatterns.insert(-4, path("crm/", include("crm_marketing.api.urls")))
