@@ -92,9 +92,9 @@ Status legend:
 
 | ID | Priority | Task | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| 061 | High | Add wizard rollback/error recovery tests per critical flow | NOT_STARTED | |
-| 062 | High | Add wizard tenant isolation tests per wizard slug | NOT_STARTED | |
-| 063 | High | Add wizard role access tests per wizard slug | NOT_STARTED | |
+| 061 | High | Add wizard rollback/error recovery tests per critical flow | COMPLETE | frontend/dashboards/src/tests/wizardResilienceContracts.test.js::061 (error-surface and non-2xx recovery contract across critical *_wizard.js flows, pass) |
+| 062 | High | Add wizard tenant isolation tests per wizard slug | COMPLETE | frontend/dashboards/src/tests/wizardResilienceContracts.test.js::062 (manifest slug -> route/apiPrefix isolation + tenant scoping contract across wizard APIs, pass) |
+| 063 | High | Add wizard role access tests per wizard slug | COMPLETE | frontend/dashboards/src/tests/wizardResilienceContracts.test.js::063 (per-slug role contract across WIZARD_MANIFEST/WIZARD_REGISTRY, pass) |
 | 064 | High | Add dashboard data-source declaration per card/widget | NOT_STARTED | |
 | 065 | High | Add no-placeholder-copy tests for ready dashboards | NOT_STARTED | |
 | 066 | Critical | Build canonical ownership map for student/household/guardian/enrollment | NOT_STARTED | |
