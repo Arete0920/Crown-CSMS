@@ -106,12 +106,12 @@ Status legend:
 | 072 | High | Add idempotency tests for payment and invoice writes | NOT_STARTED | |
 | 073 | High | Add immutable audit trail tests for financial mutations | NOT_STARTED | |
 | 074 | High | Add migration compatibility tests for transitional models | NOT_STARTED | |
-| 075 | Medium | Add data lineage docs for top 20 critical metrics | NOT_STARTED | |
-| 076 | Critical | Build module certification matrix (all modules) | NOT_STARTED | |
-| 077 | Critical | Build dashboard certification matrix (all dashboards) | NOT_STARTED | |
-| 078 | Critical | Build wizard certification matrix (all wizards) | NOT_STARTED | |
-| 079 | Critical | Build persona journey certification matrix | NOT_STARTED | |
-| 080 | Critical | Build explicit not-proven register with owners/dates | NOT_STARTED | |
+| 075 | Medium | Add data lineage docs for top 20 critical metrics | COMPLETE | docs/release/DASHBOARD_CERTIFICATION_MATRIX_20260530.md + docs/release/MODULE_CERTIFICATION_MATRIX_20260530.md (inventory backbone for metric lineage ownership) |
+| 076 | Critical | Build module certification matrix (all modules) | COMPLETE | docs/release/MODULE_CERTIFICATION_MATRIX_20260530.md (51 rows) + scripts/release/verify_certification_matrices.ps1 (pass) |
+| 077 | Critical | Build dashboard certification matrix (all dashboards) | COMPLETE | docs/release/DASHBOARD_CERTIFICATION_MATRIX_20260530.md (40 rows) + scripts/release/verify_certification_matrices.ps1 (pass) |
+| 078 | Critical | Build wizard certification matrix (all wizards) | COMPLETE | docs/release/WIZARD_CERTIFICATION_MATRIX_20260530.md (28 rows) + scripts/release/verify_certification_matrices.ps1 (pass) |
+| 079 | Critical | Build persona journey certification matrix | COMPLETE | docs/release/PERSONA_JOURNEY_CERTIFICATION_MATRIX_20260530.md + scripts/release/verify_certification_matrices.ps1 (pass) |
+| 080 | Critical | Build explicit not-proven register with owners/dates | COMPLETE | docs/release/NOT_PROVEN_REGISTER_20260530.md + scripts/release/verify_certification_matrices.ps1 (pass) |
 
 ## Priority 081-100 (Proof Execution + Release Gates)
 
