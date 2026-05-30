@@ -18,8 +18,8 @@ Status legend:
 | ID | Priority | Task | Status | Evidence |
 | --- | --- | --- | --- | --- |
 | 001 | Critical | Resolve authority contradiction between conditional-go and unrestricted-go wording | COMPLETE | P0 wording convergence updates in docs/release/P0_EXECUTION_BOARD_20260528.md |
-| 002 | Critical | Publish single controlling truth table for authority precedence | NOT_STARTED | |
-| 003 | Critical | Enforce non-canonical docs cannot declare go/no-go | NOT_STARTED | |
+| 002 | Critical | Publish single controlling truth table for authority precedence | COMPLETE | docs/release/RELEASE_AUTHORITY_PRECEDENCE_TABLE_20260530.md |
+| 003 | Critical | Enforce non-canonical docs cannot declare go/no-go | COMPLETE | scripts/release/verify_noncanonical_authority_claims.ps1 (currently failing with 3 violations for non-canonical claim docs) |
 | 004 | Critical | Add canonical status checksum block updated on release-state change | NOT_STARTED | |
 | 005 | Critical | Add candidate SHA field in canonical status | NOT_STARTED | |
 | 006 | Critical | Add approved deploy SHA field in canonical status | NOT_STARTED | |
