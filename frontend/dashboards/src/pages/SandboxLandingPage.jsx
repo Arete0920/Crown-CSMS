@@ -74,7 +74,10 @@ export default function SandboxLandingPage() {
         route: session.route,
       });
 
-      globalThis.location.href = session.route || persona.route || "/school-admin-dashboard";
+      const targetRoute = session.route || persona.route || "/school-admin-dashboard";
+      if (typeof globalThis.location?.assign === "function") {
+        globalThis.location.assign(targetRoute);
+      }
     } catch (error) {
       setLaunchError(error.message || "Sandbox launch failed.");
       setLaunchingRole("");

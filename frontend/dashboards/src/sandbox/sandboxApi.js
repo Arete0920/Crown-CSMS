@@ -7,7 +7,7 @@ function apiUrl(path) {
 
 export async function resolveSandboxInvite(inviteId) {
   if (!inviteId) return null;
-  const response = await fetch(apiUrl(`/api/v1/sandbox/invites/${encodeURIComponent(inviteId)}/`));
+  const response = await globalThis.fetch(apiUrl(`/api/v1/sandbox/invites/${encodeURIComponent(inviteId)}/`));
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.detail || `Invite resolution failed (${response.status})`);
@@ -16,7 +16,7 @@ export async function resolveSandboxInvite(inviteId) {
 }
 
 export async function createSandboxSession({ inviteId, role, school, track, guidance, tour }) {
-  const response = await fetch(apiUrl("/api/v1/sandbox/session/"), {
+  const response = await globalThis.fetch(apiUrl("/api/v1/sandbox/session/"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -54,7 +54,7 @@ export function storeSandboxSession(session) {
 
 export async function recordSandboxEvent(payload) {
   try {
-    await fetch(apiUrl("/api/v1/sandbox/events/"), {
+    await globalThis.fetch(apiUrl("/api/v1/sandbox/events/"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload || {}),
@@ -65,7 +65,7 @@ export async function recordSandboxEvent(payload) {
 }
 
 export async function submitSandboxFeedback(payload) {
-  const response = await fetch(apiUrl("/api/v1/sandbox/feedback/"), {
+  const response = await globalThis.fetch(apiUrl("/api/v1/sandbox/feedback/"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload || {}),

@@ -28,7 +28,13 @@ beforeEach(() => {
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true }) });
   }));
   delete window.location;
-  window.location = { href: "", search: "" };
+  window.location = {
+    href: "",
+    search: "",
+    assign(url) {
+      this.href = url;
+    },
+  };
 });
 
 afterEach(() => {
@@ -61,7 +67,7 @@ describe("Sandbox persona launch", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send feedback" }));
 
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         "/api/v1/sandbox/events/",
         expect.objectContaining({
           method: "POST",
