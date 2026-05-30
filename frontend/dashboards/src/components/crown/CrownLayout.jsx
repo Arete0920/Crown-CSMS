@@ -32,10 +32,19 @@ function getProfile() {
       sessionStorage.getItem("crown.user.name") ||
       sessionStorage.getItem("crown.user.email") ||
       "User";
-    return { role, displayName };
+    return { role: toRoleLabel(role), displayName };
   } catch {
     return { role: "Role", displayName: "User" };
   }
+}
+
+function toRoleLabel(role) {
+  const value = String(role || "").trim();
+  if (!value) return "Role";
+  if (value.toLowerCase() === "school_admin") return "School Administrator";
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function buildBreadcrumb(pathname) {

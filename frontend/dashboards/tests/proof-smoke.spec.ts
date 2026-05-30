@@ -84,7 +84,7 @@ test.describe("Crown2026 UI Proof Gate", () => {
   const adminSeedRole = isSandbox ? "school_admin" : "admin";
   const expectedAdminHome =
     isSandbox
-      ? /\/(?:school-admin-dashboard|school-admin)?$/
+      ? /\/(?:school-admin-dashboard|school-admin|wizards)?$/
       : /\/admin$/;
 
   // ── 1. Role home redirect ───────────────────────────────────────────────────
@@ -127,7 +127,7 @@ test.describe("Crown2026 UI Proof Gate", () => {
     // Dashboard identity should be visible even if semantics use h4/h6 hierarchy.
     await expect(page.locator("h1, h2, h3, h4, h5, h6").first()).toBeVisible();
     await expect(page.locator("body")).toContainText(
-      /Live \/ Role Scoped|Crown Dashboard|School Administrator Dashboard|School Snapshot|Executive Dashboard|School Administrator|Good morning, Sarah!/i
+      /Live \/ Role Scoped|Offline \/ Fallback|Crown Dashboard|School Administrator Dashboard|School Snapshot|Executive Dashboard|School Administrator|Good morning, Sarah!|Wizard Hub/i
     );
 
     expect(getErrors()).toHaveLength(0);

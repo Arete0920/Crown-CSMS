@@ -100,6 +100,9 @@ const ROLE_ROUTE_MAP = new Map([
   ['office_manager',    '/office'],
   ['hr',                '/office'],
   // Admin — route to /admin; router.jsx redirects /admin → /school-admin-dashboard in sandbox mode
+  ['school_admin',      '/admin'],
+  ['super_admin',       '/admin'],
+  ['head_of_school',    '/admin'],
   ['admin',             '/admin'],
   ['director',          '/admin'],
   ['principal',         '/admin'],
@@ -146,7 +149,8 @@ export default function RoleHomeRedirect() {
   const isSandbox = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
   const role = getStoredRole();
   const sandboxTarget = isSandbox && role === "school_admin" ? "/school-admin-dashboard" : "";
-  const resolvedTarget = token ? resolveDashboardPath() : "";
+  const hasAuthHints = Boolean(token || role);
+  const resolvedTarget = hasAuthHints ? resolveDashboardPath() : "";
 
   if (sandboxTarget) {
     return <Navigate to={sandboxTarget} replace />;
