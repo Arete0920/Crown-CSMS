@@ -249,6 +249,9 @@ INSTALLED_APPS = [
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
+# Use the project's custom user model defined in core.models.
+AUTH_USER_MODEL = 'core.UserAccount'
+
 MIDDLEWARE = [
     'core.middleware.DemoWriteBlockMiddleware',
     'crown_api.middleware.api_exceptions.ApiExceptionMiddleware',  # Exception envelope (outermost)
@@ -270,6 +273,15 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'crown_api.urls'
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'CROWN API',
+    'VERSION': '1.0.0',
+}
 
 TEMPLATES = [
     {
