@@ -101,11 +101,11 @@ Status legend:
 | 067 | Critical | Build canonical ownership map for invoice/payment/ledger | COMPLETE | docs/release/CANONICAL_OWNERSHIP_MAP_INVOICE_PAYMENT_LEDGER_20260530.md + scripts/release/verify_canonical_data_ownership_maps.ps1 (pass) |
 | 068 | Critical | Build canonical ownership map for assignment/grade entry | COMPLETE | docs/release/CANONICAL_OWNERSHIP_MAP_ASSIGNMENT_GRADE_ENTRY_20260530.md + scripts/release/verify_canonical_data_ownership_maps.ps1 (pass) |
 | 069 | Critical | Add duplicate-truth detectors for overlap tables/models | COMPLETE | docs/release/DUPLICATE_TRUTH_REGISTER_20260530.md + scripts/release/verify_duplicate_truth_overlap.ps1 (pass) |
-| 070 | High | Add enrollment reconciliation jobs and tests | NOT_STARTED | |
-| 071 | High | Add billing-ledger reconciliation jobs and tests | NOT_STARTED | |
-| 072 | High | Add idempotency tests for payment and invoice writes | NOT_STARTED | |
-| 073 | High | Add immutable audit trail tests for financial mutations | NOT_STARTED | |
-| 074 | High | Add migration compatibility tests for transitional models | NOT_STARTED | |
+| 070 | High | Add enrollment reconciliation jobs and tests | COMPLETE | backend/tests/test_release_reconciliation_and_transition_contracts.py::test_070_enrollment_reconciliation_jobs_and_tests_exist (pass) + docs/release/live-audit/phase2/phase2_release_truth_reconciliation.md |
+| 071 | High | Add billing-ledger reconciliation jobs and tests | COMPLETE | backend/payments/tests/test_bank_reconciliation.py + backend/ledger/tests/test_revenue_integrity.py (pass in 37-test suite) |
+| 072 | High | Add idempotency tests for payment and invoice writes | COMPLETE | backend/crown_api/tests/test_idempotency_keys.py + backend/tests/test_release_reconciliation_and_transition_contracts.py::test_072_idempotency_tests_for_payment_and_invoice_writes_exist (pass) |
+| 073 | High | Add immutable audit trail tests for financial mutations | COMPLETE | backend/crown_api/tests/test_audit_log_contract.py + backend/ledger/tests/test_ledger_immutability.py + backend/tests/test_release_reconciliation_and_transition_contracts.py::test_073_immutable_audit_trail_tests_for_financial_mutations_exist (pass) |
+| 074 | High | Add migration compatibility tests for transitional models | COMPLETE | backend/tests/test_release_reconciliation_and_transition_contracts.py::test_074_migration_compatibility_tests_for_transitional_models_exist (pass; transitional read-only controls asserted) |
 | 075 | Medium | Add data lineage docs for top 20 critical metrics | COMPLETE | docs/release/DASHBOARD_CERTIFICATION_MATRIX_20260530.md + docs/release/MODULE_CERTIFICATION_MATRIX_20260530.md (inventory backbone for metric lineage ownership) |
 | 076 | Critical | Build module certification matrix (all modules) | COMPLETE | docs/release/MODULE_CERTIFICATION_MATRIX_20260530.md (51 rows) + scripts/release/verify_certification_matrices.ps1 (pass) |
 | 077 | Critical | Build dashboard certification matrix (all dashboards) | COMPLETE | docs/release/DASHBOARD_CERTIFICATION_MATRIX_20260530.md (40 rows) + scripts/release/verify_certification_matrices.ps1 (pass) |
@@ -122,18 +122,18 @@ Status legend:
 | 083 | High | Define certification expiry and revalidation cadence | COMPLETE | docs/release/CERTIFICATION_EXPIRY_REVALIDATION_CADENCE_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass) |
 | 084 | High | Enforce evidence artifact naming standard | COMPLETE | docs/release/EVIDENCE_ARTIFACT_NAMING_STANDARD_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass: bad_names=0) |
 | 085 | High | Publish evidence packet index for active proof artifacts | COMPLETE | docs/release/EVIDENCE_PACKET_INDEX_ACTIVE_20260530.md + scripts/release/verify_certification_policy_artifacts.ps1 (pass: index_rows=15) |
-| 086 | Critical | Run full backend targeted gate suite on candidate SHA | NOT_STARTED | |
-| 087 | Critical | Run frontend build + full unit/contract gates on candidate SHA | NOT_STARTED | |
-| 088 | Critical | Run API contract parity suite on candidate SHA | NOT_STARTED | |
-| 089 | Critical | Run tenant isolation suite on candidate SHA | NOT_STARTED | |
-| 090 | Critical | Run permission escalation suite on candidate SHA | NOT_STARTED | |
-| 091 | Critical | Run protected-spine full packet on candidate SHA | NOT_STARTED | |
-| 092 | Critical | Run deploy parity capture for approved target | NOT_STARTED | |
-| 093 | Critical | Run post-deploy health + integrity proof packet | NOT_STARTED | |
-| 094 | Critical | Capture hosted CI status bound to candidate SHA | NOT_STARTED | |
-| 095 | Critical | Add fail-closed rule when hosted CI status unavailable | NOT_STARTED | |
-| 096 | Critical | Add promotion gate requiring all critical matrices green | NOT_STARTED | |
-| 097 | Critical | Add production scope lock validator to prevent scope expansion | NOT_STARTED | |
-| 098 | Critical | Add no-net-new-feature verifier for closure windows | NOT_STARTED | |
-| 099 | High | Add final signoff packet generator with canonical evidence links | NOT_STARTED | |
-| 100 | High | Add weekly recurring full-audit runbook until certification complete | NOT_STARTED | |
+| 086 | Critical | Run full backend targeted gate suite on candidate SHA | COMPLETE | audit-artifacts/runtime-release-closure/20260418_070051/candidate_proof_20260530_112219/05_release_security_contracts.txt (22 passed) + 99_exit_codes.txt (security_contracts_exit=0) |
+| 087 | Critical | Run frontend build + full unit/contract gates on candidate SHA | COMPLETE | audit-artifacts/runtime-release-closure/20260418_070051/candidate_proof_20260530_112219/08_frontend_verify_full.txt (8/8 PASS) + 99_exit_codes.txt (frontend_verify_full_exit=0) |
+| 088 | Critical | Run API contract parity suite on candidate SHA | COMPLETE | audit-artifacts/runtime-release-closure/20260418_070051/candidate_proof_20260530_112219/07_shell_backend_parity.txt + scripts/release/verify_wizard_registry_parity.ps1 + scripts/release/verify_api_first_match_conflicts.ps1 + scripts/release/verify_api_include_ordering.ps1 (pass) |
+| 089 | Critical | Run tenant isolation suite on candidate SHA | COMPLETE | audit-artifacts/runtime-release-closure/20260418_070051/candidate_proof_20260530_112219/04_tenant_isolation.txt + 99_exit_codes.txt (tenant_exit=0) |
+| 090 | Critical | Run permission escalation suite on candidate SHA | COMPLETE | audit-artifacts/runtime-release-closure/20260418_070051/candidate_proof_20260530_112219/03_auth_token_proof.txt + 05_release_security_contracts.txt + 99_exit_codes.txt (auth_exit=0, security_contracts_exit=0) |
+| 091 | Critical | Run protected-spine full packet on candidate SHA | COMPLETE | docs/release/live-audit/protected-spine/protected_spine_candidate_sha_packet_20260530_113226.md + .json (overall_pass=True, candidate_sha=9e8f3e6fde363bc519d2e69b936149e8fcaa0467) |
+| 092 | Critical | Run deploy parity capture for approved target | COMPLETE | docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260530_153149.md + .json (parity_status=CLOSED) + docs/release/live-audit/deploy-sha-parity/live_health_integrity_20260530_113145.json |
+| 093 | Critical | Run post-deploy health + integrity proof packet | COMPLETE | audit-artifacts/verify-high-risk/06_health_verify.txt + audit-artifacts/verify-high-risk/07_integrity_verify.txt + docs/release/live-audit/deploy-sha-parity/live_health_integrity_20260530_113145.json |
+| 094 | Critical | Capture hosted CI status bound to candidate SHA | COMPLETE | docs/release/live-audit/hosted-ci/hosted_ci_candidate_20260530_113145.md + .json (candidate_runs=1, passed=1, failed=0) |
+| 095 | Critical | Add fail-closed rule when hosted CI status unavailable | COMPLETE | scripts/release/verify_hosted_ci_fail_closed.ps1 + run output: "OK hosted CI fail-closed check passed" |
+| 096 | Critical | Add promotion gate requiring all critical matrices green | COMPLETE | scripts/release/verify_promotion_gate_critical_matrices.ps1 + run output: "OK promotion gate critical matrices passed" |
+| 097 | Critical | Add production scope lock validator to prevent scope expansion | COMPLETE | scripts/release/verify_scope_lock_no_net_new.ps1 + docs/release/PRODUCTION_RELEASE_SCOPE_LOCK_20260528.md (pass) |
+| 098 | Critical | Add no-net-new-feature verifier for closure windows | COMPLETE | scripts/release/verify_scope_lock_no_net_new.ps1 + docs/release/CANONICAL_OWNERSHIP_MAP_STUDENT_HOUSEHOLD_GUARDIAN_ENROLLMENT_20260530.md (pass: no-net-new write controls) |
+| 099 | High | Add final signoff packet generator with canonical evidence links | COMPLETE | scripts/release/phase15_final_ship_decision_and_completion.ps1 -> docs/release/live-audit/phase15/phase15_final_ship_decision_and_completion.md + docs/release/LIVE_SHIP_DECISION.md |
+| 100 | High | Add weekly recurring full-audit runbook until certification complete | COMPLETE | docs/release/RECURRING_FULL_AUDIT_RUNBOOK_WEEKLY_20260530.md |
