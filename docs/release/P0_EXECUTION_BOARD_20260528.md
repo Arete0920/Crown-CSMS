@@ -4,10 +4,14 @@ Purpose: close only the blockers that prevent transition from CONDITIONAL GO to 
 
 Canonical authority baseline:
 
-- Repository-wide decision for approved release slice is UNRESTRICTED GO (`docs/CURRENT_RELEASE_STATUS.md`).
-- Deploy SHA parity is CLOSED on approved candidate SHA (`docs/CURRENT_RELEASE_STATUS.md`).
-- Current scorecard reflects approved slice GO and entire-platform NOT GO (`docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`).
+- Repository-wide decision is CONDITIONAL GO (`docs/CURRENT_RELEASE_STATUS.md`).
+- Deploy SHA parity remains PARTIAL / NOT YET CLOSED at repository-level authority (`docs/CURRENT_RELEASE_STATUS.md`).
+- Current scorecard decision is CONDITIONAL GO (`docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`).
 - Supporting ranked closure backlog: `docs/release/PRODUCTION_RELEASE_TOP_10_REMAINING_TASKS_20260528.md`.
+
+Canonical truth priority:
+
+- If any wording in this board conflicts with `docs/CURRENT_RELEASE_STATUS.md` or `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`, those two canonical sources control.
 
 ## Scope and Guardrails
 
