@@ -20,20 +20,20 @@ Status legend:
 | 001 | Critical | Resolve authority contradiction between conditional-go and unrestricted-go wording | COMPLETE | P0 wording convergence updates in docs/release/P0_EXECUTION_BOARD_20260528.md |
 | 002 | Critical | Publish single controlling truth table for authority precedence | COMPLETE | docs/release/RELEASE_AUTHORITY_PRECEDENCE_TABLE_20260530.md |
 | 003 | Critical | Enforce non-canonical docs cannot declare go/no-go | COMPLETE | scripts/release/verify_noncanonical_authority_claims.ps1 (pass: violations=0 after authority scope labeling) |
-| 004 | Critical | Add canonical status checksum block updated on release-state change | NOT_STARTED | |
-| 005 | Critical | Add candidate SHA field in canonical status | NOT_STARTED | |
-| 006 | Critical | Add approved deploy SHA field in canonical status | NOT_STARTED | |
-| 007 | Critical | Add runtime-validated SHA field in canonical status | NOT_STARTED | |
-| 008 | Critical | Add parity verdict field in canonical status | NOT_STARTED | |
-| 009 | Critical | Add protected-spine verdict field in canonical status | NOT_STARTED | |
+| 004 | Critical | Add canonical status checksum block updated on release-state change | COMPLETE | docs/CURRENT_RELEASE_STATUS.md metadata block + scripts/release/verify_canonical_status_metadata.ps1 (checksum verified) |
+| 005 | Critical | Add candidate SHA field in canonical status | COMPLETE | docs/CURRENT_RELEASE_STATUS.md -> Candidate SHA |
+| 006 | Critical | Add approved deploy SHA field in canonical status | COMPLETE | docs/CURRENT_RELEASE_STATUS.md -> Approved deploy SHA |
+| 007 | Critical | Add runtime-validated SHA field in canonical status | COMPLETE | docs/CURRENT_RELEASE_STATUS.md -> Runtime-validated SHA |
+| 008 | Critical | Add parity verdict field in canonical status | COMPLETE | docs/CURRENT_RELEASE_STATUS.md -> Parity verdict |
+| 009 | Critical | Add protected-spine verdict field in canonical status | COMPLETE | docs/CURRENT_RELEASE_STATUS.md -> Protected-spine verdict |
 | 010 | Critical | Add authority convergence checklist gate before promotion language | COMPLETE | scripts/release/verify_authority_decision_sync.ps1 |
 | 011 | High | Decide release branch policy (temporary vs candidate authority branch) | NOT_STARTED | |
-| 012 | High | If temporary, merge authority stack to main | NOT_STARTED | |
+| 012 | High | If temporary, merge authority stack to main | COMPLETE | main updated at commit 1fe29aba4c374bc27351588329f4b03154e51b58 with canonical authority files |
 | 013 | High | If candidate branch, publish freeze criteria | NOT_STARTED | |
 | 014 | High | Enforce branch parity script as pre-merge check | COMPLETE | scripts/release/verify_branch_parity.ps1 (pass on release branch: ahead=0 behind=0) |
 | 015 | High | Add drift threshold alert for ahead/behind deltas | COMPLETE | scripts/release/check_branch_drift_threshold.ps1 (currently failing against origin/main: ahead=64 behind=52 over thresholds) |
 | 016 | High | Require every release claim to name branch and SHA | COMPLETE | scripts/release/verify_release_claim_branch_sha.ps1 (pass: violations=0 after branch/SHA metadata and scope labeling updates) |
-| 017 | High | Add automated detection of authority files missing on main | COMPLETE | scripts/release/verify_authority_files_on_main.ps1 (currently failing on origin/main: files missing) |
+| 017 | High | Add automated detection of authority files missing on main | COMPLETE | scripts/release/verify_authority_files_on_main.ps1 (pass: all required authority files present on origin/main) |
 | 018 | High | Add release-claim linter for contradictory wording | COMPLETE | scripts/release/scan_release_claim_wording.ps1 |
 | 019 | High | Add stale-claim scanner for historical ship/go language | COMPLETE | scripts/release/scan_release_claim_wording.ps1 |
 | 020 | High | Add superseded-doc watermark template and backfill | COMPLETE | docs/release/SUPERSEDED_AUTHORITY_WATERMARK_TEMPLATE_20260530.md; scripts/release/verify_superseded_authority_watermarks.ps1; backfilled INTEGRITY_HOLD_RELEASE_AUTHORITY_20260506.md and PROGRAM_SCORECARD_20260506.md |
