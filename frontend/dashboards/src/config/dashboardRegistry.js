@@ -122,8 +122,9 @@ function createDashboard({
   owner,
   readiness,
 }) {
-  const effectiveReleaseState = releaseState || 'ready';
-  const effectiveReadiness = readiness || (effectiveReleaseState === 'ready' ? readyReadiness() : placeholderReadiness());
+  const effectiveReleaseState = releaseState || 'draft';
+  const isReadyLike = ['ready', 'live', 'production'].includes(effectiveReleaseState);
+  const effectiveReadiness = readiness || (isReadyLike ? readyReadiness() : placeholderReadiness());
 
   return {
     key,
