@@ -74,6 +74,18 @@ describe('release route hardening contract', () => {
     expect(block.includes('<ParentDashboard />')).toBe(true);
   });
 
+  it('guards PATHS.STUDENT with student route guard', () => {
+    const block = extractRouteBlockByNeedle('path: PATHS.STUDENT,');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["student"]}>')).toBe(true);
+    expect(block.includes('<StudentDashboard />')).toBe(true);
+  });
+
+  it('guards /student/dashboard with student route guard', () => {
+    const block = extractRouteBlock('/student/dashboard');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["student"]}>')).toBe(true);
+    expect(block.includes('<StudentDashboard />')).toBe(true);
+  });
+
   it('guards /parent/students/:id with parent route guard and journey gate', () => {
     const block = extractRouteBlock('/parent/students/:id');
     expect(block.includes('<RoleRouteGuard allowedRoles={["parent"]}>')).toBe(true);
