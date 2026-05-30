@@ -26,7 +26,7 @@ Status legend:
 | 007 | Critical | Add runtime-validated SHA field in canonical status | NOT_STARTED | |
 | 008 | Critical | Add parity verdict field in canonical status | NOT_STARTED | |
 | 009 | Critical | Add protected-spine verdict field in canonical status | NOT_STARTED | |
-| 010 | Critical | Add authority convergence checklist gate before promotion language | NOT_STARTED | |
+| 010 | Critical | Add authority convergence checklist gate before promotion language | COMPLETE | scripts/release/verify_authority_decision_sync.ps1 |
 | 011 | High | Decide release branch policy (temporary vs candidate authority branch) | NOT_STARTED | |
 | 012 | High | If temporary, merge authority stack to main | NOT_STARTED | |
 | 013 | High | If candidate branch, publish freeze criteria | NOT_STARTED | |
@@ -80,8 +80,8 @@ Status legend:
 | 051 | High | Add evidence freshness SLA checks in readiness tests | NOT_STARTED | |
 | 052 | High | Fail readiness if evidence SHA mismatches candidate SHA | NOT_STARTED | |
 | 053 | High | Fail readiness if evidence branch mismatches release branch | NOT_STARTED | |
-| 054 | Critical | Add backend registry vs frontend manifest parity test | NOT_STARTED | |
-| 055 | Critical | Replace generic /wizards placeholders for production-ready entries | NOT_STARTED | |
+| 054 | Critical | Add backend registry vs frontend manifest parity test | COMPLETE | scripts/release/verify_wizard_registry_parity.ps1 |
+| 055 | Critical | Replace generic /wizards placeholders for production-ready entries | IN_PROGRESS | scripts/release/verify_wizard_registry_parity.ps1 detects 5 placeholder slugs |
 | 056 | High | Enforce unique route path for all production-ready wizard entries | NOT_STARTED | |
 | 057 | High | Add wizard step-completion contract tests per wizard | NOT_STARTED | |
 | 058 | High | Add wizard save/resume tests per wizard | NOT_STARTED | |
