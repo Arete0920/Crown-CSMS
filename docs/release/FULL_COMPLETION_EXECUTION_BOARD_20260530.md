@@ -52,10 +52,10 @@ Status legend:
 | 028 | Critical | Add route-level test asserting all student routes guarded | COMPLETE | frontend/dashboards/src/tests/releaseHardeningContracts.test.jsx |
 | 029 | High | Add deny-by-default guard policy for sensitive route groups | COMPLETE | docs/release/ROUTE_GUARD_POLICY_20260530.md; scripts/release/verify_route_guard_policy.ps1 (pass) |
 | 030 | High | Add route guard matrix tests for all role groups | COMPLETE | frontend/dashboards/src/tests/routeGuardMatrixContract.test.js (34 tests pass) |
-| 031 | High | Add route alias audit and deprecate non-essential aliases | NOT_STARTED | |
+| 031 | High | Add route alias audit and deprecate non-essential aliases | COMPLETE | docs/release/API_ROUTE_ALIAS_AUDIT_20260530.md; scripts/release/verify_api_route_alias_audit.ps1 (pass) |
 | 032 | High | Add explicit owner tags to high-risk routes | COMPLETE | docs/release/HIGH_RISK_ROUTE_OWNERSHIP_20260530.md; scripts/release/verify_high_risk_route_ownership.ps1 (pass) |
-| 033 | Critical | Add API first-match conflict scanner over URL patterns | NOT_STARTED | |
-| 034 | Critical | Add route-shadowing regression tests for include ordering | NOT_STARTED | |
+| 033 | Critical | Add API first-match conflict scanner over URL patterns | COMPLETE | scripts/release/verify_api_first_match_conflicts.ps1 (pass: conflicts=0) |
+| 034 | Critical | Add route-shadowing regression tests for include ordering | COMPLETE | scripts/release/verify_api_include_ordering.ps1 (pass: violations=0) |
 | 035 | Critical | Add anonymous denial tests for protected API prefixes | NOT_STARTED | |
 | 036 | Critical | Add tenant header enforcement tests on all write endpoints | NOT_STARTED | |
 | 037 | Critical | Add cross-tenant read/write negative tests per critical module | NOT_STARTED | |
