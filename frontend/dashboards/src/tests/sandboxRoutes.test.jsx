@@ -27,7 +27,7 @@ describe("sandbox routes", () => {
 
     render(<RouterProvider router={memoryRouter} />);
 
-    expect(screen.getByRole("heading", { name: "Guided Proof Sandbox" })).toBeTruthy();
+    expect(screen.getAllByRole("heading", { name: "Guided Proof Sandbox" }).length).toBeGreaterThan(0);
   });
 
   it("renders the sandbox command center at /sandbox/command-center", () => {

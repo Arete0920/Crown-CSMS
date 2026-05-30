@@ -20,7 +20,7 @@ const ATTENDANCE_TREND = [
 
 export default {
   key: 'schoolAdministrator',
-  activePath: '/school-admin',
+  activePath: '/school-admin-dashboard',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 6,
   user: {

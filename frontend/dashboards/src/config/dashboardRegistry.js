@@ -250,7 +250,7 @@ export const DASHBOARD_REGISTRY = [
     section: 'Leadership & Growth',
     allowedRoles: SCHOOL_ADMIN,
     component: SchoolAdministratorDashboard,
-    releaseState: 'ready',
+    releaseState: 'draft',
   }),
   createDashboard({
     key: 'school-board',
