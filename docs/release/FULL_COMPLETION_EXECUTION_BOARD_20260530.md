@@ -57,10 +57,10 @@ Status legend:
 | 033 | Critical | Add API first-match conflict scanner over URL patterns | COMPLETE | scripts/release/verify_api_first_match_conflicts.ps1 (pass: conflicts=0) |
 | 034 | Critical | Add route-shadowing regression tests for include ordering | COMPLETE | scripts/release/verify_api_include_ordering.ps1 (pass: violations=0) |
 | 035 | Critical | Add anonymous denial tests for protected API prefixes | COMPLETE | backend/tests/test_protected_prefix_anonymous_denial.py (4 passing anonymous denial contracts) |
-| 036 | Critical | Add tenant header enforcement tests on all write endpoints | NOT_STARTED | |
-| 037 | Critical | Add cross-tenant read/write negative tests per critical module | NOT_STARTED | |
-| 038 | Critical | Add object-level permission escalation tests for key models | NOT_STARTED | |
-| 039 | Critical | Add role-permission write matrix tests by module | NOT_STARTED | |
+| 036 | Critical | Add tenant header enforcement tests on all write endpoints | COMPLETE | backend/tests/test_release_security_permission_contracts.py::test_036_tenant_header_required_on_write_surfaces (pass, fail-closed write-surface coverage) |
+| 037 | Critical | Add cross-tenant read/write negative tests per critical module | COMPLETE | backend/tests/test_release_security_permission_contracts.py::test_037_cross_tenant_read_negative_gradebook + ::test_037_cross_tenant_write_negative_admissions (pass) |
+| 038 | Critical | Add object-level permission escalation tests for key models | COMPLETE | backend/tests/test_release_security_permission_contracts.py::test_038_object_level_permission_escalation_blocked_exports + ::test_038_object_level_permission_escalation_blocked_billing_runs (pass) |
+| 039 | Critical | Add role-permission write matrix tests by module | COMPLETE | backend/tests/test_release_security_permission_contracts.py::test_039_role_permission_matrix_anonymous_denied + ::test_039_role_permission_matrix_non_privileged_denied (pass) |
 | 040 | High | Add security middleware order regression test | COMPLETE | scripts/release/verify_security_middleware_order.ps1 (pass: missing=0 ordering_violations=0) |
 
 ## Priority 041-060 (Readiness Credibility + Wizard/Dashboard Parity)
