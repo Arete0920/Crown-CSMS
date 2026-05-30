@@ -135,6 +135,7 @@ class SchoolModule(models.Model):
         ("gradebook_pro", "Advanced Gradebook"),
         ("curriculum_mgmt", "Curriculum Management"),
         ("parent_portal_plus", "Enhanced Parent Portal"),
+        ("home_academy", "Home Academy / Homeschool Affiliation"),
         ("hr_staff", "HR & Staff Management"),
         ("little_lambs", "Little Lambs Daycare"),
         ("transportation", "Transportation & Bus Routing"),

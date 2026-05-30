@@ -286,7 +286,7 @@ class PrayerRequest(models.Model):
     """Prayer request submitted for or by a student."""
 
     VISIBILITY_CHOICES = [
-        ("private", "Private – pastoral only"),
+        ("private", "Private - pastoral only"),
         ("staff", "Staff only"),
         ("group", "Small group"),
         ("school", "School-wide"),
@@ -374,3 +374,9 @@ class PastoralNote(models.Model):
 
     def __str__(self) -> str:
         return f"PastoralNote({self.student_id}, {self.note_date})"
+
+
+# Expanded Spiritual Life & Biblical Formation domain models.
+# Importing here ensures Django's app model loader discovers these classes during
+# normal model import and migration generation.
+from spiritual_life.formation_models import *  # noqa: F401,F403,E402

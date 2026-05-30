@@ -1,0 +1,38 @@
+{
+  "track": "daycare",
+  "pack": "emmanuel_early_learning",
+  "display_name": "Emmanuel Early Learning Center Demo",
+  "status": "implementation_baseline",
+  "description": "Deterministic early learning sandbox scenario for daily operations, attendance, family communication, staff workflow, and billing proof paths using fictional demo records only.",
+  "organization": {
+    "name": "Emmanuel Early Learning Center",
+    "archetype": "Church-based Early Learning Center",
+    "participants": 168,
+    "demo_domain": "emmanuel-early.example.org"
+  },
+  "default_mode": "guided",
+  "personas": [
+    { "key": "school_admin", "label": "Director", "email": "admin@heritage.example.org", "route": "/school-admin-dashboard" },
+    { "key": "admissions_director", "label": "Enrollment Coordinator", "email": "admin@heritage.example.org", "route": "/admissions-dashboard" },
+    { "key": "finance_director", "label": "Billing Manager", "email": "admin@heritage.example.org", "route": "/finance" },
+    { "key": "teacher", "label": "Classroom Staff", "email": "teacher.lower@heritage.example.org", "route": "/teacher" },
+    { "key": "parent", "label": "Parent / Guardian", "email": "parent.reed@heritage.example.org", "route": "/parent" }
+  ],
+  "guided_story": [
+    "Director reviews today's classroom status.",
+    "Staff reviews attendance workflow.",
+    "Staff reviews daily note placeholders.",
+    "Parent reviews daily update and message context.",
+    "Billing manager reviews recurring care charges and open balances."
+  ],
+  "expected_metrics": {
+    "participants": 168,
+    "families": 126,
+    "classrooms": 9,
+    "present_today": 142,
+    "pending_enrollment_inquiries": 18,
+    "open_family_balances": 21
+  },
+  "reset_required": true,
+  "demo_data_only": true
+}
