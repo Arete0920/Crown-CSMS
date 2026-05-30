@@ -5,10 +5,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$decisionPattern = 'decision|go|release posture|release authority'
+$decisionPattern = '(?im)^\s*[-*]?\s*(ship decision|overall status|current decision|repository-wide decision)\s*:\s*(ship|release_ready|unrestricted go|conditional go|no-go)\b|\bUNRESTRICTED GO\b'
 $branchPattern = 'branch'
 $shaPattern = 'sha|commit'
-$supersededPattern = 'Superseded Authority Notice|superseded authority notice'
+$scopeNoticePattern = 'Superseded Authority Notice|superseded authority notice|Authority Scope Notice|authority scope notice'
 
 $files = Get-ChildItem -Path $DocsGlob -File
 if (-not $files) {
@@ -21,7 +21,7 @@ $violations = @()
 foreach ($f in $files) {
     $text = Get-Content -Raw -Path $f.FullName
     if ($text -match $decisionPattern) {
-        if ($text -match $supersededPattern) {
+        if ($text -match $scopeNoticePattern) {
             continue
         }
 

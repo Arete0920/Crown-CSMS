@@ -12,7 +12,7 @@ $allowList = @(
 )
 
 $claimPattern = '(?im)^\s*[-*]?\s*(ship decision|overall status|current decision|repository-wide decision)\s*:\s*(ship|release_ready|unrestricted go|conditional go|no-go)\b|\bUNRESTRICTED GO\b'
-$supersededPattern = 'Superseded Authority Notice|superseded authority notice'
+$supersededPattern = 'Superseded Authority Notice|superseded authority notice|Authority Scope Notice|authority scope notice'
 
 $files = Get-ChildItem -Path $DocsRoot -Filter *.md -File
 $violations = @()

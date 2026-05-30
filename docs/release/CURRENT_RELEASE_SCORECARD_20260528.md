@@ -4,6 +4,10 @@ Canonical linkage:
 - Repository-level authority: `docs/CURRENT_RELEASE_STATUS.md`
 - This file is the single current scorecard referenced by that authority.
 
+Metadata:
+- Release authority branch: `release/security-runtime-governance-repair-little-lambs-full-build`
+- Release authority commit SHA: `576316d384a2b275249a0ba0ed9ed7b81fc9e97d`
+
 ## Decision
 
 - Current decision: CONDITIONAL GO
