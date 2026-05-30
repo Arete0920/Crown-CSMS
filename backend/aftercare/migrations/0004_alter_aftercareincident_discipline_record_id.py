@@ -3,6 +3,16 @@
 from django.db import migrations, models
 
 
+def clear_legacy_discipline_record_ids(apps, schema_editor):
+    AftercareIncident = apps.get_model('aftercare', 'AftercareIncident')
+    # Legacy integer IDs cannot be cast to UUID in Postgres; clear them before type conversion.
+    AftercareIncident.objects.exclude(discipline_record_id__isnull=True).update(discipline_record_id=None)
+
+
+def noop_reverse(apps, schema_editor):
+    return
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,6 +20,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(clear_legacy_discipline_record_ids, noop_reverse),
         migrations.AlterField(
             model_name='aftercareincident',
             name='discipline_record_id',
