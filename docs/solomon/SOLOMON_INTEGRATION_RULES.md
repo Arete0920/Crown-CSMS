@@ -1,8 +1,6 @@
 ﻿# SOLOMON Integration Rules
 
-Status: ACTIVE, COMPLETED, INTEGRATED (current approved scope)
-
-Canonical status authority: `docs/solomon/SOLOMON_ACTIVE_COMPLETION_INTEGRATION_20260529.md`
+Status: Planning Only
 
 ## Integration Principle
 

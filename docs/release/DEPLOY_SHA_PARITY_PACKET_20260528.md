@@ -16,25 +16,24 @@ Purpose: authoritative parity evidence between repository SHAs and latest captur
 
 ## Parity Evaluation
 
-- `deployed_runtime_build_sha` vs `origin/main`: MISMATCH (expected for this candidate and does not govern closure by itself)
-- `deployed_runtime_build_sha` vs `local HEAD`: MISMATCH (local branch intentionally ahead/behind)
-- `deployed_runtime_build_sha` vs approved release candidate SHA (`0b20581b4b4c0d03be9e9022893303804626d81f`): MATCH
-- Repository-wide deploy parity closure status (approved candidate parity): CLOSED
+- `deployed_runtime_build_sha` vs `origin/main`: MISMATCH (parity not proven)
+- `deployed_runtime_build_sha` vs `local HEAD`: MISMATCH (parity not proven)
+- Repository-wide deploy parity closure status: OPEN
 
 ## Latest Runner Execution
 
 - Runner: `scripts/release/44_capture_deploy_sha_parity.ps1`
-- Execution timestamp (UTC): `2026-05-30T00:13:36.4530439Z`
-- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260530_001336.md`
-- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260530_001336.json`
-- Run inputs: `DeployTargetSha=0b20581b4b4c0d03be9e9022893303804626d81f`, `ApprovedReleaseSha=0b20581b4b4c0d03be9e9022893303804626d81f`
-- Result: `parity_status=CLOSED`, `matches_approved_release_sha=true`, `matches_local_head_sha=false`, `evidence_count=3`
+- Execution timestamp (UTC): `2026-05-29T08:16:38.3285416Z`
+- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.md`
+- Output artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json`
+- Result: `parity_status=OPEN`, `matches_approved_release_sha=false`, `matches_local_head_sha=false`, `evidence_count=3`
 
 ## Current P0-1 Status
 
-- P0-1 parity acceptance criteria are now satisfied for the approved release candidate SHA.
-- Latest parity capture is current and authoritative for this packet.
-- Closure basis is explicit approved-source parity, not local HEAD parity.
+- P0-1 remains OPEN.
+- Latest parity capture is now current and authoritative for this packet.
+- Latest run explicitly set `DeployTargetSha` to `origin/main` (`d793766b6640d88a4bfdb87c999f429e06cd87ec`).
+- Closure still requires runtime/deploy evidence to match either approved release SHA or local HEAD SHA.
 
 ## Decision Impact
 
@@ -45,11 +44,11 @@ Purpose: authoritative parity evidence between repository SHAs and latest captur
 
 1. Run the parity capture runner:
 
-- Live endpoint mode: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthUrl <health-url> -IntegrityUrl <integrity-url> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`
-- Offline artifact mode: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath <path-to-02_health.json> -IntegrityJsonPath <path-to-02_integrity.json> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`
+  - Live endpoint mode: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthUrl <health-url> -IntegrityUrl <integrity-url> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`
+  - Offline artifact mode: `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath <path-to-02_health.json> -IntegrityJsonPath <path-to-02_integrity.json> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`
 
-1. Review generated artifacts in:
+2. Review generated artifacts in:
 
-- `docs/release/live-audit/deploy-sha-parity/`
+  - `docs/release/live-audit/deploy-sha-parity/`
 
-1. Promote latest generated parity result into this packet and `docs/CURRENT_RELEASE_STATUS.md`.
+3. Promote latest generated parity result into this packet and `docs/CURRENT_RELEASE_STATUS.md`.
