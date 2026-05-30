@@ -11,13 +11,6 @@ on:
     # Daily at 05:00 UTC
     - cron: "0 5 * * *"
 
-permissions:
-  contents: read
-
-concurrency:
-  group: full-surface-verification-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   full-surface-verification:
     name: Full Surface Verification
@@ -29,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@v4
 
       - name: Setup Node.js 20
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
@@ -49,7 +42,7 @@ jobs:
 
       - name: Upload verification artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@v4
         with:
           name: crown-verification-${{ github.run_number }}-${{ github.sha }}
           path: frontend/dashboards/artifacts/verification/
