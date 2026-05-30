@@ -153,3 +153,13 @@ Status labels:
 - Treat `MANUAL` items as tracked blockers, not engineering-complete work.
 - Re-rank this list after PR #836 merges and the main-only release closeout gate is rerun.
 
+## Execution Delta - 2026-05-30
+
+- Top-50 ordered execution status has been refreshed in:
+- `docs/release/TOP_50_PRIORITY_EXECUTION_LEDGER_20260530.md`
+- New evidence captured in this run:
+- `audit-artifacts/runtime-release-closure/20260418_070051/backend_pip_audit_final_20260530.json` (no known vulnerabilities)
+- `audit-artifacts/runtime-release-closure/20260418_070051/loadtest_pip_audit_20260530.json` (no known vulnerabilities)
+- `audit-artifacts/runtime-release-closure/20260418_070051/frontend_npm_audit_20260530.json` (no known vulnerabilities)
+- `audit-artifacts/runtime-release-closure/20260418_070051/tenant_isolation_pytest_artifact_20260530.txt` (pass)
+

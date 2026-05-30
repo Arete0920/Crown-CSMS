@@ -18,9 +18,11 @@ Use this checklist for final investor-readiness and release-control signoff.
 - [ ] Health and integrity endpoints captured with required fields
 
 Evidence pointers:
+
 - `docs/release/BRANCH_PROTECTION_EVIDENCE.md`
 - `docs/release/SECURITY_GATES_EVIDENCE.md`
 - `docs/release/FINAL_RELEASE_GATE.md`
+- `docs/release/FRONTEND_VERIFICATION_EVIDENCE_20260530.md`
 
 ## 2. Repo Hygiene
 
@@ -30,6 +32,7 @@ Evidence pointers:
 - [ ] No runtime/application logic changed in this phase
 
 Evidence pointers:
+
 - `docs/repo-cleanup/PHASE3_FINAL_POLISH_SUMMARY.md`
 - `docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md`
 
@@ -42,6 +45,7 @@ Evidence pointers:
 - [ ] Investor review guide present
 
 Evidence pointers:
+
 - `docs/README.md`
 - `docs/release/INVESTOR_REPO_REVIEW_GUIDE.md`
 
@@ -53,6 +57,7 @@ Evidence pointers:
 - [ ] Manual-only items clearly labeled
 
 Evidence pointer:
+
 - `docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md`
 
 ## 5. Deferred Items
@@ -62,6 +67,7 @@ Evidence pointer:
 - [ ] Investor-reviewable-now statement is accurate and not overstated
 
 Evidence pointer:
+
 - `docs/release/KNOWN_GAPS_AND_DEFERRED_ITEMS.md`
 
 ## 6. Explicit Approval Lines
