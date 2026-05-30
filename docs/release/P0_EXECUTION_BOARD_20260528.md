@@ -34,7 +34,7 @@ Canonical truth priority:
 | P0-3 | Critical | Re-run authoritative runtime + policy gate on release candidate SHA | Solo owner | 2026-05-31 | Runtime protected-spine packet and policy gates are green on the exact candidate SHA that parity packet references. | Runtime packet in `audit-artifacts/runtime-release-closure/...` + policy gate evidence in `docs/security/...` | COMPLETE (2026-05-30) |
 | P0-4 | High | Parent360 silent-failure hardening (observability-only) | Solo owner | 2026-06-01 | Broad exception paths retain graceful degradation but emit structured, stage-specific warning/error context for triage. No behavioral regression in response contract. | Diff + targeted test evidence for `backend/parent360/api/views.py` | COMPLETE (2026-05-28) |
 | P0-5 | High | Parent360 continuity regression guardrail tests | Solo owner | 2026-06-01 | Tests assert admissions continuity payload shape, degraded optional-import behavior, and key summary counters. | New/updated pytest outputs committed under release evidence packet | COMPLETE (2026-05-28) |
-| P0-6 | Critical | Final unrestricted-GO gate decision packet | Solo owner | 2026-06-01 | Unrestricted GO declared only if all P0 criteria are passed with zero contradictory authority statements. | `docs/CURRENT_RELEASE_STATUS.md` final gate update + updated scorecard | COMPLETE (2026-05-30) |
+| P0-6 | Critical | Final gate decision packet (canonical-state convergence) | Solo owner | 2026-06-01 | Final canonical decision is reflected consistently across controlling authority sources with zero contradictory authority statements. | `docs/CURRENT_RELEASE_STATUS.md` final gate update + updated scorecard | COMPLETE (2026-05-30) |
 
 ## Definition of Done (P0)
 
@@ -441,12 +441,12 @@ Historical chronology note:
 - Status impact:
   - P0-2 acceptance criteria are satisfied and P0-2 is CLOSED.
 
-### 2026-05-30 - P0-6 closure evidence (final unrestricted-GO decision)
+### 2026-05-30 - P0-6 closure evidence (final canonical gate decision)
 
 - Final decision packet published:
-  - `docs/release/FINAL_UNRESTRICTED_GO_DECISION_PACKET_20260530.md`
+  - `docs/release/FINAL_CANONICAL_GATE_DECISION_PACKET_20260530.md`
 - Decision summary:
-  - approved release slice: `UNRESTRICTED GO`
+  - approved release slice: `CONDITIONAL GO`
   - entire platform roadmap scope: `NOT GO` (unchanged)
 - Gate criteria verified as complete:
   - P0-1 CLOSED (deploy parity CLOSED on approved candidate SHA)
@@ -467,7 +467,7 @@ Historical chronology note:
   - `Failures: 9`
   - failure set included `106_full_completion_truth`, `121_dashboard_provenance`, `122_domain_model`, `130_data_migration`, `140_financial_controls`, `150_performance_load`, `160_observability_incident`, `105_dashboard_completion_deep`, and `120_release_authority_meta`.
 - Integrity note:
-  - these gates are proof-gated review surfaces outside the approved-slice P0 closure path and do not alter the canonical `UNRESTRICTED GO` decision recorded in `docs/CURRENT_RELEASE_STATUS.md`.
+  - these gates are proof-gated review surfaces outside the approved-slice P0 closure path and do not alter the canonical `CONDITIONAL GO` decision recorded in `docs/CURRENT_RELEASE_STATUS.md`.
 
 ### 2026-05-29 - Mainline reconcile packet completed on remote-clean clone
 
@@ -491,7 +491,7 @@ Historical chronology note:
   - `docs/release/live-audit/mainline-reconcile/mainline_reconcile_remote_clean_20260529_212250.md`
 - Status impact:
   - this confirms successful `97_mainline_reconcile` packet production on a clean execution surface.
-  - this does not change canonical release posture; approved slice remains `UNRESTRICTED GO`, whole-platform scope remains separately tracked.
+  - this does not change canonical release posture; approved slice remains `CONDITIONAL GO`, whole-platform scope remains separately tracked.
 
 ### 2026-05-29 - First-blocker closure queue published from reconcile local-check failures
 
@@ -547,7 +547,7 @@ Historical chronology note:
   - no remaining active blocker in `docs/release/PRODUCTION_RELEASE_FIRST_BLOCKER_QUEUE_20260529.md`.
 - Status impact:
   - local-check blocker queue is fully closed in this execution lane.
-  - canonical approved-slice release authority remains unchanged (`UNRESTRICTED GO`), with whole-platform scope separately tracked.
+  - canonical approved-slice release authority remains unchanged (`CONDITIONAL GO`), with whole-platform scope separately tracked.
 
 ### 2026-05-29 - First-blocker reproducibility delta (both invocation contexts pass)
 
