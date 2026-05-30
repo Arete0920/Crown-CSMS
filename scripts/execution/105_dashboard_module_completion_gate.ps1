@@ -16,6 +16,19 @@ function Require-Tool {
     }
 }
 
+function Resolve-ShellCommand {
+    if (Get-Command powershell -ErrorAction SilentlyContinue) { return "powershell" }
+    if (Get-Command pwsh -ErrorAction SilentlyContinue) { return "pwsh" }
+    throw "Missing required tool: powershell/pwsh"
+}
+
+function Resolve-NpmCommand {
+    if ($IsWindows -and (Get-Command npm.cmd -ErrorAction SilentlyContinue)) { return "npm.cmd" }
+    if (Get-Command npm -ErrorAction SilentlyContinue) { return "npm" }
+    if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { return "npm.cmd" }
+    throw "Missing required tool: npm"
+}
+
 function New-Dir {
     param([string]$Path)
     New-Item -ItemType Directory -Force -Path $Path | Out-Null
@@ -148,7 +161,7 @@ function Get-PlaceholderHits {
 }
 
 Require-Tool git
-Require-Tool powershell
+$shellExe = Resolve-ShellCommand
 
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) {
@@ -254,7 +267,7 @@ $run95Baseline = ($env:CROWN_105_RUN_95_BASELINE -eq "1")
 $run95Deep = $Deep -or ($env:CROWN_105_RUN_95_DEEP -eq "1")
 
 if ($run95Baseline) {
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1")
+    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe $shellExe -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1")
 } else {
     $checks += [pscustomobject]@{
         Name = "95_live_scorecard_audit_baseline"
@@ -265,7 +278,7 @@ if ($run95Baseline) {
 }
 
 if ($run95Deep) {
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe "powershell" -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1","-Deep")
+    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe $shellExe -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1","-Deep")
 } else {
     $checks += [pscustomobject]@{
         Name = "95_live_scorecard_audit_deep"
@@ -276,6 +289,7 @@ if ($run95Deep) {
 }
 
 if (Test-Path $packageJson) {
+    $npmExe = Resolve-NpmCommand
     $runHeavyFrontend = $Deep -or ($env:CROWN_105_RUN_HEAVY_FRONTEND -eq "1")
     foreach ($scriptName in @(
         "check:shell-contracts",
@@ -310,7 +324,7 @@ if (Test-Path $packageJson) {
                 $envBlock["CROWN_DEMO_TOKEN"] = $demoToken
             }
 
-            $checks += Invoke-LoggedCommand -Name ("frontend_" + ($scriptName -replace '[:\-]','_')) -WorkingDirectory $dashboardRoot -Exe "npm.cmd" -CmdArgs @("run",$scriptName) -Env $envBlock
+            $checks += Invoke-LoggedCommand -Name ("frontend_" + ($scriptName -replace '[:\-]','_')) -WorkingDirectory $dashboardRoot -Exe $npmExe -CmdArgs @("run",$scriptName) -Env $envBlock
         }
     }
 
@@ -321,7 +335,7 @@ if (Test-Path $packageJson) {
             "ui:proof:matrix-pack-3"
         )) {
             if (Test-NpmScript -PackageJsonPath $packageJson -ScriptName $scriptName) {
-                $checks += Invoke-LoggedCommand -Name ("frontend_" + ($scriptName -replace '[:\-]','_')) -WorkingDirectory $dashboardRoot -Exe "npm.cmd" -CmdArgs @("run",$scriptName) -Env @{ CI = "1" }
+                $checks += Invoke-LoggedCommand -Name ("frontend_" + ($scriptName -replace '[:\-]','_')) -WorkingDirectory $dashboardRoot -Exe $npmExe -CmdArgs @("run",$scriptName) -Env @{ CI = "1" }
             }
         }
     }
