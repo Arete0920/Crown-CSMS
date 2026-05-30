@@ -3,6 +3,8 @@ export const PATHS = {
   DASHBOARD: '/dashboard',
   LOGIN: '/login',
   ROLE_DASHBOARD: '/dash/:role',
+  SANDBOX: '/sandbox',
+  SANDBOX_COMMAND_CENTER: '/sandbox/command-center',
 
   ADMISSIONS: '/admissions',
   ADMISSIONS_START: '/admissions/start',

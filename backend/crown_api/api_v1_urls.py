@@ -44,6 +44,7 @@ urlpatterns = [
     path("system/demo-school/", demo_school, name="system-demo-school"),
 
     # Authentication
+    path("sandbox/", include("sandbox_demo.urls")),
     path("auth/token/", TokenObtainPairView.as_view(), name="v1_token_obtain_pair"),
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="v1_token_refresh"),
 
@@ -142,3 +143,4 @@ urlpatterns = [
 if _optional_module_exists("crm_marketing.api.urls"):
     # CRM Marketing add-on (non-canonical core truth)
     urlpatterns.insert(-4, path("crm/", include("crm_marketing.api.urls")))
+
