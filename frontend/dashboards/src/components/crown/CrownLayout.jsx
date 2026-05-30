@@ -41,6 +41,7 @@ function getProfile() {
 function toRoleLabel(role) {
   const value = String(role || "").trim();
   if (!value) return "Role";
+  if (value.toLowerCase() === "admin") return "School Administrator";
   if (value.toLowerCase() === "school_admin") return "School Administrator";
   return value
     .replace(/[_-]+/g, " ")
