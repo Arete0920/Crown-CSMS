@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const PERF_TREND = [
   { month: 'Aug', value: 0 }, { month: 'Sep', value: 1 }, { month: 'Oct', value: 2 },
   { month: 'Nov', value: 3 }, { month: 'Dec', value: 2 }, { month: 'Jan', value: 1 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Fine Arts!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Fine arts widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until fine arts metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Enrolled Students', value: '104', detail: '17% of school — music 62, visual arts 28, drama 14.', accent: 'blue' },

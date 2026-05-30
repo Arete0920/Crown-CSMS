@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const AID_TREND = [
   { month: 'Aug', value: 24 }, { month: 'Sep', value: 38 }, { month: 'Oct', value: 51 },
   { month: 'Nov', value: 63 }, { month: 'Dec', value: 70 }, { month: 'Jan', value: 74 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Financial Aid!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Financial aid widgets currently use template snapshots pending live aid service integration.',
+  note: 'Certification remains in review until financial aid metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Aid Applications', value: '112', detail: '87 awarded — 25 in review or incomplete.', accent: 'blue' },

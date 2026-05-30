@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const CIRC_TREND = [
   { month: 'Aug', value: 124 }, { month: 'Sep', value: 218 }, { month: 'Oct', value: 264 },
   { month: 'Nov', value: 241 }, { month: 'Dec', value: 196 }, { month: 'Jan', value: 228 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Library!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Library and media widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until library and media metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Books Circulating', value: '274', detail: 'March all-time high — 44% of collection active.', accent: 'blue' },

@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const ENROLL_TREND = [
   { month: 'Aug', value: 64 }, { month: 'Sep', value: 72 }, { month: 'Oct', value: 74 },
   { month: 'Nov', value: 71 }, { month: 'Dec', value: 68 }, { month: 'Jan', value: 72 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Extended Care!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Extended care widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until extended care metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Enrolled Students', value: '76', detail: 'Spring semester — 44 PM care, 32 AM care.', accent: 'blue' },

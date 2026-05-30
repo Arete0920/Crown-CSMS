@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const WO_TREND = [
   { month: 'Aug', value: 14 }, { month: 'Sep', value: 18 }, { month: 'Oct', value: 22 },
   { month: 'Nov', value: 19 }, { month: 'Dec', value: 24 }, { month: 'Jan', value: 21 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Facilities!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Facilities widgets currently use template snapshots pending live facilities service integration.',
+  note: 'Certification remains in review until facilities metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Open Work Orders', value: '8', detail: '3 urgent, 5 standard — all assigned.', accent: 'gold' },
