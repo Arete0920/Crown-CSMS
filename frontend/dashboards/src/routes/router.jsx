@@ -82,7 +82,7 @@ import DemoReadinessPage from "../pages/DemoReadinessPage.jsx";
 import NotFoundPage from "../pages/NotFoundPage.jsx";
 import CrownLaunchDashboardPage from "../pages/CrownLaunchDashboardPage.jsx";
 import CrownLaunchModulePage from "../pages/CrownLaunchModulePage.jsx";
-import SandboxCommandCenter from "../sandbox/SandboxCommandCenter.jsx";
+import SandboxCommandCenter from "../pages/SandboxCommandCenter.jsx";
 import { dashboardRoutes } from "./dashboardRoutes";
 import { wizardRoutes } from "./wizards.js";
 import { PATHS } from "./paths";
