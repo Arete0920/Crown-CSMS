@@ -27,9 +27,9 @@ Status legend:
 | 008 | Critical | Add parity verdict field in canonical status | COMPLETE | docs/CURRENT_RELEASE_STATUS.md -> Parity verdict |
 | 009 | Critical | Add protected-spine verdict field in canonical status | COMPLETE | docs/CURRENT_RELEASE_STATUS.md -> Protected-spine verdict |
 | 010 | Critical | Add authority convergence checklist gate before promotion language | COMPLETE | scripts/release/verify_authority_decision_sync.ps1 |
-| 011 | High | Decide release branch policy (temporary vs candidate authority branch) | NOT_STARTED | |
+| 011 | High | Decide release branch policy (temporary vs candidate authority branch) | COMPLETE | Temporary authority branch policy selected; canonical authority files converged to main |
 | 012 | High | If temporary, merge authority stack to main | COMPLETE | main updated at commit 1fe29aba4c374bc27351588329f4b03154e51b58 with canonical authority files |
-| 013 | High | If candidate branch, publish freeze criteria | NOT_STARTED | |
+| 013 | High | If candidate branch, publish freeze criteria | COMPLETE | N/A (candidate-branch policy not selected; temporary branch policy used) |
 | 014 | High | Enforce branch parity script as pre-merge check | COMPLETE | scripts/release/verify_branch_parity.ps1 (pass on release branch: ahead=0 behind=0) |
 | 015 | High | Add drift threshold alert for ahead/behind deltas | COMPLETE | scripts/release/check_branch_drift_threshold.ps1 (currently failing against origin/main: ahead=64 behind=52 over thresholds) |
 | 016 | High | Require every release claim to name branch and SHA | COMPLETE | scripts/release/verify_release_claim_branch_sha.ps1 (pass: violations=0 after branch/SHA metadata and scope labeling updates) |
