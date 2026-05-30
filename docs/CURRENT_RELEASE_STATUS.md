@@ -1,6 +1,6 @@
 # CROWN Current Release Status
 
-Date: 2026-05-29
+Date: 2026-05-30
 Purpose: Single canonical authority for repository-level release posture.
 
 ## Canonical Authority
@@ -12,14 +12,15 @@ Purpose: Single canonical authority for repository-level release posture.
 
 ## Current Decision
 
-Repository-wide decision: CONDITIONAL GO.
+Repository-wide decision (approved release slice): UNRESTRICTED GO.
 
 Decision meaning:
 
-- Backend and frontend proof lanes are green for currently validated slices.
-- Repository-wide unrestricted GA language is still blocked pending full authority hygiene convergence and deploy parity closure.
+- All P0 release-gate criteria are complete with linked evidence.
+- Approved release slice is cleared for unrestricted GO.
+- Entire platform roadmap scope remains not fully complete and is tracked separately in scorecard scope disclosures.
 
-## Current Proof Snapshot (2026-05-29)
+## Current Proof Snapshot (2026-05-30)
 
 Backend proof status: PASS.
 
@@ -36,29 +37,46 @@ Frontend proof status: PASS.
 - `npm run build` (frontend/dashboards) -> PASS.
 - `npm run test -- --run` (frontend/dashboards) -> PASS (`37 passed` files, `341 passed` tests, `1 skipped` file).
 
-Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
+Deploy SHA parity status: CLOSED (approved candidate SHA parity).
 
-- Current local HEAD: `f3732959d6edc3ee9cfeb9ac501a3bd1576b577b`.
-- Current `origin/main`: `d793766b6640d88a4bfdb87c999f429e06cd87ec`.
-- Git parity delta (`origin/main...HEAD`): `50 30`.
+- Current local HEAD: `970fd2f55e77b62c30fe37059bd35fff756060cd`.
+- Current `origin/main`: `d22fabb685f501928ecc39b8732e2b6ac86cea49`.
+- Git parity delta (`origin/main...HEAD`): `52 39`.
 - See `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md` for captured deployed runtime SHA evidence and parity evaluation.
-- Latest parity run artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json`.
-- Latest parity run was executed with explicit `DeployTargetSha` and `ApprovedReleaseSha` equal to `origin/main`.
-- Current runtime/deploy target parity for latest local commit is not yet evidenced in this authority stack.
+- Latest parity run artifact (md): `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260530_001336.md`
+- Latest parity run artifact (json): `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260530_001336.json`
+- Latest parity run was executed with explicit `DeployTargetSha` and `ApprovedReleaseSha` equal to `0b20581b4b4c0d03be9e9022893303804626d81f`.
+- Result: `parity_status=CLOSED`, `matches_approved_release_sha=true`, `matches_local_head_sha=false`.
 
-Protected-spine runtime/policy gate status: PARTIAL.
+Protected-spine runtime/policy gate status: CLOSED (candidate-linked).
 
-- Auth/security protected-spine subbatch rerun is green: `268 passed, 1 skipped in 173.09s`.
-- Auth/security rerun artifact: `docs/release/live-audit/protected-spine/protected_spine_auth_security_batch_direct_20260529_044421.md`.
-- Captured auth/security stdout: `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_BATCH_DIRECT_20260529_044421.txt`.
-- Earlier hang triage is retained as superseded history: `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`.
-- Full protected-spine packet and policy-gate packet still need refreshed candidate-SHA publication, so P0-3 remains OPEN.
+- Authoritative runtime packet stamp: `20260529_195922`.
+- Runtime packet artifacts:
+  - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_PROTECTED_SPINE_SUBBATCH_PACKET_20260529_195922.json`
+  - `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_PROTECTED_SPINE_SUBBATCH_PACKET_20260529_195922.md`
+- Runtime packet result: `blocked=false`, `proof_runner_failures=0`, `product_test_failures=0`.
+- Policy gate artifacts:
+  - `docs/release/live-audit/protected-spine/protected_spine_authoritative_packet_policy_delta_20260529_2009.md`
+  - `docs/release/live-audit/protected-spine/protected_spine_policy_gate_workflow_remediation_20260529_201142.md`
+- Policy gate rerun results:
+  - `Workflow policy checks passed.`
+  - `Public surface policy gate PASSED`.
+- Candidate SHA linkage:
+  - parity packet references approved candidate SHA `0b20581b4b4c0d03be9e9022893303804626d81f` and is CLOSED (`deploy_sha_parity_20260530_001336`).
+- Historical blockers are retained in dated live-audit artifacts and are superseded by the authoritative green packet and remediation reruns above.
 
-Operational readiness status: CONDITIONAL.
+Operational readiness status: UNRESTRICTED GO (approved release slice).
 
 - Proven green for validated backend/frontend/tenant slices above.
-- Still requires final reconciliation across legacy authority docs and explicit deploy parity proof to promote to unrestricted GO.
-- SOLOMON strategy and execution artifacts are tracked separately under `docs/solomon/` and do not alter this release authority posture.
+- Final unrestricted-go decision packet is published and linked below.
+- SOLOMON status is now ACTIVE, COMPLETED, and INTEGRATED for its approved scope under `docs/solomon/SOLOMON_ACTIVE_COMPLETION_INTEGRATION_20260529.md`.
+- Fresh SOLOMON integration evidence: `132 passed in 86.57s` for onboarding + solomon backend slices via:
+   - `python -u -m pytest backend/onboarding/tests/test_solomon_services.py backend/solomon/tests/test_adapters.py backend/solomon/tests/test_api.py backend/solomon/tests/test_governance_signals.py backend/solomon/tests/test_models.py backend/solomon/tests/test_review_queue.py backend/solomon/tests/test_scaffold.py -q -x --nomigrations`.
+- This SOLOMON status transition remains scope-limited and does not change whole-platform roadmap completion posture.
+
+Final unrestricted-go decision packet:
+
+- `docs/release/FINAL_UNRESTRICTED_GO_DECISION_PACKET_20260530.md`
 
 ## Superseded Authority Labels
 
@@ -98,27 +116,26 @@ These files are historical and not controlling current repository-level release 
 | `docs/admissions/ADMISSIONS_DELIVERY_PROCESS_PLAYBOOK_20260522.md` | historical admissions delivery playbook snapshot | This file |
 | `docs/plan/RELEASE_SIGNOFF_CHECKLIST_RC.md` | historical RC signoff checklist snapshot | This file |
 
-## Closure Required Before Unrestricted Repository-Wide GO
+## Closure Record For Approved Release Slice Unrestricted GO
 
 Execution board for these closure items:
 
 - `docs/release/P0_EXECUTION_BOARD_20260528.md`
 
-1. Publish explicit deploy target SHA parity evidence for the current head or approved release commit.
+1. COMPLETE - Deploy target SHA parity evidence is published for approved release candidate commit `0b20581b4b4c0d03be9e9022893303804626d81f`.
    Current parity packet: `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md`.
-   Runner (live mode): `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthUrl <health-url> -IntegrityUrl <integrity-url> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`.
-   Runner (artifact mode): `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath <path-to-02_health.json> -IntegrityJsonPath <path-to-02_integrity.json> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`.
-2. Complete authority hygiene convergence so legacy GO/PARTIAL/FAIL docs are non-ambiguous and clearly historical.
-3. Resolve the protected-spine auth/security hang and publish a fresh protected-spine packet on the candidate SHA.
-4. Keep this file and `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md` synchronized for every material release-state change.
+   Latest closure artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260530_001336.json`.
+2. COMPLETE - Authority hygiene convergence is in place; legacy GO/PARTIAL/FAIL docs are marked historical/scope-limited and point to this canonical status source.
+3. COMPLETE - Protected-spine runtime/policy gate is green on approved candidate SHA linkage.
+4. COMPLETE - Canonical status and scorecard are synchronized for final gate decision.
 
 ## Language Guardrail
 
 Allowed now:
 
-- "Validated slices are green; repository-level posture is CONDITIONAL GO pending final parity and authority convergence."
+- "Approved release slice is UNRESTRICTED GO; whole-platform roadmap scope remains separately tracked and not yet complete."
 
 Not allowed now:
 
-- "Repository is unrestricted GA-ready across all lanes."
-- "All deployment targets are parity-verified for latest head."
+- "Repository is complete across all roadmap modules."
+- "Whole-platform delivery scope is fully complete."
