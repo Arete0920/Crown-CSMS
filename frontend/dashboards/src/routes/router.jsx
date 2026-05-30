@@ -503,11 +503,19 @@ export const router = createBrowserRouter([
   },
   {
     path: PATHS.STUDENT,
-    element: <StudentDashboard />,
+    element: (
+      <RoleRouteGuard allowedRoles={["student"]}>
+        <StudentDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/student/dashboard',
-    element: <StudentDashboard />,
+    element: (
+      <RoleRouteGuard allowedRoles={["student"]}>
+        <StudentDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.CLASSROOMS,
