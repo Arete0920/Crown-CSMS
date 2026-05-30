@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import "../features/dashboards/crown-dashboard.css";
 import "./LearningContinuityWorkflows.css";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { loadLearningContinuityPage } from "../features/learningContinuity/learningContinuityApi.js";
 import { getLearningContinuityTruth } from "../features/learningContinuity/learningContinuityTruth.js";
 
@@ -155,7 +156,8 @@ function LearningWorkflowPage({ pageKey }) {
   const statusDetail = payload.statusDetail ?? "API data is used when available. Fixture data keeps the page functional while backend and Microsoft adapters are built.";
 
   return (
-    <main className="crown-dashboard learning-workflow-page" data-testid={`learning-workflow-${pageKey}`}>
+    <CrownLayout>
+      <main className="crown-dashboard learning-workflow-page" data-testid={`learning-workflow-${pageKey}`}>
       <header className="crown-dashboard-hero">
         <div>
           <p className="crown-eyebrow">{page.eyebrow}</p>
@@ -194,7 +196,8 @@ function LearningWorkflowPage({ pageKey }) {
       <SourceRecordTable records={page.records} />
       <RecordDetailGrid records={page.records} />
       <WorkflowList workflow={page.workflow} />
-    </main>
+      </main>
+    </CrownLayout>
   );
 }
 

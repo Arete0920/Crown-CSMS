@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import CrownLogo from "../components/brand/CrownLogo";
+import CrownLayout from "../components/crown/CrownLayout.jsx";
 import {
   SANDBOX_TRACKS,
   getSandboxLoginHref,
@@ -256,7 +257,8 @@ export default function SandboxLandingPage() {
         }
       `}</style>
 
-      <main className="sandbox-root">
+      <CrownLayout>
+        <main className="sandbox-root">
         <section className="sandbox-hero">
           <aside className="sandbox-brand-card" aria-label="CROWN sandbox overview">
             <div>
@@ -354,7 +356,8 @@ export default function SandboxLandingPage() {
             </div>
           </section>
         </section>
-      </main>
+        </main>
+      </CrownLayout>
     </>
   );
 }
