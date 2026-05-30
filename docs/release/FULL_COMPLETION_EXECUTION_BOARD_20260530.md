@@ -42,12 +42,12 @@ Status legend:
 
 | ID | Priority | Task | Status | Evidence |
 | --- | --- | --- | --- | --- |
-| 021 | Critical | Add ownership metadata for all release authority artifacts | NOT_STARTED | |
-| 022 | High | Add authority-doc change-control log and review checklist | NOT_STARTED | |
+| 021 | Critical | Add ownership metadata for all release authority artifacts | COMPLETE | docs/release/RELEASE_AUTHORITY_OWNERSHIP_20260530.md; scripts/release/verify_authority_ownership_metadata.ps1 (pass) |
+| 022 | High | Add authority-doc change-control log and review checklist | COMPLETE | docs/release/RELEASE_AUTHORITY_CHANGE_CONTROL_LOG_20260530.md; scripts/release/verify_authority_change_control_log.ps1 (pass) |
 | 023 | High | Add pre-push warning for authority edits without scorecard sync | COMPLETE | scripts/release/check_authority_edit_sync.ps1 |
 | 024 | High | Add scorecard sync validator versus canonical fields | COMPLETE | frontend/dashboards/src/tests/releaseAuthorityConsistencyContract.test.js |
 | 025 | High | Add P0 board sync validator versus canonical fields | COMPLETE | frontend/dashboards/src/tests/releaseAuthorityConsistencyContract.test.js |
-| 026 | Critical | Inventory all student-facing routes and guard strategy | NOT_STARTED | |
+| 026 | Critical | Inventory all student-facing routes and guard strategy | COMPLETE | docs/release/STUDENT_ROUTE_GUARD_INVENTORY_20260530.md; scripts/release/verify_student_route_inventory.ps1 (pass) |
 | 027 | Critical | Guard direct student dashboard paths | COMPLETE | frontend/dashboards/src/routes/router.jsx |
 | 028 | Critical | Add route-level test asserting all student routes guarded | COMPLETE | frontend/dashboards/src/tests/releaseHardeningContracts.test.jsx |
 | 029 | High | Add deny-by-default guard policy for sensitive route groups | NOT_STARTED | |
