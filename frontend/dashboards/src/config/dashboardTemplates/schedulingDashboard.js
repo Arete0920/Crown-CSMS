@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const SCHED_TREND = [
   { month: 'Aug', value: 12 }, { month: 'Sep', value: 18 }, { month: 'Oct', value: 22 },
   { month: 'Nov', value: 31 }, { month: 'Dec', value: 40 }, { month: 'Jan', value: 52 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Scheduler!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Scheduling widgets currently use template snapshots pending live scheduling service integration.',
+  note: 'Certification remains in review until scheduling metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Sections Built', value: '148', detail: '97% of target — 4 sections pending staff.', accent: 'blue' },

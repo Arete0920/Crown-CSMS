@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const VISIT_TREND = [
   { month: 'Sep', value: 11 }, { month: 'Oct', value: 13 }, { month: 'Nov', value: 12 },
   { month: 'Dec', value: 14 }, { month: 'Jan', value: 13 }, { month: 'Feb', value: 14 }, { month: 'Mar', value: 14 },
@@ -18,7 +16,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Nurse!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Health office widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until health office metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Visits Today', value: '14', detail: 'Above 4-week average — monitor through afternoon.', accent: 'gold' },

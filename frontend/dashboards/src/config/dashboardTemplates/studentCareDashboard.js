@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const CARE_TREND = [
   { month: 'Aug', value: 8 }, { month: 'Sep', value: 12 }, { month: 'Oct', value: 14 },
   { month: 'Nov', value: 18 }, { month: 'Dec', value: 16 }, { month: 'Jan', value: 22 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Student Care!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Student care widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until student care metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'At-Risk Students', value: '24', detail: '8 high-priority — active care plans in place.', accent: 'gold' },

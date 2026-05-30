@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const MESSAGE_VOLUME_TREND = [
   { month: 'Sep', value: 142 },
   { month: 'Oct', value: 158 },
@@ -33,7 +31,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, James!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Communications widgets currently use template snapshots pending live communications service integration.',
+  note: 'Certification remains in review until communications metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Messages Queued', value: '18', detail: 'Ready for approval or scheduling — 4 are time-sensitive.', accent: 'blue' },

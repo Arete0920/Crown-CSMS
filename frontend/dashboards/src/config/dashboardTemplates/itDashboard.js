@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const UPTIME_TREND = [
   { month: 'Sep', value: 99.6 }, { month: 'Oct', value: 99.7 }, { month: 'Nov', value: 99.8 },
   { month: 'Dec', value: 99.7 }, { month: 'Jan', value: 99.9 }, { month: 'Feb', value: 99.8 }, { month: 'Mar', value: 99.8 },
@@ -18,7 +16,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, IT Director!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'IT support widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until IT support metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Open Tickets', value: '12', detail: '5 urgent, 1 overdue >14 days.', accent: 'gold' },
