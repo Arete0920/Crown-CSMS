@@ -50,10 +50,10 @@ Status legend:
 | 026 | Critical | Inventory all student-facing routes and guard strategy | COMPLETE | docs/release/STUDENT_ROUTE_GUARD_INVENTORY_20260530.md; scripts/release/verify_student_route_inventory.ps1 (pass) |
 | 027 | Critical | Guard direct student dashboard paths | COMPLETE | frontend/dashboards/src/routes/router.jsx |
 | 028 | Critical | Add route-level test asserting all student routes guarded | COMPLETE | frontend/dashboards/src/tests/releaseHardeningContracts.test.jsx |
-| 029 | High | Add deny-by-default guard policy for sensitive route groups | NOT_STARTED | |
-| 030 | High | Add route guard matrix tests for all role groups | NOT_STARTED | |
+| 029 | High | Add deny-by-default guard policy for sensitive route groups | COMPLETE | docs/release/ROUTE_GUARD_POLICY_20260530.md; scripts/release/verify_route_guard_policy.ps1 (pass) |
+| 030 | High | Add route guard matrix tests for all role groups | COMPLETE | frontend/dashboards/src/tests/routeGuardMatrixContract.test.js (34 tests pass) |
 | 031 | High | Add route alias audit and deprecate non-essential aliases | NOT_STARTED | |
-| 032 | High | Add explicit owner tags to high-risk routes | NOT_STARTED | |
+| 032 | High | Add explicit owner tags to high-risk routes | COMPLETE | docs/release/HIGH_RISK_ROUTE_OWNERSHIP_20260530.md; scripts/release/verify_high_risk_route_ownership.ps1 (pass) |
 | 033 | Critical | Add API first-match conflict scanner over URL patterns | NOT_STARTED | |
 | 034 | Critical | Add route-shadowing regression tests for include ordering | NOT_STARTED | |
 | 035 | Critical | Add anonymous denial tests for protected API prefixes | NOT_STARTED | |
