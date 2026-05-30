@@ -81,8 +81,8 @@ Status legend:
 | 052 | High | Fail readiness if evidence SHA mismatches candidate SHA | NOT_STARTED | |
 | 053 | High | Fail readiness if evidence branch mismatches release branch | NOT_STARTED | |
 | 054 | Critical | Add backend registry vs frontend manifest parity test | COMPLETE | scripts/release/verify_wizard_registry_parity.ps1 |
-| 055 | Critical | Replace generic /wizards placeholders for production-ready entries | IN_PROGRESS | scripts/release/verify_wizard_registry_parity.ps1 detects 5 placeholder slugs |
-| 056 | High | Enforce unique route path for all production-ready wizard entries | NOT_STARTED | |
+| 055 | Critical | Replace generic /wizards placeholders for production-ready entries | COMPLETE | scripts/release/verify_wizard_registry_parity.ps1 (placeholders=0) |
+| 056 | High | Enforce unique route path for all production-ready wizard entries | COMPLETE | frontend/dashboards/src/routes/wizardRouteAccess.test.jsx |
 | 057 | High | Add wizard step-completion contract tests per wizard | NOT_STARTED | |
 | 058 | High | Add wizard save/resume tests per wizard | NOT_STARTED | |
 | 059 | High | Add wizard commit/apply side-effect verification tests per wizard | NOT_STARTED | |
