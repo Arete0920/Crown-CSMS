@@ -33,7 +33,7 @@ Status legend:
 | 014 | High | Enforce branch parity script as pre-merge check | NOT_STARTED | |
 | 015 | High | Add drift threshold alert for ahead/behind deltas | NOT_STARTED | |
 | 016 | High | Require every release claim to name branch and SHA | NOT_STARTED | |
-| 017 | High | Add automated detection of authority files missing on main | NOT_STARTED | |
+| 017 | High | Add automated detection of authority files missing on main | COMPLETE | scripts/release/verify_authority_files_on_main.ps1 (currently failing on origin/main: files missing) |
 | 018 | High | Add release-claim linter for contradictory wording | NOT_STARTED | |
 | 019 | High | Add stale-claim scanner for historical ship/go language | NOT_STARTED | |
 | 020 | High | Add superseded-doc watermark template and backfill | NOT_STARTED | |
