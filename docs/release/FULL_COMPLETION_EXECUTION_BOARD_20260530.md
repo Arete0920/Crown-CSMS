@@ -72,14 +72,14 @@ Status legend:
 | 043 | High | Add JWT/session/AAD endpoint contract tests | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_043_jwt_session_aad_contracts_fail_closed_for_bad_auth (pass) |
 | 044 | High | Add security log presence assertions for protected failures | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_044_security_log_presence_on_protected_failure_configuration (pass) |
 | 045 | High | Add replay-safety tests for admissions lifecycle endpoints | COMPLETE | backend/tests/test_release_security_readiness_contracts.py::test_045_admissions_submit_idempotency_replay_contract + ::test_045_admissions_event_replay_requires_authentication (pass) |
-| 046 | Critical | Remove dashboard ready-by-default behavior | NOT_STARTED | |
-| 047 | Critical | Remove wizard route ready-by-default behavior | NOT_STARTED | |
-| 048 | Critical | Require evidence object for ready dashboard entries | NOT_STARTED | |
-| 049 | Critical | Require evidence object for ready wizard entries | NOT_STARTED | |
-| 050 | High | Add evidence schema validation in registry tests | NOT_STARTED | |
-| 051 | High | Add evidence freshness SLA checks in readiness tests | NOT_STARTED | |
-| 052 | High | Fail readiness if evidence SHA mismatches candidate SHA | NOT_STARTED | |
-| 053 | High | Fail readiness if evidence branch mismatches release branch | NOT_STARTED | |
+| 046 | Critical | Remove dashboard ready-by-default behavior | COMPLETE | frontend/dashboards/src/config/dashboardRegistry.js (default releaseState changed to draft fail-closed) |
+| 047 | Critical | Remove wizard route ready-by-default behavior | COMPLETE | frontend/dashboards/src/routes/wizards.js (default releaseState changed to draft fail-closed) |
+| 048 | Critical | Require evidence object for ready dashboard entries | COMPLETE | frontend/dashboards/src/tests/releaseReadinessEvidenceContracts.test.js::does not allow dashboard entries to be ready by default without evidence (pass) |
+| 049 | Critical | Require evidence object for ready wizard entries | COMPLETE | frontend/dashboards/src/tests/releaseReadinessEvidenceContracts.test.js::does not allow wizard entries to be ready by default without evidence (pass) |
+| 050 | High | Add evidence schema validation in registry tests | COMPLETE | frontend/dashboards/src/tests/releaseReadinessEvidenceContracts.test.js::enforces evidence schema/freshness/sha/branch for ready dashboards + ready wizards (pass) |
+| 051 | High | Add evidence freshness SLA checks in readiness tests | COMPLETE | frontend/dashboards/src/tests/releaseReadinessEvidenceContracts.test.js (EVIDENCE_FRESHNESS_SLA_DAYS contract, pass) |
+| 052 | High | Fail readiness if evidence SHA mismatches candidate SHA | COMPLETE | frontend/dashboards/src/tests/releaseReadinessEvidenceContracts.test.js (candidate SHA parity assertion vs docs/CURRENT_RELEASE_STATUS.md, pass) |
+| 053 | High | Fail readiness if evidence branch mismatches release branch | COMPLETE | frontend/dashboards/src/tests/releaseReadinessEvidenceContracts.test.js (release branch parity assertion vs docs/CURRENT_RELEASE_STATUS.md, pass) |
 | 054 | Critical | Add backend registry vs frontend manifest parity test | COMPLETE | scripts/release/verify_wizard_registry_parity.ps1 |
 | 055 | Critical | Replace generic /wizards placeholders for production-ready entries | COMPLETE | scripts/release/verify_wizard_registry_parity.ps1 (placeholders=0) |
 | 056 | High | Enforce unique route path for all production-ready wizard entries | COMPLETE | frontend/dashboards/src/routes/wizardRouteAccess.test.jsx |

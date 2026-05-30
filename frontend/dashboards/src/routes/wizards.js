@@ -268,8 +268,9 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
 ];
 
 function normalizeWizardRoute(route) {
-  const releaseState = route.releaseState || 'ready';
-  const readiness = route.readiness || (releaseState === 'ready' ? readyReadiness() : placeholderReadiness());
+  const releaseState = route.releaseState || 'draft';
+  const isReadyLike = ['ready', 'live', 'production'].includes(releaseState);
+  const readiness = route.readiness || (isReadyLike ? readyReadiness() : placeholderReadiness());
 
   return {
     ...route,
