@@ -62,15 +62,16 @@ describe("Sandbox persona launch", () => {
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/api/v1/sandbox/events/"),
+        "/api/v1/sandbox/events/",
         expect.objectContaining({
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             event: "feedback_requested",
             track: "school",
             guidance: "guided",
             persona: "school_admin",
-            school: "heritage",
+            school: "heritage-core",
             tour: "Daily operating picture",
           }),
         })
