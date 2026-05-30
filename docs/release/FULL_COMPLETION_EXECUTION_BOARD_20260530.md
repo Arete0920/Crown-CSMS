@@ -56,12 +56,12 @@ Status legend:
 | 032 | High | Add explicit owner tags to high-risk routes | COMPLETE | docs/release/HIGH_RISK_ROUTE_OWNERSHIP_20260530.md; scripts/release/verify_high_risk_route_ownership.ps1 (pass) |
 | 033 | Critical | Add API first-match conflict scanner over URL patterns | COMPLETE | scripts/release/verify_api_first_match_conflicts.ps1 (pass: conflicts=0) |
 | 034 | Critical | Add route-shadowing regression tests for include ordering | COMPLETE | scripts/release/verify_api_include_ordering.ps1 (pass: violations=0) |
-| 035 | Critical | Add anonymous denial tests for protected API prefixes | NOT_STARTED | |
+| 035 | Critical | Add anonymous denial tests for protected API prefixes | COMPLETE | backend/tests/test_protected_prefix_anonymous_denial.py (4 passing anonymous denial contracts) |
 | 036 | Critical | Add tenant header enforcement tests on all write endpoints | NOT_STARTED | |
 | 037 | Critical | Add cross-tenant read/write negative tests per critical module | NOT_STARTED | |
 | 038 | Critical | Add object-level permission escalation tests for key models | NOT_STARTED | |
 | 039 | Critical | Add role-permission write matrix tests by module | NOT_STARTED | |
-| 040 | High | Add security middleware order regression test | NOT_STARTED | |
+| 040 | High | Add security middleware order regression test | COMPLETE | scripts/release/verify_security_middleware_order.ps1 (pass: missing=0 ordering_violations=0) |
 
 ## Priority 041-060 (Readiness Credibility + Wizard/Dashboard Parity)
 
