@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import CrownLogo from "../components/brand/CrownLogo";
+import CrownLayout from "../components/crown/CrownLayout";
 import {
   SANDBOX_TRACKS,
   getSandboxSchool,
@@ -123,7 +124,11 @@ export default function SandboxLandingPage() {
         @media (max-width: 720px) { .track-grid, .mode-grid, .persona-grid, .school-grid { grid-template-columns: 1fr; } }
       `}</style>
 
-      <main className="sandbox-root">
+      <CrownLayout
+        title="Guided Proof Sandbox"
+        subtitle="Explore CROWN with safe fictional data and launch role-specific proof paths."
+        mainClassName="sandbox-root"
+      >
         <section className="sandbox-hero">
           <aside className="sandbox-brand-card" aria-label="CROWN sandbox overview">
             <div>
@@ -224,7 +229,7 @@ export default function SandboxLandingPage() {
             </div>
           </section>
         </section>
-      </main>
+      </CrownLayout>
     </>
   );
 }
