@@ -29,6 +29,7 @@ Decision meaning:
 - Protected-spine verdict: `PARTIAL`
 - Status checksum (SHA256 over decision+metadata tuple): `0990bdeeb6b0609504fbb9d61fd44a87b31248bb28bac474a826181d32975daa`
 
+
 ## Current Proof Snapshot (2026-05-29)
 
 Backend proof status: PASS.

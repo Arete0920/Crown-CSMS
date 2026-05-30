@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from spiritual_life.api.views import (
     SpiritualProfileView,
@@ -71,11 +71,13 @@ urlpatterns = [
         PrayerRequestDetail.as_view(),
         name="prayer_request_detail",
     ),
-    # Pastoral Notes Ã¢â‚¬â€ staff only
+    # Pastoral Notes - staff only
     path("pastoral-notes/", PastoralNoteListCreate.as_view(), name="pastoral_notes"),
     path(
         "pastoral-notes/<uuid:note_id>/",
         PastoralNoteDetail.as_view(),
         name="pastoral_note_detail",
     ),
+    # Spiritual Life & Biblical Formation expansion
+    path("formation/", include("spiritual_life.api.formation_urls")),
 ]

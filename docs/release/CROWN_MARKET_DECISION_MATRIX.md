@@ -1,7 +1,7 @@
 ﻿# Crown Competitor and Marketplace Decision Matrix
 
 Status: Positioning governance matrix
-Updated: 2026-04-14
+Updated: 2026-05-28
 
 Legend:
 - Match: required parity for buyer trust
@@ -20,6 +20,7 @@ Legend:
 | Crown Compass institutional scoring | Differentiate | Strategic leadership product signal | docs/release/crown_compass_closeout/ |
 | Board Governance Suite | Differentiate | Executive/board-facing value | docs/release/board_governance_suite_closeout/ |
 | Spiritual Life and Service/Outreach | Differentiate | Mission-fit advantage for Christian schools | docs/release/spiritual_life_closeout/ |
+| Home Academy / Homeschool Affiliation Module | Standalone Candidate | Enables Christian schools to operate school-branded homeschool, hybrid, course-only, activity, and diploma-track programs while preserving school control over academics, eligibility, billing, capacity, records, and participation rules. | docs/architecture/CROWN_HOME_ACADEMY_CANON.md |
 | PD Hub | Defer | Add-on value strong but lower urgency than governance + mission layer | docs/release/pd_hub_closeout/ |
 | Extended discipline workflows | Defer | Valuable, but follows core and second-wave stability | docs/release/extended_discipline_workflows_closeout/ |
 | Broad adjacent CRM-style expansion | Ignore (current phase) | Scope control and release discipline | docs/release/KNOWN_GAPS_AND_DEFERRED_ITEMS.md |
@@ -30,3 +31,7 @@ Legend:
 
 Every new roadmap item must be added to this matrix before implementation begins.
 If no decision exists here, item is blocked from active build scope.
+
+## Home Academy gate
+
+The Home Academy / Homeschool Affiliation Module may proceed only as a controlled premium add-on. It must not claim diploma-pathway completion until school-of-record status, transcript staging, registrar approval, graduation audit, and diploma issuance workflows are implemented and verified with proof artifacts.
