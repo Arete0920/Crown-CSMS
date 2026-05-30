@@ -13,16 +13,11 @@ export default function ParentJourneyRouteGuard({ stage, children }) {
     status: "loading",
     overview: null,
     errorMessage: "",
+    stage,
   });
 
   useEffect(() => {
     let active = true;
-
-    setGuardState({
-      status: "loading",
-      overview: null,
-      errorMessage: "",
-    });
 
     loadParentJourneyOverview()
       .then((overview) => {
@@ -32,6 +27,7 @@ export default function ParentJourneyRouteGuard({ stage, children }) {
           status: "ready",
           overview,
           errorMessage: "",
+          stage,
         });
       })
       .catch((error) => {
@@ -41,6 +37,7 @@ export default function ParentJourneyRouteGuard({ stage, children }) {
           status: "error",
           overview: null,
           errorMessage: error instanceof Error ? error.message : String(error),
+          stage,
         });
       });
 
@@ -49,7 +46,7 @@ export default function ParentJourneyRouteGuard({ stage, children }) {
     };
   }, [stage]);
 
-  if (guardState.status === "loading") {
+  if (guardState.status === "loading" || guardState.stage !== stage) {
     return (
       <section aria-busy="true" style={{ padding: "24px 20px" }}>
         Checking parent journey state…

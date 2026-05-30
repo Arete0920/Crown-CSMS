@@ -134,20 +134,15 @@ function LearningWorkflowPage({ pageKey }) {
     mode: "loading",
     authorityRules: [],
     page: fallbackPage,
+    pageKey,
   });
 
   useEffect(() => {
     let active = true;
 
-    setPayload({
-      mode: "loading",
-      authorityRules: [],
-      page: fallbackPage,
-    });
-
     loadLearningContinuityPage(pageKey).then((loadedPayload) => {
       if (!active) return;
-      setPayload(loadedPayload);
+      setPayload({ ...loadedPayload, pageKey });
     });
 
     return () => {
@@ -156,6 +151,7 @@ function LearningWorkflowPage({ pageKey }) {
   }, [pageKey, fallbackPage]);
 
   const { page, authorityRules, mode } = payload;
+  const isStale = payload.pageKey !== pageKey;
   const statusDetail = payload.statusDetail ?? "API data is used when available. Fixture data keeps the page functional while backend and Microsoft adapters are built.";
 
   return (
@@ -176,7 +172,7 @@ function LearningWorkflowPage({ pageKey }) {
 
         <aside className="crown-dashboard-status-card">
           <span className="crown-status-label">Data mode</span>
-          <strong>{mode}</strong>
+          <strong>{isStale ? "loading" : mode}</strong>
           <small>{statusDetail}</small>
         </aside>
       </header>

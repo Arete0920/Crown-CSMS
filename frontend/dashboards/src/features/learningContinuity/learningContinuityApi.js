@@ -21,7 +21,7 @@ function normalizePagePayload(pageKey, payload) {
 
 export async function loadLearningContinuityPage(pageKey) {
   try {
-    const response = await fetch(`${API_BASE}/${pageKey}/`, {
+    const response = await globalThis.fetch(`${API_BASE}/${pageKey}/`, {
       method: "GET",
       headers: {
         Accept: "application/json",
