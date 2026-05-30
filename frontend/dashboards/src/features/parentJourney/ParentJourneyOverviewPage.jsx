@@ -52,23 +52,26 @@ function HighlightCard({ label, value, helper }) {
 }
 
 function ApplicationCard({ application, focus }) {
-  const focusDetails = focus === "billing"
-    ? [
-        { label: "Contract", value: application.contract_status || "unknown" },
-        { label: "Deposit", value: application.deposit_status || "unknown" },
-        { label: "Payment precheck", value: application.payment_precheck?.status || "pending" },
-      ]
-    : focus === "aid"
-      ? [
-          { label: "Aid status", value: application.financial_aid_status || "unknown" },
-          { label: "Awards", value: String(application.aid_award_count ?? 0) },
-          { label: "Aid sync", value: application.aid_contract_sync_status || "unknown" },
-        ]
-      : [
-          { label: "Lifecycle", value: application.lifecycle_stage || "unknown" },
-          { label: "Checklist", value: application.checklist_summary?.missing_count === 0 ? "Complete" : "In progress" },
-          { label: "Parent portal", value: application.parent_portal_activation_status || "unknown" },
-        ];
+  let focusDetails;
+  if (focus === "billing") {
+    focusDetails = [
+      { label: "Contract", value: application.contract_status || "unknown" },
+      { label: "Deposit", value: application.deposit_status || "unknown" },
+      { label: "Payment precheck", value: application.payment_precheck?.status || "pending" },
+    ];
+  } else if (focus === "aid") {
+    focusDetails = [
+      { label: "Aid status", value: application.financial_aid_status || "unknown" },
+      { label: "Awards", value: String(application.aid_award_count ?? 0) },
+      { label: "Aid sync", value: application.aid_contract_sync_status || "unknown" },
+    ];
+  } else {
+    focusDetails = [
+      { label: "Lifecycle", value: application.lifecycle_stage || "unknown" },
+      { label: "Checklist", value: application.checklist_summary?.missing_count === 0 ? "Complete" : "In progress" },
+      { label: "Parent portal", value: application.parent_portal_activation_status || "unknown" },
+    ];
+  }
 
   return (
     <article className="learning-record-detail-card">
@@ -101,17 +104,20 @@ function ApplicationCard({ application, focus }) {
 }
 
 export default function ParentJourneyOverviewPage({ focus = "status" }) {
-  const [state, setState] = useState({ status: "loading", overview: null, errorMessage: "" });
+  const [state, setState] = useState({
+    status: "loading",
+    overview: null,
+    errorMessage: "",
+    focus,
+  });
 
   useEffect(() => {
     let active = true;
 
-    setState({ status: "loading", overview: null, errorMessage: "" });
-
     loadParentJourneyOverview()
       .then((overview) => {
         if (!active) return;
-        setState({ status: "ready", overview, errorMessage: "" });
+        setState({ status: "ready", overview, errorMessage: "", focus });
       })
       .catch((error) => {
         if (!active) return;
@@ -119,6 +125,7 @@ export default function ParentJourneyOverviewPage({ focus = "status" }) {
           status: "error",
           overview: null,
           errorMessage: error instanceof Error ? error.message : String(error),
+          focus,
         });
       });
 
@@ -127,7 +134,7 @@ export default function ParentJourneyOverviewPage({ focus = "status" }) {
     };
   }, [focus]);
 
-  if (state.status === "loading") {
+  if (state.status === "loading" || state.focus !== focus) {
     return (
       <main className="crown-dashboard learning-workflow-page">
         <section className="crown-dashboard-status-card" aria-busy="true">
@@ -179,23 +186,26 @@ export default function ParentJourneyOverviewPage({ focus = "status" }) {
     },
   ];
 
-  const callout = focus === "billing"
-    ? {
-        label: "Billing summary",
-        value: summary.contract_complete > 0 ? "Contract complete" : "Action needed",
-        helper: `Accepted pending contract: ${summary.accepted_pending_contract ?? 0}; deposit complete: ${summary.deposit_complete ?? 0}.`,
-      }
-    : focus === "aid"
-      ? {
-          label: "Aid summary",
-          value: firstApplication.financial_aid_status || "Not started",
-          helper: `Awards: ${firstApplication.aid_award_count ?? 0}; contract sync: ${firstApplication.aid_contract_sync_status || "unknown"}.`,
-        }
-      : {
-          label: "Lifecycle summary",
-          value: String(summary.total ?? applications.length),
-          helper: `Applications surfaced: ${summary.total ?? applications.length}.`,
-        };
+  let callout;
+  if (focus === "billing") {
+    callout = {
+      label: "Billing summary",
+      value: summary.contract_complete > 0 ? "Contract complete" : "Action needed",
+      helper: `Accepted pending contract: ${summary.accepted_pending_contract ?? 0}; deposit complete: ${summary.deposit_complete ?? 0}.`,
+    };
+  } else if (focus === "aid") {
+    callout = {
+      label: "Aid summary",
+      value: firstApplication.financial_aid_status || "Not started",
+      helper: `Awards: ${firstApplication.aid_award_count ?? 0}; contract sync: ${firstApplication.aid_contract_sync_status || "unknown"}.`,
+    };
+  } else {
+    callout = {
+      label: "Lifecycle summary",
+      value: String(summary.total ?? applications.length),
+      helper: `Applications surfaced: ${summary.total ?? applications.length}.`,
+    };
+  }
 
   return (
     <main className="crown-dashboard learning-workflow-page" data-testid={`parent-journey-${focus}`}>
