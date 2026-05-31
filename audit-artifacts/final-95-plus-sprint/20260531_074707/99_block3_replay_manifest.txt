@@ -1,0 +1,23 @@
+# Block 3 Replay Manifest (20260531_074707)
+
+Status: BLOCK-3 CLOSED VIA FOCUSED DIAGNOSTIC RERUNS
+Evidence root: audit-artifacts/final-95-plus-sprint/20260531_074707
+
+## Interrupted canonical markers
+
+- 06_django_deploy_check.txt :: django_deploy_check_exit=0
+- 07_tenant_isolation.txt :: tenant_isolation_exit=-1
+- 08_admissions_endpoints.txt :: admissions_endpoints_exit=-1
+- 09_aftercare.txt :: missing exit marker
+
+## Authoritative focused reruns (same root)
+
+- 07b_tenant_isolation_diagnostic.txt :: tenant_isolation_diag_exit=0
+- 08b_admissions_endpoints_diagnostic.txt :: admissions_endpoints_diag_exit=0
+- 09c_aftercare_diagnostic.txt :: aftercare_diag_exit=0
+- 10b_later_tier_metrics_diagnostic.txt :: later_tier_metrics_diag_exit=0
+
+## Notes
+
+- 09b_aftercare_diagnostic.txt records a non-canonical mistaken target attempt and is not used for final pass/fail.
+- For this root, diagnostic files above are the authoritative pass/fail source for block-3 until a single-session canonical pack rerun is produced.
