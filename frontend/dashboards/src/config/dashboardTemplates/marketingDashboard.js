@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const INQUIRY_TREND = [
   { month: 'Sep', value: 18 }, { month: 'Oct', value: 22 }, { month: 'Nov', value: 20 },
@@ -14,36 +14,39 @@ export default {
   activePath: '/marketing',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 4,
-  user: { initials: 'MA', name: 'Marketing & Advancement', role: 'Marketing — Funnel & Campaigns' },
+  user: { initials: 'MA', name: 'Marketing & Advancement', role: 'Marketing â€” Funnel & Campaigns' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Marketing!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/marketing/summary/',
+  liveDataKey: 'marketing',
 
   metrics: [
-    { label: 'Inquiries YTD', value: '187', detail: '+24% vs prior year — pipeline strong.', accent: 'blue' },
+    { label: 'Inquiries YTD', value: '187', detail: '+24% vs prior year â€” pipeline strong.', accent: 'blue' },
     { label: 'Tours Scheduled', value: '62', detail: 'Open House tours filling at 90% capacity.', accent: 'gold' },
     { label: 'Applications', value: '54', detail: '38 enrolled to date, 16 awaiting decision.', accent: 'navy' },
-    { label: 'Stalled Leads', value: '11', detail: 'No follow-up >7 days — re-engagement queue active.', accent: 'gold' },
+    { label: 'Stalled Leads', value: '11', detail: 'No follow-up >7 days â€” re-engagement queue active.', accent: 'gold' },
   ],
 
   priorities: [
-    { title: 'Re-engage 11 stalled leads', detail: 'No follow-up >7 days — assign to admissions counselor.', state: 'Today', tone: 'warn' },
-    { title: 'Boost Open House RSVPs', detail: 'Currently 28 of 50 target — push email + social cadence.', state: 'This week', tone: 'warn' },
-    { title: 'Finalize spring digital ad refresh', detail: 'Q1 creative ends Friday — Q2 assets in review.', state: 'This week', tone: 'warn' },
+    { title: 'Re-engage 11 stalled leads', detail: 'No follow-up >7 days â€” assign to admissions counselor.', state: 'Today', tone: 'warn' },
+    { title: 'Boost Open House RSVPs', detail: 'Currently 28 of 50 target â€” push email + social cadence.', state: 'This week', tone: 'warn' },
+    { title: 'Finalize spring digital ad refresh', detail: 'Q1 creative ends Friday â€” Q2 assets in review.', state: 'This week', tone: 'warn' },
   ],
   prioritiesTitle: 'Marketing priorities',
 
   alerts: [
-    { title: '11 leads with no follow-up >7 days', detail: 'SLA breach — escalation queue active for re-assignment.', tone: 'warn' },
-    { title: 'Open House RSVPs below target', detail: '28 of 50 target — additional outreach this week.', tone: 'warn' },
+    { title: '11 leads with no follow-up >7 days', detail: 'SLA breach â€” escalation queue active for re-assignment.', tone: 'warn' },
+    { title: 'Open House RSVPs below target', detail: '28 of 50 target â€” additional outreach this week.', tone: 'warn' },
   ],
 
   commandModules: [
     { key: 'funnel', icon: 'FN', title: 'Enrollment Funnel', status: 'Stable', statusTone: 'good',
-      mainKpi: '187 → 62 → 54 → 38', summary: 'Funnel conversion holding above last year at every stage.',
+      mainKpi: '187 â†’ 62 â†’ 54 â†’ 38', summary: 'Funnel conversion holding above last year at every stage.',
       kpis: [{ label: 'Inquiries', value: '187' }, { label: 'Tours', value: '62' }, { label: 'Applied', value: '54' }, { label: 'Enrolled', value: '38' }],
-      details: ['Inquiry → tour conversion 33%', 'Tour → application conversion 87%', 'Application → enrolled conversion 70%', 'Overall yield: 20% inquiry-to-enrolled'],
+      details: ['Inquiry â†’ tour conversion 33%', 'Tour â†’ application conversion 87%', 'Application â†’ enrolled conversion 70%', 'Overall yield: 20% inquiry-to-enrolled'],
       primaryActionLabel: 'Open Admissions', backActionLabel: 'View Pipeline',
       primaryActionHref: '/admissions', backActionHref: '/admissions/pipeline', lastUpdated: '8:30 AM' },
     { key: 'campaigns', icon: 'CP', title: 'Campaigns', status: 'Stable', statusTone: 'good',
@@ -65,7 +68,7 @@ export default {
       primaryActionLabel: 'Open Analytics', backActionLabel: 'Email Reports',
       primaryActionHref: '/marketing', backActionHref: '/communications', lastUpdated: '7:50 AM' },
     { key: 'open-house', icon: 'OH', title: 'Open House', status: 'Watch', statusTone: 'warn',
-      mainKpi: '28 of 50 RSVPs', summary: 'RSVPs below target — push outreach this week.',
+      mainKpi: '28 of 50 RSVPs', summary: 'RSVPs below target â€” push outreach this week.',
       kpis: [{ label: 'RSVPs', value: '28' }, { label: 'Target', value: '50' }, { label: 'Capacity', value: '60%' }, { label: 'Tour slots open', value: '12' }],
       details: ['RSVPs at 56% of target with 10 days left', 'Tour slot capacity 60% reserved', 'Email reminder scheduled Wednesday', 'Social push planned Thursday and Friday'],
       primaryActionLabel: 'Open House Console', backActionLabel: 'View RSVPs',

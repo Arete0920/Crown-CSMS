@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ATTENDANCE_TREND = [
   { month: 'Sep', value: 88 }, { month: 'Oct', value: 87 }, { month: 'Nov', value: 89 },
@@ -14,11 +14,14 @@ export default {
   activePath: '/athletics',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 4,
-  user: { initials: 'AD', name: 'Athletic Director', role: 'Athletics — Teams & Compliance' },
+  user: { initials: 'AD', name: 'Athletic Director', role: 'Athletics â€” Teams & Compliance' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Athletic Director!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/athletics/summary/',
+  liveDataKey: 'athletics',
 
   metrics: [
     { label: 'Upcoming Events', value: '6', detail: '2 home / 4 away over next 7 days.', accent: 'navy' },
@@ -28,7 +31,7 @@ export default {
   ],
 
   priorities: [
-    { title: 'Resolve eligibility for boys basketball player', detail: 'GPA below 2.0 — confirm tutoring plan with academic team.', state: 'Today', tone: 'warn' },
+    { title: 'Resolve eligibility for boys basketball player', detail: 'GPA below 2.0 â€” confirm tutoring plan with academic team.', state: 'Today', tone: 'warn' },
     { title: 'Collect missing physical for football player', detail: 'Cannot participate until form is on file.', state: 'Today', tone: 'warn' },
     { title: 'Confirm transportation for 4 away events', detail: 'Bus requests pending office approval.', state: 'This week', tone: 'warn' },
   ],
@@ -36,26 +39,26 @@ export default {
 
   alerts: [
     { title: '3 eligibility issues open', detail: 'Players cannot participate until issues are resolved.', tone: 'warn' },
-    { title: '2 active injuries', detail: 'Return-to-play protocols in flight — coordinate with nurse.', tone: 'warn' },
+    { title: '2 active injuries', detail: 'Return-to-play protocols in flight â€” coordinate with nurse.', tone: 'warn' },
   ],
 
   commandModules: [
     { key: 'schedule', icon: 'SC', title: 'Upcoming Schedule', status: 'Stable', statusTone: 'good',
       mainKpi: '6 events in next 7 days', summary: 'Schedule confirmed; transportation pending for 4 away events.',
       kpis: [{ label: 'Events', value: '6' }, { label: 'Home', value: '2' }, { label: 'Away', value: '4' }, { label: 'Transport', value: '4 needed' }],
-      details: ['Feb 22 — Boys Basketball — Home', 'Feb 23 — Girls Soccer — Away', 'Feb 24 — Track Meet — Away', 'Feb 25 — Boys Basketball — Away'],
+      details: ['Feb 22 â€” Boys Basketball â€” Home', 'Feb 23 â€” Girls Soccer â€” Away', 'Feb 24 â€” Track Meet â€” Away', 'Feb 25 â€” Boys Basketball â€” Away'],
       primaryActionLabel: 'Open Schedule', backActionLabel: 'Transportation',
       primaryActionHref: '/athletics', backActionHref: '/office', lastUpdated: '8:30 AM' },
     { key: 'eligibility', icon: 'EL', title: 'Eligibility', status: 'Watch', statusTone: 'warn',
       mainKpi: '3 issues open', summary: 'GPA and paperwork issues are blocking three players from participation.',
       kpis: [{ label: 'Open issues', value: '3' }, { label: 'GPA holds', value: '1' }, { label: 'Missing physical', value: '1' }, { label: 'Missing consent', value: '1' }],
-      details: ['Boys Basketball — GPA below 2.0', 'Football — missing physical form', 'Track — missing parent consent', '90% of athletes currently eligible'],
+      details: ['Boys Basketball â€” GPA below 2.0', 'Football â€” missing physical form', 'Track â€” missing parent consent', '90% of athletes currently eligible'],
       primaryActionLabel: 'Open Eligibility Console', backActionLabel: 'Academic Coord.',
       primaryActionHref: '/athletics', backActionHref: '/gradebook', lastUpdated: '8:15 AM' },
     { key: 'rosters', icon: 'RO', title: 'Roster Compliance', status: 'Stable', statusTone: 'good',
       mainKpi: 'All sports rostered', summary: 'Forms and physicals tracked across all teams.',
       kpis: [{ label: 'Boys BB', value: '12' }, { label: 'Girls Soccer', value: '16' }, { label: 'Track', value: '22' }, { label: 'Swimming', value: '14' }],
-      details: ['Boys Basketball — 12 athletes / forms current', 'Girls Soccer — 16 athletes / forms current', 'Track — 22 athletes / 1 missing form', 'Swimming — 14 athletes / forms current'],
+      details: ['Boys Basketball â€” 12 athletes / forms current', 'Girls Soccer â€” 16 athletes / forms current', 'Track â€” 22 athletes / 1 missing form', 'Swimming â€” 14 athletes / forms current'],
       primaryActionLabel: 'Open Rosters', backActionLabel: 'Form Library',
       primaryActionHref: '/athletics', backActionHref: '/athletics', lastUpdated: '8:00 AM' },
     { key: 'injuries', icon: 'IJ', title: 'Injuries & Health', status: 'Watch', statusTone: 'warn',
@@ -88,7 +91,7 @@ export default {
   activities: [
     'Boys Basketball home game scheduled for Feb 22.',
     'Bus request submitted for Track meet Feb 24.',
-    'Athlete cleared from injury protocol — soccer.',
+    'Athlete cleared from injury protocol â€” soccer.',
     'Eligibility flag opened for football player.',
     'Weekly athletics recap sent to families.',
   ],

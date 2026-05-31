@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ACADEMIC_AVG_TREND = [
   { month: 'Sep', value: 88 },
@@ -28,30 +28,33 @@ export default {
   user: {
     initials: 'AM',
     name: 'Alex Martinez',
-    role: 'Student — Grade 10',
+    role: 'Student â€” Grade 10',
   },
   dashboardTitle: 'Student Dashboard',
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Alex!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/student/summary/',
+  liveDataKey: 'student',
 
   metrics: [
     { label: 'Current Average', value: '91.2%', detail: 'Up 1.2 points since last month.', accent: 'blue' },
     { label: 'Missing Work', value: '1', detail: 'History reflection due tonight at 11:59 PM.', accent: 'gold' },
     { label: 'Service Hours', value: '14 / 20', detail: '6 hours remaining to meet the annual requirement.', accent: 'navy' },
-    { label: 'Attendance Rate', value: '96%', detail: 'Two absences this semester — both excused.', accent: 'emerald' },
+    { label: 'Attendance Rate', value: '96%', detail: 'Two absences this semester â€” both excused.', accent: 'emerald' },
   ],
 
   priorities: [
-    { title: 'History reflection due tonight', detail: 'Submit to class assignment portal by 11:59 PM — no extensions available.', state: 'Due today', tone: 'warn' },
-    { title: 'Complete math practice set', detail: 'Units 4–6 practice problems assigned for tomorrow\'s review.', state: 'Due tomorrow', tone: 'warn' },
+    { title: 'History reflection due tonight', detail: 'Submit to class assignment portal by 11:59 PM â€” no extensions available.', state: 'Due today', tone: 'warn' },
+    { title: 'Complete math practice set', detail: 'Units 4â€“6 practice problems assigned for tomorrow\'s review.', state: 'Due tomorrow', tone: 'warn' },
     { title: 'Schedule service hours verification', detail: 'Book a 10-minute meeting with Dr. Reyes to confirm your current hours count.', state: 'Ready', tone: 'good' },
   ],
   prioritiesTitle: 'Today\'s student agenda',
 
   alerts: [
-    { title: 'Biology quiz result posted — 84%', detail: 'Quiz returned with teacher feedback. Review annotations before the unit test on Friday.', tone: 'good' },
+    { title: 'Biology quiz result posted â€” 84%', detail: 'Quiz returned with teacher feedback. Review annotations before the unit test on Friday.', tone: 'good' },
     { title: 'Advisory attendance note from Mr. Chen', detail: 'Please see the note posted to your advisory profile regarding last Monday\'s absence.', tone: 'warn' },
   ],
 
@@ -72,7 +75,7 @@ export default {
       ],
       details: [
         'History reflection: due 11:59 PM tonight',
-        'Math practice set (Units 4–6): due tomorrow',
+        'Math practice set (Units 4â€“6): due tomorrow',
         'English narrative draft: due Thursday',
         'Bio lab worksheet: due Friday before class',
       ],
@@ -88,19 +91,19 @@ export default {
       title: 'Grades & GPA',
       status: 'Stable',
       statusTone: 'good',
-      mainKpi: '91.2% — 3.5 GPA',
-      summary: 'Strong semester performance. Biology is the lowest course — focus there for finals.',
+      mainKpi: '91.2% â€” 3.5 GPA',
+      summary: 'Strong semester performance. Biology is the lowest course â€” focus there for finals.',
       kpis: [
         { label: 'Current average', value: '91.2%' },
         { label: 'Estimated GPA', value: '3.5' },
-        { label: 'Highest class', value: 'English — 97%' },
-        { label: 'Lowest class', value: 'Biology — 84%' },
+        { label: 'Highest class', value: 'English â€” 97%' },
+        { label: 'Lowest class', value: 'Biology â€” 84%' },
       ],
       details: [
-        'English: 97% — above semester benchmark',
-        'History: 93% — strong performance',
-        'Math: 91% — on target for semester goal',
-        'Biology: 84% — review quiz feedback before unit test',
+        'English: 97% â€” above semester benchmark',
+        'History: 93% â€” strong performance',
+        'Math: 91% â€” on target for semester goal',
+        'Biology: 84% â€” review quiz feedback before unit test',
       ],
       primaryActionLabel: 'Open Gradebook',
       backActionLabel: 'View Transcript',
@@ -124,7 +127,7 @@ export default {
       ],
       details: [
         'Advisory attendance note posted from Mr. Chen',
-        '2 excused absences — both fully documented',
+        '2 excused absences â€” both fully documented',
         'Rate of 96% exceeds required school minimum of 93%',
         'Attendance history available in student profile',
       ],
@@ -149,12 +152,12 @@ export default {
         { label: 'Dismissal', value: '3:05 PM' },
       ],
       details: [
-        'Period 1: English 10 — Room 214, Mr. Chen',
-        'Period 2: Biology — Room 108, Ms. Davis',
-        'Period 3: History — Room 201, Mr. Wang',
-        'Period 4: Math — Room 115, Mrs. Lopez',
-        'Period 5: Study Hall — Library',
-        'Period 6: P.E. — Gymnasium',
+        'Period 1: English 10 â€” Room 214, Mr. Chen',
+        'Period 2: Biology â€” Room 108, Ms. Davis',
+        'Period 3: History â€” Room 201, Mr. Wang',
+        'Period 4: Math â€” Room 115, Mrs. Lopez',
+        'Period 5: Study Hall â€” Library',
+        'Period 6: P.E. â€” Gymnasium',
       ],
       primaryActionLabel: 'View Full Schedule',
       backActionLabel: 'Course Details',
@@ -179,8 +182,8 @@ export default {
       details: [
         '6 hours still needed to meet annual requirement',
         'Dr. Reyes must verify and sign off by May 30',
-        'Upcoming opportunity: food pantry volunteer — May 11',
-        'Second opportunity: campus cleanup day — May 18',
+        'Upcoming opportunity: food pantry volunteer â€” May 11',
+        'Second opportunity: campus cleanup day â€” May 18',
       ],
       primaryActionLabel: 'Log Service Hours',
       backActionLabel: 'View History',
@@ -203,8 +206,8 @@ export default {
         { label: 'School bulletin', value: 'Posted today' },
       ],
       details: [
-        'Advisory note from Mr. Chen — attendance record',
-        'Student life announcement: spirit week May 12–16',
+        'Advisory note from Mr. Chen â€” attendance record',
+        'Student life announcement: spirit week May 12â€“16',
         'Principal newsletter posted this morning',
         'Reminder: chapel Wednesday 9:00 AM, all students',
       ],
@@ -219,13 +222,13 @@ export default {
   trendPanels: [
     {
       kicker: 'Academic average trend',
-      title: 'Grade average across all courses — by month',
+      title: 'Grade average across all courses â€” by month',
       chip: 'Trending upward',
       trend: ACADEMIC_AVG_TREND,
     },
     {
       kicker: 'Assignment completion',
-      title: 'Assignments submitted on time — semester',
+      title: 'Assignments submitted on time â€” semester',
       chip: 'Consistent above 91%',
       trend: ASSIGNMENT_COMPLETION_TREND,
     },
@@ -234,9 +237,9 @@ export default {
   activityKicker: 'Recent activity',
   activityTitle: 'Your recent school activity',
   activities: [
-    'Biology quiz score of 84% posted — feedback attached.',
-    'History reflection assignment due tonight — not yet submitted.',
-    'Math practice set (Units 4–6) posted to portal.',
+    'Biology quiz score of 84% posted â€” feedback attached.',
+    'History reflection assignment due tonight â€” not yet submitted.',
+    'Math practice set (Units 4â€“6) posted to portal.',
     'Advisory attendance note from Mr. Chen posted to profile.',
     'Weekly school bulletin published this morning.',
   ],

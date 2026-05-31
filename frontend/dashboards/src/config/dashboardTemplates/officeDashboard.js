@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ABSENCE_TREND = [
   { month: 'Sep', value: 4 }, { month: 'Oct', value: 3 }, { month: 'Nov', value: 5 },
@@ -14,11 +14,14 @@ export default {
   activePath: '/office',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 4,
-  user: { initials: 'OF', name: 'Office Manager', role: 'Office & HR — Operations & Compliance' },
+  user: { initials: 'OF', name: 'Office Manager', role: 'Office & HR â€” Operations & Compliance' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Office!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/office/summary/',
+  liveDataKey: 'office',
 
   metrics: [
     { label: 'Staff Absent Today', value: '3', detail: 'Substitutes placed for 2 of 3 absences.', accent: 'gold' },
@@ -28,14 +31,14 @@ export default {
   ],
 
   priorities: [
-    { title: 'Place Period 3 substitute', detail: 'Coverage gap unresolved — assign before second period.', state: 'Today', tone: 'warn' },
-    { title: 'Approve background check for new hire', detail: 'In review — finalize before onboarding paperwork.', state: 'Today', tone: 'warn' },
+    { title: 'Place Period 3 substitute', detail: 'Coverage gap unresolved â€” assign before second period.', state: 'Today', tone: 'warn' },
+    { title: 'Approve background check for new hire', detail: 'In review â€” finalize before onboarding paperwork.', state: 'Today', tone: 'warn' },
     { title: 'Complete 4 HR compliance tasks', detail: 'TB tests, I-9 reverification, handbook acknowledgments due.', state: 'This week', tone: 'warn' },
   ],
   prioritiesTitle: 'Office priorities',
 
   alerts: [
-    { title: '1 coverage gap — Period 3 sub needed', detail: 'Substitute pool exhausted for that slot — escalate to admin.', tone: 'warn' },
+    { title: '1 coverage gap â€” Period 3 sub needed', detail: 'Substitute pool exhausted for that slot â€” escalate to admin.', tone: 'warn' },
     { title: '2 compliance items due this week', detail: 'TB tests and I-9 reverification on the calendar.', tone: 'warn' },
   ],
 
@@ -55,11 +58,11 @@ export default {
     { key: 'hr', icon: 'HR', title: 'HR Tasks', status: 'Watch', statusTone: 'warn',
       mainKpi: '4 tasks due', summary: 'Compliance and onboarding items pending across staff.',
       kpis: [{ label: 'Tasks due', value: '4' }, { label: 'Onboarding open', value: '1' }, { label: 'Acknowledgments', value: '4 pending' }, { label: 'Reviews due', value: '2' }],
-      details: ['Annual TB test due — 2 staff (Feb 28)', 'I-9 reverification — 1 staff (Mar 5)', 'Handbook acknowledgment — 4 staff (Mar 10)', 'Emergency contact update (Mar 15)'],
+      details: ['Annual TB test due â€” 2 staff (Feb 28)', 'I-9 reverification â€” 1 staff (Mar 5)', 'Handbook acknowledgment â€” 4 staff (Mar 10)', 'Emergency contact update (Mar 15)'],
       primaryActionLabel: 'Open HR Console', backActionLabel: 'Compliance Log',
       primaryActionHref: '/office', backActionHref: '/office', lastUpdated: '8:00 AM' },
     { key: 'compliance', icon: 'CM', title: 'Compliance', status: 'Watch', statusTone: 'warn',
-      mainKpi: '2 items due this week', summary: 'Compliance items on track — items closing this week.',
+      mainKpi: '2 items due this week', summary: 'Compliance items on track â€” items closing this week.',
       kpis: [{ label: 'Items due week', value: '2' }, { label: 'Items overdue', value: '0' }, { label: 'Audits scheduled', value: '1' }, { label: 'Closed MTD', value: '6' }],
       details: ['No overdue compliance items', '2 items closing this week', 'Annual audit scheduled May 12', '6 compliance items closed this month'],
       primaryActionLabel: 'Open Compliance', backActionLabel: 'Audit Log',
