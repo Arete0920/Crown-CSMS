@@ -88,3 +88,26 @@ Result:
 2. In this environment, execution repeatedly stalled on the first canonical target (`08_admissions_endpoints.txt`) after header write; downstream files were not advanced.
 3. Process cleanup was performed after stall detection, and canonical strict regeneration remains unresolved.
 4. Authoritative proof remains the diagnostic reruns (`08c/09c/10c`) in the same evidence root.
+
+## Latest Command-Pack Root Closure (20260531_074707)
+
+Evidence root: `audit-artifacts/final-95-plus-sprint/20260531_074707`
+
+Observed from the interrupted pack run:
+
+1. `06_django_deploy_check.txt`: `django_deploy_check_exit=0`
+2. `07_tenant_isolation.txt`: `tenant_isolation_exit=-1`
+3. `08_admissions_endpoints.txt`: `admissions_endpoints_exit=-1`
+4. `09_aftercare.txt`: missing exit marker due interruption
+
+Focused blocker-isolation reruns in the same root:
+
+1. `07b_tenant_isolation_diagnostic.txt`: `tenant_isolation_diag_exit=0`
+2. `08b_admissions_endpoints_diagnostic.txt`: `admissions_endpoints_diag_exit=0`
+3. `09c_aftercare_diagnostic.txt`: `aftercare_diag_exit=0`
+4. `10b_later_tier_metrics_diagnostic.txt`: `later_tier_metrics_diag_exit=0`
+
+Note:
+
+- `09b_aftercare_diagnostic.txt` captured a failed attempt (`aftercare_diag_exit=4`) caused by an incorrect manual target path (`backend/applications/tests/test_aftercare.py`).
+- Canonical command-pack intent uses `backend/aftercare`; corrected rerun `09c` is authoritative for aftercare pass/fail in this root.
