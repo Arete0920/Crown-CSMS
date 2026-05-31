@@ -64,12 +64,11 @@ vi.mock('./CrownDashboardFlipCard.jsx', () => ({
   },
 }));
 
-vi.mock('react-router-dom', () => ({
-  vi.mock('../../hooks/useDashboardData.js', () => ({
-    default: (...args) => mockUseDashboardData(...args),
-  }));
+vi.mock('../../hooks/useDashboardData.js', () => ({
+  default: (...args) => mockUseDashboardData(...args),
+}));
 
-  vi.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', () => ({
   Link: ({ children, to, ...rest }) => <a href={to} {...rest}>{children}</a>,
   useInRouterContext: () => false,
 }));
