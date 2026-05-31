@@ -14,3 +14,5 @@ notes:
 - Diagnostic files (08c/09c/10c) are authoritative for pass/fail in this root.
 - Attempted non-pipeline helper script: scripts/execution/174_block3_canonical_capture_nopipeline.ps1.
 - Canonical strict regeneration remains unstable in this terminal environment; retain diagnostic files as source of truth.
+- Attempted cmd helper runner: scripts/execution/174b_block3_canonical_capture.cmd.
+- Cmd runner also stalled on canonical 08 after header write; run terminated under first-blocker policy.

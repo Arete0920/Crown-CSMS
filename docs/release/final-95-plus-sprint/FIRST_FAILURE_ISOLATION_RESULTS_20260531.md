@@ -75,3 +75,16 @@ Result:
 1. Script introduced a non-pipeline capture path using `Start-Process` output redirection.
 2. In this shell environment, canonical `08` still remained sparse during repeated attempts; process-level behavior showed long-running pytest workers without deterministic completion output in terminal-captured execution.
 3. To preserve truth discipline, diagnostic artifacts (`08c/09c/10c`) remain the authoritative replay proof for this evidence root.
+
+## Canonical Regeneration Attempt (CMD Runner)
+
+Attempted helper:
+
+- `scripts/execution/174b_block3_canonical_capture.cmd`
+
+Result:
+
+1. Runner executes strict sequential order (`08` then `09` then `10`) with in-file exit marker writes and first-failure stop.
+2. In this environment, execution repeatedly stalled on the first canonical target (`08_admissions_endpoints.txt`) after header write; downstream files were not advanced.
+3. Process cleanup was performed after stall detection, and canonical strict regeneration remains unresolved.
+4. Authoritative proof remains the diagnostic reruns (`08c/09c/10c`) in the same evidence root.
