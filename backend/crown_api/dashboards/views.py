@@ -1,9 +1,11 @@
 from copy import deepcopy
+import os
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.conf import settings
 
 from core.permissions import user_has_permission
 
@@ -14,6 +16,19 @@ import uuid as _uuid
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound, ValidationError
+
+
+def _is_production_runtime() -> bool:
+    env = (
+        str(getattr(settings, 'CROWN_ENV', '') or '')
+        or str(getattr(settings, 'DJANGO_ENV', '') or '')
+        or str(getattr(settings, 'ENVIRONMENT', '') or '')
+        or str(os.getenv('CROWN_ENV', '') or '')
+        or str(os.getenv('DJANGO_ENV', '') or '')
+        or str(os.getenv('ENVIRONMENT', '') or '')
+        or str(os.getenv('AZURE_ENVIRONMENT', '') or '')
+    ).strip().lower()
+    return env in {'prod', 'production', 'live'} or bool(os.getenv('WEBSITE_HOSTNAME'))
 
 
 def _school_id_from_request(request):
@@ -156,6 +171,17 @@ class DashboardSummaryView(APIView):
             payload['meta']['school_id'] = school_id
             validate_dashboard_payload(payload)
             return Response(payload, status=status.HTTP_200_OK)
+
+        if _is_production_runtime():
+            return Response(
+                {
+                    'code': 'dashboard_live_data_required',
+                    'message': f'No live or snapshot payload is available for "{key}" in production.',
+                    'dashboard_key': key,
+                    'school_id': school_id,
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         payload = SAMPLE_PAYLOAD_BUILDERS[key](school_id)
         payload = deepcopy(payload)
