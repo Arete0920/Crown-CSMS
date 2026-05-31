@@ -1,9 +1,20 @@
 import pytest
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import override_settings
 from rest_framework.test import APIClient
 
 from crown_api.dashboards.models import DashboardSnapshot
+
+
+def _authed_client():
+    user_model = get_user_model()
+    user = user_model.objects.create_user(username='dashboard-summary-tester')
+    user.set_unusable_password()
+    user.save(update_fields=['password'])
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False)
@@ -23,7 +34,7 @@ def test_attendance_summary_serves_snapshot_first():
         },
     )
 
-    client = APIClient()
+    client = _authed_client()
     response = client.get(
         reverse('dashboard-summary', kwargs={'dashboard_key': 'attendance'}),
         HTTP_X_SCHOOL_ID='heritage-demo',
@@ -39,7 +50,7 @@ def test_attendance_summary_serves_snapshot_first():
 @override_settings(TENANT_HEADER_REQUIRED=False)
 @pytest.mark.django_db
 def test_attendance_summary_falls_back_to_sample_payload():
-    client = APIClient()
+    client = _authed_client()
     response = client.get(
         reverse('dashboard-summary', kwargs={'dashboard_key': 'attendance'}),
         HTTP_X_SCHOOL_ID='heritage-demo',
@@ -55,7 +66,7 @@ def test_attendance_summary_falls_back_to_sample_payload():
 @override_settings(TENANT_HEADER_REQUIRED=False)
 @pytest.mark.django_db
 def test_unknown_dashboard_returns_404():
-    client = APIClient()
+    client = _authed_client()
     response = client.get(
         reverse('dashboard-summary', kwargs={'dashboard_key': 'does-not-exist'}),
         HTTP_X_SCHOOL_ID='heritage-demo',

@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const MEALS_TREND = [
   { month: 'Sep', value: 268 }, { month: 'Oct', value: 274 }, { month: 'Nov', value: 281 },
@@ -14,15 +14,18 @@ export default {
   activePath: '/food',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 4,
-  user: { initials: 'FS', name: 'Food Services', role: 'Food Services — Meals & Inventory' },
+  user: { initials: 'FS', name: 'Food Services', role: 'Food Services â€” Meals & Inventory' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Food Services!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
 
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/food/summary/',
+  liveDataKey: 'food',
   metrics: [
-    { label: 'Meals Served Today', value: '287', detail: 'Above 4-day average — supply on hand sufficient.', accent: 'emerald' },
-    { label: 'Free / Reduced Count', value: '62', detail: '28% of total meals — within program plan.', accent: 'navy' },
+    { label: 'Meals Served Today', value: '287', detail: 'Above 4-day average â€” supply on hand sufficient.', accent: 'emerald' },
+    { label: 'Free / Reduced Count', value: '62', detail: '28% of total meals â€” within program plan.', accent: 'navy' },
     { label: 'Inventory Low Items', value: '4', detail: 'Reorder list ready for office approval.', accent: 'gold' },
     { label: 'Payments Pending', value: '18', detail: '$1,248 collected MTD across active accounts.', accent: 'gold' },
   ],
@@ -41,7 +44,7 @@ export default {
 
   commandModules: [
     { key: 'meals', icon: 'ML', title: 'Meals Served', status: 'Stable', statusTone: 'good',
-      mainKpi: '287 meals today', summary: 'Service running on plan — afternoon counts below capacity.',
+      mainKpi: '287 meals today', summary: 'Service running on plan â€” afternoon counts below capacity.',
       kpis: [{ label: 'Today', value: '287' }, { label: '4-day avg', value: '283' }, { label: 'F/R %', value: '28%' }, { label: 'Capacity', value: '320' }],
       details: ['287 meals served today across all sittings', '4-day moving average at 283', 'Free/reduced participation at 28%', 'Capacity headroom: 33 meals'],
       primaryActionLabel: 'Open Meal Log', backActionLabel: 'Service Reports',
@@ -55,11 +58,11 @@ export default {
     { key: 'inventory', icon: 'IN', title: 'Inventory', status: 'Watch', statusTone: 'warn',
       mainKpi: '4 items low', summary: 'Whole wheat buns, chocolate milk, apple sauce cups, latex gloves.',
       kpis: [{ label: 'Low items', value: '4' }, { label: 'Out of stock', value: '0' }, { label: 'Reorder draft', value: 'Ready' }, { label: 'Vendor count', value: '3' }],
-      details: ['Whole wheat buns — low', 'Chocolate milk — low', 'Apple sauce cups — low', 'Latex gloves (M) — low'],
+      details: ['Whole wheat buns â€” low', 'Chocolate milk â€” low', 'Apple sauce cups â€” low', 'Latex gloves (M) â€” low'],
       primaryActionLabel: 'Open Inventory', backActionLabel: 'Reorder Draft',
       primaryActionHref: '/food', backActionHref: '/finance', lastUpdated: '8:00 AM' },
     { key: 'payments', icon: 'PY', title: 'Payments & Accounts', status: 'Watch', statusTone: 'warn',
-      mainKpi: '$1,248 MTD / 18 pending', summary: 'Collections on plan — 12 low-balance reminders going out.',
+      mainKpi: '$1,248 MTD / 18 pending', summary: 'Collections on plan â€” 12 low-balance reminders going out.',
       kpis: [{ label: 'Revenue MTD', value: '$1,248' }, { label: 'Pending payments', value: '18' }, { label: 'Low balance', value: '12' }, { label: 'F/R enrolled', value: '62' }],
       details: ['$1,248 collected month to date', '18 payments pending across active accounts', '12 family low-balance reminders queued', '62 students enrolled in free/reduced program'],
       primaryActionLabel: 'Open Payment Console', backActionLabel: 'Family Statements',
@@ -67,7 +70,7 @@ export default {
     { key: 'compliance', icon: 'CM', title: 'Health & Compliance', status: 'Stable', statusTone: 'good',
       mainKpi: 'All checks current', summary: 'Health inspection log current; allergen plan documented.',
       kpis: [{ label: 'Last inspection', value: 'Feb 4' }, { label: 'Open findings', value: '0' }, { label: 'Allergen flags', value: '4' }, { label: 'Staff training', value: 'Current' }],
-      details: ['Last health inspection Feb 4 — no findings', 'Allergen flags tracked for 4 students', 'Staff food handling training current', 'Quarterly allergen audit on schedule'],
+      details: ['Last health inspection Feb 4 â€” no findings', 'Allergen flags tracked for 4 students', 'Staff food handling training current', 'Quarterly allergen audit on schedule'],
       primaryActionLabel: 'Compliance Console', backActionLabel: 'Allergen Records',
       primaryActionHref: '/food', backActionHref: '/health', lastUpdated: '7:35 AM' },
     { key: 'communications', icon: 'CO', title: 'Family Communications', status: 'Stable', statusTone: 'good',
@@ -109,3 +112,4 @@ export default {
     { label: 'Compliance', state: 'Current' },
   ],
 };
+

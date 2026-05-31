@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,7 +17,11 @@ from rest_framework.exceptions import NotFound, ValidationError
 
 
 def _school_id_from_request(request):
-    raw = request.headers.get('X-School-ID') or request.query_params.get('school_id') or 'heritage-demo'
+    raw = request.headers.get('X-School-ID')
+    if raw is None:
+        user = getattr(request, 'user', None)
+        user_school_id = getattr(user, 'school_id', None) if user else None
+        raw = user_school_id or 'heritage-demo'
     value = str(raw).strip()
     return value or 'heritage-demo'
 
@@ -108,13 +112,13 @@ def dashboard_drilldown(request):
 @permission_classes([IsAuthenticated])
 def dashboard_alerts(request):
     """Return school-level alerts."""
-    school = _resolve_school_strict(request)
+    _resolve_school_strict(request)
     return Response({
         "alerts": [],
     })
 
 class DashboardSummaryView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, dashboard_key):
         key = str(dashboard_key).strip().lower()
