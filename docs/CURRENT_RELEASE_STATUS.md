@@ -19,6 +19,17 @@ Decision meaning:
 - Backend and frontend proof lanes are green for currently validated slices.
 - Repository-wide unrestricted GA language is still blocked pending full authority hygiene convergence and deploy parity closure.
 
+## Canonical Status Metadata
+
+- Release authority branch: `release/security-runtime-governance-repair-little-lambs-full-build`
+- Candidate SHA: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`
+- Approved deploy SHA: `1fe29aba4c374bc27351588329f4b03154e51b58`
+- Runtime-validated SHA: `0b20581b4b4c0d03be9e9022893303804626d81f`
+- Parity verdict: `PARTIAL_OPEN`
+- Protected-spine verdict: `PARTIAL`
+- Status checksum (SHA256 over decision+metadata tuple): `0990bdeeb6b0609504fbb9d61fd44a87b31248bb28bac474a826181d32975daa`
+
+
 ## Current Proof Snapshot (2026-05-29)
 
 Backend proof status: PASS.
@@ -38,8 +49,8 @@ Frontend proof status: PASS.
 
 Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
 
-- Current local HEAD: `f3732959d6edc3ee9cfeb9ac501a3bd1576b577b`.
-- Current `origin/main`: `d793766b6640d88a4bfdb87c999f429e06cd87ec`.
+- Current local HEAD: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`.
+- Current `origin/main`: `1fe29aba4c374bc27351588329f4b03154e51b58`.
 - Git parity delta (`origin/main...HEAD`): `50 30`.
 - See `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md` for captured deployed runtime SHA evidence and parity evaluation.
 - Latest parity run artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json`.

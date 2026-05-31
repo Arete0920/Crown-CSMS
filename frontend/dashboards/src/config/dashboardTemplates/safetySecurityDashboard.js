@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const INC_TREND = [
   { month: 'Aug', value: 2 }, { month: 'Sep', value: 3 }, { month: 'Oct', value: 1 },
   { month: 'Nov', value: 2 }, { month: 'Dec', value: 1 }, { month: 'Jan', value: 2 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Safety Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Safety and security widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until safety and security metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Incidents Today', value: '0', detail: 'Zero incidents — clean start to the day.', accent: 'emerald' },

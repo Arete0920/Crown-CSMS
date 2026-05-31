@@ -4,6 +4,8 @@ import CrownWizard from "../components/crown/CrownWizard.jsx";
 import CrownWizardStepHeader from "../components/crown/CrownWizardStepHeader.jsx";
 import { useWizardDraft } from "../hooks/useWizardDraft";
 import { fetchAdmissionsPublicConfig, submitAdmissionsIntake } from "../api/admissions";
+import { clearAdmissionsStartIntake, loadAdmissionsStartIntake } from "../lib/admissionsStartIntake.js";
+import { markAdmissionsLifecycleStarted, markAdmissionsLifecycleSubmitted } from "../lib/admissionsLifecycleState.js";
 import "../styles/crown-wizard.css";
 
 const STEPS = [
@@ -13,6 +15,7 @@ const STEPS = [
   "Student Profile",
   "Mission Alignment",
   "Documents",
+  "Financial Aid Interest",
   "Review",
   "Submit",
 ];
@@ -68,11 +71,62 @@ const INTERVIEW_MODE_OPTIONS = [
 ];
 
 const DEFAULT_APPLICATION_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_APPLICATION_FEE_USD || "85");
+const DEFAULT_FINANCIAL_AID_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_FINANCIAL_AID_FEE_USD || "35");
+const DEFAULT_ENROLLMENT_FEE_AMOUNT = Number(import.meta.env.VITE_ADMISSIONS_ENROLLMENT_FEE_USD || "250");
+const DEMO_SCHOOL_NAME = (import.meta.env.VITE_DEMO_SCHOOL_NAME || "Heritage Christian Academy").trim();
+const DEMO_AID_YEAR = (import.meta.env.VITE_DEMO_AID_YEAR || "2026-2027").trim();
 const FALLBACK_FEE_CONFIG = {
   required: Number.isFinite(DEFAULT_APPLICATION_FEE_AMOUNT) && DEFAULT_APPLICATION_FEE_AMOUNT > 0,
   amount: Number.isFinite(DEFAULT_APPLICATION_FEE_AMOUNT) ? DEFAULT_APPLICATION_FEE_AMOUNT : 0,
   currency: "USD",
 };
+
+function feeDiscountPercentForChild(childIndex) {
+  if (childIndex <= 1) return 0;
+  if (childIndex === 2) return 25;
+  if (childIndex === 3) return 50;
+  if (childIndex === 4) return 75;
+  return 100;
+}
+
+function applyFeeDiscount(amount, childIndex) {
+  const numeric = Number(amount || 0);
+  const percent = feeDiscountPercentForChild(childIndex);
+  const discounted = numeric * (1 - (percent / 100));
+  return Math.max(0, Number(discounted.toFixed(2)));
+}
+
+function formatCurrency(value, currency = "USD") {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(Number(value || 0));
+}
+
+function buildHouseholdFeePreview({ context, feeConfig }) {
+  const students = Array.isArray(context?.students) ? context.students : [];
+  const aidIntent = String(context?.financialAidInterest?.intent || "").trim().toLowerCase();
+  const appFeeAmount = Number(feeConfig?.amount || DEFAULT_APPLICATION_FEE_AMOUNT);
+  const aidFeeAmount = Number(DEFAULT_FINANCIAL_AID_FEE_AMOUNT);
+  const enrollmentFeeAmount = Number(DEFAULT_ENROLLMENT_FEE_AMOUNT);
+
+  return students.map((student, index) => {
+    const childIndex = index + 1;
+    const discountPercent = feeDiscountPercentForChild(childIndex);
+    const applicationFee = applyFeeDiscount(appFeeAmount, childIndex);
+    const financialAidFee = aidIntent === "applying" ? applyFeeDiscount(aidFeeAmount, childIndex) : 0;
+    const enrollmentFee = applyFeeDiscount(enrollmentFeeAmount, childIndex);
+    return {
+      childIndex,
+      studentName: `${String(student?.firstName || "").trim()} ${String(student?.lastName || "").trim()}`.trim() || `Child ${childIndex}`,
+      discountPercent,
+      applicationFee,
+      financialAidFee,
+      enrollmentFee,
+      total: Number((applicationFee + financialAidFee + enrollmentFee).toFixed(2)),
+    };
+  });
+}
 
 const CHURCH_AFFILIATION_OPTIONS = [
   "Member at partnering church",
@@ -103,6 +157,117 @@ const CURRENT_SCHOOL_OPTIONS = [
   "Other",
 ];
 
+const STUDENT_INTEREST_ACTIVITY_OPTIONS = [
+  "Reading",
+  "Choir",
+  "Team sports",
+  "Visual art",
+  "Instrumental music",
+  "STEM and robotics",
+  "Theater and drama",
+  "Service and volunteering",
+];
+
+const SUPPORT_NEEDS_OPTIONS = [
+  "Reading support",
+  "Math support",
+  "Executive functioning support",
+  "Speech and language support",
+  "Social-emotional support",
+  "ESL/ELL support",
+];
+
+const MISSION_ALIGNMENT_OPTIONS = [
+  "Value Christian education",
+  "Spiritual formation",
+  "Discipleship",
+  "Christian service",
+  "Biblical worldview development",
+  "Christ-centered character and leadership",
+];
+
+const CHURCH_ATTENDANCE_OPTIONS = [
+  "Weekly",
+  "Two to three times per month",
+  "Monthly",
+  "Occasionally",
+  "Not currently attending",
+];
+
+const COMMITMENT_TO_CHRIST_OPTIONS = [
+  "Parent or guardian professes faith in Christ",
+  "Family is actively exploring Christian faith",
+  "Family supports Christ-centered education but is still discerning",
+];
+
+const PORTRAIT_RUBRIC_ITEMS = [
+  { key: "christ_centered_identity", label: "Christ-centered identity" },
+  { key: "biblical_worldview", label: "Biblical worldview" },
+  { key: "servant_leadership", label: "Servant leadership" },
+  { key: "academic_readiness", label: "Academic readiness" },
+  { key: "community_impact", label: "Community impact" },
+];
+
+function normalizePortraitScore(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  if (numeric < 1 || numeric > 5) return 0;
+  return Math.round(numeric);
+}
+
+function normalizePortraitRatings(ratings) {
+  const source = ratings && typeof ratings === "object" ? ratings : {};
+  const normalized = {};
+  PORTRAIT_RUBRIC_ITEMS.forEach((item) => {
+    normalized[item.key] = normalizePortraitScore(source[item.key]);
+  });
+  return normalized;
+}
+
+function hasCompletePortraitRatings(ratings) {
+  const normalized = normalizePortraitRatings(ratings);
+  return PORTRAIT_RUBRIC_ITEMS.every((item) => normalized[item.key] >= 1);
+}
+
+function computePortraitPercent(ratings) {
+  const normalized = normalizePortraitRatings(ratings);
+  const total = PORTRAIT_RUBRIC_ITEMS.reduce((sum, item) => sum + normalized[item.key], 0);
+  const max = PORTRAIT_RUBRIC_ITEMS.length * 5;
+  if (max <= 0) return 0;
+  return Math.round((total / max) * 100);
+}
+
+function getMissionRatingsContainer(mission, key) {
+  const source = mission?.[key];
+  return source && typeof source === "object" ? source : {};
+}
+
+function normalizeMissionAlignment(value) {
+  const normalized = normalizeMultiSelect(value);
+  return normalized.filter((item) => MISSION_ALIGNMENT_OPTIONS.includes(item));
+}
+
+function normalizeMultiSelect(value) {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    if (!normalized) return [];
+    return normalized
+      .split(/[,;]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function getSelectMultipleValues(event) {
+  return Array.from(event.target.selectedOptions).map((option) => option.value);
+}
+
 function createLocalId(prefix) {
   const random = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
   return `${prefix}-${random}`;
@@ -128,8 +293,8 @@ function createStudent() {
     gradeApplyingFor: "",
     currentSchool: "",
     currentSchoolOther: "",
-    strengths: "",
-    supportNeeds: "",
+    interestsAndActivities: [],
+    supportNeeds: [],
   };
 }
 
@@ -151,13 +316,23 @@ const INITIAL_CONTEXT = {
     covenantPartnership: false,
     discipleshipCommitment: false,
     serviceMindset: false,
+    churchAttendance: "",
+    commitmentToChrist: "",
+    spiritualLifeComments: "",
+    alignmentFocus: [],
     comments: "",
+    guardianPortraitRatings: {},
+    studentPortraitRatings: {},
   },
   documents: {
     transcriptReady: false,
     recommendationsReady: false,
     pastorReferenceReady: false,
     immunizationReady: false,
+  },
+  financialAidInterest: {
+    intent: "",
+    note: "",
   },
   attestations: {
     informationAccurate: false,
@@ -170,6 +345,169 @@ const INITIAL_CONTEXT = {
   },
   submitted: false,
 };
+
+const IS_SANDBOX_FLOW = Boolean(
+  import.meta.env.VITE_DEMO_MODE === "sandbox"
+  || import.meta.env.VITE_SANDBOX_MODE === "1"
+);
+const IS_DEMO_PREFILL_MODE = Boolean(
+  IS_SANDBOX_FLOW
+  && (String(import.meta.env.VITE_ADMISSIONS_DEMO_PREFILL || "").trim() === "1"
+    || String(import.meta.env.VITE_ADMISSIONS_DEMO_PREFILL || "").trim().toLowerCase() === "true")
+);
+
+const DEMO_PRIMARY_STUDENT_ID = createLocalId("student");
+
+const DEMO_INITIAL_CONTEXT = {
+  ...INITIAL_CONTEXT,
+  inquiry: {
+    campus: "Heritage Christian Academy",
+    startTerm: "2026-2027",
+    heardAbout: "Current family",
+    preferredTourWindow: "Weekday mornings",
+    preferredInterviewMode: "In person",
+  },
+  family: {
+    guardians: [
+      {
+        id: createLocalId("guardian"),
+        relationship: "Mother",
+        relationshipOther: "",
+        guardianName: "Jordan Reed",
+        email: "parent@crown-demo.local",
+        phone: "555-010-1101",
+        isPrimary: true,
+      },
+      {
+        id: createLocalId("guardian"),
+        relationship: "Father",
+        relationshipOther: "",
+        guardianName: "Casey Reed",
+        email: "guardian2@heritage.example.org",
+        phone: "555-010-1102",
+        isPrimary: false,
+      },
+    ],
+    churchAffiliation: "Attend regularly",
+    churchAffiliationOther: "",
+  },
+  students: [
+    {
+      id: DEMO_PRIMARY_STUDENT_ID,
+      firstName: "Avery",
+      lastName: "Reed",
+      gradeApplyingFor: "6",
+      currentSchool: "Christian school",
+      currentSchoolOther: "",
+      interestsAndActivities: ["Reading", "Choir", "Service and volunteering"],
+      supportNeeds: [],
+    },
+  ],
+  mission: {
+    covenantPartnership: true,
+    discipleshipCommitment: true,
+    serviceMindset: true,
+    churchAttendance: "Weekly",
+    commitmentToChrist: "Parent or guardian professes faith in Christ",
+    spiritualLifeComments: "Our family attends church regularly and wants school to reinforce discipleship, biblical worldview, and daily Christian formation.",
+    alignmentFocus: ["Spiritual formation", "Discipleship"],
+    comments: "Spiritual formation, Discipleship",
+    guardianPortraitRatings: {},
+    studentPortraitRatings: {
+      [DEMO_PRIMARY_STUDENT_ID]: {
+        christ_centered_identity: 4,
+        biblical_worldview: 4,
+        servant_leadership: 3,
+        academic_readiness: 4,
+        community_impact: 3,
+      },
+    },
+  },
+  documents: {
+    transcriptReady: true,
+    recommendationsReady: true,
+    pastorReferenceReady: true,
+    immunizationReady: true,
+  },
+  financialAidInterest: {
+    intent: "applying",
+    note: "Family plans to complete aid application after admissions submit.",
+  },
+  attestations: {
+    informationAccurate: true,
+    missionPartnershipUnderstood: true,
+    communicationOptIn: true,
+  },
+};
+
+function splitFullName(fullName) {
+  const normalized = String(fullName || "").trim();
+  if (!normalized) {
+    return { firstName: "", lastName: "" };
+  }
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: "" };
+  }
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+function mergeStartIntakeIntoContext(context, intake) {
+  if (!intake || typeof intake !== "object") {
+    return context;
+  }
+
+  const merged = { ...context };
+  const inquiry = intake.inquiry || {};
+  const family = intake.family || {};
+  const student = intake.student || {};
+
+  merged.inquiry = {
+    ...merged.inquiry,
+    campus: String(merged.inquiry?.campus || inquiry.campus || "").trim(),
+    startTerm: String(merged.inquiry?.startTerm || inquiry.startTerm || "").trim(),
+    heardAbout: String(merged.inquiry?.heardAbout || inquiry.heardAbout || "").trim(),
+    preferredTourWindow: String(merged.inquiry?.preferredTourWindow || inquiry.preferredTourWindow || "").trim(),
+    preferredInterviewMode: String(merged.inquiry?.preferredInterviewMode || inquiry.preferredInterviewMode || "").trim(),
+  };
+
+  const guardians = Array.isArray(merged.family?.guardians) && merged.family.guardians.length > 0
+    ? [...merged.family.guardians]
+    : [createGuardian(true)];
+
+  const primaryGuardianIndex = guardians.findIndex((guardian) => guardian?.isPrimary);
+  const guardianIndex = Math.max(primaryGuardianIndex, 0);
+  const primaryGuardian = guardians[guardianIndex] || createGuardian(true);
+  guardians[guardianIndex] = {
+    ...primaryGuardian,
+    guardianName: String(primaryGuardian.guardianName || family.parentName || "").trim(),
+    email: String(primaryGuardian.email || family.email || "").trim(),
+    phone: String(primaryGuardian.phone || family.phone || "").trim(),
+    isPrimary: true,
+  };
+
+  merged.family = {
+    ...merged.family,
+    guardians,
+  };
+
+  const students = Array.isArray(merged.students) && merged.students.length > 0
+    ? [...merged.students]
+    : [createStudent()];
+  const firstStudent = students[0] || createStudent();
+  const guardianNameParts = splitFullName(family.parentName);
+  students[0] = {
+    ...firstStudent,
+    gradeApplyingFor: String(firstStudent.gradeApplyingFor || student.gradeApplyingFor || "").trim(),
+    lastName: String(firstStudent.lastName || guardianNameParts.lastName || "").trim(),
+  };
+
+  merged.students = students;
+  return merged;
+}
 
 function isGuardianComplete(guardian) {
   const relationship = String(guardian?.relationship || "").trim();
@@ -229,6 +567,95 @@ function buildHouseholdReadiness(context) {
   };
 }
 
+function buildJourneyStageSnapshot(context, stepIndex) {
+  const inquiry = context?.inquiry || {};
+  const family = context?.family || {};
+  const students = context?.students || [];
+  const documents = context?.documents || {};
+  const mission = context?.mission || {};
+
+  const guardiansComplete = Array.isArray(family.guardians) && family.guardians.length > 0
+    && family.guardians.every(isGuardianComplete);
+  const studentsComplete = Array.isArray(students) && students.length > 0
+    && students.every(isStudentComplete);
+  const documentsReady = Object.values(documents).filter(Boolean).length;
+
+  if (stepIndex <= 1) {
+    return {
+      stage: "Inquiry and Exploration",
+      familyAction: String(inquiry.campus || "").trim() && String(inquiry.startTerm || "").trim()
+        ? "Confirm tour and interview preferences so admissions can personalize your follow-up."
+        : "Choose your campus and start term so we can route your family to the right admissions path.",
+      staffAction: "Assign counselor, send welcome guidance, and invite the family into the next admissions touchpoint.",
+      visibility: "You should always know what happens next, who owns your file, and the first action to take.",
+    };
+  }
+
+  if (stepIndex <= 3) {
+    return {
+      stage: "Household Profile Completion",
+      familyAction: guardiansComplete && studentsComplete
+        ? "Review interests, activities, support needs, and household details before moving into mission alignment."
+        : "Complete guardian and student profiles so admissions can guide your family without duplicate follow-up.",
+      staffAction: "Prepare a household-level view, watch for inactivity, and keep the next required action visible.",
+      visibility: "Strong funnels keep progress obvious instead of burying families inside a giant form.",
+    };
+  }
+
+  if (stepIndex <= 5) {
+    return {
+      stage: "Mission Alignment and Readiness",
+      familyAction: mission.covenantPartnership && mission.discipleshipCommitment
+        ? "Confirm your document readiness and get ready for a transparent human-led review."
+        : "Complete the partnership commitments so the next conversation is about fit, formation, and support.",
+      staffAction: "Prepare mission-fit review context and identify any missing readiness items before submit.",
+      visibility: `Document readiness currently shows ${documentsReady}/4 items ready.`,
+    };
+  }
+
+  if (stepIndex === 6) {
+    return {
+      stage: "Application Review and Submit",
+      familyAction: "Review your household snapshot, then submit so admissions can begin file completion and interview coordination.",
+      staffAction: "Trigger the post-submit workflow, ownership assignment, and milestone communications.",
+      visibility: "Families should see the next milestone, the owner, and the expected response window before they submit.",
+    };
+  }
+
+  return {
+    stage: "Post-Submit Status Center",
+    familyAction: "Use the status center and checklist below to track milestones, documents, and the next admissions action.",
+    staffAction: "Maintain visible milestone updates, follow-up ownership, and enrollment continuity.",
+    visibility: "The funnel should now feel like an ongoing guided journey, not a black-box handoff.",
+  };
+}
+
+function JourneyStagePanel({ context, stepIndex }) {
+  const snapshot = buildJourneyStageSnapshot(context, stepIndex);
+
+  return (
+    <div
+      style={{
+        border: "1px solid var(--crown-border)",
+        borderRadius: 8,
+        padding: "10px 12px",
+        marginBottom: 12,
+        background: "var(--crown-bg, #f8fafc)",
+      }}
+    >
+      <div style={{ marginBottom: 6, fontSize: 12, color: "var(--crown-muted)" }}>
+        Current journey stage
+      </div>
+      <div style={{ fontWeight: 600, marginBottom: 8 }}>{snapshot.stage}</div>
+      <div style={{ display: "grid", gap: 6, fontSize: 13, color: "var(--crown-muted)" }}>
+        <div><strong>Your next action:</strong> {snapshot.familyAction}</div>
+        <div><strong>Admissions next action:</strong> {snapshot.staffAction}</div>
+        <div><strong>Why this matters:</strong> {snapshot.visibility}</div>
+      </div>
+    </div>
+  );
+}
+
 function StepFrame({
   title,
   subtitle,
@@ -257,6 +684,7 @@ function StepFrame({
       />
 
       <div className="crown-card" style={{ marginTop: 16, padding: 16 }}>
+        <JourneyStagePanel context={context || {}} stepIndex={stepIndex} />
         <div
           style={{
             border: "1px solid var(--crown-border)",
@@ -319,7 +747,7 @@ function StepInterest(props) {
       <ul style={{ marginBottom: 0, color: "var(--crown-muted)" }}>
         <li>Interest and inquiry in one guided path</li>
         <li>Clear checklist and expectations</li>
-        <li>Mission and portrait-aligned family conversation</li>
+        <li>Mission, spiritual-life, and church-partnership conversation</li>
         <li>Human-led review and transparent next steps</li>
       </ul>
     </StepFrame>
@@ -678,6 +1106,8 @@ function StepStudent({ context, setContext, ...props }) {
     : [createStudent()]).map((student) => ({
       ...student,
       id: student.id || createLocalId("student"),
+      interestsAndActivities: normalizeMultiSelect(student.interestsAndActivities ?? student.strengths),
+      supportNeeds: normalizeMultiSelect(student.supportNeeds),
     }));
 
   const canContinue = students.every((student) => {
@@ -811,23 +1241,39 @@ function StepStudent({ context, setContext, ...props }) {
               ) : null}
 
               <label>
-                <span style={{ display: "block", marginBottom: 4 }}>Student Strengths</span>
-                <textarea
+                <span style={{ display: "block", marginBottom: 4 }}>Student Interests and Activities</span>
+                <select
                   className="crown-input"
-                  rows={3}
-                  value={student.strengths || ""}
-                  onChange={(e) => updateStudent(index, "strengths", e.target.value)}
-                />
+                  multiple
+                  size={Math.min(STUDENT_INTEREST_ACTIVITY_OPTIONS.length, 6)}
+                  value={student.interestsAndActivities || []}
+                  onChange={(e) => updateStudent(index, "interestsAndActivities", getSelectMultipleValues(e))}
+                >
+                  {STUDENT_INTEREST_ACTIVITY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <span style={{ display: "block", marginTop: 4, color: "var(--crown-muted)", fontSize: 12 }}>
+                  Hold Ctrl (Windows) or Command (Mac) to select multiple.
+                </span>
               </label>
 
               <label>
                 <span style={{ display: "block", marginBottom: 4 }}>Support Needs (if any)</span>
-                <textarea
+                <select
                   className="crown-input"
-                  rows={3}
-                  value={student.supportNeeds || ""}
-                  onChange={(e) => updateStudent(index, "supportNeeds", e.target.value)}
-                />
+                  multiple
+                  size={Math.min(SUPPORT_NEEDS_OPTIONS.length, 6)}
+                  value={student.supportNeeds || []}
+                  onChange={(e) => updateStudent(index, "supportNeeds", getSelectMultipleValues(e))}
+                >
+                  {SUPPORT_NEEDS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+                <span style={{ display: "block", marginTop: 4, color: "var(--crown-muted)", fontSize: 12 }}>
+                  Select all that apply.
+                </span>
               </label>
             </div>
           </div>
@@ -843,7 +1289,29 @@ function StepStudent({ context, setContext, ...props }) {
 
 function StepMission({ context, setContext, ...props }) {
   const mission = context.mission;
-  const canContinue = mission.covenantPartnership && mission.discipleshipCommitment;
+  const students = Array.isArray(context?.students) ? context.students : [];
+  const selectedAlignmentFocus = normalizeMissionAlignment(mission.alignmentFocus ?? mission.comments);
+  const studentPortraitRatings = getMissionRatingsContainer(mission, "studentPortraitRatings");
+  const studentPortraitComplete = students.every((student, index) => {
+    const studentId = String(student?.id || `student-${index}`).trim();
+    return hasCompletePortraitRatings(studentPortraitRatings[studentId]);
+  });
+
+  const respondentPercents = students.map((student, index) => {
+      const studentId = String(student?.id || `student-${index}`).trim();
+      return computePortraitPercent(studentPortraitRatings[studentId]);
+    }).filter((value) => Number.isFinite(value) && value > 0);
+
+  const studentPortraitScore = respondentPercents.length > 0
+    ? Math.round(respondentPercents.reduce((sum, value) => sum + value, 0) / respondentPercents.length)
+    : 0;
+
+  const canContinue = mission.covenantPartnership
+    && mission.discipleshipCommitment
+    && Boolean(String(mission.churchAttendance || "").trim())
+    && Boolean(String(mission.commitmentToChrist || "").trim())
+    && selectedAlignmentFocus.length > 0
+    && studentPortraitComplete;
 
   function toggle(name) {
     setContext((prev) => ({
@@ -852,11 +1320,42 @@ function StepMission({ context, setContext, ...props }) {
     }));
   }
 
-  function updateComments(value) {
+  function updateAlignmentFocus(values) {
+    const normalized = normalizeMissionAlignment(values);
     setContext((prev) => ({
       ...prev,
-      mission: { ...prev.mission, comments: value },
+      mission: {
+        ...prev.mission,
+        alignmentFocus: normalized,
+        comments: normalized.join(", "),
+      },
     }));
+  }
+
+  function updatePortraitScore(groupKey, profileId, rubricKey, value) {
+    const normalizedId = String(profileId || "").trim();
+    if (!normalizedId) {
+      return;
+    }
+    const score = normalizePortraitScore(value);
+    setContext((prev) => {
+      const missionSource = prev.mission || {};
+      const currentContainer = getMissionRatingsContainer(missionSource, groupKey);
+      const currentProfile = normalizePortraitRatings(currentContainer[normalizedId]);
+      return {
+        ...prev,
+        mission: {
+          ...missionSource,
+          [groupKey]: {
+            ...currentContainer,
+            [normalizedId]: {
+              ...currentProfile,
+              [rubricKey]: score,
+            },
+          },
+        },
+      };
+    });
   }
 
   return (
@@ -893,15 +1392,110 @@ function StepMission({ context, setContext, ...props }) {
           We encourage service, character, and leadership development.
         </label>
         <label>
-          <span style={{ display: "block", marginBottom: 4 }}>Family mission comments (optional)</span>
+          <span style={{ display: "block", marginBottom: 4 }}>Church attendance *</span>
+          <select
+            className="crown-input"
+            value={mission.churchAttendance || ""}
+            onChange={(e) => setContext((prev) => ({
+              ...prev,
+              mission: { ...prev.mission, churchAttendance: e.target.value },
+            }))}
+          >
+            <option value="">Select one</option>
+            {CHURCH_ATTENDANCE_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span style={{ display: "block", marginBottom: 4 }}>Commitment to Christ *</span>
+          <select
+            className="crown-input"
+            value={mission.commitmentToChrist || ""}
+            onChange={(e) => setContext((prev) => ({
+              ...prev,
+              mission: { ...prev.mission, commitmentToChrist: e.target.value },
+            }))}
+          >
+            <option value="">Select one</option>
+            {COMMITMENT_TO_CHRIST_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span style={{ display: "block", marginBottom: 4 }}>Spiritual life at home or church (optional)</span>
           <textarea
             className="crown-input"
-            rows={4}
-            value={mission.comments}
-            onChange={(e) => updateComments(e.target.value)}
-            placeholder="Share what you value most in a Christian school partnership."
+            rows={3}
+            value={mission.spiritualLifeComments || ""}
+            onChange={(e) => setContext((prev) => ({
+              ...prev,
+              mission: { ...prev.mission, spiritualLifeComments: e.target.value },
+            }))}
+            placeholder="Share how your family approaches church attendance, discipleship, prayer, or Christian formation."
           />
         </label>
+        <label>
+          <span style={{ display: "block", marginBottom: 4 }}>Family mission alignment focus *</span>
+          <select
+            className="crown-input"
+            multiple
+            size={Math.min(MISSION_ALIGNMENT_OPTIONS.length, 6)}
+            value={selectedAlignmentFocus}
+            onChange={(e) => updateAlignmentFocus(getSelectMultipleValues(e))}
+          >
+            {MISSION_ALIGNMENT_OPTIONS.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+          <span style={{ display: "block", marginTop: 4, color: "var(--crown-muted)", fontSize: 12 }}>
+            Select the areas that best describe why your family is pursuing Christ-centered education. Hold Ctrl (Windows) or Command (Mac) to select multiple.
+          </span>
+        </label>
+
+        <div className="crown-card" style={{ padding: 12, border: "1px solid var(--crown-border)" }}>
+          <div style={{ fontWeight: 600, marginBottom: 8 }}>Student Portrait of the Graduate reflection</div>
+          <div style={{ color: "var(--crown-muted)", fontSize: 13, marginBottom: 8 }}>
+            Admissions should evaluate the student against the Portrait of the Graduate. Parents should answer spiritual-life and commitment questions, not portrait scoring for themselves.
+          </div>
+
+          <div style={{ display: "grid", gap: 12 }}>
+            {students.map((student, index) => {
+              const studentId = String(student?.id || `student-${index}`).trim();
+              const ratings = normalizePortraitRatings(studentPortraitRatings[studentId]);
+              const studentName = `${String(student?.firstName || "").trim()} ${String(student?.lastName || "").trim()}`.trim() || `Student ${index + 1}`;
+              return (
+                <div key={studentId} style={{ border: "1px solid var(--crown-border)", borderRadius: 8, padding: 10 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>{studentName} (Student)</div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {PORTRAIT_RUBRIC_ITEMS.map((rubric) => (
+                      <label key={rubric.key}>
+                        <span style={{ display: "block", marginBottom: 4 }}>{rubric.label} *</span>
+                        <select
+                          className="crown-input"
+                          value={ratings[rubric.key] || ""}
+                          onChange={(e) => updatePortraitScore("studentPortraitRatings", studentId, rubric.key, e.target.value)}
+                        >
+                          <option value="">Select score</option>
+                          <option value="1">1 - Emerging</option>
+                          <option value="2">2 - Developing</option>
+                          <option value="3">3 - Proficient</option>
+                          <option value="4">4 - Strong</option>
+                          <option value="5">5 - Exemplary</option>
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ marginTop: 10, fontSize: 13 }}>
+            Student portrait readiness score: <strong>{studentPortraitScore}%</strong>
+          </div>
+        </div>
       </div>
     </StepFrame>
   );
@@ -910,7 +1504,7 @@ function StepMission({ context, setContext, ...props }) {
 function StepDocuments({ context, setContext, ...props }) {
   const docs = context.documents;
   const completionCount = Object.values(docs).filter(Boolean).length;
-  const canContinue = completionCount >= 2;
+  const canContinue = completionCount === 4;
 
   function toggle(name) {
     setContext((prev) => ({
@@ -924,7 +1518,7 @@ function StepDocuments({ context, setContext, ...props }) {
       {...props}
       context={context}
       title="Document Readiness"
-      subtitle="Select what you already have ready. You can still continue with partial completion."
+      subtitle="All required documents must be marked ready before review."
       canContinue={canContinue}
     >
       <div style={{ display: "grid", gap: 10 }}>
@@ -936,11 +1530,109 @@ function StepDocuments({ context, setContext, ...props }) {
       <p style={{ marginTop: 14, color: "var(--crown-muted)", fontSize: 13 }}>
         Ready items: {completionCount}/4
       </p>
+      {canContinue ? null : (
+        <p className="crown-alert" style={{ marginTop: 8 }}>
+          Review stays locked until all four required document items are ready.
+        </p>
+      )}
     </StepFrame>
   );
 }
 
+function StepFinancialAidInterest({ context, setContext, ...props }) {
+  const financialAidInterest = context.financialAidInterest || { intent: "", note: "" };
+  const canContinue = Boolean(String(financialAidInterest.intent || "").trim());
+
+  useEffect(() => {
+    if (String(financialAidInterest.intent || "").trim()) {
+      return;
+    }
+    setContext((prev) => ({
+      ...prev,
+      financialAidInterest: {
+        intent: "undecided",
+        note: prev.financialAidInterest?.note || "",
+      },
+    }));
+  }, [financialAidInterest.intent, setContext]);
+
+  function update(name, value) {
+    setContext((prev) => ({
+      ...prev,
+      financialAidInterest: {
+        ...prev.financialAidInterest,
+        [name]: value,
+      },
+    }));
+  }
+
+  return (
+    <StepFrame
+      {...props}
+      context={context}
+      title="Financial Aid Interest"
+      subtitle="Tell us whether your family plans to apply for aid so the next steps and contract timeline stay clear."
+      canContinue={canContinue}
+    >
+      <div style={{ display: "grid", gap: 10 }}>
+        <label>
+          <input
+            type="radio"
+            name="financialAidIntent"
+            checked={financialAidInterest.intent === "applying"}
+            onChange={() => update("intent", "applying")}
+          />{" "}
+          We plan to apply for financial aid.
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="financialAidIntent"
+            checked={financialAidInterest.intent === "not_applying"}
+            onChange={() => update("intent", "not_applying")}
+          />{" "}
+          We are not applying for financial aid.
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="financialAidIntent"
+            checked={financialAidInterest.intent === "undecided"}
+            onChange={() => update("intent", "undecided")}
+          />{" "}
+          We are undecided and need guidance.
+        </label>
+
+        <label>
+          <span style={{ display: "block", marginBottom: 4 }}>Financial aid notes (optional)</span>
+          <textarea
+            className="crown-input"
+            value={financialAidInterest.note || ""}
+            onChange={(e) => update("note", e.target.value)}
+            rows={3}
+            placeholder="Share timing or document questions so admissions can route you quickly."
+          />
+        </label>
+      </div>
+    </StepFrame>
+  );
+}
+
+function financialAidIntentLabel(intent) {
+  if (intent === "applying") {
+    return "Applying";
+  }
+  if (intent === "not_applying") {
+    return "Not applying";
+  }
+  if (intent === "undecided") {
+    return "Undecided";
+  }
+  return "Not provided";
+}
+
 function StepReview({ context, ...props }) {
+  const feeConfig = normalizeFeeConfig(props?.admissionsPublicConfig?.application_fee || FALLBACK_FEE_CONFIG);
   const summary = useMemo(
     () => ({
       inquiry: context.inquiry,
@@ -948,8 +1640,11 @@ function StepReview({ context, ...props }) {
       students: context.students,
       mission: context.mission,
       documents: context.documents,
+      financialAidInterest: context.financialAidInterest,
+      feeRows: buildHouseholdFeePreview({ context, feeConfig }),
+      feeCurrency: feeConfig.currency || "USD",
     }),
-    [context]
+    [context, feeConfig]
   );
 
   return (
@@ -979,26 +1674,29 @@ function StepReview({ context, ...props }) {
           <div>Guardians: {summary.family?.guardians?.length || 0}</div>
           <div>Students: {summary.students?.length || 0}</div>
           <div>Documents ready: {Object.values(summary.documents || {}).filter(Boolean).length}/4</div>
+          <div>Financial aid intent: {financialAidIntentLabel(summary.financialAidInterest?.intent)}</div>
         </div>
       </div>
 
-      <details>
-        <summary style={{ cursor: "pointer", marginBottom: 8 }}>View full JSON payload</summary>
-      <pre
-        style={{
-          margin: 0,
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          color: "var(--crown-text)",
-          fontSize: 12,
-          background: "var(--crown-bg, #f8fafc)",
-          padding: 12,
-          borderRadius: 8,
-        }}
-      >
-        {JSON.stringify(summary, null, 2)}
-      </pre>
-      </details>
+      <div className="crown-card" style={{ padding: 12, marginBottom: 12, border: "1px solid var(--crown-border)" }}>
+        <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Fee Schedule (Application, Financial Aid, Enrollment)</p>
+        <div style={{ color: "var(--crown-muted)", fontSize: 13, marginBottom: 8 }}>
+          Multi-child discounts: 2nd child 25% off, 3rd child 50% off, 4th child 75% off, 5th+ free.
+        </div>
+        <div style={{ display: "grid", gap: 8 }}>
+          {summary.feeRows.map((row) => (
+            <div key={`fee-row-${row.childIndex}`} style={{ border: "1px solid var(--crown-border)", borderRadius: 8, padding: 10 }}>
+              <div style={{ fontWeight: 600 }}>{row.studentName} (Child {row.childIndex})</div>
+              <div style={{ color: "var(--crown-muted)", fontSize: 13, marginTop: 4 }}>Discount: {row.discountPercent}%</div>
+              <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Application fee: {formatCurrency(row.applicationFee, summary.feeCurrency)}</div>
+              <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Financial aid fee: {formatCurrency(row.financialAidFee, summary.feeCurrency)}</div>
+              <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>Enrollment fee: {formatCurrency(row.enrollmentFee, summary.feeCurrency)}</div>
+              <div style={{ marginTop: 4 }}>Total: <strong>{formatCurrency(row.total, summary.feeCurrency)}</strong></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
     </StepFrame>
   );
 }
@@ -1055,7 +1753,7 @@ async function checkSubmitServiceAvailability() {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await window.fetch("/api/v1/admissions/submit/", {
+    const response = await globalThis.fetch("/api/v1/admissions/submit/", {
       method: "OPTIONS",
       credentials: "include",
       cache: "no-store",
@@ -1107,54 +1805,6 @@ function getFeeSummaryText(feeStatus) {
   return `Application fee due: ${feeStatus.currency || "USD"} ${feeStatus.amount || "0"}.`;
 }
 
-function SubmissionLifecyclePanels({ receipt }) {
-  return (
-    <>
-      {Array.isArray(receipt?.status_center?.milestones) ? (
-        <div className="crown-card" style={{ marginTop: 10, padding: 12, border: "1px solid var(--crown-border)" }}>
-          <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Status center</p>
-          <div style={{ marginBottom: 8, color: "var(--crown-muted)", fontSize: 13 }}>
-            Owner: {receipt?.status_center?.owner_team || "Admissions"} · Next update: {receipt?.status_center?.next_update_target || "Within 1 business day"}
-          </div>
-          <div style={{ display: "grid", gap: 6 }}>
-            {receipt.status_center.milestones.map((milestone) => (
-              <div key={milestone.key} style={{ color: "var(--crown-muted)", fontSize: 13 }}>
-                <strong>{milestone.title}</strong> - {milestone.target} ({milestone.status})
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {Array.isArray(receipt?.documents_lifecycle) ? (
-        <div className="crown-card" style={{ marginTop: 10, padding: 12, border: "1px solid var(--crown-border)" }}>
-          <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Documents lifecycle</p>
-          <div style={{ display: "grid", gap: 6 }}>
-            {receipt.documents_lifecycle.map((item) => (
-              <div key={item.key} style={{ color: "var(--crown-muted)", fontSize: 13 }}>
-                <strong>{item.label}</strong> - {item.status} · {item.next_action}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {Array.isArray(receipt?.enrollment_continuity?.checklist) ? (
-        <div className="crown-card" style={{ marginTop: 10, padding: 12, border: "1px solid var(--crown-border)" }}>
-          <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>Enrollment continuity</p>
-          <div style={{ display: "grid", gap: 6 }}>
-            {receipt.enrollment_continuity.checklist.map((item) => (
-              <div key={item.key} style={{ color: "var(--crown-muted)", fontSize: 13 }}>
-                <strong>{item.title}</strong> - {item.status}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </>
-  );
-}
-
 function FeeSelectionPanel({ feeConfig, applicationFee, onToggleFee }) {
   if (!feeConfig.required) {
     return null;
@@ -1202,14 +1852,13 @@ function SubmitPendingPanel({
   return (
     <>
       <p style={{ marginTop: 0 }}>
-        Final submission triggers a staff review workflow with human-led mission-fit discernment and
-        transparent communication milestones.
+        When you submit, our admissions team will begin reviewing your application and follow up with next steps.
       </p>
       <div
         className={preflight.status === "down" ? "crown-alert" : "crown-muted"}
         style={{ marginBottom: 10 }}
       >
-        Service check: {preflight.message}
+        Submission status: {preflight.message}
       </div>
       <button className="crown-btn" type="button" onClick={runPreflightCheck} disabled={submitting || preflight.status === "checking"}>
         {preflight.status === "checking" ? "Checking..." : "Re-check Service"}
@@ -1266,7 +1915,6 @@ function SubmitPendingPanel({
 }
 
 function SubmitSuccessPanel({ receipt, submissionSummary }) {
-  const paymentHandoff = receipt?.application_fee?.payment_handoff;
   return (
     <>
       <p style={{ marginTop: 0, fontWeight: 600 }}>
@@ -1282,28 +1930,17 @@ function SubmitSuccessPanel({ receipt, submissionSummary }) {
           {getFeeSummaryText(receipt.application_fee)}
         </p>
       ) : null}
-      {receipt?.application_fee?.finance?.state === "invoiced" ? (
-        <div className="crown-card" style={{ marginTop: 8, padding: 10, border: "1px solid var(--crown-border)" }}>
-          <p style={{ margin: "0 0 6px 0", fontWeight: 600 }}>Finance processing</p>
-          <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>
-            Invoice reference: {receipt.application_fee.finance.invoice_id}
-          </div>
-          <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>
-            Collection endpoint: {receipt.application_fee.finance.collection_path}
-          </div>
-          {paymentHandoff ? (
-            <div style={{ marginTop: 8, color: "var(--crown-muted)", fontSize: 13 }}>
-              Payment intent handoff ready. Sign in to continue secure payment at {paymentHandoff.endpoint}.
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-      <SubmissionLifecyclePanels receipt={receipt} />
-      <ul style={{ color: "var(--crown-muted)", marginBottom: 0 }}>
-        <li>Next update target: within 1 business day</li>
-        <li>Admissions will review completeness and mission conversation notes</li>
-        <li>You will receive next-step instructions by email</li>
+      <ul style={{ color: "var(--crown-muted)", marginBottom: 10 }}>
+        <li>Admissions will contact you within 1 business day.</li>
+        <li>Upload any remaining records from your checklist link.</li>
+        <li>Watch your email and text messages for interview and next-step instructions.</li>
       </ul>
+      <div className="crown-card" style={{ padding: 10, border: "1px solid var(--crown-border)" }}>
+        <p style={{ margin: "0 0 6px 0", fontWeight: 600 }}>Need help?</p>
+        <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>
+          Call (555) 010-1000 or email admissions@crown.edu.
+        </div>
+      </div>
     </>
   );
 }
@@ -1391,12 +2028,28 @@ function StepSubmit({
     }
     setSubmitting(true);
     try {
-      const response = await submitAdmissionsIntake(context);
+      const submitPayload = {
+        ...context,
+        demoChecklistAutoComplete: IS_SANDBOX_FLOW,
+      };
+      const response = await submitAdmissionsIntake(submitPayload);
+      const checklistHub = response?.checklist_hub;
+      markAdmissionsLifecycleSubmitted({
+        applicationId: checklistHub?.application_id,
+        checklistKey: checklistHub?.checklist_key,
+      });
       setReceipt(response);
       setContext((prev) => ({ ...prev, submitted: true }));
       if (typeof onFinalizeSubmit === "function") {
         onFinalizeSubmit();
       }
+
+      if (checklistHub?.path && checklistHub?.application_id && checklistHub?.checklist_key) {
+        const target = `${checklistHub.path}?application_id=${encodeURIComponent(checklistHub.application_id)}&checklist_key=${encodeURIComponent(checklistHub.checklist_key)}&demo_flow=${IS_SANDBOX_FLOW ? "1" : "0"}`;
+        globalThis.location.href = target;
+        return;
+      }
+
       setSubmittedNow(true);
     } catch (error) {
       const correlation = String(error?.correlationId || error?.requestId || "").trim();
@@ -1459,18 +2112,27 @@ const STEP_COMPONENTS = [
   StepStudent,
   StepMission,
   StepDocuments,
+  StepFinancialAidInterest,
   StepReview,
   StepSubmit,
 ];
 
 export default function ProspectiveFamilyAdmissionsWizard() {
+  const draftKey = IS_DEMO_PREFILL_MODE ? "admissions-apply-demo" : "admissions-apply";
+
+  const initialDraftContext = useMemo(
+    () => (IS_DEMO_PREFILL_MODE ? DEMO_INITIAL_CONTEXT : INITIAL_CONTEXT),
+    [],
+  );
+
   const {
     value: draftContext,
+    setValue: setDraftContext,
     saveDraft,
     clearDraft,
     loaded,
     lastSavedAt,
-  } = useWizardDraft("admissions-apply", INITIAL_CONTEXT);
+  } = useWizardDraft(draftKey, initialDraftContext);
   const [admissionsPublicConfig, setAdmissionsPublicConfig] = useState({
     application_fee: FALLBACK_FEE_CONFIG,
   });
@@ -1493,6 +2155,39 @@ export default function ProspectiveFamilyAdmissionsWizard() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!loaded || !IS_DEMO_PREFILL_MODE) return;
+
+    const firstGuardian = draftContext?.family?.guardians?.[0] || {};
+    const firstStudent = draftContext?.students?.[0] || {};
+    const isEffectivelyBlank = !String(draftContext?.inquiry?.campus || "").trim()
+      && !String(firstGuardian.guardianName || "").trim()
+      && !String(firstGuardian.email || "").trim()
+      && !String(firstStudent.firstName || "").trim()
+      && !String(firstStudent.lastName || "").trim();
+
+    if (!isEffectivelyBlank) return;
+
+    setDraftContext(DEMO_INITIAL_CONTEXT);
+    saveDraft(DEMO_INITIAL_CONTEXT);
+  }, [loaded, draftContext, saveDraft, setDraftContext]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const intake = loadAdmissionsStartIntake();
+    if (!intake) return;
+
+    const merged = mergeStartIntakeIntoContext(draftContext, intake);
+    setDraftContext(merged);
+    saveDraft(merged);
+    clearAdmissionsStartIntake();
+  }, [loaded, draftContext, saveDraft, setDraftContext]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    markAdmissionsLifecycleStarted("admissions_wizard");
+  }, [loaded]);
+
   if (!loaded) {
     return null;
   }
@@ -1514,6 +2209,7 @@ export default function ProspectiveFamilyAdmissionsWizard() {
       helpNotice={(
         <>
           Need help? Call Admissions at <strong>(555) 010-1000</strong> or email <strong>admissions@crown.edu</strong>.
+          {" "}Sandbox school: <strong>{DEMO_SCHOOL_NAME}</strong> ({DEMO_AID_YEAR}).
           {" "}Your progress is saved automatically on this device.
           {lastSavedAt ? ` Last saved: ${new Date(lastSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.` : ""}
         </>

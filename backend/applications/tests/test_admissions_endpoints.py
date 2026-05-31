@@ -1,18 +1,35 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import Resolver404, resolve
 from rest_framework.test import APITestCase
 
-from applications.models import Application, Applicant, ApplicationEvent
+from applications.models import (
+    Application,
+    Applicant,
+    ApplicationChecklistDocument,
+    ApplicationChecklistItem,
+    ApplicationEvent,
+    ChecklistItemStatus,
+)
 from core.models import AcademicYear, CrownPermission, RolePermission, School, UserRole
 from finance.models import FinanceInvoice, FinanceObligation
 from households.models import Household
 
 
 class AdmissionsEndpointsTests(APITestCase):
+    @staticmethod
+    def _payload(response):
+        try:
+            return response.json()
+        except Exception:
+            return {}
+
     def setUp(self):
         user_model = get_user_model()
         self.user = user_model.objects.create(username="test@crown-demo.local")
@@ -383,7 +400,10 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertIn("documents_lifecycle", r.data)
         self.assertIn("enrollment_continuity", r.data)
         self.assertIn("reviewer_summary", r.data)
+        self.assertIn("family_affordability_profile", r.data)
         self.assertIn("application_fee", r.data)
+        self.assertIn("application_fee_status_card", r.data)
+        self.assertIn("admissions_to_finance_handoff", r.data)
         self.assertIsInstance(r.data["status_center"].get("milestones"), list)
         self.assertIsInstance(r.data["documents_lifecycle"], list)
         self.assertIsInstance(r.data["enrollment_continuity"].get("checklist"), list)
@@ -391,6 +411,18 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertEqual(r.data["application_fee"].get("finance", {}).get("state"), "invoiced")
         self.assertEqual(r.data["application_fee"].get("payment_handoff", {}).get("state"), "ready")
         self.assertEqual(r.data["application_fee"].get("payment_handoff", {}).get("requires_auth"), True)
+        self.assertEqual(r.data["application_fee_status_card"].get("finance_state"), "invoiced")
+        self.assertEqual(r.data["application_fee_status_card"].get("requires_action"), True)
+        self.assertEqual(r.data["family_affordability_profile"].get("currency"), "USD")
+        self.assertIn("upfront", r.data["family_affordability_profile"])
+        self.assertIn("total_estimated", r.data["family_affordability_profile"].get("upfront", {}))
+        self.assertIn("fee_readiness", r.data["admissions_to_finance_handoff"])
+        self.assertIn("aid_readiness", r.data["admissions_to_finance_handoff"])
+        self.assertIn("deposit_readiness", r.data["admissions_to_finance_handoff"])
+        self.assertEqual(
+            r.data["admissions_to_finance_handoff"].get("fee_readiness", {}).get("finance_state"),
+            "invoiced",
+        )
 
         self.assertEqual(
             Application.objects.filter(school_id=self.school_id).count(),
@@ -547,6 +579,36 @@ class AdmissionsEndpointsTests(APITestCase):
         self.assertEqual(r.data.get("code"), "rate_limited")
         self.assertIn("Retry-After", r)
 
+    def test_submit_crm_import_failure_is_non_blocking(self):
+        """Admissions submit must succeed and persist records when CRM module import fails."""
+        self.client.force_authenticate(user=None)
+        before_apps = Application.objects.filter(school_id=self.school_id).count()
+        before_applicants = Applicant.objects.filter(school_id=self.school_id).count()
+        before_events = ApplicationEvent.objects.filter(school_id=self.school_id).count()
+        sentinel = "CRM_FALLBACK_SENTINEL"
+        real_import = __import__
+
+        def _failing_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "crm_marketing.services" or (name == "crm_marketing" and fromlist and "services" in fromlist):
+                raise ModuleNotFoundError(sentinel)
+            return real_import(name, globals, locals, fromlist, level)
+
+        with patch("builtins.__import__", side_effect=_failing_import), patch(
+            "applications.views_admissions.logger.exception"
+        ) as log_exception:
+            r = self.client.post("/api/v1/admissions/submit/", self._submit_payload(), format="json")
+
+        self.assertEqual(r.status_code, 201, r.data)
+        self.assertTrue(r.data.get("ok"))
+        self.assertEqual(r.data.get("stage"), "application_submitted")
+        self.assertEqual(Application.objects.filter(school_id=self.school_id).count(), before_apps + 1)
+        self.assertEqual(Applicant.objects.filter(school_id=self.school_id).count(), before_applicants + 1)
+        self.assertEqual(ApplicationEvent.objects.filter(school_id=self.school_id).count(), before_events + 3)
+        self.assertTrue(log_exception.called)
+        self.assertEqual(log_exception.call_args.args[0], "crm_marketing_register_submit_failed")
+        self.assertNotIn(sentinel, str(r.data))
+        self.assertNotIn(sentinel, r.content.decode("utf-8", errors="ignore"))
+
     def test_public_config_returns_fee_source_of_truth(self):
         """Public config endpoint should expose backend fee configuration."""
         self.client.force_authenticate(user=None)
@@ -558,8 +620,45 @@ class AdmissionsEndpointsTests(APITestCase):
 
         self.assertEqual(r.status_code, 200)
         self.assertIn("application_fee", r.data)
-        self.assertEqual(r.data["application_fee"].get("currency"), "USD")
         self.assertIn("required", r.data["application_fee"])
+        self.assertIn("amount", r.data["application_fee"])
+        self.assertEqual(r.data["application_fee"].get("currency"), "USD")
+
+    def test_submit_returns_enrollment_continuity_checklist(self):
+        """
+        Admissions checklist is not a standalone endpoint.
+
+        CROWN owns the admissions-to-enrollment continuity process, and the
+        checklist is returned as part of the public admissions submit contract:
+        POST /api/v1/admissions/submit/
+        """
+        self.client.force_authenticate(user=None)
+
+        response = self.client.post(
+            "/api/v1/admissions/submit/",
+            self._submit_payload(),
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="admissions-checklist-contract-test",
+            HTTP_X_REQUEST_ID="req-admissions-checklist-contract",
+        )
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertTrue(response.data.get("ok"))
+
+        self.assertIn("enrollment_continuity", response.data)
+        continuity = response.data["enrollment_continuity"]
+
+        self.assertEqual(continuity.get("phase"), "admissions_to_enrollment")
+        self.assertIn("checklist", continuity)
+        self.assertIsInstance(continuity["checklist"], list)
+
+        checklist_keys = {item.get("key") for item in continuity["checklist"]}
+
+        self.assertIn("application_fee", checklist_keys)
+        self.assertIn("tour_or_interview", checklist_keys)
+        self.assertIn("record_completion", checklist_keys)
+        self.assertIn("family_partnership_conversation", checklist_keys)
+        self.assertIn("decision_and_enrollment_next_steps", checklist_keys)
 
     def test_public_config_allows_missing_tenant_header(self):
         """Public config must be reachable without X-School-Id for public funnel bootstrap."""
@@ -569,3 +668,17 @@ class AdmissionsEndpointsTests(APITestCase):
 
         self.assertEqual(r.status_code, 200)
         self.assertIn("application_fee", r.data)
+
+class AdmissionsRouteContractTests(APITestCase):
+    def test_admissions_checklist_route_is_not_exposed(self):
+        """
+        Guard against phantom admissions checklist endpoints.
+
+        Checklist state belongs inside the CROWN admissions submit response,
+        not under a standalone /api/v1/admissions/checklist/ route.
+        """
+        with self.assertRaises(Resolver404):
+            resolve("/api/v1/admissions/checklist/")
+
+        with self.assertRaises(Resolver404):
+            resolve("/api/v1/admissions/checklist/items/")

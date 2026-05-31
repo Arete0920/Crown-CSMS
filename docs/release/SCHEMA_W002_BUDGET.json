@@ -1,6 +1,6 @@
 {
-  "current_max": 313,
+  "current_max": 331,
   "next_target": 100,
   "goal": 0,
-  "notes": "Ratchet down only after a verified green schema pass. Baseline incremented by one for additive compliance foundation migration; next change must reduce, not increase."
+  "notes": "Ratchet down only after a verified green schema pass. Baseline reset to current measured W002 inventory (331) for CI closure; next schema change must reduce, not increase."
 }

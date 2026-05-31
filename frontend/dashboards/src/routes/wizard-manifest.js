@@ -36,11 +36,11 @@ export const WIZARD_MANIFEST = [
   { slug: "course-catalog-wizard",       title: "Course Catalog Setup",        path: "/course-catalog-setup" },
   { slug: "room-setup-wizard",           title: "Rooms Setup",                 path: "/room-setup" },
   { slug: "promotion-wizard",            title: "Promotion Map Setup",         path: "/promotion-setup" },
-  { slug: "student-import-wizard",       title: "Student Import",               path: "/wizards" },
-  { slug: "guardian-household-wizard",   title: "Guardian & Household Setup",   path: "/wizards" },
-  { slug: "section-staffing-wizard",     title: "Section Staffing",             path: "/wizards" },
-  { slug: "attendance-codes-wizard",     title: "Attendance Codes Setup",       path: "/wizards" },
-  { slug: "grade-weights-wizard",        title: "Grade Weights & Categories",   path: "/wizards" },
+  { slug: "student-import-wizard",       title: "Student Import",               path: "/student-import-setup" },
+  { slug: "guardian-household-wizard",   title: "Guardian & Household Setup",   path: "/guardian-household-setup" },
+  { slug: "section-staffing-wizard",     title: "Section Staffing",             path: "/section-staffing-setup" },
+  { slug: "attendance-codes-wizard",     title: "Attendance Codes Setup",       path: "/attendance-codes-setup" },
+  { slug: "grade-weights-wizard",        title: "Grade Weights & Categories",   path: "/grade-weights-setup" },
 ];
 
 /** Flat slug list — the frontend's commitment to which wizard slugs exist. */

@@ -6,12 +6,16 @@
 import { httpJson } from "../lib/http.js";
 
 function getSchoolId() {
-  try { return sessionStorage.getItem("crown.school.id") || ""; }
+  try {
+    return sessionStorage.getItem("crown.school.id") || localStorage.getItem("crown.school.id") || localStorage.getItem("schoolId") || "";
+  }
   catch { return ""; }
 }
 
 function getToken() {
-  try { return sessionStorage.getItem("crown.jwt.access") || ""; }
+  try {
+    return sessionStorage.getItem("crown.jwt.access") || localStorage.getItem("crown.jwt.access") || "";
+  }
   catch { return ""; }
 }
 

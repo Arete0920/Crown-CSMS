@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const ROUTE_TREND = [
   { month: 'Aug', value: 8 }, { month: 'Sep', value: 10 }, { month: 'Oct', value: 10 },
   { month: 'Nov', value: 10 }, { month: 'Dec', value: 9 }, { month: 'Jan', value: 10 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Transportation!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Transportation widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until transportation metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Routes Active', value: '11', detail: 'All 11 morning and afternoon routes operational.', accent: 'emerald' },

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 from datetime import date
 
 import pytest
@@ -9,6 +10,7 @@ from rest_framework.test import APIClient
 from academics.models import AcademicYear, Assignment, AssignmentCategory, Course, Section, Term
 from core.models import Family, School, UserRole
 from households.models import Guardian, Household, Student as HouseholdStudent
+from parent360.api import views as parent_overview_views
 from servicehours.models import ServiceEntry
 
 
@@ -217,3 +219,54 @@ def test_parent_self_overview_ignores_assignments_for_unenrolled_sections():
     assert payload["upcoming_assignments_total"] == 0
     assert payload["children"][0]["missing_assignments"] == 0
     assert payload["children"][0]["upcoming_assignments"] == []
+
+
+def test_parent_self_overview_admissions_continuity_shape_and_zero_counters_without_apps():
+    school = School.objects.create(name="Admissions Continuity Shape School")
+    client, _ = _make_parent_client(school=school, email="admissions-shape-parent@example.com")
+    _make_household_bundle(
+        school,
+        email="admissions-shape-parent@example.com",
+        household_name="Admissions Shape Family",
+    )
+
+    response = client.get(PARENT360_URL)
+
+    assert response.status_code == 200, response.content
+    payload = response.json()
+    continuity = payload["admissions_continuity"]
+    assert continuity["available"] is True
+    assert continuity["applications"] == []
+    assert continuity["summary"]["total"] == 0
+    assert continuity["summary"]["accepted_pending_contract"] == 0
+    assert continuity["summary"]["contract_complete"] == 0
+    assert continuity["summary"]["deposit_complete"] == 0
+
+
+def test_admissions_continuity_degrades_when_applications_optional_imports_fail(monkeypatch):
+    school = School.objects.create(name="Admissions Optional Import School")
+    household, _ = _make_household_bundle(
+        school,
+        email="admissions-import-parent@example.com",
+        household_name="Admissions Import Family",
+    )
+
+    original_import = builtins.__import__
+
+    def _import_with_applications_failure(name, globals=None, locals=None, fromlist=(), level=0):
+        if name in {"applications.aid_projection", "applications.models"}:
+            raise ImportError("simulated optional dependency failure")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", _import_with_applications_failure)
+
+    continuity = parent_overview_views._build_admissions_continuity(household)
+
+    assert continuity["available"] is False
+    assert continuity["applications"] == []
+    assert continuity["summary"] == {
+        "total": 0,
+        "accepted_pending_contract": 0,
+        "contract_complete": 0,
+        "deposit_complete": 0,
+    }

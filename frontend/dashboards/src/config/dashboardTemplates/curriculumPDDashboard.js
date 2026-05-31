@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const PD_TREND = [
   { month: 'Aug', value: 12 }, { month: 'Sep', value: 18 }, { month: 'Oct', value: 22 },
   { month: 'Nov', value: 21 }, { month: 'Dec', value: 19 }, { month: 'Jan', value: 24 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Curriculum Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Curriculum and professional development widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until curriculum and professional development metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Active PD Tracks', value: '6', detail: 'Differentiation, Literacy, STEM, Faith Integration, Tech, Leadership.', accent: 'blue' },

@@ -1,4 +1,13 @@
 ﻿# Dev 5 -- QA/Release Assignment
+
+> Authority Scope Notice (2026-05-29)
+>
+> This file is an operational assignment prompt and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Mission
 Keep release proof honest.
 ## Work Now

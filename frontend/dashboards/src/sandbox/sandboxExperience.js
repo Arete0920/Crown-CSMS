@@ -111,7 +111,7 @@ export const SANDBOX_SCHOOL_ARCHETYPES = [
 export const SANDBOX_PERSONAS = [
   {
     value: "school_admin",
-    label: "Head of School",
+    label: "Program Director",
     loginLabel: "School Admin",
     trackKeys: ["school", "daycare", "camp"],
     route: "/school-admin-dashboard",
@@ -261,5 +261,5 @@ export function getSandboxLoginHref(personaValue, schoolId, trackKey = "school",
     school: targetSchoolId,
     tour: persona.tourTitle,
   });
-  return `/login?${params.toString()}`;
+  return `/sandbox/command-center?${params.toString()}`;
 }
