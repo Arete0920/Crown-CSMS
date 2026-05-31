@@ -103,6 +103,57 @@ function ApplicationCard({ application, focus }) {
   );
 }
 
+function buildStatusCenterSections({ application, summary, household }) {
+  const checklistSummary = application.checklist_summary || {};
+  const paymentPrecheck = application.payment_precheck || {};
+  const balanceCents = typeof household.balance_cents === "number" ? household.balance_cents : null;
+
+  const admissionsValue = application.lifecycle_stage || application.application_status || "not_started";
+  const aidValue = application.financial_aid_status || "not_started";
+  const contractReady = (summary.contract_complete ?? 0) > 0;
+  const depositReady = (summary.deposit_complete ?? 0) > 0;
+  const contractDepositValue = contractReady && depositReady ? "ready" : "in_progress";
+  const billingValue = paymentPrecheck.status || (balanceCents && balanceCents > 0 ? "action_required" : "ready");
+  const classroomValue =
+    application.classroom_readiness_status
+    || application.applicant_to_student_status
+    || application.parent_portal_activation_status
+    || "not_started";
+
+  return [
+    {
+      key: "admissions",
+      label: "Admissions readiness",
+      value: admissionsValue,
+      detail: `Checklist missing ${checklistSummary.missing_count ?? 0} of ${checklistSummary.required_total ?? 0}.`,
+    },
+    {
+      key: "aid",
+      label: "Financial aid readiness",
+      value: aidValue,
+      detail: `Awards ${application.aid_award_count ?? 0}; sync ${application.aid_contract_sync_status || "unknown"}.`,
+    },
+    {
+      key: "contractDeposit",
+      label: "Contract & deposit readiness",
+      value: contractDepositValue,
+      detail: `Accepted pending ${summary.accepted_pending_contract ?? 0}; contract complete ${summary.contract_complete ?? 0}; deposit complete ${summary.deposit_complete ?? 0}.`,
+    },
+    {
+      key: "billing",
+      label: "Billing readiness",
+      value: billingValue,
+      detail: `Balance ${formatMoney(balanceCents)}; payment precheck ${paymentPrecheck.status || "pending"}.`,
+    },
+    {
+      key: "classroom",
+      label: "Classroom readiness",
+      value: classroomValue,
+      detail: `Portal activation ${application.parent_portal_activation_status || "unknown"}.`,
+    },
+  ];
+}
+
 export default function ParentJourneyOverviewPage({ focus = "status" }) {
   const [state, setState] = useState({
     status: "loading",
@@ -163,6 +214,9 @@ export default function ParentJourneyOverviewPage({ focus = "status" }) {
   const household = overview.household || {};
 
   const firstApplication = applications[0] || {};
+  const statusCenterSections = focus === "status"
+    ? buildStatusCenterSections({ application: firstApplication, summary, household })
+    : [];
   const metrics = [
     {
       label: "Children",
@@ -233,6 +287,27 @@ export default function ParentJourneyOverviewPage({ focus = "status" }) {
           <HighlightCard key={metric.label} {...metric} />
         ))}
       </section>
+
+      {statusCenterSections.length > 0 ? (
+        <section className="learning-authority-card" aria-label="Parent status center sections">
+          <div className="crown-section-heading">
+            <div>
+              <p className="crown-eyebrow">Status center scaffold</p>
+              <h2>Parent readiness by lifecycle section</h2>
+            </div>
+          </div>
+
+          <div className="learning-authority-grid">
+            {statusCenterSections.map((section) => (
+              <article key={section.key} data-testid={`parent-status-section-${section.key}`}>
+                <strong>{section.label}</strong>
+                <p>{section.value}</p>
+                <small>{section.detail}</small>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="learning-authority-card" aria-label="Parent journey summary">
         <div className="crown-section-heading">
