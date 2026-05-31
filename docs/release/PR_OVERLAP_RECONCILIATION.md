@@ -1,4 +1,13 @@
-ar# PR OVERLAP RECONCILIATION
+# PR OVERLAP RECONCILIATION
+
+Authority Scope Notice (2026-05-29)
+
+This document is an operational reconciliation artifact and not a controlling repository-level release authority source.
+
+Current controlling release-authority sources:
+
+- docs/CURRENT_RELEASE_STATUS.md
+- docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
 
 ## Local Branch
 
@@ -9,7 +18,7 @@ ar# PR OVERLAP RECONCILIATION
 ## Open PR Overlap Rollup
 
 | PR | Branch | Overlap | High-Risk | Risk |
-|---|---|---:|---:|---|
+| --- | --- | ---: | ---: | --- |
 | #699 | `fix/frontend-audit` | 100 | 84 | CRITICAL |
 | #703 | `copilot/fix-student-records-url-routing` | 17 | 3 | CRITICAL |
 | #701 | `copilot/fix-ci-workflow-pythonpath-errors` | 5 | 3 | HIGH |

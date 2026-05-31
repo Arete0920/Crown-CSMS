@@ -1,0 +1,19 @@
+﻿{
+    "captured_at_utc":  "2026-05-30T15:31:51.8116961Z",
+    "candidate_sha":  "9e8f3e6fde363bc519d2e69b936149e8fcaa0467",
+    "total_runs":  30,
+    "candidate_runs":  1,
+    "runs":  [
+                 {
+                     "conclusion":  "success",
+                     "createdAt":  "2026-05-30T14:54:19Z",
+                     "databaseId":  26686875924,
+                     "displayTitle":  "docs(release): close 081-085 certification policy and evidence index ΓÇª",
+                     "headSha":  "9e8f3e6fde363bc519d2e69b936149e8fcaa0467",
+                     "status":  "completed",
+                     "updatedAt":  "2026-05-30T14:59:23Z",
+                     "url":  "https://github.com/tcmegahan/Crown2026/actions/runs/26686875924",
+                     "workflowName":  "Proof Ceremony"
+                 }
+             ]
+}

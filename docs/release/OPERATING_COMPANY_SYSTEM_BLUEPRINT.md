@@ -1,4 +1,15 @@
-﻿# Operating Company System Blueprint
+﻿<!-- markdownlint-disable MD060 -->
+
+# Operating Company System Blueprint
+
+Authority Scope Notice (2026-05-29)
+
+This document is an operating-system blueprint and not a controlling repository-level release authority source.
+
+Current controlling release-authority sources:
+
+- docs/CURRENT_RELEASE_STATUS.md
+- docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
 
 Status: Priority #7 execution blueprint
 Updated: 2026-04-14
@@ -61,7 +72,6 @@ Turn Crown from a strong codebase into a deliverable, supportable, and scalable 
 | Security review rhythm | Scheduled security review process | Security owner | docs/release/SECURITY_GATES_EVIDENCE.md |
 | Customer trust materials | Customer-facing confidence packet | GTM + customer success | docs/release/PILOT_INVESTOR_READINESS_PROOF_PACK.md |
 
-
 ## Workstream 6: Partnership-Led Market Capture
 
 | Capability | Required Output | Owner | Evidence Artifact |
@@ -91,6 +101,7 @@ Turn Crown from a strong codebase into a deliverable, supportable, and scalable 
 | Valuation proof metrics | Pilot, ARR, implementation, and stability scorecards | Finance lead | docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md |
 | Investor language discipline | Evidence-aligned narrative and disclosure controls | Platform lead (TC) | docs/release/PRIORITY_10_OPTIONALITY_FINANCEABILITY_CANON.md |
 | Optionality protection gate | No-urgency decision framework across transaction paths | Platform lead (TC) | docs/release/STRATEGIC_OPTIONALITY_DILIGENCE_PLAYBOOK.md |
+
 ## Exit Rule for Priority #7
 
 Priority #7 is complete only when each workstream has:

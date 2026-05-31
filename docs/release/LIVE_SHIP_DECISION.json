@@ -1,15 +1,15 @@
 {
-    "generated_at_utc":  "2026-04-11T12:14:54.2297776Z",
-    "summary":  {
-                    "generated_at_utc":  "2026-04-11T12:14:54.2297776Z",
-                    "ship_decision":  "SHIP",
-                    "overall_score":  98,
-                    "overall_status":  "RELEASE_READY",
-                    "checklist_percent":  100,
-                    "remote_delete_count":  0,
-                    "local_delete_count":  0,
-                    "workflow_archive_candidates":  0,
-                    "packet_ready":  true,
-                    "phase_completion_percent":  100
-                }
+  "generated_at_utc": "2026-05-30T15:32:39.3597284Z",
+  "summary": {
+    "generated_at_utc": "2026-05-30T15:32:39.3597284Z",
+    "ship_decision": "SHIP",
+    "overall_score": 98,
+    "overall_status": "RELEASE_READY",
+    "checklist_percent": 100,
+    "remote_delete_count": 0,
+    "local_delete_count": 0,
+    "workflow_archive_candidates": 0,
+    "packet_ready": true,
+    "phase_completion_percent": 100
+  }
 }

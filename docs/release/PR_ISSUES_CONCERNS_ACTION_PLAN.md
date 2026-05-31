@@ -1,5 +1,14 @@
 # PR, Issues, and Concerns Action Plan
 
+Authority Scope Notice (2026-05-29)
+
+This document is an operational action-plan artifact and not a controlling repository-level release authority source.
+
+Current controlling release-authority sources:
+
+- docs/CURRENT_RELEASE_STATUS.md
+- docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-04-02
 Branch: `chore/github-cleanup-phase3-investor-evidence`
 
@@ -60,7 +69,7 @@ Reason: superseded by cleanup sequence delivered in Phase 1/2/3 branches.
 ### Concern Mapping
 
 | Concern | Related issue/PR | Impact if unresolved | Required evidence to close |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Deploy token/config mismatch | #512 | Frontend prod deploy instability | Successful deploy run + settings screenshot/log |
 | Auth regression after reset | #511 | Smoke gates unreliable; false negatives | Green reset+auth smoke run artifact |
 | Protected endpoint coverage gaps | #518 #520 #521 | Security/compliance confidence gap | Endpoint proof logs and tests |

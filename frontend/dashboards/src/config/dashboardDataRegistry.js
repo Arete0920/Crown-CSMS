@@ -89,6 +89,7 @@ export const DASHBOARD_DATA_REGISTRY = {
   'athletics-director': createDataConfig(dashboardSummaryPath('athletics-director')),
   'library-media': createDataConfig(dashboardSummaryPath('library-media')),
   'extended-care': createDataConfig(dashboardSummaryPath('extended-care')),
+  'summer-camp': createDataConfig(dashboardSummaryPath('summer-camp')),
   'safety-security': createDataConfig(dashboardSummaryPath('safety-security')),
   'curriculum-pd': createDataConfig(dashboardSummaryPath('curriculum-pd')),
 

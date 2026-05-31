@@ -1,1 +1,4 @@
 ﻿source_id,file_name,folder,department,owner,version_date,trust_level,tenant_scope,canonical_status,lifecycle_state,review_interval,sensitivity,accreditation_related,notes
+GOV-001,GOVERNANCE_PR792_CLOSEOUT_REPORT.md,audit-artifacts/runtime-release-closure/20260418_070051/governance-pr792-closeout-20260506_070829,Governance,CROWN release governance,2026-05-06,A,CROWN,canonical,active,quarterly,internal,yes,Release authority and closeout source for governance corpus
+ADM-001,ADMISSIONS_RELEASE_NOTE_20260522.md,audit-artifacts/runtime-release-closure/20260418_070051,Admissions,CROWN admissions,2026-05-22,B,CROWN,advisory,active,quarterly,internal,yes,Admissions workflow release note for corpus intake
+FIN-001,FINANCE_OPERATING_SYSTEM_MASTER_PLAN_20260528.md,audit-artifacts/runtime-release-closure/20260418_070051,Finance,CROWN finance operations,2026-05-28,B,CROWN,advisory,active,quarterly,internal,yes,Finance operating model and control-plane planning source

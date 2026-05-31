@@ -1,0 +1,51 @@
+id,workstream,change,status,priority,acceptance_signal
+1,WS1,Add admissions to finance handoff panel,completed,P0,Handoff payload visible with fee aid deposit readiness
+2,WS1,Add family affordability profile in admissions,completed,P0,Affordability summary persisted and rendered
+3,WS1,Add aid interest flag before acceptance,completed,P0,Flag available in admissions and aid queues
+4,WS1,Add application fee payment status card,completed,P0,Fee status card reflects ledger truth
+5,WS1,Add post acceptance deposit due workflow,not_started,P0,Deposit due state transitions tested
+6,WS1,Add sibling detection in enrollment conversion,not_started,P0,Sibling relation detected deterministically
+7,WS1,Auto trigger sibling discount review,not_started,P0,Discount review event emitted
+8,WS1,Auto create family financial account,not_started,P0,Household finance account created on enrollment
+9,WS3,Auto create tuition draft quote,not_started,P0,Draft quote generated pre contract
+10,WS1,Add estimated family cost page,not_started,P1,Estimate page shows tuition aid discount math
+11,WS1,Create unified Parent Financial Home,not_started,P0,Parent home route available and secured
+12,WS1,Show one amount due now,not_started,P0,Due now value deterministic and tested
+13,WS1,Show next payment date,not_started,P0,Next due date displayed and validated
+14,WS1,Show autopay status,not_started,P1,Autopay state visible with fallback
+15,WS1,Show aid scholarship applied,not_started,P0,Aid totals visible in family view
+16,WS1,Show open finance tasks,not_started,P1,Open tasks count and detail available
+17,WS7,Add download statement,not_started,P0,Statement export endpoint returns deterministic output
+18,WS7,Add download receipt,not_started,P0,Receipt export endpoint and UI action available
+19,WS1,Add saved payment methods view,not_started,P1,Saved method list and default method visible
+20,WS1,Add payment success confirmation state,not_started,P2,Receipt and next step shown after payment
+21,WS4,Build Financial Aid Application Wizard,not_started,P0,Aid wizard session lifecycle passes tests
+22,WS4,Add aid document checklist,not_started,P0,Checklist completion gates downstream steps
+23,WS4,Add aid review dashboard,not_started,P1,Officer review dashboard with queue metrics
+24,WS4,Add committee scoring recommendation,not_started,P1,Recommendation records and audit trail stored
+25,WS4,Add aid budget remaining KPI,not_started,P0,Budget remaining computed and shown
+26,WS4,Add award letter generation,not_started,P1,Award letter artifact generated per decision
+27,WS4,Add family acceptance flow,not_started,P0,Acceptance event updates aid state
+28,WS4,Add award to billing handoff,not_started,P0,Billing obligation updates from aid award
+29,WS4,Add aid amendment audit trail,not_started,P1,All revisions and actors captured
+30,WS8,Add Head of School aid impact dashboard,not_started,P1,Aid impact metrics visible at leadership level
+31,WS2,Build Finance Command Center,not_started,P0,Finance command route with secured role access
+32,WS2,Add cash received today KPI,not_started,P0,KPI reflects posted payment truth
+33,WS5,Add A R aging KPI,not_started,P0,0-30 31-60 61-90 90+ buckets computed
+34,WS2,Add failed payments queue,not_started,P0,Failed payments listed with next actions
+35,WS2,Add refund approval queue,not_started,P0,Refund approval workflow and permissions tested
+36,WS2,Add payment plan exceptions queue,not_started,P1,Exceptions derived and routed by owner
+37,WS6,Add deposit batch workflow,not_started,P0,Batches created posted and reconciled
+38,WS2,Add manual payment posting workflow,not_started,P0,Manual post and reversal path audited
+39,WS2,Add charge adjustment workflow,not_started,P1,Adjustments capture reason and approval
+40,WS2,Add finance task inbox,not_started,P1,Role queue with SLA fields available
+41,WS6,Build LedgerPostingService,not_started,P0,Deterministic posting with unit tests
+42,WS6,Build LedgerReversalService,not_started,P0,Reversal links to original entry and audit
+43,WS6,Build BalanceDerivationService,not_started,P0,Balance recompute matches ledger fixtures
+44,WS6,Build bank reconciliation workspace,not_started,P0,Bank lines matched unmatched and approved
+45,WS6,Build processor payout reconciliation,not_started,P0,Processor payout match report generated
+46,WS6,Add unmatched payment queue,not_started,P0,Unmatched queue visible with resolution actions
+47,WS6,Add period close workflow,not_started,P1,Close lock and reopen control tested
+48,WS6,Add QuickBooks Sage export center,not_started,P0,Export files deterministic and role secured
+49,WS8,Add audit trail report,not_started,P1,Audit report supports finance event traceability
+50,WS8,Add board finance summary dashboard,not_started,P0,Board mode shows trend risk budget exposure

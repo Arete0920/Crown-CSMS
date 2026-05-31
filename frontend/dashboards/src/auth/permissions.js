@@ -27,6 +27,8 @@ export const APP_PERMISSIONS = {
 
   AFTERCARE_VIEW: 'aftercare.view',
   AFTERCARE_EDIT: 'aftercare.edit',
+  SUMMER_CAMP_VIEW: 'summer_camp.view',
+  SUMMER_CAMP_EDIT: 'summer_camp.edit',
 
   REPORTING_VIEW: 'reporting.view',
   SYSTEM_VIEW: 'system.view',
@@ -98,6 +100,20 @@ export const PERMISSIONS_BY_ROLE = {
     APP_PERMISSIONS.SYSTEM_VIEW,
     APP_PERMISSIONS.RELEASE_VIEW,
     APP_PERMISSIONS.DEMO_VIEW,
+  ],
+
+  extended_care_manager: [
+    APP_PERMISSIONS.DASHBOARD_VIEW,
+    APP_PERMISSIONS.AFTERCARE_VIEW,
+    APP_PERMISSIONS.AFTERCARE_EDIT,
+    APP_PERMISSIONS.SUMMER_CAMP_VIEW,
+    APP_PERMISSIONS.SUMMER_CAMP_EDIT,
+  ],
+
+  summer_camp_coordinator: [
+    APP_PERMISSIONS.DASHBOARD_VIEW,
+    APP_PERMISSIONS.SUMMER_CAMP_VIEW,
+    APP_PERMISSIONS.SUMMER_CAMP_EDIT,
   ],
 };
 

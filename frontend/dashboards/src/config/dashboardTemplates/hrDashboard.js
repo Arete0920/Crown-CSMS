@@ -20,7 +20,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, HR Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'HR widgets currently use template snapshots pending live human resources service integration.',
+  note: 'Certification remains in review until HR metrics are sourced from canonical runtime endpoints.',
 
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/hr/summary/',

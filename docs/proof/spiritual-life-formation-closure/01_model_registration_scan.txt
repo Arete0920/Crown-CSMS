@@ -1,0 +1,9 @@
+﻿=== MODEL REGISTRATION SCAN ===
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\models.py:382:from spiritual_life.formation_models import *  # noqa: F401,F403,E402
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\formation_models.py:21:class PortraitDomain(FormationTimeStampedModel):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\formation_models.py:40:class BiblicalWorldviewPriority(FormationTimeStampedModel):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\formation_models.py:60:class FormationCampaign(FormationTimeStampedModel):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\formation_models.py:98:class FormationArtifact(FormationTimeStampedModel):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\formation_models.py:142:class DevotionalContent(FormationTimeStampedModel):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\formation_models.py:200:class BiblicalIntegrationRecord(FormationTimeStampedModel):
+C:\Users\JMega\OneDrive\Desktop\Crown2026_wt_pr862\backend\spiritual_life\formation_models.py:233:class SpiritualDomainRating(FormationTimeStampedModel):

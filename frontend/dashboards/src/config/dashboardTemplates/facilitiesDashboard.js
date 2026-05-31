@@ -20,7 +20,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Facilities!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Facilities widgets currently use template snapshots pending live facilities service integration.',
+  note: 'Certification remains in review until facilities metrics are sourced from canonical runtime endpoints.',
 
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/facilities/summary/',

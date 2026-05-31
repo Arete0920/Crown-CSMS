@@ -61,3 +61,5 @@ d2b0c11d4fe9d9a92989cda1d41bba0914f5955f:gitleaks.json:postgres-connection-strin
 # Recovery script in d3319c1d used Azure client/tenant/subscription IDs as hardcoded placeholders;
 # values replaced with <placeholder> strings in current HEAD. Historical commit suppressed.
 d3319c1d676797846cefddc2080562f1ea029032:scripts/recovery/fix_release_blockers_now.ps1:generic-api-key:17
+# Release scorecard authority SHA (commit hash) matched generic-api-key pattern in historical commit.
+8097d4c23e847bfaced4d9a49637a3aa0e20617b:docs/release/CURRENT_RELEASE_SCORECARD_20260528.md:generic-api-key:9

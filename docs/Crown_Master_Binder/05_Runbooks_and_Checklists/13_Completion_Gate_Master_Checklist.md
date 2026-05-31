@@ -1,5 +1,13 @@
 ﻿# Completion Gate Master Checklist
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational completion checklist and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Gate 1 - Inventory and Canon Lock
 - [ ] master inventory materially complete
 - [ ] lane inventories materially complete

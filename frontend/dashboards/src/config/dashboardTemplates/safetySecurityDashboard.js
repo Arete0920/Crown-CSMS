@@ -20,7 +20,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Safety Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Safety and security widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until safety and security metrics are sourced from canonical runtime endpoints.',
 
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/safetySecurity/summary/',

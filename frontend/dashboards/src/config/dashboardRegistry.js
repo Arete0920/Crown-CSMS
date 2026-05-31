@@ -35,6 +35,7 @@ import FineArtsDashboard from '../pages/FineArtsDashboard';
 import AthleticsDirectorDashboard from '../pages/AthleticsDirectorDashboard';
 import LibraryMediaDashboard from '../pages/LibraryMediaDashboard';
 import ExtendedCareDashboard from '../pages/ExtendedCareDashboard';
+import SummerCampDashboard from '../pages/SummerCampDashboard';
 import SafetySecurityDashboard from '../pages/SafetySecurityDashboard';
 import CurriculumPDDashboard from '../pages/CurriculumPDDashboard';
 
@@ -89,6 +90,7 @@ const FINE_ARTS_TEAM = ['fine_arts_director', ...SCHOOL_ADMIN];
 const ATHLETICS_TEAM = ['athletics_director', ...SCHOOL_ADMIN];
 const LIBRARY_TEAM = ['librarian', 'media_specialist', ...SCHOOL_ADMIN];
 const EXTENDED_CARE_TEAM = ['extended_care_manager', ...SCHOOL_ADMIN];
+const SUMMER_CAMP_TEAM = ['summer_camp_coordinator', ...EXTENDED_CARE_TEAM];
 const SAFETY_TEAM = ['safety_manager', 'security_officer', ...SCHOOL_ADMIN];
 const CURRICULUM_TEAM = ['curriculum_director', 'pd_coordinator', ...SCHOOL_ADMIN];
 const CHAPLAIN_TEAM = ['chaplain', 'spiritual_life', ...SCHOOL_ADMIN];
@@ -120,8 +122,9 @@ function createDashboard({
   owner,
   readiness,
 }) {
-  const effectiveReleaseState = releaseState || 'ready';
-  const effectiveReadiness = readiness || (effectiveReleaseState === 'ready' ? readyReadiness() : placeholderReadiness());
+  const effectiveReleaseState = releaseState || 'draft';
+  const isReadyLike = ['ready', 'live', 'production'].includes(effectiveReleaseState);
+  const effectiveReadiness = readiness || (isReadyLike ? readyReadiness() : placeholderReadiness());
 
   return {
     key,
@@ -247,6 +250,7 @@ export const DASHBOARD_REGISTRY = [
     section: 'Leadership & Growth',
     allowedRoles: SCHOOL_ADMIN,
     component: SchoolAdministratorDashboard,
+    releaseState: 'draft',
   }),
   createDashboard({
     key: 'school-board',
@@ -377,6 +381,15 @@ export const DASHBOARD_REGISTRY = [
     section: 'Enrichment & Support',
     allowedRoles: EXTENDED_CARE_TEAM,
     component: ExtendedCareDashboard,
+  }),
+  createDashboard({
+    key: 'summer-camp',
+    label: 'Summer Camp',
+    path: PATHS.SUMMER_CAMP_DASHBOARD,
+    tier: 5,
+    section: 'Enrichment & Support',
+    allowedRoles: SUMMER_CAMP_TEAM,
+    component: SummerCampDashboard,
   }),
   createDashboard({
     key: 'safety-security',

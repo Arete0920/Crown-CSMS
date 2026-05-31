@@ -8,7 +8,37 @@ export const BASE_TREND = [
   { month: 'Mar', value: 1248 },
 ];
 
-export const BASE_NOTE = 'Sandbox preview data shown. Connect backend for live records.';
+export const BASE_NOTE = 'Widget badges disclose data provenance and non-live states.';
+
+export const BASE_COMMUNICATIONS = {
+  inboxTitle: 'Unread and waiting',
+  inboxSummary: 'Communications remains a shared operating spine across family, teacher, and school workflows.',
+  inboxItems: [
+    '3 family replies still need response.',
+    '1 teacher follow-up is due before noon.',
+    'Weekly bulletin draft is waiting for review.',
+  ],
+  inboxActionLabel: 'Open Inbox',
+  inboxActionHref: '/communications',
+  announcementsTitle: 'Announcements and bulletin',
+  announcementsSummary: 'Shared notices, reminders, and publication queue status.',
+  announcementItems: [
+    'Thursday parent bulletin scheduled for 3:00 PM.',
+    'Chapel reminder is queued for tomorrow morning.',
+    'Field trip permission note remains pinned for families.',
+  ],
+  announcementsActionLabel: 'View Announcements',
+  announcementsActionHref: '/communications',
+  urgentTitle: 'Alerts and escalations',
+  urgentSummary: 'Urgent communication risk and unresolved delivery items.',
+  urgentItems: [
+    'No emergency alerts active.',
+    'Message delivery queue healthy.',
+    'Translation backlog cleared for the current cycle.',
+  ],
+  urgentActionLabel: 'Review Alerts',
+  urgentActionHref: '/communications',
+};
 
 export const BASE_ACTIVITY = [
   'Registrar verified reenrollment packets before chapel.',

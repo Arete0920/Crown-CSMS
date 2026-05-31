@@ -25,6 +25,8 @@ export const STATIC_SHELL_PATHS = [
   "/admissions",
   "/admissions/pipeline",
   "/aftercare/roster",
+  "/summer-camp-dashboard/roster",
+  "/summer-camp-dashboard/setup",
   "/communications",
   "/communications-director",
 ];

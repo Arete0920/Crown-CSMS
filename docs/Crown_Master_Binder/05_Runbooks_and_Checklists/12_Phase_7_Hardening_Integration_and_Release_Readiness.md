@@ -1,5 +1,13 @@
 ﻿# Phase 7 - Hardening, Integration, and Release Readiness
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational hardening/release-readiness runbook and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Purpose
 Prove that Crown is not just built, but controlled, integrated, and release-ready.
 

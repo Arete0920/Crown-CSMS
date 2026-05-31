@@ -20,7 +20,7 @@ const ATTENDANCE_TREND = [
 
 export default {
   key: 'schoolAdministrator',
-  activePath: '/school-admin',
+  activePath: '/school-admin-dashboard',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 6,
   user: {
@@ -31,19 +31,51 @@ export default {
   },
   heroMessage: '"Let the peace of Christ rule in your hearts." â€” Colossians 3:15',
   title: 'Good morning, Sarah!',
+  priorityFirst: true,
+  dashboardTitle: 'School Administrator Command Center',
+  truthLabel: 'Whole-school operating dashboard',
+  lastSyncLabel: 'Updated from current school operations snapshot',
   note: BASE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/schoolAdministrator/summary/',
   liveDataKey: 'schoolAdministrator',
   metrics: [
-    { label: 'Total Students', value: '1,248', detail: 'Enrollment is up 4.1% from last semester.', accent: 'blue' },
-    { label: 'Faculty & Staff', value: '156', detail: 'Three new hires completed onboarding this week.', accent: 'navy' },
-    { label: 'Attendance Rate', value: '96.2%', detail: 'Steady above benchmark across all divisions.', accent: 'gold' },
-    { label: 'Tuition Collected', value: '$2.4M', detail: '94% of semester target collected to date.', accent: 'emerald' },
-    { label: 'Open Admissions', value: '42', detail: 'Applications in decision and packet stages.', accent: 'blue' },
-    { label: 'Active Alerts', value: '6', detail: 'Cross-department exceptions need review today.', accent: 'gold' },
-    { label: 'Pending Approvals', value: '11', detail: 'Enrollment, staffing, and field trip approvals awaiting signoff.', accent: 'navy' },
-    { label: 'Messages Pending', value: '27', detail: 'Family and staff threads require same-day response.', accent: 'emerald' },
+    {
+      label: 'Decisions Needed',
+      value: '11',
+      detail: 'Enrollment, staffing, finance, and field-trip approvals awaiting signoff.',
+      accent: 'gold',
+    },
+    {
+      label: 'Enrollment',
+      value: '1,248',
+      detail: 'Up 4.1% from last semester; 42 open admissions files remain active.',
+      accent: 'blue',
+    },
+    {
+      label: 'Attendance Completion',
+      value: '96.2%',
+      detail: '5 homerooms still need first-period sync before closeout.',
+      accent: 'gold',
+    },
+    {
+      label: 'Tuition / AR Risk',
+      value: '$184K',
+      detail: 'Outstanding balances with 18 accounts needing approved follow-up.',
+      accent: 'navy',
+    },
+    {
+      label: 'Staff Coverage',
+      value: '4 gaps',
+      detail: 'Substitute coverage decisions needed before midday.',
+      accent: 'gold',
+    },
+    {
+      label: 'Safety / Student Care',
+      value: '7 items',
+      detail: 'Incident and student-care reviews awaiting administrator action.',
+      accent: 'emerald',
+    },
   ],
   priorities: [
     { title: 'Finalize open admissions decisions', detail: '12 applications pending principal signoff.', state: 'Due by 10:30 AM', tone: 'warn' },

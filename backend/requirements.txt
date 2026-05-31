@@ -20,9 +20,14 @@ django-cors-headers==4.3.1
 drf-spectacular>=0.27.2
 drf-spectacular-sidecar>=2025.3.1
 # Microsoft 365 SSO (OAuth2 via Authlib)
-authlib>=1.6.8
+authlib>=1.6.11
 requests>=2.32.0
-cryptography>=43.0.0
+cryptography>=46.0.7
+# Transitive security floors (pulled by requests/twilio/reportlab)
+urllib3>=2.7.0
+idna>=3.15
+aiohttp>=3.13.4
+pillow>=12.2.0
 # Sentry error telemetry (production only; loaded conditionally in settings.py)
 sentry-sdk>=2.0.0
 # Celery task queue (outbox drain, background jobs)

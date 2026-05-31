@@ -2,6 +2,13 @@
   "status": "NO_GO_FIX_REQUIRED",
   "timestamp": "2026-05-03T15:33:00Z",
   "status_source": "AUDIT_DECISION.json",
+  "authority_scope": "current_runtime_release_posture",
+  "is_controlling_go_no_go_authority": false,
+  "controlling_authority": "STRICT_RELEASE_CLOSEOUT_CHECKLIST_20260527.md",
+  "supersedes": [
+    "legacy_completed_status_2026-04-25"
+  ],
+  "language_guardrail": "Unrestricted production GO is not permitted unless all P0 gates in STRICT_RELEASE_CLOSEOUT_CHECKLIST_20260527.md are PASS.",
   "audit_decision": "NO-GO",
   "audit_run_id": "20260428_042020",
   "audit_type": "structural_51x51",
@@ -78,6 +85,7 @@
       "conclusion": "success",
       "artifact_path": "ci-artifacts/p0-phase1-integrity-gate/p0-playwright-report/index.html",
       "collected_at": "2026-05-03T15:20:00Z"
+    }
     },
     "branch_head_before_merge": "ff0e302",
     "note": "Dependency Review workflow hardened; post-merge Release Verify + secret-scan failures resolved in PR #788."
