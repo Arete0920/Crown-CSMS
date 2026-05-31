@@ -76,6 +76,7 @@ export default function AdmissionsDashboard() {
   const topSourceLabel = topSource?.source ? `${topSource.source} (${topSource.total})` : 'No source data yet';
 
   const config = cloneConfig(baseConfig);
+  config.disableLiveData = true;
   config.updatesCount = hasLiveSummary ? 0 : 1;
   config.note = `${config.note} · ${dataStateLabel}`;
 
