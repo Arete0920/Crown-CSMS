@@ -1,3 +1,5 @@
+﻿import { BASE_NOTE } from './_baseData.js';
+
 const MESSAGE_VOLUME_TREND = [
   { month: 'Sep', value: 142 },
   { month: 'Oct', value: 158 },
@@ -35,23 +37,26 @@ export default {
   sourceLabel: 'Communications widgets currently use template snapshots pending live communications service integration.',
   note: 'Certification remains in review until communications metrics are sourced from canonical runtime endpoints.',
 
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/communications/summary/',
+  liveDataKey: 'communications',
   metrics: [
-    { label: 'Messages Queued', value: '18', detail: 'Ready for approval or scheduling — 4 are time-sensitive.', accent: 'blue' },
+    { label: 'Messages Queued', value: '18', detail: 'Ready for approval or scheduling â€” 4 are time-sensitive.', accent: 'blue' },
     { label: 'Unread Threads', value: '9', detail: 'Parent and staff threads requiring triage before noon.', accent: 'gold' },
     { label: 'Announcements Sent', value: '4', detail: 'Published this morning to families and staff.', accent: 'navy' },
-    { label: 'Delivery Health', value: '99.4%', detail: 'Outbound message success rate — 2 contacts flagged.', accent: 'emerald' },
+    { label: 'Delivery Health', value: '99.4%', detail: 'Outbound message success rate â€” 2 contacts flagged.', accent: 'emerald' },
   ],
 
   priorities: [
-    { title: 'Publish weekly parent bulletin', detail: 'Draft is ready — principal approval received. Publish before 9 AM.', state: 'Draft ready', tone: 'warn' },
-    { title: 'Respond to 5 priority parent inquiries', detail: 'Threads marked urgent — 3 from teachers, 2 from front office.', state: 'Before lunch', tone: 'warn' },
+    { title: 'Publish weekly parent bulletin', detail: 'Draft is ready â€” principal approval received. Publish before 9 AM.', state: 'Draft ready', tone: 'warn' },
+    { title: 'Respond to 5 priority parent inquiries', detail: 'Threads marked urgent â€” 3 from teachers, 2 from front office.', state: 'Before lunch', tone: 'warn' },
     { title: 'Schedule Thursday chapel announcement', detail: 'Message drafted. Needs scheduling for Wednesday 4 PM delivery.', state: 'Ready', tone: 'good' },
   ],
   prioritiesTitle: 'Communications execution queue',
 
   alerts: [
-    { title: '2 undelivered messages — contact info needed', detail: 'Two family records have stale email addresses. Records office must update.', tone: 'warn' },
-    { title: 'Social media post pending principal approval', detail: 'Spring Open House post drafted and queued — approval required before publication.', tone: 'warn' },
+    { title: '2 undelivered messages â€” contact info needed', detail: 'Two family records have stale email addresses. Records office must update.', tone: 'warn' },
+    { title: 'Social media post pending principal approval', detail: 'Spring Open House post drafted and queued â€” approval required before publication.', tone: 'warn' },
   ],
 
   commandModules: [
@@ -62,7 +67,7 @@ export default {
       status: 'Watch',
       statusTone: 'warn',
       mainKpi: '18 messages queued',
-      summary: 'Parent bulletin is approved and ready — publish before the 9 AM open.',
+      summary: 'Parent bulletin is approved and ready â€” publish before the 9 AM open.',
       kpis: [
         { label: 'Messages queued', value: '18' },
         { label: 'Published today', value: '4' },
@@ -70,7 +75,7 @@ export default {
         { label: 'Scheduled', value: '3' },
       ],
       details: [
-        'Weekly parent bulletin approved — ready to publish',
+        'Weekly parent bulletin approved â€” ready to publish',
         '3 messages scheduled for this week',
         '2 messages awaiting principal approval',
         'Thursday chapel announcement drafted and queued',
@@ -96,7 +101,7 @@ export default {
         { label: 'Avg response time', value: '4.2 hrs' },
       ],
       details: [
-        '5 threads flagged urgent — 3 from teachers, 2 front office',
+        '5 threads flagged urgent â€” 3 from teachers, 2 front office',
         'Average response time 4.2 hours vs 4-hour target',
         '2 contact records with invalid email addresses',
         'Auto-acknowledgment active for all new threads',
@@ -122,10 +127,10 @@ export default {
         { label: 'Open staff threads', value: '2' },
       ],
       details: [
-        'Principal morning memo delivered — 81% read rate',
+        'Principal morning memo delivered â€” 81% read rate',
         'Academic calendar reminder sent to all teaching staff',
         'Safety protocol update distributed school-wide',
-        '2 open staff threads — non-urgent',
+        '2 open staff threads â€” non-urgent',
       ],
       primaryActionLabel: 'Open Staff Channel',
       backActionLabel: 'Communications Director',
@@ -140,7 +145,7 @@ export default {
       status: 'Watch',
       statusTone: 'warn',
       mainKpi: 'Bulletin ready to publish',
-      summary: 'Weekly bulletin approved by principal — waiting to be published before 9 AM.',
+      summary: 'Weekly bulletin approved by principal â€” waiting to be published before 9 AM.',
       kpis: [
         { label: 'Status', value: 'Approved' },
         { label: 'Last published', value: 'Last Thursday' },
@@ -148,7 +153,7 @@ export default {
         { label: 'Estimated reads', value: '430+' },
       ],
       details: [
-        'Bulletin approved — principal signature on file',
+        'Bulletin approved â€” principal signature on file',
         '6 stories finalized: calendar, chapel, sports, events, academics, faith',
         'Expected audience: 430+ families and staff',
         'Archived bulletins available in communications director view',
@@ -175,7 +180,7 @@ export default {
       ],
       details: [
         'All 4 alert channels tested and operational',
-        'Contact database 99.1% current — 2 records need update',
+        'Contact database 99.1% current â€” 2 records need update',
         'Last emergency alert test: April 21',
         'Next scheduled drill: May 15',
       ],
@@ -192,7 +197,7 @@ export default {
       status: 'Watch',
       statusTone: 'warn',
       mainKpi: 'Spring post pending approval',
-      summary: 'Spring Open House social media post drafted — principal approval required.',
+      summary: 'Spring Open House social media post drafted â€” principal approval required.',
       kpis: [
         { label: 'Pending approval', value: '1' },
         { label: 'Posts published this month', value: '8' },
@@ -202,7 +207,7 @@ export default {
       details: [
         'Spring Open House announcement post awaiting principal approval',
         '3 website news items queued for this week',
-        '8 social posts this month — 79% average engagement rate',
+        '8 social posts this month â€” 79% average engagement rate',
         'Next scheduled post: Thursday before chapel',
       ],
       primaryActionLabel: 'View Digital Queue',
@@ -216,13 +221,13 @@ export default {
   trendPanels: [
     {
       kicker: 'Message volume trend',
-      title: 'Total outbound messages sent — by month',
+      title: 'Total outbound messages sent â€” by month',
       chip: 'Up 31% since September',
       trend: MESSAGE_VOLUME_TREND,
     },
     {
       kicker: 'Parent engagement trend',
-      title: 'Parent message open/read rate — by month',
+      title: 'Parent message open/read rate â€” by month',
       chip: 'Growing steadily',
       trend: ENGAGEMENT_TREND,
     },
@@ -231,11 +236,11 @@ export default {
   activityKicker: 'Communications activity',
   activityTitle: 'Recent communications events',
   activities: [
-    'Parent bulletin approved by principal — ready to publish.',
+    'Parent bulletin approved by principal â€” ready to publish.',
     '5 priority parent threads flagged for before-noon response.',
     '4 announcements published to families and staff this morning.',
     'Social media post for Open House drafted and queued.',
-    '2 undeliverable emails flagged — records office notified.',
+    '2 undeliverable emails flagged â€” records office notified.',
   ],
 
   quickActions: [
@@ -282,3 +287,4 @@ export default {
     { label: 'Staff Channel', state: 'Active' },
   ],
 };
+

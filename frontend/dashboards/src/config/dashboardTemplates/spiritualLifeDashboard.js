@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const CHAPEL_TREND = [
   { month: 'Sep', value: 84 }, { month: 'Oct', value: 86 }, { month: 'Nov', value: 87 },
@@ -23,6 +23,9 @@ export default {
   title: 'Good morning, Chaplain!',
   subtitle: 'Spiritual Life & Biblical Formation Command Center',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/spiritualLife/summary/',
+  liveDataKey: 'spiritualLife',
 
   metrics: [
     { label: 'Chapel Attendance', value: '89%', detail: 'Worship and formation rhythm above 4-week average.', accent: 'emerald' },

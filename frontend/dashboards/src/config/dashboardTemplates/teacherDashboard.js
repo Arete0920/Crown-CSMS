@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const GRADE_COMPLETION_TREND = [
   { month: 'Sep', value: 84 },
@@ -28,13 +28,16 @@ export default {
   user: {
     initials: 'DC',
     name: 'David Chen',
-    role: 'Teacher — English & History',
+    role: 'Teacher â€” English & History',
   },
   dashboardTitle: 'Teacher Dashboard',
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Mr. Chen!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/teacher/summary/',
+  liveDataKey: 'teacher',
 
   metrics: [
     { label: 'Classes Today', value: '5', detail: 'Full teaching schedule active this period.', accent: 'blue' },
@@ -44,15 +47,15 @@ export default {
   ],
 
   priorities: [
-    { title: 'Submit Period 3 attendance', detail: 'Homeroom sync incomplete — front office needs this before 10 AM.', state: 'Due now', tone: 'warn' },
+    { title: 'Submit Period 3 attendance', detail: 'Homeroom sync incomplete â€” front office needs this before 10 AM.', state: 'Due now', tone: 'warn' },
     { title: 'Grade English composition queue', detail: '12 papers submitted yesterday afternoon awaiting feedback.', state: 'Due 3 PM', tone: 'warn' },
     { title: 'Reply to parent inquiry', detail: 'Mrs. Ramirez asked about the semester project rubric.', state: 'Today', tone: 'warn' },
   ],
   prioritiesTitle: 'Teaching execution queue',
 
   alerts: [
-    { title: 'At-risk threshold: 2 students', detail: '2 students dropped below 70% average — flag for counselor review this week.', tone: 'warn' },
-    { title: 'Missing work escalation', detail: '4 students have 3 or more missing assignments — contact families per policy.', tone: 'warn' },
+    { title: 'At-risk threshold: 2 students', detail: '2 students dropped below 70% average â€” flag for counselor review this week.', tone: 'warn' },
+    { title: 'Missing work escalation', detail: '4 students have 3 or more missing assignments â€” contact families per policy.', tone: 'warn' },
   ],
 
   commandModules: [
@@ -89,7 +92,7 @@ export default {
       status: 'Watch',
       statusTone: 'warn',
       mainKpi: '4 of 5 periods submitted',
-      summary: 'Period 3 attendance pending — front office needs sync before morning closeout.',
+      summary: 'Period 3 attendance pending â€” front office needs sync before morning closeout.',
       kpis: [
         { label: 'Students present', value: '124' },
         { label: 'Students absent', value: '3' },
@@ -98,7 +101,7 @@ export default {
       ],
       details: [
         'Period 3 (10:05 AM) submission outstanding',
-        '3 absent students — family notifications auto-queued',
+        '3 absent students â€” family notifications auto-queued',
         '2 late arrivals logged, no follow-up required',
         'Front office requires Period 3 sync by 10:00 AM',
       ],
@@ -123,11 +126,11 @@ export default {
         { label: 'Advisory', value: '7:50 AM' },
       ],
       details: [
-        'Period 1: English 8A — Room 214',
-        'Period 2: History 8B — Room 214',
-        'Period 3: English 8B — Room 214',
-        'Period 5: History 8A — Room 214',
-        'Period 6: Advisory — Room 214',
+        'Period 1: English 8A â€” Room 214',
+        'Period 2: History 8B â€” Room 214',
+        'Period 3: English 8B â€” Room 214',
+        'Period 5: History 8A â€” Room 214',
+        'Period 6: Advisory â€” Room 214',
       ],
       primaryActionLabel: 'View Schedule',
       backActionLabel: 'Open Classrooms',
@@ -224,7 +227,7 @@ export default {
     },
     {
       kicker: 'Attendance trend',
-      title: 'Section attendance rate — last 7 months',
+      title: 'Section attendance rate â€” last 7 months',
       chip: 'Stable above 94%',
       trend: CLASS_ATTENDANCE_TREND,
     },
@@ -233,7 +236,7 @@ export default {
   activityKicker: 'Classroom activity',
   activityTitle: 'Recent classroom events',
   activities: [
-    'English 8A essays submitted — 92% on-time completion.',
+    'English 8A essays submitted â€” 92% on-time completion.',
     'Period 1 attendance posted and synced to SIS.',
     'Parent portal reading assignment confirmed for Mrs. Tran.',
     'History quiz scores processed for both sections.',
@@ -252,7 +255,7 @@ export default {
     {
       title: 'Submit Attendance',
       eyebrow: 'Quick action',
-      description: 'Post remaining period attendance — Period 3 still pending.',
+      description: 'Post remaining period attendance â€” Period 3 still pending.',
       actionLabel: 'Submit Attendance',
       href: '/teacher/attendance',
       allowedRoles: ['teacher'],

@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const APPLICATION_VOLUME_TREND = [
   { month: 'Sep', value: 12 },
@@ -34,24 +34,27 @@ export default {
   title: 'Good morning, Lisa!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/admissions/summary/',
+  liveDataKey: 'admissions',
 
   metrics: [
-    { label: 'Open Applications', value: '84', detail: '12 awaiting principal signoff — action needed today.', accent: 'blue' },
+    { label: 'Open Applications', value: '84', detail: '12 awaiting principal signoff â€” action needed today.', accent: 'blue' },
     { label: 'Tours Scheduled', value: '14', detail: 'Three families added this week. Thursday slots still open.', accent: 'navy' },
     { label: 'Accepted Students', value: '31', detail: '6 accepted families have not yet returned enrollment packets.', accent: 'gold' },
-    { label: 'Conversion Rate', value: '68%', detail: 'Up 5 points from February — best of the year.', accent: 'emerald' },
+    { label: 'Conversion Rate', value: '68%', detail: 'Up 5 points from February â€” best of the year.', accent: 'emerald' },
   ],
 
   priorities: [
-    { title: '12 applications pending principal signoff', detail: 'Review committee met yesterday — principal approval required before 10:30 AM.', state: 'In Progress', tone: 'warn' },
-    { title: 'Follow up with 6 families ready to enroll', detail: 'Accepted — paperwork not returned. 72-hour window closing today.', state: 'Ready', tone: 'warn' },
+    { title: '12 applications pending principal signoff', detail: 'Review committee met yesterday â€” principal approval required before 10:30 AM.', state: 'In Progress', tone: 'warn' },
+    { title: 'Follow up with 6 families ready to enroll', detail: 'Accepted â€” paperwork not returned. 72-hour window closing today.', state: 'Ready', tone: 'warn' },
     { title: 'Confirm Thursday tour schedule', detail: 'Two families have not confirmed. Contact by 1 PM to secure attendance.', state: 'Ready', tone: 'good' },
   ],
   prioritiesTitle: 'Admissions execution queue',
 
   alerts: [
     { title: '8 incomplete applications at 72-hour deadline', detail: 'Missing documents. Families must complete or lose their review slot.', tone: 'warn' },
-    { title: '2 accepted families missing enrollment packets', detail: 'Packets due by Friday — seat held pending receipt. Contact today.', tone: 'warn' },
+    { title: '2 accepted families missing enrollment packets', detail: 'Packets due by Friday â€” seat held pending receipt. Contact today.', tone: 'warn' },
   ],
 
   commandModules: [
@@ -70,7 +73,7 @@ export default {
         { label: 'New this week', value: '11' },
       ],
       details: [
-        '12 applications approved by committee — need principal signature',
+        '12 applications approved by committee â€” need principal signature',
         '8 incomplete applications flagged at 72-hour warning',
         '11 new applications received this week',
         'Pipeline review closes at 10:30 AM',
@@ -88,7 +91,7 @@ export default {
       status: 'Watch',
       statusTone: 'warn',
       mainKpi: '14 tours scheduled',
-      summary: 'Thursday tour has 2 unconfirmed families — contact required before 1 PM.',
+      summary: 'Thursday tour has 2 unconfirmed families â€” contact required before 1 PM.',
       kpis: [
         { label: 'Scheduled this week', value: '14' },
         { label: 'Confirmed', value: '12' },
@@ -96,7 +99,7 @@ export default {
         { label: 'Available tour slots', value: '4' },
       ],
       details: [
-        '2 Thursday tour families unconfirmed — call before 1 PM',
+        '2 Thursday tour families unconfirmed â€” call before 1 PM',
         '12 families confirmed for scheduled campus visits',
         '4 open tour slots available next week',
         'Virtual tour option available for remote families',
@@ -114,7 +117,7 @@ export default {
       status: 'Watch',
       statusTone: 'warn',
       mainKpi: '31 students accepted',
-      summary: '6 accepted families have not returned enrollment packets — follow-up due today.',
+      summary: '6 accepted families have not returned enrollment packets â€” follow-up due today.',
       kpis: [
         { label: 'Accepted students', value: '31' },
         { label: 'Enrollment packets returned', value: '25' },
@@ -124,7 +127,7 @@ export default {
       details: [
         '6 accepted families have not returned enrollment packets',
         'Seat holds expire Friday if packets not received',
-        '22 enrollment deposits confirmed — 9 still pending',
+        '22 enrollment deposits confirmed â€” 9 still pending',
         'Acceptance letter batch sent for the week',
       ],
       primaryActionLabel: 'Review Acceptances',
@@ -148,7 +151,7 @@ export default {
         { label: 'New family yield', value: '+14 vs prior yr' },
       ],
       details: [
-        '68% conversion — up from 63% in January',
+        '68% conversion â€” up from 63% in January',
         '22 new enrollment deposits received this cycle',
         '188 students confirmed for reenrollment',
         'Yield improvement: +14 new families vs prior year',
@@ -174,10 +177,10 @@ export default {
         { label: 'Tours confirmed via follow-up', value: '4' },
       ],
       details: [
-        '6 accepted families — packets due Friday, no response yet',
+        '6 accepted families â€” packets due Friday, no response yet',
         '18 families in active follow-up queue',
         '4 tour confirmations closed through follow-up this week',
-        'Auto-email follow-up sent — personal call recommended for 6 priority families',
+        'Auto-email follow-up sent â€” personal call recommended for 6 priority families',
       ],
       primaryActionLabel: 'Open Communications',
       backActionLabel: 'View Pipeline',
@@ -200,9 +203,9 @@ export default {
         { label: 'Open house registrations', value: '17' },
       ],
       details: [
-        '42 inquiries in March — highest single-month count',
+        '42 inquiries in March â€” highest single-month count',
         '28 digital leads from school website form',
-        'Open house on May 14 — 17 families registered',
+        'Open house on May 14 â€” 17 families registered',
         'Social media referral source tracking active',
       ],
       primaryActionLabel: 'View Inquiry Pipeline',
@@ -216,13 +219,13 @@ export default {
   trendPanels: [
     {
       kicker: 'Application volume trend',
-      title: 'New applications received — by month',
+      title: 'New applications received â€” by month',
       chip: 'Accelerating',
       trend: APPLICATION_VOLUME_TREND,
     },
     {
       kicker: 'Conversion rate trend',
-      title: 'Inquiry-to-enrollment conversion rate — semester',
+      title: 'Inquiry-to-enrollment conversion rate â€” semester',
       chip: 'Best rate this year',
       trend: CONVERSION_RATE_TREND,
     },
@@ -235,14 +238,14 @@ export default {
     'Thursday tour confirmations sent to 12 of 14 families.',
     'Enrollment packet reminder emailed to 6 accepted families.',
     '8 incomplete applications flagged at 72-hour deadline.',
-    'March inquiry volume hit 42 — highest of the year.',
+    'March inquiry volume hit 42 â€” highest of the year.',
   ],
 
   quickActions: [
     {
       title: 'Review Pipeline',
       eyebrow: 'Quick action',
-      description: 'Open application pipeline — 12 items need principal signoff today.',
+      description: 'Open application pipeline â€” 12 items need principal signoff today.',
       actionLabel: 'Review Pipeline',
       href: '/admissions/pipeline',
       allowedRoles: ['admissions'],

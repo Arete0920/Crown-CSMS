@@ -1,4 +1,4 @@
-import { BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'attendance',
@@ -7,9 +7,10 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Attendance Overview',
   subtitle: 'Daily attendance completion and intervention tracking',
-  dataState: 'fallback',
-  sourceLabel: 'Attendance metrics are currently dashboard-template fallbacks pending live service wiring.',
-  note: 'Dashboard certification remains in review until attendance widgets are bound to canonical runtime services.',
+  note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/attendance/summary/',
+  liveDataKey: 'attendance',
   metrics: [
     { label: 'Present Today', value: '1,201', detail: '94 students marked absent or tardy.', accent: 'blue' },
     { label: 'Homerooms Posted', value: '100%', detail: 'All divisions reported before 8:30 AM.', accent: 'emerald' },
@@ -26,7 +27,7 @@ export default {
   ],
   quickActions: [
     { title: 'Open interventions', description: 'Review flagged student attendance patterns.', actionLabel: 'Open Interventions', href: '/attendance' },
-    { title: 'Export attendance report', description: 'Generate today’s attendance snapshot.', actionLabel: 'Export Report', href: '/integrity' },
+    { title: 'Export attendance report', description: 'Generate todayâ€™s attendance snapshot.', actionLabel: 'Export Report', href: '/integrity' },
   ],
   statusTitle: 'Attendance service status',
   statuses: BASE_STATUS,
@@ -37,3 +38,4 @@ export default {
     actions: [{ label: 'Review Queue', href: '/attendance' }, { label: 'Export Snapshot', tone: 'secondary', href: '/integrity' }],
   },
 };
+

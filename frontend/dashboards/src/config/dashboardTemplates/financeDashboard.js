@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const COLLECTIONS_TREND = [
   { month: 'Sep', value: 241000 },
@@ -34,25 +34,28 @@ export default {
   title: 'Good morning, Rebecca!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/finance/summary/',
+  liveDataKey: 'finance',
 
   metrics: [
-    { label: 'AR Outstanding', value: '$148,200', detail: 'Total outstanding family receivables — 94.2% collection rate.', accent: 'navy' },
-    { label: 'Collected This Month', value: '$284,500', detail: 'March collections — 8% above March prior year.', accent: 'emerald' },
-    { label: 'Payment Plans Active', value: '412', detail: '98.4% of plans current — 7 behind schedule.', accent: 'blue' },
+    { label: 'AR Outstanding', value: '$148,200', detail: 'Total outstanding family receivables â€” 94.2% collection rate.', accent: 'navy' },
+    { label: 'Collected This Month', value: '$284,500', detail: 'March collections â€” 8% above March prior year.', accent: 'emerald' },
+    { label: 'Payment Plans Active', value: '412', detail: '98.4% of plans current â€” 7 behind schedule.', accent: 'blue' },
     { label: 'Open Exceptions', value: '9', detail: '9 items require specialist review before noon.', accent: 'gold' },
-    { label: 'Aid Applications', value: '24', detail: '3 applications pending approval — deadline this week.', accent: 'navy' },
+    { label: 'Aid Applications', value: '24', detail: '3 applications pending approval â€” deadline this week.', accent: 'navy' },
     { label: 'Collection Rate', value: '94.2%', detail: 'Above the 93% semester target. Trend stable.', accent: 'emerald' },
   ],
 
   priorities: [
-    { title: 'Process 9 exceptions before 12 PM', detail: 'Auto-pay failures and gateway flags — must clear before afternoon batch.', state: 'In Progress', tone: 'warn' },
-    { title: 'Approve 3 financial aid applications', detail: 'Families notified of deadline — committee review ready.', state: 'Ready', tone: 'warn' },
+    { title: 'Process 9 exceptions before 12 PM', detail: 'Auto-pay failures and gateway flags â€” must clear before afternoon batch.', state: 'In Progress', tone: 'warn' },
+    { title: 'Approve 3 financial aid applications', detail: 'Families notified of deadline â€” committee review ready.', state: 'Ready', tone: 'warn' },
     { title: 'Review overnight reconciliation discrepancy', detail: 'Bank sync flagged a $2,400 variance in yesterday\'s payout batch.', state: 'In Progress', tone: 'warn' },
   ],
   prioritiesTitle: 'Business office execution queue',
 
   alerts: [
-    { title: '3 auto-pay failures overnight', detail: 'Three family accounts failed scheduled auto-pay — cards declined or expired.', tone: 'warn' },
+    { title: '3 auto-pay failures overnight', detail: 'Three family accounts failed scheduled auto-pay â€” cards declined or expired.', tone: 'warn' },
     { title: '2 new chargebacks in dispute workbench', detail: 'Two dispute records require documentation and written response within 5 days.', tone: 'warn' },
   ],
 
@@ -74,7 +77,7 @@ export default {
       details: [
         '7 payment plans are past their scheduled installment date',
         '3 accounts exceed 90-day aging threshold',
-        'AR trending down from $168K in September — positive trajectory',
+        'AR trending down from $168K in September â€” positive trajectory',
         'Auto-contact outreach queued for 11 delinquent accounts',
       ],
       primaryActionLabel: 'Open AR Dashboard',
@@ -101,7 +104,7 @@ export default {
         'Monthly statement batch finalized and distributed',
         '481 invoices posted for March billing cycle',
         '63 outstanding invoices with open balances',
-        '$284,500 collected — up 8% vs prior March',
+        '$284,500 collected â€” up 8% vs prior March',
       ],
       primaryActionLabel: 'View Invoices',
       backActionLabel: 'Billing Dashboard',
@@ -115,7 +118,7 @@ export default {
       title: 'Payment Plans',
       status: 'Watch',
       statusTone: 'warn',
-      mainKpi: '412 active plans — 7 delinquent',
+      mainKpi: '412 active plans â€” 7 delinquent',
       summary: '7 payment plan accounts are behind schedule and require outreach today.',
       kpis: [
         { label: 'Active plans', value: '412' },
@@ -124,8 +127,8 @@ export default {
         { label: 'Auto-pay failures', value: '3' },
       ],
       details: [
-        '3 auto-pay card failures from overnight batch — need manual follow-up',
-        '4 plans delinquent 2+ months — escalation review',
+        '3 auto-pay card failures from overnight batch â€” need manual follow-up',
+        '4 plans delinquent 2+ months â€” escalation review',
         'Payment plan enrollment open through May 15',
         'Modification requests pending: 2 families',
       ],
@@ -151,8 +154,8 @@ export default {
       ],
       details: [
         '3 aid applications awaiting committee approval',
-        'Deadline for this cycle: May 9 — families notified',
-        '18 families approved — award letters sent',
+        'Deadline for this cycle: May 9 â€” families notified',
+        '18 families approved â€” award letters sent',
         '$38,400 total aid disbursed this academic year',
       ],
       primaryActionLabel: 'Open Financial Aid',
@@ -179,7 +182,7 @@ export default {
         '3 overnight auto-pay failures requiring card update or manual charge',
         '2 chargeback disputes need documentation within 5 days',
         '4 miscellaneous exceptions flagged by gateway',
-        'Batch closes at 3 PM — all items must clear before then',
+        'Batch closes at 3 PM â€” all items must clear before then',
       ],
       primaryActionLabel: 'Open Exceptions',
       backActionLabel: 'Dispute Workbench',
@@ -203,7 +206,7 @@ export default {
       ],
       details: [
         'Bank sync flagged $2,400 variance in yesterday\'s batch',
-        '4 payout batches processed this week — 3 clean',
+        '4 payout batches processed this week â€” 3 clean',
         'Payout reconciliation report available for review',
         'Discrepancy must be resolved before Friday ledger close',
       ],
@@ -218,14 +221,14 @@ export default {
   trendPanels: [
     {
       kicker: 'Monthly collections trend',
-      title: 'Total collected per month — academic year',
+      title: 'Total collected per month â€” academic year',
       chip: 'Trending up',
       trend: COLLECTIONS_TREND,
     },
     {
       kicker: 'AR aging trend',
-      title: 'Total AR balance — month over month',
-      chip: 'Declining — positive',
+      title: 'Total AR balance â€” month over month',
+      chip: 'Declining â€” positive',
       trend: AR_AGING_TREND,
     },
   ],
@@ -233,11 +236,11 @@ export default {
   activityKicker: 'Finance activity',
   activityTitle: 'Recent business office activity',
   activities: [
-    'March billing batch completed — 481 invoices posted.',
-    'Compuwerx payout reconciled — $2,400 variance flagged.',
+    'March billing batch completed â€” 481 invoices posted.',
+    'Compuwerx payout reconciled â€” $2,400 variance flagged.',
     '3 auto-pay card failures logged from overnight batch.',
     'Financial aid award letters sent to 18 approved families.',
-    'Bank sync completed — 4 of 4 batches processed.',
+    'Bank sync completed â€” 4 of 4 batches processed.',
   ],
 
   quickActions: [

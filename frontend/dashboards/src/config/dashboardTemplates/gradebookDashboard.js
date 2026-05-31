@@ -1,4 +1,4 @@
-import { BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'gradebook',
@@ -7,9 +7,10 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Academic Performance View',
   subtitle: 'Grading progress, missing work, and at-risk tracking',
-  dataState: 'fallback',
-  sourceLabel: 'Gradebook widgets currently use template snapshots pending live gradebook service integration.',
-  note: 'Certification remains in review until gradebook metrics are sourced from canonical runtime endpoints.',
+  note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/gradebook/summary/',
+  liveDataKey: 'gradebook',
   metrics: [
     { label: 'Assignments Graded', value: '482', detail: '92% completion rate this week.', accent: 'blue' },
     { label: 'Missing Work', value: '39', detail: 'Down 11% since Monday.', accent: 'gold' },
@@ -37,3 +38,4 @@ export default {
     actions: [{ label: 'Review Queue', href: '/gradebook' }, { label: 'Export Snapshot', tone: 'secondary', href: '/integrity' }],
   },
 };
+

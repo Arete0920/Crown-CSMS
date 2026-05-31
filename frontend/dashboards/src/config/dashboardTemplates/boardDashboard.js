@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ENROLLMENT_TREND = [
   { month: 'Aug', value: 365 },
@@ -27,34 +27,37 @@ export default {
   activePath: '/board',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 4,
-  user: { initials: 'BD', name: 'Board of Directors', role: 'Governance — Strategic Oversight' },
+  user: { initials: 'BD', name: 'Board of Directors', role: 'Governance â€” Strategic Oversight' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Board!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/board/summary/',
+  liveDataKey: 'board',
 
   metrics: [
-    { label: 'Enrollment', value: '412', detail: '+4% vs last year — tracking ahead of plan.', accent: 'blue' },
-    { label: 'Revenue Collected', value: '$3.1M', detail: '+6% YTD — collection cadence strong.', accent: 'emerald' },
-    { label: 'Retention Rate', value: '92%', detail: '+2% vs prior year — returning families up.', accent: 'gold' },
+    { label: 'Enrollment', value: '412', detail: '+4% vs last year â€” tracking ahead of plan.', accent: 'blue' },
+    { label: 'Revenue Collected', value: '$3.1M', detail: '+6% YTD â€” collection cadence strong.', accent: 'emerald' },
+    { label: 'Retention Rate', value: '92%', detail: '+2% vs prior year â€” returning families up.', accent: 'gold' },
     { label: 'Mission Engagement', value: '81%', detail: 'Composite of service, chapel, and mission programs.', accent: 'navy' },
   ],
 
   priorities: [
     { title: 'Approve Q2 strategic plan update', detail: 'Finance + Mission committees aligned. Vote scheduled this session.', state: 'This session', tone: 'warn' },
-    { title: 'Review enrollment goal pacing', detail: '412 of 450 enrolled — on track for 91% of plan.', state: 'Today', tone: 'warn' },
-    { title: 'Confirm spring fundraising scope', detail: 'Advancement target $250K — committee endorsement required.', state: 'This week', tone: 'warn' },
+    { title: 'Review enrollment goal pacing', detail: '412 of 450 enrolled â€” on track for 91% of plan.', state: 'Today', tone: 'warn' },
+    { title: 'Confirm spring fundraising scope', detail: 'Advancement target $250K â€” committee endorsement required.', state: 'This week', tone: 'warn' },
   ],
   prioritiesTitle: 'Board priorities',
 
   alerts: [
-    { title: 'Grade-level retention watch', detail: 'Two grade levels tracking below 88% retention — admissions follow-up underway.', tone: 'warn' },
+    { title: 'Grade-level retention watch', detail: 'Two grade levels tracking below 88% retention â€” admissions follow-up underway.', tone: 'warn' },
     { title: 'Capital reserve review due', detail: 'Annual reserve assessment scheduled for May session.', tone: 'warn' },
   ],
 
   commandModules: [
     { key: 'enrollment', icon: 'EN', title: 'Enrollment', status: 'Stable', statusTone: 'good',
-      mainKpi: '412 of 450 (91%)', summary: 'Enrollment pacing strong — 4% ahead of last year through March.',
+      mainKpi: '412 of 450 (91%)', summary: 'Enrollment pacing strong â€” 4% ahead of last year through March.',
       kpis: [{ label: 'Enrolled', value: '412' }, { label: 'Goal', value: '450' }, { label: 'YoY change', value: '+4%' }, { label: 'Pipeline', value: '54 apps' }],
       details: ['New student enrollment up 12 vs prior year', 'Re-enrollment confirmed for 312 families', 'Wait list active in 3 grade levels', 'Open House conversion 28%'],
       primaryActionLabel: 'Open Admissions', backActionLabel: 'View Pipeline',
@@ -80,7 +83,7 @@ export default {
     { key: 'governance', icon: 'GV', title: 'Governance & Compliance', status: 'Stable', statusTone: 'good',
       mainKpi: 'All filings current', summary: 'Annual filings, audits, and accreditation documents all up to date.',
       kpis: [{ label: 'Open committee items', value: '3' }, { label: 'Filings current', value: 'All' }, { label: 'Audit status', value: 'Clean' }, { label: 'Policy reviews', value: '2 due' }],
-      details: ['Strategic plan revision in committee', 'External audit completed Feb — clean opinion', 'Two policies due for triennial review', 'Accreditation site visit scheduled fall'],
+      details: ['Strategic plan revision in committee', 'External audit completed Feb â€” clean opinion', 'Two policies due for triennial review', 'Accreditation site visit scheduled fall'],
       primaryActionLabel: 'Governance Detail', backActionLabel: 'Open Reports',
       primaryActionHref: '/reports', backActionHref: '/system-status', lastUpdated: '8:00 AM' },
     { key: 'communications', icon: 'CO', title: 'Board Communications', status: 'Stable', statusTone: 'good',
@@ -100,7 +103,7 @@ export default {
   activityTitle: 'Recent governance events',
   activities: [
     'Q2 strategic plan draft circulated to committees.',
-    'External audit final report received — clean opinion.',
+    'External audit final report received â€” clean opinion.',
     'Enrollment committee reviewed grade 9/11 retention plan.',
     'Advancement committee endorsed spring fundraising scope.',
     'Annual report draft posted for committee review.',

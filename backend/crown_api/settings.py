@@ -250,7 +250,7 @@ INSTALLED_APPS = [
 ]
 INSTALLED_APPS += WIZARD_INSTALLED_APPS  # wizard SDK: single source of truth in wizard_registry.py
 
-# Use the project's custom user model defined in core.models.
+# Use the project custom user model everywhere to avoid dual auth model registration.
 AUTH_USER_MODEL = 'core.UserAccount'
 
 MIDDLEWARE = [
