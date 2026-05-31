@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ENROLLMENT_TREND = [
   { month: 'Oct', value: 1198 },
@@ -29,9 +29,12 @@ export default {
     role: 'School Administrator',
     avatar: 'https://i.pravatar.cc/80?img=47',
   },
-  heroMessage: '"Let the peace of Christ rule in your hearts." — Colossians 3:15',
+  heroMessage: '"Let the peace of Christ rule in your hearts." â€” Colossians 3:15',
   title: 'Good morning, Sarah!',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/schoolAdministrator/summary/',
+  liveDataKey: 'schoolAdministrator',
   metrics: [
     { label: 'Total Students', value: '1,248', detail: 'Enrollment is up 4.1% from last semester.', accent: 'blue' },
     { label: 'Faculty & Staff', value: '156', detail: 'Three new hires completed onboarding this week.', accent: 'navy' },
@@ -385,8 +388,8 @@ export default {
       detail: '50% complete',
       accent: 'gold',
       items: [
-        '✓ Approve 4 enrollment packets',
-        '✓ Review 3 attendance exceptions',
+        'âœ“ Approve 4 enrollment packets',
+        'âœ“ Review 3 attendance exceptions',
         'Sign off tuition adjustment queue',
         'Confirm substitute coverage',
       ],

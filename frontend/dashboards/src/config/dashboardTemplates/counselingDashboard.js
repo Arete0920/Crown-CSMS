@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const REFERRAL_TREND = [
   { month: 'Sep', value: 7 }, { month: 'Oct', value: 9 }, { month: 'Nov', value: 8 },
@@ -14,23 +14,26 @@ export default {
   activePath: '/counseling',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 4,
-  user: { initials: 'CN', name: 'Counseling Team', role: 'Counseling — Behavior & Wellness' },
+  user: { initials: 'CN', name: 'Counseling Team', role: 'Counseling â€” Behavior & Wellness' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Counselors!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/counseling/summary/',
+  liveDataKey: 'counseling',
 
   metrics: [
-    { label: 'Referrals This Week', value: '11', detail: '+1 vs last week — discipline trend stable.', accent: 'gold' },
+    { label: 'Referrals This Week', value: '11', detail: '+1 vs last week â€” discipline trend stable.', accent: 'gold' },
     { label: 'Active Plans', value: '8', detail: 'Behavior and academic plans currently in flight.', accent: 'navy' },
     { label: 'Detentions This Week', value: '5', detail: 'Within normal range for term.', accent: 'blue' },
     { label: 'Suspensions This Week', value: '1', detail: 'Pending VP review.', accent: 'gold' },
   ],
 
   priorities: [
-    { title: 'Close 2 overdue follow-up meetings', detail: 'Both scheduled this week — confirm parent availability.', state: 'This week', tone: 'warn' },
-    { title: 'Convene parent meeting for Tyler Green', detail: '3rd truancy this semester — schedule with attendance.', state: 'Today', tone: 'warn' },
-    { title: 'Review repeat referral — Marcus Brown', detail: '2nd referral in 5 days — escalate to behavior plan.', state: 'Today', tone: 'warn' },
+    { title: 'Close 2 overdue follow-up meetings', detail: 'Both scheduled this week â€” confirm parent availability.', state: 'This week', tone: 'warn' },
+    { title: 'Convene parent meeting for Tyler Green', detail: '3rd truancy this semester â€” schedule with attendance.', state: 'Today', tone: 'warn' },
+    { title: 'Review repeat referral â€” Marcus Brown', detail: '2nd referral in 5 days â€” escalate to behavior plan.', state: 'Today', tone: 'warn' },
   ],
   prioritiesTitle: 'Counseling priorities',
 
@@ -43,19 +46,19 @@ export default {
     { key: 'referrals', icon: 'RF', title: 'Recent Referrals', status: 'Watch', statusTone: 'warn',
       mainKpi: '11 this week', summary: 'Recent referral mix balanced across behavior and wellness categories.',
       kpis: [{ label: 'This week', value: '11' }, { label: 'Open', value: '5' }, { label: 'Plan active', value: '4' }, { label: 'Resolved', value: '2' }],
-      details: ['Marcus Brown (G8) — disruptive behavior — open', 'Tyler Green (G10) — truancy — open', 'Aisha Patel (G9) — academic concern — plan active', 'Chloe Rivera (G11) — anxiety — plan active'],
+      details: ['Marcus Brown (G8) â€” disruptive behavior â€” open', 'Tyler Green (G10) â€” truancy â€” open', 'Aisha Patel (G9) â€” academic concern â€” plan active', 'Chloe Rivera (G11) â€” anxiety â€” plan active'],
       primaryActionLabel: 'Open Referral Queue', backActionLabel: 'Resolved Cases',
       primaryActionHref: '/counseling', backActionHref: '/counseling', lastUpdated: '8:30 AM' },
     { key: 'caseload', icon: 'CL', title: 'Case Load', status: 'Stable', statusTone: 'good',
-      mainKpi: '7 open across 2 counselors', summary: 'Caseload balanced — Okafor 4 open, Cruz 3 open.',
+      mainKpi: '7 open across 2 counselors', summary: 'Caseload balanced â€” Okafor 4 open, Cruz 3 open.',
       kpis: [{ label: 'J. Okafor open', value: '4' }, { label: 'M. Cruz open', value: '3' }, { label: 'Plans active', value: '5' }, { label: 'Resolved MTD', value: '12' }],
-      details: ['J. Okafor — 4 open / 3 plans / 7 resolved', 'M. Cruz — 3 open / 2 plans / 5 resolved', 'New caseload assignments balanced this week', 'Monthly caseload review scheduled Friday'],
+      details: ['J. Okafor â€” 4 open / 3 plans / 7 resolved', 'M. Cruz â€” 3 open / 2 plans / 5 resolved', 'New caseload assignments balanced this week', 'Monthly caseload review scheduled Friday'],
       primaryActionLabel: 'Open Case Load', backActionLabel: 'Counselor Schedule',
       primaryActionHref: '/counseling', backActionHref: '/counseling', lastUpdated: '8:15 AM' },
     { key: 'behavior', icon: 'BH', title: 'Behavior Categories', status: 'Stable', statusTone: 'good',
-      mainKpi: 'Disruptive behavior leads at 4', summary: 'Category mix typical — disruptive and truancy lead.',
+      mainKpi: 'Disruptive behavior leads at 4', summary: 'Category mix typical â€” disruptive and truancy lead.',
       kpis: [{ label: 'Disruptive', value: '4' }, { label: 'Truancy / late', value: '3' }, { label: 'Academic', value: '2' }, { label: 'Wellness', value: '1' }],
-      details: ['Disruptive behavior — 4 referrals', 'Truancy / late — 3 referrals', 'Academic concern — 2 referrals', 'Bullying — 1 / wellness — 1'],
+      details: ['Disruptive behavior â€” 4 referrals', 'Truancy / late â€” 3 referrals', 'Academic concern â€” 2 referrals', 'Bullying â€” 1 / wellness â€” 1'],
       primaryActionLabel: 'Open Behavior Report', backActionLabel: 'Trends',
       primaryActionHref: '/reports', backActionHref: '/counseling', lastUpdated: '8:00 AM' },
     { key: 'discipline', icon: 'DC', title: 'Discipline Actions', status: 'Watch', statusTone: 'warn',

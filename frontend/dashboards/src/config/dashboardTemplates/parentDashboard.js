@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ACADEMIC_TREND = [
   { month: 'Sep', value: 89 },
@@ -35,23 +35,26 @@ export default {
   title: 'Good morning, Mrs. Parker!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/parent/summary/',
+  liveDataKey: 'parent',
 
   metrics: [
-    { label: 'Children Enrolled', value: '2', detail: 'Aiden (8th) and Sophie (5th) — both active.', accent: 'blue' },
+    { label: 'Children Enrolled', value: '2', detail: 'Aiden (8th) and Sophie (5th) â€” both active.', accent: 'blue' },
     { label: 'Open Assignments', value: '4', detail: '3 due this week across both students.', accent: 'gold' },
     { label: 'Attendance This Week', value: '98%', detail: 'One late arrival noted for Aiden on Monday.', accent: 'emerald' },
     { label: 'Account Balance', value: '$425', detail: 'November billing statement available for review.', accent: 'navy' },
   ],
 
   priorities: [
-    { title: 'Review Sophie\'s missing English assignment', detail: 'Due today — teacher flagged it in the parent portal this morning.', state: 'Due today', tone: 'warn' },
-    { title: 'Confirm field trip permission slip for Aiden', detail: 'Science museum trip — consent required by Friday noon.', state: 'Due Friday', tone: 'warn' },
-    { title: 'Review November billing statement', detail: 'Statement posted — payment due by the 15th. Payment plan available.', state: 'Due next week', tone: 'warn' },
+    { title: 'Review Sophie\'s missing English assignment', detail: 'Due today â€” teacher flagged it in the parent portal this morning.', state: 'Due today', tone: 'warn' },
+    { title: 'Confirm field trip permission slip for Aiden', detail: 'Science museum trip â€” consent required by Friday noon.', state: 'Due Friday', tone: 'warn' },
+    { title: 'Review November billing statement', detail: 'Statement posted â€” payment due by the 15th. Payment plan available.', state: 'Due next week', tone: 'warn' },
   ],
   prioritiesTitle: 'Family action queue',
 
   alerts: [
-    { title: 'Aiden: Algebra quiz below 75%', detail: 'Quiz score of 72% posted — teacher recommends review session before next test.', tone: 'warn' },
+    { title: 'Aiden: Algebra quiz below 75%', detail: 'Quiz score of 72% posted â€” teacher recommends review session before next test.', tone: 'warn' },
     { title: 'Billing statement ready', detail: 'November statement is available. Balance of $425 due by the 15th.', tone: 'warn' },
   ],
 
@@ -65,13 +68,13 @@ export default {
       mainKpi: '4 open assignments',
       summary: 'Both students tracking well overall, but Sophie has a missing assignment due today.',
       kpis: [
-        { label: 'Aiden — current avg', value: '88.6%' },
-        { label: 'Sophie — current avg', value: '93.1%' },
+        { label: 'Aiden â€” current avg', value: '88.6%' },
+        { label: 'Sophie â€” current avg', value: '93.1%' },
         { label: 'Missing assignments', value: '4' },
         { label: 'Upcoming assessments', value: '3' },
       ],
       details: [
-        'Sophie: missing English reflection — due today',
+        'Sophie: missing English reflection â€” due today',
         'Aiden: Algebra quiz result flagged for review',
         'Both students: midterm report cards available',
         '3 assessments scheduled this week across both students',
@@ -97,7 +100,7 @@ export default {
         { label: 'Semester attendance rate', value: '97.8%' },
       ],
       details: [
-        'Aiden: one late arrival Monday — no action needed',
+        'Aiden: one late arrival Monday â€” no action needed',
         'Sophie: perfect attendance this week',
         'Semester rate of 97.8% exceeds school benchmark of 95%',
         'Attendance history available in parent portal',
@@ -115,16 +118,16 @@ export default {
       status: 'Watch',
       statusTone: 'warn',
       mainKpi: '$425 account balance',
-      summary: 'November statement posted. Payment due by the 15th — payment plan available.',
+      summary: 'November statement posted. Payment due by the 15th â€” payment plan available.',
       kpis: [
         { label: 'Current balance', value: '$425.00' },
         { label: 'Payment plan', value: 'Active' },
-        { label: 'Last payment', value: '$450 — Oct 28' },
+        { label: 'Last payment', value: '$450 â€” Oct 28' },
         { label: 'Next due date', value: 'Nov 15' },
       ],
       details: [
         'November tuition and activity fee statement posted',
-        'Payment plan is active — $450/month recurring',
+        'Payment plan is active â€” $450/month recurring',
         'Last payment of $450 received October 28',
         'Contact business office to adjust payment schedule',
       ],
@@ -175,8 +178,8 @@ export default {
         { label: 'Chapel schedule', value: 'Wednesday' },
       ],
       details: [
-        'Aiden: Science museum field trip — permission due Friday',
-        'Wednesday chapel at 9:00 AM — all students attend',
+        'Aiden: Science museum field trip â€” permission due Friday',
+        'Wednesday chapel at 9:00 AM â€” all students attend',
         'Sophie: band concert next Tuesday at 7:00 PM',
         'No parent-teacher conferences this week',
       ],
@@ -195,10 +198,10 @@ export default {
       mainKpi: 'Both students active',
       summary: 'Aiden and Sophie are both enrolled and active for the current academic year.',
       kpis: [
-        { label: 'Aiden — Grade 8', value: '88.6% avg' },
-        { label: 'Sophie — Grade 5', value: '93.1% avg' },
+        { label: 'Aiden â€” Grade 8', value: '88.6% avg' },
+        { label: 'Sophie â€” Grade 5', value: '93.1% avg' },
         { label: 'Service hours (Aiden)', value: '12 / 20 hrs' },
-        { label: 'Service hours (Sophie)', value: 'N/A — Grade 5' },
+        { label: 'Service hours (Sophie)', value: 'N/A â€” Grade 5' },
       ],
       details: [
         'Aiden: on track for service hour requirement completion',
@@ -217,13 +220,13 @@ export default {
   trendPanels: [
     {
       kicker: 'Academic trend',
-      title: 'Combined academic average — both students',
+      title: 'Combined academic average â€” both students',
       chip: 'Last 7 months',
       trend: ACADEMIC_TREND,
     },
     {
       kicker: 'Attendance trend',
-      title: 'Family attendance rate — semester',
+      title: 'Family attendance rate â€” semester',
       chip: 'Consistently above 96%',
       trend: FAMILY_ATTENDANCE_TREND,
     },
@@ -235,7 +238,7 @@ export default {
     'Sophie submitted math homework before the 9 PM deadline.',
     'Field trip permission reminder received for Aiden.',
     'Weekly parent bulletin from principal opened.',
-    'Aiden\'s Algebra quiz result posted — 72%.',
+    'Aiden\'s Algebra quiz result posted â€” 72%.',
     'November billing statement available in parent portal.',
   ],
 

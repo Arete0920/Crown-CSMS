@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const CONTROL_TREND = [
   { month: 'Aug', value: 68 }, { month: 'Sep', value: 72 }, { month: 'Oct', value: 76 },
@@ -16,11 +16,14 @@ export default {
   activePath: '/compliance-audit-dashboard',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 2,
-  user: { initials: 'CA', name: 'Compliance & Audit', role: 'Platform — Compliance Monitoring & Internal Audit' },
+  user: { initials: 'CA', name: 'Compliance & Audit', role: 'Platform â€” Compliance Monitoring & Internal Audit' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Compliance Team!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/complianceAudit/summary/',
+  liveDataKey: 'complianceAudit',
 
   metrics: [
     { label: 'Active Audits', value: '3', detail: 'Diocese, State Accreditation, and SOC2 Type II in progress.', accent: 'navy' },
@@ -30,50 +33,50 @@ export default {
   ],
 
   priorities: [
-    { title: 'Submit Diocese audit evidence package', detail: 'Diocese audit window April 14–18 — evidence due April 13.', state: 'This week', tone: 'warn' },
+    { title: 'Submit Diocese audit evidence package', detail: 'Diocese audit window April 14â€“18 â€” evidence due April 13.', state: 'This week', tone: 'warn' },
     { title: 'Remediate 4 open findings', detail: 'All 4 findings need documented remediation plans by April 20.', state: 'This week', tone: 'warn' },
-    { title: 'Schedule 6 upcoming compliance reviews', detail: 'State, diocese, and internal — all due in 30 days.', state: 'This week', tone: 'nominal' },
+    { title: 'Schedule 6 upcoming compliance reviews', detail: 'State, diocese, and internal â€” all due in 30 days.', state: 'This week', tone: 'nominal' },
   ],
   prioritiesTitle: 'Compliance priorities',
 
   alerts: [
-    { title: 'Diocese evidence package due April 13', detail: 'Audit window April 14–18 — final evidence submission deadline.', tone: 'warn' },
-    { title: '4 open findings need remediation plans', detail: 'Plans due April 20 — assign owners today.', tone: 'warn' },
+    { title: 'Diocese evidence package due April 13', detail: 'Audit window April 14â€“18 â€” final evidence submission deadline.', tone: 'warn' },
+    { title: '4 open findings need remediation plans', detail: 'Plans due April 20 â€” assign owners today.', tone: 'warn' },
   ],
 
   commandModules: [
     { key: 'audits', icon: 'AU', title: 'Active Audits', status: 'In Progress', statusTone: 'warn',
-      mainKpi: '3 active audits — Diocese, State, SOC2', summary: 'Diocese most urgent — evidence due April 13.',
+      mainKpi: '3 active audits â€” Diocese, State, SOC2', summary: 'Diocese most urgent â€” evidence due April 13.',
       kpis: [{ label: 'Active', value: '3' }, { label: 'Diocese', value: 'Due Apr 13' }, { label: 'State Accred.', value: 'May 1' }, { label: 'SOC2 Type II', value: 'June 15' }],
-      details: ['Diocese audit: evidence package due April 13', 'State accreditation: evidence due May 1', 'SOC2 Type II: fieldwork June 15–30', 'All three auditors confirmed'],
+      details: ['Diocese audit: evidence package due April 13', 'State accreditation: evidence due May 1', 'SOC2 Type II: fieldwork June 15â€“30', 'All three auditors confirmed'],
       primaryActionLabel: 'Audit Tracker', backActionLabel: 'Evidence',
       primaryActionHref: '/compliance-audit-dashboard', backActionHref: '/compliance-audit-dashboard', lastUpdated: '8:00 AM' },
     { key: 'controls', icon: 'CT', title: 'Controls', status: 'Good', statusTone: 'good',
-      mainKpi: '86/100 controls passing', summary: 'Control framework trending upward — 14 needing attention.',
+      mainKpi: '86/100 controls passing', summary: 'Control framework trending upward â€” 14 needing attention.',
       kpis: [{ label: 'Passing', value: '86' }, { label: 'Total', value: '100' }, { label: 'Failing', value: '4' }, { label: 'Testing', value: '10' }],
-      details: ['86 controls passing', '4 controls with open findings', '10 controls in active testing cycle', 'Control score: 86 — up 18 points YOY'],
+      details: ['86 controls passing', '4 controls with open findings', '10 controls in active testing cycle', 'Control score: 86 â€” up 18 points YOY'],
       primaryActionLabel: 'Control Matrix', backActionLabel: 'Test Results',
       primaryActionHref: '/compliance-audit-dashboard', backActionHref: '/compliance-audit-dashboard', lastUpdated: '8:05 AM' },
     { key: 'findings', icon: 'FN', title: 'Findings', status: 'Action Required', statusTone: 'warn',
-      mainKpi: '4 open findings — plans due April 20', summary: 'Assign owners and document remediation plans.',
+      mainKpi: '4 open findings â€” plans due April 20', summary: 'Assign owners and document remediation plans.',
       kpis: [{ label: 'Open', value: '4' }, { label: 'Critical', value: '1' }, { label: 'Moderate', value: '3' }, { label: 'Plans Due', value: 'Apr 20' }],
-      details: ['Finding F-01 (Critical): Access control exception — assign April 15', 'Finding F-02: Training record gaps — moderate', 'Finding F-03: Data retention policy — moderate', 'Finding F-04: Vendor assessment — moderate'],
+      details: ['Finding F-01 (Critical): Access control exception â€” assign April 15', 'Finding F-02: Training record gaps â€” moderate', 'Finding F-03: Data retention policy â€” moderate', 'Finding F-04: Vendor assessment â€” moderate'],
       primaryActionLabel: 'Finding Register', backActionLabel: 'Assign Owners',
       primaryActionHref: '/compliance-audit-dashboard', backActionHref: '/compliance-audit-dashboard', lastUpdated: '8:10 AM' },
     { key: 'reviews', icon: 'RV', title: 'Compliance Reviews', status: 'Due Soon', statusTone: 'warn',
-      mainKpi: '6 reviews due in 30 days', summary: 'Schedule all 6 — diocese, state, and internal cycles.',
+      mainKpi: '6 reviews due in 30 days', summary: 'Schedule all 6 â€” diocese, state, and internal cycles.',
       kpis: [{ label: 'Due (30d)', value: '6' }, { label: 'Diocese', value: '2' }, { label: 'State', value: '2' }, { label: 'Internal', value: '2' }],
       details: ['2 diocese compliance reviews due', '2 state regulatory reviews due', '2 internal control reviews scheduled', 'Review calendar updated and assigned'],
       primaryActionLabel: 'Review Schedule', backActionLabel: 'Compliance Calendar',
       primaryActionHref: '/compliance-audit-dashboard', backActionHref: '/compliance-audit-dashboard', lastUpdated: '8:15 AM' },
     { key: 'evidence', icon: 'EV', title: 'Evidence Management', status: 'Active', statusTone: 'good',
-      mainKpi: 'Evidence collection active for all 3 audits', summary: 'Diocese package 80% complete — due April 13.',
+      mainKpi: 'Evidence collection active for all 3 audits', summary: 'Diocese package 80% complete â€” due April 13.',
       kpis: [{ label: 'Diocese Package', value: '80%' }, { label: 'State Package', value: '40%' }, { label: 'SOC2 Package', value: '20%' }, { label: 'Docs Collected', value: '184' }],
-      details: ['184 evidence documents collected YTD', 'Diocese: 80% — final 5 docs due tomorrow', 'State accreditation: 40% — on track for May 1', 'SOC2: 20% — fieldwork begins June 15'],
+      details: ['184 evidence documents collected YTD', 'Diocese: 80% â€” final 5 docs due tomorrow', 'State accreditation: 40% â€” on track for May 1', 'SOC2: 20% â€” fieldwork begins June 15'],
       primaryActionLabel: 'Evidence Vault', backActionLabel: 'Upload',
       primaryActionHref: '/compliance-audit-dashboard', backActionHref: '/compliance-audit-dashboard', lastUpdated: '8:20 AM' },
     { key: 'policies', icon: 'PL', title: 'Policy Management', status: 'Current', statusTone: 'good',
-      mainKpi: 'All policies reviewed and current', summary: 'Annual policy review complete — next cycle August.',
+      mainKpi: 'All policies reviewed and current', summary: 'Annual policy review complete â€” next cycle August.',
       kpis: [{ label: 'Policies Active', value: '42' }, { label: 'Reviewed', value: '42' }, { label: 'Updates', value: '6' }, { label: 'Next Review', value: 'Aug 2026' }],
       details: ['42 active organizational policies', '6 policies updated in annual review', 'Data retention policy: minor update pending', 'All policies posted to staff portal'],
       primaryActionLabel: 'Policy Library', backActionLabel: 'Review History',
@@ -86,11 +89,11 @@ export default {
   ],
 
   activities: [
-    'Diocese audit evidence package at 80% — due April 13.',
-    '4 open findings assigned owners — remediation plans due April 20.',
+    'Diocese audit evidence package at 80% â€” due April 13.',
+    '4 open findings assigned owners â€” remediation plans due April 20.',
     '6 compliance reviews scheduled for next 30 days.',
     'SOC2 Type II fieldwork confirmed for June 15.',
-    'Annual policy review complete — 6 policies updated.',
+    'Annual policy review complete â€” 6 policies updated.',
   ],
 
   quickActions: [
