@@ -1,0 +1,14 @@
+=== BLOCK 3 REPLAY MANIFEST ===
+replay_root=audit-artifacts/final-95-plus-sprint/20260531_071710
+
+07_tenant_isolation.txt :: tenant_isolation_exit=0
+08_admissions_endpoints.txt :: (sparse output; see 08c)
+08c_admissions_endpoints_diagnostic.txt :: admissions_endpoints_diag_exit=0
+09_aftercare.txt :: aftercare_exit=4 (incorrect path in initial retry)
+09c_aftercare_diagnostic.txt :: aftercare_diag_exit=0
+10_later_tier_metrics.txt :: (sparse output; see 10c)
+10c_later_tier_metrics_diagnostic.txt :: later_tier_metrics_diag_exit=0
+
+notes:
+- This replay encountered shell-specific pipeline capture instability with Tee-Object.
+- Diagnostic files (08c/09c/10c) are authoritative for pass/fail in this root.

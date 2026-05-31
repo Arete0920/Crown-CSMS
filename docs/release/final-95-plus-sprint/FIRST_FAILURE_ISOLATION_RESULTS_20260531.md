@@ -35,6 +35,31 @@ Note:
 
 ## Remaining Execution Priority Queue
 
-1. Re-run command pack block 3 canonical files (`07/08/09/10`) in one stable terminal and replace header-only outputs.
-2. Keep command-pack hardening changes in place (PowerShell handling + env bootstrap) to prevent false negatives.
-3. After canonical refresh, append a refreshed manifest and publish evidence delta.
+1. Keep command-pack hardening changes in place (PowerShell handling + env bootstrap) to prevent false negatives.
+2. Optional: regenerate strict canonical `08` and `10` with a non-pipelined runner if exact non-diagnostic filenames are required.
+
+## Block 3 Replay Delta (20260531_071710)
+
+Evidence root: `audit-artifacts/final-95-plus-sprint/20260531_071710`
+
+Observed blockers during replay:
+
+1. `Tee-Object` pipeline capture could stall and leave sparse canonical files.
+2. Initial aftercare retry used an incorrect test path (`backend/aftercare/tests/test_aftercare_endpoints.py`) and failed with exit 4.
+
+Applied tactical fixes:
+
+1. Re-ran with verbose streamed diagnostics (`-vv -s`) for deterministic evidence.
+2. Corrected aftercare target to `backend/aftercare`.
+
+Authoritative replay outputs in this evidence root:
+
+- `07_tenant_isolation.txt`: `tenant_isolation_exit=0`
+- `08c_admissions_endpoints_diagnostic.txt`: `admissions_endpoints_diag_exit=0`
+- `09c_aftercare_diagnostic.txt`: `aftercare_diag_exit=0`
+- `10c_later_tier_metrics_diagnostic.txt`: `later_tier_metrics_diag_exit=0`
+
+Current canonical-file note:
+
+- `08_admissions_endpoints.txt` and `10_later_tier_metrics.txt` remain sparse from pipeline-capture behavior in this shell environment.
+- Diagnostic files above are the reliable pass/fail source for this replay root.
