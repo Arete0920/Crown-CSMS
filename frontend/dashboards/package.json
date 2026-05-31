@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:unit": "vitest run src",
-    "test:contracts": "vitest run src/tests/writeFlowContract.test.jsx src/tests/permissionContract.test.js src/tests/routeContract.test.jsx src/tests/sidebarContract.test.jsx src/tests/roleGuard.test.jsx src/tests/dashboardCardContract.test.jsx src/tests/apiContractRegistry.test.js src/tests/navigationSurfaceContract.test.js",
+    "test:contracts": "vitest run src/tests/writeFlowContract.test.jsx src/tests/permissionContract.test.js src/tests/routeContract.test.jsx src/tests/sidebarContract.test.jsx src/tests/roleGuard.test.jsx src/tests/dashboardCardContract.test.jsx src/tests/apiContractRegistry.test.js src/tests/navigationSurfaceContract.test.js src/tests/parentStatusCenterScaffold.test.jsx",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test:e2e": "playwright test",

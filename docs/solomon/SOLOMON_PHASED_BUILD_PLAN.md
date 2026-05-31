@@ -2,6 +2,9 @@
 
 Status: Planning Only
 
+Strategic directive reference:
+- `docs/solomon/SOLOMON_COMPREHENSIVE_PLATFORM_BUILD_PLAN_20260529.md`
+
 ## Phase 0 - Planning
 
 Create canonical architecture, module boundaries, governance model, build plan, and integration rules.

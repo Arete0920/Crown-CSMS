@@ -28,7 +28,7 @@ export default function CrownInsightPanel({ kicker = 'Insight', title, chip, tre
         ) : isTestRuntime ? (
           <div className="launch-chart-test-fallback" aria-hidden="true" />
         ) : (
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
+          <ResponsiveContainer width="100%" height={240} minWidth={320} minHeight={220}>
             <LineChart data={trend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid stroke="#E2E8F0" strokeDasharray="4 6" vertical={false} />
               <XAxis dataKey="month" stroke="#94A3B8" tickLine={false} axisLine={false} />

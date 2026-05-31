@@ -1,5 +1,14 @@
 # Pilot and Investor Readiness Proof Pack
 
+Authority Scope Notice (2026-05-29)
+
+This document is a readiness proof-pack artifact and not a controlling repository-level release authority source.
+
+Current controlling release-authority sources:
+
+- docs/CURRENT_RELEASE_STATUS.md
+- docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Status: Packaging and evidence playbook
 Updated: 2026-04-14
 
@@ -49,11 +58,13 @@ Final production-ready release claim only when all are true:
 ## Messaging Discipline
 
 Use:
+
 - "evidence-backed release candidate"
 - "proof-backed release candidate"
 - "staged expansion model"
 
 Avoid:
+
 - "fully complete platform"
 - "all workflows production-hardened" (unless proven)
 
@@ -92,5 +103,3 @@ Avoid:
 ### 10. Master Priority Ladder Dashboard
 
 - docs/release/CROWN_MASTER_PRIORITY_LADDER_DASHBOARD.md
-
-

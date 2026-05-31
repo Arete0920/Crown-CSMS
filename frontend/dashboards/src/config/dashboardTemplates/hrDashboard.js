@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const STAFF_TREND = [
   { month: 'Aug', value: 48 }, { month: 'Sep', value: 52 }, { month: 'Oct', value: 54 },
   { month: 'Nov', value: 54 }, { month: 'Dec', value: 53 }, { month: 'Jan', value: 56 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, HR Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'HR widgets currently use template snapshots pending live human resources service integration.',
+  note: 'Certification remains in review until HR metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Staff Count', value: '58', detail: '42 FT, 16 PT — all positions active.', accent: 'blue' },

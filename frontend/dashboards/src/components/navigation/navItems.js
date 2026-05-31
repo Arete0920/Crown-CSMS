@@ -11,6 +11,7 @@ export const navItems = [
   { label: 'Attendance', href: PATHS.ATTENDANCE, roles: ROLE_GROUPS.ACADEMIC_TEAM, permissions: [APP_PERMISSIONS.ATTENDANCE_VIEW] },
   { label: 'Gradebook', href: PATHS.GRADEBOOK, roles: ROLE_GROUPS.ACADEMIC_TEAM, permissions: [APP_PERMISSIONS.GRADEBOOK_VIEW] },
   { label: 'Daycare / Aftercare', href: PATHS.EXTENDED_CARE_DASHBOARD, roles: ROLE_GROUPS.AFTERCARE_STAFF, permissions: [APP_PERMISSIONS.AFTERCARE_VIEW] },
+  { label: 'Summer Camp', href: PATHS.SUMMER_CAMP_DASHBOARD, roles: ROLE_GROUPS.SUMMER_CAMP_TEAM, permissions: [APP_PERMISSIONS.SUMMER_CAMP_VIEW] },
   { label: 'Communications', href: PATHS.COMMUNICATIONS, roles: ROLE_GROUPS.ALL_AUTHENTICATED, permissions: [APP_PERMISSIONS.COMMUNICATIONS_VIEW] },
   { label: 'Reporting', href: PATHS.REPORTING, roles: ROLE_GROUPS.ADMIN_ONLY, permissions: [APP_PERMISSIONS.REPORTING_VIEW] },
   { label: 'System Status', href: PATHS.SYSTEM_STATUS, roles: ROLE_GROUPS.ADMIN_ONLY, permissions: [APP_PERMISSIONS.SYSTEM_VIEW] },

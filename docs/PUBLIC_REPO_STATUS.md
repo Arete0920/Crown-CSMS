@@ -1,9 +1,13 @@
 ﻿# CROWN Public Repository Status
 
+Superseded: This file is a historical snapshot from 2026-05-06.
+Current authority: docs/CURRENT_RELEASE_STATUS.md
+Do not use this file alone for current go/no-go decisions.
+
 Date: 2026-05-06
 Public posture: Integrity hold
 
-## Current state (authoritative)
+## Historical state (2026-05-06 snapshot)
 
 - CROWN is not GA.
 - CROWN is not yet pilot-approved.

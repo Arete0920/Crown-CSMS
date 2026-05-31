@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
 import { HomeDashboard } from './HomeDashboard.jsx';
 import { getAccessToken } from '../utils/authClient.js';
@@ -101,6 +100,9 @@ const ROLE_ROUTE_MAP = new Map([
   ['office_manager',    '/office'],
   ['hr',                '/office'],
   // Admin — route to /admin; router.jsx redirects /admin → /school-admin-dashboard in sandbox mode
+  ['school_admin',      '/admin'],
+  ['super_admin',       '/admin'],
+  ['head_of_school',    '/admin'],
   ['admin',             '/admin'],
   ['director',          '/admin'],
   ['principal',         '/admin'],
@@ -141,23 +143,22 @@ function resolveDashboardPath() {
 }
 
 export default function RoleHomeRedirect() {
-  const navigate = useNavigate();
   const token = getAccessToken();
 
   // Hard redirect for sandbox admins
   const isSandbox = Boolean(import.meta.env.VITE_DEMO_MODE === "sandbox" || import.meta.env.VITE_SANDBOX_MODE === "1");
   const role = getStoredRole();
-  useEffect(() => {
-    if (isSandbox && role === "school_admin") navigate("/school-admin-dashboard");
-  }, [isSandbox, role, navigate]);
+  const sandboxTarget = isSandbox && role === "school_admin" ? "/school-admin-dashboard" : "";
+  const hasAuthHints = Boolean(token || role);
+  const resolvedTarget = hasAuthHints ? resolveDashboardPath() : "";
 
-  useEffect(() => {
-    if (!token) return;
-    const target = resolveDashboardPath();
-    if (target !== '/') {
-      navigate(target, { replace: true });
-    }
-  }, [navigate, token]);
+  if (sandboxTarget) {
+    return <Navigate to={sandboxTarget} replace />;
+  }
+
+  if (resolvedTarget && resolvedTarget !== '/') {
+    return <Navigate to={resolvedTarget} replace />;
+  }
 
   return <HomeDashboard />;
 }

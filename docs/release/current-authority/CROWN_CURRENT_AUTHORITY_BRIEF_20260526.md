@@ -1,5 +1,13 @@
 # CROWN Current Authority Brief (2026-05-26)
 
+> Superseded Authority Notice (2026-05-29)
+>
+> This document is a historical authority brief snapshot and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## 1) Verified Release / Governance Status
 
 ### Authoritative state

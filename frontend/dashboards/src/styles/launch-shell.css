@@ -923,6 +923,110 @@
 }
 /* ── end Faith & Community ──────────────────────────────── */
 
+/* ── Communications strip ──────────────────────────────── */
+.launch-communications-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.launch-communications-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+}
+
+.launch-communications-card--inbox {
+  border-top: 3px solid var(--launch-royal);
+}
+
+.launch-communications-card--announcements {
+  border-top: 3px solid var(--launch-gold);
+}
+
+.launch-communications-card--alerts {
+  border-top: 3px solid #dc2626;
+}
+
+.launch-communications-title {
+  margin: 4px 0 6px !important;
+  color: #1d4a9b;
+}
+
+.launch-communications-summary {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #315da9;
+}
+
+.launch-communications-list {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  list-style: disc;
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+
+.launch-communications-list li {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #1e3a8a;
+}
+
+.launch-communications-empty {
+  font-size: 0.85rem;
+  color: #315da9;
+  font-style: italic;
+  flex: 1;
+}
+
+.launch-communications-action {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+/* ── Data truth status ─────────────────────────────────── */
+.launch-data-truth-status {
+  margin: 14px 0 16px;
+  padding: 14px 18px;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.launch-data-truth-status-copy h3 {
+  margin: 4px 0 6px;
+  color: #1d4a9b;
+}
+
+.launch-data-truth-status-copy p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #315da9;
+}
+
+.launch-data-truth-status-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.launch-data-truth-sync {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #315da9;
+}
+
 .launch-command-grid {
   align-items: stretch;
 }
@@ -1128,6 +1232,7 @@
 }
 
 .launch-chart-card {
+  min-height: 320px;
   background:
     radial-gradient(circle at 100% -30%, rgba(37, 99, 235, 0.1), transparent 42%),
     #ffffff;
@@ -1712,6 +1817,19 @@
     grid-template-columns: 1fr;
   }
 
+  .launch-communications-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .launch-data-truth-status {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .launch-data-truth-status-meta {
+    justify-content: flex-start;
+  }
+
   .launch-right-rail {
     grid-column: auto;
     padding: 0 14px 24px;
@@ -1768,5 +1886,132 @@
   .launch-activity-time,
   .launch-activity-state {
     margin-left: 20px;
+  }
+}
+
+.launch-decision-panel {
+  margin-bottom: 1.25rem;
+}
+
+.launch-decision-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.launch-decision-panel-header h3 {
+  margin: 0.15rem 0 0.35rem;
+}
+
+.launch-decision-panel-header p {
+  margin: 0;
+  max-width: 48rem;
+  color: rgba(30, 41, 59, 0.78);
+}
+
+.launch-decision-panel-metric {
+  min-width: 7.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(180, 138, 43, 0.28);
+  background: rgba(180, 138, 43, 0.08);
+  text-align: center;
+}
+
+.launch-decision-panel-metric strong {
+  display: block;
+  font-size: 1.85rem;
+  line-height: 1;
+  color: #1f2a44;
+}
+
+.launch-decision-panel-metric span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(30, 41, 59, 0.72);
+}
+
+.launch-decision-panel-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.launch-decision-panel-grid a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.launch-decision-item {
+  height: 100%;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.78);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.launch-decision-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(31, 42, 68, 0.28);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.launch-decision-item.is-warn {
+  border-color: rgba(180, 138, 43, 0.35);
+  background: rgba(180, 138, 43, 0.07);
+}
+
+.launch-decision-item.is-good {
+  border-color: rgba(16, 121, 91, 0.25);
+  background: rgba(16, 121, 91, 0.06);
+}
+
+.launch-decision-item-value {
+  display: block;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #1f2a44;
+}
+
+.launch-decision-item-label {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #1f2a44;
+}
+
+.launch-decision-item small {
+  display: block;
+  margin-top: 0.4rem;
+  line-height: 1.35;
+  color: rgba(30, 41, 59, 0.72);
+}
+
+@media (max-width: 980px) {
+  .launch-decision-panel-header {
+    flex-direction: column;
+  }
+
+  .launch-decision-panel-metric {
+    width: 100%;
+    text-align: left;
+  }
+
+  .launch-decision-panel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .launch-decision-panel-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,5 +1,13 @@
 ﻿# CROWN Execution Control Room Summary
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is an operational execution snapshot and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-05-01T02:33:33
 
 - Repo: C:\w\crown_main_postmerge_verify

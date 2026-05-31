@@ -1,4 +1,4 @@
-import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+import { BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'attendance',
@@ -7,7 +7,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Attendance Overview',
   subtitle: 'Daily attendance completion and intervention tracking',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Attendance metrics are currently dashboard-template fallbacks pending live service wiring.',
+  note: 'Dashboard certification remains in review until attendance widgets are bound to canonical runtime services.',
   metrics: [
     { label: 'Present Today', value: '1,201', detail: '94 students marked absent or tardy.', accent: 'blue' },
     { label: 'Homerooms Posted', value: '100%', detail: 'All divisions reported before 8:30 AM.', accent: 'emerald' },

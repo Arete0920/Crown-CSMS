@@ -1,5 +1,13 @@
 # NEXT ACTION SUMMARY
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational next-step summary and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 1. Run freeze reconciliation script:
    - `powershell -ExecutionPolicy Bypass -File scripts/release/29_reconcile_after_freeze.ps1`
 2. Verify missing inventory:

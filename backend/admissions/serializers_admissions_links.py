@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 
 from admissions.models import AdmissionsApplication
 
@@ -62,6 +63,7 @@ class AdmissionsApplicationLinkReadSerializer(serializers.ModelSerializer):
         contacts.sort(key=lambda c: (not c["is_primary"], c["name"].lower()))
         return contacts
 
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_guardian_contacts(self, obj):
         return self._guardian_contacts_for_obj(obj)
 
@@ -71,12 +73,15 @@ class AdmissionsApplicationLinkReadSerializer(serializers.ModelSerializer):
             return {}
         return contacts[0]
 
+    @extend_schema_field(serializers.CharField())
     def get_primary_guardian_name(self, obj):
         return self._get_primary_guardian(obj).get("name", "")
 
+    @extend_schema_field(serializers.CharField())
     def get_primary_guardian_email(self, obj):
         return self._get_primary_guardian(obj).get("email", "")
 
+    @extend_schema_field(serializers.CharField())
     def get_primary_guardian_phone(self, obj):
         return self._get_primary_guardian(obj).get("phone", "")
 

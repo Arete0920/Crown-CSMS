@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const PART_TREND = [
   { month: 'Aug', value: 180 }, { month: 'Sep', value: 214 }, { month: 'Oct', value: 228 },
   { month: 'Nov', value: 219 }, { month: 'Dec', value: 231 }, { month: 'Jan', value: 244 },
@@ -20,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Activities Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Activities and athletics widgets currently use template snapshots pending live program service integration.',
+  note: 'Certification remains in review until activities and athletics metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Active Programs', value: '22', detail: '14 athletic, 8 activity clubs — all active.', accent: 'blue' },

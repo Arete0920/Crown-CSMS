@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const MEALS_TREND = [
   { month: 'Sep', value: 268 }, { month: 'Oct', value: 274 }, { month: 'Nov', value: 281 },
   { month: 'Dec', value: 270 }, { month: 'Jan', value: 285 }, { month: 'Feb', value: 287 }, { month: 'Mar', value: 290 },
@@ -18,7 +16,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Food Services!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Food service widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until food service metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Meals Served Today', value: '287', detail: 'Above 4-day average — supply on hand sufficient.', accent: 'emerald' },

@@ -1,5 +1,3 @@
-import { BASE_NOTE } from './_baseData.js';
-
 const REQUEST_TREND = [
   { month: 'Sep', value: 6 }, { month: 'Oct', value: 7 }, { month: 'Nov', value: 9 },
   { month: 'Dec', value: 5 }, { month: 'Jan', value: 7 }, { month: 'Feb', value: 8 }, { month: 'Mar', value: 8 },
@@ -18,7 +16,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Registrar!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Registrar dashboard widgets currently use template snapshots pending live registrar service integration.',
+  note: 'Certification remains in review until registrar metrics are sourced from canonical runtime endpoints.',
 
   metrics: [
     { label: 'Enrollment Total', value: '412', detail: 'Snapshot Feb 26 — verified active enrollment.', accent: 'navy' },

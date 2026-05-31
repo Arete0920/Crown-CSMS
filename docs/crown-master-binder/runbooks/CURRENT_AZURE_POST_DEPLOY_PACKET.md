@@ -1,5 +1,13 @@
 ﻿# Azure / DevOps - Post-Deploy Proof Packet
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is an operational post-deploy packet and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Generated: 2026-05-01T02:33:33
 
 ## Status
@@ -31,4 +39,5 @@ b9dad81
 
 `powershell
 powershell -ExecutionPolicy Bypass -File scripts\execution\270_post_azure_live_proof.ps1
-`
+`
+

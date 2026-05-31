@@ -41,7 +41,7 @@ describe('release route hardening contract', () => {
   it('guards /teacher/attendance with academic team roles', () => {
     const block = extractRouteBlock('/teacher/attendance');
     expect(block.includes('<RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>')).toBe(true);
-    expect(block.includes('<AttendanceDashboard />')).toBe(true);
+    expect(block.includes('<TeacherAttendancePage />')).toBe(true);
   });
 
   it('guards /teacher with academic team roles', () => {
@@ -56,26 +56,58 @@ describe('release route hardening contract', () => {
     expect(block.includes('<TeacherDashboard />')).toBe(true);
   });
 
-  it('guards /parent/attendance with family-view roles', () => {
+  it('guards /parent/attendance with parent route guard', () => {
     const block = extractRouteBlock('/parent/attendance');
-    expect(block.includes('<RoleGuard allowedRoles={ROLE_GROUPS.FAMILY_VIEW}>')).toBe(true);
-    expect(block.includes('<AttendanceDashboard />')).toBe(true);
+    expect(block.includes('<RoleRouteGuard allowedRoles={["parent"]}>')).toBe(true);
+    expect(block.includes('<ParentAttendancePage />')).toBe(true);
+  });
+
+  it('guards /parent with parent route guard', () => {
+    const block = extractRouteBlock('/parent');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["parent"]}>')).toBe(true);
+    expect(block.includes('<ParentDashboard />')).toBe(true);
+  });
+
+  it('guards /parent/dashboard with parent route guard', () => {
+    const block = extractRouteBlock('/parent/dashboard');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["parent"]}>')).toBe(true);
+    expect(block.includes('<ParentDashboard />')).toBe(true);
+  });
+
+  it('guards PATHS.STUDENT with student route guard', () => {
+    const block = extractRouteBlockByNeedle('path: PATHS.STUDENT,');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["student"]}>')).toBe(true);
+    expect(block.includes('<StudentDashboard />')).toBe(true);
+  });
+
+  it('guards /student/dashboard with student route guard', () => {
+    const block = extractRouteBlock('/student/dashboard');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["student"]}>')).toBe(true);
+    expect(block.includes('<StudentDashboard />')).toBe(true);
+  });
+
+  it('guards /parent/students/:id with parent route guard and journey gate', () => {
+    const block = extractRouteBlock('/parent/students/:id');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["parent"]}>')).toBe(true);
+    expect(block.includes('<ParentJourneyRouteGuard stage="activeStudent">')).toBe(true);
+    expect(block.includes('<ParentStudent360Page />')).toBe(true);
   });
 
   it('keeps /teacher/lesson-plans guarded for academic team', () => {
     const block = extractRouteBlock('/teacher/lesson-plans');
     expect(block.includes('<RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>')).toBe(true);
-    expect(block.includes('<TeacherWorkflowPending workflowName="Lesson Plans" />')).toBe(true);
-  });
-
-  it('keeps /classrooms guarded for academic team', () => {
-    const block = extractRouteBlockByNeedle('path: PATHS.CLASSROOMS,');
-    expect(block.includes('<RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>')).toBe(true);
     expect(block.includes('<ClassroomsDashboard />')).toBe(true);
   });
 
-  it('keeps /teacher/scope-sequence guarded for academic team', () => {
-    const block = extractRouteBlock('/teacher/scope-sequence');
+  it('keeps /classrooms guarded for parent journey access', () => {
+    const block = extractRouteBlockByNeedle('path: PATHS.CLASSROOMS,');
+    expect(block.includes('<RoleRouteGuard allowedRoles={["parent"]}>')).toBe(true);
+    expect(block.includes('<ParentJourneyRouteGuard stage="classAssignment">')).toBe(true);
+    expect(block.includes('<ClassroomsDashboard />')).toBe(true);
+  });
+
+  it('keeps /teacher/curriculum guarded for academic team', () => {
+    const block = extractRouteBlock('/teacher/curriculum');
     expect(block.includes('<RoleGuard allowedRoles={ROLE_GROUPS.ACADEMIC_TEAM}>')).toBe(true);
     expect(block.includes('<CurriculumPDDashboard />')).toBe(true);
   });

@@ -1,5 +1,13 @@
 ﻿# CROWN Release Authority Integrity Hold
 
+> Superseded Authority Notice (2026-05-30)
+>
+> This document is historical and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Date: 2026-05-21
 State: HOLD LIFTED
 

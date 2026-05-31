@@ -1,5 +1,13 @@
 # CROWN Current Authority Brief - Executive One-Page (2026-05-26)
 
+> Superseded Authority Notice (2026-05-29)
+>
+> This document is a historical authority brief snapshot and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Executive Decision
 - Release authority posture for this slice is `FINAL GO`.
 - Runtime governance + dashboard truth closure was merged via PR #854.

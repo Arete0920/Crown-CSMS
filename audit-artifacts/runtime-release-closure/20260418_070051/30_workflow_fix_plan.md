@@ -84,3 +84,61 @@ All 8 issues resolved. Infrastructure ready. Zero blockers identified.
 
 **Prepared**: 2026-04-25  
 **Status**: Ready for implementation
+
+## 2026-05-26 Executive Delta (Current Authority)
+
+This section supersedes the earlier "zero blockers" conclusion for dashboard release credibility.
+
+### Current Executive Judgment
+
+- Directionally strong architecture: shared persona template, faith/community strip, role-specific module model.
+- Primary blocker remains: production-facing truth-state credibility is inconsistent.
+- Root issue: widespread template fallback messaging and no universal communications strip.
+
+### Live Evidence Snapshot
+
+- Shared template still renders generic note banner from per-dashboard config: `launch-sandbox-banner` in `CrownDashboardTemplate`.
+- Many dashboard templates still use `BASE_NOTE` from `_baseData.js`.
+- Data truth pills exist on metric cards and module cards (`Live/Fallback/Loading/Unavailable`) but are not reinforced with page-level sync disclosure.
+- Parent route hardening and parent note correction were implemented in current cycle.
+
+### Release Blockers (Must Close Before Production-Grade Claim)
+
+1. Replace production-facing sandbox note usage on persona dashboards with truth-state component behavior.
+2. Add page-level data truth footer/header per persona: state + source + last synced.
+3. Add universal communications strip to the shared template (same enforcement level as faith/community strip).
+4. Ensure planned/inactive workflows are visually differentiated from active workflows.
+5. Enforce route-guard contracts for all sensitive parent/teacher/student detail routes.
+
+### Blocker-First Implementation Order
+
+1. Template truth hardening
+- Add shared data-truth component at template level.
+- Require explicit `dataState`, `sourceLabel`, and `lastSyncLabel` defaults per dashboard.
+
+2. Sandbox-note containment
+- Restrict generic preview note wording to launch-preview-only contexts.
+- Migrate persona dashboards to production-safe notes or no note when live-backed.
+
+3. Universal communications spine
+- Add `CrownCommunicationsStrip` to shared template.
+- Feed each persona with unread/action-required/urgent counts.
+
+4. Workflow truth UX
+- Add `Planned/Not Active` badge style and disabled action behavior for non-live flows.
+
+5. Contract and proof
+- Expand release-hardening contracts for parent/teacher/admin route and truth-state requirements.
+- Capture focused vitest proof packet for all newly enforced contracts.
+
+### Acceptance Gates
+
+- Gate A: No production persona dashboard displays generic sandbox copy.
+- Gate B: Every persona page shows page-level data truth and last-sync disclosure.
+- Gate C: Every persona page includes both faith/community and communications strips.
+- Gate D: Planned workflows cannot appear visually equivalent to active workflows.
+- Gate E: Route-guard contract tests pass for all sensitive role routes.
+
+### Status
+
+- Repository-level dashboard posture: CONDITIONAL NO-GO until Gates A-E are evidenced.

@@ -3,10 +3,11 @@ import type { DashboardApiPayload, DashboardRoleKey } from "./dashboardTypes";
 import { getDashboardProfile, requiredSharedDashboardCards } from "./roleDashboardMatrix";
 import { loadRoleDashboardPayload } from "./dashboardApi";
 import { SharedDashboardWidgets } from "./shared/SharedDashboardWidgets";
+import LearningContinuityPanel from "./LearningContinuityPanel";
 import "./crown-dashboard.css";
 
 interface RoleDashboardProps {
-  roleKey: DashboardRoleKey;
+  readonly roleKey: DashboardRoleKey;
 }
 
 function urgencyLabel(urgency: string) {
@@ -22,7 +23,7 @@ function urgencyLabel(urgency: string) {
   }
 }
 
-export function RoleDashboard({ roleKey }: RoleDashboardProps) {
+export function RoleDashboard({ roleKey }: Readonly<RoleDashboardProps>) {
   const profile = useMemo(() => getDashboardProfile(roleKey), [roleKey]);
   const [payload, setPayload] = useState<DashboardApiPayload | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -142,6 +143,8 @@ export function RoleDashboard({ roleKey }: RoleDashboardProps) {
           </article>
         ))}
       </section>
+
+      <LearningContinuityPanel roleKey={profile.key} />
 
       <SharedDashboardWidgets />
 
