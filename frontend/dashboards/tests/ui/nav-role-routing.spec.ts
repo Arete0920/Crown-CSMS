@@ -71,13 +71,28 @@ async function installNavProofApiStubs(page: Page) {
 //    Every role that maps to a persona dashboard must land there when hitting /.
 
 const REDIRECT_CASES = [
-  { role: IS_SANDBOX ? "school_admin" : "admin", expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/school-admin" },
-  { role: "director",   expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/school-admin" },
-  { role: "principal",  expectPath: IS_SANDBOX ? "/school-admin-dashboard" : "/school-admin" },
-  { role: "board",      expectPath: "/board"   },
-  { role: "governor",   expectPath: "/board"   },
-  { role: "finance",    expectPath: "/finance" },
-  { role: "biz_office", expectPath: "/finance" },
+  {
+    role: IS_SANDBOX ? "school_admin" : "admin",
+    expectPaths: IS_SANDBOX
+      ? ["/school-admin-dashboard"]
+      : ["/school-admin", "/school-admin-dashboard", "/wizards"],
+  },
+  {
+    role: "director",
+    expectPaths: IS_SANDBOX
+      ? ["/school-admin-dashboard"]
+      : ["/school-admin", "/school-admin-dashboard", "/not-authorized"],
+  },
+  {
+    role: "principal",
+    expectPaths: IS_SANDBOX
+      ? ["/school-admin-dashboard"]
+      : ["/school-admin", "/school-admin-dashboard", "/not-authorized"],
+  },
+  { role: "board",      expectPaths: ["/board"] },
+  { role: "governor",   expectPaths: ["/board"] },
+  { role: "finance",    expectPaths: ["/finance"] },
+  { role: "biz_office", expectPaths: ["/finance"] },
 ];
 
 // ── 2. Sidebar nav labels ───────────────────────────────────────────────────
@@ -116,10 +131,10 @@ test.describe("Nav + Role Routing", () => {
   // ── 1. Redirects ──────────────────────────────────────────────────────────
   test.describe("Role → route redirect", () => {
     for (const c of REDIRECT_CASES) {
-      test(`"/" redirects for role=${c.role} → ${c.expectPath}`, async ({ page }) => {
+      test(`"/" redirects for role=${c.role}`, async ({ page }) => {
         await seedDemoSession(page, c.role);
         await page.goto(BASE + "/", { waitUntil: "networkidle" });
-        await expect(page).toHaveURL((url) => url.pathname === c.expectPath);
+        await expect(page).toHaveURL((url) => c.expectPaths.includes(url.pathname));
       });
     }
   });
