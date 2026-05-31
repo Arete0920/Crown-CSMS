@@ -44,6 +44,8 @@ describe('dashboard registry contract', () => {
       expect(screen.getByText('Source and sync status')).toBeTruthy();
       expect(screen.getByText('Updated from current school operations snapshot')).toBeTruthy();
 
+  expect(screen.getAllByText(/dashboard (records|data)/i).length).toBeGreaterThan(0);
+
       expect(screen.getByText('Decisions Needed')).toBeTruthy();
       expect(screen.getAllByText('Attendance Completion').length).toBeGreaterThan(0);
       expect(screen.getByText('Tuition / AR Risk')).toBeTruthy();

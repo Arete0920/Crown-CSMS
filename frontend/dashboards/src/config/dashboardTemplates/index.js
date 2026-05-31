@@ -45,6 +45,7 @@ import revenueOperationsDashboard from './revenueOperationsDashboard.js';
 import advancementOperationsDashboard from './advancementOperationsDashboard.js';
 import releaseReliabilityDashboard from './releaseReliabilityDashboard.js';
 import dashboardCertificationCenterDashboard from './dashboardCertificationCenterDashboard.js';
+import { DASHBOARD_DATA_REGISTRY } from '../dashboardDataRegistry';
 
 export const DASHBOARD_TEMPLATE_MAP = {
   dashboard: schoolAdministratorDashboard,
@@ -149,9 +150,20 @@ function isValidDashboardTemplate(template) {
   );
 }
 
+function lookupDashboardDataKey(key) {
+  const normalized = String(key || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+
+  return DASHBOARD_DATA_REGISTRY[normalized] ? normalized : null;
+}
+
 export function getDashboardTemplate(key) {
   const candidate = DASHBOARD_TEMPLATE_MAP[key] || schoolAdministratorDashboard;
   const templateKey = DASHBOARD_TEMPLATE_MAP[key] ? key : 'dashboard';
   const validTemplate = isValidDashboardTemplate(candidate) ? candidate : schoolAdministratorDashboard;
-  return withTemplateDataSources(validTemplate, templateKey);
+  return {
+    ...withTemplateDataSources(validTemplate, templateKey),
+    liveDataKey: lookupDashboardDataKey(key),
+  };
 }
