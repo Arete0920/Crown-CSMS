@@ -4,11 +4,24 @@ import { DASHBOARD_DATA_REGISTRY } from '../config/dashboardDataRegistry';
 import { DASHBOARD_CERTIFICATION_REGISTRY } from '../config/dashboardCertificationRegistry';
 
 function isStrictModeEnabled() {
+  const env = import.meta.env || {};
   return (
-    typeof import.meta !== 'undefined' &&
-    import.meta.env &&
-    String(import.meta.env.VITE_DASHBOARD_STRICT_MODE).toLowerCase() === 'true'
+    String(env.VITE_DASHBOARD_STRICT_MODE).toLowerCase() === 'true'
   );
+}
+
+function isFallbackRuntimeAllowed() {
+  const env = import.meta.env || {};
+  const mode = String(env.MODE || '').toLowerCase();
+  const isSandbox = String(env.VITE_DEMO_MODE || '').toLowerCase() === 'sandbox'
+    || String(env.VITE_SANDBOX_MODE || '') === '1';
+  const isProduction = Boolean(env.PROD) || mode === 'production';
+
+  if (isSandbox) {
+    return true;
+  }
+
+  return !isProduction;
 }
 
 export default function useDashboardData(dashboardKey, options = {}) {
@@ -20,12 +33,20 @@ export default function useDashboardData(dashboardKey, options = {}) {
       notes: '',
     };
 
-  const [data, setData] = useState(config?.fallbackData ?? null);
+  const [data, setData] = useState(
+    isFallbackRuntimeAllowed() && config?.allowScaffoldFallback
+      ? (config?.fallbackData ?? null)
+      : null
+  );
   const [error, setError] = useState(
     config ? null : new Error(`No dashboard data config found for "${dashboardKey}".`)
   );
   const [loading, setLoading] = useState(Boolean(config) && (options.enabled ?? true));
-  const [source, setSource] = useState(config?.fallbackData ? 'fallback' : 'none');
+  const [source, setSource] = useState(
+    isFallbackRuntimeAllowed() && config?.allowScaffoldFallback && config?.fallbackData
+      ? 'fallback'
+      : 'none'
+  );
   const [lastLoadedAt, setLastLoadedAt] = useState(null);
 
   const effectiveOptions = useMemo(
@@ -52,8 +73,8 @@ export default function useDashboardData(dashboardKey, options = {}) {
         const response = await dashboardFetch(config.endpoint, {
           method: config.method,
           query: {
-            ...(config.query || {}),
-            ...(effectiveOptions.query || {}),
+            ...config.query,
+            ...effectiveOptions.query,
           },
         });
 
@@ -69,6 +90,7 @@ export default function useDashboardData(dashboardKey, options = {}) {
         if (!isMounted) return;
 
         const canFallback =
+          isFallbackRuntimeAllowed() &&
           !strictMode &&
           config.allowScaffoldFallback &&
           config.fallbackData !== null &&

@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const ENROLLMENT_TREND = [
   { month: 'Oct', value: 1198 },
@@ -29,50 +29,16 @@ export default {
     role: 'School Administrator',
     avatar: 'https://i.pravatar.cc/80?img=47',
   },
-  heroMessage: '"Let the peace of Christ rule in your hearts." — Colossians 3:15',
+  heroMessage: '"Let the peace of Christ rule in your hearts." â€” Colossians 3:15',
   title: 'Good morning, Sarah!',
   priorityFirst: true,
   dashboardTitle: 'School Administrator Command Center',
   truthLabel: 'Whole-school operating dashboard',
   lastSyncLabel: 'Updated from current school operations snapshot',
   note: BASE_NOTE,
-  decisionPanel: {
-    kicker: 'Today\'s decisions',
-    title: 'What needs administrator action now',
-    summary: 'Approvals, exceptions, and risk items requiring same-day leadership attention.',
-    primaryMetric: '11',
-    primaryMetricLabel: 'pending approvals',
-    actions: [
-      {
-        label: 'Enrollment packets',
-        value: '4',
-        detail: 'Packet exceptions awaiting administrator decision.',
-        tone: 'warn',
-        href: '/admissions',
-      },
-      {
-        label: 'Attendance exceptions',
-        value: '3',
-        detail: 'Unresolved attendance items requiring same-day review.',
-        tone: 'warn',
-        href: '/attendance',
-      },
-      {
-        label: 'Finance queue',
-        value: '2',
-        detail: 'Tuition adjustment and aid committee items ready for approval.',
-        tone: 'warn',
-        href: '/finance',
-      },
-      {
-        label: 'Staff coverage',
-        value: '2',
-        detail: 'Substitute and coverage decisions needed before midday.',
-        tone: 'warn',
-        href: '/hr',
-      },
-    ],
-  },
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/schoolAdministrator/summary/',
+  liveDataKey: 'schoolAdministrator',
   metrics: [
     {
       label: 'Decisions Needed',
@@ -454,8 +420,8 @@ export default {
       detail: '50% complete',
       accent: 'gold',
       items: [
-        '✓ Approve 4 enrollment packets',
-        '✓ Review 3 attendance exceptions',
+        'âœ“ Approve 4 enrollment packets',
+        'âœ“ Review 3 attendance exceptions',
         'Sign off tuition adjustment queue',
         'Confirm substitute coverage',
       ],

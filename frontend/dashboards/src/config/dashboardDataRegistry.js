@@ -7,7 +7,7 @@ function createDataConfig(endpoint, options = {}) {
     endpoint,
     method: options.method || 'GET',
     query: options.query || undefined,
-    allowScaffoldFallback: options.allowScaffoldFallback ?? true,
+    allowScaffoldFallback: options.allowScaffoldFallback ?? false,
     fallbackData: options.fallbackData ?? null,
     transform: options.transform || identityTransform,
   };
@@ -20,6 +20,7 @@ function dashboardSummaryPath(slug) {
 export const DASHBOARD_DATA_REGISTRY = {
   // Tier 1
   attendance: createDataConfig(dashboardSummaryPath('attendance'), {
+    allowScaffoldFallback: true,
     fallbackData: {
       dashboard_key: 'attendance',
       metrics: [
@@ -107,6 +108,7 @@ export const DASHBOARD_DATA_REGISTRY = {
   'compliance-audit': createDataConfig(dashboardSummaryPath('compliance-audit')),
   'revenue-operations': createDataConfig(dashboardSummaryPath('revenue-operations')),
   'release-reliability': createDataConfig(dashboardSummaryPath('release-reliability'), {
+    allowScaffoldFallback: true,
     fallbackData: {
       dashboard_key: 'release-reliability',
       metrics: [

@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const HRS_TREND = [
   { month: 'Aug', value: 0 }, { month: 'Sep', value: 240 }, { month: 'Oct', value: 480 },
@@ -16,34 +16,37 @@ export default {
   activePath: '/portrait-service-dashboard',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 2,
-  user: { initials: 'SH', name: 'Service Hours Coordinator', role: 'Student Life — Service Learning & Portrait Hours' },
+  user: { initials: 'SH', name: 'Service Hours Coordinator', role: 'Student Life â€” Service Learning & Portrait Hours' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Service Learning!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/portraitService/summary/',
+  liveDataKey: 'portraitService',
 
   metrics: [
-    { label: 'Service Hours Logged', value: '1,560', detail: 'YTD — averaging 10.5 hours per student.', accent: 'emerald' },
-    { label: 'Students Participating', value: '148', detail: '24% of enrollment — 8th–12th grade eligible.', accent: 'blue' },
+    { label: 'Service Hours Logged', value: '1,560', detail: 'YTD â€” averaging 10.5 hours per student.', accent: 'emerald' },
+    { label: 'Students Participating', value: '148', detail: '24% of enrollment â€” 8thâ€“12th grade eligible.', accent: 'blue' },
     { label: 'Active Projects', value: '12', detail: '7 on-campus, 5 community partner projects.', accent: 'gold' },
     { label: 'Hours Due (Senior)', value: '82', detail: '14 seniors below 40-hour graduation requirement.', accent: 'navy' },
   ],
 
   priorities: [
-    { title: 'Contact 14 seniors below requirement', detail: '14 seniors need 40+ hours — deadline June 1.', state: 'This week', tone: 'warn' },
+    { title: 'Contact 14 seniors below requirement', detail: '14 seniors need 40+ hours â€” deadline June 1.', state: 'This week', tone: 'warn' },
     { title: 'Approve 34 pending hour submissions', detail: '34 student submissions awaiting coordinator review.', state: 'Today', tone: 'warn' },
     { title: 'Confirm summer project placements', detail: '12 students registered for summer service projects.', state: 'This week', tone: 'nominal' },
   ],
   prioritiesTitle: 'Service Learning priorities',
 
   alerts: [
-    { title: '14 seniors at risk of not meeting graduation requirement', detail: 'Service hours deadline June 1 — outreach needed immediately.', tone: 'warn' },
-    { title: '34 hour submissions pending approval', detail: 'Students waiting for confirmation — review today.', tone: 'warn' },
+    { title: '14 seniors at risk of not meeting graduation requirement', detail: 'Service hours deadline June 1 â€” outreach needed immediately.', tone: 'warn' },
+    { title: '34 hour submissions pending approval', detail: 'Students waiting for confirmation â€” review today.', tone: 'warn' },
   ],
 
   commandModules: [
     { key: 'hours', icon: 'HR', title: 'Hours Tracking', status: 'On Track', statusTone: 'good',
-      mainKpi: '1,560 hours logged YTD', summary: 'Strong participation — 34 submissions pending review.',
+      mainKpi: '1,560 hours logged YTD', summary: 'Strong participation â€” 34 submissions pending review.',
       kpis: [{ label: 'Hours YTD', value: '1,560' }, { label: 'Avg Per Student', value: '10.5' }, { label: 'Pending Review', value: '34' }, { label: 'Approved', value: '1,480' }],
       details: ['1,560 total service hours logged', 'Average 10.5 hours per participating student', '34 submissions awaiting coordinator review', '1,480 hours approved and credited'],
       primaryActionLabel: 'Review Submissions', backActionLabel: 'Hours Log',
@@ -67,7 +70,7 @@ export default {
       primaryActionLabel: 'Manage Placements', backActionLabel: 'Partners',
       primaryActionHref: '/portrait-service-dashboard', backActionHref: '/portrait-service-dashboard', lastUpdated: '8:15 AM' },
     { key: 'recognition', icon: 'RN', title: 'Recognition', status: 'Upcoming', statusTone: 'good',
-      mainKpi: 'Service Learning Awards — May 30', summary: 'Top service learners recognized at end-of-year assembly.',
+      mainKpi: 'Service Learning Awards â€” May 30', summary: 'Top service learners recognized at end-of-year assembly.',
       kpis: [{ label: 'Top Performers', value: '10' }, { label: 'Award Categories', value: '4' }, { label: 'Event Date', value: 'May 30' }, { label: 'Nominations Due', value: 'May 15' }],
       details: ['Service Learning Awards ceremony May 30', '4 award categories: individual, group, faculty, project', 'Top 10 students by hours eligible', 'Nominations open to faculty now'],
       primaryActionLabel: 'Recognition Planning', backActionLabel: 'View Report',
@@ -90,7 +93,7 @@ export default {
     '34 hour submissions queued for coordinator review.',
     '12 students confirmed for summer project placements.',
     'Service Learning Awards nominations opened to faculty.',
-    '1,560 service hours logged — strong YTD progress.',
+    '1,560 service hours logged â€” strong YTD progress.',
   ],
 
   quickActions: [

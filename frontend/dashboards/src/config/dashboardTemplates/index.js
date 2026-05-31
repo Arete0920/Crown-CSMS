@@ -45,7 +45,7 @@ import revenueOperationsDashboard from './revenueOperationsDashboard.js';
 import advancementOperationsDashboard from './advancementOperationsDashboard.js';
 import releaseReliabilityDashboard from './releaseReliabilityDashboard.js';
 import dashboardCertificationCenterDashboard from './dashboardCertificationCenterDashboard.js';
-import { DASHBOARD_DATA_REGISTRY } from '../dashboardDataRegistry';
+import summerCampDashboard from './summerCampDashboard.js';
 
 export const DASHBOARD_TEMPLATE_MAP = {
   dashboard: schoolAdministratorDashboard,
@@ -96,6 +96,7 @@ export const DASHBOARD_TEMPLATE_MAP = {
   advancementOperations: advancementOperationsDashboard,
   releaseReliability: releaseReliabilityDashboard,
   dashboardCertificationCenter: dashboardCertificationCenterDashboard,
+  summerCamp: summerCampDashboard,
   // Alias keys
   schoolBoard: boardDashboard,
   healthOffice: healthDashboard,
