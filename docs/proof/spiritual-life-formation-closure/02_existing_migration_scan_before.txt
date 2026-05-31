@@ -1,0 +1,9 @@
+﻿=== EXISTING MIGRATION SCAN BEFORE ===
+
+Name                          
+----                          
+0001_initial_spiritual_life.py
+__init__.py                   
+
+
+
