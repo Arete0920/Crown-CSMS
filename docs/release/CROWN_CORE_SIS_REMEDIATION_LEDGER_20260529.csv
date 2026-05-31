@@ -1,0 +1,17 @@
+gate_id,priority,remediation_item,definition_of_done,required_evidence,current_status
+S0,P0,Authority truth lock,Keep public/product language aligned to repository evidence until all gates are green,"README, PUBLIC_REPO_STATUS, KNOWN_LIMITATIONS, signed release note",BLOCKED
+S1,P0,Merge/run full-completion truth gate,Execute scripts/execution/106_crown_full_completion_truth_gate.ps1 without AllowPreviewData and produce zero blockers,"full-completion-truth latest summary, blocker CSVs, status JSON",BLOCKED
+S2,P0,Remove hidden preview dashboard data,Replace BASE_NOTE/base trend/status/activity template metrics with live service/API provenance or certified sandbox-only states,dashboard template scan zero unexpected preview/sample/fallback records,BLOCKED
+S3,P0,Production sample-payload refusal,Ensure production/full-completion mode refuses backend sample/fallback dashboard payload certification,"backend sample payload blocker CSV zero, tests proving refusal",BLOCKED
+S4,P0,Current CI proof,"Run backend, frontend, dependency, secret, migration, health, deploy, accessibility, responsive gates on reviewed commit","CI logs, gate outputs, status JSON all PASS",BLOCKED
+S5,P0,Tenant/RBAC/object authorization proof,Prove every route/API/dashboard respects tenant boundary and least-privilege role enforcement,"tenant isolation tests, RBAC matrix, API route proof, object auth proof",IN_PROGRESS
+S6,P0,Core SIS workflow closure,"Prove student records, households, enrollment, attendance, scheduling, gradebook, registrar, billing, financial aid, communications end-to-end",module proof register rows green with screenshots/logs/API tests,PROOF_REQUIRED
+S7,P0,Wizard closure,Run all 29 backend-registered wizards end-to-end through API and UI where applicable,wizard result matrix with zero fail/unknown,BLOCKED
+S8,P0,Compliance/customer-readiness packet,"Complete FERPA, COPPA, DPA, retention, support access, incident response, subprocessor, backup/restore, sandbox/no-real-data, pilot criteria",signed compliance/customer-readiness packet,BLOCKED
+S9,P0,Pilot entry/exit proof,Define and prove controlled pilot entry criteria and exit criteria,"pilot entry packet, pilot exit packet, founder acceptance",BLOCKED
+S10,P1,Later-tier backend/runtime proof,"For HR, facilities, health, transportation, food, fine arts, library, extended care, safety, curriculum, spiritual life, advancement ops, volunteer, alumni, benchmarking, platform ops: prove backend/API/UI/permission/runtime",later-tier module proof matrix all PASS,BLOCKED
+S11,P1,Dashboard data provenance schema,"Add a formal provenance field to every dashboard widget: live, sandbox, sample, fallback, unavailable, error",dashboard provenance registry and tests,BLOCKED
+S12,P1,Competitor claim firewall,Prevent sales/marketing statements from claiming superiority until matrix and proof gates are green,approved claims register,BLOCKED
+S13,P1,Migration and import proof,"Prove imports, validation, rollback, reconciliation, and error handling for student/family/finance/academic data",migration proof report,PROOF_REQUIRED
+S14,P1,Support and implementation readiness,"Prove setup, training, support access, issue triage, escalation, audit logging, and school onboarding",implementation success evidence bundle,PROOF_REQUIRED
+S15,P1,UX/accessibility/responsive closure,Run accessibility and responsive checks across all role dashboards and critical workflows,a11y/responsive test artifacts zero critical blockers,PROOF_REQUIRED

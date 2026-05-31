@@ -1,0 +1,51 @@
+module_or_capability,current_repo_signal,minimum_pass_evidence,status,blocker
+Authority / Product Claims,"Repo public status, known limitations, and PR #866 blocker evidence",Signed release authority; no public claim exceeds evidence,BLOCKED,Repo states not GA/not pilot-approved/integrity hold
+Tenant / School Boundary,Security policy treats cross-tenant exposure as critical; P0 lanes previously closed,Current tenant-isolation tests and object-level authorization proof for reviewed commit,IN_PROGRESS,Fresh gate outputs required
+Authentication / SSO,Frontend includes MSAL dependency and auth components,Current login/logout/session/token proof across sandbox roles,PROOF_REQUIRED,Runtime proof required
+RBAC / Permissions,Dashboard registry defines role groups; frontend proof scripts exist,Backend + frontend permissions prove least-privilege access for every route/API,PROOF_REQUIRED,Route coverage is not permission proof
+Student Records,Backend broad domain surface includes student records; frontend/API files exist,"CRUD, import, merge, archive, audit trail, tenant isolation, runtime tests",PROOF_REQUIRED,Per-workflow proof required
+Household / Guardian Records,Guardian & Household Setup wizard registered,"End-to-end household/guardian creation, relationship, portal, contact proof",PROOF_REQUIRED,Wizard completion proof required
+Admissions,Dashboard/API surface and competitor-relevant enrollment lane exist,"Application, event, decision, conversion, communications, document proof",PROOF_REQUIRED,Runtime workflow proof required
+Enrollment / Re-enrollment,Re-enrollment and Enrollment Conversion wizards registered,"Student lifecycle conversion, reenrollment packet, contracts, billing handoff proof",PROOF_REQUIRED,Wizard + backend proof required
+Attendance,Tier 1 dashboard and Attendance Rules/Codes wizards registered,"Daily/class attendance, codes, alerts, reports, compliance, live dashboard proof",BLOCKED,Dashboard templates include preview data
+Scheduling,Tier 2 dashboard and Scheduling/Bell/Section wizards registered; scheduling PR exists,"Master schedule, conflicts, sections, rooms, staff, student schedules runtime proof",PROOF_REQUIRED,Current runtime gate required
+Gradebook,Tier 2 dashboard; gradebook API/UI proof scripts and setup/weights wizards exist,"Assignments, scores, categories, weights, grade scales, report cards, permissions proof",PROOF_REQUIRED,Current proof scripts must run green
+Registrar / Transcripts,Tier 1 registrar dashboard and academic-year/term/grade-scale wizards exist,"Transcript, report card, enrollment status, records request, graduation proof",PROOF_REQUIRED,Generated artifact proof required
+Billing / Tuition,Tier 1 billing dashboard and billing/invoice/fee wizards exist; billing guard PRs exist,"Invoice, payment, plan, ledger, refund, tenant authorization proof",PROOF_REQUIRED,Live data + tenant proof required
+Financial Aid,Tier 1 dashboard and financial aid wizard exist,"Application, award, document, need/merit workflow, privacy proof",PROOF_REQUIRED,Compliance/customer readiness required
+Payments,Backend domain surface includes payments/subscriptions,"Payment provider sandbox/live separation, webhook, reconciliation, refund, audit proof",PROOF_REQUIRED,No current certifying artifact in gate
+Communications,Tier 2 dashboard and communications campaign wizard exist,"Email/SMS/portal notice, templates, opt-outs, delivery audit, tenant proof",PROOF_REQUIRED,Runtime and compliance proof required
+Parent Portal,Frontend package exposes parent proof script,"Login, student access, billing, messages, grades, forms, permissions proof",PROOF_REQUIRED,Current Playwright output required
+Student Portal,Frontend package exposes student proof script,"Login, schedule, grades, assignments, attendance, messages proof",PROOF_REQUIRED,Current Playwright output required
+Teacher Portal / Classroom,Frontend classroom components and gradebook proof scripts exist,"Roster, attendance, grade entry, communications, assignments runtime proof",PROOF_REQUIRED,Current e2e proof required
+Leadership / Board,Dashboard registry includes school administrator/board/master control,"Executive KPIs, board reports, permissions, data provenance proof",BLOCKED,Base dashboard data/provenance unresolved
+Student Care / Counseling,Tier 2 student-care dashboard exists,"Case notes, interventions, referrals, privacy, parent/staff visibility proof",PROOF_REQUIRED,Backend/runtime proof required
+Health Office,Tier 4 health dashboard exists,"Visits, meds, allergies, immunizations, permissions, emergency contacts proof",PROOF_REQUIRED,Compliance and runtime proof required
+Behavior / Discipline,Competitor core SIS lane; evidence not yet certified,"Incident logging, notifications, corrective action, reports, privacy proof",PROOF_REQUIRED,Module proof register must locate canonical implementation
+Activities / Athletics,Tier 2 activities-athletics dashboard and athletics director dashboard exist,"Teams, rosters, eligibility, events, permissions, live dashboard proof",PROOF_REQUIRED,Later-tier runtime proof required
+Food Service,Tier 4 dashboard exists,"Menus, meal counts, charges, eligibility, POS/ledger integration proof",BLOCKED,Later-tier backend/runtime proof listed as blocker
+Transportation,Tier 4 dashboard exists,"Routes, riders, stops, vehicles, incidents, communications proof",PROOF_REQUIRED,Later-tier backend/runtime proof required
+Facilities,Tier 4 dashboard exists,"Work orders, assets, spaces, maintenance, calendars proof",PROOF_REQUIRED,Backend/runtime proof required
+HR / Staff,Tier 4 dashboard and Staff Onboarding/Staff Roles wizards exist,"Staff records, roles, onboarding, certifications, HR permissions proof",PROOF_REQUIRED,Wizard + backend proof required
+Advancement / Development,Tier 3 dashboard and Advancement Operations dashboard exist,"Donors, campaigns, gifts, pledges, alumni integration proof",PROOF_REQUIRED,Backend/runtime proof required
+Alumni,Tier 6 alumni relations dashboard exists,"Constituent records, communications, events, giving integration proof",BLOCKED,Later-tier proof listed as blocker
+Volunteer Management,Tier 6 dashboard exists,"Volunteer records, approvals, opportunities, hours, background/safety proof",BLOCKED,Later-tier proof listed as blocker
+Spiritual Life / Chaplain,Tier 6 dashboard exists; spiritual-life remediation PRs recent,"Chapel, prayer requests, pastoral care, service/mission workflows proof",PROOF_REQUIRED,Runtime and privacy proof required
+Service Hours / Portrait,Tier 6 portrait/service-hours dashboard exists,"Student service hours, approvals, graduation/mission reporting proof",PROOF_REQUIRED,Backend/runtime proof required
+Library / Media,Tier 5 dashboard exists,"Catalog, circulation, holds, fines/fees, student privacy proof",BLOCKED,Later-tier proof listed as blocker
+Fine Arts,Tier 5 dashboard exists,"Programs, rosters, performances, fees, scheduling proof",BLOCKED,Later-tier proof listed as blocker
+Curriculum / PD,Tier 5 dashboard exists,"Curriculum maps, PD plans, staff completion, artifacts proof",PROOF_REQUIRED,Backend/runtime proof required
+Safety / Security,Tier 5 dashboard exists,"Incident, drill, visitor, emergency contact, alert proof",PROOF_REQUIRED,Security/privacy proof required
+IT Support,Tier 4 dashboard exists,"Tickets, devices, assignments, classroom support proof",PROOF_REQUIRED,Backend/runtime proof required
+Compliance / Audit,Tier 7 compliance audit dashboard exists,"FERPA, COPPA, DPA, retention, support access, subprocessors, incident response proof",BLOCKED,Compliance packet open
+Integrations / Automation,Tier 7 integrations dashboard exists,"API contracts, webhooks, imports/exports, third-party mappings proof",PROOF_REQUIRED,Contract and runtime proof required
+Data Migration,Tier 7 data migration dashboard exists,"Import validation, rollback, error handling, reconciliation proof",PROOF_REQUIRED,Runtime proof required
+Implementation Success,Tier 7 implementation dashboard exists,"Pilot entry/exit, training, setup, adoption, issue closure proof",BLOCKED,Pilot proof open
+Revenue Operations,Tier 7 revenue ops dashboard exists,Internal CROWN sales/customer ops if productized; must not affect school SIS data,PROOF_REQUIRED,Scope and data boundary proof required
+Release Reliability,Tier 7 release reliability dashboard exists,"CI/CD, deploy checks, health checks, rollback, monitoring proof",BLOCKED,Current CI/workflow proof missing
+Dashboard Certification Center,Tier 7 dashboard certification center exists,Certifies dashboards only from live/proven data sources,BLOCKED,Preview/sample/fallback blockers open
+Analytics / Reporting,Release evidence requires KPI source wiring,"Reports, exports, KPI provenance, role-scoped dashboards proof",PROOF_REQUIRED,KPI source wiring proof required
+Backup / Restore,Known limitations require backup/restore policy,"Policy, tested restore, RPO/RTO, tenant separation proof",BLOCKED,Compliance/customer readiness open
+Incident Response,Known limitations require incident response policy,"IR policy, breach workflow, notification, audit evidence",BLOCKED,Compliance/customer readiness open
+Sandbox / Demo Data Separation,Repo rules require sandbox data labeled/no real data,"Environment flags, demo/sample refusal in production, scans green",BLOCKED,Sample/preview/fallback data gating unresolved
+Support Access,Known limitations require support access policy,"Least-privilege support, approval, audit logging, break-glass proof",BLOCKED,Compliance/customer readiness open
