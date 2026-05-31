@@ -40,13 +40,17 @@ describe('dashboard registry contract', () => {
       expect(screen.getByAltText('CROWN - Christian School Management Solution')).toBeTruthy();
       expect(screen.getByText('Good morning, Sarah!')).toBeTruthy();
       expect(screen.getAllByText('Heritage Christian Academy').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Sandbox preview data shown. Connect backend for live records.').length).toBeGreaterThan(0);
+      expect(screen.queryByText('Sandbox preview data shown. Connect backend for live records.')).toBeNull();
+      expect(screen.getByText('Source and sync status')).toBeTruthy();
+      expect(screen.getByText('Updated from current school operations snapshot')).toBeTruthy();
 
-      expect(screen.getByText('Total Students')).toBeTruthy();
-      expect(screen.getAllByText('Attendance Rate').length).toBeGreaterThan(0);
-      expect(screen.getByText('Tuition Collected')).toBeTruthy();
-      expect(screen.getByText('Open Admissions')).toBeTruthy();
-      expect(screen.getByText('Active Alerts')).toBeTruthy();
+  expect(screen.getAllByText(/dashboard (records|data)/i).length).toBeGreaterThan(0);
+
+      expect(screen.getByText('Decisions Needed')).toBeTruthy();
+      expect(screen.getAllByText('Attendance Completion').length).toBeGreaterThan(0);
+      expect(screen.getByText('Tuition / AR Risk')).toBeTruthy();
+      expect(screen.getByText('Enrollment')).toBeTruthy();
+      expect(screen.getByText('Safety / Student Care')).toBeTruthy();
 
       expect(screen.getAllByText('Admissions / Enrollment').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Attendance').length).toBeGreaterThan(0);

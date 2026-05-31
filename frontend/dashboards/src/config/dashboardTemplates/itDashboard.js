@@ -18,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, IT Director!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'IT support widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until IT support metrics are sourced from canonical runtime endpoints.',
 
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/it/summary/',

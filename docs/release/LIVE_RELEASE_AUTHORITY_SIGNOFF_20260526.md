@@ -1,5 +1,8 @@
 # Live Release Authority Signoff - 2026-05-26
 
+Scope note: This signoff is authoritative for the documented release-governance slice only.
+Repository-wide current authority is documented in docs/CURRENT_RELEASE_STATUS.md.
+
 ## Decision
 
 - FINAL GO for release approval.

@@ -37,6 +37,8 @@ from crown_api.metrics_views import (
     academic_support_metrics, fine_arts_metrics, library_metrics,
     extended_care_metrics, registrar_metrics, communications_metrics,
     student_services_metrics,
+    volunteer_management_metrics, alumni_metrics,
+    network_benchmarking_metrics, platform_ops_metrics,
     # advancement_metrics, pd_metrics omitted: real backends in app urls.py
 )
 from crown_api.views_students import student_detail, students_list
@@ -91,6 +93,10 @@ urlpatterns = [
     path('registrar/metrics/',       registrar_metrics,      name='registrar-metrics'),
     path('communications/metrics/',  communications_metrics, name='communications-metrics'),
     path('student-services/metrics/', student_services_metrics, name='student-services-metrics'),
+    path('volunteer-management/metrics/', volunteer_management_metrics, name='volunteer-management-metrics'),
+    path('alumni/metrics/', alumni_metrics, name='alumni-metrics'),
+    path('network-benchmarking/metrics/', network_benchmarking_metrics, name='network-benchmarking-metrics'),
+    path('platform-ops/metrics/', platform_ops_metrics, name='platform-ops-metrics'),
 
     path('360/', include('student360.api.urls')),
     path('comms/', include('comms.api.urls')),

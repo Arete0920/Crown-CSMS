@@ -2,6 +2,7 @@
 Advancement Stage 3 serializers — flat file (no api/ subdirectory package).
 """
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from django.db.models import Sum
 
 from .models_stage3 import (
@@ -52,6 +53,7 @@ class AlumniCohortSerializer(serializers.ModelSerializer):
         model = AlumniCohort
         fields = "__all__"
 
+    @extend_schema_field(serializers.IntegerField())
     def get_member_count(self, obj):
         return obj.members.count()
 
@@ -90,6 +92,7 @@ class SeatingMapSerializer(serializers.ModelSerializer):
         model = SeatingMap
         fields = "__all__"
 
+    @extend_schema_field(serializers.IntegerField())
     def get_seat_count(self, obj):
         return obj.seats.count()
 
@@ -125,6 +128,7 @@ class SponsorshipDeliverableSerializer(serializers.ModelSerializer):
         model = SponsorshipDeliverable
         fields = "__all__"
 
+    @extend_schema_field(serializers.IntegerField())
     def get_impression_count(self, obj):
         return obj.impressions.aggregate(total=Sum("count"))["total"] or 0
 

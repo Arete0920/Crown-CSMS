@@ -1,5 +1,13 @@
 ﻿# Build Sequence
 
+> Authority Scope Notice (2026-05-29)
+>
+> This document is an operational build-sequencing runbook and not a controlling repository-level release authority source.
+>
+> Current controlling release-authority sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Phase 1 - Inventory and Canon Lock
 - inventory everything
 - classify nothing yet unless obvious

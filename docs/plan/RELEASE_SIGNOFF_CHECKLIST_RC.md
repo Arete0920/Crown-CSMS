@@ -1,5 +1,13 @@
 # Crown2026 Release Signoff Checklist
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is a historical RC signoff checklist and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 Status: Release Candidate
 Branch: feature/dashboards-phase8-9-hardening
 Latest proven commit: 77f88e1f

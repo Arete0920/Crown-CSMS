@@ -47,7 +47,7 @@ export default function WizardHub() {
 
   if (loading) {
     return (
-      <CrownLayout title="Wizard Hub" subtitle="Setup wizards">
+      <CrownLayout title="Wizard Hub" subtitle="School Administrator Dashboard setup wizards">
         <p style={{ opacity: 0.7 }}>Loading wizards…</p>
       </CrownLayout>
     );
@@ -55,7 +55,7 @@ export default function WizardHub() {
 
   if (err) {
     return (
-      <CrownLayout title="Wizard Hub" subtitle="Setup wizards">
+      <CrownLayout title="Wizard Hub" subtitle="School Administrator Dashboard setup wizards">
         <p style={{ color: "var(--crown-danger)" }}>Error: {err}</p>
       </CrownLayout>
     );

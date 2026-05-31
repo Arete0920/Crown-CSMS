@@ -45,7 +45,7 @@ describe("sandbox experience catalog", () => {
     );
     const url = new URL(href, "https://example.test");
 
-    expect(url.pathname).toBe("/login");
+    expect(url.pathname).toBe("/sandbox/command-center");
     expect(url.searchParams.get("mode")).toBe("sandbox");
     expect(url.searchParams.get("experience")).toBe("school");
     expect(url.searchParams.get("guidance")).toBe("self-guided");

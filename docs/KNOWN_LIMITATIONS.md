@@ -1,5 +1,9 @@
 ﻿# CROWN Known Limitations and Release Disposition
 
+Superseded: This file is a historical snapshot from 2026-05-06.
+Current authority: docs/CURRENT_RELEASE_STATUS.md
+Do not use this file alone for current go/no-go decisions.
+
 Date: 2026-05-06
 Release posture: Integrity hold
 
@@ -8,7 +12,7 @@ Release posture: Integrity hold
 Every limitation is classified as CLOSED, OPEN, or BLOCKING GA/PILOT APPROVAL.
 No limitation language may be softened to imply approval not yet earned.
 
-## Current disposition register
+## Historical disposition register (2026-05-06 snapshot)
 
 | ID | Item | Status | Disposition |
 |---|---|---|---|

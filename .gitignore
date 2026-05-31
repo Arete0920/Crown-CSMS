@@ -59,6 +59,8 @@ _tmp/
 _local_proofs/
 app_logs/
 media/
+WING.worktrees/
+.worktrees/
 
 # Local secrets (never commit â€” contains rotated credentials)
 local.secrets.ps1
@@ -217,6 +219,7 @@ local.secrets.ps1.example
 *.bak
 *.backup
 *.tmp
+backend/crown_api/settings.py.phase*
 .env
 .env.*
 !.env.example
@@ -244,3 +247,7 @@ run_*.json
 runs.json
 pr_threads.json
 gitleaks-sarif/
+
+# Sandbox pack local extraction and generated script backups
+_sandbox_pack/
+*.best-sandbox-backup-*

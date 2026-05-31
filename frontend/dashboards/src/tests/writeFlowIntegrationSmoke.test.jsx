@@ -41,13 +41,26 @@ const smokeContext = {
     covenantPartnership: true,
     discipleshipCommitment: true,
     serviceMindset: true,
+    churchAttendance: "Weekly",
+    commitmentToChrist: "Parent or guardian professes faith in Christ",
+    spiritualLifeComments: "Family seeks Christ-centered growth.",
+    alignmentFocus: ["Spiritual formation"],
     comments: "Aligned",
+    studentPortraitRatings: {
+      "s-1": {
+        christ_centered_identity: 4,
+        biblical_worldview: 4,
+        servant_leadership: 3,
+        academic_readiness: 4,
+        community_impact: 3,
+      },
+    },
   },
   documents: {
     transcriptReady: true,
     recommendationsReady: true,
-    pastorReferenceReady: false,
-    immunizationReady: false,
+    pastorReferenceReady: true,
+    immunizationReady: true,
   },
   attestations: {
     informationAccurate: true,
@@ -125,6 +138,8 @@ describe("write flow UI integration smoke", () => {
       fireEvent.click(screen.getByRole("button", { name: /continue/i }));
     }
 
+    fireEvent.click(screen.getByLabelText(/we are not applying for financial aid\./i));
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
     fireEvent.click(screen.getByRole("button", { name: /submit application/i }));
 
     const submitButton = await screen.findByRole("button", { name: /confirm and submit/i });

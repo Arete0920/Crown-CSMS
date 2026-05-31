@@ -208,7 +208,7 @@ class AftercareIncident(models.Model):
     description = models.TextField()
 
     parent_notified = models.BooleanField(default=False)
-    discipline_record_id = models.IntegerField(null=True, blank=True)
+    discipline_record_id = models.UUIDField(null=True, blank=True)
 
     created_at = models.DateTimeField(default=timezone.now)
 

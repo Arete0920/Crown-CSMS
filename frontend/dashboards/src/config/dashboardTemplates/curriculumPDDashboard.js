@@ -20,7 +20,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Curriculum Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Curriculum and professional development widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until curriculum and professional development metrics are sourced from canonical runtime endpoints.',
 
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/curriculumPD/summary/',

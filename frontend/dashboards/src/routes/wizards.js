@@ -46,6 +46,7 @@ import StaffSetupWizard from '../pages/StaffSetupWizard.jsx';
 import CourseCatalogWizard from '../pages/CourseCatalogWizard.jsx';
 import RoomSetupWizard from '../pages/RoomSetupWizard.jsx';
 import PromotionWizard from '../pages/PromotionWizard.jsx';
+import WizardHub from '../pages/WizardHub.jsx';
 
 const readyReadiness = () => ({
   shellReady: true,
@@ -224,11 +225,52 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     apiPrefix: '/api/v1/promotion-wizard/sessions/',
     roles: ['admin', 'academics', 'director'],
   },
+  {
+    path: '/student-import-setup',
+    component: WizardHub,
+    name: 'Student Import',
+    apiPrefix: '/api/v1/student-import-wizard/sessions/',
+    roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
+    releaseState: 'placeholder',
+  },
+  {
+    path: '/guardian-household-setup',
+    component: WizardHub,
+    name: 'Guardian & Household Setup',
+    apiPrefix: '/api/v1/guardian-household-wizard/sessions/',
+    roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
+    releaseState: 'placeholder',
+  },
+  {
+    path: '/section-staffing-setup',
+    component: WizardHub,
+    name: 'Section Staffing',
+    apiPrefix: '/api/v1/section-staffing-wizard/sessions/',
+    roles: ['super_admin', 'school_admin', 'academics', 'admin'],
+    releaseState: 'placeholder',
+  },
+  {
+    path: '/attendance-codes-setup',
+    component: WizardHub,
+    name: 'Attendance Codes Setup',
+    apiPrefix: '/api/v1/attendance-codes-wizard/sessions/',
+    roles: ['super_admin', 'school_admin', 'registrar', 'academics', 'admin'],
+    releaseState: 'placeholder',
+  },
+  {
+    path: '/grade-weights-setup',
+    component: WizardHub,
+    name: 'Grade Weights & Categories',
+    apiPrefix: '/api/v1/grade-weights-wizard/sessions/',
+    roles: ['super_admin', 'school_admin', 'academics', 'admin'],
+    releaseState: 'placeholder',
+  },
 ];
 
 function normalizeWizardRoute(route) {
-  const releaseState = route.releaseState || 'ready';
-  const readiness = route.readiness || (releaseState === 'ready' ? readyReadiness() : placeholderReadiness());
+  const releaseState = route.releaseState || 'draft';
+  const isReadyLike = ['ready', 'live', 'production'].includes(releaseState);
+  const readiness = route.readiness || (isReadyLike ? readyReadiness() : placeholderReadiness());
 
   return {
     ...route,

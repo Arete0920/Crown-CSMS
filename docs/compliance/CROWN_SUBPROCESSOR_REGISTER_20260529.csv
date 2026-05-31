@@ -1,0 +1,11 @@
+vendor,service_purpose,data_categories,processing_region_or_location,contract_dpa_status,security_notes,customer_notice_required,status
+Microsoft Azure or hosting provider,Application hosting infrastructure,Tenant/customer application data; logs; backups,TBD,REQUIRES_CONFIRMATION,Tenant isolation and backup controls must be verified before production,YES,UNVERIFIED
+Database hosting provider,Production database storage,Student/family/staff/financial/academic/customer records,TBD,REQUIRES_CONFIRMATION,Encryption/access/backup/restore proof required,YES,UNVERIFIED
+Email delivery provider,Transactional email and notifications,Names; email addresses; message metadata; communication content where configured,TBD,REQUIRES_CONFIRMATION,No marketing use of student data; delivery logs retained minimally,YES,UNVERIFIED
+SMS provider,Optional text notifications,Names; phone numbers; message metadata/content where configured,TBD,REQUIRES_CONFIRMATION,Customer opt-out and consent obligations must be configured,YES,UNVERIFIED
+Payment processor,Tuition/payment processing,Payment metadata; payer contact information; transaction identifiers,TBD,REQUIRES_CONFIRMATION,Do not store full card data in CROWN unless PCI scope is explicitly approved,YES,UNVERIFIED
+Identity provider,Authentication/SSO,User identifiers; roles; tenant; authentication metadata,TBD,REQUIRES_CONFIRMATION,Least privilege; tenant-scoped role claims; audit logs required,YES,UNVERIFIED
+Error monitoring/logging provider,Application reliability and diagnostics,Application logs; error traces; minimal user/session metadata,TBD,REQUIRES_CONFIRMATION,PII minimization and redaction required,YES,UNVERIFIED
+Analytics/BI provider,Operational analytics if enabled,Aggregated operational data; limited role-scoped metrics,TBD,REQUIRES_CONFIRMATION,No behavioral advertising or unrelated student profiling,YES,UNVERIFIED
+Support/helpdesk provider,Customer support cases,Contact info; ticket content; limited screenshots/files if customer attaches,TBD,REQUIRES_CONFIRMATION,Support access policy and customer redaction guidance required,YES,UNVERIFIED
+File/object storage provider,Document uploads and generated exports,School documents; student/family/staff records; reports,TBD,REQUIRES_CONFIRMATION,Encryption and access control proof required,YES,UNVERIFIED

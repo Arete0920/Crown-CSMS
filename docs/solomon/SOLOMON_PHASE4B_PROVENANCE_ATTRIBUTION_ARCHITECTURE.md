@@ -1,7 +1,7 @@
 # SOLOMON Phase 4B: Provenance & Attribution Architecture
 
-**Status:** ARCHITECTURE REVIEW ONLY (Design, Not Implementation)  
-**Date:** 2026-05-14  
+**Status:** ARCHITECTURE REVIEW COMPLETE (Design Approved, Implementation Pending)  
+**Date:** 2026-05-29  
 **Related:** Phase 4A Slice 3 (Governance Signal Detection)  
 **Decision Gate:** Requires explicit approval before Phase 4B implementation begins
 
@@ -14,6 +14,24 @@ Phase 4B extends SOLOMON's governance observation capability by adding **provena
 **Critical principle:** Provenance records and attribution metadata **inform** governance decisions; they do **not enforce** them.
 
 **Authority preservation:** All governance decisions remain human-owned. Provenance and attribution are advisory telemetry, not enforcement mechanisms.
+
+## 0. Human Review Outcome (S-101)
+
+Review completed on 2026-05-29 with governance-first approval of the architecture boundary.
+
+Accepted review decisions:
+- Provenance remains append-only and non-mutating.
+- Attribution remains accountability metadata and not an authorization channel.
+- Canonical governance fields remain human-controlled only.
+- Queryability remains read-only for analysis and audit.
+- Automation remains deferred until post-4B maturity and separate approval.
+
+Open questions requiring implementation-stage resolution:
+- Which append-only storage option will be selected (single audit model vs partitioned event models)?
+- Which retention and archival policy applies to long-lived provenance records?
+- Which endpoint set is required for initial read-only provenance queries?
+- Which minimal dashboard metric set is required for first release?
+- Which migration/backfill approach will initialize provenance for pre-existing SOLOMON resources?
 
 ---
 
@@ -510,7 +528,7 @@ Before Phase 4B implementation begins, answer these questions:
 
 ## Part 11: Implementation Readiness
 
-**Status:** ARCHITECTURE APPROVED / PENDING IMPLEMENTATION  
+**Status:** REVIEW APPROVED / PENDING IMPLEMENTATION  
 
 When this document is explicitly approved, Phase 4B implementation can begin with:
 
@@ -530,14 +548,14 @@ When this document is explicitly approved, Phase 4B implementation can begin wit
 
 ## Sign-Off
 
-**Architecture Review Status:** PENDING APPROVAL
+**Architecture Review Status:** APPROVED (2026-05-29)
 
 This document establishes the boundaries and principles for Phase 4B.
 
-**Next step:** Explicit approval of this architecture before implementation begins.
+**Next step:** Begin implementation design only within the approved boundaries and open-question controls.
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2026-05-14  
+**Document Version:** 1.1  
+**Last Updated:** 2026-05-29  
 **Related Commits:** e54ccad9 (Phase 4A Slice 3)

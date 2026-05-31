@@ -1,5 +1,13 @@
 ﻿# Crown Executive Board Report
 
+> Authority Scope Notice (2026-05-29)
+>
+> This file is a historical executive reporting snapshot and not a controlling repository-level release authority source.
+>
+> Current controlling sources:
+> - docs/CURRENT_RELEASE_STATUS.md
+> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
 ## Overall Status
 - Overall board status: **RED**
 - Total inventoried assets: **106327**

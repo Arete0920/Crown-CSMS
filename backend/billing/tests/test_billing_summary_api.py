@@ -1,6 +1,7 @@
 import uuid
 import pytest
 from decimal import Decimal
+from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.test import Client
@@ -20,8 +21,10 @@ def _mk_user_with_school(school: School):
     if hasattr(u, "school_id"):
         setattr(u, "school_id", school.id)
         u.save(update_fields=["school_id"])
-    finance_group, _ = Group.objects.get_or_create(name="finance_admin")
-    u.groups.add(finance_group)
+
+    # Billing run summary is finance-gated; test user must hold finance runtime role.
+    group, _ = Group.objects.get_or_create(name="finance_admin")
+    u.groups.add(group)
     return u
 
 

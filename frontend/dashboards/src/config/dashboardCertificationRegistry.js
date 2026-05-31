@@ -47,6 +47,7 @@ export const DASHBOARD_CERTIFICATION_REGISTRY = {
   'athletics-director': createCertification('scaffold', 'Athletics Team'),
   'library-media': createCertification('scaffold', 'Library Media Team'),
   'extended-care': createCertification('scaffold', 'Extended Care Team'),
+  'summer-camp': createCertification('scaffold', 'Summer Camp Team'),
   'safety-security': createCertification('scaffold', 'Safety Team'),
   'curriculum-pd': createCertification('scaffold', 'Curriculum PD Team'),
 

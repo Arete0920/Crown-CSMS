@@ -20,7 +20,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Scheduler!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Scheduling widgets currently use template snapshots pending live scheduling service integration.',
+  note: 'Certification remains in review until scheduling metrics are sourced from canonical runtime endpoints.',
 
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/scheduling/summary/',

@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from .models import (
     Donor,
     Campaign,
@@ -29,6 +30,7 @@ class CampaignSerializer(serializers.ModelSerializer):
         model = Campaign
         fields = "__all__"
 
+    @extend_schema_field(serializers.FloatField())
     def get_progress_percent(self, obj):
         return obj.progress_percent()
 
@@ -47,9 +49,11 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         fields = "__all__"
 
+    @extend_schema_field(serializers.FloatField())
     def get_attendance_percent(self, obj):
         return obj.attendance_percent()
 
+    @extend_schema_field(serializers.IntegerField())
     def get_seats_remaining(self, obj):
         return obj.seats_remaining()
 

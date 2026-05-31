@@ -30,6 +30,7 @@ import transportationDashboard from './transportationDashboard.js';
 import fineArtsDashboard from './fineArtsDashboard.js';
 import libraryMediaDashboard from './libraryMediaDashboard.js';
 import extendedCareDashboard from './extendedCareDashboard.js';
+import summerCampDashboard from './summerCampDashboard.js';
 import safetySecurityDashboard from './safetySecurityDashboard.js';
 import curriculumPDDashboard from './curriculumPDDashboard.js';
 import volunteerManagementDashboard from './volunteerManagementDashboard.js';
@@ -80,6 +81,7 @@ export const DASHBOARD_TEMPLATE_MAP = {
   fineArts: fineArtsDashboard,
   libraryMedia: libraryMediaDashboard,
   extendedCare: extendedCareDashboard,
+  summerCamp: summerCampDashboard,
   safetySecurity: safetySecurityDashboard,
   curriculumPD: curriculumPDDashboard,
   volunteerManagement: volunteerManagementDashboard,
@@ -104,6 +106,42 @@ export const DASHBOARD_TEMPLATE_MAP = {
   chaplainSpiritualLife: spiritualLifeDashboard,
 };
 
+function annotateCollectionDataSources(items, templateKey, collectionName) {
+  if (!Array.isArray(items)) {
+    return items;
+  }
+
+  return items.map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      return item;
+    }
+
+    return {
+      ...item,
+      dataSource: item.dataSource || `${templateKey}.${collectionName}[${index}]`,
+    };
+  });
+}
+
+function withTemplateDataSources(template, templateKey) {
+  if (!template || typeof template !== 'object') {
+    return template;
+  }
+
+  return {
+    ...template,
+    dataSource: template.dataSource || `${templateKey}.template`,
+    metrics: annotateCollectionDataSources(template.metrics, templateKey, 'metrics'),
+    priorities: annotateCollectionDataSources(template.priorities, templateKey, 'priorities'),
+    alerts: annotateCollectionDataSources(template.alerts, templateKey, 'alerts'),
+    commandModules: annotateCollectionDataSources(template.commandModules, templateKey, 'commandModules'),
+    trendPanels: annotateCollectionDataSources(template.trendPanels, templateKey, 'trendPanels'),
+    activities: annotateCollectionDataSources(template.activities, templateKey, 'activities'),
+    quickActions: annotateCollectionDataSources(template.quickActions, templateKey, 'quickActions'),
+    statuses: annotateCollectionDataSources(template.statuses, templateKey, 'statuses'),
+  };
+}
+
 function isValidDashboardTemplate(template) {
   return Boolean(
     template
@@ -113,7 +151,20 @@ function isValidDashboardTemplate(template) {
   );
 }
 
+function lookupDashboardDataKey(key) {
+  const normalized = String(key || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+
+  return DASHBOARD_DATA_REGISTRY[normalized] ? normalized : null;
+}
+
 export function getDashboardTemplate(key) {
   const candidate = DASHBOARD_TEMPLATE_MAP[key] || schoolAdministratorDashboard;
-  return isValidDashboardTemplate(candidate) ? candidate : schoolAdministratorDashboard;
+  const templateKey = DASHBOARD_TEMPLATE_MAP[key] ? key : 'dashboard';
+  const validTemplate = isValidDashboardTemplate(candidate) ? candidate : schoolAdministratorDashboard;
+  return {
+    ...withTemplateDataSources(validTemplate, templateKey),
+    liveDataKey: lookupDashboardDataKey(key),
+  };
 }

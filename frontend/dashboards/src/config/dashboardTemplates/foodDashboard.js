@@ -18,7 +18,9 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Food Services!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  dataState: 'fallback',
+  sourceLabel: 'Food service widgets currently use template snapshots pending live service integration.',
+  note: 'Certification remains in review until food service metrics are sourced from canonical runtime endpoints.',
 
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/food/summary/',
