@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+﻿import { BASE_NOTE } from './_baseData.js';
 
 const CARE_TREND = [
   { month: 'Aug', value: 8 }, { month: 'Sep', value: 12 }, { month: 'Oct', value: 14 },
@@ -16,60 +16,63 @@ export default {
   activePath: '/student-care-dashboard',
   schoolName: 'Heritage Christian Academy',
   updatesCount: 3,
-  user: { initials: 'SC', name: 'Student Care Team', role: 'Counseling — Student Wellness & Support' },
+  user: { initials: 'SC', name: 'Student Care Team', role: 'Counseling â€” Student Wellness & Support' },
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Student Care!',
   subtitle: 'Heritage Christian Academy',
   note: BASE_NOTE,
 
+  dataSource: 'live_api',
+  apiEndpoint: '/api/v1/dashboards/studentCare/summary/',
+  liveDataKey: 'studentCare',
   metrics: [
-    { label: 'At-Risk Students', value: '24', detail: '8 high-priority — active care plans in place.', accent: 'gold' },
-    { label: 'Interventions Active', value: '17', detail: '12 academic, 5 behavioral — all assigned.', accent: 'navy' },
-    { label: 'Resolution Rate', value: '91%', detail: 'Best this year — 3-year high in positive closures.', accent: 'emerald' },
-    { label: 'Family Contacts', value: '38', detail: 'This month — 31 documented, 7 pending log.', accent: 'blue' },
+    { label: 'At-Risk Students', value: '24', detail: '8 high-priority â€” active care plans in place.', accent: 'gold' },
+    { label: 'Interventions Active', value: '17', detail: '12 academic, 5 behavioral â€” all assigned.', accent: 'navy' },
+    { label: 'Resolution Rate', value: '91%', detail: 'Best this year â€” 3-year high in positive closures.', accent: 'emerald' },
+    { label: 'Family Contacts', value: '38', detail: 'This month â€” 31 documented, 7 pending log.', accent: 'blue' },
   ],
 
   priorities: [
-    { title: 'Review 8 high-priority care plans', detail: 'Weekly team review — 3 require updated goals.', state: 'Today', tone: 'warn' },
+    { title: 'Review 8 high-priority care plans', detail: 'Weekly team review â€” 3 require updated goals.', state: 'Today', tone: 'warn' },
     { title: 'Log 7 pending family contacts', detail: 'Documentation required within 48 hours of contact.', state: 'Today', tone: 'warn' },
     { title: 'Complete monthly at-risk report', detail: 'Due to principal by April 30.', state: 'This week', tone: 'nominal' },
   ],
   prioritiesTitle: 'Care team priorities',
 
   alerts: [
-    { title: 'Student #0831 care plan escalated', detail: 'Behavioral incident — parent meeting requested.', tone: 'warn' },
-    { title: '3 care plans require goal updates', detail: 'Team review today — updates needed before Friday.', tone: 'warn' },
+    { title: 'Student #0831 care plan escalated', detail: 'Behavioral incident â€” parent meeting requested.', tone: 'warn' },
+    { title: '3 care plans require goal updates', detail: 'Team review today â€” updates needed before Friday.', tone: 'warn' },
   ],
 
   commandModules: [
     { key: 'atRisk', icon: 'AR', title: 'At-Risk Roster', status: 'Active', statusTone: 'warn',
-      mainKpi: '24 students — 8 high-priority', summary: 'All high-priority students have active care plans.',
+      mainKpi: '24 students â€” 8 high-priority', summary: 'All high-priority students have active care plans.',
       kpis: [{ label: 'At-Risk', value: '24' }, { label: 'High Priority', value: '8' }, { label: 'Medium', value: '11' }, { label: 'Monitoring', value: '5' }],
-      details: ['8 high-priority students — weekly check-ins', '11 medium-risk — bi-weekly contact', '5 in monitoring — monthly review', 'All have assigned counselors'],
+      details: ['8 high-priority students â€” weekly check-ins', '11 medium-risk â€” bi-weekly contact', '5 in monitoring â€” monthly review', 'All have assigned counselors'],
       primaryActionLabel: 'View Roster', backActionLabel: 'Care Plans',
       primaryActionHref: '/student-care-dashboard', backActionHref: '/student-care-dashboard', lastUpdated: '8:00 AM' },
     { key: 'interventions', icon: 'IV', title: 'Interventions', status: 'Active', statusTone: 'good',
-      mainKpi: '17 active interventions', summary: '12 academic, 5 behavioral — all assigned to staff.',
+      mainKpi: '17 active interventions', summary: '12 academic, 5 behavioral â€” all assigned to staff.',
       kpis: [{ label: 'Active', value: '17' }, { label: 'Academic', value: '12' }, { label: 'Behavioral', value: '5' }, { label: 'Unassigned', value: '0' }],
       details: ['12 academic intervention plans active', '5 behavioral support plans active', 'All interventions assigned to staff', 'Last review: 2 days ago'],
       primaryActionLabel: 'View Interventions', backActionLabel: 'Student List',
       primaryActionHref: '/student-care-dashboard', backActionHref: '/student-care-dashboard', lastUpdated: '8:05 AM' },
     { key: 'carePlans', icon: 'CP', title: 'Care Plans', status: 'Watch', statusTone: 'warn',
-      mainKpi: '24 active plans — 3 need updates', summary: '3 care plans require updated goals — team review today.',
+      mainKpi: '24 active plans â€” 3 need updates', summary: '3 care plans require updated goals â€” team review today.',
       kpis: [{ label: 'Active Plans', value: '24' }, { label: 'Current', value: '21' }, { label: 'Needs Update', value: '3' }, { label: 'Escalated', value: '1' }],
-      details: ['21 care plans current', '3 require updated goals after weekly review', '1 escalated — parent meeting requested', 'Next group review: Friday'],
+      details: ['21 care plans current', '3 require updated goals after weekly review', '1 escalated â€” parent meeting requested', 'Next group review: Friday'],
       primaryActionLabel: 'Review Plans', backActionLabel: 'Team Calendar',
       primaryActionHref: '/student-care-dashboard', backActionHref: '/student-care-dashboard', lastUpdated: '8:10 AM' },
     { key: 'familyContact', icon: 'FC', title: 'Family Contacts', status: 'Watch', statusTone: 'warn',
-      mainKpi: '38 contacts this month — 7 unlogged', summary: '7 contacts need documentation within 48 hrs.',
+      mainKpi: '38 contacts this month â€” 7 unlogged', summary: '7 contacts need documentation within 48 hrs.',
       kpis: [{ label: 'Contacts', value: '38' }, { label: 'Logged', value: '31' }, { label: 'Pending', value: '7' }, { label: 'Meetings Scheduled', value: '4' }],
       details: ['31 contacts documented in system', '7 contacts pending 48-hr log deadline', '4 parent meetings scheduled this week', 'Average response time: 1.2 days'],
       primaryActionLabel: 'Log Contacts', backActionLabel: 'View Communications',
       primaryActionHref: '/communications-dashboard', backActionHref: '/communications-dashboard', lastUpdated: '7:55 AM' },
     { key: 'counseling', icon: 'CN', title: 'Counseling Sessions', status: 'Stable', statusTone: 'good',
-      mainKpi: '64 sessions this month', summary: 'Session volume on track — resolution rate 91%.',
+      mainKpi: '64 sessions this month', summary: 'Session volume on track â€” resolution rate 91%.',
       kpis: [{ label: 'Sessions', value: '64' }, { label: 'Individual', value: '48' }, { label: 'Group', value: '16' }, { label: 'Resolution Rate', value: '91%' }],
-      details: ['48 individual counseling sessions', '16 group sessions across 4 groups', 'Resolution rate 91% — best this year', 'Avg sessions per student: 2.7'],
+      details: ['48 individual counseling sessions', '16 group sessions across 4 groups', 'Resolution rate 91% â€” best this year', 'Avg sessions per student: 2.7'],
       primaryActionLabel: 'View Sessions', backActionLabel: 'Counseling Dashboard',
       primaryActionHref: '/counseling-dashboard', backActionHref: '/counseling-dashboard', lastUpdated: '8:15 AM' },
     { key: 'reports', icon: 'RP', title: 'Care Reports', status: 'Due Soon', statusTone: 'warn',
@@ -86,7 +89,7 @@ export default {
   ],
 
   activities: [
-    'Student #0831 care plan escalated — parent meeting requested.',
+    'Student #0831 care plan escalated â€” parent meeting requested.',
     '3 care plan goal updates flagged for team review.',
     '7 family contacts queued for documentation.',
     'Monthly at-risk report drafted for principal.',
@@ -107,3 +110,4 @@ export default {
     { label: 'Monthly Report', state: 'Due April 30' },
   ],
 };
+
