@@ -275,15 +275,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'crown_api.urls'
 
-REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
-
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'CROWN API',
-    'VERSION': '1.0.0',
-}
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -355,9 +346,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-# Custom User Model
-AUTH_USER_MODEL = 'core.UserAccount'
 
 # --- DRF renderer policy (PROD: JSON-only; non-PROD: JSON + Browsable) ---
 def _env_is_prod() -> bool:
