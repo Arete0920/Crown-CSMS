@@ -29,7 +29,7 @@ function formatValue(value, format) {
   return String(toNumber(value));
 }
 
-function getDetail(metric, value) {
+function getDetail(metric) {
   if (metric.detail) return metric.detail;
   if (metric.format === 'percent') return 'Operational performance ratio.';
   if (metric.format === 'currency') return 'Financial exposure requiring visibility.';
