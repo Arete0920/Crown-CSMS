@@ -1,0 +1,40 @@
+# Final 95+ Sprint First-Failure Isolation Results (2026-05-31)
+
+Status: PARTIAL PASS (evidence pack completed with focused reruns)
+Evidence root: `audit-artifacts/final-95-plus-sprint/20260531_000443`
+
+## First Failures Observed
+
+1. Frontend lint failed (`frontend_lint_exit=1`)
+   - File: `12_frontend_lint.txt`
+   - Root causes:
+     - `frontend/dashboards/scripts/verify-dashboard-completeness.mjs`: Node globals undefined under flat ESLint config.
+     - `frontend/dashboards/src/utils/dashboardOperationalModel.js`: unused parameter `value`.
+   - Focused rerun proof:
+     - `12b_frontend_lint_rerun.txt`
+     - `frontend_lint_rerun_exit=0`
+
+2. Frontend RC verify failed (`frontend_rc_verify_exit=1`)
+   - File: `20_frontend_rc_verify.txt`
+   - Root cause:
+     - Missing required env var: `VITE_BUILD_SHA`.
+   - Focused rerun proof:
+     - `20b_frontend_rc_verify_rerun.txt`
+     - `frontend_rc_verify_rerun_exit=0`
+
+## Backend Focused Proof Results
+
+- `07b_tenant_isolation_diagnostic.txt`: `tenant_isolation_diag_exit=0`
+- `08b_admissions_endpoints_diagnostic.txt`: `admissions_endpoints_diag_exit=0`
+- `09b_aftercare_diagnostic.txt`: `aftercare_diag_exit=0`
+- `10b_later_tier_metrics_diagnostic.txt`: `later_tier_metrics_diag_exit=0`
+
+Note:
+- Canonical `07_tenant_isolation.txt` and `08_admissions_endpoints.txt` are header-only due shell/session variable and streaming behavior in the initial run path.
+- Diagnostic reruns above are authoritative for pass/fail until the canonical block is re-run in a single stable terminal session.
+
+## Remaining Execution Priority Queue
+
+1. Re-run command pack block 3 canonical files (`07/08/09/10`) in one stable terminal and replace header-only outputs.
+2. Keep command-pack hardening changes in place (PowerShell handling + env bootstrap) to prevent false negatives.
+3. After canonical refresh, append a refreshed manifest and publish evidence delta.

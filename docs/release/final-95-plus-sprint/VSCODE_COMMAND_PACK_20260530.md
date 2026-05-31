@@ -9,12 +9,21 @@ Run from the repository root in VS Code PowerShell.
 
 ```powershell
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
 
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $base = "audit-artifacts\final-95-plus-sprint\$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
 
 "evidence_root=$base" | Tee-Object "$base\00_EVIDENCE_ROOT.txt"
+$env:CROWN_EVIDENCE_ROOT = $base
+```
+
+If you open a new terminal mid-run, restore the evidence root first:
+
+```powershell
+$base = $env:CROWN_EVIDENCE_ROOT
+if (-not $base) { throw "CROWN_EVIDENCE_ROOT is not set in this terminal." }
 ```
 
 ## 1. Repo truth freeze
@@ -102,6 +111,10 @@ node scripts\release\verify-api-contracts.mjs 2>&1 | Tee-Object -Append "$base\1
 node scripts\release\verify-navigation-surface.mjs 2>&1 | Tee-Object -Append "$base\19_release_navigation_surface.txt"
 
 "=== FRONTEND RC VERIFY ===" | Tee-Object "$base\20_frontend_rc_verify.txt"
+$env:VITE_BUILD_SHA = (git rev-parse --short HEAD).Trim()
+$env:VITE_BUILD_TAG = "local-final-95-plus"
+$env:VITE_BUILD_TIME = (Get-Date).ToString("o")
+if (-not $env:VITE_API_BASE_URL) { $env:VITE_API_BASE_URL = "http://localhost:8000" }
 node scripts\release\verify-frontend-rc.mjs 2>&1 | Tee-Object -Append "$base\20_frontend_rc_verify.txt"
 ```
 
