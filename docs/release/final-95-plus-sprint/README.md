@@ -25,6 +25,7 @@ Authority: Non-shipping index until promoted by `docs/CURRENT_RELEASE_STATUS.md`
 | `COMPLIANCE_CUSTOMER_READINESS_AUDIT_20260530.md` | Compliance/customer trust blocker audit |
 | `FINAL_IP_CLEAN_ROOM_ORIGINALITY_PACKET.md` | IP clean-room, originality, competitor-research, asset, copy, dependency, and trade-secret release gate |
 | `SANDBOX_READY_GATE_20260601.md` | June 1 sandbox-readiness gate and required proof |
+| `SANDBOX_120_SCHOOL_LAUNCH_GATE_20260601.md` | 120-school sandbox launch gate requiring complete, clean, no-noise, no-failure launch proof |
 | `PRODUCTION_RELEASE_ROADMAP_20260701.md` | July 1 production-readiness roadmap and required proof |
 | `FINAL_SIGNOFF_TEMPLATE_20260530.md` | Final signoff template; not a signoff until all TBDs are filled with proof |
 | `BACKEND_API_COMPLETION_QUEUE_20260530.md` | Backend/API completion queue and scoring lock |
@@ -39,6 +40,7 @@ Run one of the following from repo root:
 
 - `docs/release/final-95-plus-sprint/VSCODE_COMMAND_PACK_20260530.md`
 - `docs/release/final-95-plus-sprint/VSCODE_SINGLE_BLOCK_EVIDENCE_RUN_20260530.md`
+- `docs/release/final-95-plus-sprint/SANDBOX_120_SCHOOL_LAUNCH_GATE_20260601.md`
 
 Then commit the generated evidence root under:
 
@@ -53,18 +55,20 @@ Then commit the generated evidence root under:
 5. Fix the first failure only.
 6. Re-run focused proof.
 7. Repeat until P0 gates pass.
-8. Close route/API/role/data matrices.
-9. Close module-by-module 95+ rows.
-10. Complete compliance/customer trust artifacts.
-11. Complete IP clean-room/originality review and evidence packet.
-12. Run deploy parity and protected-spine proof.
-13. Only then update the canonical release authority and final scorecard.
+8. Close the 120-school sandbox launch gate.
+9. Close route/API/role/data matrices.
+10. Close module-by-module 95+ rows.
+11. Complete compliance/customer trust artifacts.
+12. Complete IP clean-room/originality review and evidence packet.
+13. Run deploy parity and protected-spine proof.
+14. Only then update the canonical release authority and final scorecard.
 
 ## Target gates
 
 | Target | Gate file | Current sprint status |
 |---|---|---|
 | Sandbox-ready process by 2026-06-01 | `SANDBOX_READY_GATE_20260601.md` | NO-GO until evidence passes and sandbox/IP limits are explicit |
+| 120-school sandbox launch by 2026-06-01 | `SANDBOX_120_SCHOOL_LAUNCH_GATE_20260601.md` | NO-GO until every exposed route/module/workflow is complete, clean, and evidence-backed |
 | Production marketplace release by 2026-07-01 | `PRODUCTION_RELEASE_ROADMAP_20260701.md` | NO-GO until every release gate is 95+, including IP clean-room/originality readiness |
 
 ## Forbidden shortcuts
@@ -74,6 +78,7 @@ Then commit the generated evidence root under:
 - No production claim from dashboard shell presence.
 - No production claim from old/stale evidence.
 - No production/customer-facing claim from unreviewed competitor-derived material.
+- No 120-school sandbox launch with exposed partial, deferred, broken, fake-ready, or noisy surfaces.
 - No unrestricted GO while parity/protected-spine/compliance/customer/IP readiness are incomplete.
 
 ## Status language
@@ -92,3 +97,4 @@ Forbidden:
 - `Good enough`.
 - `Will clean later`.
 - `Production ready` before all final gates pass.
+- `Sandbox ready for 120 schools` before every exposed sandbox surface is complete, clean, and proof-backed.
