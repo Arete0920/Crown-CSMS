@@ -63,3 +63,15 @@ Current canonical-file note:
 
 - `08_admissions_endpoints.txt` and `10_later_tier_metrics.txt` remain sparse from pipeline-capture behavior in this shell environment.
 - Diagnostic files above are the reliable pass/fail source for this replay root.
+
+## Canonical Regeneration Attempt (No-Pipeline Script)
+
+Attempted helper:
+
+- `scripts/execution/174_block3_canonical_capture_nopipeline.ps1`
+
+Result:
+
+1. Script introduced a non-pipeline capture path using `Start-Process` output redirection.
+2. In this shell environment, canonical `08` still remained sparse during repeated attempts; process-level behavior showed long-running pytest workers without deterministic completion output in terminal-captured execution.
+3. To preserve truth discipline, diagnostic artifacts (`08c/09c/10c`) remain the authoritative replay proof for this evidence root.
