@@ -63,6 +63,21 @@ def test_attendance_summary_falls_back_to_sample_payload():
     assert len(data['metrics']) > 0
 
 
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='production')
+@pytest.mark.django_db
+def test_attendance_summary_rejects_sample_payload_in_production_without_snapshot():
+    client = _authed_client()
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'attendance'}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 503
+    data = response.json()
+    assert data['code'] == 'dashboard_live_data_required'
+    assert data['dashboard_key'] == 'attendance'
+
+
 @override_settings(TENANT_HEADER_REQUIRED=False)
 @pytest.mark.django_db
 def test_unknown_dashboard_returns_404():
