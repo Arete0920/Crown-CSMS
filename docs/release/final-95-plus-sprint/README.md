@@ -23,6 +23,7 @@ Authority: Non-shipping index until promoted by `docs/CURRENT_RELEASE_STATUS.md`
 | `PUNCH_LIST_20260530.md` | Prioritized P0/P1/P2/P3 punch list |
 | `ROUTE_API_ROLE_DATA_AUDIT_20260530.md` | Connector-backed audit for routes, APIs, roles, data readiness |
 | `COMPLIANCE_CUSTOMER_READINESS_AUDIT_20260530.md` | Compliance/customer trust blocker audit |
+| `FINAL_IP_CLEAN_ROOM_ORIGINALITY_PACKET.md` | IP clean-room, originality, competitor-research, asset, copy, dependency, and trade-secret release gate |
 | `SANDBOX_READY_GATE_20260601.md` | June 1 sandbox-readiness gate and required proof |
 | `PRODUCTION_RELEASE_ROADMAP_20260701.md` | July 1 production-readiness roadmap and required proof |
 | `FINAL_SIGNOFF_TEMPLATE_20260530.md` | Final signoff template; not a signoff until all TBDs are filled with proof |
@@ -55,15 +56,16 @@ Then commit the generated evidence root under:
 8. Close route/API/role/data matrices.
 9. Close module-by-module 95+ rows.
 10. Complete compliance/customer trust artifacts.
-11. Run deploy parity and protected-spine proof.
-12. Only then update the canonical release authority and final scorecard.
+11. Complete IP clean-room/originality review and evidence packet.
+12. Run deploy parity and protected-spine proof.
+13. Only then update the canonical release authority and final scorecard.
 
 ## Target gates
 
 | Target | Gate file | Current sprint status |
 |---|---|---|
-| Sandbox-ready process by 2026-06-01 | `SANDBOX_READY_GATE_20260601.md` | NO-GO until evidence passes |
-| Production marketplace release by 2026-07-01 | `PRODUCTION_RELEASE_ROADMAP_20260701.md` | NO-GO until every release gate is 95+ |
+| Sandbox-ready process by 2026-06-01 | `SANDBOX_READY_GATE_20260601.md` | NO-GO until evidence passes and sandbox/IP limits are explicit |
+| Production marketplace release by 2026-07-01 | `PRODUCTION_RELEASE_ROADMAP_20260701.md` | NO-GO until every release gate is 95+, including IP clean-room/originality readiness |
 
 ## Forbidden shortcuts
 
@@ -71,7 +73,8 @@ Then commit the generated evidence root under:
 - No production claim from route presence.
 - No production claim from dashboard shell presence.
 - No production claim from old/stale evidence.
-- No unrestricted GO while parity/protected-spine/compliance/customer readiness are incomplete.
+- No production/customer-facing claim from unreviewed competitor-derived material.
+- No unrestricted GO while parity/protected-spine/compliance/customer/IP readiness are incomplete.
 
 ## Status language
 
