@@ -72,11 +72,27 @@ export default function AdmissionsDashboard() {
     ? `${Math.round(velocitySubmitToDecision)} day avg decision cycle`
     : 'Decision cycle pending more data';
 
+  const stageAging = rawSummary?.stage_aging || {};
+  const submittedAging = stageAging.application_submitted || {};
+  const inReviewAging = stageAging.in_review || {};
+  const acceptedAging = stageAging.accepted || {};
+  const submittedOverSla = toInt(submittedAging.over_sla);
+  const inReviewOverSla = toInt(inReviewAging.over_sla);
+  const acceptedOverSla = toInt(acceptedAging.over_sla);
+  const totalOverSla = submittedOverSla + inReviewOverSla + acceptedOverSla;
+  const maxStageAgeDays = Math.max(
+    toInt(submittedAging.max_days),
+    toInt(inReviewAging.max_days),
+    toInt(acceptedAging.max_days),
+  );
+
   const topSource = rawSummary?.top_sources?.[0];
   const topSourceLabel = topSource?.source ? `${topSource.source} (${topSource.total})` : 'No source data yet';
 
   const config = cloneConfig(baseConfig);
-  config.disableLiveData = true;
+  config.dataState = dataState;
+  config.sourceLabel = dataSourceLabel;
+  config.lastSyncLabel = hasLiveSummary ? 'Last synced just now' : dataStateLabel;
   config.updatesCount = hasLiveSummary ? 0 : 1;
   config.note = `${config.note} · ${dataStateLabel}`;
 
@@ -106,10 +122,10 @@ export default function AdmissionsDashboard() {
       sourceLabel: dataSourceLabel,
     },
     {
-      label: 'Accepted to Enrolled',
-      value: acceptedToEnrolled,
-      detail: 'Conversion from accepted to enrolled.',
-      accent: 'emerald',
+      label: 'Stage Aging Pressure',
+      value: `${maxStageAgeDays}d`,
+      detail: `${totalOverSla} applications over SLA across submitted, review, and accepted stages.`,
+      accent: totalOverSla > 0 ? 'gold' : 'emerald',
       dataState,
       sourceLabel: dataSourceLabel,
     },
@@ -127,6 +143,12 @@ export default function AdmissionsDashboard() {
       detail: 'Follow up with contract and deposit completion support.',
       state: accepted - enrolled > 0 ? 'Ready' : 'Stable',
       tone: accepted - enrolled > 0 ? 'warn' : 'good',
+    },
+    {
+      title: `${totalOverSla} admissions records over SLA`,
+      detail: 'Clear stale submitted, in-review, and accepted records to protect family experience.',
+      state: totalOverSla > 0 ? 'Action Required' : 'Stable',
+      tone: totalOverSla > 0 ? 'warn' : 'good',
     },
   ];
 
@@ -146,6 +168,7 @@ export default function AdmissionsDashboard() {
     { label: 'Admissions Data Source', state: dataStateLabel },
     { label: 'Summary Endpoint', state: hasLiveSummary ? 'Operational' : error ? 'Unavailable' : 'Degraded' },
     { label: 'Pipeline Coverage', state: `Inquiry ${inquiry} · Submitted ${submitted} · Accepted ${accepted} · Enrolled ${enrolled}` },
+    { label: 'Stage Aging', state: totalOverSla > 0 ? `${totalOverSla} records over SLA` : 'Within SLA' },
     { label: 'Next Priority', state: submitted > 0 ? 'Review submitted applications' : 'Advance inquiry pipeline' },
   ];
 
@@ -154,8 +177,8 @@ export default function AdmissionsDashboard() {
       key: 'pipeline',
       icon: 'PL',
       title: 'Application Pipeline',
-      status: submitted > 0 || inReview > 0 ? 'Watch' : 'Stable',
-      statusTone: submitted > 0 || inReview > 0 ? 'warn' : 'good',
+      status: submitted > 0 || inReview > 0 || totalOverSla > 0 ? 'Watch' : 'Stable',
+      statusTone: submitted > 0 || inReview > 0 || totalOverSla > 0 ? 'warn' : 'good',
       mainKpi: `${openApplications} open applications`,
       summary: `Submitted ${submitted} · In review ${inReview} · Waitlisted ${waitlisted}`,
       kpis: [
@@ -169,6 +192,8 @@ export default function AdmissionsDashboard() {
         `Declined: ${declined}`,
         `Top source: ${topSourceLabel}`,
         velocityLabel,
+        `Stage aging max: ${maxStageAgeDays} days`,
+        `Over SLA: ${totalOverSla}`,
       ],
       dataState,
       sourceLabel: dataSourceLabel,
@@ -242,6 +267,7 @@ export default function AdmissionsDashboard() {
       `Open applications: ${openApplications}`,
       `Submitted awaiting movement: ${submitted}`,
       `Accepted awaiting enrollment: ${accepted - enrolled > 0 ? accepted - enrolled : 0}`,
+      `Admissions records over SLA: ${totalOverSla}`,
       hasLiveSummary ? 'Admissions summary is live.' : 'Admissions summary is running in fallback mode.',
     ];
 
