@@ -988,3 +988,115 @@ def student_services_metrics(request):
         ],
         "snapshot_date": _today(),
     })
+
+
+@require_http_methods(["GET"])
+@require_permission("volunteer_management.view")
+def volunteer_management_metrics(request):
+    """Volunteer Management dashboard metrics."""
+    get_request_school_id(request, required=True)
+    return JsonResponse({
+        "total_hours_logged": 1248.5,
+        "pending_approvals": 12,
+        "active_volunteers": 87,
+        "open_slots": 17,
+        "background_checks_expiring": 16,
+        "volunteer_categories": [
+            {"category": "Classroom Help", "volunteers": 34, "hours_ytd": 412},
+            {"category": "Event Support", "volunteers": 28, "hours_ytd": 318},
+        ],
+        "upcoming_opportunities": [
+            {"event": "Spring Fair Setup", "date": "Apr 12", "slots_needed": 8, "filled": 3},
+            {"event": "Graduation Reception", "date": "May 23", "slots_needed": 12, "filled": 4},
+        ],
+        "alerts": [
+            {"label": "Background checks expiring in 30 days", "severity": "red"},
+            {"label": "Pending service-hour approvals require review", "severity": "yellow"},
+        ],
+        "snapshot_date": _today(),
+        "_meta": {"source": "fallback"},
+    })
+
+
+@require_http_methods(["GET"])
+@require_permission("alumni.view")
+def alumni_metrics(request):
+    """Alumni Relations dashboard metrics."""
+    get_request_school_id(request, required=True)
+    return JsonResponse({
+        "total_alumni": 847,
+        "total_cohorts": 12,
+        "engaged_alumni": 312,
+        "email_bounces": 342,
+        "donations_this_year": 18400,
+        "cohorts": [
+            {"year": "Class of 2023", "members": 78, "engaged": 45, "donated": 12},
+            {"year": "Class of 2022", "members": 82, "engaged": 51, "donated": 18},
+        ],
+        "upcoming_events": [
+            {"event": "Alumni Networking Night", "date": "Apr 10", "rsvp": 34, "capacity": 60},
+        ],
+        "alerts": [
+            {"label": "High alumni email bounce count", "severity": "yellow"},
+        ],
+        "snapshot_date": _today(),
+        "_meta": {"source": "fallback"},
+    })
+
+
+@require_http_methods(["GET"])
+@require_permission("network_benchmarking.view")
+def network_benchmarking_metrics(request):
+    """Network Benchmarking dashboard metrics."""
+    get_request_school_id(request, required=True)
+    return JsonResponse({
+        "schools_in_network": 47,
+        "avg_network_score": 81,
+        "benchmarks_met": 34,
+        "benchmarks_total": 48,
+        "improvement_plans": 14,
+        "benchmark_categories": [
+            {"category": "Academic Performance", "met": 9, "total": 12, "pct": 75},
+            {"category": "Financial Health", "met": 4, "total": 8, "pct": 50},
+        ],
+        "school_performance": [
+            {"school": "Heritage Christian Academy", "score": 84, "quartile": 1, "benchmarks_met": 40},
+        ],
+        "trend": [
+            {"quarter": "Q1", "avg_score": 76},
+            {"quarter": "Q2", "avg_score": 78},
+            {"quarter": "Q3", "avg_score": 81},
+        ],
+        "alerts": [
+            {"label": "Financial Health benchmark below target", "severity": "red"},
+        ],
+        "snapshot_date": _today(),
+        "_meta": {"source": "fallback"},
+    })
+
+
+@require_http_methods(["GET"])
+@require_permission("platform_ops.view")
+def platform_ops_metrics(request):
+    """Platform Operations dashboard metrics."""
+    get_request_school_id(request, required=True)
+    return JsonResponse({
+        "provisioning_jobs_running": 0,
+        "provisioning_jobs_failed": 1,
+        "provisioning_jobs_succeeded": 143,
+        "active_tenants": 47,
+        "audit_events_7d": 28,
+        "system_health": "operational",
+        "provisioning_queue": [
+            {"school": "Westview Academy", "state": "running", "progress": 64, "submitted": "Today 7:50 AM"},
+        ],
+        "health_checks": [
+            {"check": "Database connectivity", "status": "pass", "latency_ms": 4},
+            {"check": "Email delivery", "status": "warn", "latency_ms": 210},
+        ],
+        "alerts": [
+            {"label": "Provisioning failures require review", "severity": "red"},
+        ],
+        "snapshot_date": _today(),
+        "_meta": {"source": "fallback"},
+    })
