@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const PERF_TREND = [
   { month: 'Aug', value: 0 }, { month: 'Sep', value: 1 }, { month: 'Oct', value: 2 },

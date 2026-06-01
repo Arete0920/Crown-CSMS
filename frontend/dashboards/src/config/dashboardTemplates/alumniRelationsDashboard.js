@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const ALUMNI_TREND = [
   { month: 'Aug', value: 1820 }, { month: 'Sep', value: 1840 }, { month: 'Oct', value: 1858 },
@@ -20,7 +20,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Alumni Relations!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/alumniRelations/summary/',
   liveDataKey: 'alumniRelations',

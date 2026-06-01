@@ -231,7 +231,7 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Student Import',
     apiPrefix: '/api/v1/student-import-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
-    releaseState: 'placeholder',
+    releaseState: 'ready',
   },
   {
     path: '/guardian-household-setup',
@@ -239,7 +239,7 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Guardian & Household Setup',
     apiPrefix: '/api/v1/guardian-household-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
-    releaseState: 'placeholder',
+    releaseState: 'ready',
   },
   {
     path: '/section-staffing-setup',
@@ -247,7 +247,7 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Section Staffing',
     apiPrefix: '/api/v1/section-staffing-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'academics', 'admin'],
-    releaseState: 'placeholder',
+    releaseState: 'ready',
   },
   {
     path: '/attendance-codes-setup',
@@ -255,7 +255,7 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Attendance Codes Setup',
     apiPrefix: '/api/v1/attendance-codes-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'academics', 'admin'],
-    releaseState: 'placeholder',
+    releaseState: 'ready',
   },
   {
     path: '/grade-weights-setup',
@@ -263,7 +263,7 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Grade Weights & Categories',
     apiPrefix: '/api/v1/grade-weights-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'academics', 'admin'],
-    releaseState: 'placeholder',
+    releaseState: 'ready',
   },
 ];
 

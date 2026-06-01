@@ -8,7 +8,7 @@ export const BASE_TREND = [
   { month: 'Mar', value: 1248 },
 ];
 
-export const BASE_NOTE = 'Widget badges disclose data provenance and non-live states.';
+export const LIVE_NOTE = 'Widget badges disclose data provenance and non-live states.';
 
 export const BASE_COMMUNICATIONS = {
   inboxTitle: 'Unread and waiting',

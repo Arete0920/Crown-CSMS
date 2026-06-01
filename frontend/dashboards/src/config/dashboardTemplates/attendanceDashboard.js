@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { LIVE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'attendance',
@@ -7,7 +7,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Attendance Overview',
   subtitle: 'Daily attendance completion and intervention tracking',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/attendance/summary/',
   liveDataKey: 'attendance',

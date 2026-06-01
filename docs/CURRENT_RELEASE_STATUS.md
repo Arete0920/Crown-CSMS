@@ -127,9 +127,9 @@ Execution board for these closure items:
 
 Allowed now:
 
-- "Validated slices are green; repository-level posture is CONDITIONAL GO pending final parity and authority convergence."
+- "Validated slices are green; repository-level posture is NO-GO pending final parity and authority convergence."
 
 Not allowed now:
 
-- "Repository is unrestricted GA-ready across all lanes."
+- "Repository is unrestricted GO across all lanes."
 - "All deployment targets are parity-verified for latest head."

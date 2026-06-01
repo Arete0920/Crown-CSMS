@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const RECORDS_TREND = [
   { month: 'Aug', value: 0 }, { month: 'Sep', value: 8400 }, { month: 'Oct', value: 16800 },
@@ -20,7 +20,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Data Migration Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/dataMigration/summary/',
   liveDataKey: 'dataMigration',

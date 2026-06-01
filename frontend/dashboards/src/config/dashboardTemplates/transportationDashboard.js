@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const ROUTE_TREND = [
   { month: 'Aug', value: 8 }, { month: 'Sep', value: 10 }, { month: 'Oct', value: 10 },

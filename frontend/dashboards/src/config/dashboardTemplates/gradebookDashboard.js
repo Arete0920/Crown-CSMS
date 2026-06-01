@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
+﻿import { LIVE_NOTE, BASE_STATUS, BASE_TREND } from './_baseData.js';
 
 export default {
   key: 'gradebook',
@@ -7,7 +7,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Academic Performance View',
   subtitle: 'Grading progress, missing work, and at-risk tracking',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/gradebook/summary/',
   liveDataKey: 'gradebook',

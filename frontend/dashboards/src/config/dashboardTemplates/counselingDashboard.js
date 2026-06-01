@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const REFERRAL_TREND = [
   { month: 'Sep', value: 7 }, { month: 'Oct', value: 9 }, { month: 'Nov', value: 8 },
@@ -18,7 +18,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Counselors!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/counseling/summary/',
   liveDataKey: 'counseling',

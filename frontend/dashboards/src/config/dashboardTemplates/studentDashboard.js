@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const ACADEMIC_AVG_TREND = [
   { month: 'Sep', value: 88 },
@@ -34,7 +34,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Alex!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/student/summary/',
   liveDataKey: 'student',

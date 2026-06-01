@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const CIRC_TREND = [
   { month: 'Aug', value: 124 }, { month: 'Sep', value: 218 }, { month: 'Oct', value: 264 },

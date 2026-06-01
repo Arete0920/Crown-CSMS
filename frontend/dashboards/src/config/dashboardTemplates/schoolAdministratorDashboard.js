@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const ENROLLMENT_TREND = [
   { month: 'Oct', value: 1198 },
@@ -35,7 +35,7 @@ export default {
   dashboardTitle: 'School Administrator Command Center',
   truthLabel: 'Whole-school operating dashboard',
   lastSyncLabel: 'Updated from current school operations snapshot',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/schoolAdministrator/summary/',
   liveDataKey: 'schoolAdministrator',

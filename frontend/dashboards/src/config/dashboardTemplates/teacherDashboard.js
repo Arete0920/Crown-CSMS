@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const GRADE_COMPLETION_TREND = [
   { month: 'Sep', value: 84 },
@@ -34,7 +34,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Mr. Chen!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/teacher/summary/',
   liveDataKey: 'teacher',
