@@ -43,6 +43,25 @@ function Assert-Present {
     }
 }
 
+function Get-ObjectPropertyValue {
+    param(
+        [object]$Object,
+        [string]$Name,
+        [object]$Default = $null
+    )
+
+    if ($null -eq $Object) {
+        return $Default
+    }
+
+    $prop = $Object.PSObject.Properties[$Name]
+    if ($null -eq $prop) {
+        return $Default
+    }
+
+    return $prop.Value
+}
+
 $summary = [ordered]@{
     generated_at = (Get-Date).ToUniversalTime().ToString("o")
     repo_root = $repoRoot
@@ -140,10 +159,14 @@ try {
         )
         $presence = foreach ($key in $requiredSettings) {
             $item = $settings | Where-Object { $_.name -eq $key } | Select-Object -First 1
+            $hasValue = $false
+            if ($null -ne $item) {
+                $hasValue = -not [string]::IsNullOrWhiteSpace("$($item.value)")
+            }
             [ordered]@{
                 key = $key
                 present = [bool]$item
-                has_value = [bool]($item.value)
+                has_value = $hasValue
             }
         }
         Save-Json -Object $presence -Path $settingsPath
@@ -157,39 +180,48 @@ try {
     $healthResponse = Invoke-WebRequest -UseBasicParsing -Uri $HealthUrl -TimeoutSec 30
     $healthResponse.Content | Set-Content -Path $healthPath -Encoding UTF8
     $health = Get-Content $healthPath -Raw | ConvertFrom-Json
+    $healthOk = Get-ObjectPropertyValue -Object $health -Name "ok"
+    $healthStatus = Get-ObjectPropertyValue -Object $health -Name "status" -Default ""
+    $healthEnv = Get-ObjectPropertyValue -Object $health -Name "env" -Default ""
+    $healthDb = Get-ObjectPropertyValue -Object $health -Name "db" -Default ""
+    $healthBuildSha = Get-ObjectPropertyValue -Object $health -Name "build_sha" -Default ""
     Add-Check -Name "health_endpoint_200" -Pass ($healthResponse.StatusCode -eq 200) -Detail "status=$($healthResponse.StatusCode) path=$healthPath"
-    Add-Check -Name "health_ok" -Pass ($health.ok -eq $true -or "$($health.status)".ToLowerInvariant() -eq "ok") -Detail "ok=$($health.ok) status=$($health.status)"
-    Add-Check -Name "health_env_prod" -Pass ("$($health.env)" -eq "prod") -Detail "env=$($health.env)"
-    Add-Check -Name "health_db_ok" -Pass ("$($health.db)" -eq "ok") -Detail "db=$($health.db)"
-    Assert-Present -Name "health.build_sha" -Value $health.build_sha
+    Add-Check -Name "health_ok" -Pass ($healthOk -eq $true -or "$healthStatus".ToLowerInvariant() -eq "ok") -Detail "ok=$healthOk status=$healthStatus"
+    Add-Check -Name "health_env_prod" -Pass ("$healthEnv" -eq "prod") -Detail "env=$healthEnv"
+    Add-Check -Name "health_db_ok" -Pass ("$healthDb" -eq "ok") -Detail "db=$healthDb"
+    Assert-Present -Name "health.build_sha" -Value $healthBuildSha
 
     $integrityPath = Join-Path $base "10_integrity.json"
     $integrityResponse = Invoke-WebRequest -UseBasicParsing -Uri $IntegrityUrl -TimeoutSec 30
     $integrityResponse.Content | Set-Content -Path $integrityPath -Encoding UTF8
     $integrity = Get-Content $integrityPath -Raw | ConvertFrom-Json
+    $integrityOk = Get-ObjectPropertyValue -Object $integrity -Name "ok"
+    $integrityStatus = Get-ObjectPropertyValue -Object $integrity -Name "status" -Default ""
+    $integrityEnv = Get-ObjectPropertyValue -Object $integrity -Name "env" -Default ""
+    $integrityBuildSha = Get-ObjectPropertyValue -Object $integrity -Name "build_sha" -Default ""
     Add-Check -Name "integrity_endpoint_200" -Pass ($integrityResponse.StatusCode -eq 200) -Detail "status=$($integrityResponse.StatusCode) path=$integrityPath"
-    Add-Check -Name "integrity_ok" -Pass ($integrity.ok -eq $true -or "$($integrity.status)".ToLowerInvariant() -eq "ok") -Detail "ok=$($integrity.ok) status=$($integrity.status)"
-    Add-Check -Name "integrity_env_prod" -Pass ("$($integrity.env)" -eq "prod") -Detail "env=$($integrity.env)"
-    Assert-Present -Name "integrity.build_sha" -Value $integrity.build_sha
+    Add-Check -Name "integrity_ok" -Pass ($integrityOk -eq $true -or "$integrityStatus".ToLowerInvariant() -eq "ok") -Detail "ok=$integrityOk status=$integrityStatus"
+    Add-Check -Name "integrity_env_prod" -Pass ("$integrityEnv" -eq "prod") -Detail "env=$integrityEnv"
+    Assert-Present -Name "integrity.build_sha" -Value $integrityBuildSha
 
-    $sameRuntimeSha = ("$($health.build_sha)" -eq "$($integrity.build_sha)")
-    Add-Check -Name "health_integrity_sha_match" -Pass $sameRuntimeSha -Detail "health=$($health.build_sha) integrity=$($integrity.build_sha)"
+    $sameRuntimeSha = ("$healthBuildSha" -eq "$integrityBuildSha")
+    Add-Check -Name "health_integrity_sha_match" -Pass $sameRuntimeSha -Detail "health=$healthBuildSha integrity=$integrityBuildSha"
 
-    $matchesExpected = ("$($health.build_sha)" -eq $ExpectedSha -and "$($integrity.build_sha)" -eq $ExpectedSha)
-    Add-Check -Name "runtime_matches_expected_sha" -Pass $matchesExpected -Detail "expected=$ExpectedSha health=$($health.build_sha) integrity=$($integrity.build_sha)"
+    $matchesExpected = ("$healthBuildSha" -eq $ExpectedSha -and "$integrityBuildSha" -eq $ExpectedSha)
+    Add-Check -Name "runtime_matches_expected_sha" -Pass $matchesExpected -Detail "expected=$ExpectedSha health=$healthBuildSha integrity=$integrityBuildSha"
 
     $shaComparisonPath = Join-Path $base "11_sha_comparison.json"
     Save-Json -Object ([ordered]@{
         expected_sha = $ExpectedSha
-        health_build_sha = "$($health.build_sha)"
-        integrity_build_sha = "$($integrity.build_sha)"
-        health_ok = $health.ok
-        health_status = $health.status
-        health_env = $health.env
-        health_db = $health.db
-        integrity_ok = $integrity.ok
-        integrity_status = $integrity.status
-        integrity_env = $integrity.env
+        health_build_sha = "$healthBuildSha"
+        integrity_build_sha = "$integrityBuildSha"
+        health_ok = $healthOk
+        health_status = $healthStatus
+        health_env = $healthEnv
+        health_db = $healthDb
+        integrity_ok = $integrityOk
+        integrity_status = $integrityStatus
+        integrity_env = $integrityEnv
         health_integrity_sha_match = $sameRuntimeSha
         runtime_matches_expected_sha = $matchesExpected
     }) -Path $shaComparisonPath
