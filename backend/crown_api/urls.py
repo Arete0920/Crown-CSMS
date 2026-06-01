@@ -68,6 +68,9 @@ urlpatterns = [
     path("api/auth/me/", me, name="auth_me"),
     # Demo-only dev token endpoint (fail-closed)
     path("api/dev/token/", dev_token, name="dev_token"),
+    # Little Lambs is an operating alias of Aftercare; keep it before api_v1 catch-all.
+    path("api/v1/little-lambs/", include("aftercare.urls")),
+    path("api/little-lambs/", include("aftercare.urls")),
     # Canonical API
     path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
     path("api/v1/", include("crown_api.api_v1_urls")),
