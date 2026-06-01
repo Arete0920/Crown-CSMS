@@ -1,0 +1,36 @@
+name: Route Exposure Guard
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/execution/995_route_exposure_guard_gate.ps1"
+      - "frontend/dashboards/src/routes/router.jsx"
+      - "frontend/dashboards/src/routes/**"
+      - ".github/workflows/route-exposure-guard.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  route-exposure-guard:
+    name: Route Exposure Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run route exposure guard gate
+        shell: pwsh
+        run: ./scripts/execution/995_route_exposure_guard_gate.ps1
+
+      - name: Upload route exposure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-exposure-guard-${{ github.run_number }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: audit-artifacts/route-exposure-guard-*/**
