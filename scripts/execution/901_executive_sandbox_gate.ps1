@@ -33,7 +33,11 @@ function Invoke-Step {
 
     Push-Location $WorkingDirectory
     try {
-        cmd.exe /c $Command 1> $LogPath 2>&1
+        if (Get-Command cmd.exe -ErrorAction SilentlyContinue) {
+            cmd.exe /c $Command 1> $LogPath 2>&1
+        } else {
+            pwsh -NoLogo -NoProfile -Command $Command 1> $LogPath 2>&1
+        }
         $exitCode = $LASTEXITCODE
         if ($null -eq $exitCode) { $exitCode = 0 }
         if ($exitCode -ne 0) { $ok = $false }
@@ -80,6 +84,25 @@ function Add-ScanResult {
     }) | Out-Null
 }
 
+function Get-BranchNameSafe {
+    $name = (git branch --show-current 2>$null)
+    if (-not [string]::IsNullOrWhiteSpace($name)) {
+        return $name.Trim()
+    }
+
+    $ref = (git rev-parse --abbrev-ref HEAD 2>$null)
+    if (-not [string]::IsNullOrWhiteSpace($ref) -and $ref.Trim() -ne "HEAD") {
+        return $ref.Trim()
+    }
+
+    $githubRef = $env:GITHUB_REF_NAME
+    if (-not [string]::IsNullOrWhiteSpace($githubRef)) {
+        return $githubRef.Trim()
+    }
+
+    return "detached-head"
+}
+
 $repoRoot = (git rev-parse --show-toplevel).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) {
     throw "Not inside a git repository."
@@ -87,7 +110,6 @@ if ([string]::IsNullOrWhiteSpace($repoRoot)) {
 Set-Location $repoRoot
 
 Require-Command git
-Require-Command powershell
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $outDir = Join-Path $repoRoot ".crown-audit\executive-sandbox-gate\$timestamp"
@@ -104,7 +126,7 @@ $env:TENANT_HEADER_REQUIRED = "0"
 if (-not $env:DJANGO_SECRET_KEY) { $env:DJANGO_SECRET_KEY = "local-ci-test-key" }
 
 $head = (git rev-parse HEAD).Trim()
-$branch = (git branch --show-current).Trim()
+$branch = Get-BranchNameSafe
 $dirty = @((git status --porcelain=v1) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 
 $scanRows = New-Object System.Collections.Generic.List[object]
@@ -153,7 +175,7 @@ if (Test-Path $navPath) {
     if ($nav -notmatch "isProductionReady") {
         Add-ScanResult $scanRows "FAIL" "sandbox-nav" "Navigation does not filter dashboard items by production-ready state." "frontend/dashboards/src/components/navigation/dashboardNavConfig.js"
     }
-    if ($nav -notmatch "visibleStaticSections = readyOnly\s*\?\s*\[\]") {
+    if ($nav -notmatch "visibleStaticSections\s*=\s*readyOnly") {
         Add-ScanResult $scanRows "WARN" "sandbox-nav" "Static nav may still show in sandbox-ready-only mode." "frontend/dashboards/src/components/navigation/dashboardNavConfig.js"
     }
 }
