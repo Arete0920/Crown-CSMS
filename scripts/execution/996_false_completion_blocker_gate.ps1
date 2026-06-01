@@ -112,7 +112,11 @@ Search-RepoText -Paths $backendDashboardFiles -Pattern "Phase A stub|gracefully 
 $wizardRoutes = "frontend/dashboards/src/routes/wizards.js"
 $wizardText = Read-TextFile $wizardRoutes
 if ($wizardText) {
-    $placeholderRouteMatches = Select-String -Path $wizardRoutes -Pattern "component:\s*WizardHub|releaseState:\s*'placeholder'|releaseState:\s*\"placeholder\"" -AllMatches -ErrorAction SilentlyContinue
+    $placeholderRouteMatches = Select-String -Path $wizardRoutes -Pattern @(
+        'component:\s*WizardHub',
+        'releaseState:\s*''placeholder''',
+        'releaseState:\s*"placeholder"'
+    ) -AllMatches -ErrorAction SilentlyContinue
     foreach ($match in $placeholderRouteMatches) {
         Add-Finding -Id "FC-030" -Severity "BLOCKER" -Area "wizard-completion" -File $wizardRoutes -Evidence ("line {0}: {1}" -f $match.LineNumber, $match.Line.Trim()) -RequiredFix "Complete the wizard save/continue/commit path with backend API proof or keep route non-production-visible and excluded from completion claims."
     }

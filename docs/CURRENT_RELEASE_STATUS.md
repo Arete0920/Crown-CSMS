@@ -12,12 +12,12 @@ Purpose: Single canonical authority for repository-level release posture.
 
 ## Current Decision
 
-Repository-wide decision: CONDITIONAL GO.
+Repository-wide decision: NO-GO.
 
 Decision meaning:
 
 - Backend and frontend proof lanes are green for currently validated slices.
-- Repository-wide unrestricted GA language is still blocked pending full authority hygiene convergence and deploy parity closure.
+- Repository-wide GO language remains blocked pending full authority hygiene convergence and deploy parity closure.
 
 ## Canonical Status Metadata
 
