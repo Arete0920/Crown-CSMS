@@ -1,0 +1,39 @@
+name: False Completion Blocker
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/execution/996_false_completion_blocker_gate.ps1"
+      - "docs/CURRENT_RELEASE_STATUS.md"
+      - "docs/release/final-95-plus-sprint/**"
+      - "frontend/dashboards/src/config/dashboardTemplates/**"
+      - "frontend/dashboards/src/routes/wizards.js"
+      - "backend/crown_api/dashboards/**"
+      - ".github/workflows/false-completion-blocker.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  false-completion-blocker:
+    name: False Completion Blocker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run false-completion blocker gate
+        shell: pwsh
+        run: ./scripts/execution/996_false_completion_blocker_gate.ps1
+
+      - name: Upload false-completion evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: false-completion-blocker-${{ github.run_number }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: audit-artifacts/false-completion-blocker-*/**
