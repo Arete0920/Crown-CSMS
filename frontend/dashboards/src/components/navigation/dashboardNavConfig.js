@@ -1,9 +1,17 @@
 import { getAccessibleDashboardSections } from '../../config/dashboardRegistry';
+import { isProductionReady } from '../../config/releaseState';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { filterVisibleNav } from '../../auth/roleAccess';
 import { PATHS } from '../../routes/paths';
 import { ROLE_GROUPS } from '../../routes/routeGroups';
 import { APP_PERMISSIONS } from '../../auth/permissions';
+
+function sandboxReadyOnlyEnabled() {
+  const env = import.meta.env || {};
+  return String(env.VITE_SANDBOX_READY_ONLY || '').toLowerCase() === 'true'
+    || String(env.VITE_HIDE_UNREADY_NAV || '').toLowerCase() === 'true'
+    || String(env.VITE_SANDBOX_MODE || '') === '1';
+}
 
 const STATIC_NAV_SECTIONS = [
   {
@@ -104,6 +112,8 @@ function normalizeAndDedupeSections(sections) {
           label: item.label,
           href,
           tier: item.tier,
+          roles: item.roles,
+          permissions: item.permissions,
         };
       }).filter(Boolean);
 
@@ -117,16 +127,22 @@ function normalizeAndDedupeSections(sections) {
 
 export function getDashboardNavSections() {
   const userRoles = getCurrentUserRoles();
-  const visibleStaticSections = filterVisibleNav(STATIC_NAV_SECTIONS, userRoles);
+  const readyOnly = sandboxReadyOnlyEnabled();
+  const visibleStaticSections = readyOnly
+    ? []
+    : filterVisibleNav(STATIC_NAV_SECTIONS, userRoles);
 
   const dynamicSections = getAccessibleDashboardSections(userRoles).map((section) => ({
     label: section.sectionLabel,
-    children: section.items.map((item) => ({
-      key: item.key,
-      label: item.label,
-      href: item.path,
-      tier: item.tier,
-    })),
+    children: section.items
+      .filter((item) => !readyOnly || isProductionReady(item))
+      .map((item) => ({
+        key: item.key,
+        label: item.label,
+        href: item.path,
+        tier: item.tier,
+        roles: item.roles || item.allowedRoles,
+      })),
   }));
 
   return normalizeAndDedupeSections([...visibleStaticSections, ...dynamicSections]);

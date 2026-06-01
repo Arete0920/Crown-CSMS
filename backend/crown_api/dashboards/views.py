@@ -1,11 +1,11 @@
 from copy import deepcopy
 import os
 
+from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.conf import settings
 
 from core.permissions import user_has_permission
 
@@ -16,6 +16,13 @@ import uuid as _uuid
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound, ValidationError
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
 
 
 def _is_production_runtime() -> bool:
@@ -29,6 +36,26 @@ def _is_production_runtime() -> bool:
         or str(os.getenv('AZURE_ENVIRONMENT', '') or '')
     ).strip().lower()
     return env in {'prod', 'production', 'live'} or bool(os.getenv('WEBSITE_HOSTNAME'))
+
+
+def _sample_dashboard_payloads_allowed() -> bool:
+    """
+    Allow sample dashboard payloads only when the environment explicitly says so
+    or when the runtime is clearly non-production.
+
+    This prevents a production or full-completion certification lane from getting
+    HTTP 200 dashboard summaries backed only by SAMPLE_PAYLOAD_BUILDERS.
+    """
+    if _env_flag('CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', default=False):
+        return True
+
+    if bool(getattr(settings, 'CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', False)):
+        return True
+
+    if _is_production_runtime():
+        return False
+
+    return True
 
 
 def _school_id_from_request(request):
@@ -132,6 +159,7 @@ def dashboard_alerts(request):
         "alerts": [],
     })
 
+
 class DashboardSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -172,13 +200,14 @@ class DashboardSummaryView(APIView):
             validate_dashboard_payload(payload)
             return Response(payload, status=status.HTTP_200_OK)
 
-        if _is_production_runtime():
+        if not _sample_dashboard_payloads_allowed():
             return Response(
                 {
                     'code': 'dashboard_live_data_required',
-                    'message': f'No live or snapshot payload is available for "{key}" in production.',
+                    'message': f'No live or snapshot payload is available for "{key}" in this environment.',
                     'dashboard_key': key,
                     'school_id': school_id,
+                    'required_resolution': 'Create a live dashboard service or certified DashboardSnapshot before production/full-completion certification.',
                 },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
@@ -188,5 +217,6 @@ class DashboardSummaryView(APIView):
         payload.setdefault('meta', {})
         payload['meta'].setdefault('served_from', 'sample')
         payload['meta']['school_id'] = school_id
+        payload['meta']['sample_payload_allowed'] = True
         validate_dashboard_payload(payload)
         return Response(payload, status=status.HTTP_200_OK)

@@ -1,0 +1,103 @@
+name: Sandbox Ready Evidence Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: sandbox-ready-evidence-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  sandbox-ready-evidence:
+    name: Sandbox Ready Evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CROWN_ENV: production
+      CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS: "0"
+      TENANT_HEADER_REQUIRED: "0"
+      VITE_SANDBOX_READY_ONLY: "true"
+      VITE_HIDE_UNREADY_NAV: "true"
+      VITE_SANDBOX_MODE: "1"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Backend dashboard gate tests
+        run: python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py -q
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend/dashboards
+        run: npm ci
+
+      - name: Frontend unit tests
+        working-directory: frontend/dashboards
+        env:
+          VITE_SANDBOX_READY_ONLY: ""
+          VITE_HIDE_UNREADY_NAV: ""
+          VITE_SANDBOX_MODE: ""
+        run: npm run test:unit --if-present
+
+      - name: Frontend shell certification
+        working-directory: frontend/dashboards
+        env:
+          VITE_SANDBOX_READY_ONLY: ""
+          VITE_HIDE_UNREADY_NAV: ""
+          VITE_SANDBOX_MODE: ""
+        run: npm run check:shell-certification --if-present
+
+      - name: Sandbox ready static assertions
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "VITE_SANDBOX_READY_ONLY" frontend/dashboards/src/components/navigation/dashboardNavConfig.js
+          grep -q "VITE_HIDE_UNREADY_NAV" frontend/dashboards/src/components/navigation/dashboardNavConfig.js
+          grep -q "isProductionReady" frontend/dashboards/src/components/navigation/dashboardNavConfig.js
+          grep -q "visibleStaticSections = readyOnly" frontend/dashboards/src/components/navigation/dashboardNavConfig.js
+          grep -q "dashboard_live_data_required" backend/crown_api/dashboards/views.py
+          grep -q "CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS" backend/crown_api/dashboards/views.py
+
+      - name: Run completion evidence gates
+        shell: pwsh
+        run: |
+          ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep
+          ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep
+
+      - name: Upload sandbox evidence artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-ready-evidence-${{ github.run_number }}-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            .crown-audit/**
+            audit-artifacts/**
+            frontend/dashboards/test-results/**
+            frontend/dashboards/playwright-report/**
+            frontend/dashboards/artifacts/**
