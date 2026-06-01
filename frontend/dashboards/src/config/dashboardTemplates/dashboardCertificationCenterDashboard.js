@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const CERT_TREND = [
   { month: 'Aug', value: 2 }, { month: 'Sep', value: 6 }, { month: 'Oct', value: 12 },
@@ -20,7 +20,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Certification Center!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/dashboardCertificationCenter/summary/',
   liveDataKey: 'dashboardCertificationCenter',

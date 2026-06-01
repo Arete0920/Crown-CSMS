@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const CHAPEL_TREND = [
   { month: 'Sep', value: 84 }, { month: 'Oct', value: 86 }, { month: 'Nov', value: 87 },
@@ -22,7 +22,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Chaplain!',
   subtitle: 'Spiritual Life & Biblical Formation Command Center',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/spiritualLife/summary/',
   liveDataKey: 'spiritualLife',

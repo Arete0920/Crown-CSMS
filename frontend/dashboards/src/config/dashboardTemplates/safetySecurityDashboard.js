@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const INC_TREND = [
   { month: 'Aug', value: 2 }, { month: 'Sep', value: 3 }, { month: 'Oct', value: 1 },

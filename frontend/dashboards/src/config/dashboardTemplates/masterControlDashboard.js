@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const DASH_TREND = [
   { month: 'Aug', value: 8 }, { month: 'Sep', value: 12 }, { month: 'Oct', value: 18 },
@@ -20,7 +20,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Master Control!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/masterControl/summary/',
   liveDataKey: 'masterControl',

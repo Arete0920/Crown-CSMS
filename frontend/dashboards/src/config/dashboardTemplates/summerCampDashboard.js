@@ -1,4 +1,4 @@
-import { BASE_NOTE } from './_baseData.js';
+import { LIVE_NOTE } from './_baseData.js';
 
 const ENROLLMENT_TREND = [
   { month: 'Apr', value: 48 },
@@ -20,7 +20,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Summer program command center',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/summerCamp/summary/',
   liveDataKey: 'summerCamp',

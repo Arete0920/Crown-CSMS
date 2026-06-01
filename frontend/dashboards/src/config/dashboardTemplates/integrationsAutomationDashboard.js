@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const API_TREND = [
   { month: 'Aug', value: 98.2 }, { month: 'Sep', value: 98.8 }, { month: 'Oct', value: 99.1 },
@@ -20,7 +20,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Integrations Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/integrationsAutomation/summary/',
   liveDataKey: 'integrationsAutomation',

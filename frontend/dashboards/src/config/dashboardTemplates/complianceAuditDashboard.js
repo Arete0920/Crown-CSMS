@@ -1,4 +1,4 @@
-﻿import { BASE_NOTE } from './_baseData.js';
+﻿import { LIVE_NOTE } from './_baseData.js';
 
 const CONTROL_TREND = [
   { month: 'Aug', value: 68 }, { month: 'Sep', value: 72 }, { month: 'Oct', value: 76 },
@@ -20,7 +20,7 @@ export default {
   eyebrow: 'CROWN Launch Preview',
   title: 'Good morning, Compliance Team!',
   subtitle: 'Heritage Christian Academy',
-  note: BASE_NOTE,
+  note: LIVE_NOTE,
   dataSource: 'live_api',
   apiEndpoint: '/api/v1/dashboards/complianceAudit/summary/',
   liveDataKey: 'complianceAudit',
