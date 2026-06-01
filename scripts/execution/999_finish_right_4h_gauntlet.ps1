@@ -17,6 +17,26 @@ New-Item -ItemType Directory -Force -Path $base | Out-Null
 
 $results = New-Object System.Collections.Generic.List[object]
 
+function Resolve-PythonCommand {
+    $venvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+    if (Test-Path $venvPython) { return $venvPython }
+    if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
+    if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
+    throw "Missing required Python command. Expected .venv\Scripts\python.exe, python, or py."
+}
+
+function Resolve-NpmCommand {
+    if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { return "npm.cmd" }
+    if (Get-Command npm -ErrorAction SilentlyContinue) { return "npm" }
+    throw "Missing required npm command."
+}
+
+function Resolve-PowerShellCommand {
+    if (Get-Command pwsh -ErrorAction SilentlyContinue) { return "pwsh" }
+    if (Get-Command powershell -ErrorAction SilentlyContinue) { return "powershell" }
+    throw "Missing required PowerShell command."
+}
+
 function Add-Result {
     param(
         [string]$Name,
@@ -118,8 +138,13 @@ function Invoke-StaticAssertion {
             }
         }
     }
-    Add-Result -Name $Name -ExitCode ($(if ($ok) { 0 } else { 1 })) -Log $log -Required "YES"
+    $code = if ($ok) { 0 } else { 1 }
+    Add-Result -Name $Name -ExitCode $code -Log $log -Required "YES"
 }
+
+$pythonExe = Resolve-PythonCommand
+$npmExe = Resolve-NpmCommand
+$psExe = Resolve-PowerShellCommand
 
 Invoke-InfoStep -Name "01_repo_truth" -Block {
     git branch --show-current
@@ -132,8 +157,8 @@ Invoke-InfoStep -Name "02_blocker_signal_scan" -Block {
     git grep -n -E "NO-GO|NOT VERIFIED|NOT DONE|BLOCKER|REVIEW REQUIRED|placeholder|sample data|not implemented|coming soon|TODO|FIXME" -- docs scripts backend frontend .github
 }
 
-Invoke-Step -Name "03_backend_django_check" -WorkingDirectory $repoRoot -Exe "python" -Args @("backend\manage.py", "check")
-Invoke-Step -Name "04_backend_migration_dry_run" -WorkingDirectory $repoRoot -Exe "python" -Args @("backend\manage.py", "makemigrations", "--check", "--dry-run")
+Invoke-Step -Name "03_backend_django_check" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("backend\manage.py", "check")
+Invoke-Step -Name "04_backend_migration_dry_run" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("backend\manage.py", "makemigrations", "--check", "--dry-run")
 
 $backendSmokeArgs = @(
     "-m", "pytest",
@@ -143,7 +168,7 @@ $backendSmokeArgs = @(
     "backend\crown_api\tests\test_dashboard_snapshot_summary_api.py",
     "-q", "--nomigrations"
 )
-Invoke-Step -Name "05_backend_core_smoke" -WorkingDirectory $repoRoot -Exe "python" -Args $backendSmokeArgs
+Invoke-Step -Name "05_backend_core_smoke" -WorkingDirectory $repoRoot -Exe $pythonExe -Args $backendSmokeArgs
 
 $backendSecurityArgs = @(
     "-m", "pytest",
@@ -151,22 +176,22 @@ $backendSecurityArgs = @(
     "backend\tests\test_release_security_readiness_contracts.py",
     "-q", "--nomigrations"
 )
-Invoke-Step -Name "06_backend_security_contracts" -WorkingDirectory $repoRoot -Exe "python" -Args $backendSecurityArgs
+Invoke-Step -Name "06_backend_security_contracts" -WorkingDirectory $repoRoot -Exe $pythonExe -Args $backendSecurityArgs
 
 $frontendRoot = Join-Path $repoRoot "frontend\dashboards"
-Invoke-Step -Name "07_frontend_npm_ci" -WorkingDirectory $frontendRoot -Exe "npm" -Args @("ci")
-Invoke-Step -Name "08_frontend_lint" -WorkingDirectory $frontendRoot -Exe "npm" -Args @("run", "lint")
-Invoke-Step -Name "09_frontend_contracts" -WorkingDirectory $frontendRoot -Exe "npm" -Args @("run", "test:contracts")
-Invoke-Step -Name "10_frontend_shell_certification" -WorkingDirectory $frontendRoot -Exe "npm" -Args @("run", "check:shell-certification")
-Invoke-Step -Name "11_frontend_shell_backend_contract_parity" -WorkingDirectory $frontendRoot -Exe "npm" -Args @("run", "check:shell-backend-contract-parity")
-Invoke-Step -Name "12_frontend_dashboard_completeness" -WorkingDirectory $frontendRoot -Exe "npm" -Args @("run", "verify:dashboard-completeness")
-Invoke-Step -Name "13_frontend_build" -WorkingDirectory $frontendRoot -Exe "npm" -Args @("run", "build")
+Invoke-Step -Name "07_frontend_npm_ci" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("ci")
+Invoke-Step -Name "08_frontend_lint" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "lint")
+Invoke-Step -Name "09_frontend_contracts" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "test:contracts")
+Invoke-Step -Name "10_frontend_shell_certification" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "check:shell-certification")
+Invoke-Step -Name "11_frontend_shell_backend_contract_parity" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "check:shell-backend-contract-parity")
+Invoke-Step -Name "12_frontend_dashboard_completeness" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "verify:dashboard-completeness")
+Invoke-Step -Name "13_frontend_build" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "build")
 
 Invoke-Step -Name "14_release_api_contracts" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts\release\verify-api-contracts.mjs")
 Invoke-Step -Name "15_release_navigation_surface" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts\release\verify-navigation-surface.mjs")
 
-Invoke-Step -Name "16_dashboard_completion_gate_deep" -WorkingDirectory $repoRoot -Exe "powershell" -Args @("-ExecutionPolicy", "Bypass", "-File", ".\scripts\execution\105_dashboard_module_completion_gate.ps1", "-Deep")
-Invoke-Step -Name "17_full_completion_truth_gate_deep" -WorkingDirectory $repoRoot -Exe "powershell" -Args @("-ExecutionPolicy", "Bypass", "-File", ".\scripts\execution\106_crown_full_completion_truth_gate.ps1", "-Deep")
+Invoke-Step -Name "16_dashboard_completion_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", ".\scripts\execution\105_dashboard_module_completion_gate.ps1", "-Deep")
+Invoke-Step -Name "17_full_completion_truth_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", ".\scripts\execution\106_crown_full_completion_truth_gate.ps1", "-Deep")
 
 Invoke-StaticAssertion -Name "18_sandbox_nav_flag_static_assertions" -Path "frontend\dashboards\src\components\navigation\dashboardNavConfig.js" -Patterns @(
     "VITE_SANDBOX_READY_ONLY",
