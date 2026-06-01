@@ -1,6 +1,3 @@
-$ErrorActionPreference = "Stop"
-Set-StrictMode -Version Latest
-
 param(
     [string]$ResourceGroup = "crown-rg",
     [string]$WebAppName = "crown-api-prod",
@@ -8,9 +5,11 @@ param(
     [string]$HealthUrl = "",
     [string]$IntegrityUrl = "",
     [string]$ExpectedSha = "",
-    [switch]$AllowApprovedReleaseSha,
     [switch]$SkipAzureCli
 )
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
 
 $repoRoot = (git rev-parse --show-toplevel 2>$null).Trim()
 if ([string]::IsNullOrWhiteSpace($repoRoot)) {
@@ -30,11 +29,6 @@ if ([string]::IsNullOrWhiteSpace($IntegrityUrl)) {
 }
 if ([string]::IsNullOrWhiteSpace($ExpectedSha)) {
     $ExpectedSha = (git rev-parse HEAD).Trim()
-}
-
-function Write-Section {
-    param([string]$Path, [string]$Title)
-    "=== $Title ===" | Set-Content -Path $Path -Encoding UTF8
 }
 
 function Save-Json {
@@ -78,7 +72,7 @@ function Add-Check {
 
 try {
     $repoPath = Join-Path $base "01_repo_truth.txt"
-    Write-Section -Path $repoPath -Title "REPO TRUTH"
+    "=== REPO TRUTH ===" | Set-Content -Path $repoPath -Encoding UTF8
     git branch --show-current | Add-Content -Path $repoPath -Encoding UTF8
     git rev-parse HEAD | Add-Content -Path $repoPath -Encoding UTF8
     git status --short --branch | Add-Content -Path $repoPath -Encoding UTF8
