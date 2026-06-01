@@ -12,17 +12,17 @@ if ([string]::IsNullOrWhiteSpace($repoRoot)) {
 }
 Set-Location $repoRoot
 
-$base = Join-Path $repoRoot "audit-artifacts\finish-right-4h-$stamp"
+$base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
 
 $results = New-Object System.Collections.Generic.List[object]
 
 function Resolve-PythonCommand {
-    $venvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+    $venvPython = Join-Path $repoRoot ".venv/Scripts/python.exe"
     if (Test-Path $venvPython) { return $venvPython }
     if (Get-Command python -ErrorAction SilentlyContinue) { return "python" }
     if (Get-Command py -ErrorAction SilentlyContinue) { return "py" }
-    throw "Missing required Python command. Expected .venv\Scripts\python.exe, python, or py."
+    throw "Missing required Python command. Expected .venv/Scripts/python.exe, python, or py."
 }
 
 function Resolve-NpmCommand {
@@ -157,28 +157,28 @@ Invoke-InfoStep -Name "02_blocker_signal_scan" -Block {
     git grep -n -E "NO-GO|NOT VERIFIED|NOT DONE|BLOCKER|REVIEW REQUIRED|placeholder|sample data|not implemented|coming soon|TODO|FIXME" -- docs scripts backend frontend .github
 }
 
-Invoke-Step -Name "03_backend_django_check" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("backend\manage.py", "check")
-Invoke-Step -Name "04_backend_migration_dry_run" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("backend\manage.py", "makemigrations", "--check", "--dry-run")
+Invoke-Step -Name "03_backend_django_check" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("manage.py", "check")
+Invoke-Step -Name "04_backend_migration_dry_run" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("manage.py", "makemigrations", "--check", "--dry-run")
 
 $backendSmokeArgs = @(
     "-m", "pytest",
-    "backend\core\tests\test_permission_engine.py",
-    "backend\tests\test_tenant_isolation.py",
-    "backend\crown_api\tests\test_health.py",
-    "backend\crown_api\tests\test_dashboard_snapshot_summary_api.py",
+    "backend/core/tests/test_permission_engine.py",
+    "backend/tests/test_tenant_isolation.py",
+    "backend/crown_api/tests/test_health.py",
+    "backend/crown_api/tests/test_dashboard_snapshot_summary_api.py",
     "-q", "--nomigrations"
 )
 Invoke-Step -Name "05_backend_core_smoke" -WorkingDirectory $repoRoot -Exe $pythonExe -Args $backendSmokeArgs
 
 $backendSecurityArgs = @(
     "-m", "pytest",
-    "backend\tests\test_release_security_permission_contracts.py",
-    "backend\tests\test_release_security_readiness_contracts.py",
+    "backend/tests/test_release_security_permission_contracts.py",
+    "backend/tests/test_release_security_readiness_contracts.py",
     "-q", "--nomigrations"
 )
 Invoke-Step -Name "06_backend_security_contracts" -WorkingDirectory $repoRoot -Exe $pythonExe -Args $backendSecurityArgs
 
-$frontendRoot = Join-Path $repoRoot "frontend\dashboards"
+$frontendRoot = Join-Path $repoRoot "frontend/dashboards"
 Invoke-Step -Name "07_frontend_npm_ci" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("ci")
 Invoke-Step -Name "08_frontend_lint" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "lint")
 Invoke-Step -Name "09_frontend_contracts" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "test:contracts")
@@ -187,13 +187,13 @@ Invoke-Step -Name "11_frontend_shell_backend_contract_parity" -WorkingDirectory 
 Invoke-Step -Name "12_frontend_dashboard_completeness" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "verify:dashboard-completeness")
 Invoke-Step -Name "13_frontend_build" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "build")
 
-Invoke-Step -Name "14_release_api_contracts" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts\release\verify-api-contracts.mjs")
-Invoke-Step -Name "15_release_navigation_surface" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts\release\verify-navigation-surface.mjs")
+Invoke-Step -Name "14_release_api_contracts" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts/release/verify-api-contracts.mjs")
+Invoke-Step -Name "15_release_navigation_surface" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts/release/verify-navigation-surface.mjs")
 
-Invoke-Step -Name "16_dashboard_completion_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", ".\scripts\execution\105_dashboard_module_completion_gate.ps1", "-Deep")
-Invoke-Step -Name "17_full_completion_truth_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", ".\scripts\execution\106_crown_full_completion_truth_gate.ps1", "-Deep")
+Invoke-Step -Name "16_dashboard_completion_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", "./scripts/execution/105_dashboard_module_completion_gate.ps1", "-Deep")
+Invoke-Step -Name "17_full_completion_truth_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", "./scripts/execution/106_crown_full_completion_truth_gate.ps1", "-Deep")
 
-Invoke-StaticAssertion -Name "18_sandbox_nav_flag_static_assertions" -Path "frontend\dashboards\src\components\navigation\dashboardNavConfig.js" -Patterns @(
+Invoke-StaticAssertion -Name "18_sandbox_nav_flag_static_assertions" -Path "frontend/dashboards/src/components/navigation/dashboardNavConfig.js" -Patterns @(
     "VITE_SANDBOX_READY_ONLY",
     "VITE_HIDE_UNREADY_NAV",
     "VITE_SANDBOX_MODE",
@@ -201,7 +201,7 @@ Invoke-StaticAssertion -Name "18_sandbox_nav_flag_static_assertions" -Path "fron
     "visibleStaticSections = readyOnly"
 )
 
-Invoke-StaticAssertion -Name "19_backend_dashboard_sample_fail_closed_assertions" -Path "backend\crown_api\dashboards\views.py" -Patterns @(
+Invoke-StaticAssertion -Name "19_backend_dashboard_sample_fail_closed_assertions" -Path "backend/crown_api/dashboards/views.py" -Patterns @(
     "CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS",
     "dashboard_live_data_required",
     "No live or snapshot payload is available",
