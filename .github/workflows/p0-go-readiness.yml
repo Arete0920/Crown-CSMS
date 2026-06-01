@@ -43,6 +43,7 @@ jobs:
       DJANGO_SECRET_KEY: p0-go-readiness-ci-only
       DATABASE_URL: sqlite:///./ci.sqlite3
       DJANGO_SETTINGS_MODULE: crown_api.settings
+      AZURE_CREDENTIALS_FOR_LOGIN: ${{ secrets.AZURE_CREDENTIALS }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -91,13 +92,13 @@ jobs:
         run: npm ci
 
       - name: Azure Login using service principal JSON
-        if: ${{ github.event.inputs.run_azure_probe != 'false' && secrets.AZURE_CREDENTIALS != '' }}
+        if: ${{ github.event.inputs.run_azure_probe != 'false' && env.AZURE_CREDENTIALS_FOR_LOGIN != '' }}
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Azure Login using OIDC
-        if: ${{ github.event.inputs.run_azure_probe != 'false' && secrets.AZURE_CREDENTIALS == '' }}
+        if: ${{ github.event.inputs.run_azure_probe != 'false' && env.AZURE_CREDENTIALS_FOR_LOGIN == '' }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
