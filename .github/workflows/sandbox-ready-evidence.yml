@@ -89,6 +89,48 @@ jobs:
           ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep
           ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep
 
+      - name: Emit latest gate summaries
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          echo "--- full-completion-truth latest summary ---"
+          if [ -f .crown-audit/full-completion-truth/latest/00_SUMMARY.md ]; then
+            cat .crown-audit/full-completion-truth/latest/00_SUMMARY.md
+          else
+            echo "(missing) .crown-audit/full-completion-truth/latest/00_SUMMARY.md"
+          fi
+          echo
+          echo "--- dashboard-completion latest summary ---"
+          if [ -f .crown-audit/dashboard-completion/latest/00_SUMMARY.md ]; then
+            cat .crown-audit/dashboard-completion/latest/00_SUMMARY.md
+          else
+            echo "(missing) .crown-audit/dashboard-completion/latest/00_SUMMARY.md"
+          fi
+          echo
+          echo "--- latest status files ---"
+          if [ -f .crown-audit/full-completion-truth/latest/99_STATUS.json ]; then
+            cat .crown-audit/full-completion-truth/latest/99_STATUS.json
+          else
+            echo "(missing) .crown-audit/full-completion-truth/latest/99_STATUS.json"
+          fi
+          if [ -f .crown-audit/dashboard-completion/latest/99_STATUS.json ]; then
+            cat .crown-audit/dashboard-completion/latest/99_STATUS.json
+          else
+            echo "(missing) .crown-audit/dashboard-completion/latest/99_STATUS.json"
+          fi
+
+      - name: Stage hidden audit outputs for artifact upload
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          rm -rf crown-audit-export
+          if [ -d .crown-audit ]; then
+            mkdir -p crown-audit-export
+            cp -R .crown-audit/. crown-audit-export/
+          fi
+
       - name: Upload sandbox evidence artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -97,7 +139,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
           path: |
-            .crown-audit/**
+            crown-audit-export/**
             audit-artifacts/**
             frontend/dashboards/test-results/**
             frontend/dashboards/playwright-report/**
