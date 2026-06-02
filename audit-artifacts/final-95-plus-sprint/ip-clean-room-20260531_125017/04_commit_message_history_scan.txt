@@ -1,0 +1,9 @@
+﻿# Scan 4 — Git Commit Message History Scan
+# Run: 2026-05-31 12:52:14
+# Pattern: blackbaud|renweb|veracross|skyward|nelnet|rediker|moodle|eschool|easyboard|booster|gibbon|fedena|like facts|like blackbaud|modeled after|reverse engineer
+# Scope: all commits on all branches (git log --all)
+# ============================================================
+
+5a2e5290d8d5b1f7a2ce5af4b9e9e7a82ead2dc8 feat(aftercare): add Crown preschool integration bridge
+
+# TOTAL HITS: 1
