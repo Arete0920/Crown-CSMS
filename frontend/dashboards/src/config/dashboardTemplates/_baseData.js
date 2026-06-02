@@ -10,6 +10,8 @@ export const BASE_TREND = [
 
 export const LIVE_NOTE = 'Widget badges disclose data provenance and non-live states.';
 
+export const BASE_NOTE = 'Sandbox preview data shown. Connect backend for live records.';
+
 export const BASE_COMMUNICATIONS = {
   inboxTitle: 'Unread and waiting',
   inboxSummary: 'Communications remains a shared operating spine across family, teacher, and school workflows.',

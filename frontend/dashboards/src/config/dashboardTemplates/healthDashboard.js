@@ -1,6 +1,4 @@
-﻿import { LIVE_NOTE } from './_baseData.js';
-
-const VISIT_TREND = [
+﻿const VISIT_TREND = [
   { month: 'Sep', value: 11 }, { month: 'Oct', value: 13 }, { month: 'Nov', value: 12 },
   { month: 'Dec', value: 14 }, { month: 'Jan', value: 13 }, { month: 'Feb', value: 14 }, { month: 'Mar', value: 14 },
 ];
