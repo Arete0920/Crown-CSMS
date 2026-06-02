@@ -1,6 +1,4 @@
-﻿import { LIVE_NOTE } from './_baseData.js';
-
-const BILLING_TREND = [
+﻿const BILLING_TREND = [
   { month: 'Aug', value: 92 }, { month: 'Sep', value: 156 }, { month: 'Oct', value: 210 },
   { month: 'Nov', value: 273 }, { month: 'Dec', value: 298 }, { month: 'Jan', value: 342 },
   { month: 'Feb', value: 381 }, { month: 'Mar', value: 412 },
