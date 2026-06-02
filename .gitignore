@@ -196,6 +196,8 @@ audit-artifacts/
 audit-artifacts/*
 !audit-artifacts/production-excellence-95-plus/
 !audit-artifacts/production-excellence-95-plus/**
+!audit-artifacts/final-95-plus-sprint/
+!audit-artifacts/final-95-plus-sprint/**
 artifacts/
 docs/audit/evidence/
 docs/audit/reports/
