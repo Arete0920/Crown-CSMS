@@ -59,6 +59,23 @@ Invoke-Gate -Name "120_release_authority_meta" -Command ".\scripts\execution\120
 $failures = @($steps | Where-Object { $_.Status -ne "PASS" })
 $pass = ($failures.Count -eq 0)
 
+$branchName = (git branch --show-current)
+if ([string]::IsNullOrWhiteSpace($branchName)) {
+    $branchName = $env:GITHUB_REF_NAME
+}
+if ([string]::IsNullOrWhiteSpace($branchName)) {
+    $branchName = "detached-head"
+} else {
+    $branchName = $branchName.Trim()
+}
+
+$headSha = (git rev-parse HEAD)
+if ([string]::IsNullOrWhiteSpace($headSha)) {
+    $headSha = "unknown"
+} else {
+    $headSha = $headSha.Trim()
+}
+
 $steps | Export-Csv -Path (Join-Path $outDir "10_stack_results.csv") -NoTypeInformation -Encoding UTF8
 $failures | Export-Csv -Path (Join-Path $outDir "20_stack_failures.csv") -NoTypeInformation -Encoding UTF8
 
@@ -66,8 +83,8 @@ $summary = @(
     "# CROWN Release Authority Stack",
     "",
     "- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')",
-    "- Branch: $((git branch --show-current).Trim())",
-    "- Head: $((git rev-parse HEAD).Trim())",
+    "- Branch: $branchName",
+    "- Head: $headSha",
     "- Steps: $($steps.Count)",
     "- Failures: $($failures.Count)",
     "",
@@ -79,8 +96,8 @@ Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
 $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
-    branch = (git branch --show-current).Trim()
-    head = (git rev-parse HEAD).Trim()
+    branch = $branchName
+    head = $headSha
     pass = $pass
     step_count = $steps.Count
     failure_count = $failures.Count
