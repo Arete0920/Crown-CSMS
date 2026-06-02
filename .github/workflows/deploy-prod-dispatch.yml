@@ -492,8 +492,9 @@ jobs:
             fi
 
             echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Checking health endpoint..."
+            rm -f /tmp/health_response.json
             RESPONSE=$(curl --max-time 30 -s -w "%{http_code}" -o /tmp/health_response.json "$HEALTH_ENDPOINT" 2>/dev/null || echo "000")
-            HTTP_CODE=$(echo "$RESPONSE" | tail -c 4)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -c 3)
 
             if [ "$HTTP_CODE" == "200" ]; then
               BUILD_SHA=$(extract_json_field "/tmp/health_response.json" "build_sha")
@@ -501,7 +502,7 @@ jobs:
 
               if [ -z "$BUILD_SHA" ] || [ -z "$DB_STATUS" ]; then
                 echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] WARN: Health response missing required fields (build_sha or db)"
-                echo "Response: $(cat /tmp/health_response.json 2>/dev/null | head -c 200)"
+                echo "Response: $(cat /tmp/health_response.json 2>/dev/null | head -c 500)"
               elif sha_matches "$BUILD_SHA" "$EXPECTED_SHA"; then
                 if [ "$DB_STATUS" == "ok" ]; then
                   echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] ✓ Health check PASSED (build_sha match: $BUILD_SHA, db: $DB_STATUS)"
