@@ -56,6 +56,10 @@ jobs:
         working-directory: frontend/dashboards
         run: npm ci
 
+      - name: Install Playwright browser runtime
+        working-directory: frontend/dashboards
+        run: npx playwright install --with-deps chromium
+
       - name: Frontend unit tests
         working-directory: frontend/dashboards
         env:
