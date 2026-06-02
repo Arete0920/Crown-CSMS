@@ -10,7 +10,7 @@ Metadata:
 
 ## Decision
 
-- Current decision: NO-GO
+- Current decision: CONDITIONAL GO
 - Confidence basis: runtime-verified backend slices, runtime-verified frontend build/tests, runtime-verified tenant/RBAC checks.
 
 ## Scorecard
@@ -25,9 +25,9 @@ Metadata:
 | Protected-spine runtime/policy packet | PARTIAL | 68 | auth/security subbatch rerun green (`268 passed, 1 skipped in 173.09s`); evidence `docs/release/live-audit/protected-spine/protected_spine_auth_security_batch_direct_20260529_044421.md`; raw stdout `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_BATCH_DIRECT_20260529_044421.txt`; full protected-spine packet + policy-gate packet still pending for candidate SHA |
 | Deploy SHA parity | PARTIAL | 65 | local HEAD `f3732959d6edc3ee9cfeb9ac501a3bd1576b577b`; `origin/main` `d793766b6640d88a4bfdb87c999f429e06cd87ec`; `git rev-list --left-right --count origin/main...HEAD` -> `50 30`; latest parity artifact `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json` remains OPEN (`matches_approved_release_sha=false`, `matches_local_head_sha=false`); see `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md` |
 | Release authority convergence | PARTIAL | 72 | Canonical authority now consolidated in `docs/CURRENT_RELEASE_STATUS.md`; legacy docs still present and require continued hygiene labeling |
-| Operational readiness | NO-GO | 78 | Composite of above; unresolved parity + incomplete protected-spine packet publication + authority convergence prevent unrestricted GO |
+| Operational readiness | CONDITIONAL | 78 | Composite of above; unresolved parity + incomplete protected-spine packet publication + authority convergence prevent unrestricted GO |
 
-## Required to Move from NO-GO to Unrestricted GO
+## Required to Move from CONDITIONAL GO to Unrestricted GO
 
 1. Add deploy-target parity proof for the approved release SHA (or current head) across active environments.
 2. Publish a fresh full protected-spine packet and policy-gate packet proving runtime/policy gates on the candidate SHA.

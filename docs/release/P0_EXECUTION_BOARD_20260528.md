@@ -1,12 +1,12 @@
 # P0 Execution Board - 2026-05-30
 
-Purpose: close only the blockers that prevent transition from NO-GO to unrestricted GO.
+Purpose: close only the blockers that prevent transition from CONDITIONAL GO to unrestricted GO.
 
 Canonical authority baseline:
 
-- Repository-wide decision is NO-GO (`docs/CURRENT_RELEASE_STATUS.md`).
+- Repository-wide decision is CONDITIONAL GO (`docs/CURRENT_RELEASE_STATUS.md`).
 - Deploy SHA parity remains PARTIAL / NOT YET CLOSED at repository-level authority (`docs/CURRENT_RELEASE_STATUS.md`).
-- Current scorecard decision is NO-GO (`docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`).
+- Current scorecard decision is CONDITIONAL GO (`docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`).
 - Supporting ranked closure backlog: `docs/release/PRODUCTION_RELEASE_TOP_10_REMAINING_TASKS_20260528.md`.
 
 Canonical truth priority:
@@ -63,7 +63,7 @@ All items below must be true simultaneously:
 
 ## Escalation Rule
 
-If any P0 acceptance criterion fails, release posture remains NO-GO and cannot be advanced by narrative justification.
+If any P0 acceptance criterion fails, release posture remains CONDITIONAL GO and cannot be advanced by narrative justification.
 
 ## Execution Updates
 
@@ -446,7 +446,7 @@ Historical chronology note:
 - Final decision packet published:
   - `docs/release/FINAL_CANONICAL_GATE_DECISION_PACKET_20260530.md`
 - Decision summary:
-  - historical approved release slice: `CONDITIONAL GO`
+  - approved release slice: `CONDITIONAL GO`
   - entire platform roadmap scope: `NOT GO` (unchanged)
 - Gate criteria verified as complete:
   - P0-1 CLOSED (deploy parity CLOSED on approved candidate SHA)
@@ -467,7 +467,7 @@ Historical chronology note:
   - `Failures: 9`
   - failure set included `106_full_completion_truth`, `121_dashboard_provenance`, `122_domain_model`, `130_data_migration`, `140_financial_controls`, `150_performance_load`, `160_observability_incident`, `105_dashboard_completion_deep`, and `120_release_authority_meta`.
 - Integrity note:
-  - these gates are proof-gated review surfaces outside the approved-slice P0 closure path and do not alter the canonical repository-level `NO-GO` decision recorded in `docs/CURRENT_RELEASE_STATUS.md`.
+  - these gates are proof-gated review surfaces outside the approved-slice P0 closure path and do not alter the canonical `CONDITIONAL GO` decision recorded in `docs/CURRENT_RELEASE_STATUS.md`.
 
 ### 2026-05-29 - Mainline reconcile packet completed on remote-clean clone
 
@@ -491,7 +491,7 @@ Historical chronology note:
   - `docs/release/live-audit/mainline-reconcile/mainline_reconcile_remote_clean_20260529_212250.md`
 - Status impact:
   - this confirms successful `97_mainline_reconcile` packet production on a clean execution surface.
-  - this does not change canonical release posture; historical approved-slice posture remains `CONDITIONAL GO`, whole-platform scope remains separately tracked.
+  - this does not change canonical release posture; approved slice remains `CONDITIONAL GO`, whole-platform scope remains separately tracked.
 
 ### 2026-05-29 - First-blocker closure queue published from reconcile local-check failures
 
@@ -547,7 +547,7 @@ Historical chronology note:
   - no remaining active blocker in `docs/release/PRODUCTION_RELEASE_FIRST_BLOCKER_QUEUE_20260529.md`.
 - Status impact:
   - local-check blocker queue is fully closed in this execution lane.
-  - historical approved-slice release authority remains unchanged (`CONDITIONAL GO`), with whole-platform scope separately tracked.
+  - canonical approved-slice release authority remains unchanged (`CONDITIONAL GO`), with whole-platform scope separately tracked.
 
 ### 2026-05-29 - First-blocker reproducibility delta (both invocation contexts pass)
 

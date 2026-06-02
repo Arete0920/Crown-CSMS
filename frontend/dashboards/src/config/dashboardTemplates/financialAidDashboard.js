@@ -1,4 +1,6 @@
-﻿const AID_TREND = [
+﻿import { LIVE_NOTE } from './_baseData.js';
+
+const AID_TREND = [
   { month: 'Aug', value: 24 }, { month: 'Sep', value: 38 }, { month: 'Oct', value: 51 },
   { month: 'Nov', value: 63 }, { month: 'Dec', value: 70 }, { month: 'Jan', value: 74 },
   { month: 'Feb', value: 79 }, { month: 'Mar', value: 87 },

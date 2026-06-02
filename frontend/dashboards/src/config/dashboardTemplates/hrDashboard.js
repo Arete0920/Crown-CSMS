@@ -1,4 +1,6 @@
-﻿const STAFF_TREND = [
+﻿import { LIVE_NOTE } from './_baseData.js';
+
+const STAFF_TREND = [
   { month: 'Aug', value: 48 }, { month: 'Sep', value: 52 }, { month: 'Oct', value: 54 },
   { month: 'Nov', value: 54 }, { month: 'Dec', value: 53 }, { month: 'Jan', value: 56 },
   { month: 'Feb', value: 57 }, { month: 'Mar', value: 58 },
