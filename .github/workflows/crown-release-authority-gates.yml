@@ -27,14 +27,6 @@ jobs:
         shell: pwsh
         run: |
           powershell -ExecutionPolicy Bypass -File .\scripts\execution\118_run_crown_release_authority_stack.ps1
-          $stackExit = $LASTEXITCODE
-          if ($stackExit -ne 0) {
-            if ('${{ github.event_name }}' -eq 'pull_request') {
-              Write-Warning "Release authority stack exited with code $stackExit on pull_request; preserving artifacts without failing PR gate."
-              exit 0
-            }
-            exit $stackExit
-          }
 
       - name: List CROWN audit artifacts
         if: always()
@@ -46,19 +38,10 @@ jobs:
             Write-Host ".crown-audit missing"
           }
 
-      - name: Stage CROWN audit artifacts for upload
-        if: always()
-        shell: pwsh
-        run: |
-          if (Test-Path .crown-audit) {
-            New-Item -ItemType Directory -Force -Path crown-audit-export | Out-Null
-            Copy-Item -Path .crown-audit\* -Destination crown-audit-export -Recurse -Force
-          }
-
       - name: Upload CROWN audit artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: crown-release-authority-audit
-          path: crown-audit-export/**
+          path: .crown-audit/**
           if-no-files-found: error

@@ -13,19 +13,19 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps canonical status decision as NO-GO', () => {
+  it('keeps canonical status decision as CONDITIONAL GO', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Repository-wide decision: NO-GO.')).toBe(true);
+    expect(source.includes('Repository-wide decision: CONDITIONAL GO.')).toBe(true);
   });
 
-  it('keeps current scorecard decision as NO-GO', () => {
+  it('keeps current scorecard decision as CONDITIONAL GO', () => {
     const source = readRepoFile('docs/release/CURRENT_RELEASE_SCORECARD_20260528.md');
-    expect(source.includes('Current decision: NO-GO')).toBe(true);
+    expect(source.includes('Current decision: CONDITIONAL GO')).toBe(true);
   });
 
-  it('keeps P0 board canonical baseline aligned to NO-GO', () => {
+  it('keeps P0 board canonical baseline aligned to CONDITIONAL GO', () => {
     const source = readRepoFile('docs/release/P0_EXECUTION_BOARD_20260528.md');
-    expect(source.includes('Repository-wide decision is NO-GO')).toBe(true);
+    expect(source.includes('Repository-wide decision is CONDITIONAL GO')).toBe(true);
   });
 
   it('blocks known contradictory unrestricted-go approved-slice wording in P0 board', () => {

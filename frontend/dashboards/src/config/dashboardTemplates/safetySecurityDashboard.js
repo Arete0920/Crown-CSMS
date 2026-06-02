@@ -1,4 +1,6 @@
-﻿const INC_TREND = [
+﻿import { LIVE_NOTE } from './_baseData.js';
+
+const INC_TREND = [
   { month: 'Aug', value: 2 }, { month: 'Sep', value: 3 }, { month: 'Oct', value: 1 },
   { month: 'Nov', value: 2 }, { month: 'Dec', value: 1 }, { month: 'Jan', value: 2 },
   { month: 'Feb', value: 1 }, { month: 'Mar', value: 0 },
