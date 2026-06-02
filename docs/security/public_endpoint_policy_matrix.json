@@ -16,7 +16,6 @@
     {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_context","status":"approved","owner":"Onboarding Team","rationale":"Public onboarding context helper.","controls":["Contract-limited fields","No auth tokens in response","Input validation"]},
     {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_categories","status":"approved","owner":"Onboarding Team","rationale":"Public category navigation endpoint.","controls":["Read-only output","No private records","Schema-constrained"]},
     {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_playbooks","status":"approved","owner":"Onboarding Team","rationale":"Public playbook index endpoint.","controls":["Read-only output","No private assets","Content reviewed"]},
-    {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_search","status":"approved","owner":"Onboarding Team","rationale":"Public search endpoint for onboarding resources.","controls":["Query validation","Result filtering","Rate-limit at edge"]},
-    {"type":"allow_any","path":"backend/crown_api/dashboards/views.py","symbol":"get","status":"approved","owner":"Dashboard Platform","rationale":"Sample/snapshot dashboard payload endpoint supports unauthenticated demo reads.","controls":["Served_from metadata tagging","No tenant-sensitive data in sample mode","Payload contract validation"]}
+    {"type":"allow_any","path":"backend/onboarding/api_onboarding.py","symbol":"solomon_search","status":"approved","owner":"Onboarding Team","rationale":"Public search endpoint for onboarding resources.","controls":["Query validation","Result filtering","Rate-limit at edge"]}
   ]
 }
