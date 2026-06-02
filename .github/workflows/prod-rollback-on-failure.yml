@@ -8,6 +8,7 @@ on:
     types: [completed]
 
 permissions:
+  actions: read
   contents: read
   issues: write
   id-token: write
@@ -77,11 +78,11 @@ jobs:
 
             if [ "$DB_STATUS" == "ok" ]; then
               echo "✓ RUNTIME HEALTHY: HTTP 200, db=ok"
-              echo "Upstream deploy failed due to automation timeout, NOT runtime fault."
+              echo "Upstream deploy failed, but live runtime health is still good."
               echo "Skipping rollback. Opening advisory-only issue."
               echo "rollback_needed=false" >> "$GITHUB_OUTPUT"
               echo "health_status=healthy" >> "$GITHUB_OUTPUT"
-              ROLLBACK_REASON="Deploy automation timeout detected; runtime health confirmed healthy."
+              ROLLBACK_REASON="Deploy automation failed; runtime health confirmed healthy."
               exit 0
             fi
           fi
@@ -135,28 +136,105 @@ jobs:
             const healthStatus = '${{ steps.health_recheck.outputs.health_status }}';
             const rollbackNeeded = '${{ steps.health_recheck.outputs.rollback_needed }}' === 'true';
             const timestamp = new Date().toISOString();
+            const runId = context.payload.workflow_run?.id;
 
             let title, body, labels;
+            let jobDiagnostics = [];
+            let runnerStartupFailure = false;
+
+            if (runId) {
+              const { data } = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: runId,
+                per_page: 100
+              });
+
+              const jobs = data.jobs || [];
+              const summarizeJob = (job) => {
+                const startedAt = job.started_at ? Date.parse(job.started_at) : null;
+                const completedAt = job.completed_at ? Date.parse(job.completed_at) : null;
+                const elapsedSeconds =
+                  startedAt && completedAt ? Math.max(0, Math.round((completedAt - startedAt) / 1000)) : null;
+                const stepCount = Array.isArray(job.steps) ? job.steps.length : 0;
+                return {
+                  name: job.name || 'unnamed',
+                  elapsedSeconds,
+                  runnerId: job.runner_id ?? 0,
+                  runnerName: job.runner_name || '',
+                  stepCount
+                };
+              };
+
+              jobDiagnostics = jobs.map(summarizeJob);
+              const failedJobs = jobs
+                .filter((job) => job.conclusion === 'failure')
+                .map(summarizeJob);
+              runnerStartupFailure =
+                failedJobs.length > 0 &&
+                failedJobs.every((job) =>
+                  job.runnerId === 0 &&
+                  job.runnerName === '' &&
+                  job.stepCount === 0 &&
+                  job.elapsedSeconds !== null &&
+                  job.elapsedSeconds < 10
+                );
+            }
+
+            const diagnosticsSection =
+              jobDiagnostics.length === 0
+                ? []
+                : [
+                    '',
+                    '## Job Diagnostics',
+                    ...jobDiagnostics.map((job) =>
+                      `- ${job.name}: elapsed=${job.elapsedSeconds ?? 'n/a'}s, runner_id=${job.runnerId}, runner_name=${job.runnerName || '(blank)'}, steps=${job.stepCount}`
+                    )
+                  ];
 
             if (!rollbackNeeded && healthStatus === 'healthy') {
-              // Automation timeout case: runtime is healthy, advisory only
-              title = `[ADVISORY] Prod deploy automation timed out but runtime healthy (${timestamp})`;
-              body = [
-                `Upstream workflow: ${context.payload.workflow_run?.name}`,
-                `Run URL: ${context.payload.workflow_run?.html_url}`,
-                `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
-                '',
-                '## Summary',
-                'Deploy workflow failed due to health-check automation timeout.',
-                'Live health check confirmed runtime is HEALTHY (HTTP 200, db=ok).',
-                '**Rollback was SKIPPED** — no emergency action needed.',
-                '',
-                '## Action Required',
-                '- Review deploy logs for root cause of automation timeout',
-                '- Consider increasing backoff attempts or health-check timeout if needed',
-                '- Monitor next deploy attempt to confirm timing is resolved'
-              ].join('\n');
-              labels = ['production-advisory', 'automation-timeout'];
+              if (runnerStartupFailure) {
+                title = `[ADVISORY] Prod deploy runner startup failed but runtime healthy (${timestamp})`;
+                body = [
+                  `Upstream workflow: ${context.payload.workflow_run?.name}`,
+                  `Run URL: ${context.payload.workflow_run?.html_url}`,
+                  `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
+                  '',
+                  '## Summary',
+                  'Deploy workflow failed before a GitHub Actions runner started.',
+                  'Live health check confirmed runtime is HEALTHY (HTTP 200, db=ok).',
+                  '**Rollback was SKIPPED** — no emergency action needed.',
+                  '',
+                  '## Likely Root Cause',
+                  '- Upstream job metadata matches the runner outage signature (`runner_id=0`, empty `runner_name`, no steps, sub-10s failure).',
+                  '- Job logs may be unavailable because the failed job never started on a runner.',
+                  ...diagnosticsSection,
+                  '',
+                  '## Action Required',
+                  '- Re-run the deploy after GitHub Actions runner capacity recovers',
+                  '- Review workflow job metadata if the pattern recurs',
+                  '- Only tune health-check backoff if a future deploy reaches the health-check step and still times out'
+                ].join('\n');
+                labels = ['production-advisory'];
+              } else {
+                title = `[ADVISORY] Prod deploy automation failed but runtime healthy (${timestamp})`;
+                body = [
+                  `Upstream workflow: ${context.payload.workflow_run?.name}`,
+                  `Run URL: ${context.payload.workflow_run?.html_url}`,
+                  `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
+                  '',
+                  '## Summary',
+                  'Deploy workflow failed, but live health check confirmed runtime is HEALTHY (HTTP 200, db=ok).',
+                  '**Rollback was SKIPPED** — no emergency action needed.',
+                  ...diagnosticsSection,
+                  '',
+                  '## Action Required',
+                  '- Review deploy logs and job metadata for the automation root cause',
+                  '- If the failure reached the deploy health check, consider increasing backoff attempts or timeout',
+                  '- Monitor the next deploy attempt to confirm the timing is resolved'
+                ].join('\n');
+                labels = ['production-advisory', 'automation-timeout'];
+              }
             } else {
               // True failure case: runtime unhealthy, emergency rollback executed
               title = `[INCIDENT] Prod deploy failed — emergency rollback executed (${timestamp})`;
