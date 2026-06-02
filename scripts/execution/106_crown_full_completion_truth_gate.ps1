@@ -150,10 +150,10 @@ foreach ($m in $routeMatches) {
 }
 
 $searchRoots = @(
-    Join-Path $repoRoot "frontend\dashboards\src",
-    Join-Path $repoRoot "frontend\dashboards\tests",
-    Join-Path $repoRoot "backend\tests",
-    Join-Path $repoRoot "audit-artifacts"
+    (Join-Path $repoRoot "frontend\dashboards\src"),
+    (Join-Path $repoRoot "frontend\dashboards\tests"),
+    (Join-Path $repoRoot "backend\tests"),
+    (Join-Path $repoRoot "audit-artifacts")
 ) | Where-Object { Test-Path $_ }
 
 $evidenceFiles = @()
@@ -276,11 +276,40 @@ if ($incompleteRows.Count -gt 0) {
 
 Write-Utf8 -Path (Join-Path $outDir "00_SUMMARY.md") -Lines $summary
 
+$branchRaw = ""
+try {
+    $branchRaw = [string](git branch --show-current 2>$null)
+} catch {
+    $branchRaw = ""
+}
+if ([string]::IsNullOrWhiteSpace($branchRaw)) {
+    $branchRaw = [string]$env:GITHUB_HEAD_REF
+}
+if ([string]::IsNullOrWhiteSpace($branchRaw)) {
+    $branchRaw = [string]$env:GITHUB_REF_NAME
+}
+if ([string]::IsNullOrWhiteSpace($branchRaw)) {
+    $branchRaw = "detached-head"
+}
+
+$headRaw = ""
+try {
+    $headRaw = [string](git rev-parse HEAD 2>$null)
+} catch {
+    $headRaw = ""
+}
+if ([string]::IsNullOrWhiteSpace($headRaw)) {
+    $headRaw = [string]$env:GITHUB_SHA
+}
+if ([string]::IsNullOrWhiteSpace($headRaw)) {
+    $headRaw = "unknown-sha"
+}
+
 $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
     repo_root = $repoRoot
-    branch = (git branch --show-current).Trim()
-    head = (git rev-parse HEAD).Trim()
+    branch = $branchRaw.Trim()
+    head = $headRaw.Trim()
     gate_105_deep = [ordered]@{
         passed = $run105Passed
         log = $run105Log
