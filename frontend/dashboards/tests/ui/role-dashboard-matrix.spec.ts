@@ -96,6 +96,16 @@ const NEW_NAV_LABELS = [
   { label: "Marketing",     href: "/marketing"     },
 ];
 
+const REACHABILITY_CASES = [
+  { href: "/it", role: "it" },
+  { href: "/office", role: "office_manager" },
+  { href: "/teacher", role: "teacher" },
+  { href: "/parent", role: "parent" },
+  { href: "/student", role: "student" },
+  { href: "/spiritual-life", role: "chaplain" },
+  { href: "/marketing", role: "marketing" },
+];
+
 const NOT_FOUND_RE = /not found|page not found|cannot find/i;
 
 // ── 3. Active-link bold (new routes) ─────────────────────────────────────
@@ -128,9 +138,9 @@ test.describe("Role Dashboard Matrix", () => {
 
   // ── 2. Route availability ───────────────────────────────────────────────
   test.describe("Pack 1 routes are reachable", () => {
-    test("all new Pack 1 routes are reachable in admin session", async ({ page }) => {
-      await seedDemoSession(page, "admin");
-      for (const { href } of NEW_NAV_LABELS) {
+    test("all new Pack 1 routes are reachable with role-aligned sessions", async ({ page }) => {
+      for (const { href, role } of REACHABILITY_CASES) {
+        await seedDemoSession(page, role);
         await page.goto(BASE + href, { waitUntil: "networkidle" });
         await expect(page).toHaveURL((url) => url.pathname === href);
         await expect(page.locator("main")).toBeVisible();
