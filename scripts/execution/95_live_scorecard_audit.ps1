@@ -157,9 +157,62 @@ New-Item -ItemType Directory -Force -Path $script:OutDir | Out-Null
 New-Item -ItemType Directory -Force -Path $latestDir | Out-Null
 
 $repoState = [ordered]@{}
-$repoState.Branch = (git branch --show-current).Trim()
-$repoState.Head = (git rev-parse HEAD).Trim()
-$repoState.CommitCount = [int]((git rev-list --count HEAD).Trim())
+$branchRaw = ""
+try {
+    $branchRaw = [string](git branch --show-current 2>$null)
+} catch {
+    $branchRaw = ""
+}
+$branchRaw = ("$branchRaw").Trim()
+if ([string]::IsNullOrWhiteSpace($branchRaw)) {
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_HEAD_REF)) {
+        $branchRaw = [string]$env:GITHUB_HEAD_REF
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF_NAME)) {
+        $branchRaw = [string]$env:GITHUB_REF_NAME
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF)) {
+        $branchRaw = [string]$env:GITHUB_REF
+    }
+    else {
+        $branchRaw = "detached-head"
+    }
+}
+$branchRaw = ("$branchRaw").Trim()
+if ($branchRaw -like "refs/heads/*") {
+    $branchRaw = $branchRaw.Substring(11)
+}
+
+$headRaw = ""
+try {
+    $headRaw = [string](git rev-parse HEAD 2>$null)
+} catch {
+    $headRaw = ""
+}
+$headRaw = ("$headRaw").Trim()
+if ([string]::IsNullOrWhiteSpace($headRaw)) {
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_SHA)) {
+        $headRaw = ("$env:GITHUB_SHA").Trim()
+    }
+    else {
+        $headRaw = "UNKNOWN"
+    }
+}
+
+$commitCountRaw = ""
+try {
+    $commitCountRaw = [string](git rev-list --count HEAD 2>$null)
+} catch {
+    $commitCountRaw = "0"
+}
+$commitCount = 0
+if (-not [int]::TryParse(("$commitCountRaw").Trim(), [ref]$commitCount)) {
+    $commitCount = 0
+}
+
+$repoState.Branch = $branchRaw
+$repoState.Head = $headRaw
+$repoState.CommitCount = $commitCount
 $repoState.StatusLines = @(git status --porcelain)
 $repoState.DirtyCount = @($repoState.StatusLines | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count
 
