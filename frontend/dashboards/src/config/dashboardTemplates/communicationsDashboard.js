@@ -1,6 +1,4 @@
-﻿import { LIVE_NOTE } from './_baseData.js';
-
-const MESSAGE_VOLUME_TREND = [
+﻿const MESSAGE_VOLUME_TREND = [
   { month: 'Sep', value: 142 },
   { month: 'Oct', value: 158 },
   { month: 'Nov', value: 171 },

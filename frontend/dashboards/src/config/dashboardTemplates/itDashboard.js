@@ -1,6 +1,4 @@
-﻿import { LIVE_NOTE } from './_baseData.js';
-
-const UPTIME_TREND = [
+﻿const UPTIME_TREND = [
   { month: 'Sep', value: 99.6 }, { month: 'Oct', value: 99.7 }, { month: 'Nov', value: 99.8 },
   { month: 'Dec', value: 99.7 }, { month: 'Jan', value: 99.9 }, { month: 'Feb', value: 99.8 }, { month: 'Mar', value: 99.8 },
 ];
