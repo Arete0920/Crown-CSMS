@@ -49,8 +49,8 @@ jobs:
                       "pip-audit",
                       "--ignore-vuln",
                       "PYSEC-2025-183",
-                    "--ignore-vuln",
-                    "PYSEC-2024-271",
+                      "--ignore-vuln",
+                      "PYSEC-2024-271",
                       "-r",
                       str(req),
                       "-f",
@@ -60,23 +60,42 @@ jobs:
                   text=True,
               )
               parsed = []
+              parse_error = False
               stdout = result.stdout.strip()
+              stderr = result.stderr.strip()
               if stdout:
                   try:
                       parsed = json.loads(stdout)
                   except json.JSONDecodeError:
+                      parse_error = True
                       parsed = [{"requirements_file": str(req), "parse_error": stdout}]
+
+              vuln_count = 0
+              for item in parsed if isinstance(parsed, list) else []:
+                  if isinstance(item, dict):
+                      vulns = item.get("vulns")
+                      if isinstance(vulns, list):
+                          vuln_count += len(vulns)
+
+              failed = False
+              if parse_error or vuln_count > 0:
+                  failed = True
+              elif result.returncode != 0 and "No known vulnerabilities found" not in stderr:
+                  failed = True
+
               outputs.append(
                   {
                       "requirements_file": str(req),
                       "exit_code": result.returncode,
+                      "failed": failed,
+                      "vulnerability_count": vuln_count,
                       "results": parsed,
-                      "stderr": result.stderr.strip(),
+                      "stderr": stderr,
                   }
               )
           Path("pip-audit-results.json").write_text(json.dumps(outputs, indent=2), encoding="utf-8")
           print(json.dumps(outputs, indent=2))
-          if any(item["exit_code"] != 0 for item in outputs):
+          if any(item["failed"] for item in outputs):
               raise SystemExit(1)
           PY
 
