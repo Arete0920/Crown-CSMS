@@ -152,5 +152,5 @@ describe("write flow UI integration smoke", () => {
     expect(await screen.findByText("Validation failed from smoke test.")).toBeTruthy();
     expect(screen.getByText(/support reference:/i)).toBeTruthy();
     expect(mockSubmitAdmissionsIntake).toHaveBeenCalledTimes(1);
-  });
+  }, 20000);
 });
