@@ -1,7 +1,0 @@
-﻿# Scan 2 — GPL License Reference Scan
-# Run: 2026-05-31 12:51:11
-# Pattern: GNU General Public License|(?<![A-Za-z])GPL(?![0-9A-Za-z-])|LGPL|AGPL|copyleft|version 2 of the License|version 3 of the License|This program is free software
-# Exclusions: .git .venv node_modules dist .next build; also requirements.txt package.json package-lock.json
-# ============================================================
-
-# NO GPL REFERENCES FOUND — CLEAN

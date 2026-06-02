@@ -24,7 +24,6 @@ jobs:
       CROWN_ENV: production
       CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS: "0"
       TENANT_HEADER_REQUIRED: "0"
-      CROWN_DEMO_TOKEN: "ci-sandbox-demo-token"
       VITE_SANDBOX_READY_ONLY: "true"
       VITE_HIDE_UNREADY_NAV: "true"
       VITE_SANDBOX_MODE: "1"

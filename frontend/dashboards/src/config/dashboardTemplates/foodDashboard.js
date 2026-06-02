@@ -1,4 +1,6 @@
-﻿const MEALS_TREND = [
+﻿import { LIVE_NOTE } from './_baseData.js';
+
+const MEALS_TREND = [
   { month: 'Sep', value: 268 }, { month: 'Oct', value: 274 }, { month: 'Nov', value: 281 },
   { month: 'Dec', value: 270 }, { month: 'Jan', value: 285 }, { month: 'Feb', value: 287 }, { month: 'Mar', value: 290 },
 ];
