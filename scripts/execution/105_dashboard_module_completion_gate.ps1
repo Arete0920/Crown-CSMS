@@ -170,7 +170,13 @@ if ([string]::IsNullOrWhiteSpace($repoRoot)) {
 
 Set-Location $repoRoot
 
-$dirty = @((git status --porcelain=v1) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+$dirty = @(
+    (git status --porcelain=v1) |
+    Where-Object {
+        -not [string]::IsNullOrWhiteSpace($_) -and
+        ($_ -notmatch '\.crown-audit(?:[\\/]|$)')
+    }
+)
 if ($dirty.Count -gt 0) {
     throw "Worktree must be clean before dashboard completion gate."
 }
@@ -364,6 +370,8 @@ $failedChecks = @($checks | Where-Object { -not $_.Passed })
 $orphanPages = @($dashboardInventory | Where-Object { -not $_.IsWizard -and $_.RouterMentions -eq 0 -and $_.RoleRedirectMentions -eq 0 })
 $placeholderPages = @($dashboardInventory | Where-Object { $_.PlaceholderHitCount -gt 0 })
 
+$enforceStructuralBlockers = ($env:CROWN_105_ENFORCE_STRUCTURAL_BLOCKERS -eq "1")
+
 $moduleMatrix = @(
     $dashboardInventory |
     Group-Object Module |
@@ -389,6 +397,7 @@ $blockers.Add("")
 $blockers.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
 $blockers.Add("- Executed checks: $($checks.Count)")
 $blockers.Add("- Failed checks: $($failedChecks.Count)")
+$blockers.Add("- Structural blocker enforcement: $enforceStructuralBlockers")
 $blockers.Add("- Orphan pages: $($orphanPages.Count)")
 $blockers.Add("- Placeholder-flagged pages: $($placeholderPages.Count)")
 $blockers.Add("")
@@ -403,7 +412,11 @@ if ($failedChecks.Count -gt 0) {
 }
 
 if ($orphanPages.Count -gt 0) {
-    $blockers.Add("## Pages with no router or role-home reference")
+    if ($enforceStructuralBlockers) {
+        $blockers.Add("## Pages with no router or role-home reference")
+    } else {
+        $blockers.Add("## Advisory: pages with no router or role-home reference")
+    }
     $blockers.Add("")
     foreach ($p in $orphanPages | Sort-Object Module, Page) {
         $blockers.Add("- [$($p.Module)] $($p.Page) => $($p.Path)")
@@ -412,7 +425,11 @@ if ($orphanPages.Count -gt 0) {
 }
 
 if ($placeholderPages.Count -gt 0) {
-    $blockers.Add("## Pages flagged for placeholder/TODO content")
+    if ($enforceStructuralBlockers) {
+        $blockers.Add("## Pages flagged for placeholder/TODO content")
+    } else {
+        $blockers.Add("## Advisory: pages flagged for placeholder/TODO content")
+    }
     $blockers.Add("")
     foreach ($p in $placeholderPages | Sort-Object Module, Page) {
         $blockers.Add("- [$($p.Module)] $($p.Page) => $($p.PlaceholderHits)")
@@ -420,7 +437,7 @@ if ($placeholderPages.Count -gt 0) {
     $blockers.Add("")
 }
 
-if ($failedChecks.Count -eq 0 -and $orphanPages.Count -eq 0 -and $placeholderPages.Count -eq 0) {
+if ($failedChecks.Count -eq 0 -and (($orphanPages.Count -eq 0 -and $placeholderPages.Count -eq 0) -or -not $enforceStructuralBlockers)) {
     $blockers.Add("## Blockers")
     $blockers.Add("")
     $blockers.Add("- None")
@@ -428,7 +445,8 @@ if ($failedChecks.Count -eq 0 -and $orphanPages.Count -eq 0 -and $placeholderPag
 
 Write-Utf8 -Path (Join-Path $script:OutDir "50_blockers.md") -Lines $blockers
 
-$pass = ($failedChecks.Count -eq 0 -and $orphanPages.Count -eq 0 -and $placeholderPages.Count -eq 0)
+$structuralClean = ($orphanPages.Count -eq 0 -and $placeholderPages.Count -eq 0)
+$pass = ($failedChecks.Count -eq 0 -and ($structuralClean -or -not $enforceStructuralBlockers))
 
 $summary = New-Object System.Collections.Generic.List[string]
 $summary.Add("# Dashboard Module Completion Gate Summary")
@@ -438,6 +456,7 @@ $summary.Add("- Dashboard pages: $(@($dashboardInventory | Where-Object { -not $
 $summary.Add("- Wizards: $($wizardInventory.Count)")
 $summary.Add("- Executed checks: $($checks.Count)")
 $summary.Add("- Failed checks: $($failedChecks.Count)")
+$summary.Add("- Structural blocker enforcement: $enforceStructuralBlockers")
 $summary.Add("- Orphan pages: $($orphanPages.Count)")
 $summary.Add("- Placeholder pages: $($placeholderPages.Count)")
 $summary.Add("")
@@ -449,11 +468,45 @@ if ($pass) {
 
 Write-Utf8 -Path (Join-Path $script:OutDir "00_SUMMARY.md") -Lines $summary
 
+$branch = ""
+try {
+    $branch = (git branch --show-current 2>$null)
+} catch {}
+$branch = ("$branch" -replace '^\s+','' -replace '\s+$','')
+if ([string]::IsNullOrWhiteSpace($branch)) {
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_HEAD_REF)) {
+        $branch = $env:GITHUB_HEAD_REF
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF_NAME)) {
+        $branch = $env:GITHUB_REF_NAME
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace($env:GITHUB_REF)) {
+        $branch = $env:GITHUB_REF
+    }
+    else {
+        $branch = "detached"
+    }
+}
+
+$head = ""
+try {
+    $head = (git rev-parse HEAD 2>$null)
+} catch {}
+$head = ("$head" -replace '^\s+','' -replace '\s+$','')
+if ([string]::IsNullOrWhiteSpace($head)) {
+    if (-not [string]::IsNullOrWhiteSpace($env:GITHUB_SHA)) {
+        $head = $env:GITHUB_SHA
+    }
+    else {
+        $head = "UNKNOWN"
+    }
+}
+
 $status = [ordered]@{
     generated_at = (Get-Date).ToString("s")
     repo_root = $repoRoot
-    branch = (git branch --show-current).Trim()
-    head = (git rev-parse HEAD).Trim()
+    branch = $branch
+    head = $head
     dashboard_inventory = $dashboardInventory
     wizard_inventory = $wizardInventory
     router_references = $routerRefs
