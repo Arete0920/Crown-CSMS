@@ -27,6 +27,10 @@ jobs:
       )
     steps:
       - name: Auto-approve PR
+        # Security note: GITHUB_TOKEN approvals use the github-actions[bot] identity,
+        # which is distinct from the PR author's token. This prevents direct self-approval.
+        # The workflow is restricted to same-repo PRs (no forks) to prevent malicious
+        # injection of workflow steps from untrusted contributors.
         uses: hmarr/auto-approve-action@f0939ea97e9205ef24d872e76833fa908a770363 # v4.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
