@@ -334,6 +334,57 @@ jobs:
           app-name: ${{ env.WEBAPP_NAME }}
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.deploy_sha }}
 
+      - name: Build allowed appsettings JSON
+        shell: pwsh
+        run: |
+          $appVersion = (Get-Content VERSION -Raw).Trim()
+          if ([string]::IsNullOrWhiteSpace($appVersion)) {
+            throw "VERSION file is empty; cannot set APP_VERSION app setting."
+          }
+          $settings = @{
+            "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
+            "PROD_DEPLOY_TAG" = "${{ env.DEPLOY_TAG }}"
+            "APP_VERSION"     = $appVersion
+            "RUN_MIGRATIONS"  = "true"
+            "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
+            "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
+          }
+          $settings | ConvertTo-Json -Depth 5 | Out-File -Encoding utf8 appsettings.prod.json
+          Get-Content appsettings.prod.json
+
+      - name: Appsettings allowlist gate
+        shell: pwsh
+        run: |
+          ./tools/appsettings_allowlist_gate.ps1 `
+            -AppSettingsJsonPath "appsettings.prod.json" `
+            -AllowedKeysFile "tools/appsettings_allowlist.keys.json" `
+            -AllowedKeySet "prod"
+
+      - name: Apply appsettings (allowlisted only)
+        shell: pwsh
+        run: |
+          az webapp config appsettings set `
+            --resource-group ${{ env.RESOURCE_GROUP }} `
+            --name ${{ env.WEBAPP_NAME }} `
+            --settings '@appsettings.prod.json' `
+            --output none `
+            --only-show-errors
+          az webapp restart `
+            --resource-group ${{ env.RESOURCE_GROUP }} `
+            --name ${{ env.WEBAPP_NAME }} `
+            --only-show-errors
+
+      - name: "Guard: verify BUILD_SHA app setting matches deployed SHA"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $expected = "${{ steps.vars.outputs.deploy_sha }}"
+          Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
+          .\tools\verify_prod_build_sha.ps1 `
+            -ExpectedSha $expected `
+            -AppName "${{ env.WEBAPP_NAME }}" `
+            -ResourceGroup "${{ env.RESOURCE_GROUP }}"
+
       - name: Verify tenant-aware integrity
         shell: pwsh
         env:
@@ -642,4 +693,3 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-
