@@ -1,6 +1,4 @@
-﻿import { LIVE_NOTE } from './_baseData.js';
-
-const PD_TREND = [
+﻿const PD_TREND = [
   { month: 'Aug', value: 12 }, { month: 'Sep', value: 18 }, { month: 'Oct', value: 22 },
   { month: 'Nov', value: 21 }, { month: 'Dec', value: 19 }, { month: 'Jan', value: 24 },
   { month: 'Feb', value: 26 }, { month: 'Mar', value: 28 },

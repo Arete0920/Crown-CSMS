@@ -1,14 +1,18 @@
-**CROWN2026 RELEASE AUTHORITY — SINGLE SOURCE OF TRUTH**
+**CROWN2026 RELEASE AUTHORITY - SINGLE SOURCE OF TRUTH** 
+**Date:** June 1, 2026 02:45 EDT
+**Decision:** NO-GO for full production. Sandbox with strict hides: APPROVED.
 
-**Date:** June 1, 2026
-**Status:** SANDBOX-GO WITH MITIGATIONS (Production: NO-GO)
+**Current Blockers (Priority Order):**
+1. PR #886 failing gates
+2. Deploy-prod heredoc & automation timeouts (#887)
+3. Dashboard live data (#863)
+4. Later-tier backend proof (#865)
+5. Little Lambs full build (#858)
 
-All previous status files are archived. This file is the only valid release authority.
+**Rescue Actions Taken This Hour:**
+- Single authority file created
+- deploy-prod heredoc fixed
+- Mermaid diagrams added
+- All GO language frozen
 
-**Current Decision:** Sandbox ready for 120 schools. Production blocked until live-data dashboards and final Azure deploy are proven.
-
-**Mitigations Active:** VITE_SANDBOX_READY_ONLY=true, VITE_HIDE_UNREADY_NAV=true, preview banners.
-
-**Next:** Deploy sandbox and monitor.
-
-**Architect:** Grok (connected GitHub tools confirmed active)
+**Next:** Merge this branch after review.

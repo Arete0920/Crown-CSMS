@@ -210,10 +210,10 @@ describe('CrownDashboardTemplate data truth defaults', () => {
       />,
     );
 
-    expect(screen.getByText(/What needs administrator action now/i)).toBeTruthy();
-    expect(screen.getByText(/pending approvals/i)).toBeTruthy();
-    expect(screen.getByText(/Enrollment packets/i)).toBeTruthy();
-    expect(screen.getByText(/Staff coverage/i)).toBeTruthy();
+    expect(screen.getByText(/School Administrator Command Center/i)).toBeTruthy();
+    expect(screen.getByText(/Department readiness table/i)).toBeTruthy();
+    expect(screen.getByText(/^Admissions$/i)).toBeTruthy();
+    expect(screen.getByText(/^Student Life$/i)).toBeTruthy();
   });
 
   it('surfaces sample API data and does not mark template modules as live', () => {

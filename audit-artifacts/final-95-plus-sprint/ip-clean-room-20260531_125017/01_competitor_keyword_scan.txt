@@ -1,0 +1,8 @@
+﻿# Scan 1 — Competitor Keyword Scan
+# Run: 2026-05-31 12:50:52
+# Repo: tcmegahan/Crown2026  Branch: main
+# Pattern: blackbaud|renweb|veracross|skyward|nelnet|rediker|moodle|eschool|easyboard|booster|gibbon|fedena|facts|inspired by|modeled after|reverse engineer|like facts|like blackbaud
+# Exclusions: .git .venv node_modules dist .next build
+# ============================================================
+
+# NO HITS FOUND — REPOSITORY IS CLEAN
