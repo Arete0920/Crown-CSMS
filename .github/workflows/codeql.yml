@@ -37,3 +37,6 @@ jobs:
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          # Repo-level default setup is enabled; avoid duplicate SARIF upload conflict from advanced workflow runs.
+          upload: false
