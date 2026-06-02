@@ -53,3 +53,8 @@ def test_prod_removed_redundant_verification_steps():
 def test_dispatch_removed_redundant_build_sha_poll_step():
     text = _read(DISPATCH_WORKFLOW)
     assert "name: Verify deployed build_sha via /api/health/" not in text
+
+
+def test_dispatch_applies_appsettings_before_integrity_probe():
+    text = _read(DISPATCH_WORKFLOW)
+    assert text.index('name: Apply appsettings (allowlisted only)') < text.index('name: Verify tenant-aware integrity')
