@@ -1,4 +1,6 @@
-﻿const PART_TREND = [
+﻿import { LIVE_NOTE } from './_baseData.js';
+
+const PART_TREND = [
   { month: 'Aug', value: 180 }, { month: 'Sep', value: 214 }, { month: 'Oct', value: 228 },
   { month: 'Nov', value: 219 }, { month: 'Dec', value: 231 }, { month: 'Jan', value: 244 },
   { month: 'Feb', value: 256 }, { month: 'Mar', value: 268 },

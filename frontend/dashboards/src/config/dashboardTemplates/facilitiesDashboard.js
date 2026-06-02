@@ -1,4 +1,6 @@
-﻿const WO_TREND = [
+﻿import { LIVE_NOTE } from './_baseData.js';
+
+const WO_TREND = [
   { month: 'Aug', value: 14 }, { month: 'Sep', value: 18 }, { month: 'Oct', value: 22 },
   { month: 'Nov', value: 19 }, { month: 'Dec', value: 24 }, { month: 'Jan', value: 21 },
   { month: 'Feb', value: 17 }, { month: 'Mar', value: 23 },

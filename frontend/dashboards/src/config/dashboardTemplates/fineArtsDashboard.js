@@ -1,4 +1,6 @@
-﻿const PERF_TREND = [
+﻿import { LIVE_NOTE } from './_baseData.js';
+
+const PERF_TREND = [
   { month: 'Aug', value: 0 }, { month: 'Sep', value: 1 }, { month: 'Oct', value: 2 },
   { month: 'Nov', value: 3 }, { month: 'Dec', value: 2 }, { month: 'Jan', value: 1 },
   { month: 'Feb', value: 2 }, { month: 'Mar', value: 3 },
