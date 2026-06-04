@@ -58,3 +58,9 @@ def test_dispatch_removed_redundant_build_sha_poll_step():
 def test_dispatch_applies_appsettings_before_integrity_probe():
     text = _read(DISPATCH_WORKFLOW)
     assert text.index('name: Apply appsettings (allowlisted only)') < text.index('name: Verify tenant-aware integrity')
+
+
+def test_prod_health_check_uses_extended_backoff_window():
+    text = _read(PROD_WORKFLOW)
+    assert "MAX_ATTEMPTS=20" in text
+    assert "sha_matches()" in text
