@@ -1,7 +1,6 @@
 ﻿from __future__ import annotations
 
 import datetime
-import json
 import logging
 from decimal import Decimal
 from uuid import UUID
@@ -12,6 +11,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+
+from crown_api.request_parsing import parse_json_object
 
 log = logging.getLogger(__name__)
 
@@ -28,15 +29,8 @@ def _json_error(message: str, status: int = 400) -> JsonResponse:
 def _envelope(data, status: int = 200) -> JsonResponse:
     return JsonResponse({"ok": True, "data": data}, status=status, safe=False)
 
-
-
 def _parse_json(request: HttpRequest):
-    try:
-        if not request.body:
-            return {}
-        return json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return None
+    return parse_json_object(request)
 
 
 def _app_to_dict(a: FinancialAidApplication) -> dict:
