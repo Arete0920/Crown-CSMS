@@ -393,11 +393,11 @@ jobs:
           sha_matches() {
             local actual="${1,,}"
             local expected="${2,,}"
-            [ "$actual" = "$expected" ] && return 0
+            [[ "$actual" == "$expected" ]] && return 0
             local prefix_len=7
             local ap="${actual:0:$prefix_len}"
             local ep="${expected:0:$prefix_len}"
-            [ -n "$ap" ] && [ -n "$ep" ] && [ "$ap" = "$ep" ]
+            [[ -n "$ap" && -n "$ep" && "$ap" == "$ep" ]]
           }
 
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
@@ -413,7 +413,7 @@ jobs:
 
             echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Checking health endpoint..."
             RESPONSE=$(curl --max-time 30 -s -w "%{http_code}" -o /tmp/health_response.json "$HEALTH_ENDPOINT" 2>/dev/null || echo "000")
-            HTTP_CODE=$(printf '%s' "$RESPONSE" | grep -oE '[0-9]{3}$' || echo "000")
+            HTTP_CODE="${RESPONSE: -3}"
 
             if [ "$HTTP_CODE" == "200" ]; then
               BUILD_SHA=$(extract_json_field "/tmp/health_response.json" "build_sha")
