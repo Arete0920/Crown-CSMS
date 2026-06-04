@@ -1,5 +1,4 @@
 # backend/crown_api/auth_views.py
-import json
 import uuid
 
 from django.http import JsonResponse
@@ -10,15 +9,11 @@ from django.contrib.auth.hashers import check_password, make_password
 from crown_api.auth_models import CrownUser
 from crown_api.auth_middleware import require_auth
 from crown_api.jwt_utils import build_access_token, build_refresh_token, decode_refresh
+from crown_api.request_parsing import parse_json_object
 
 
 def _json_body(request):
-    try:
-        if not request.body:
-            return {}
-        return json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return None
+    return parse_json_object(request)
 
 
 @csrf_exempt

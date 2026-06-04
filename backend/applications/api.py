@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import ast
-import json
 import logging
 from decimal import Decimal
 from uuid import UUID
@@ -10,6 +8,7 @@ from django.http import JsonResponse, HttpRequest
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 
+from crown_api.request_parsing import parse_json_object
 from households.models import Household
 from households.scoping import get_request_school_id
 from .models import Application, Applicant, ApplicationEvent, ApplicationStatus
@@ -29,17 +28,7 @@ def _envelope(data, status: int = 200) -> JsonResponse:
 
 
 def _parse_json(request: HttpRequest):
-    try:
-        if not request.body:
-            return {}
-        return json.loads(request.body.decode("utf-8"))
-    except Exception:
-        # Django test Client often sends a Python dict string when content_type=application/json.
-        # Keep this boring and forgiving.
-        try:
-            return ast.literal_eval(request.body.decode("utf-8"))
-        except Exception:
-            return None
+    return parse_json_object(request)
 
 
 def _app_to_dict(app: Application):

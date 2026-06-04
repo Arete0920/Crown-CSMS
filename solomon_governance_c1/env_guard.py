@@ -15,6 +15,7 @@ Fail-fast principle:
 
 from __future__ import annotations
 
+import importlib
 import subprocess
 import sys
 from pathlib import Path
@@ -32,7 +33,7 @@ def run_cmd(args: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
 
 
-def find_repo_root() -> Path:
+def find_repo_root() -> Path | None:
     """Find Crown2026 repository root by walking up directory tree."""
     current = Path.cwd()
     while current != current.parent:
@@ -114,8 +115,6 @@ def validate_git_state(root: Path) -> None:
 
 def validate_python_environment() -> None:
     """Validate Python version and basic imports."""
-    import sys
-
     if sys.version_info < (3, 10):
         print(f"FAILED: Python 3.10+ required (found {sys.version_info.major}.{sys.version_info.minor})")
         sys.exit(1)
@@ -124,7 +123,7 @@ def validate_python_environment() -> None:
     required_modules = ["json", "subprocess", "pathlib", "hashlib", "argparse"]
     for module_name in required_modules:
         try:
-            __import__(module_name)
+            importlib.import_module(module_name)
         except ImportError:
             print(f"FAILED: Required Python module not available: {module_name}")
             sys.exit(1)

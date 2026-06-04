@@ -1,4 +1,5 @@
 from __future__ import annotations
+import importlib
 import os
 import sys
 from pathlib import Path
@@ -32,8 +33,11 @@ class Command(BaseCommand):
             
             # Import the module and call its run() function
             try:
-                mod = __import__(module_name.replace(".py", ""))
-                mod.run()
+                mod = importlib.import_module(module_name.removesuffix(".py"))
+                run = getattr(mod, "run", None)
+                if not callable(run):
+                    raise RuntimeError(f"{module_name} does not expose a callable run()")
+                run()
             except Exception as e:
                 raise RuntimeError(f"Failed to run {module_name}: {e}") from e
 

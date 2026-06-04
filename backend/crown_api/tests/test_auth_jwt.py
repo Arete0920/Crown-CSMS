@@ -104,3 +104,25 @@ def test_refresh_issues_new_access():
     r = c.get("/api/auth/me/", HTTP_AUTHORIZATION=f"Bearer {body2['access']}")
     assert r.status_code == 200
     assert r.json()["user"]["role"] == "finance"
+
+
+def test_login_rejects_json_arrays():
+    c = Client()
+
+    r = c.post(
+        "/api/auth/login/",
+        data='["admin@heritage.test", "Passw0rd!"]',
+        content_type="application/json",
+    )
+
+    assert r.status_code == 400
+    assert r.json()["error"] == "invalid_json"
+
+
+def test_me_rejects_empty_bearer_token():
+    c = Client()
+
+    r = c.get("/api/auth/me/", HTTP_AUTHORIZATION="Bearer ")
+
+    assert r.status_code == 401
+    assert r.json()["error"] == "Unauthorized"
