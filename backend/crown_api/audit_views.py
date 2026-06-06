@@ -6,6 +6,7 @@ from django.views.decorators.http import require_GET
 
 from crown_api.audit_models import AuditEvent
 from crown_api.permissions import require_roles
+from crown_api.request_parsing import parse_bounded_int
 
 
 @require_GET
@@ -15,11 +16,12 @@ def recent_audit_events(request):
     Proof endpoint: returns the most recent audit events.
     Demo-safe; does not create new events.
     """
-    try:
-        limit = int(request.GET.get("limit", "25"))
-    except Exception:
-        limit = 25
-    limit = max(1, min(limit, 100))
+    limit = parse_bounded_int(
+        request.GET.get("limit", "25"),
+        default=25,
+        min_value=1,
+        max_value=100,
+    )
 
     qs = AuditEvent.objects.order_by("-ts")
 

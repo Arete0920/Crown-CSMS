@@ -271,9 +271,13 @@ $checks = @()
 
 $run95Baseline = ($env:CROWN_105_RUN_95_BASELINE -eq "1")
 $run95Deep = $Deep -or ($env:CROWN_105_RUN_95_DEEP -eq "1")
+$scorecardEnv = @{}
+if ([string]::IsNullOrWhiteSpace($env:GH_TOKEN) -and -not [string]::IsNullOrWhiteSpace($env:GITHUB_TOKEN)) {
+    $scorecardEnv["GH_TOKEN"] = $env:GITHUB_TOKEN
+}
 
 if ($run95Baseline) {
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe $shellExe -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1")
+    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_baseline" -WorkingDirectory $repoRoot -Exe $shellExe -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1") -Env $scorecardEnv
 } else {
     $checks += [pscustomobject]@{
         Name = "95_live_scorecard_audit_baseline"
@@ -284,7 +288,7 @@ if ($run95Baseline) {
 }
 
 if ($run95Deep) {
-    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe $shellExe -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1","-Deep")
+    $checks += Invoke-LoggedCommand -Name "95_live_scorecard_audit_deep" -WorkingDirectory $repoRoot -Exe $shellExe -CmdArgs @("-ExecutionPolicy","Bypass","-File",".\scripts\execution\95_live_scorecard_audit.ps1","-Deep") -Env $scorecardEnv
 } else {
     $checks += [pscustomobject]@{
         Name = "95_live_scorecard_audit_deep"
