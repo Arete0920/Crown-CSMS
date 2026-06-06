@@ -90,10 +90,7 @@ function Invoke-Capture {
         }
         # Kill any lingering preview server on port 4173 after CI suite completes
         if ($Env.ContainsKey("CI")) {
-            $tcpConns = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue
-            foreach ($conn in $tcpConns) {
-                Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
-            }
+            Stop-Port4173Listeners
         }
     }
 }
@@ -130,6 +127,26 @@ function Wait-Port4173Free {
         $still = (netstat -ano 2>$null) | Where-Object { $_ -match ":4173\s.*LISTENING" }
         if (-not $still) { return }
         Start-Sleep -Milliseconds 500
+    }
+}
+
+function Stop-Port4173Listeners {
+    # Use Get-NetTCPConnection when available, otherwise fall back to netstat parsing.
+    $getNetTcp = Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue
+    if ($null -ne $getNetTcp) {
+        $tcpConns = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue
+        foreach ($conn in $tcpConns) {
+            Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
+        }
+        return
+    }
+
+    $netstatLines = (netstat -ano 2>$null) | Where-Object { $_ -match ":4173\s.*LISTENING" }
+    foreach ($line in $netstatLines) {
+        $pidStr = ($line.Trim() -split '\s+')[-1]
+        if ($pidStr -match '^\d+$' -and $pidStr -ne '0') {
+            Stop-Process -Id ([int]$pidStr) -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 

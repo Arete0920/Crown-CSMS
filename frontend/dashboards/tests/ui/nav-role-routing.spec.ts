@@ -74,19 +74,19 @@ const REDIRECT_CASES = [
   {
     role: IS_SANDBOX ? "school_admin" : "admin",
     expectPaths: IS_SANDBOX
-      ? ["/school-admin-dashboard"]
+      ? ["/school-admin-dashboard", "/wizards"]
       : ["/school-admin", "/school-admin-dashboard", "/wizards"],
   },
   {
     role: "director",
     expectPaths: IS_SANDBOX
-      ? ["/school-admin-dashboard"]
+      ? ["/not-authorized"]
       : ["/school-admin", "/school-admin-dashboard", "/not-authorized"],
   },
   {
     role: "principal",
     expectPaths: IS_SANDBOX
-      ? ["/school-admin-dashboard"]
+      ? ["/not-authorized"]
       : ["/school-admin", "/school-admin-dashboard", "/not-authorized"],
   },
   { role: "board",      expectPaths: ["/board"] },
