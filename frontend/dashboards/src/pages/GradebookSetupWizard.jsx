@@ -20,9 +20,9 @@ export default function GradebookSetupWizard() {
           stepLabels={STEP_LABELS}
           initialContext={wizardContext}
           onContextChange={setWizardContext}
-          onComplete={() => { setWizardContext({}); }}
         />
       </div>
     </CrownLayout>
   );
 }
+

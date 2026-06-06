@@ -20,9 +20,9 @@ export default function InvoiceRunWizard() {
           stepLabels={STEP_LABELS}
           initialContext={context}
           onContextChange={setContext}
-          onComplete={() => { setContext({}); }}
         />
       </div>
     </CrownLayout>
   );
 }
+
