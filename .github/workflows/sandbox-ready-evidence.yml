@@ -97,20 +97,7 @@ jobs:
           echo $! > ../backend-runtime.pid
 
           for i in {1..60}; do
-            if python - <<'PY'
-import socket
-
-sock = socket.socket()
-sock.settimeout(1)
-try:
-    sock.connect(("127.0.0.1", 8000))
-except OSError:
-    raise SystemExit(1)
-else:
-    raise SystemExit(0)
-finally:
-    sock.close()
-PY
+            if python -c "import socket,sys; s=socket.socket(); s.settimeout(1); code=s.connect_ex(('127.0.0.1',8000)); s.close(); sys.exit(0 if code == 0 else 1)"
             then
               echo "backend runtime is ready"
               exit 0
