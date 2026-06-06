@@ -13,7 +13,7 @@ const STEP_LABELS     = ["Select Section", "Define Categories", "Preview", "Comm
 export default function GradebookSetupWizard() {
   const [wizardContext, setWizardContext] = useState({});
   return (
-    <CrownLayout title="Gradebook Setup" subtitle="Configure assignment categories and categories for a section">
+    <CrownLayout title="Gradebook Setup" subtitle="Configure assignment categories for a section">
       <div className="crown-card" style={{ padding: "22px 24px" }}>
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
