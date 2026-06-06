@@ -1,4 +1,3 @@
-import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import Step1Configure  from "./attendance_rules_wizard/Step1Configure.jsx";
@@ -9,32 +8,17 @@ import Step5Verify     from "./attendance_rules_wizard/Step5Verify.jsx";
 
 const STEP_COMPONENTS = [Step1Configure, Step2Codes, Step3Preview, Step4Commit, Step5Verify];
 const STEP_LABELS     = ["Label & Year", "Define Codes", "Preview", "Commit", "Verify"];
-const STORAGE_KEY     = "crown_attendance_rules_wizard_ctx_v1";
-
-function loadContext() {
-  try { const r = sessionStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : {}; } catch { return {}; }
-}
-function saveContext(ctx) {
-  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ctx)); } catch { /* ignore */ }
-}
 
 export default function AttendanceRulesWizard() {
-  const [initialContext] = useState(() => loadContext());
-  function wrappedSetContext(ctx) {
-    saveContext(typeof ctx === "function" ? ctx(loadContext()) : ctx);
-  }
-  void wrappedSetContext;
   return (
     <CrownLayout title="Attendance Rules" subtitle="Define attendance codes and rules for a school year">
       <div className="crown-card" style={{ padding: "22px 24px" }}>
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
-          initialContext={initialContext}
-          onContextChange={saveContext}
-          onComplete={() => { sessionStorage.removeItem(STORAGE_KEY); }}
         />
       </div>
     </CrownLayout>
   );
 }
+

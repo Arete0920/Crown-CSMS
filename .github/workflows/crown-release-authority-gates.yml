@@ -1,5 +1,10 @@
 name: CROWN Release Authority Gates
 
+permissions:
+  contents: read
+  actions: read
+  security-events: read
+
 on:
   pull_request:
     branches:

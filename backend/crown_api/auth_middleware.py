@@ -18,10 +18,19 @@ def _is_crown_access_token(token: str) -> bool:
         if len(parts) != 3:
             return False
         payload_bytes = _b64url_decode(parts[1])
-        payload = json.loads(payload_bytes)
+        payload = json.loads(payload_bytes.decode("utf-8"))
         return payload.get("typ") == "access"
-    except Exception:
+    except (TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
         return False
+
+
+def _extract_bearer_token(auth_header: str) -> str | None:
+    scheme, _, token = auth_header.partition(" ")
+    if scheme.lower() != "bearer":
+        return None
+
+    cleaned_token = token.strip()
+    return cleaned_token or None
 
 
 class JwtAuthMiddleware:
@@ -39,14 +48,13 @@ class JwtAuthMiddleware:
         request.user = getattr(request, "user", None)  # preserve if already set
 
         auth = request.META.get("HTTP_AUTHORIZATION") or ""
-        if auth.lower().startswith("bearer "):
-            token = auth.split(" ", 1)[1].strip()
-            
+        token = _extract_bearer_token(auth)
+        if token:
             #Only process tokens that are definitely ours (typ=access in payload)
             # This allows SimpleJWT and other auth systems to coexist
             if not _is_crown_access_token(token):
                 return self.get_response(request)
-            
+
             res = decode_access(token)
             if res.ok and res.payload:
                 p = res.payload
