@@ -29,9 +29,8 @@ Scope: Security P0 remediation branch `copilot/fix-security-and-quality-warnings
 
 ## Connector-verified remaining blockers
 
-- Dependency Scan: failure.
-- Dependency Audit: failure.
-- Both failing dependency workflows isolate to backend Python `pip-audit` jobs.
+- Sandbox Ready Evidence Gate: failure (issue #926)
+
 - Frontend npm audit jobs are passing in both dependency workflows.
 
 ## Files inspected for backend dependency lane

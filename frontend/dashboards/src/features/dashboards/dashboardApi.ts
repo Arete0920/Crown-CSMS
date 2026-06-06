@@ -12,24 +12,23 @@ type DashboardFetchOptions = RequestInit & {
   token?: string;
 };
 
-type DashboardMeResult = {
+type HttpJsonResult<T> = {
   ok: boolean;
-  data: Record<string, unknown> | null;
+  status: number;
+  data: T | null;
+  correlationId: string;
+  error: string;
 };
 
-type DashboardSummaryResult = {
-  ok: boolean;
-  data: {
-    widgets?: unknown[];
-  } | null;
-};
+type DashboardMeResult = HttpJsonResult<Record<string, unknown>>;
 
-type DashboardAlertsResult = {
-  ok: boolean;
-  data: {
-    alerts?: unknown[];
-  } | null;
-};
+type DashboardSummaryResult = HttpJsonResult<{
+  widgets?: unknown[];
+}>;
+
+type DashboardAlertsResult = HttpJsonResult<{
+  alerts?: unknown[];
+}>;
 
 function getSchoolDashboardContext(): SchoolDashboardContext {
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
@@ -167,7 +166,7 @@ function hasLiveDashboardPayload(
   summaryResult: DashboardSummaryResult,
   alertsResult: DashboardAlertsResult,
 ): boolean {
-  return Boolean(meResult.ok && meResult.data) || Boolean(summaryResult.ok && summaryResult.data) || Boolean(alertsResult.ok && alertsResult.data);
+  return (meResult.ok && meResult.data !== null && typeof meResult.data === "object" && !Array.isArray(meResult.data)) || (summaryResult.ok && summaryResult.data !== null && typeof summaryResult.data === "object" && !Array.isArray(summaryResult.data)) || (alertsResult.ok && alertsResult.data !== null && typeof alertsResult.data === "object" && !Array.isArray(alertsResult.data));
 }
 
 function buildLiveDashboardSourceLabel(

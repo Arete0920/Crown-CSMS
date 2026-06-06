@@ -91,11 +91,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          set -euo pipefail
           cd backend
           python manage.py migrate --noinput
           python manage.py runserver 127.0.0.1:8000 --noreload > ../backend-runtime.log 2>&1 &
           echo $! > ../backend-runtime.pid
-
           for i in {1..60}; do
             if python -c "import socket,sys; s=socket.socket(); s.settimeout(1); code=s.connect_ex(('127.0.0.1',8000)); s.close(); sys.exit(0 if code == 0 else 1)"
             then
