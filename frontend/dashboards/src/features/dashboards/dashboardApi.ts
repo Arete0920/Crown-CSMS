@@ -12,6 +12,24 @@ type DashboardFetchOptions = RequestInit & {
   token?: string;
 };
 
+type HttpJsonResult<T> = {
+  ok: boolean;
+  status: number;
+  data: T | null;
+  correlationId: string;
+  error: string;
+};
+
+type DashboardMeResult = HttpJsonResult<Record<string, unknown>>;
+
+type DashboardSummaryResult = HttpJsonResult<{
+  widgets?: unknown[];
+}>;
+
+type DashboardAlertsResult = HttpJsonResult<{
+  alerts?: unknown[];
+}>;
+
 function getSchoolDashboardContext(): SchoolDashboardContext {
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
 
@@ -143,11 +161,19 @@ export async function loadMicrosoft365DashboardPayload(): Promise<DashboardApiPa
   return fetchDashboardJsonWithFallback<DashboardApiPayload>("/api/v1/dashboards/microsoft365/");
 }
 
-function hasLiveDashboardPayload(meResult: any, summaryResult: any, alertsResult: any): boolean {
-  return Boolean(meResult.ok && meResult.data) || Boolean(summaryResult.ok && summaryResult.data) || Boolean(alertsResult.ok && alertsResult.data);
+function hasLiveDashboardPayload(
+  meResult: DashboardMeResult,
+  summaryResult: DashboardSummaryResult,
+  alertsResult: DashboardAlertsResult,
+): boolean {
+  return (meResult.ok && meResult.data !== null && typeof meResult.data === "object" && !Array.isArray(meResult.data)) || (summaryResult.ok && summaryResult.data !== null && typeof summaryResult.data === "object" && !Array.isArray(summaryResult.data)) || (alertsResult.ok && alertsResult.data !== null && typeof alertsResult.data === "object" && !Array.isArray(alertsResult.data));
 }
 
-function buildLiveDashboardSourceLabel(meResult: any, summaryResult: any, alertsResult: any): string {
+function buildLiveDashboardSourceLabel(
+  meResult: DashboardMeResult,
+  summaryResult: DashboardSummaryResult,
+  alertsResult: DashboardAlertsResult,
+): string {
   const parts: string[] = [];
   if (meResult.ok && meResult.data) parts.push("dashboard me");
   if (summaryResult.ok && summaryResult.data) parts.push("dashboard summary");
@@ -164,9 +190,9 @@ export async function loadSchoolAdministratorLiveSnapshot() {
   const { schoolId } = getSchoolDashboardContext();
 
   const [meResult, summaryResult, alertsResult] = await Promise.all([
-    fetchDashboardMe(schoolId, "school-administrator"),
-    fetchDashboardSummary(schoolId, "school-administrator"),
-    fetchDashboardAlerts(schoolId, "school-administrator"),
+    fetchDashboardMe(schoolId, "school-administrator") as Promise<DashboardMeResult>,
+    fetchDashboardSummary(schoolId, "school-administrator") as Promise<DashboardSummaryResult>,
+    fetchDashboardAlerts(schoolId, "school-administrator") as Promise<DashboardAlertsResult>,
   ]);
 
   const dashboardMe = meResult.ok ? meResult.data : null;

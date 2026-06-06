@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 from decimal import Decimal
 from uuid import UUID
@@ -15,6 +14,7 @@ from rest_framework.response import Response
 from django.db.models import Sum
 from django.utils import timezone
 
+from crown_api.request_parsing import parse_json_object
 from households.scoping import get_request_school_id
 from .models import BillingRun, Invoice, InvoiceLine, InstallmentPlan
 from .reconciliation import compute_invoice_balance_due
@@ -127,12 +127,7 @@ def _finance_role_forbidden_response(request: HttpRequest):
 
 
 def _parse_json(request: HttpRequest):
-    try:
-        if not request.body:
-            return {}
-        return json.loads(request.body.decode("utf-8"))
-    except Exception:
-        return None
+    return parse_json_object(request)
 
 
 def _aging_bucket(days_past_due: int) -> str:
