@@ -93,7 +93,7 @@ jobs:
           set -euo pipefail
           cd backend
           python manage.py migrate --noinput
-          python manage.py runserver 127.0.0.1:8000 > ../backend-runtime.log 2>&1 &
+          python manage.py runserver 127.0.0.1:8000 --noreload > ../backend-runtime.log 2>&1 &
           echo $! > ../backend-runtime.pid
 
           for i in {1..60}; do
@@ -170,3 +170,4 @@ jobs:
             frontend/dashboards/test-results/**
             frontend/dashboards/playwright-report/**
             frontend/dashboards/artifacts/**
+

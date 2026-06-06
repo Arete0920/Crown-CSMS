@@ -20,9 +20,9 @@ export default function EnrollmentConversionWizard() {
           stepLabels={STEP_LABELS}
           initialContext={wizardContext}
           onContextChange={setWizardContext}
-          onComplete={() => { setWizardContext({}); }}
         />
       </div>
     </CrownLayout>
   );
 }
+
