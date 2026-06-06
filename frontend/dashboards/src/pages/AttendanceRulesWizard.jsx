@@ -1,4 +1,3 @@
-import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import Step1Configure  from "./attendance_rules_wizard/Step1Configure.jsx";
@@ -11,15 +10,12 @@ const STEP_COMPONENTS = [Step1Configure, Step2Codes, Step3Preview, Step4Commit, 
 const STEP_LABELS     = ["Label & Year", "Define Codes", "Preview", "Commit", "Verify"];
 
 export default function AttendanceRulesWizard() {
-  const [wizardContext, setWizardContext] = useState({});
   return (
     <CrownLayout title="Attendance Rules" subtitle="Define attendance codes and rules for a school year">
       <div className="crown-card" style={{ padding: "22px 24px" }}>
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
-          initialContext={wizardContext}
-          onContextChange={setWizardContext}
         />
       </div>
     </CrownLayout>
