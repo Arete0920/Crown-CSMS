@@ -20,11 +20,12 @@ for r in qs:
 
 logger.info("\nTOTAL EVENTS: %s", ApplicationEvent.objects.count())
 
-logger.info("\n=== SAMPLE EVENT WITH PAYLOAD ===")
+logger.info("\n=== SAMPLE EVENT PAYLOAD SHAPE ===")
 e = ApplicationEvent.objects.exclude(payload__isnull=True).first()
 if e:
+    payload = e.payload if isinstance(e.payload, dict) else {}
     logger.info("Event type: %s", e.event_type)
-    logger.info("Payload keys: %s", sorted(list(e.payload.keys())) if e.payload else 'None')
-    logger.info("Sample payload: %s", e.payload)
+    logger.info("Payload key count: %s", len(payload))
+    logger.info("Payload keys: %s", sorted(payload.keys()))
 else:
     logger.info("No events with payload found")
