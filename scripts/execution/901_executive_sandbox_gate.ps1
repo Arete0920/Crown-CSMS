@@ -66,12 +66,20 @@ function Invoke-Step {
     $ok = $true
     $exitCode = 0
 
+    @(
+        "==> $Name",
+        "Started: $($start.ToString('s'))",
+        "WorkingDirectory: $WorkingDirectory",
+        "Command: $Command",
+        ""
+    ) | Set-Content -Path $LogPath -Encoding UTF8
+
     Push-Location $WorkingDirectory
     try {
         if (Get-Command cmd.exe -ErrorAction SilentlyContinue) {
-            cmd.exe /c $Command 1> $LogPath 2>&1
+            cmd.exe /c $Command 1>> $LogPath 2>&1
         } else {
-            pwsh -NoLogo -NoProfile -Command $Command 1> $LogPath 2>&1
+            pwsh -NoLogo -NoProfile -Command $Command 1>> $LogPath 2>&1
         }
         $exitCode = $LASTEXITCODE
         if ($null -eq $exitCode) { $exitCode = 0 }
@@ -85,6 +93,14 @@ function Invoke-Step {
     }
 
     $elapsed = [int]((Get-Date) - $start).TotalSeconds
+    @(
+        "",
+        "Completed: $((Get-Date).ToString('s'))",
+        "ExitCode: $exitCode",
+        "Passed: $ok",
+        "Seconds: $elapsed"
+    ) | Add-Content -Path $LogPath -Encoding UTF8
+
     return [pscustomobject]@{
         Name = $Name
         Command = $Command
@@ -201,6 +217,8 @@ $env:VITE_SANDBOX_MODE = "1"
 $env:CROWN_ENV = "production"
 $env:CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS = "0"
 $env:TENANT_HEADER_REQUIRED = "0"
+$env:PYTHONFAULTHANDLER = "1"
+$env:PYTHONUNBUFFERED = "1"
 if (-not $env:DJANGO_SECRET_KEY) { $env:DJANGO_SECRET_KEY = "local-ci-test-key" }
 
 $head = (git rev-parse HEAD).Trim()
@@ -271,7 +289,8 @@ try {
         }
         $steps.Add((Invoke-Step "Django system check" "python backend\manage.py check" $repoRoot (Join-Path $logsDir "backend_check.log"))) | Out-Null
         Write-GateOutputs -ScanRows $scanRows -Steps $steps -OutDir $outDir -LatestDir $latestDir -Branch $branch -Head $head -Stage "backend-check-complete" | Out-Null
-        $steps.Add((Invoke-Step "Dashboard sample gate tests" "python -m pytest backend\crown_api\tests\test_dashboard_snapshot_summary_api.py -q" $repoRoot (Join-Path $logsDir "dashboard_sample_gate_tests.log"))) | Out-Null
+        $dashboardPytestCommand = "python -X faulthandler -m pytest backend\crown_api\tests\test_dashboard_snapshot_summary_api.py -vv -s --tb=long --setup-show --durations=20"
+        $steps.Add((Invoke-Step "Dashboard sample gate tests" $dashboardPytestCommand $repoRoot (Join-Path $logsDir "dashboard_sample_gate_tests.log"))) | Out-Null
         Write-GateOutputs -ScanRows $scanRows -Steps $steps -OutDir $outDir -LatestDir $latestDir -Branch $branch -Head $head -Stage "backend-tests-complete" | Out-Null
     }
 
