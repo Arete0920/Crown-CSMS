@@ -64,6 +64,14 @@ function Test-NpmScript {
     return $json.scripts.PSObject.Properties.Name -contains $ScriptName
 }
 
+function ConvertTo-CmdToken {
+    param([string]$Value)
+    if ($null -eq $Value) { return '""' }
+    $escaped = $Value -replace '([\^&|<>()%!"])', '^$1'
+    if ($escaped -match '\s') { return '"' + $escaped + '"' }
+    return $escaped
+}
+
 function Invoke-LoggedCommand {
     param(
         [string]$Name,
@@ -74,6 +82,8 @@ function Invoke-LoggedCommand {
     )
 
     $logPath = Join-Path $script:OutDir "$Name.txt"
+    $stdoutTmp = Join-Path $script:OutDir "$Name.stdout.tmp"
+    $stderrTmp = Join-Path $script:OutDir "$Name.stderr.tmp"
     $saved = @{}
 
     foreach ($k in $Env.Keys) {
@@ -91,9 +101,30 @@ function Invoke-LoggedCommand {
         )
 
         $global:LASTEXITCODE = 0
-        & $Exe @CmdArgs 1>> $logPath 2>&1
-        $exitCode = $LASTEXITCODE
-        if ($null -eq $exitCode) { $exitCode = 0 }
+        $exitCode = 1
+
+        try {
+            $cmdTokens = @((ConvertTo-CmdToken $Exe)) + @($CmdArgs | ForEach-Object { ConvertTo-CmdToken $_ })
+            $cmdLine = ($cmdTokens -join ' ')
+            $cmdLine = "$cmdLine > `"$stdoutTmp`" 2> `"$stderrTmp`""
+
+            & cmd.exe /d /s /c $cmdLine
+            $exitCode = $LASTEXITCODE
+            if ($null -eq $exitCode) { $exitCode = 0 }
+        } catch {
+            "ERROR invoking command: $_" | Add-Content -Path $logPath -Encoding UTF8
+            $exitCode = 1
+        }
+
+        if (Test-Path $stdoutTmp) {
+            Get-Content $stdoutTmp -ErrorAction SilentlyContinue | Add-Content -Path $logPath -Encoding UTF8
+        }
+        if (Test-Path $stderrTmp) {
+            Get-Content $stderrTmp -ErrorAction SilentlyContinue | Add-Content -Path $logPath -Encoding UTF8
+        }
+
+        Remove-Item $stdoutTmp -Force -ErrorAction SilentlyContinue
+        Remove-Item $stderrTmp -Force -ErrorAction SilentlyContinue
 
         return [pscustomobject]@{
             Name = $Name
@@ -107,6 +138,8 @@ function Invoke-LoggedCommand {
         foreach ($k in $Env.Keys) {
             [Environment]::SetEnvironmentVariable($k, $saved[$k], "Process")
         }
+        Remove-Item $stdoutTmp -Force -ErrorAction SilentlyContinue
+        Remove-Item $stderrTmp -Force -ErrorAction SilentlyContinue
     }
 }
 
