@@ -373,9 +373,10 @@ jobs:
           BASE_URL="https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
           HEALTH_ENDPOINT="$BASE_URL/api/health/"
           EXPECTED_SHA="${{ steps.vars.outputs.deploy_sha }}"
-          MAX_ATTEMPTS=15
+          MAX_ATTEMPTS=20
           ATTEMPT=1
           BACKOFF_BASE=20
+          TOTAL_ELAPSED=0
 
           # Function to extract JSON field with jq or grep fallback
           extract_json_field() {
@@ -388,19 +389,31 @@ jobs:
             fi
           }
 
+          # SHA comparison: accept exact match or 7-char prefix match (short vs full SHA)
+          sha_matches() {
+            local actual="${1,,}"
+            local expected="${2,,}"
+            [[ "$actual" == "$expected" ]] && return 0
+            local prefix_len=7
+            local ap="${actual:0:$prefix_len}"
+            local ep="${expected:0:$prefix_len}"
+            [[ -n "$ap" && -n "$ep" && "$ap" == "$ep" ]]
+          }
+
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             # Calculate exponential backoff: 20s, 40s, 60s, 80s, 90s, 90s...
             BACKOFF=$((BACKOFF_BASE * (ATTEMPT - 1)))
             if [ $BACKOFF -gt 90 ]; then BACKOFF=90; fi
 
             if [ $ATTEMPT -gt 1 ]; then
-              echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Waiting ${BACKOFF}s before retry (total elapsed: $((BACKOFF_BASE * (ATTEMPT - 1)))s)..."
+              echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Waiting ${BACKOFF}s before retry (total elapsed: ${TOTAL_ELAPSED}s)..."
               sleep $BACKOFF
+              TOTAL_ELAPSED=$((TOTAL_ELAPSED + BACKOFF))
             fi
 
             echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Checking health endpoint..."
             RESPONSE=$(curl --max-time 30 -s -w "%{http_code}" -o /tmp/health_response.json "$HEALTH_ENDPOINT" 2>/dev/null || echo "000")
-            HTTP_CODE=$(echo "$RESPONSE" | tail -c 4)
+            HTTP_CODE="${RESPONSE: -3}"
 
             if [ "$HTTP_CODE" == "200" ]; then
               BUILD_SHA=$(extract_json_field "/tmp/health_response.json" "build_sha")
@@ -409,7 +422,7 @@ jobs:
               if [ -z "$BUILD_SHA" ] || [ -z "$DB_STATUS" ]; then
                 echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] WARN: Health response missing required fields (build_sha or db)"
                 echo "Response: $(cat /tmp/health_response.json 2>/dev/null | head -c 200)"
-              elif [[ "$BUILD_SHA" == *"$EXPECTED_SHA"* ]] || [[ "$EXPECTED_SHA" == *"$BUILD_SHA"* ]]; then
+              elif sha_matches "$BUILD_SHA" "$EXPECTED_SHA"; then
                 if [ "$DB_STATUS" == "ok" ]; then
                   echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] ✓ Health check PASSED (build_sha match: $BUILD_SHA, db: $DB_STATUS)"
                   exit 0
@@ -426,7 +439,7 @@ jobs:
             ATTEMPT=$((ATTEMPT + 1))
           done
 
-          echo "❌ ERROR: Health check failed after $MAX_ATTEMPTS exponential backoff attempts (~10 minutes)"
+          echo "❌ ERROR: Health check failed after $MAX_ATTEMPTS exponential backoff attempts (~15 minutes)"
           exit 1
 
       - name: Verify deployed build SHA and tenant-aware integrity
@@ -640,4 +653,3 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-
