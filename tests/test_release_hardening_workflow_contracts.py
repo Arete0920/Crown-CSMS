@@ -63,4 +63,6 @@ def test_dispatch_applies_appsettings_before_integrity_probe():
 def test_prod_health_check_uses_extended_backoff_window():
     text = _read(PROD_WORKFLOW)
     assert "MAX_ATTEMPTS=20" in text
-    assert "sha_matches()" in text
+    assert "sha_matches() {" in text
+    assert "elif sha_matches \"$BUILD_SHA\" \"$EXPECTED_SHA\"; then" in text
+    assert "[[ \"$BUILD_SHA\" == *\"$EXPECTED_SHA\"* ]]" not in text
