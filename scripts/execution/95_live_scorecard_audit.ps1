@@ -135,24 +135,42 @@ function Get-StatusFromScore {
     return "Weak"
 }
 
-function Wait-Port4173Free {
-    # Kill any LISTEN process on 4173, then wait until the port is truly free
-    for ($i = 0; $i -lt 3; $i++) {
-        $netstatLines = (netstat -ano 2>$null) | Where-Object { $_ -match ":4173\s.*LISTENING" }
-        if (-not $netstatLines) { break }
-        foreach ($line in $netstatLines) {
-            $pidStr = ($line.Trim() -split '\s+')[-1]
-            if ($pidStr -match '^\d+$' -and $pidStr -ne '0') {
-                Stop-Process -Id ([int]$pidStr) -Force -ErrorAction SilentlyContinue
-            }
+function Test-Port4173Listening {
+    if ($script:IsWindowsPlatform) {
+        $getNetTcp = Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue
+        if ($null -ne $getNetTcp) {
+            return [bool](Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue)
         }
+
+        $netstatCmd = Get-Command netstat -ErrorAction SilentlyContinue
+        if ($null -eq $netstatCmd) { return $false }
+
+        return [bool]((& netstat -ano 2>$null) | Where-Object { $_ -match ":4173\s.*LISTENING" })
+    }
+
+    $lsofCmd = Get-Command lsof -ErrorAction SilentlyContinue
+    if ($null -ne $lsofCmd) {
+        return [bool](& lsof -ti tcp:4173 -sTCP:LISTEN 2>$null)
+    }
+
+    $ssCmd = Get-Command ss -ErrorAction SilentlyContinue
+    if ($null -ne $ssCmd) {
+        return [bool]((& ss -ltnp "sport = :4173" 2>$null) | Where-Object { $_ -match ":4173" })
+    }
+
+    return $false
+}
+
+function Wait-Port4173Free {
+    for ($i = 0; $i -lt 3; $i++) {
+        Stop-Port4173Listeners
+        if (-not (Test-Port4173Listening)) { break }
         Start-Sleep -Seconds 2
     }
-    # Wait up to 10s for port to clear (LISTEN state only)
+
     $deadline = (Get-Date).AddSeconds(10)
     while ((Get-Date) -lt $deadline) {
-        $still = (netstat -ano 2>$null) | Where-Object { $_ -match ":4173\s.*LISTENING" }
-        if (-not $still) { return }
+        if (-not (Test-Port4173Listening)) { return }
         Start-Sleep -Milliseconds 500
     }
 }
