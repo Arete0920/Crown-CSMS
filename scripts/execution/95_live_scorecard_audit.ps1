@@ -5,6 +5,13 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$script:IsWindowsPlatform = $false
+if (Get-Variable IsWindows -ErrorAction SilentlyContinue) {
+    $script:IsWindowsPlatform = [bool]$IsWindows
+} else {
+    $script:IsWindowsPlatform = ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT)
+}
+
 function Invoke-Capture {
     param(
         [Parameter(Mandatory = $true)][string]$Name,
@@ -44,13 +51,14 @@ function Invoke-Capture {
         }
 
         try {
-            $quotedExe = if ($Exe -match '[\s"]') { '"' + ($Exe -replace '"', '\\"') + '"' } else { $Exe }
-            $quotedArgs = @($CmdParts | ForEach-Object {
-                if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\\"') + '"' } else { $_ }
-            })
-            $cmdLine = @($quotedExe) + $quotedArgs -join ' '
+            $resolvedExe = Resolve-CrownExecutable -Exe $Exe
+            $resolvedCommand = Get-Command $resolvedExe -ErrorAction SilentlyContinue
 
-            $proc = Start-Process -FilePath "cmd.exe" -ArgumentList @('/d', '/s', '/c', $cmdLine) -WorkingDirectory (Get-Location).Path -NoNewWindow -PassThru -RedirectStandardOutput $outTmp -RedirectStandardError $errTmp
+            if ($null -eq $resolvedCommand) {
+                throw "Executable not found: $resolvedExe (original: $Exe)"
+            }
+
+            $proc = Start-Process -FilePath $resolvedCommand.Source -ArgumentList $CmdParts -WorkingDirectory (Get-Location).Path -NoNewWindow -PassThru -RedirectStandardOutput $outTmp -RedirectStandardError $errTmp
             $finished = $proc.WaitForExit($timeoutSec * 1000)
 
             if (-not $finished) {
@@ -95,6 +103,25 @@ function Invoke-Capture {
     }
 }
 
+function Resolve-CrownExecutable {
+    param(
+        [Parameter(Mandatory = $true)][string]$Exe
+    )
+
+    if ($script:IsWindowsPlatform) {
+        return $Exe
+    }
+
+    switch -Regex ($Exe) {
+        '^npm(\.cmd)?$' { return 'npm' }
+        '^npx(\.cmd)?$' { return 'npx' }
+        '^node(\.exe)?$' { return 'node' }
+        '^python(\.exe)?$' { return 'python' }
+        '^py(\.exe)?$' { return 'python' }
+        default { return $Exe }
+    }
+}
+
 function Get-Score {
     param([double]$Value)
     return [math]::Round([math]::Max(0, [math]::Min(10, $Value)), 1)
@@ -133,7 +160,7 @@ function Wait-Port4173Free {
 function Stop-Port4173Listeners {
     # Cross-platform cleanup for preview server port 4173.
 
-    if ($IsWindows) {
+    if ($script:IsWindowsPlatform) {
         $getNetTcp = Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue
         if ($null -ne $getNetTcp) {
             $tcpConns = Get-NetTCPConnection -LocalPort 4173 -State Listen -ErrorAction SilentlyContinue
@@ -315,13 +342,13 @@ Wait-Port4173Free
 $results = @()
 
 if (Test-Path (Join-Path $frontendDir "package.json")) {
-    $results += Invoke-Capture -Name "frontend_check_shell_contracts" -WorkingDirectory $frontendDir -LogFile "frontend_check_shell_contracts.txt" -Exe "npm.cmd" -CmdParts @("run", "check:shell-contracts")
-    $results += Invoke-Capture -Name "frontend_unit" -WorkingDirectory $frontendDir -LogFile "frontend_unit.txt" -Exe "npm.cmd" -CmdParts @("run", "test:unit") -Env @{ CI = "1" }
+    $results += Invoke-Capture -Name "frontend_check_shell_contracts" -WorkingDirectory $frontendDir -LogFile "frontend_check_shell_contracts.txt" -Exe "npm" -CmdParts @("run", "check:shell-contracts")
+    $results += Invoke-Capture -Name "frontend_unit" -WorkingDirectory $frontendDir -LogFile "frontend_unit.txt" -Exe "npm" -CmdParts @("run", "test:unit") -Env @{ CI = "1" }
 
     # Build once and start a single shared preview server for all Playwright suites.
     # This avoids the Windows issue where per-suite CI builds leave orphaned node processes
     # on port 4173, causing reuseExistingServer:false to reject subsequent suite startups.
-    $buildResult = Invoke-Capture -Name "frontend_build" -WorkingDirectory $frontendDir -LogFile "frontend_build.txt" -Exe "npm.cmd" -CmdParts @("run", "build")
+    $buildResult = Invoke-Capture -Name "frontend_build" -WorkingDirectory $frontendDir -LogFile "frontend_build.txt" -Exe "npm" -CmdParts @("run", "build")
     $buildRecord = @($buildResult | Where-Object { $_ -and $_.PSObject.Properties.Name -contains "ExitCode" } | Select-Object -Last 1)
     $buildExit = if ($buildRecord.Count -gt 0 -and $null -ne $buildRecord[0].ExitCode) { [int]$buildRecord[0].ExitCode } else { 1 }
 
@@ -331,7 +358,8 @@ if (Test-Path (Join-Path $frontendDir "package.json")) {
         $previewJob = Start-Job -ScriptBlock {
             param($dir)
             Set-Location $dir
-            npm.cmd run preview -- --port 4173 --strictPort 2>&1
+            $npmCommand = Get-Command npm -ErrorAction Stop
+            & $npmCommand.Source run preview -- --port 4173 --strictPort 2>&1
         } -ArgumentList $frontendDir
 
         # Wait until port 4173 is accepting connections (up to 60s)
@@ -348,14 +376,14 @@ if (Test-Path (Join-Path $frontendDir "package.json")) {
         if ($ready) {
             # All Playwright suites reuse the running preview server (no CI=1 means reuseExistingServer:true)
             # VITE_DEV_BASE_URL is already the default; set retries via PLAYWRIGHT_RETRIES if needed
-            $results += Invoke-Capture -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -LogFile "frontend_release_a11y.txt" -Exe "npm.cmd" -CmdParts @("run", "test:release:a11y") -Env @{ PLAYWRIGHT_RETRIES = "2" }
-            $results += Invoke-Capture -Name "frontend_nav"           -WorkingDirectory $frontendDir -LogFile "frontend_nav.txt"           -Exe "npm.cmd" -CmdParts @("run", "ui:proof:nav")
-            $results += Invoke-Capture -Name "frontend_release_routes" -WorkingDirectory $frontendDir -LogFile "frontend_release_routes.txt" -Exe "npm.cmd" -CmdParts @("run", "test:release:routes")
+            $results += Invoke-Capture -Name "frontend_release_a11y" -WorkingDirectory $frontendDir -LogFile "frontend_release_a11y.txt" -Exe "npm" -CmdParts @("run", "test:release:a11y") -Env @{ PLAYWRIGHT_RETRIES = "2" }
+            $results += Invoke-Capture -Name "frontend_nav"           -WorkingDirectory $frontendDir -LogFile "frontend_nav.txt"           -Exe "npm" -CmdParts @("run", "ui:proof:nav")
+            $results += Invoke-Capture -Name "frontend_release_routes" -WorkingDirectory $frontendDir -LogFile "frontend_release_routes.txt" -Exe "npm" -CmdParts @("run", "test:release:routes")
 
             if ($Deep) {
-                $results += Invoke-Capture -Name "frontend_matrix_1" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_1.txt" -Exe "npm.cmd" -CmdParts @("run", "ui:proof:matrix")
-                $results += Invoke-Capture -Name "frontend_matrix_2" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_2.txt" -Exe "npm.cmd" -CmdParts @("run", "ui:proof:matrix-pack-2")
-                $results += Invoke-Capture -Name "frontend_matrix_3" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_3.txt" -Exe "npm.cmd" -CmdParts @("run", "ui:proof:matrix-pack-3")
+                $results += Invoke-Capture -Name "frontend_matrix_1" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_1.txt" -Exe "npm" -CmdParts @("run", "ui:proof:matrix")
+                $results += Invoke-Capture -Name "frontend_matrix_2" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_2.txt" -Exe "npm" -CmdParts @("run", "ui:proof:matrix-pack-2")
+                $results += Invoke-Capture -Name "frontend_matrix_3" -WorkingDirectory $frontendDir -LogFile "frontend_matrix_3.txt" -Exe "npm" -CmdParts @("run", "ui:proof:matrix-pack-3")
             }
         } else {
             "Preview server did not become ready within 60s" | Set-Content -Path (Join-Path $script:OutDir "frontend_preview_timeout.txt") -Encoding UTF8
