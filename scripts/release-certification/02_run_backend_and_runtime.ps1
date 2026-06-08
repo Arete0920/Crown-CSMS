@@ -62,7 +62,7 @@ function Write-Heartbeat {
     [string]$Message
   )
   $ts = (Get-Date).ToString("s")
-  Add-Content -Path $heartbeatFile -Value ("[{0}] {1}" -f $ts, $Message)
+  Add-Content -Path $heartbeatFile -Value ("[{0}] {1}" -f $ts, $Message) -Encoding utf8
 }
 
 function Invoke-SupplementalStep {
@@ -145,7 +145,11 @@ function Invoke-SupplementalStep {
   } else {
     Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
 
-    if ($jobExitCode -eq 0 -or $null -eq $jobExitCode) {
+    if ($null -eq $jobExitCode) {
+      $result.status = "FAIL"
+      $result.reason = "Supplemental job completed without a parseable exit code"
+      Write-Heartbeat ("STEP_FAIL name={0} reason=missing_exit_code" -f $Name)
+    } elseif ($jobExitCode -eq 0) {
       $result.status = "PASS"
       $result.reason = "Completed successfully"
       Write-Heartbeat ("STEP_PASS name={0}" -f $Name)
