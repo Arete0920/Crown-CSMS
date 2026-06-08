@@ -17,7 +17,7 @@ function Write-Section {
 
 function Add-Result {
     param(
-        [Parameter(Mandatory = $true)][System.Collections.Generic.List[object]]$Results,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][System.Collections.Generic.List[object]]$Results,
         [Parameter(Mandatory = $true)][string]$Name,
         [Parameter(Mandatory = $true)][bool]$Passed,
         [string]$Detail = ""
@@ -97,7 +97,7 @@ try {
     } catch {
         $baseExists = $false
     }
-    Add-Result $results "base_ref_exists" $baseExists $BaseRef
+    Add-Result -Results $results -Name "base_ref_exists" -Passed $baseExists -Detail $BaseRef
 
     Write-Section "WORKTREE HYGIENE"
     $statusLines = @(git status --porcelain=v1)
@@ -110,7 +110,7 @@ try {
     )
 
     $statusLines | Set-Content (Join-Path $outDir "git_status_porcelain.txt") -Encoding UTF8
-    Add-Result $results "worktree_clean" ($blockingDirty.Count -eq 0) "blocking_dirty_count=$($blockingDirty.Count)"
+    Add-Result -Results $results -Name "worktree_clean" -Passed ($blockingDirty.Count -eq 0) -Detail "blocking_dirty_count=$($blockingDirty.Count)"
 
     if ($blockingDirty.Count -gt 0) {
         Write-Host "Blocking dirty rows:"
@@ -120,12 +120,12 @@ try {
     Write-Section "DIFF SCOPE"
     $changedFiles = @()
     if (-not $baseExists) {
-        Add-Result $results "diff_scope" $false "base_ref_missing=$BaseRef"
+        Add-Result -Results $results -Name "diff_scope" -Passed $false -Detail "base_ref_missing=$BaseRef"
         "BASE REF MISSING: $BaseRef" | Set-Content (Join-Path $outDir "changed_files.txt") -Encoding UTF8
     } else {
         $changedFiles = @(Get-GitOutput @("diff", "--name-only", "$BaseRef...HEAD"))
         $changedFiles | Sort-Object | Set-Content (Join-Path $outDir "changed_files.txt") -Encoding UTF8
-        Add-Result $results "diff_scope" $true "changed_file_count=$($changedFiles.Count)"
+        Add-Result -Results $results -Name "diff_scope" -Passed $true -Detail "changed_file_count=$($changedFiles.Count)"
     }
 
     Write-Host "Changed file count: $($changedFiles.Count)"
@@ -143,7 +143,7 @@ try {
         $missing = @($expected | Where-Object { $_ -notin $actual })
         $extra = @($actual | Where-Object { $_ -notin $expected })
 
-        Add-Result $results "expected_file_scope" (($missing.Count -eq 0) -and ($extra.Count -eq 0)) "missing=$($missing.Count); extra=$($extra.Count)"
+        Add-Result -Results $results -Name "expected_file_scope" -Passed (($missing.Count -eq 0) -and ($extra.Count -eq 0)) -Detail "missing=$($missing.Count); extra=$($extra.Count)"
 
         if ($missing.Count -gt 0) {
             Write-Host "Missing expected files:"
@@ -154,7 +154,7 @@ try {
             $extra | ForEach-Object { Write-Host $_ }
         }
     } else {
-        Add-Result $results "expected_file_scope" $true "not_provided"
+        Add-Result -Results $results -Name "expected_file_scope" -Passed $true -Detail "not_provided"
     }
 
     Write-Section "POWERSHELL PARSE CHECK"
@@ -173,7 +173,7 @@ try {
     }
 
     $parseErrors | Set-Content (Join-Path $outDir "powershell_parse_errors.txt") -Encoding UTF8
-    Add-Result $results "powershell_parse" ($parseErrors.Count -eq 0) "parse_errors=$($parseErrors.Count)"
+    Add-Result -Results $results -Name "powershell_parse" -Passed ($parseErrors.Count -eq 0) -Detail "parse_errors=$($parseErrors.Count)"
 
     Write-Section "CI PORTABILITY RISK SCAN"
     $riskPatterns = @(
@@ -182,7 +182,7 @@ try {
         "npx\.cmd",
         "powershell\.exe",
         "Get-NetTCPConnection",
-        "\$IsWindows",
+        '\$IsWindows',
         "netstat -ano"
     )
 
@@ -212,11 +212,11 @@ try {
         }
     )
 
-    Add-Result $results "ci_portability_scan" ($unguardedHardRisks.Count -eq 0) "changed_files_scanned=$($scanFiles.Count); risk_hits=$($riskHits.Count); unguarded_hard_risks=$($unguardedHardRisks.Count)"
+    Add-Result -Results $results -Name "ci_portability_scan" -Passed ($unguardedHardRisks.Count -eq 0) -Detail "changed_files_scanned=$($scanFiles.Count); risk_hits=$($riskHits.Count); unguarded_hard_risks=$($unguardedHardRisks.Count)"
 
     Write-Section "BACKEND CHECK"
     if ($SkipBackend) {
-        Add-Result $results "backend_manage_check" $true "skipped"
+        Add-Result -Results $results -Name "backend_manage_check" -Passed $true -Detail "skipped"
     } else {
         $pythonExe = Resolve-CrownPython
         $rootManage = Join-Path $repoRoot "manage.py"
@@ -225,34 +225,34 @@ try {
 
         if ($pythonExe -and (Test-Path $rootManage)) {
             & $pythonExe $rootManage check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
-            Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+            Add-Result -Results $results -Name "backend_manage_check" -Passed ($LASTEXITCODE -eq 0) -Detail "exit=$LASTEXITCODE"
         } elseif ($pythonExe -and (Test-Path $backendManage)) {
             Push-Location $backendRoot
             try {
                 & $pythonExe manage.py check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
-                Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+                Add-Result -Results $results -Name "backend_manage_check" -Passed ($LASTEXITCODE -eq 0) -Detail "exit=$LASTEXITCODE"
             } finally {
                 Pop-Location
             }
         } else {
-            Add-Result $results "backend_manage_check" $false "python/manage.py not found"
+            Add-Result -Results $results -Name "backend_manage_check" -Passed $false -Detail "python/manage.py not found"
         }
     }
 
     Write-Section "FRONTEND SHELL CONTRACTS"
     $dashRoot = Join-Path (Join-Path $repoRoot "frontend") "dashboards"
     if ($SkipFrontend) {
-        Add-Result $results "frontend_shell_contracts" $true "skipped"
+        Add-Result -Results $results -Name "frontend_shell_contracts" -Passed $true -Detail "skipped"
     } elseif (Test-Path (Join-Path $dashRoot "package.json")) {
         Push-Location $dashRoot
         try {
             npm run check:shell-contracts 2>&1 | Tee-Object -FilePath (Join-Path $outDir "frontend_shell_contracts.txt")
-            Add-Result $results "frontend_shell_contracts" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+            Add-Result -Results $results -Name "frontend_shell_contracts" -Passed ($LASTEXITCODE -eq 0) -Detail "exit=$LASTEXITCODE"
         } finally {
             Pop-Location
         }
     } else {
-        Add-Result $results "frontend_shell_contracts" $false "frontend/dashboards/package.json not found"
+        Add-Result -Results $results -Name "frontend_shell_contracts" -Passed $false -Detail "frontend/dashboards/package.json not found"
     }
 
     Write-Section "SUMMARY"
