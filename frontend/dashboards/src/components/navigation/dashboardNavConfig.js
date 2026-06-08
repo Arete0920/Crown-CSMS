@@ -53,7 +53,7 @@ const STATIC_NAV_SECTIONS = [
       { key: 'admissions', label: 'Admissions', href: PATHS.ADMISSIONS, tier: 0, roles: ROLE_GROUPS.ADMIN_REGISTRAR, permissions: [APP_PERMISSIONS.ADMISSIONS_VIEW] },
       { key: 'admissions-pipeline', label: 'Admissions Pipeline', href: PATHS.ADMISSIONS_PIPELINE, tier: 0, roles: ROLE_GROUPS.ADMIN_REGISTRAR },
       { key: 'aftercare-roster', label: 'Roster Workspace', href: '/aftercare/roster', tier: 0 },
-      { key: 'wizards', label: 'Wizard Hub', href: PATHS.WIZARDS, tier: 0, roles: ROLE_GROUPS.ADMIN_REGISTRAR },
+      { key: 'wizards', label: 'Wizard Hub', href: PATHS.WIZARDS, tier: 0, roles: ROLE_GROUPS.ADMIN_REGISTRAR, comingSoon: true },
     ],
   },
   {
