@@ -18,10 +18,34 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
   throw "GitHub CLI (gh) is required for branch protection export."
 }
 
-gh api "/repos/$RepoSlug/branches/main/protection" > $outJson
-if ($LASTEXITCODE -ne 0) {
-  throw "gh api branch protection export failed"
-}
+$protectionResponse = & cmd /c "gh api /repos/$RepoSlug/branches/main/protection 2>&1"
+$protectionExitCode = $LASTEXITCODE
+
+  if ($protectionExitCode -eq 0) {
+    $protectionResponse | Out-File $outJson -Encoding utf8
+  } else {
+    $branchResponse = & cmd /c "gh api /repos/$RepoSlug/branches/main 2>NUL"
+    $branchExitCode = $LASTEXITCODE
+    $branchInfo = $null
+    if ($branchExitCode -eq 0 -and $branchResponse) {
+      $branchInfo = $branchResponse | ConvertFrom-Json
+    }
+
+    $isProtected = $null -ne $branchInfo -and ($branchInfo.protected -eq $true)
+    if ($isProtected) {
+      # Branch metadata confirms protection; proceed with fallback evidence when details API is not accessible.
+      [ordered]@{
+        retrieval_mode = "fallback_branch_metadata"
+        branch = "main"
+        branch_protected = $true
+        details_endpoint_error = ($protectionResponse | Out-String).Trim()
+        note = "Detailed protection export was inaccessible from this token/context."
+      } | ConvertTo-Json -Depth 5 | Out-File $outJson -Encoding utf8
+    } else {
+      throw "gh api branch protection export failed"
+    }
+  }
+
 
 @"
 MANUAL REQUIRED
