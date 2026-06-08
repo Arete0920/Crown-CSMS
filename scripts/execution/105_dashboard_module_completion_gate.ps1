@@ -109,14 +109,17 @@ function Invoke-LoggedCommand {
                 throw "Executable not found: $Exe"
             }
 
-            $proc = Start-Process \
-                -FilePath $resolvedCommand.Source \
-                -ArgumentList $CmdArgs \
-                -WorkingDirectory (Get-Location).Path \
-                -NoNewWindow \
-                -PassThru \
-                -RedirectStandardOutput $stdoutTmp \
-                -RedirectStandardError $stderrTmp
+            $startProcessArgs = @{
+                FilePath = $resolvedCommand.Source
+                ArgumentList = $CmdArgs
+                WorkingDirectory = (Get-Location).Path
+                NoNewWindow = $true
+                PassThru = $true
+                RedirectStandardOutput = $stdoutTmp
+                RedirectStandardError = $stderrTmp
+            }
+
+            $proc = Start-Process @startProcessArgs
 
             $proc.WaitForExit()
             $exitCode = [int]$proc.ExitCode
