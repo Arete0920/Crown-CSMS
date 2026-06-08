@@ -80,18 +80,28 @@ function Invoke-TimeboxedProcess {
   $startedAt = Get-Date
   Write-Heartbeat ("STEP_START name={0} timeout_sec={1}" -f $Name, $TimeoutSec)
 
-  $proc = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -WorkingDirectory $WorkingDirectory -RedirectStandardOutput $StdOutFile -RedirectStandardError $StdErrFile -PassThru
+  $proc = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -WorkingDirectory $WorkingDirectory -RedirectStandardOutput $StdOutFile -RedirectStandardError $StdErrFile -NoNewWindow -PassThru
 
   $deadline = (Get-Date).AddSeconds($TimeoutSec)
   $timedOut = $false
   while (-not $proc.HasExited) {
-    if ((Get-Date) -ge $deadline) {
+    $now = Get-Date
+    $remainingMs = [int][math]::Max(0, ($deadline - $now).TotalMilliseconds)
+
+    if ($remainingMs -le 0) {
       $timedOut = $true
       break
     }
 
-    $proc.WaitForExit($HeartbeatSec * 1000) | Out-Null
+    $waitMs = [int][math]::Min($HeartbeatSec * 1000, $remainingMs)
+    $proc.WaitForExit($waitMs) | Out-Null
+
     if (-not $proc.HasExited) {
+      if ((Get-Date) -ge $deadline) {
+        $timedOut = $true
+        break
+      }
+
       $elapsedSec = [math]::Round(((Get-Date) - $startedAt).TotalSeconds, 1)
       Write-Heartbeat ("STEP_RUNNING name={0} elapsed_sec={1}" -f $Name, $elapsedSec)
     }
