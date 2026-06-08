@@ -109,7 +109,11 @@ function Resolve-CrownExecutable {
     )
 
     if ($script:IsWindowsPlatform) {
-        return $Exe
+        switch -Regex ($Exe) {
+            '^npm(\.cmd)?$' { return 'npm.cmd' }
+            '^npx(\.cmd)?$' { return 'npx.cmd' }
+            default { return $Exe }
+        }
     }
 
     switch -Regex ($Exe) {
