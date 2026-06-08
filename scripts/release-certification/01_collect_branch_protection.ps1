@@ -18,34 +18,40 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
   throw "GitHub CLI (gh) is required for branch protection export."
 }
 
-$protectionResponse = & cmd /c "gh api /repos/$RepoSlug/branches/main/protection 2>&1"
+$protectionResponse = & gh api "/repos/$RepoSlug/branches/main/protection" 2>&1
 $protectionExitCode = $LASTEXITCODE
 
-  if ($protectionExitCode -eq 0) {
-    $protectionResponse | Out-File $outJson -Encoding utf8
-  } else {
-    $branchResponse = & cmd /c "gh api /repos/$RepoSlug/branches/main 2>NUL"
-    $branchExitCode = $LASTEXITCODE
-    $branchInfo = $null
-    if ($branchExitCode -eq 0 -and $branchResponse) {
-      $branchInfo = $branchResponse | ConvertFrom-Json
-    }
+if ($protectionExitCode -eq 0) {
+  $protectionResponse | Out-File $outJson -Encoding utf8
+} else {
+  $protectionErrorText = ($protectionResponse | Out-String).Trim()
+  $isDetailsNotFound = $protectionErrorText -match "(?i)(HTTP\s+404|404\s+Not\s+Found|Not\s+Found)"
 
-    $isProtected = $null -ne $branchInfo -and ($branchInfo.protected -eq $true)
-    if ($isProtected) {
-      # Branch metadata confirms protection; proceed with fallback evidence when details API is not accessible.
-      [ordered]@{
-        retrieval_mode = "fallback_branch_metadata"
-        branch = "main"
-        branch_protected = $true
-        details_endpoint_error = ($protectionResponse | Out-String).Trim()
-        note = "Detailed protection export was inaccessible from this token/context."
-      } | ConvertTo-Json -Depth 5 | Out-File $outJson -Encoding utf8
-    } else {
-      throw "gh api branch protection export failed"
-    }
+  if (-not $isDetailsNotFound) {
+    throw "gh api branch protection export failed: $protectionErrorText"
   }
 
+  $branchResponse = & gh api "/repos/$RepoSlug/branches/main" 2>$null
+  $branchExitCode = $LASTEXITCODE
+  $branchInfo = $null
+  if ($branchExitCode -eq 0 -and $branchResponse) {
+    $branchInfo = $branchResponse | ConvertFrom-Json
+  }
+
+  $isProtected = $null -ne $branchInfo -and ($branchInfo.protected -eq $true)
+  if ($isProtected) {
+    # Branch metadata confirms protection; proceed with fallback evidence only for the known 404 details-endpoint case.
+    [ordered]@{
+      retrieval_mode = "fallback_branch_metadata"
+      branch = "main"
+      branch_protected = $true
+      details_endpoint_error = $protectionErrorText
+      note = "Detailed protection export returned 404 in this token/context; branch metadata still confirms protection."
+    } | ConvertTo-Json -Depth 5 | Out-File $outJson -Encoding utf8
+  } else {
+    throw "gh api branch protection export failed and branch metadata did not confirm protection: $protectionErrorText"
+  }
+}
 
 @"
 MANUAL REQUIRED
