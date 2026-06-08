@@ -158,7 +158,17 @@ try {
     }
 
     Write-Section "POWERSHELL PARSE CHECK"
-    $psFiles = @(git ls-files "*.ps1" "*.psm1")
+    $psFiles = @()
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedFilesCsv)) {
+        $psFiles = @(
+            $ExpectedFilesCsv.Split(",") |
+                ForEach-Object { $_.Trim() } |
+                Where-Object { $_ -match '\.(ps1|psm1)$' } |
+                Sort-Object
+        )
+    } else {
+        $psFiles = @(git ls-files "*.ps1" "*.psm1")
+    }
     $parseErrors = [System.Collections.Generic.List[string]]::new()
 
     foreach ($file in $psFiles) {
