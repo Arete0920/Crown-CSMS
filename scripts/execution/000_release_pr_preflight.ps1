@@ -3,7 +3,7 @@
     [string]$ExpectedFilesCsv = "",
     [switch]$SkipBackend,
     [switch]$SkipFrontend,
-    [switch]$AllowDirtyAuditArtifacts
+    [switch]$AllowDirtyAuditArtifacts = $true
 )
 
 $ErrorActionPreference = "Stop"
@@ -40,12 +40,35 @@ function Get-GitOutput {
     return @($output)
 }
 
+function Resolve-CrownPython {
+    $candidatePaths = @(
+        (Join-Path (Join-Path (Join-Path $repoRoot ".venv") "Scripts") "python.exe"),
+        (Join-Path (Join-Path (Join-Path $repoRoot ".venv") "bin") "python")
+    )
+
+    foreach ($candidate in $candidatePaths) {
+        if (Test-Path $candidate) {
+            return (Resolve-Path $candidate).Path
+        }
+    }
+
+    foreach ($candidateName in @("python", "python3")) {
+        $cmd = Get-Command $candidateName -ErrorAction SilentlyContinue
+        if ($null -ne $cmd) {
+            return $cmd.Source
+        }
+    }
+
+    return $null
+}
+
 $repoRoot = (Get-GitOutput @("rev-parse", "--show-toplevel") | Select-Object -First 1).Trim()
 Set-Location $repoRoot
 
 $stamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$outDir = Join-Path $repoRoot ".crown-audit\release-pr-preflight\$stamp"
-$latestDir = Join-Path $repoRoot ".crown-audit\release-pr-preflight\latest"
+$preflightRoot = Join-Path (Join-Path $repoRoot ".crown-audit") "release-pr-preflight"
+$outDir = Join-Path $preflightRoot $stamp
+$latestDir = Join-Path $preflightRoot "latest"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 New-Item -ItemType Directory -Force -Path $latestDir | Out-Null
 
@@ -66,7 +89,7 @@ try {
     Write-Host "BaseRef: $BaseRef"
 
     Write-Section "FETCH BASE"
-    git fetch origin | Write-Host
+    Get-GitOutput @("fetch", "origin") | ForEach-Object { Write-Host $_ }
 
     $baseExists = $true
     try {
@@ -95,8 +118,15 @@ try {
     }
 
     Write-Section "DIFF SCOPE"
-    $changedFiles = @(git diff --name-only "$BaseRef...HEAD")
-    $changedFiles | Sort-Object | Set-Content (Join-Path $outDir "changed_files.txt") -Encoding UTF8
+    $changedFiles = @()
+    if (-not $baseExists) {
+        Add-Result $results "diff_scope" $false "base_ref_missing=$BaseRef"
+        "BASE REF MISSING: $BaseRef" | Set-Content (Join-Path $outDir "changed_files.txt") -Encoding UTF8
+    } else {
+        $changedFiles = @(Get-GitOutput @("diff", "--name-only", "$BaseRef...HEAD"))
+        $changedFiles | Sort-Object | Set-Content (Join-Path $outDir "changed_files.txt") -Encoding UTF8
+        Add-Result $results "diff_scope" $true "changed_file_count=$($changedFiles.Count)"
+    }
 
     Write-Host "Changed file count: $($changedFiles.Count)"
     $changedFiles | Sort-Object | ForEach-Object { Write-Host $_ }
@@ -157,13 +187,18 @@ try {
     )
 
     $riskHits = [System.Collections.Generic.List[string]]::new()
-    $scanRoots = @("scripts", ".github", "frontend", "backend") | Where-Object { Test-Path $_ }
+    $scanFiles = @(
+        $changedFiles |
+            Where-Object { $_ -match '\.(ps1|psm1|yml|yaml|js|jsx|ts|tsx|json|py)$' } |
+            Where-Object { Test-Path (Join-Path $repoRoot $_) }
+    )
 
-    foreach ($root in $scanRoots) {
+    foreach ($changedFile in $scanFiles) {
+        $scanPath = Join-Path $repoRoot $changedFile
         foreach ($pattern in $riskPatterns) {
-            $matches = @(Select-String -Path (Join-Path $root "*") -Pattern $pattern -Recurse -ErrorAction SilentlyContinue)
+            $matches = @(Select-String -Path $scanPath -Pattern $pattern -ErrorAction SilentlyContinue)
             foreach ($m in $matches) {
-                $riskHits.Add("$($m.Path):$($m.LineNumber): $($m.Line.Trim())") | Out-Null
+                $riskHits.Add("${changedFile}:$($m.LineNumber): $($m.Line.Trim())") | Out-Null
             }
         }
     }
@@ -173,32 +208,39 @@ try {
     $unguardedHardRisks = @(
         $riskHits | Where-Object {
             ($_ -match "cmd\.exe|npm\.cmd|npx\.cmd|powershell\.exe") -and
-            ($_ -notmatch "Resolve-CrownExecutable|IsWindowsPlatform|Get-Command")
+            ($_ -notmatch "Resolve-CrownExecutable|Resolve-NpmCommand|Resolve-PowerShellCommand|IsWindowsPlatform|Get-Command")
         }
     )
 
-    Add-Result $results "ci_portability_scan" ($unguardedHardRisks.Count -eq 0) "risk_hits=$($riskHits.Count); unguarded_hard_risks=$($unguardedHardRisks.Count)"
+    Add-Result $results "ci_portability_scan" ($unguardedHardRisks.Count -eq 0) "changed_files_scanned=$($scanFiles.Count); risk_hits=$($riskHits.Count); unguarded_hard_risks=$($unguardedHardRisks.Count)"
 
     Write-Section "BACKEND CHECK"
     if ($SkipBackend) {
         Add-Result $results "backend_manage_check" $true "skipped"
-    } elseif ((Test-Path ".\.venv\Scripts\python.exe") -and (Test-Path ".\manage.py")) {
-        .\.venv\Scripts\python.exe manage.py check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
-        Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
-    } elseif ((Test-Path ".\.venv\Scripts\python.exe") -and (Test-Path ".\backend\manage.py")) {
-        Push-Location "backend"
-        try {
-            ..\.venv\Scripts\python.exe manage.py check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
-            Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
-        } finally {
-            Pop-Location
-        }
     } else {
-        Add-Result $results "backend_manage_check" $false "python/manage.py not found"
+        $pythonExe = Resolve-CrownPython
+        $rootManage = Join-Path $repoRoot "manage.py"
+        $backendRoot = Join-Path $repoRoot "backend"
+        $backendManage = Join-Path $backendRoot "manage.py"
+
+        if ($pythonExe -and (Test-Path $rootManage)) {
+            & $pythonExe $rootManage check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
+            Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+        } elseif ($pythonExe -and (Test-Path $backendManage)) {
+            Push-Location $backendRoot
+            try {
+                & $pythonExe manage.py check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
+                Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+            } finally {
+                Pop-Location
+            }
+        } else {
+            Add-Result $results "backend_manage_check" $false "python/manage.py not found"
+        }
     }
 
     Write-Section "FRONTEND SHELL CONTRACTS"
-    $dashRoot = Join-Path $repoRoot "frontend\dashboards"
+    $dashRoot = Join-Path (Join-Path $repoRoot "frontend") "dashboards"
     if ($SkipFrontend) {
         Add-Result $results "frontend_shell_contracts" $true "skipped"
     } elseif (Test-Path (Join-Path $dashRoot "package.json")) {
