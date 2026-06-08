@@ -39,7 +39,7 @@ function annotate(entries = [], source = "unknown") {
 export function getOwnedRouteEntries() {
   const staticEntries = STATIC_SHELL_PATHS.map((path) => ({
     path,
-    releaseState: "ready",
+    releaseState: path === "/wizards" ? "draft" : "ready",
     owner: "staticShell",
   }));
 
