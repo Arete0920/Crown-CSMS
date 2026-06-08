@@ -104,13 +104,25 @@ function Invoke-LoggedCommand {
         $exitCode = 1
 
         try {
-            $cmdTokens = @((ConvertTo-CmdToken $Exe)) + @($CmdArgs | ForEach-Object { ConvertTo-CmdToken $_ })
-            $cmdLine = ($cmdTokens -join ' ')
-            $cmdLine = "$cmdLine > `"$stdoutTmp`" 2> `"$stderrTmp`""
+            $resolvedCommand = Get-Command $Exe -ErrorAction SilentlyContinue
+            if ($null -eq $resolvedCommand) {
+                throw "Executable not found: $Exe"
+            }
 
-            & cmd.exe /d /s /c $cmdLine
-            $exitCode = $LASTEXITCODE
-            if ($null -eq $exitCode) { $exitCode = 0 }
+            $startProcessArgs = @{
+                FilePath = $resolvedCommand.Source
+                ArgumentList = $CmdArgs
+                WorkingDirectory = (Get-Location).Path
+                NoNewWindow = $true
+                PassThru = $true
+                RedirectStandardOutput = $stdoutTmp
+                RedirectStandardError = $stderrTmp
+            }
+
+            $proc = Start-Process @startProcessArgs
+
+            $proc.WaitForExit()
+            $exitCode = [int]$proc.ExitCode
         } catch {
             "ERROR invoking command: $_" | Add-Content -Path $logPath -Encoding UTF8
             $exitCode = 1
