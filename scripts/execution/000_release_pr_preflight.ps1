@@ -1,0 +1,255 @@
+﻿param(
+    [string]$BaseRef = "origin/main",
+    [string]$ExpectedFilesCsv = "",
+    [switch]$SkipBackend,
+    [switch]$SkipFrontend,
+    [switch]$AllowDirtyAuditArtifacts
+)
+
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+function Write-Section {
+    param([Parameter(Mandatory = $true)][string]$Text)
+    Write-Host ""
+    Write-Host "=== $Text ==="
+}
+
+function Add-Result {
+    param(
+        [Parameter(Mandatory = $true)][System.Collections.Generic.List[object]]$Results,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][bool]$Passed,
+        [string]$Detail = ""
+    )
+
+    $Results.Add([pscustomobject]@{
+        Name = $Name
+        Passed = $Passed
+        Detail = $Detail
+    }) | Out-Null
+}
+
+function Get-GitOutput {
+    param([Parameter(Mandatory = $true)][string[]]$Args)
+
+    $output = & git @Args 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "git $($Args -join ' ') failed: $output"
+    }
+    return @($output)
+}
+
+$repoRoot = (Get-GitOutput @("rev-parse", "--show-toplevel") | Select-Object -First 1).Trim()
+Set-Location $repoRoot
+
+$stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$outDir = Join-Path $repoRoot ".crown-audit\release-pr-preflight\$stamp"
+$latestDir = Join-Path $repoRoot ".crown-audit\release-pr-preflight\latest"
+New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+New-Item -ItemType Directory -Force -Path $latestDir | Out-Null
+
+$transcript = Join-Path $outDir "preflight_console.txt"
+Start-Transcript -Path $transcript -Force | Out-Null
+
+$results = [System.Collections.Generic.List[object]]::new()
+
+try {
+    Write-Section "RELEASE PR PREFLIGHT"
+
+    $branch = (Get-GitOutput @("branch", "--show-current") | Select-Object -First 1).Trim()
+    $head = (Get-GitOutput @("rev-parse", "HEAD") | Select-Object -First 1).Trim()
+
+    Write-Host "Repo: $repoRoot"
+    Write-Host "Branch: $branch"
+    Write-Host "HEAD: $head"
+    Write-Host "BaseRef: $BaseRef"
+
+    Write-Section "FETCH BASE"
+    git fetch origin | Write-Host
+
+    $baseExists = $true
+    try {
+        Get-GitOutput @("rev-parse", "--verify", $BaseRef) | Out-Null
+    } catch {
+        $baseExists = $false
+    }
+    Add-Result $results "base_ref_exists" $baseExists $BaseRef
+
+    Write-Section "WORKTREE HYGIENE"
+    $statusLines = @(git status --porcelain=v1)
+    $blockingDirty = @(
+        $statusLines | Where-Object {
+            if ([string]::IsNullOrWhiteSpace($_)) { return $false }
+            if ($AllowDirtyAuditArtifacts -and ($_ -match '\.crown-audit[\\/]|audit-artifacts[\\/]')) { return $false }
+            return $true
+        }
+    )
+
+    $statusLines | Set-Content (Join-Path $outDir "git_status_porcelain.txt") -Encoding UTF8
+    Add-Result $results "worktree_clean" ($blockingDirty.Count -eq 0) "blocking_dirty_count=$($blockingDirty.Count)"
+
+    if ($blockingDirty.Count -gt 0) {
+        Write-Host "Blocking dirty rows:"
+        $blockingDirty | ForEach-Object { Write-Host $_ }
+    }
+
+    Write-Section "DIFF SCOPE"
+    $changedFiles = @(git diff --name-only "$BaseRef...HEAD")
+    $changedFiles | Sort-Object | Set-Content (Join-Path $outDir "changed_files.txt") -Encoding UTF8
+
+    Write-Host "Changed file count: $($changedFiles.Count)"
+    $changedFiles | Sort-Object | ForEach-Object { Write-Host $_ }
+
+    if (-not [string]::IsNullOrWhiteSpace($ExpectedFilesCsv)) {
+        $expected = @(
+            $ExpectedFilesCsv.Split(",") |
+                ForEach-Object { $_.Trim() } |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                Sort-Object
+        )
+        $actual = @($changedFiles | Sort-Object)
+
+        $missing = @($expected | Where-Object { $_ -notin $actual })
+        $extra = @($actual | Where-Object { $_ -notin $expected })
+
+        Add-Result $results "expected_file_scope" (($missing.Count -eq 0) -and ($extra.Count -eq 0)) "missing=$($missing.Count); extra=$($extra.Count)"
+
+        if ($missing.Count -gt 0) {
+            Write-Host "Missing expected files:"
+            $missing | ForEach-Object { Write-Host $_ }
+        }
+        if ($extra.Count -gt 0) {
+            Write-Host "Extra files:"
+            $extra | ForEach-Object { Write-Host $_ }
+        }
+    } else {
+        Add-Result $results "expected_file_scope" $true "not_provided"
+    }
+
+    Write-Section "POWERSHELL PARSE CHECK"
+    $psFiles = @(git ls-files "*.ps1" "*.psm1")
+    $parseErrors = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($file in $psFiles) {
+        $tokens = $null
+        $errors = $null
+        [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $repoRoot $file), [ref]$tokens, [ref]$errors) | Out-Null
+        if ($errors.Count -gt 0) {
+            foreach ($err in $errors) {
+                $parseErrors.Add("$file :: $($err.Message)") | Out-Null
+            }
+        }
+    }
+
+    $parseErrors | Set-Content (Join-Path $outDir "powershell_parse_errors.txt") -Encoding UTF8
+    Add-Result $results "powershell_parse" ($parseErrors.Count -eq 0) "parse_errors=$($parseErrors.Count)"
+
+    Write-Section "CI PORTABILITY RISK SCAN"
+    $riskPatterns = @(
+        "cmd\.exe",
+        "npm\.cmd",
+        "npx\.cmd",
+        "powershell\.exe",
+        "Get-NetTCPConnection",
+        "\$IsWindows",
+        "netstat -ano"
+    )
+
+    $riskHits = [System.Collections.Generic.List[string]]::new()
+    $scanRoots = @("scripts", ".github", "frontend", "backend") | Where-Object { Test-Path $_ }
+
+    foreach ($root in $scanRoots) {
+        foreach ($pattern in $riskPatterns) {
+            $matches = @(Select-String -Path (Join-Path $root "*") -Pattern $pattern -Recurse -ErrorAction SilentlyContinue)
+            foreach ($m in $matches) {
+                $riskHits.Add("$($m.Path):$($m.LineNumber): $($m.Line.Trim())") | Out-Null
+            }
+        }
+    }
+
+    $riskHits | Set-Content (Join-Path $outDir "ci_portability_risks.txt") -Encoding UTF8
+
+    $unguardedHardRisks = @(
+        $riskHits | Where-Object {
+            ($_ -match "cmd\.exe|npm\.cmd|npx\.cmd|powershell\.exe") -and
+            ($_ -notmatch "Resolve-CrownExecutable|IsWindowsPlatform|Get-Command")
+        }
+    )
+
+    Add-Result $results "ci_portability_scan" ($unguardedHardRisks.Count -eq 0) "risk_hits=$($riskHits.Count); unguarded_hard_risks=$($unguardedHardRisks.Count)"
+
+    Write-Section "BACKEND CHECK"
+    if ($SkipBackend) {
+        Add-Result $results "backend_manage_check" $true "skipped"
+    } elseif ((Test-Path ".\.venv\Scripts\python.exe") -and (Test-Path ".\manage.py")) {
+        .\.venv\Scripts\python.exe manage.py check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
+        Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+    } elseif ((Test-Path ".\.venv\Scripts\python.exe") -and (Test-Path ".\backend\manage.py")) {
+        Push-Location "backend"
+        try {
+            ..\.venv\Scripts\python.exe manage.py check 2>&1 | Tee-Object -FilePath (Join-Path $outDir "backend_manage_check.txt")
+            Add-Result $results "backend_manage_check" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Add-Result $results "backend_manage_check" $false "python/manage.py not found"
+    }
+
+    Write-Section "FRONTEND SHELL CONTRACTS"
+    $dashRoot = Join-Path $repoRoot "frontend\dashboards"
+    if ($SkipFrontend) {
+        Add-Result $results "frontend_shell_contracts" $true "skipped"
+    } elseif (Test-Path (Join-Path $dashRoot "package.json")) {
+        Push-Location $dashRoot
+        try {
+            npm run check:shell-contracts 2>&1 | Tee-Object -FilePath (Join-Path $outDir "frontend_shell_contracts.txt")
+            Add-Result $results "frontend_shell_contracts" ($LASTEXITCODE -eq 0) "exit=$LASTEXITCODE"
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Add-Result $results "frontend_shell_contracts" $false "frontend/dashboards/package.json not found"
+    }
+
+    Write-Section "SUMMARY"
+    $failed = @($results | Where-Object { -not $_.Passed })
+    $passed = @($results | Where-Object { $_.Passed })
+
+    $summary = [ordered]@{
+        generated_at = (Get-Date).ToString("s")
+        repo = $repoRoot
+        branch = $branch
+        head = $head
+        base_ref = $BaseRef
+        pass = ($failed.Count -eq 0)
+        passed_count = $passed.Count
+        failed_count = $failed.Count
+        results = @($results)
+        out_dir = $outDir
+    }
+
+    $summary | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $outDir "99_STATUS.json") -Encoding UTF8
+    $summary | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $latestDir "99_STATUS.json") -Encoding UTF8
+
+    "PASS=$($summary.pass)" | Set-Content (Join-Path $outDir "00_SUMMARY.md") -Encoding UTF8
+    "PASS=$($summary.pass)" | Set-Content (Join-Path $latestDir "00_SUMMARY.md") -Encoding UTF8
+
+    Copy-Item -Path (Join-Path $outDir "*") -Destination $latestDir -Recurse -Force
+
+    $results | Format-Table -AutoSize
+
+    if ($failed.Count -gt 0) {
+        Write-Host ""
+        Write-Host "FAILED PREFLIGHT ITEMS:"
+        $failed | ForEach-Object { Write-Host "$($_.Name): $($_.Detail)" }
+        exit 1
+    }
+
+    Write-Host "RELEASE_PR_PREFLIGHT_PASS=True"
+    exit 0
+}
+finally {
+    Stop-Transcript | Out-Null
+}
