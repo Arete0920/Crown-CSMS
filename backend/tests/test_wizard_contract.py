@@ -50,6 +50,11 @@ WIZARD_ENDPOINTS = [
     ("course_catalog",               "/api/v1/course-catalog-wizard/sessions/"),
     ("room_setup",                   "/api/v1/room-setup-wizard/sessions/"),
     ("promotion",                    "/api/v1/promotion-wizard/sessions/"),
+    ("student_import",               "/api/v1/student-import-wizard/sessions/"),
+    ("guardian_household",           "/api/v1/guardian-household-wizard/sessions/"),
+    ("section_staffing",             "/api/v1/section-staffing-wizard/sessions/"),
+    ("attendance_codes",             "/api/v1/attendance-codes-wizard/sessions/"),
+    ("grade_weights",                "/api/v1/grade-weights-wizard/sessions/"),
 ]
 
 
