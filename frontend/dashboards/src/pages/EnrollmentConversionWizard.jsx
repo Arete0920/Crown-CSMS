@@ -11,18 +11,17 @@ const STEP_COMPONENTS = [Step1Configure, Step2Load, Step3Preview, Step4Commit, S
 const STEP_LABELS     = ["Configure", "Load Applicants", "Preview", "Commit", "Verify"];
 
 export default function EnrollmentConversionWizard() {
-  const [wizardContext, setWizardContext] = useState({});
+  const [context, setContext] = useState({});
   return (
     <CrownLayout title="Enrollment Conversion" subtitle="Convert accepted applicants to enrolled students">
       <div className="crown-card" style={{ padding: "22px 24px" }}>
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
-          initialContext={wizardContext}
-          onContextChange={setWizardContext}
+          initialContext={context}
+          onContextChange={setContext}
         />
       </div>
     </CrownLayout>
   );
 }
-

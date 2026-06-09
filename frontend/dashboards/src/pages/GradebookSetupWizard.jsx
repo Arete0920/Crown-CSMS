@@ -1,3 +1,4 @@
+import { useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import Step1Configure   from "./gradebook_setup_wizard/Step1Configure.jsx";
@@ -10,15 +11,17 @@ const STEP_COMPONENTS = [Step1Configure, Step2Categories, Step3Preview, Step4Com
 const STEP_LABELS     = ["Select Section", "Define Categories", "Preview", "Commit", "Verify"];
 
 export default function GradebookSetupWizard() {
+  const [context, setContext] = useState({});
   return (
-    <CrownLayout title="Gradebook Setup" subtitle="Configure assignment categories for a section">
+    <CrownLayout title="Gradebook Setup" subtitle="Configure assignment categories and weights for a section">
       <div className="crown-card" style={{ padding: "22px 24px" }}>
         <CrownWizard
           stepComponents={STEP_COMPONENTS}
           stepLabels={STEP_LABELS}
+          initialContext={context}
+          onContextChange={setContext}
         />
       </div>
     </CrownLayout>
   );
 }
-
