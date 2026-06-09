@@ -1,14 +1,14 @@
 # CROWN Current Release Status
 
-Date: 2026-05-29
-Purpose: Single canonical authority for repository-level release posture.
+Date: 2026-06-09
+Purpose: Single canonical repository-level release posture for CROWN.
 
 ## Canonical Authority
 
 1. This file is the canonical repository-level release authority.
-2. Current scorecard authority is `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md`.
-3. `docs/release/LIVE_RELEASE_AUTHORITY_SIGNOFF_20260526.md` remains authoritative for its scoped release-governance slice only.
-4. Operational/planning docs (including `PRIORITY_*_TO_GREEN` and execution-program plans) are non-authoritative unless explicitly designated here.
+2. Current controlling posture is **NO-GO / RELEASE FREEZE** until the required evidence gates below pass on the same current candidate SHA.
+3. Historical GO, SHIP, PASS, RELEASE_READY, PARTIAL, or prior candidate-SHA documents are non-authoritative unless this file explicitly promotes them.
+4. Product, sandbox, and production claims must be based on current-head evidence, not stale packets or local transcript memory.
 
 ## Current Decision
 
@@ -16,120 +16,105 @@ Repository-wide decision: NO-GO.
 
 Decision meaning:
 
-- Backend and frontend proof lanes are green for currently validated slices.
-- Repository-wide GO language remains blocked pending full authority hygiene convergence and deploy parity closure.
+- CROWN has substantial architecture and verification infrastructure.
+- Recent release-certification harness fixes are merged into `main`.
+- Production release is blocked until current-head release-certification evidence, live-data proof, dashboard/runtime proof, and repo-hygiene proof are all current and green.
+- Broad sandbox launch is blocked until sandbox evidence gates pass on the same current candidate SHA and local worktree hygiene is closed.
 
-## Canonical Status Metadata
+## Current GitHub Evidence Snapshot
 
-- Release authority branch: `release/security-runtime-governance-repair-little-lambs-full-build`
+- Latest inspected main SHA: `12e682c0e298a4f8fff688e547dd589b4fd8cd1e`.
 - Candidate SHA: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`
-- Approved deploy SHA: `1fe29aba4c374bc27351588329f4b03154e51b58`
-- Runtime-validated SHA: `0b20581b4b4c0d03be9e9022893303804626d81f`
-- Parity verdict: `PARTIAL_OPEN`
-- Protected-spine verdict: `PARTIAL`
-- Status checksum (SHA256 over decision+metadata tuple): `0990bdeeb6b0609504fbb9d61fd44a87b31248bb28bac474a826181d32975daa`
+- Release authority branch: `release/security-runtime-governance-repair-little-lambs-full-build`
+- Candidate/branch metadata above is retained to keep ready-entry evidence contracts parseable; it is not a current production-release approval and does not override the repository-wide NO-GO decision.
+- PR #949: merged; wizard backend contract parity matrix.
+- PR #948: merged; guarded runtime wizard route and sandbox regression alignment.
+- PR #947: merged; parallel-work synchronization protocol.
+- PR #946: merged; Windows command-wrapper capture diagnostic gate.
+- PR #945: merged; repo hygiene gate packet generator.
+- PR #944: merged; frontend/backend wizard parity verifier.
+- PR #941: merged; one-file release-certification step01 fallback hardening.
+- PR #940: merged; earlier step01 branch-protection 404 fallback repair.
+- PR #939: merged; release-certification step06 deterministic finalization.
+- PR #938: merged; release-certification step02 supplemental orchestration hardening.
+- PR #933: merged; clean two-file wizard shell-readiness/auth integrity repair.
+- PR #909: closed unmerged; remains historical no-go/release-freeze evidence and must not be treated as a current release lane.
 
+## Current Blocking Conditions
 
-## Current Proof Snapshot (2026-05-29)
+### 1. Current-head release-certification proof is missing
 
-Backend proof status: PASS.
+A current release-certification packet must be generated from a clean current main or approved release branch and must show:
 
-- `python backend/manage.py check` -> PASS.
-- `pytest backend/applications/tests/test_admissions_endpoints.py -q -s` -> PASS (`24 passed`).
-- `pytest backend/aftercare -q` -> PASS (`17 passed`).
+- `00_release_certification_summary.json` final status PASS;
+- zero RED lanes;
+- zero AMBER lanes unless explicitly approved as non-production-blocking;
+- branch-protection evidence;
+- backend/runtime health, integrity, OpenAPI, migrations, and deploy check evidence;
+- golden path, tenant isolation, and UI evidence;
+- phase2 reporting/export/transcript and sandbox role-route regression evidence;
+- final signoff packet.
 
-Tenant/RBAC proof status: PASS.
+### 2. Local repo hygiene is not closed
 
-- `pytest backend/tests/test_tenant_isolation.py -q` -> PASS (`7 passed`).
+Local worktree state is not visible through GitHub. Current local hygiene remains blocking until a fresh local packet proves:
 
-Frontend proof status: PASS.
+- `deleted_count=0`;
+- `nested_pending=0`;
+- root untracked noise quarantined or intentionally retained outside product scope;
+- all root dirty entries classified;
+- no blank triage decisions;
+- no unresolved `NEEDS REVIEW` rows;
+- no cleanup artifacts mixed into product repair branches.
 
-- `npm run build` (frontend/dashboards) -> PASS.
-- `npm run test -- --run` (frontend/dashboards) -> PASS (`37 passed` files, `341 passed` tests, `1 skipped` file).
+### 3. Dashboard live-data completion remains blocked
 
-Deploy SHA parity status: PARTIAL / NOT YET CLOSED.
+Dashboard registry coverage is not equivalent to live operational completion. Production/full-completion claims remain blocked until every production-visible dashboard has live service/API-backed data provenance or is accurately marked unavailable/non-production-visible.
 
-- Current local HEAD: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`.
-- Current `origin/main`: `1fe29aba4c374bc27351588329f4b03154e51b58`.
-- Git parity delta (`origin/main...HEAD`): `50 30`.
-- See `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md` for captured deployed runtime SHA evidence and parity evaluation.
-- Latest parity run artifact: `docs/release/live-audit/deploy-sha-parity/deploy_sha_parity_20260529_081638.json`.
-- Latest parity run was executed with explicit `DeployTargetSha` and `ApprovedReleaseSha` equal to `origin/main`.
-- Current runtime/deploy target parity for latest local commit is not yet evidenced in this authority stack.
+### 4. Wizard completion is not yet all-wizard proven
 
-Protected-spine runtime/policy gate status: PARTIAL.
+Wizard architecture exists, but all-wizard completion requires current evidence for each production-visible wizard:
 
-- Auth/security protected-spine subbatch rerun is green: `268 passed, 1 skipped in 173.09s`.
-- Auth/security rerun artifact: `docs/release/live-audit/protected-spine/protected_spine_auth_security_batch_direct_20260529_044421.md`.
-- Captured auth/security stdout: `audit-artifacts/runtime-release-closure/20260418_070051/BACKEND_PYTEST_AUTH_SECURITY_BATCH_DIRECT_20260529_044421.txt`.
-- Earlier hang triage is retained as superseded history: `docs/release/live-audit/protected-spine/protected_spine_hang_triage_20260529_042753.md`.
-- Full protected-spine packet and policy-gate packet still need refreshed candidate-SHA publication, so P0-3 remains OPEN.
+- frontend route registered;
+- backend registry entry present;
+- frontend `apiPrefix` matches backend URL prefix;
+- component renders;
+- role access enforced;
+- tenant boundary enforced;
+- session create/load/save/resume works;
+- submit/commit persists expected records;
+- failure states are handled;
+- tests and/or UI proof artifacts are current.
 
-Operational readiness status: CONDITIONAL.
+### 5. Release authority hygiene must stay converged
 
-- Proven green for validated backend/frontend/tenant slices above.
-- Still requires final reconciliation across legacy authority docs and explicit deploy parity proof to promote to unrestricted GO.
-- SOLOMON strategy and execution artifacts are tracked separately under `docs/solomon/` and do not alter this release authority posture.
+Only this file controls repository-level release posture. Any stale historical release, GO, SHIP, PASS, or certification document must remain explicitly superseded unless promoted here with current evidence.
 
-## Superseded Authority Labels
+## Allowed Language Now
 
-These files are historical and not controlling current repository-level release authority:
+Allowed:
 
-| File | Historical label | Superseded by |
-| --- | --- | --- |
-| `docs/release/LIVE_SHIP_DECISION.md` | SHIP | This file + `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md` |
-| `docs/release/LIVE_RELEASE_GATE_STATUS.md` | RELEASE_READY/PASS | This file + `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md` |
-| `docs/release/LIVE_FINAL_RELEASE_GATE.md` | historical gate snapshot | This file |
-| `docs/release/LIVE_15_PHASE_COMPLETION.md` | historical SHIP snapshot | This file |
-| `docs/release/FINAL_15_PHASE_VERIFICATION.md` | historical RELEASE_READY/SHIP verification snapshot | This file |
-| `docs/release/SHIP_CANDIDATE.md` | historical SHIP candidate snapshot | This file |
-| `docs/release/SHIP_CANDIDATE_32_46.md` | historical SHIP candidate snapshot | This file |
-| `docs/release/SHIP_CANDIDATE_47_61.md` | historical SHIP candidate snapshot | This file |
-| `docs/release/HANDOFF_2026-05-04.md` | historical NO-GO handoff snapshot | This file |
-| `docs/release/INTEGRITY_HOLD_PROGRESS.md` | historical integrity-hold tracker snapshot | This file |
-| `docs/release/LIVE_HOSTED_CI_HANDOFF_20260526.md` | historical hosted-CI handoff snapshot | This file |
-| `docs/release/LIVE_RUNTIME_GOVERNANCE_PR_SUMMARY_20260526.md` | historical PR summary snapshot | This file |
-| `docs/release/LIVE_RELEASE_TRUTH.md` | historical truth packet | This file |
-| `docs/KNOWN_LIMITATIONS.md` | historical NO-GO-era snapshot | This file |
-| `docs/PUBLIC_REPO_STATUS.md` | historical PARTIAL status snapshot | This file |
-| `docs/ACTUAL_STATUS_TODAY.md` | historical conditional-go hardening snapshot | This file |
-| `docs/crown-master-binder/operations/JUDGMENT_DAY_CURRENT_SUMMARY.md` | historical operational NO-GO summary snapshot | This file |
-| `docs/crown-master-binder/operations/CURRENT_EXECUTION_CONTROL_SUMMARY.md` | historical operational execution snapshot | This file |
-| `docs/crown-master-binder/operations/BLOCKER_EXECUTION_BOARD.md` | historical operational blocker board snapshot | This file |
-| `docs/crown-master-binder/operations/JUDGMENT_DAY_RUNBOOK.md` | historical operational gauntlet runbook snapshot | This file |
-| `docs/crown-master-binder/operations/DEV5_QA_RELEASE_PROMPT.md` | historical operational QA/release prompt snapshot | This file |
-| `docs/crown-master-binder/runbooks/CURRENT_AZURE_POST_DEPLOY_PACKET.md` | historical operational post-deploy packet snapshot | This file |
-| `docs/status/PROJECT_COMPLETE.md` | historical feature-completion snapshot | This file |
-| `docs/status/VERIFICATION_REPORT.md` | historical feature-verification snapshot | This file |
-| `docs/completion/06-PRODUCTION-CERTIFICATION-CHECKLIST.md` | historical production certification checklist snapshot | This file |
-| `docs/completion/07-INVESTOR-READINESS-CHECKLIST.md` | historical investor readiness checklist snapshot | This file |
-| `docs/completion/02-MODULE-ACCEPTANCE-MATRIX.md` | historical module acceptance matrix snapshot | This file |
-| `docs/audit/reports/EXEC_BOARD_REPORT.md` | historical executive board report snapshot | This file |
-| `docs/DAY2_DASHBOARD_ENDPOINTS.md` | historical API operations reference snapshot | This file |
-| `docs/admissions/ADMISSIONS_DELIVERY_PROCESS_PLAYBOOK_20260522.md` | historical admissions delivery playbook snapshot | This file |
-| `docs/plan/RELEASE_SIGNOFF_CHECKLIST_RC.md` | historical RC signoff checklist snapshot | This file |
+- "CROWN has substantial architecture and verification infrastructure. Repository-level posture is NO-GO pending current-head evidence, live-data proof, wizard/runtime proof, and local hygiene closure."
+- "Validated slices may be described as validated only when their evidence is current and cited."
 
-## Closure Required Before Unrestricted Repository-Wide GO
+Not allowed:
 
-Execution board for these closure items:
+- "Repository is production ready."
+- "CROWN is unrestricted GO."
+- "All dashboards are complete."
+- "All wizards work."
+- "Sandbox is broadly approved."
+- "Latest head is release-certified" unless the current-head release-certification packet proves it.
 
-- `docs/release/P0_EXECUTION_BOARD_20260528.md`
+## Required Closure Sequence
 
-1. Publish explicit deploy target SHA parity evidence for the current head or approved release commit.
-   Current parity packet: `docs/release/DEPLOY_SHA_PARITY_PACKET_20260528.md`.
-   Runner (live mode): `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthUrl <health-url> -IntegrityUrl <integrity-url> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`.
-   Runner (artifact mode): `pwsh -File scripts/release/44_capture_deploy_sha_parity.ps1 -HealthJsonPath <path-to-02_health.json> -IntegrityJsonPath <path-to-02_integrity.json> -DeployTargetSha <deploy-run-sha> -ApprovedReleaseSha <approved-sha> -FailOnOpen`.
-2. Complete authority hygiene convergence so legacy GO/PARTIAL/FAIL docs are non-ambiguous and clearly historical.
-3. Resolve the protected-spine auth/security hang and publish a fresh protected-spine packet on the candidate SHA.
-4. Keep this file and `docs/release/CURRENT_RELEASE_SCORECARD_20260528.md` synchronized for every material release-state change.
+1. Close local repo-hygiene gate from the main repo root.
+2. Generate a clean current-head release-certification packet.
+3. Generate frontend/backend wizard parity and runtime matrix.
+4. Close dashboard live-data/template blockers for production-visible surfaces.
+5. Run sandbox-ready evidence gate on current head.
+6. Update this file only after the evidence above is current, green, and same-SHA consistent.
 
-## Language Guardrail
+## Current Final Status
 
-Allowed now:
-
-- "Validated slices are green; repository-level posture is NO-GO pending final parity and authority convergence."
-
-Not allowed now:
-
-- "Repository is unrestricted GO across all lanes."
-- "All deployment targets are parity-verified for latest head."
+**NO-GO / RELEASE FREEZE**.
