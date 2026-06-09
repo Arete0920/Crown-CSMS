@@ -23,10 +23,11 @@ Decision meaning:
 
 ## Current GitHub Evidence Snapshot
 
-- Latest inspected main SHA: `12e682c0e298a4f8fff688e547dd589b4fd8cd1e`.
+- Latest inspected main SHA: `56f2d784fd6b4dd0c261245c0f603d508cf09861`.
 - Candidate SHA: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`
 - Release authority branch: `release/security-runtime-governance-repair-little-lambs-full-build`
 - Candidate/branch metadata above is retained to keep ready-entry evidence contracts parseable; it is not a current production-release approval and does not override the repository-wide NO-GO decision.
+- PR #950: merged; current release authority refresh preserving NO-GO / RELEASE FREEZE.
 - PR #949: merged; wizard backend contract parity matrix.
 - PR #948: merged; guarded runtime wizard route and sandbox regression alignment.
 - PR #947: merged; parallel-work synchronization protocol.
