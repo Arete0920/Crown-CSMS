@@ -1,6 +1,6 @@
 # CROWN Modules and Dashboards Verification Packet
 
-Status: VS Code / GitHub Verification Packet
+Status: Pending Copilot Review
 Parent Canon: `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md`
 Release Authority: `docs/CURRENT_RELEASE_STATUS.md`
 Created: 2026-06-09
@@ -8,13 +8,13 @@ Scope: Modules and dashboards only
 
 ## Purpose
 
-This packet routes the CROWN modules and dashboards canon package through the available verification path: ChatGPT support, VS Code inspection, GitHub evidence, repository checks, and current-head proof artifacts.
+This packet routes the CROWN modules and dashboards canon package through the active verification and review path: TC direction, ChatGPT drafting and evidence organization, VS Code repo inspection, GitHub evidence, CI/check outputs where available, and GitHub Copilot review captured as review evidence.
 
 This packet does not approve the canon, certify any module, certify any dashboard, approve production release, approve sandbox launch, or alter release posture.
 
-## Current Review Constraint
+## Current Review Path
 
-External support reviewers are not available for this lane. Claude and Grok are not part of the workflow. The active workflow is limited to:
+The active workflow is limited to:
 
 - TC direction and priority-setting
 - ChatGPT drafting, inspection support, and evidence organization
@@ -22,14 +22,31 @@ External support reviewers are not available for this lane. Claude and Grok are 
 - GitHub repo evidence
 - CI/check outputs where available
 - committed proof artifacts
+- GitHub Copilot review through VS Code/GitHub, with review output captured as evidence
 
-Because no independent human reviewer is available in this lane, this package cannot honestly be marked `independently approved` from this workflow alone. The correct status after successful verification is:
+Claude and Grok are not part of this workflow.
+
+Copilot may serve as the independent review support path only when its review output is captured in one of these reviewable forms:
+
+- GitHub PR review
+- GitHub PR comment
+- GitHub issue comment
+- committed VS Code/Copilot review transcript or summary
+- pasted Copilot review output committed into an evidence packet
+
+Until that evidence exists, the correct status is:
 
 ```text
-MECHANICALLY VERIFIED FOR PLANNING USE — NOT INDEPENDENTLY APPROVED
+PENDING COPILOT REVIEW - NOT APPROVED
 ```
 
-This preserves segregation-of-duties integrity while allowing planning work to continue.
+After Copilot review evidence is captured and no blocking corrections remain, the correct status is:
+
+```text
+COPILOT-REVIEWED FOR PLANNING USE - NOT PRODUCTION GO
+```
+
+Copilot review does not certify modules, certify dashboards, approve sandbox launch, or approve production release.
 
 ## Files in Verification Scope
 
@@ -40,11 +57,11 @@ This preserves segregation-of-duties integrity while allowing planning work to c
 | 3 | `docs/product/CROWN_MODULE_DATA_OWNERSHIP_MATRIX.md` | Canonical data ownership and duplicate-truth prevention. |
 | 4 | `docs/product/CROWN_MODULE_PERMISSION_MATRIX.md` | Action-level permission, role, export, and sensitive-access requirements. |
 | 5 | `docs/product/CROWN_DASHBOARD_FIT_MATRIX.md` | Dashboard-to-module fit, data provenance, freshness, drilldown, and certification requirements. |
-| 6 | `docs/product/CROWN_MODULE_REVIEW_RACI.md` | Review and approval routing, including the independent-review limitation. |
+| 6 | `docs/product/CROWN_MODULE_REVIEW_RACI.md` | Review and approval routing, including Copilot review evidence requirements. |
 
 ## Authority Boundaries
 
-Verification must preserve these boundaries:
+Verification and Copilot review must preserve these boundaries:
 
 - `docs/CURRENT_RELEASE_STATUS.md` remains the only release-posture authority.
 - This package does not claim production GO.
@@ -54,9 +71,10 @@ Verification must preserve these boundaries:
 - This package does not override current-head evidence requirements.
 - TC is not assigned self-approval authority.
 - ChatGPT is not assigned approval authority for work it authored.
-- VS Code/GitHub checks provide mechanical verification, not independent approval.
+- VS Code/GitHub checks provide mechanical verification.
+- Copilot review must be captured as evidence before approval status changes.
 
-## Required Verification Lanes
+## Required Verification and Review Lanes
 
 | Lane | Required Focus | Available Mechanism |
 |---|---|---|
@@ -64,6 +82,7 @@ Verification must preserve these boundaries:
 | Security Verification | Tenant isolation, action-level permissions, sensitive data, redaction, exports, dashboard access. | Static inspection, security checklist, permission matrix, backend tests where available. |
 | QA / Evidence Verification | Evidence language, proof gates, test expectations, runtime artifact requirements. | GitHub checks, local/CI logs, evidence packets, matrix row proof links. |
 | Product Workflow Verification | School operations workflow, persona fit, dashboard usefulness, competitor-research alignment. | Canon/matrix review against CROWN product strategy and school operations requirements. |
+| Copilot Review | Independent review support for planning-control quality, consistency, gaps, and corrections. | VS Code/GitHub Copilot review output captured as evidence. |
 
 ## Verification Checklist
 
@@ -127,7 +146,21 @@ Verification must preserve these boundaries:
 - [ ] Module certification is separate from release GO.
 - [ ] Revocation conditions are defined.
 - [ ] Evidence locations are defined.
-- [ ] The unavailable independent-review condition is accurately documented.
+- [ ] Copilot review evidence is required before any Copilot-reviewed approval status is claimed.
+
+### 7. Copilot Review Checklist
+
+Copilot review must check:
+
+- [ ] internal consistency across all six files
+- [ ] no release GO, sandbox approval, module certification, or dashboard certification is implied
+- [ ] module order follows dependency flow
+- [ ] first completion batch is coherent
+- [ ] data ownership avoids duplicate truth
+- [ ] permission model is action-level, not page-only
+- [ ] dashboard fit requires source module, provenance, freshness, tenant proof, and role proof
+- [ ] RACI prevents TC self-approval and ChatGPT self-approval
+- [ ] blocking corrections, if any, are listed explicitly
 
 ## Known Non-Approval Statements
 
@@ -139,7 +172,8 @@ This package does not approve sandbox launch.
 This package does not certify any module.
 This package does not certify any dashboard.
 This package does not replace current-head release evidence.
-This package is not independently approved unless a qualified independent reviewer actually reviews and signs off.
+This package is not Copilot-reviewed until Copilot review output is captured as evidence.
+Copilot review for planning use is not production GO.
 ```
 
 ## Verification Outcome Values
@@ -148,16 +182,16 @@ Use one of these outcomes:
 
 | Outcome | Meaning |
 |---|---|
-| MECHANICALLY VERIFIED FOR PLANNING USE | VS Code/GitHub/evidence review found no blocking planning-control defect. Not independent approval. |
-| VERIFIED WITH CORRECTIONS REQUIRED | Planning can continue only after listed corrections are applied. |
+| PENDING COPILOT REVIEW | Package is prepared but Copilot review evidence is not yet captured. |
+| COPILOT-REVIEWED FOR PLANNING USE | Copilot review evidence is captured and no blocking corrections remain. Not production GO. |
+| COPILOT-REVIEWED WITH CORRECTIONS REQUIRED | Copilot found corrections that must be addressed before planning use. |
 | REJECT FOR REVISION | Material gaps exist; revise before use. |
-| INDEPENDENTLY APPROVED | Reserved only for actual qualified independent reviewer signoff. Not available in the current lane. |
 
 No outcome may be interpreted as production GO.
 
-## First Planning Execution Step After Mechanical Verification
+## First Planning Execution Step After Copilot Review
 
-After the package is mechanically verified for planning use, the next controlled execution step is:
+After the package is Copilot-reviewed for planning use, the next controlled execution step is:
 
 ```text
 Populate and verify the first ten module rows in CROWN_MODULE_COMPLETION_MATRIX.md:
@@ -186,6 +220,7 @@ Each first-batch module row must be expanded with:
 - runtime proof requirements
 - blocking questions
 - verification status
+- Copilot review output where applicable
 
 ## Verification Signoff Table
 
@@ -195,8 +230,8 @@ Each first-batch module row must be expanded with:
 | Security Verification | ChatGPT + VS Code/GitHub evidence | Pending | TBD | TBD |
 | QA / Evidence Verification | ChatGPT + VS Code/GitHub evidence | Pending | TBD | TBD |
 | Product Workflow Verification | TC direction + ChatGPT support | Pending | TBD | TBD |
-| Independent Approval | Not available in current lane | Not available | TBD | Do not mark independently approved without actual independent reviewer. |
+| Copilot Review | GitHub Copilot via VS Code/GitHub, evidence captured | Pending | TBD | TBD |
 
 ## Current Status
 
-Verification packet updated for the current workflow. Independent review is not available in this lane. Package is not independently approved. Module/dashboard implementation certification has not started.
+Verification packet updated for the active workflow. Copilot is the independent review support path once its output is captured as evidence. Package is not yet Copilot-reviewed. Module/dashboard implementation certification has not started.
