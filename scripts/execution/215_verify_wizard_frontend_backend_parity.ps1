@@ -88,7 +88,7 @@ function Get-StringProperty {
         [string]$Name
     )
 
-    $pattern = ('(?m){0}\s*:\s*["'']([^"'']+)["'']' -f [regex]::Escape($Name))
+    $pattern = ('(?m)["'']?{0}["'']?\s*:\s*["'']([^"'']+)["'']' -f [regex]::Escape($Name))
     $m = [regex]::Match($Block, $pattern)
     if ($m.Success) { return $m.Groups[1].Value }
     return ""
@@ -100,7 +100,7 @@ function Get-ArrayStringsProperty {
         [string]$Name
     )
 
-    $pattern = ('(?s){0}\s*:\s*\[(?<body>.*?)\]' -f [regex]::Escape($Name))
+    $pattern = ('(?s)["'']?{0}["'']?\s*:\s*\[(?<body>.*?)\]' -f [regex]::Escape($Name))
     $m = [regex]::Match($Block, $pattern)
     if (-not $m.Success) { return @() }
 
