@@ -10,17 +10,30 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.models import AcademicYear, UserRole
+from core.models import AcademicYear, GradeLevel, UserRole
 from core.viewsets import TenantScopedViewSet
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
 
 from .models import AssignmentCategory, Course, Enrollment, Section, Term, Assignment
-from .models import CurriculumSource, Unit, Lesson, PublisherObjective, Submission, Grade, MasteryRecord, TranscriptEntry
-from .curriculum_publishers import publisher_search_terms, SUPPORTED_CURRICULUM_PUBLISHERS
+from .models import (
+    CurriculumSource,
+    Unit,
+    Lesson,
+    PublisherObjective,
+    Submission,
+    Grade,
+    MasteryRecord,
+    TranscriptEntry,
+)
+from .curriculum_publishers import (
+    publisher_search_terms,
+    SUPPORTED_CURRICULUM_PUBLISHERS,
+)
 from .serializers import (
     AcademicYearSerializer,
     CourseSerializer,
+    GradeLevelSerializer,
     SectionDetailSerializer,
     SectionListSerializer,
     SectionRosterStudentSerializer,
@@ -66,7 +79,9 @@ def _role_codes(user, school_id) -> set[str]:
     if not user_id:
         return set()
     return set(
-        UserRole.objects.filter(user_id=user_id, school_id=school_id).values_list("role_code", flat=True)
+        UserRole.objects.filter(user_id=user_id, school_id=school_id).values_list(
+            "role_code", flat=True
+        )
     )
 
 
@@ -198,6 +213,21 @@ class AcademicYearViewSet(PaginatedReadOnlyViewSet):
         return qs.filter(id__in=term_year_ids).distinct()
 
 
+class GradeLevelViewSet(PaginatedReadOnlyViewSet):
+    """Read-only list of GradeLevel records scoped to the requesting school.
+
+    Route: GET /api/v1/grade-levels/
+    Auth: IsAuthenticated (inherits from PaginatedReadOnlyViewSet)
+    Tenant: resolved from X-School-Id header or force_authenticate user.school_id
+    """
+
+    serializer_class = GradeLevelSerializer
+
+    def get_queryset(self):
+        school_id = get_request_school_id(self.request, required=True)
+        return GradeLevel.objects.filter(school_id=school_id).order_by("sort_order")
+
+
 class TermViewSet(PaginatedReadOnlyViewSet):
     serializer_class = TermSerializer
 
@@ -208,9 +238,9 @@ class TermViewSet(PaginatedReadOnlyViewSet):
 
         qs = Term.objects.filter(school_id=school_id).order_by("ordering", "code")
 
-        academic_year_id = self.request.query_params.get("academic_year") or self.request.query_params.get(
-            "academic_year_id"
-        )
+        academic_year_id = self.request.query_params.get(
+            "academic_year"
+        ) or self.request.query_params.get("academic_year_id")
         school_year = self.request.query_params.get("school_year")
         if academic_year_id:
             qs = qs.filter(academic_year_id=academic_year_id)
@@ -235,9 +265,9 @@ class CourseViewSet(PaginatedReadOnlyViewSet):
 
         qs = Course.objects.filter(school_id=school_id).order_by("code")
 
-        academic_year_id = self.request.query_params.get("academic_year") or self.request.query_params.get(
-            "academic_year_id"
-        )
+        academic_year_id = self.request.query_params.get(
+            "academic_year"
+        ) or self.request.query_params.get("academic_year_id")
         term_id = self.request.query_params.get("term_id")
         term_code = self.request.query_params.get("term")
 
@@ -269,6 +299,7 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
     Role guard:
       - TEACHER may only query teacher_id matching their own staff id.
     """
+
     serializer_class = SectionListSerializer
     queryset = Section.objects.none()
 
@@ -284,9 +315,9 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
 
         qs = _sections_for_access(self.request, school_id)
 
-        academic_year_id = self.request.query_params.get("academic_year") or self.request.query_params.get(
-            "academic_year_id"
-        )
+        academic_year_id = self.request.query_params.get(
+            "academic_year"
+        ) or self.request.query_params.get("academic_year_id")
         term_id = self.request.query_params.get("term_id")
         term_code = self.request.query_params.get("term")
         student_id = self.request.query_params.get("student_id")
@@ -402,7 +433,11 @@ def student_sections(request, student_id):
     school_id = get_request_school_id(request, required=True)
     _assert_student_in_scope_or_404(request, school_id, student_id)
 
-    qs = _sections_for_access(request, school_id).filter(enrollments__student_id=student_id).distinct()
+    qs = (
+        _sections_for_access(request, school_id)
+        .filter(enrollments__student_id=student_id)
+        .distinct()
+    )
     serializer = SectionSerializer(qs, many=True)
     return Response(serializer.data)
 
@@ -415,7 +450,9 @@ def parent_students(request):
     roles = _role_codes(user, school_id)
 
     if _is_staffish(user, roles):
-        qs = Student.objects.filter(school_id=school_id).order_by("last_name", "first_name")
+        qs = Student.objects.filter(school_id=school_id).order_by(
+            "last_name", "first_name"
+        )
         return Response(StudentSerializer(qs, many=True).data)
 
     if "PARENT" not in roles:
@@ -425,9 +462,9 @@ def parent_students(request):
     if not household_ids:
         return Response([])
 
-    qs = Student.objects.filter(school_id=school_id, household_id__in=household_ids).order_by(
-        "last_name", "first_name"
-    )
+    qs = Student.objects.filter(
+        school_id=school_id, household_id__in=household_ids
+    ).order_by("last_name", "first_name")
     return Response(StudentSerializer(qs, many=True).data)
 
 
@@ -439,25 +476,27 @@ def section_assessments(request, section_id):
     if not section:
         raise Http404()
 
-    categories = (
-        AssignmentCategory.objects
-        .filter(school_id=school_id, section_id=section.id)
-        .order_by("sort_order", "name")
-    )
+    categories = AssignmentCategory.objects.filter(
+        school_id=school_id, section_id=section.id
+    ).order_by("sort_order", "name")
 
     items = []
     for category in categories:
-        items.append({
-            "section_id": str(section.id),
-            "category": category.name,
-            "weight": str(category.weight_percent),
-            "published": category.is_active,
-        })
+        items.append(
+            {
+                "section_id": str(section.id),
+                "category": category.name,
+                "weight": str(category.weight_percent),
+                "published": category.is_active,
+            }
+        )
 
-    return Response({
-        "section_id": str(section.id),
-        "assessments": items,
-    })
+    return Response(
+        {
+            "section_id": str(section.id),
+            "assessments": items,
+        }
+    )
 
 
 @api_view(["GET"])
@@ -483,8 +522,7 @@ def section_roster(request, section_id):
 
     # Fetch enrollments and students, deterministically ordered
     enrollments = (
-        Enrollment.objects
-        .select_related("student")
+        Enrollment.objects.select_related("student")
         .filter(section=section, school_id=school_id)
         .order_by("student__last_name", "student__first_name", "student__id")
     )
@@ -553,15 +591,22 @@ class CurriculumSourceViewSet(PaginatedReadOnlyViewSet):
             if name_query.children:
                 qs = qs.filter(name_query)
 
-        supported_only = (self.request.query_params.get("supported_only") or "").strip().lower()
+        supported_only = (
+            (self.request.query_params.get("supported_only") or "").strip().lower()
+        )
         if supported_only in {"1", "true", "yes"}:
             supported_query = Q()
             for aliases in SUPPORTED_CURRICULUM_PUBLISHERS.values():
                 for alias in aliases:
                     supported_query |= Q(name__icontains=alias)
-            qs = qs.filter(supported_query) if SUPPORTED_CURRICULUM_PUBLISHERS else qs.none()
+            qs = (
+                qs.filter(supported_query)
+                if SUPPORTED_CURRICULUM_PUBLISHERS
+                else qs.none()
+            )
 
         return qs.order_by("name")
+
 
 class UnitViewSet(PaginatedReadOnlyViewSet):
     serializer_class = UnitSerializer
@@ -621,6 +666,7 @@ class SubmissionViewSet(TenantScopedViewSet):
     Writable ViewSet for student submissions.
     Inherits tenant scoping from TenantScopedViewSet.
     """
+
     queryset = Submission.objects.select_related(
         "assignment", "enrollment", "enrollment__student"
     ).all()
@@ -682,8 +728,7 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
         feedback = ser.validated_data.get("teacher_feedback", "")
 
         submission = get_object_or_404(
-            Submission.objects.select_related("assignment"),
-            id=submission_id
+            Submission.objects.select_related("assignment"), id=submission_id
         )
 
         # Verify school_id matches
@@ -695,7 +740,7 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
             submission=submission,
             numeric_score=numeric_score,
             graded_by=request.user,
-            feedback=feedback
+            feedback=feedback,
         )
 
         return Response(GradeSerializer(grade).data)
@@ -731,9 +776,7 @@ class MasteryRecordViewSet(PaginatedReadOnlyViewSet):
 
 class TranscriptEntryViewSet(PaginatedReadOnlyViewSet):
     serializer_class = TranscriptEntrySerializer
-    queryset = TranscriptEntry.objects.select_related(
-        "student", "course", "term"
-    ).all()
+    queryset = TranscriptEntry.objects.select_related("student", "course", "term").all()
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request)

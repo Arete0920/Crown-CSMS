@@ -1,14 +1,29 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 
-from core.models import AcademicYear
+from core.models import AcademicYear, GradeLevel
 from households.models import Student
-from .curriculum_publishers import normalize_curriculum_publisher, is_supported_curriculum_publisher
+from .curriculum_publishers import (
+    normalize_curriculum_publisher,
+    is_supported_curriculum_publisher,
+)
 from .models import (
-    Course, Section, Term, Enrollment, Assignment, AssignmentCategory,
-    CurriculumSource, Unit, Lesson, PublisherObjective,
-    Submission, Grade, MasteryRecord, TranscriptEntry,
-    LessonPlan, LessonResource,
+    Course,
+    Section,
+    Term,
+    Enrollment,
+    Assignment,
+    AssignmentCategory,
+    CurriculumSource,
+    Unit,
+    Lesson,
+    PublisherObjective,
+    Submission,
+    Grade,
+    MasteryRecord,
+    TranscriptEntry,
+    LessonPlan,
+    LessonResource,
 )
 
 
@@ -25,6 +40,21 @@ class AcademicYearSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
             "is_current",
+        ]
+
+
+class GradeLevelSerializer(serializers.ModelSerializer):
+    grade_level_id = serializers.UUIDField(source="id", read_only=True)
+    school_id = serializers.UUIDField(read_only=True)
+
+    class Meta:
+        model = GradeLevel
+        fields = [
+            "grade_level_id",
+            "school_id",
+            "code",
+            "label",
+            "sort_order",
         ]
 
 
@@ -108,6 +138,7 @@ class StudentSerializer(serializers.ModelSerializer):
 # Section Serializers (v1 read-only API)
 class SectionListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for section list view."""
+
     section_id = serializers.UUIDField(source="id", read_only=True)
     course_id = serializers.UUIDField(read_only=True)
     course_code = serializers.CharField(source="course.code", read_only=True)
@@ -137,6 +168,7 @@ class SectionListSerializer(serializers.ModelSerializer):
 
 class SectionDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for section detail view."""
+
     section_id = serializers.UUIDField(source="id", read_only=True)
     course_id = serializers.UUIDField(read_only=True)
     course_code = serializers.CharField(source="course.code", read_only=True)
@@ -166,6 +198,7 @@ class SectionDetailSerializer(serializers.ModelSerializer):
 
 class SectionRosterStudentSerializer(serializers.Serializer):
     """Simple student row for roster endpoint."""
+
     student_id = serializers.UUIDField()
     display_name = serializers.CharField()
     grade_level = serializers.CharField(allow_null=True)
@@ -208,11 +241,22 @@ class UnitSerializer(serializers.ModelSerializer):
     unit_id = serializers.UUIDField(source="id", read_only=True)
     course_id = serializers.UUIDField(read_only=True)
     course_code = serializers.CharField(source="course.code", read_only=True)
-    source_id = serializers.UUIDField(source="curriculum_source_id", read_only=True, allow_null=True)
+    source_id = serializers.UUIDField(
+        source="curriculum_source_id", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = Unit
-        fields = ["unit_id", "school_id", "course_id", "course_code", "source_id", "title", "description", "sequence_order"]
+        fields = [
+            "unit_id",
+            "school_id",
+            "course_id",
+            "course_code",
+            "source_id",
+            "title",
+            "description",
+            "sequence_order",
+        ]
 
 
 class LessonSerializer(serializers.ModelSerializer):
@@ -222,7 +266,15 @@ class LessonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lesson
-        fields = ["lesson_id", "school_id", "unit_id", "unit_title", "title", "lesson_date", "instructional_notes"]
+        fields = [
+            "lesson_id",
+            "school_id",
+            "unit_id",
+            "unit_title",
+            "title",
+            "lesson_date",
+            "instructional_notes",
+        ]
 
 
 class PublisherObjectiveSerializer(serializers.ModelSerializer):
@@ -232,7 +284,14 @@ class PublisherObjectiveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PublisherObjective
-        fields = ["objective_id", "school_id", "lesson_id", "lesson_title", "objective_code", "description"]
+        fields = [
+            "objective_id",
+            "school_id",
+            "lesson_id",
+            "lesson_title",
+            "objective_code",
+            "description",
+        ]
 
 
 # =============================================================================
@@ -251,9 +310,16 @@ class SubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Submission
         fields = [
-            "submission_id", "school_id", "assignment_id", "assignment_name",
-            "enrollment_id", "student_id", "student_name",
-            "status", "submitted_at", "upload"
+            "submission_id",
+            "school_id",
+            "assignment_id",
+            "assignment_name",
+            "enrollment_id",
+            "student_id",
+            "student_name",
+            "status",
+            "submitted_at",
+            "upload",
         ]
         read_only_fields = ["status", "submitted_at"]
 
@@ -289,10 +355,16 @@ class GradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Grade
         fields = [
-            "grade_id", "school_id", "submission_id",
-            "graded_by", "graded_by_name",
-            "numeric_score", "percentage", "letter_grade",
-            "teacher_feedback", "graded_at"
+            "grade_id",
+            "school_id",
+            "submission_id",
+            "graded_by",
+            "graded_by_name",
+            "numeric_score",
+            "percentage",
+            "letter_grade",
+            "teacher_feedback",
+            "graded_at",
         ]
 
     @extend_schema_field(serializers.CharField(allow_null=True))
@@ -304,9 +376,12 @@ class GradeSerializer(serializers.ModelSerializer):
 
 class GradeCreateSerializer(serializers.Serializer):
     """Create or update grade for submission."""
+
     submission_id = serializers.UUIDField()
     numeric_score = serializers.DecimalField(max_digits=7, decimal_places=2)
-    teacher_feedback = serializers.CharField(required=False, allow_blank=True, default="")
+    teacher_feedback = serializers.CharField(
+        required=False, allow_blank=True, default=""
+    )
 
 
 # =============================================================================
@@ -319,17 +394,23 @@ class MasteryRecordSerializer(serializers.ModelSerializer):
     student_id = serializers.UUIDField(read_only=True)
     student_name = serializers.SerializerMethodField()
     objective_id = serializers.UUIDField(read_only=True)
-    objective_code = serializers.CharField(source="objective.objective_code", read_only=True)
+    objective_code = serializers.CharField(
+        source="objective.objective_code", read_only=True
+    )
     evidence_assignment_id = serializers.UUIDField(read_only=True, allow_null=True)
 
     class Meta:
         model = MasteryRecord
         fields = [
-            "mastery_id", "school_id",
-            "student_id", "student_name",
-            "objective_id", "objective_code",
-            "mastery_level", "last_demonstrated_at",
-            "evidence_assignment_id"
+            "mastery_id",
+            "school_id",
+            "student_id",
+            "student_name",
+            "objective_id",
+            "objective_code",
+            "mastery_level",
+            "last_demonstrated_at",
+            "evidence_assignment_id",
         ]
 
     @extend_schema_field(serializers.CharField())
@@ -350,12 +431,21 @@ class TranscriptEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = TranscriptEntry
         fields = [
-            "entry_id", "school_id",
-            "student_id", "student_name",
-            "course_id", "course_code", "course_name",
-            "term_id", "term_code",
-            "credit_value", "final_letter_grade", "final_percentage", "gpa_points",
-            "provider", "dual_enrollment_label"
+            "entry_id",
+            "school_id",
+            "student_id",
+            "student_name",
+            "course_id",
+            "course_code",
+            "course_name",
+            "term_id",
+            "term_code",
+            "credit_value",
+            "final_letter_grade",
+            "final_percentage",
+            "gpa_points",
+            "provider",
+            "dual_enrollment_label",
         ]
 
     @extend_schema_field(serializers.CharField())
@@ -371,9 +461,15 @@ class LessonResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = LessonResource
         fields = [
-            "resource_id", "school_id", "lesson_id",
-            "title", "kind", "url", "file_ref",
-            "created_at", "updated_at",
+            "resource_id",
+            "school_id",
+            "lesson_id",
+            "title",
+            "kind",
+            "url",
+            "file_ref",
+            "created_at",
+            "updated_at",
         ]
 
 
@@ -387,17 +483,26 @@ class LessonPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = LessonPlan
         fields = [
-            "plan_id", "school_id", "section_id", "plan_date",
+            "plan_id",
+            "school_id",
+            "section_id",
+            "plan_date",
             "lesson_ids",
-            "objectives", "materials", "activities", "homework",
+            "objectives",
+            "materials",
+            "activities",
+            "homework",
             "teacher_notes_private",
-            "created_by_id", "updated_by_id",
-            "created_at", "updated_at",
+            "created_by_id",
+            "updated_by_id",
+            "created_at",
+            "updated_at",
         ]
 
 
 class LessonPlanPublicSerializer(serializers.ModelSerializer):
     """Read-only serializer for student/parent; omits teacher_notes_private."""
+
     plan_id = serializers.UUIDField(source="id", read_only=True)
     school_id = serializers.UUIDField(read_only=True)
     section_id = serializers.UUIDField(read_only=True)
@@ -405,9 +510,15 @@ class LessonPlanPublicSerializer(serializers.ModelSerializer):
     class Meta:
         model = LessonPlan
         fields = [
-            "plan_id", "school_id", "section_id", "plan_date",
+            "plan_id",
+            "school_id",
+            "section_id",
+            "plan_date",
             "lesson_ids",
-            "objectives", "materials", "activities", "homework",
-            "created_at", "updated_at",
+            "objectives",
+            "materials",
+            "activities",
+            "homework",
+            "created_at",
+            "updated_at",
         ]
-
