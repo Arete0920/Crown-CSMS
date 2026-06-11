@@ -748,21 +748,25 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
         # Authorization gate for grading.
         user = getattr(request, "user", None)
         roles = _role_codes(user, school_id)
-        if not _is_staffish(user, roles):
+        has_admin_or_director_role = "ADMIN" in roles or "DIRECTOR" in roles
+        if not _is_staffish(user, roles) and not has_admin_or_director_role:
             if "TEACHER" not in roles:
                 raise PermissionDenied("Role not permitted to grade submissions")
 
             staff = getattr(user, "staff", None)
-            if not staff:
-                raise PermissionDenied("Teacher must be linked to staff profile")
-
+            user_id = getattr(user, "id", None)
             section_id = submission.assignment.section_id
-            if not TeacherAssignment.objects.filter(
-                school_id=school_id,
-                section_id=section_id,
-                staff=staff,
-            ).exists():
-                raise PermissionDenied("Teacher not assigned to this section")
+
+            # Allow teachers connected through the section primary teacher FK.
+            if not (user_id and submission.assignment.section.teacher_id == user_id):
+                if not staff:
+                    raise PermissionDenied("Teacher must be linked to staff profile")
+                if not TeacherAssignment.objects.filter(
+                    school_id=school_id,
+                    section_id=section_id,
+                    staff=staff,
+                ).exists():
+                    raise PermissionDenied("Teacher not assigned to this section")
 
         grade = upsert_grade_for_submission(
             submission=submission,
