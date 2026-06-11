@@ -1,0 +1,29 @@
+wizard_slug,certification_status,evidence_file,current_proof_status,blocker_category,owner
+onboarding,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+reenrollment,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+billing-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+aid-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+scheduling-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+comms-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+section-assign-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+bell-schedule-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+gradebook-setup-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+attendance-rules-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+enrollment-conversion-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+invoice-run-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+staff-onboarding-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+fee-schedule-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+academic-year-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+enrollment-period-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+grade-scale-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+term-structure-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+section-scheduler-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+staff-setup-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+course-catalog-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+room-setup-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+promotion-wizard,MAPPED,frontend/dashboards/src/routes/wizard-manifest.js,route registered but step flow incomplete,step-flow-completion,wizard-owner-tbd
+student-import-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+guardian-household-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+section-staffing-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+attendance-codes-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
+grade-weights-wizard,FLOW_CONTRACT_VALIDATED,frontend/dashboards/src/tests/wizardFlowContracts.test.js,step flow contract validated,none,wizard-owner-tbd
