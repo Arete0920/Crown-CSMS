@@ -1,0 +1,5 @@
+﻿backend/core/tests/test_module002_auth_authorization.py
+backend/core/tests/test_rbac_contract.py
+backend/crown_api/tests/test_rbac_matrix_readonly.py
+backend/crown_api/tests/test_rbac_matrix_writes.py
+backend/crown_api/tests/test_rbac_proof.py
