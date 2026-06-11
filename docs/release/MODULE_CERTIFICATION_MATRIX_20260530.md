@@ -4,7 +4,7 @@ Purpose: certification coverage matrix for ModuleId 001-051 with explicit proof 
 
 | module_id | certification_status | evidence | owner |
 | --- | --- | --- | --- |
-| 001 | NOT_PROVEN | none-captured | domain-owner-tbd |
+| 001 | PROVEN | audit-artifacts/module-completion/module-001-tenant-isolation/20260611_054419/04_module001_tenant_pytest.txt | domain-owner-tbd |
 | 002 | NOT_PROVEN | none-captured | domain-owner-tbd |
 | 003 | NOT_PROVEN | none-captured | domain-owner-tbd |
 | 004 | PROVEN | backend/tests/test_51x51_evidence_04_audit_logging.py | domain-owner-tbd |

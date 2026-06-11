@@ -194,6 +194,8 @@ AUDIT_PACK_*/
 audit-artifacts/
 !audit-artifacts/
 audit-artifacts/*
+!audit-artifacts/module-completion/
+!audit-artifacts/module-completion/**
 !audit-artifacts/production-excellence-95-plus/
 !audit-artifacts/production-excellence-95-plus/**
 !audit-artifacts/final-95-plus-sprint/

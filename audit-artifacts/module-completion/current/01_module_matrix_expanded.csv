@@ -1,5 +1,5 @@
 module_id,module_name,certification_status,evidence_file,current_proof,blocker_category,owner
-001,Tenant Isolation & Multi-Tenancy,NOT_PROVEN,none-captured,requires root infrastructure audit,infrastructure-core,domain-owner-tbd
+001,Tenant Isolation & Multi-Tenancy,PROVEN,audit-artifacts/module-completion/module-001-tenant-isolation/20260611_054419/04_module001_tenant_pytest.txt,64 tenant-isolation tests passed on 2026-06-11,none,domain-owner-tbd
 002,Authentication & Authorization,NOT_PROVEN,none-captured,requires RBAC matrix and test proof,auth-core,domain-owner-tbd
 003,User Management & Roles,NOT_PROVEN,none-captured,requires role binding tests,user-management,domain-owner-tbd
 004,Audit Logging Framework,PROVEN,backend/tests/test_51x51_evidence_04_audit_logging.py,audit-trail validation present,none,domain-owner-tbd
