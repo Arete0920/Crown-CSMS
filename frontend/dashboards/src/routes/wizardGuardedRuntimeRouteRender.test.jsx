@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 
 import WizardHub from '../pages/WizardHub.jsx';
+import { isProductionReady } from '../config/releaseState.js';
 import { WIZARD_MANIFEST } from './wizard-manifest.js';
 import { WIZARD_REGISTRY, wizardRoutes } from './wizards.js';
 
@@ -66,6 +67,7 @@ function renderAt(path) {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
   sessionStorage.clear();
   localStorage.clear();
   seedAuthorizedRoles();
@@ -73,6 +75,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   delete globalThis.__CROWN_USER_ROLES__;
 });
 
@@ -104,14 +107,30 @@ describe('wizard guarded runtime route rendering', () => {
     }
   });
 
-  it('renders WizardHub-backed ready wizard routes with guarded wrappers active', async () => {
-    const readyWizardHubPaths = [
-      '/student-import-setup',
-      '/guardian-household-setup',
-      '/section-staffing-setup',
-      '/attendance-codes-setup',
-      '/grade-weights-setup',
-    ];
+  it('renders WizardHub-backed production-ready wizard routes with guarded wrappers active', async () => {
+    const wizardHubRoutes = WIZARD_REGISTRY.filter((route) => route.component === WizardHub);
+
+    const readyWizardHubPaths = wizardHubRoutes
+      .filter((route) => isProductionReady(route))
+      .map((route) => route.path);
+
+    const nonReadyWizardHubPaths = wizardHubRoutes
+      .filter((route) => !isProductionReady(route))
+      .map((route) => route.path);
+
+    for (const path of nonReadyWizardHubPaths) {
+      cleanup();
+      seedAuthorizedRoles();
+
+      const router = renderAt(path);
+
+      await waitFor(() => {
+        expect(
+          router.state.location.pathname,
+          `non-ready WizardHub route ${path} should redirect away`,
+        ).not.toBe(path);
+      });
+    }
 
     for (const path of readyWizardHubPaths) {
       cleanup();

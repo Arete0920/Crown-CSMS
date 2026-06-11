@@ -20,7 +20,7 @@
 import { createElement } from 'react';
 import RoleRouteGuard from '../components/routing/RoleRouteGuard.jsx';
 import ReleaseStateRoute from '../components/routing/ReleaseStateRoute.jsx';
-import { WIZARD_SLUGS } from './wizard-manifest.js';
+export { WIZARD_SLUGS } from './wizard-manifest.js';
 
 import AdmissionsIntakeWizard from '../pages/AdmissionsIntakeWizard.jsx';
 import ReenrollmentWizard from '../pages/ReenrollmentWizard.jsx';
@@ -60,17 +60,6 @@ const placeholderReadiness = () => ({
   uxReady: false,
   accessReady: true,
   dataReady: false,
-});
-
-const READY_EVIDENCE_COLLECTED_AT = '2026-06-01T00:00:00Z';
-const READY_EVIDENCE_CANDIDATE_SHA = '8097d4c23e847bfaced4d9a49637a3aa0e20617b';
-const READY_EVIDENCE_RELEASE_BRANCH = 'release/security-runtime-governance-repair-little-lambs-full-build';
-
-const buildReadyEvidence = (artifact) => ({
-  artifact,
-  collectedAt: READY_EVIDENCE_COLLECTED_AT,
-  candidateSha: READY_EVIDENCE_CANDIDATE_SHA,
-  releaseBranch: READY_EVIDENCE_RELEASE_BRANCH,
 });
 
 const RAW_WIZARD_ROUTE_DEFINITIONS = [
@@ -242,8 +231,6 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Student Import',
     apiPrefix: '/api/v1/student-import-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
-    releaseState: 'ready',
-    evidence: buildReadyEvidence('audit-artifacts/release-authority/20260601/student-import-setup-ready.md'),
   },
   {
     path: '/guardian-household-setup',
@@ -251,8 +238,6 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Guardian & Household Setup',
     apiPrefix: '/api/v1/guardian-household-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
-    releaseState: 'ready',
-    evidence: buildReadyEvidence('audit-artifacts/release-authority/20260601/guardian-household-setup-ready.md'),
   },
   {
     path: '/section-staffing-setup',
@@ -260,8 +245,6 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Section Staffing',
     apiPrefix: '/api/v1/section-staffing-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'academics', 'admin'],
-    releaseState: 'ready',
-    evidence: buildReadyEvidence('audit-artifacts/release-authority/20260601/section-staffing-setup-ready.md'),
   },
   {
     path: '/attendance-codes-setup',
@@ -269,8 +252,6 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Attendance Codes Setup',
     apiPrefix: '/api/v1/attendance-codes-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'academics', 'admin'],
-    releaseState: 'ready',
-    evidence: buildReadyEvidence('audit-artifacts/release-authority/20260601/attendance-codes-setup-ready.md'),
   },
   {
     path: '/grade-weights-setup',
@@ -278,8 +259,6 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
     name: 'Grade Weights & Categories',
     apiPrefix: '/api/v1/grade-weights-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'academics', 'admin'],
-    releaseState: 'ready',
-    evidence: buildReadyEvidence('audit-artifacts/release-authority/20260601/grade-weights-setup-ready.md'),
   },
 ];
 
@@ -302,12 +281,6 @@ export const WIZARD_ROUTE_DEFINITIONS = RAW_WIZARD_ROUTE_DEFINITIONS.map(normali
 
 // Backward compatibility for existing imports in tests/components.
 export const WIZARD_REGISTRY = WIZARD_ROUTE_DEFINITIONS;
-
-/**
- * Slugs imported from wizard-manifest.js (React-free) — safe for Playwright tests.
- * Re-exported here for consumers within the app.
- */
-export { WIZARD_SLUGS };
 
 function buildWizardElement(route) {
   const element = createElement(route.component);
