@@ -15,7 +15,15 @@ from core.viewsets import TenantScopedViewSet
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
 
-from .models import AssignmentCategory, Course, Enrollment, Section, Term, Assignment
+from .models import (
+    AssignmentCategory,
+    Assignment,
+    Course,
+    Enrollment,
+    Section,
+    TeacherAssignment,
+    Term,
+)
 from .models import (
     CurriculumSource,
     Unit,
@@ -728,13 +736,33 @@ class GradeViewSet(viewsets.ReadOnlyModelViewSet):
         feedback = ser.validated_data.get("teacher_feedback", "")
 
         submission = get_object_or_404(
-            Submission.objects.select_related("assignment"), id=submission_id
+            Submission.objects.select_related("assignment", "assignment__section"),
+            id=submission_id,
         )
 
         # Verify school_id matches
         school_id = get_request_school_id(request)
         if submission.school_id != school_id:
             raise PermissionDenied("Submission not in your school")
+
+        # Authorization gate for grading.
+        user = getattr(request, "user", None)
+        roles = _role_codes(user, school_id)
+        if not _is_staffish(user, roles):
+            if "TEACHER" not in roles:
+                raise PermissionDenied("Role not permitted to grade submissions")
+
+            staff = getattr(user, "staff", None)
+            if not staff:
+                raise PermissionDenied("Teacher must be linked to staff profile")
+
+            section_id = submission.assignment.section_id
+            if not TeacherAssignment.objects.filter(
+                school_id=school_id,
+                section_id=section_id,
+                staff=staff,
+            ).exists():
+                raise PermissionDenied("Teacher not assigned to this section")
 
         grade = upsert_grade_for_submission(
             submission=submission,
