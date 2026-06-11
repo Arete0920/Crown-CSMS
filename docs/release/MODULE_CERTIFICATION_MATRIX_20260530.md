@@ -5,7 +5,7 @@ Purpose: certification coverage matrix for ModuleId 001-051 with explicit proof 
 | module_id | certification_status | evidence | owner |
 | --- | --- | --- | --- |
 | 001 | PROVEN | audit-artifacts/module-completion/module-001-tenant-isolation/20260611_054419/04_module001_tenant_pytest.txt | domain-owner-tbd |
-| 002 | NOT_PROVEN | none-captured | domain-owner-tbd |
+| 002 | PROVEN | audit-artifacts/module-completion/module-002-authentication-authorization/20260611_174740/10_module002_auth_rbac_pytest.txt; audit-artifacts/module-completion/module-002-authentication-authorization/20260611_174740/12_module002_coverage_sufficiency.md | domain-owner-tbd |
 | 003 | NOT_PROVEN | none-captured | domain-owner-tbd |
 | 004 | PROVEN | backend/tests/test_51x51_evidence_04_audit_logging.py | domain-owner-tbd |
 | 005 | PROVEN | backend/tests/test_51x51_evidence_05_notifications_framework.py | domain-owner-tbd |
