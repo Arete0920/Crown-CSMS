@@ -240,7 +240,7 @@ class TestGradebookGradesTenantIsolation:
         assert response.status_code == 200
 
     def test_cross_tenant_header_override_denied(self):
-        """Staff from school B cannot use X-School-Id to access school A data."""
+        """Cross-tenant X-School-Id probing must not leak school A data."""
         self.client.force_authenticate(user=self.staff_b)
         response = self.client.get(
             GRADES_URL,
@@ -301,6 +301,16 @@ class TestGradeSubmissionAuthorization:
         self.parent_user = _make_user(self.school, "gb-parent")
         _assign_role(self.parent_user, self.school, "PARENT")
 
+        self.admin_user = _make_user(self.school, "gb-admin-nonstaff", is_staff=False)
+        _assign_role(self.admin_user, self.school, "ADMIN")
+
+        self.director_user = _make_user(
+            self.school,
+            "gb-director-nonstaff",
+            is_staff=False,
+        )
+        _assign_role(self.director_user, self.school, "DIRECTOR")
+
         self.staffish_user = _make_user(self.school, "gb-staffish", is_staff=True)
         self.other_school_staffish_user = _make_user(
             self.other_school,
@@ -318,7 +328,26 @@ class TestGradeSubmissionAuthorization:
         }
 
     def test_staffish_user_can_grade_submission(self):
+        """is_staff/is_superuser path can grade within tenant scope."""
         self.client.force_authenticate(user=self.staffish_user)
+        response = self.client.post(
+            f"{GRADES_URL}grade/",
+            data=self._grade_payload(),
+            format="json",
+        )
+        assert response.status_code == 200, response.content
+
+    def test_non_staff_admin_role_can_grade_submission(self):
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.post(
+            f"{GRADES_URL}grade/",
+            data=self._grade_payload(),
+            format="json",
+        )
+        assert response.status_code == 200, response.content
+
+    def test_non_staff_director_role_can_grade_submission(self):
+        self.client.force_authenticate(user=self.director_user)
         response = self.client.post(
             f"{GRADES_URL}grade/",
             data=self._grade_payload(),
@@ -328,6 +357,20 @@ class TestGradeSubmissionAuthorization:
 
     def test_assigned_teacher_can_grade_submission(self):
         self.client.force_authenticate(user=self.assigned_teacher_user)
+        response = self.client.post(
+            f"{GRADES_URL}grade/",
+            data=self._grade_payload(),
+            format="json",
+        )
+        assert response.status_code == 200, response.content
+
+    def test_primary_teacher_fk_can_grade_without_staff_link(self):
+        teacher_user = _make_user(self.school, "gb-primary-fk-teacher")
+        _assign_role(teacher_user, self.school, "TEACHER")
+        self.section.teacher = teacher_user
+        self.section.save(update_fields=["teacher"])
+
+        self.client.force_authenticate(user=teacher_user)
         response = self.client.post(
             f"{GRADES_URL}grade/",
             data=self._grade_payload(),
