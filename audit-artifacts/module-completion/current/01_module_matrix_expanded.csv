@@ -1,0 +1,52 @@
+module_id,module_name,certification_status,evidence_file,current_proof,blocker_category,owner
+001,Tenant Isolation & Multi-Tenancy,NOT_PROVEN,none-captured,requires root infrastructure audit,infrastructure-core,domain-owner-tbd
+002,Authentication & Authorization,NOT_PROVEN,none-captured,requires RBAC matrix and test proof,auth-core,domain-owner-tbd
+003,User Management & Roles,NOT_PROVEN,none-captured,requires role binding tests,user-management,domain-owner-tbd
+004,Audit Logging Framework,PROVEN,backend/tests/test_51x51_evidence_04_audit_logging.py,audit-trail validation present,none,domain-owner-tbd
+005,Notifications Framework,PROVEN,backend/tests/test_51x51_evidence_05_notifications_framework.py,notification delivery tests present,none,domain-owner-tbd
+006,Document & File Framework,PROVEN,backend/tests/test_51x51_evidence_06_document___file_framework.py,file storage and retrieval tests present,none,domain-owner-tbd
+007,Data Import & Migration,NOT_PROVEN,none-captured,requires migration validation and rollback tests,data-movement,domain-owner-tbd
+008,Shared Frontend Shell,PROVEN,backend/tests/test_51x51_evidence_08_shared_frontend_shell.py,shell routing and layout tests present,none,domain-owner-tbd
+009,Shared Design System,PROVEN,backend/tests/test_51x51_evidence_09_shared_design_system.py,component and theming tests present,none,domain-owner-tbd
+010,Error Handling & Monitoring,NOT_PROVEN,none-captured,requires error categorization and alerting rules,monitoring-core,domain-owner-tbd
+011,School Profile,PROVEN,backend/tests/test_51x51_evidence_11_school_profile.py,school configuration tests present,none,domain-owner-tbd
+012,School Year & Term Structure,PROVEN,backend/tests/test_51x51_evidence_12_school_year___term.py,academic calendar tests present,none,domain-owner-tbd
+013,Student Master Record,PROVEN,backend/tests/test_51x51_evidence_13_student_master_record.py,student CRUD and enrollment tests present,none,domain-owner-tbd
+014,Course & Section Management,NOT_PROVEN,none-captured,requires section authorization and schedule conflict tests,academic-scheduling,domain-owner-tbd
+015,Staff & Faculty,PROVEN,backend/tests/test_51x51_evidence_15_staff___faculty.py,staff provisioning and role assignment tests present,none,domain-owner-tbd
+016,Faculty Load & Scheduling,NOT_PROVEN,none-captured,requires load calculation and conflict resolution tests,academic-scheduling,domain-owner-tbd
+017,Grade Levels & Progression,PROVEN,backend/tests/test_51x51_evidence_17_grade_levels.py,grade progression logic tests present,none,domain-owner-tbd
+018,Classroom & Room Management,NOT_PROVEN,none-captured,requires room assignment and capacity validation tests,facilities-scheduling,domain-owner-tbd
+019,Assessment & Testing Framework,NOT_PROVEN,none-captured,requires assessment design and scoring tests,academics-assessment,domain-owner-tbd
+020,Grades & Report Cards,PROVEN,backend/tests/test_51x51_evidence_20_grades___report_cards.py,grade submission and transcript tests present (PR#964),none,domain-owner-tbd
+021,Competency Tracking,NOT_PROVEN,none-captured,requires mastery rubric and evidence collection tests,academics-assessment,domain-owner-tbd
+022,Student Care & Discipline,PROVEN,backend/tests/test_51x51_evidence_22_student_care___discipline_summary.py,discipline event logging and incident tracking tests present,none,domain-owner-tbd
+023,Emergency & Medical Essentials,PROVEN,backend/tests/test_51x51_evidence_23_emergency___medical_essentials.py,health screening and emergency contact tests present,none,domain-owner-tbd
+024,Transportation & Routes,NOT_PROVEN,none-captured,requires route assignment and scheduling tests,logistics-operations,domain-owner-tbd
+025,Nutrition & Food Services,NOT_PROVEN,none-captured,requires meal plan and dietary accommodation tests,logistics-operations,domain-owner-tbd
+026,After-School & Extended Care,NOT_PROVEN,none-captured,requires enrollment and activity scheduling tests,student-services,domain-owner-tbd
+027,Communications Framework,PROVEN,backend/tests/test_51x51_evidence_27_communications.py,message routing and delivery tests present,none,domain-owner-tbd
+028,Parent Portal,PROVEN,backend/tests/test_51x51_evidence_28_parent_portal.py,parent account and permission tests present,none,domain-owner-tbd
+029,Teacher Portal,PROVEN,backend/tests/test_51x51_evidence_29_teacher_portal.py,teacher workspace and grading interface tests present,none,domain-owner-tbd
+030,Student Portal,NOT_PROVEN,none-captured,requires student account and enrollment view tests,student-portal,domain-owner-tbd
+031,Administrative Portal,NOT_PROVEN,none-captured,requires admin workspace and oversight tests,admin-portal,domain-owner-tbd
+032,Activities & Athletics & Events,PROVEN,backend/tests/test_51x51_evidence_32_activities___athletics___events.py,activity registration and roster tests present,none,domain-owner-tbd
+033,Nurse Office & Health Office,PROVEN,backend/tests/test_51x51_evidence_33_nurse_office___health_office.py,health encounter and medication logging tests present,none,domain-owner-tbd
+034,Fundraising & Giving,NOT_PROVEN,none-captured,requires campaign management and donor tracking tests,advancement-finance,domain-owner-tbd
+035,Food Services,PROVEN,backend/tests/test_51x51_evidence_35_food_services.py,meal service scheduling and inventory tests present,none,domain-owner-tbd
+036,Volunteer & Family Engagement,PROVEN,backend/tests/test_51x51_evidence_36_volunteer___family_engagement.py,volunteer placement and time logging tests present,none,domain-owner-tbd
+037,Advanced Discipline Workflows,NOT_PROVEN,none-captured,requires appeal process and data retention tests,student-services,domain-owner-tbd
+038,Extended Discipline Workflows,PROVEN,backend/tests/test_51x51_evidence_38_extended_discipline_workflows.py,investigation and remediation workflow tests present,none,domain-owner-tbd
+039,Christian Formation & Tracking,NOT_PROVEN,none-captured,requires faith formation rubric and portfolio tests,student-services,domain-owner-tbd
+040,Service & Outreach,PROVEN,backend/tests/test_51x51_evidence_40_service___outreach.py,service hour logging and community partnership tests present,none,domain-owner-tbd
+041,Crown Compass,PROVEN,backend/tests/test_51x51_evidence_41_crown_compass.py,predictive analytics and pathway guidance tests present,none,domain-owner-tbd
+042,Board Governance Suite,PROVEN,backend/tests/test_51x51_evidence_42_board_governance_suite.py,board meeting minutes and action tracking tests present,none,domain-owner-tbd
+043,Christian PD Hub,PROVEN,backend/tests/test_51x51_evidence_43_christian_pd_hub.py,faculty professional development and faith formation tests present,none,domain-owner-tbd
+044,Chaplain & Pastoral Care,PROVEN,backend/tests/test_51x51_evidence_44_chaplain___pastoral_care.py,pastoral care encounters and spiritual growth portfolio tests present,none,domain-owner-tbd
+045,Portrait of the Graduate,PROVEN,backend/tests/test_51x51_evidence_45_portrait_of_the_graduate.py,graduate profile alignment and competency matrix tests present,none,domain-owner-tbd
+046,Mission Metrics,PROVEN,backend/tests/test_51x51_evidence_46_mission_metrics.py,mission alignment KPI and reporting tests present,none,domain-owner-tbd
+047,CRM & Marketing Suite,PROVEN,backend/tests/test_51x51_evidence_47_crm___marketing_suite.py,lead management and campaign coordination tests present,none,domain-owner-tbd
+048,Mobile App & Family App,PROVEN,backend/tests/test_51x51_evidence_48_mobile_app___family_app.py,mobile app sync and family communication tests present,none,domain-owner-tbd
+049,Survey & Sentiment Engine,PROVEN,backend/tests/test_51x51_evidence_49_survey___sentiment_engine.py,feedback collection and sentiment analysis tests present,none,domain-owner-tbd
+050,Business Intelligence Suite,NOT_PROVEN,none-captured,requires data warehouse and reporting tests,analytics-operations,domain-owner-tbd
+051,Standalone Schedule Builder,PROVEN,backend/tests/test_51x51_evidence_51_standalone_schedule_builder.py,schedule conflict detection and optimization tests present,none,domain-owner-tbd
