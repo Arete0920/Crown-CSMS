@@ -1,15 +1,14 @@
 # Crown2026: NOT_PROVEN Module Work Orders (Canonical 51x51 Matrix)
 
-**Generated:** 2026-06-10  
-**Baseline:** Canonical module matrix reconciliation (51 modules, 32 PROVEN, 19 NOT_PROVEN)  
-**Scope:** All 19 canonical NOT_PROVEN modules with closure paths
+**Generated:** 2026-06-11  
+**Baseline:** Canonical module matrix reconciliation (51 modules, 33 PROVEN, 18 NOT_PROVEN)  
+**Scope:** All 18 canonical NOT_PROVEN modules with closure paths
 
 ---
 
 ## NOT_PROVEN Module Work Order Index
 
 ### High Priority (Core Infrastructure)
-- Module 001: Tenant Isolation & Multi-Tenancy
 - Module 002: Authentication & Authorization
 - Module 003: User Management & Roles
 
@@ -35,55 +34,7 @@
 
 ---
 
-## Work Order #1: Module 001 - Tenant Isolation & Multi-Tenancy
-
-**Priority:** HIGH (blocking all modules)  
-**Status:** NOT_PROVEN  
-**Blocker Category:** infrastructure-core  
-**Evidence Gap:** Root infrastructure audit required; no tenant isolation proof attached
-
-**Scope of Work:**
-1. Audit school-scoped isolation surfaces across API, resolver, and models:
-   - X-School-Id / HTTP_X_SCHOOL_ID handling
-   - request.school_id and request.school propagation
-   - School foreign key scoping
-   - current-school thread-local context
-   - TenantScopedModel where applicable
-2. Verify school scope is enforced in API filters (for example QuerySet.filter(school_id=request.school_id)) and helper scoping functions
-3. Test cross-tenant query isolation:
-   - Create records in School A
-   - Authenticate as School B user
-   - Verify School B user cannot access School A records
-4. Test raw SQL fallback: verify no Django ORM bypass
-5. Test multi-tenant concurrency: simultaneous requests from different schools
-6. Document tenant isolation architecture in [backend/docs/TENANT_ISOLATION.md](backend/docs/TENANT_ISOLATION.md)
-
-**Files Expected to Change:**
-- backend/core/models.py (verify tenant fields)
-- backend/core/permissions.py (verify isolation checks)
-- backend/tests/test_tenant_isolation.py (new - comprehensive tests)
-
-**Files Explicitly NOT Allowed:**
-- No schema migrations
-- No middleware changes
-
-**Validation Commands:**
-```bash
-cd backend
-python manage.py check
-pytest tests/test_tenant_isolation.py -v --tb=short
-```
-
-**Proof Artifacts Required:**
-- test_output: tests/pytest-output/module-001-tenant-isolation.txt
-- isolation_audit: audit-artifacts/module-completion/module-001-tenant-schema-audit.txt
-- architecture_doc: backend/docs/TENANT_ISOLATION.md
-
-**Target Status:** PROVEN (move to PROVEN once proof passes)
-
----
-
-## Work Order #2: Module 002 - Authentication & Authorization
+## Work Order #1: Module 002 - Authentication & Authorization
 
 **Priority:** HIGH (blocking all security-sensitive modules)  
 **Status:** NOT_PROVEN  
@@ -124,7 +75,7 @@ pytest tests/test_rbac_matrix.py -v --tb=short
 
 ---
 
-## Work Order #3: Module 003 - User Management & Roles
+## Work Order #2: Module 003 - User Management & Roles
 
 **Priority:** HIGH (prerequisite for portal modules)  
 **Status:** NOT_PROVEN  
@@ -162,7 +113,7 @@ pytest tests/test_user_management.py -v --tb=short
 
 ---
 
-## Work Order #4: Module 007 - Data Import & Migration
+## Work Order #3: Module 007 - Data Import & Migration
 
 **Priority:** MEDIUM (operations support)  
 **Status:** NOT_PROVEN  
@@ -198,11 +149,11 @@ pytest tests/test_data_import.py -v --tb=short
 
 ## Consolidated Work Order Summary
 
-**19 NOT_PROVEN modules require closure.** Priority sequence:
+**18 NOT_PROVEN modules require closure.** Priority sequence:
 
 | Priority | Modules | Total Time Est. | Critical Path |
 | --- | --- | --- | --- |
-| HIGH (blocking) | 001, 002, 003 | 6-8 hours | Must complete before other modules |
+| HIGH (blocking) | 002, 003 | 6-8 hours | Must complete before other modules |
 | MEDIUM (academic ops) | 007, 010, 014, 016, 018, 019, 021 | 14-18 hours | Second wave; unlocks wizard/dashboard wiring |
 | LOWER (services) | 024, 025, 026, 030, 031, 034, 037, 039, 050 | 18-24 hours | Third wave; post-academic stabilization |
 
@@ -224,7 +175,7 @@ pytest tests/test_data_import.py -v --tb=short
 
 ---
 
-**Reconciliation Status:** All 19 canonical NOT_PROVEN modules listed with scope and closure paths.  
+**Reconciliation Status:** All 18 canonical NOT_PROVEN modules listed with scope and closure paths.  
 **No modules have been downgraded from PROVEN without evidence.**  
 **No modules have been upgraded from NOT_PROVEN without evidence.**
 

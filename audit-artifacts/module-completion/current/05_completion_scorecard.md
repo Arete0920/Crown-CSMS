@@ -1,21 +1,21 @@
 # Crown2026: Module Completion Scorecard (Reconciled)
 
-**Generated:** 2026-06-10  
+**Generated:** 2026-06-11  
 **Source:** Canonical repository matrices (MODULE_CERTIFICATION_MATRIX_20260530.md)  
-**Authority:** Official 51-module matrix with 32 PROVEN, 19 NOT_PROVEN statuses  
+**Authority:** Official 51-module matrix with 33 PROVEN, 18 NOT_PROVEN statuses  
 **Status:** Matrix reconciliation complete; work queue established
 
 ---
 
 ## Executive Summary
 
-Crown2026 repository contains **51 canonical modules** with **32 PROVEN (63%)** and **19 NOT_PROVEN (37%)** statuses. This scorecard reflects the authoritative certification matrix and establishes the closure path for all NOT_PROVEN modules.
+Crown2026 repository contains **51 canonical modules** with **33 PROVEN (65%)** and **18 NOT_PROVEN (35%)** statuses. This scorecard reflects the authoritative certification matrix and establishes the closure path for all NOT_PROVEN modules.
 
 All previous generated estimates based on partial module counts have been **reset to canonical authority**. No work should proceed from uncertified local matrices.
 
 **Key Findings:**
-- ✓ Infrastructure core (004-006, 008-009, 011-013, 015, 017, 020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051): **PROVEN** (32 modules, 63%)
-- ✗ Operational gaps (001-003, 007, 010, 014, 016, 018-019, 021, 024-026, 030-031, 034, 037, 039, 050): **NOT_PROVEN** (19 modules, 37%)
+- ✓ Infrastructure core (001, 004-006, 008-009, 011-013, 015, 017, 020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051): **PROVEN** (33 modules, 65%)
+- ✗ Operational gaps (002-003, 007, 010, 014, 016, 018-019, 021, 024-026, 030-031, 034, 037, 039, 050): **NOT_PROVEN** (18 modules, 35%)
 
 ---
 
@@ -25,7 +25,7 @@ All previous generated estimates based on partial module counts have been **rese
 
 | module_id | name | status | evidence | blocker |
 | --- | --- | --- | --- | --- |
-| 001 | Tenant Isolation & Multi-Tenancy | NOT_PROVEN | none-captured | root infrastructure audit required |
+| 001 | Tenant Isolation & Multi-Tenancy | PROVEN | audit-artifacts/module-completion/module-001-tenant-isolation/20260611_054419/04_module001_tenant_pytest.txt | none |
 | 002 | Authentication & Authorization | NOT_PROVEN | none-captured | RBAC matrix and test proof required |
 | 003 | User Management & Roles | NOT_PROVEN | none-captured | role binding tests required |
 | 004 | Audit Logging Framework | PROVEN | backend/tests/test_51x51_evidence_04_audit_logging.py | none |
@@ -36,7 +36,7 @@ All previous generated estimates based on partial module counts have been **rese
 | 009 | Shared Design System | PROVEN | backend/tests/test_51x51_evidence_09_shared_design_system.py | none |
 | 010 | Error Handling & Monitoring | NOT_PROVEN | none-captured | error categorization and alerting rules required |
 
-**Completion Rate: 70% (7 of 10 PROVEN)**
+**Completion Rate: 60% (6 of 10 PROVEN)**
 
 ### Academic Core (Modules 011-023)
 
@@ -134,33 +134,32 @@ onboarding, reenrollment, staff-onboarding-wizard, fee-schedule-wizard, academic
 
 ## NOT_PROVEN Module Closure Priority
 
-### Wave 1: Core Infrastructure (3 modules, ~6-8 hours)
+### Wave 1: Core Infrastructure (2 modules, ~6-8 hours)
 **Must complete before any operational module work**
-1. Module 001: Tenant Isolation & Multi-Tenancy
-2. Module 002: Authentication & Authorization
-3. Module 003: User Management & Roles
+1. Module 002: Authentication & Authorization
+2. Module 003: User Management & Roles
 
 ### Wave 2: Academic Operations (7 modules, ~14-18 hours)
 **Unlocks wizard and dashboard wiring**
-4. Module 007: Data Import & Migration
-5. Module 010: Error Handling & Monitoring
-6. Module 014: Course & Section Management
-7. Module 016: Faculty Load & Scheduling
-8. Module 018: Classroom & Room Management
-9. Module 019: Assessment & Testing Framework
-10. Module 021: Competency Tracking
+3. Module 007: Data Import & Migration
+4. Module 010: Error Handling & Monitoring
+5. Module 014: Course & Section Management
+6. Module 016: Faculty Load & Scheduling
+7. Module 018: Classroom & Room Management
+8. Module 019: Assessment & Testing Framework
+9. Module 021: Competency Tracking
 
 ### Wave 3: Student & Administrative Services (9 modules, ~18-24 hours)
 **Post-academic stabilization**
-11. Module 024: Transportation & Routes
-12. Module 025: Nutrition & Food Services
-13. Module 026: After-School & Extended Care
-14. Module 030: Student Portal
-15. Module 031: Administrative Portal
-16. Module 034: Fundraising & Giving
-17. Module 037: Advanced Discipline Workflows
-18. Module 039: Christian Formation & Tracking
-19. Module 050: Business Intelligence Suite
+10. Module 024: Transportation & Routes
+11. Module 025: Nutrition & Food Services
+12. Module 026: After-School & Extended Care
+13. Module 030: Student Portal
+14. Module 031: Administrative Portal
+15. Module 034: Fundraising & Giving
+16. Module 037: Advanced Discipline Workflows
+17. Module 039: Christian Formation & Tracking
+18. Module 050: Business Intelligence Suite
 
 **Total Estimated Effort:** 38-50 hours (2-3 week full-dedication cycle)
 
@@ -170,19 +169,19 @@ onboarding, reenrollment, staff-onboarding-wizard, fee-schedule-wizard, academic
 
 | Area | Total | PROVEN/VALIDATED | NOT_PROVEN/MAPPED | % Complete |
 | --- | ---: | ---: | ---: | ---: |
-| Modules | 51 | 32 | 19 | 63% |
+| Modules | 51 | 33 | 18 | 65% |
 | Dashboards | 40 | 0 | 40 | 0% |
 | Wizards | 28 | 15 | 13 | 54% |
-| **Aggregate** | **119** | **47** | **72** | **40%** |
+| **Aggregate** | **119** | **48** | **71** | **40%** |
 
 ---
 
 ## Next Immediate Step
 
 1. ✓ Reconciliation complete: local matrices aligned to canonical authority
-2. ✓ NOT_PROVEN work orders established (all 19 modules scoped)
+2. ✓ NOT_PROVEN work orders established (all 18 modules scoped)
 3. ✓ Priority sequencing established (Wave 1 → Wave 2 → Wave 3)
-4. **Next:** Begin Wave 1, Module 001 (Tenant Isolation & Multi-Tenancy) closure
+4. **Next:** Begin Wave 1, Module 002 (Authentication & Authorization) closure
 
 **Wave 1 Entrance Criteria Met:**
 - Canonical matrix authority established

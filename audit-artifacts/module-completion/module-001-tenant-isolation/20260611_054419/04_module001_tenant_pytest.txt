@@ -1,0 +1,3 @@
+Sanitized Module 001 pytest capture (UTF-8, no local paths)
+pytest -q
+64 passed in 375.21s
