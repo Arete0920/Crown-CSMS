@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 
-from core.models import AcademicYear, GradeLevel
+from core.models import AcademicYear, GradeLevel, School
 from households.models import Student
 from .curriculum_publishers import (
     normalize_curriculum_publisher,
@@ -25,6 +25,20 @@ from .models import (
     LessonPlan,
     LessonResource,
 )
+
+
+class SchoolSerializer(serializers.ModelSerializer):
+    school_id = serializers.UUIDField(source="id", read_only=True)
+
+    class Meta:
+        model = School
+        fields = [
+            "school_id",
+            "name",
+            "timezone",
+            "is_active",
+        ]
+        read_only_fields = ["school_id", "is_active"]
 
 
 class AcademicYearSerializer(serializers.ModelSerializer):
