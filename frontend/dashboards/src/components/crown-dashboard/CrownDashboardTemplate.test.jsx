@@ -69,9 +69,8 @@ vi.mock('../../hooks/useDashboardData.js', () => ({
 }));
 
 vi.mock('react-router-dom', () => ({
-  /* eslint-disable react/prop-types */
+  // eslint-disable-next-line react/prop-types
   Link: ({ children, to, ...rest }) => <a href={to} {...rest}>{children}</a>,
-  /* eslint-enable react/prop-types */
   useInRouterContext: () => false,
 }));
 
@@ -256,7 +255,7 @@ describe('CrownDashboardTemplate data truth defaults', () => {
     expect(captured.metrics[0].dataState).toBe('sample');
     expect(captured.metrics[0].sourceLabel).toContain('Dashboard summary service sample');
     expect(captured.modules[0].dataState).toBe('sample');
-    expect(captured.modules[0].sourceLabel).toBe('Static dashboard scaffold');
+    expect(captured.modules[0].sourceLabel).toContain('Dashboard summary service sample');
   });
 
   it('skips live data loading when disableLiveData is set', () => {

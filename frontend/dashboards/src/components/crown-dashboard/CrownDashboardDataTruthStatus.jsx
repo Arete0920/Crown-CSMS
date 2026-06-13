@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 function getTruthLabel(dataState) {
   const state = String(dataState || '').toLowerCase();
   if (state === 'live') return 'Live';
@@ -16,22 +18,20 @@ function getTruthClass(dataState) {
   return 'is-warn';
 }
 
-import PropTypes from 'prop-types';
-
 export default function CrownDashboardDataTruthStatus({ dataState, sourceLabel, lastSyncLabel }) {
   const truthLabel = getTruthLabel(dataState);
   const truthClass = getTruthClass(dataState);
 
   return (
-    <section className="launch-data-truth-status" aria-label="Data truth status">
-      <div className="launch-data-truth-status-copy">
-        <div className="launch-section-kicker">Data truth</div>
+    <section className='launch-data-truth-status' aria-label='Data truth status'>
+      <div className='launch-data-truth-status-copy'>
+        <div className='launch-section-kicker'>Data truth</div>
         <h3>Source and sync status</h3>
         <p>{sourceLabel}</p>
       </div>
-      <div className="launch-data-truth-status-meta">
+      <div className='launch-data-truth-status-meta'>
         <span className={`launch-data-truth-pill ${truthClass}`}>{truthLabel}</span>
-        <span className="launch-data-truth-sync">{lastSyncLabel}</span>
+        <span className='launch-data-truth-sync'>{lastSyncLabel}</span>
       </div>
     </section>
   );

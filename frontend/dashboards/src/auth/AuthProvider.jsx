@@ -9,11 +9,15 @@ import { msalConfig } from "./msalConfig";
 const msalInstance = new PublicClientApplication(msalConfig);
 
 // Set active account from any previously-cached session on first load.
-await msalInstance.initialize();
-const accounts = msalInstance.getAllAccounts();
-if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
-  msalInstance.setActiveAccount(accounts[0]);
-}
+msalInstance
+  .initialize()
+  .then(() => {
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
+      msalInstance.setActiveAccount(accounts[0]);
+    }
+  })
+  .catch(() => null);
 
 msalInstance.addEventCallback((event) => {
   if (

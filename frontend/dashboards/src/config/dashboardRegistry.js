@@ -1,5 +1,6 @@
 import { validateDashboardRegistry } from './validateDashboardRegistry';
 import { normalizeRoles as normalizeEffectiveRoles } from '../auth/roleAccess';
+export { normalizeRoles } from '../auth/roleAccess';
 import { PATHS } from '../routes/paths';
 
 // Tier 1
@@ -532,8 +533,6 @@ export const DASHBOARD_REGISTRY = [
   }),
 ];
 
-export const normalizeRoles = normalizeEffectiveRoles;
-
 export function hasRouteAccess(userRoles, allowedRoles) {
   const normalizedUserRoles = normalizeEffectiveRoles(userRoles);
   const normalizedAllowedRoles = normalizeEffectiveRoles(allowedRoles);
@@ -568,7 +567,9 @@ export function getDefaultDashboardPath(userRoles) {
   return getAccessibleDashboards(userRoles)[0]?.path || '/';
 }
 
-if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.DEV) {
+const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
+
+if (isDev) {
   validateDashboardRegistry(DASHBOARD_REGISTRY);
 }
 
