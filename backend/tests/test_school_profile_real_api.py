@@ -25,7 +25,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import School, UserRole
+from core.models import School, UserRole  # type: ignore[attr-defined]  # noqa: F401
 
 pytestmark = pytest.mark.django_db
 User: Any = get_user_model()
@@ -123,6 +123,8 @@ class TestSchoolProfileUnauthenticated:
 
 
 class TestSchoolProfileStaffAccess:
+    school: School
+
     def setup_method(self):
         self.school = _make_school("A")
         self.staff = _make_staff(self.school)
@@ -178,6 +180,9 @@ class TestSchoolProfileStaffAccess:
 
 
 class TestSchoolProfileTenantIsolation:
+    school_a: School
+    school_b: School
+
     def setup_method(self):
         self.school_a = _make_school("ISO-A")
         self.school_b = _make_school("ISO-B")
@@ -233,6 +238,8 @@ class TestSchoolProfileTenantIsolation:
 
 
 class TestSchoolProfilePatchPermissions:
+    school: School
+
     def setup_method(self):
         self.school = _make_school("PATCH")
         self.staff = _make_staff(self.school)

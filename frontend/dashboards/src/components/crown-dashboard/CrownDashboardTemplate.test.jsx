@@ -69,8 +69,9 @@ vi.mock('../../hooks/useDashboardData.js', () => ({
 }));
 
 vi.mock('react-router-dom', () => ({
-  // eslint-disable-next-line react/prop-types
+  /* eslint-disable react/prop-types */
   Link: ({ children, to, ...rest }) => <a href={to} {...rest}>{children}</a>,
+  /* eslint-enable react/prop-types */
   useInRouterContext: () => false,
 }));
 
