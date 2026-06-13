@@ -28,7 +28,7 @@ describe('wizard flow contracts', () => {
 
     wizardFiles.forEach((fileName) => {
       const source = loadWizardSource(fileName);
-      const exportedFns = [...source.matchAll(/^export\s+async\s+function\s+([A-Za-z0-9_]+)\s*\(/gm)].map((m) => m[1]);
+      const exportedFns = [...source.matchAll(/^export\s+async\s+function\s+(\w+)\s*\(/gm)].map((m) => m[1]);
       const hasStepMutator = exportedFns.some((fnName) => STEP_MUTATOR_PATTERN.test(fnName));
       expect(hasStepMutator, `${fileName} must expose a step-mutating operation`).toBe(true);
     });
@@ -38,7 +38,7 @@ describe('wizard flow contracts', () => {
     wizardFiles.forEach((fileName) => {
       const source = loadWizardSource(fileName);
 
-      const hasCreateSession = /export\s+async\s+function\s+create[A-Za-z0-9_]*Session\s*\(/m.test(source);
+      const hasCreateSession = /export\s+async\s+function\s+create\w*Session\s*\(/m.test(source);
       expect(hasCreateSession, `${fileName} must expose create*Session`).toBe(true);
 
       const sessionArgOccurrences = source.match(/\(\s*sessionId\s*[,)]/g) || [];
@@ -55,7 +55,7 @@ describe('wizard flow contracts', () => {
     wizardFiles.forEach((fileName) => {
       const source = loadWizardSource(fileName);
 
-      const hasCommitFn = /export\s+async\s+function\s+commit[A-Za-z0-9_]*\s*\(/m.test(source);
+      const hasCommitFn = /export\s+async\s+function\s+commit\w*\s*\(/m.test(source);
       expect(hasCommitFn, `${fileName} must expose commit operation`).toBe(true);
       expect(source.includes('/commit/'), `${fileName} must call commit endpoint`).toBe(true);
     });
@@ -65,7 +65,7 @@ describe('wizard flow contracts', () => {
     wizardFiles.forEach((fileName) => {
       const source = loadWizardSource(fileName);
 
-      const hasVerifyFn = /export\s+async\s+function\s+verify[A-Za-z0-9_]*\s*\(/m.test(source);
+      const hasVerifyFn = /export\s+async\s+function\s+verify\w*\s*\(/m.test(source);
       expect(hasVerifyFn, `${fileName} must expose verify operation`).toBe(true);
       expect(source.includes('/verify/'), `${fileName} must call verify endpoint`).toBe(true);
     });
