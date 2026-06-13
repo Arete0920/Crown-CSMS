@@ -23,9 +23,22 @@ from core.models import (
     UserRole,
 )
 from crown_api.jwt_utils import build_access_token, build_refresh_token
-from finance.models import FinanceInvoice, FinanceInvoiceLine, FinanceObligation, MoneyStatus, ObligationType
+from finance.models import (
+    FinanceInvoice,
+    FinanceInvoiceLine,
+    FinanceObligation,
+    MoneyStatus,
+    ObligationType,
+)
 
-from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS, SandboxPersona, SandboxSchool, get_persona, get_school
+from .catalog import (
+    SANDBOX_PERSONAS,
+    SANDBOX_SCHOOLS,
+    SandboxPersona,
+    SandboxSchool,
+    get_persona,
+    get_school,
+)
 
 
 PROHIBITED_FEEDBACK_PATTERNS = [
@@ -119,12 +132,13 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
         },
     )
 
+    # Keep sandbox logins deterministic for local/demo proof runs when explicitly configured.
     fallback_password = getattr(settings, "CROWN_SANDBOX_FALLBACK_PASSWORD", "")
     if fallback_password:
         user.set_password(fallback_password)
     else:
         user.set_unusable_password()
-    user.save()
+    user.save(update_fields=["password"])
 
     UserRole.objects.update_or_create(
         school=school,
@@ -137,7 +151,9 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
 
 
 @transaction.atomic
-def create_sandbox_session(*, persona_key: str, school_key_or_id: str, guidance: str, tour: str | None = None) -> dict:
+def create_sandbox_session(
+    *, persona_key: str, school_key_or_id: str, guidance: str, tour: str | None = None
+) -> dict:
     persona = get_persona(persona_key)
     school_spec = get_school(school_key_or_id)
     school = ensure_demo_school(school_spec)
@@ -149,11 +165,15 @@ def create_sandbox_session(*, persona_key: str, school_key_or_id: str, guidance:
         email=user.email,
         role=persona.key,
         school_id=str(school.id),
-        ttl_seconds=int(getattr(settings, "CROWN_SANDBOX_ACCESS_TTL_SECONDS", 60 * 60 * 2)),
+        ttl_seconds=int(
+            getattr(settings, "CROWN_SANDBOX_ACCESS_TTL_SECONDS", 60 * 60 * 2)
+        ),
     )
     refresh = build_refresh_token(
         user_id=str(user.id),
-        ttl_seconds=int(getattr(settings, "CROWN_SANDBOX_REFRESH_TTL_SECONDS", 60 * 60 * 12)),
+        ttl_seconds=int(
+            getattr(settings, "CROWN_SANDBOX_REFRESH_TTL_SECONDS", 60 * 60 * 12)
+        ),
     )
 
     return {
@@ -333,7 +353,9 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
     for persona in SANDBOX_PERSONAS.values():
         ensure_persona_user(school, persona)
 
-    parent_user = UserAccount.objects.filter(username="parent.reed@heritage.example.org", school=school).first()
+    parent_user = UserAccount.objects.filter(
+        username="parent.reed@heritage.example.org", school=school
+    ).first()
     if parent_user:
         for n in range(1, 13):
             obligation, _ = FinanceObligation.objects.update_or_create(
@@ -411,10 +433,12 @@ def assert_flagship_proof() -> list[dict]:
 
     for key, expected in minimums.items():
         actual = metrics.get(key, 0)
-        findings.append({
-            "level": "PASS" if actual >= expected else "FAIL",
-            "message": f"{key}: actual={actual} expected_min={expected}",
-        })
+        findings.append(
+            {
+                "level": "PASS" if actual >= expected else "FAIL",
+                "message": f"{key}: actual={actual} expected_min={expected}",
+            }
+        )
 
     for persona in SANDBOX_PERSONAS.values():
         session = create_sandbox_session(
@@ -424,9 +448,11 @@ def assert_flagship_proof() -> list[dict]:
             tour=persona.tour_title,
         )
         ok = bool(session.get("access") and session.get("route") == persona.route)
-        findings.append({
-            "level": "PASS" if ok else "FAIL",
-            "message": f"one-click session for {persona.key}",
-        })
+        findings.append(
+            {
+                "level": "PASS" if ok else "FAIL",
+                "message": f"one-click session for {persona.key}",
+            }
+        )
 
     return findings
