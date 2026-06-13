@@ -123,10 +123,15 @@ function getDashboardNote(dataState, sourceLabel) {
 }
 
 function buildPriorityItems(queue, dataState, sourceLabel) {
+  let stateLabel = 'Attention';
+  if (dataState === 'live') stateLabel = 'Live';
+  else if (dataState === 'sample') stateLabel = 'Sample';
+  else if (dataState === 'loading') stateLabel = 'Loading';
+
   return (Array.isArray(queue) ? queue : []).map((item) => ({
     title: item,
     detail: sourceLabel,
-    state: dataState === 'live' ? 'Live' : dataState === 'sample' ? 'Sample' : dataState === 'loading' ? 'Loading' : 'Attention',
+    state: stateLabel,
     tone: dataState === 'live' ? 'good' : 'warn',
   }));
 }
@@ -381,6 +386,7 @@ function renderStandardLayout(config, model, hasRouterContext) {
   );
 }
 
+// eslint-disable-next-line react/prop-types -- config and roleKey validated via runtime guard below
 export default function CrownDashboardTemplate({ config, roleKey }) {
   const hasRouterContext = useInRouterContext();
 

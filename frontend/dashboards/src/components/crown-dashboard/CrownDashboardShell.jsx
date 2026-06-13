@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import CrownSidebar from '../launch/CrownSidebar.jsx';
 import CrownTopbar from '../launch/CrownTopbar.jsx';
 
@@ -23,3 +24,13 @@ export default function CrownDashboardShell({
     </div>
   );
 }
+
+CrownDashboardShell.propTypes = {
+  activePath: PropTypes.string,
+  schoolName: PropTypes.string,
+  user: PropTypes.shape({ initials: PropTypes.string }),
+  updatesCount: PropTypes.number,
+  rightRail: PropTypes.node,
+  children: PropTypes.node,
+  topbarSlot: PropTypes.node,
+};

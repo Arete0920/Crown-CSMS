@@ -19,6 +19,7 @@ Covers:
 """
 
 import uuid
+from typing import Any
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -27,7 +28,7 @@ from rest_framework.test import APIClient
 from core.models import School, UserRole
 
 pytestmark = pytest.mark.django_db
-User = get_user_model()
+User: Any = get_user_model()
 
 SCHOOL_URL = "/api/v1/school/"
 
@@ -37,19 +38,19 @@ SCHOOL_URL = "/api/v1/school/"
 # ---------------------------------------------------------------------------
 
 
-def _make_school(suffix=""):
+def _make_school(suffix: str = ""):
     return School.objects.create(
         name=f"SPTest-School-{suffix or uuid.uuid4().hex[:6]}",
         timezone="America/New_York",
     )
 
 
-def _make_staff(school):
+def _make_staff(school: School):
     tok = uuid.uuid4().hex[:8]
-    return User.objects.create_user(
+    return User.objects.create_user(  # type: ignore[attr-defined]
         username=f"sp-staff-{tok}",
         email=f"sp-staff-{tok}@example.com",
-        password="Passw0rd!",
+        password="Passw0rd!",  # NOSONAR - test fixture only
         school=school,
         is_staff=True,
     )
@@ -57,31 +58,31 @@ def _make_staff(school):
 
 def _make_regular_user(school: School):
     tok = uuid.uuid4().hex[:8]
-    return User.objects.create_user(
+    return User.objects.create_user(  # type: ignore[attr-defined]
         username=f"sp-user-{tok}",
         email=f"sp-user-{tok}@example.com",
-        password="Passw0rd!",
+        password="Passw0rd!",  # NOSONAR - test fixture only
         school=school,
         is_staff=False,
     )
 
 
-def _make_superuser(school):
+def _make_superuser(school: School):
     tok = uuid.uuid4().hex[:8]
-    return User.objects.create_superuser(
+    return User.objects.create_superuser(  # type: ignore[attr-defined]
         username=f"sp-super-{tok}",
         email=f"sp-super-{tok}@example.com",
-        password="Passw0rd!",
+        password="Passw0rd!",  # NOSONAR - test fixture only
         school=school,
     )
 
 
-def _make_head_of_school_user(school):
+def _make_head_of_school_user(school: School):
     tok = uuid.uuid4().hex[:8]
-    user = User.objects.create_user(
+    user = User.objects.create_user(  # type: ignore[attr-defined]
         username=f"sp-head-{tok}",
         email=f"sp-head-{tok}@example.com",
-        password="Passw0rd!",
+        password="Passw0rd!",  # NOSONAR - test fixture only
         school=school,
         is_staff=False,
     )
