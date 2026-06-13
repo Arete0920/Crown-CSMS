@@ -16,6 +16,7 @@ from .lesson_plan_views import (
 )
 from .transcript_views import StudentTranscriptContractView, TranscriptROView
 from crown_api.views_academics import section_attendance_submit
+from .school_profile_views import SchoolProfileView
 from .views import (
     AcademicYearViewSet,
     CourseViewSet,
@@ -70,6 +71,11 @@ router.register(
 
 urlpatterns = [
     path("", include(router.urls)),
+    path(
+        "school/",
+        SchoolProfileView.as_view(),
+        name="school-profile",
+    ),
     path(
         "academics/transcript/<uuid:student_id>/",
         TranscriptROView.as_view(),

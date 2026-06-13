@@ -9,8 +9,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from core.models import AcademicYear, GradeLevel, UserRole
+from core.models import AcademicYear, GradeLevel, School, UserRole
 from core.viewsets import TenantScopedViewSet
 from households.models import Guardian, Student
 from households.scoping import get_request_school_id
@@ -42,6 +43,7 @@ from .serializers import (
     AcademicYearSerializer,
     CourseSerializer,
     GradeLevelSerializer,
+    SchoolSerializer,
     SectionDetailSerializer,
     SectionListSerializer,
     SectionRosterStudentSerializer,
@@ -234,6 +236,44 @@ class GradeLevelViewSet(PaginatedReadOnlyViewSet):
     def get_queryset(self):
         school_id = get_request_school_id(self.request, required=True)
         return GradeLevel.objects.filter(school_id=school_id).order_by("sort_order")
+
+
+class SchoolProfileView(APIView):
+    """
+    School profile endpoint — tenant root resource.
+
+    GET  /api/v1/school/  — returns the profile of the authenticated user's school.
+    PATCH /api/v1/school/ — updates name/timezone; restricted to superusers and
+                            HEAD_OF_SCHOOL role holders.
+
+    Tenant: resolved from X-School-Id header (staff override) or user.school_id.
+    Auth: IsAuthenticated (both methods).
+    Permissions: GET → any authenticated user; PATCH → superuser or HEAD_OF_SCHOOL.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        school_id = get_request_school_id(request, required=True)
+        school = get_object_or_404(School, pk=school_id)
+        return Response(SchoolSerializer(school).data)
+
+    def patch(self, request):
+        school_id = get_request_school_id(request, required=True)
+        user = getattr(request, "user", None)
+        roles = _role_codes(user, school_id)
+        if not (
+            getattr(user, "is_superuser", False)
+            or "HEAD_OF_SCHOOL" in roles
+        ):
+            raise PermissionDenied(
+                "Only superusers or HEAD_OF_SCHOOL role holders may update school settings."
+            )
+        school = get_object_or_404(School, pk=school_id)
+        serializer = SchoolSerializer(school, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class TermViewSet(PaginatedReadOnlyViewSet):
