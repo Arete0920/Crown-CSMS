@@ -16,6 +16,8 @@ function getTruthClass(dataState) {
   return 'is-warn';
 }
 
+import PropTypes from 'prop-types';
+
 export default function CrownDashboardDataTruthStatus({ dataState, sourceLabel, lastSyncLabel }) {
   const truthLabel = getTruthLabel(dataState);
   const truthClass = getTruthClass(dataState);
@@ -34,3 +36,9 @@ export default function CrownDashboardDataTruthStatus({ dataState, sourceLabel, 
     </section>
   );
 }
+
+CrownDashboardDataTruthStatus.propTypes = {
+  dataState: PropTypes.string,
+  sourceLabel: PropTypes.string,
+  lastSyncLabel: PropTypes.string,
+};
