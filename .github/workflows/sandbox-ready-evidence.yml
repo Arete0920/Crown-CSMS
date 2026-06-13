@@ -91,7 +91,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          set -euo pipefail
           cd backend
           python manage.py migrate --noinput
           python manage.py runserver 127.0.0.1:8000 --noreload > ../backend-runtime.log 2>&1 &
@@ -109,11 +108,71 @@ jobs:
           cat ../backend-runtime.log || true
           exit 1
 
-      - name: Run completion evidence gates
+      - name: Generate wizard frontend backend parity evidence
+        shell: bash
+        run: python scripts/execution/216_verify_wizard_frontend_backend_parity.py
+
+      - name: Run 50 wizard deep dive assessment
+        shell: pwsh
+        run: ./scripts/execution/121_50_wizard_deep_dive_assessment.ps1
+
+      - name: Assert wizard frontend backend parity evidence
         shell: pwsh
         run: |
-          ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep
-          ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep
+          $latestParityStatus = "audit-artifacts/wizard-parity/latest/99_STATUS.json"
+          $latestParitySummary = "audit-artifacts/wizard-parity/latest/00_SUMMARY.md"
+          if (-not (Test-Path $latestParityStatus)) {
+            throw "Missing wizard parity status: $latestParityStatus"
+          }
+          if (Test-Path $latestParitySummary) {
+            Write-Host "--- WIZARD PARITY SUMMARY BEGIN ---"
+            Get-Content -Path $latestParitySummary
+            Write-Host "--- WIZARD PARITY SUMMARY END ---"
+          }
+          $status = Get-Content -Path $latestParityStatus -Raw | ConvertFrom-Json
+          Write-Host "WIZARD_PARITY_FRONTEND_COUNT=$($status.frontend_count)"
+          Write-Host "WIZARD_PARITY_BACKEND_COUNT=$($status.backend_count)"
+          Write-Host "WIZARD_PARITY_MATRIX_COUNT=$($status.matrix_count)"
+          Write-Host "WIZARD_PARITY_REVIEW_REQUIRED_COUNT=$($status.review_required_count)"
+          if (-not $status.pass) {
+            throw "Wizard frontend/backend parity failed; review_required_count=$($status.review_required_count)"
+          }
+
+      - name: Assert 50 wizard completion evidence
+        shell: pwsh
+        run: |
+          $latestWizardSummary = Get-ChildItem -Path "audit-artifacts/50-wizard-deep-dive" -Recurse -Filter "SUMMARY.md" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $latestWizardSummary) {
+            throw "Missing 50-wizard deep dive SUMMARY.md"
+          }
+
+          Write-Host "50_WIZARD_SUMMARY=$($latestWizardSummary.FullName)"
+          $wizardSummary = Get-Content -Path $latestWizardSummary.FullName -Raw
+          Write-Host "--- 50 WIZARD SUMMARY BEGIN ---"
+          Write-Host $wizardSummary
+          Write-Host "--- 50 WIZARD SUMMARY END ---"
+
+          $requiredPatterns = @(
+            "PASS:\s+50",
+            "REVIEW:\s+0",
+            "FAIL_PARTIAL:\s+0",
+            "FAIL_MISSING:\s+0",
+            "P0 fix rows:\s+0",
+            "PASS - all 50 wizards are complete and proof-backed"
+          )
+          foreach ($pattern in $requiredPatterns) {
+            if ($wizardSummary -notmatch $pattern) {
+              throw "50-wizard deep dive certification failed missing pattern: $pattern"
+            }
+          }
+
+      - name: Run full completion truth gate
+        shell: pwsh
+        run: ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep
+
+      - name: Run dashboard module completion gate
+        shell: pwsh
+        run: ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep
 
       - name: Emit latest gate summaries
         if: always()
@@ -132,6 +191,21 @@ jobs:
             cat .crown-audit/dashboard-completion/latest/00_SUMMARY.md
           else
             echo "(missing) .crown-audit/dashboard-completion/latest/00_SUMMARY.md"
+          fi
+          echo
+          echo "--- wizard parity latest summary ---"
+          if [ -f audit-artifacts/wizard-parity/latest/00_SUMMARY.md ]; then
+            cat audit-artifacts/wizard-parity/latest/00_SUMMARY.md
+          else
+            echo "(missing) audit-artifacts/wizard-parity/latest/00_SUMMARY.md"
+          fi
+          echo
+          echo "--- 50-wizard deep dive latest summary ---"
+          latest_wizard_summary=$(find audit-artifacts/50-wizard-deep-dive -name SUMMARY.md -type f 2>/dev/null | sort | tail -n 1)
+          if [ -n "$latest_wizard_summary" ]; then
+            cat "$latest_wizard_summary"
+          else
+            echo "(missing) audit-artifacts/50-wizard-deep-dive/**/SUMMARY.md"
           fi
           echo
           echo "--- latest status files ---"
@@ -170,4 +244,3 @@ jobs:
             frontend/dashboards/test-results/**
             frontend/dashboards/playwright-report/**
             frontend/dashboards/artifacts/**
-
