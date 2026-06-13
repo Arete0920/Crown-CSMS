@@ -1,5 +1,5 @@
 {
-  "tag": "prod-2026-03-28-02",
-  "expected_sha": "c7ab4328516ad0354d20606c5e6a60d05dc07b73",
+  "tag": "main-canonical-20260612",
+  "expected_sha": "3cf22a47ba29481adc435cb85a0f00fcd9bf0d30",
   "health_url": "https://crown-api-prod.azurewebsites.net/api/health/"
 }
