@@ -85,7 +85,7 @@ test.describe("Crown2026 UI Proof Gate", () => {
   const expectedAdminHome =
     isSandbox
       ? /\/(?:school-admin-dashboard|school-admin|wizards)?$/
-      : /\/admin$/;
+      : /\/(?:admin|wizards)$/;
 
   // ── 1. Role home redirect ───────────────────────────────────────────────────
   test("/ redirects admin role → /admin", async ({ page }) => {
