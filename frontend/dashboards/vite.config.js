@@ -27,20 +27,36 @@ export default defineConfig(({ mode }) => {
     build: {
       // Keep warning signal meaningful while avoiding noisy false alarms for this bundle profile.
       chunkSizeWarningLimit: 2000,
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              return 'vendor';
-            }
-
-            if (
-              id.includes('/src/')
-            ) {
-              return 'app-shell';
-            }
-
-            return undefined;
+          codeSplitting: {
+            groups: [
+              {
+                name: 'vendor-react',
+                test: /node_modules[\\/](react|react-dom)[\\/]/,
+                priority: 50,
+              },
+              {
+                name: 'vendor-router',
+                test: /node_modules[\\/](react-router|react-router-dom)[\\/]/,
+                priority: 45,
+              },
+              {
+                name: 'vendor-recharts',
+                test: /node_modules[\\/]recharts[\\/]/,
+                priority: 40,
+              },
+              {
+                name: 'vendor-radix',
+                test: /node_modules[\\/]@radix-ui[\\/]/,
+                priority: 35,
+              },
+              {
+                name: 'vendor-misc',
+                test: /node_modules/,
+                priority: 10,
+              },
+            ],
           },
         },
       },

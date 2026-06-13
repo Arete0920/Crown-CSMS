@@ -1,13 +1,13 @@
 /**
  * TermStructureWizard.jsx
  *
- * Wizard #18 — Term & Marking Period Setup
+ * Wizard #18 â€” Term & Marking Period Setup
  *
  * Steps:
- *   1. Configure — academic year ID, structure type (SEMESTER/QUARTER/TRIMESTER/CUSTOM)
- *   2. Periods   — define ordered marking periods (code, name, start_date, end_date)
+ *   1. Configure â€” academic year ID, structure type (SEMESTER/QUARTER/TRIMESTER/CUSTOM)
+ *   2. Periods   â€” define ordered marking periods (code, name, start_date, end_date)
  *                  full adjacency coverage required: periods must span ay.start_date ? ay.end_date
- *   3. Done      — commit result: term_structure_id, structure_type, periods created/updated
+ *   3. Done      â€” commit result: term_structure_id, structure_type, periods created/updated
  */
 import { useState, useCallback } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
@@ -29,7 +29,7 @@ async function _post(path, body) {
   const json = await r.json().catch(() => ({}));
   if (!r.ok) {
     const msgs = json.errors || [json.error] || [`HTTP ${r.status}`];
-    throw new Error(Array.isArray(msgs) ? msgs.join(" · ") : String(msgs));
+    throw new Error(Array.isArray(msgs) ? msgs.join(" Â· ") : String(msgs));
   }
   return json;
 }
@@ -121,7 +121,7 @@ export default function TermStructureWizard() {
     <CrownLayout title="Term & Marking Period Setup">
       {phase === "configure" && (
         <div style={{ maxWidth: 520 }}>
-          <h2>Step 1 — Configure Structure</h2>
+          <h2>Step 1 â€” Configure Structure</h2>
 
           <div>Academic Year ID</div>
           <input
@@ -149,14 +149,14 @@ export default function TermStructureWizard() {
             onClick={handleConfigure}
             disabled={loading || !academicYearId.trim()}
           >
-            {loading ? "Saving…" : "Next: Set Periods ?"}
+            {loading ? "Savingâ€¦" : "Next: Set Periods ?"}
           </button>
         </div>
       )}
 
       {phase === "periods" && (
         <div style={{ maxWidth: 820 }}>
-          <h2>Step 2 — Marking Periods</h2>
+          <h2>Step 2 â€” Marking Periods</h2>
           <p style={{ color: "var(--crown-muted)", fontSize: 13 }}>
             Periods must be non-overlapping and cover the full academic year with no gaps.
             Adjacent periods: <code>period[i].end_date + 1 day == period[i+1].start_date</code>
@@ -233,7 +233,7 @@ export default function TermStructureWizard() {
               ? Back
             </button>
             <button onClick={handleSetPeriods} disabled={loading}>
-              {loading ? "Saving…" : "Commit Structure ?"}
+              {loading ? "Savingâ€¦" : "Commit Structure ?"}
             </button>
           </div>
         </div>

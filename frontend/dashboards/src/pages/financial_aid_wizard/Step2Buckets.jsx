@@ -83,7 +83,7 @@ export default function Step2Buckets({ context, setContext, goNext, goPrev, step
             Back
           </button>
           <button className="crown-btn crown-btn--primary" onClick={handleContinue} disabled={loading}>
-            {loading ? "Saving…" : "Continue"}
+            {loading ? "Savingâ€¦" : "Continue"}
           </button>
         </div>
       </div>
