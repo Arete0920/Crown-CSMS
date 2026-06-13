@@ -17,6 +17,7 @@ import CrownDashboardDataTruthStatus from './CrownDashboardDataTruthStatus.jsx';
 import CrownDashboardDecisionPanel from './CrownDashboardDecisionPanel.jsx';
 import { Link, useInRouterContext } from 'react-router-dom';
 import { useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { BASE_COMMUNICATIONS, BASE_FAITH_COMMUNITY, BASE_NOTE } from '../../config/dashboardTemplates/_baseData.js';
 import useDashboardData from '../../hooks/useDashboardData.js';
 
@@ -164,6 +165,9 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
 
   return {
     ...config,
+    dataState,
+    sourceLabel,
+    lastSyncLabel: config.lastSyncLabel || getDefaultLastSyncLabel(dataState),
     note: getDashboardNote(dataState, sourceLabel),
     metrics,
     priorities: buildPriorityItems(payload?.queue, dataState, sourceLabel),
@@ -173,7 +177,7 @@ function buildLiveDashboardConfig(config, payload, endpointConfig, loading, erro
       { label: 'Dashboard Data Source', state: sourceLabel },
       ...(Array.isArray(config.statuses) ? config.statuses : []),
     ],
-    commandModules: applyDataTruth(config.commandModules, 'sample', 'Static dashboard scaffold'),
+    commandModules: applyDataTruth(config.commandModules, dataState, sourceLabel),
     errorState: (dataState === 'error' || dataState === 'unavailable') && metrics.length === 0
       ? {
           title: 'Dashboard data unavailable',
@@ -472,3 +476,8 @@ export default function CrownDashboardTemplate({ config, roleKey }) {
     </CrownDashboardShell>
   );
 }
+
+CrownDashboardTemplate.propTypes = {
+  config: PropTypes.object,
+  roleKey: PropTypes.string,
+};
