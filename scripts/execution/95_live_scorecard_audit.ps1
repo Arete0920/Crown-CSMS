@@ -58,7 +58,24 @@ function Invoke-Capture {
                 throw "Executable not found: $resolvedExe (original: $Exe)"
             }
 
-            $proc = Start-Process -FilePath $resolvedCommand.Source -ArgumentList $CmdParts -WorkingDirectory (Get-Location).Path -NoNewWindow -PassThru -RedirectStandardOutput $outTmp -RedirectStandardError $errTmp
+            $resolvedSource = $resolvedCommand.Source
+            $isCmdWrapper = ($resolvedSource -match '\.(cmd|bat)$')
+
+            if ($isCmdWrapper) {
+                # .cmd/.bat wrappers must be invoked via cmd.exe /d /c to allow
+                # stdout/stderr redirection to work correctly on Windows.
+                $filePath = "$env:SystemRoot\System32\cmd.exe"
+                $cmdInner = '"' + $resolvedSource + '"'
+                if ($CmdParts.Count -gt 0) {
+                    $cmdInner = $cmdInner + ' ' + ($CmdParts -join ' ')
+                }
+                $argumentList = @('/d', '/c', $cmdInner)
+            } else {
+                $filePath = $resolvedSource
+                $argumentList = $CmdParts
+            }
+
+            $proc = Start-Process -FilePath $filePath -ArgumentList $argumentList -WorkingDirectory (Get-Location).Path -NoNewWindow -PassThru -RedirectStandardOutput $outTmp -RedirectStandardError $errTmp
             $finished = $proc.WaitForExit($timeoutSec * 1000)
 
             if (-not $finished) {
