@@ -1,33 +1,24 @@
-# Module 003 post-merge proof update
+# Module 003 reconciliation note
 
 Date: 2026-06-13
 Module: 003 User Management and Roles
 Evidence commit: 4e8bc8facc68324ce9c2e615ac7e780d6d5b2072
 
-## Verified evidence on main
+Evidence files are present on main:
 
-- backend/tests/test_user_management.py exists on main.
-- backend/docs/USER_MANAGEMENT.md exists on main.
-- audit-artifacts/module-completion/module-003-user-role-binding.csv exists on main.
-- audit-artifacts/module-completion/module-003-user-management-roles/20260611_203413/07_module003_coverage_sufficiency.md exists on main.
+- backend/tests/test_user_management.py
+- backend/docs/USER_MANAGEMENT.md
+- audit-artifacts/module-completion/module-003-user-role-binding.csv
+- audit-artifacts/module-completion/module-003-user-management-roles/20260611_203413/07_module003_coverage_sufficiency.md
 
-## Coverage
+The evidence covers role assignment, tenant isolation, role transition, role deletion, bulk assignment, duplicate-role rejection, and same-user multi-role or multi-tenant behavior.
 
-The role-binding proof matrix records ten implemented controls:
+Reconciliation status:
 
-- user creation with role assignment grants scoped permission
-- role assignment does not bleed across tenants
-- role transition removes old permission and adds new permission
-- user can hold distinct roles in distinct tenants without cross-bleed
-- deleted role can no longer act
-- bulk role assignment to cohort works
-- bulk assignment remains tenant scoped
-- duplicate same-school same-role assignment is rejected
-- same user can hold same role in different schools
-- same user can hold different roles in the same school
+- Evidence exists.
+- The authoritative current scorecard has not yet credited Module 003 as PROVEN.
+- The authoritative scorecard remains audit-artifacts/module-completion/current/05_completion_scorecard.md.
 
-## Status
+Next action: reconcile Module 003 into the authoritative scorecard only after current GitHub checks and closure criteria are confirmed.
 
-Module 003 status can be treated as PROVEN for the module-proof scorecard.
-
-This does not claim release readiness or dashboard live-data completion.
+This note does not claim release readiness or dashboard live-data completion.
