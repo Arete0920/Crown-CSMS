@@ -55,7 +55,7 @@ def _make_staff(school):
     )
 
 
-def _make_regular_user(school):
+def _make_regular_user(school: School):
     tok = uuid.uuid4().hex[:8]
     return User.objects.create_user(
         username=f"sp-user-{tok}",
