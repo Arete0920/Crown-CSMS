@@ -19,7 +19,7 @@ Covers:
 """
 
 import uuid
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -43,6 +43,22 @@ def _make_school(suffix: str = ""):
         name=f"SPTest-School-{suffix or uuid.uuid4().hex[:6]}",
         timezone="America/New_York",
     )
+
+
+def _school_id_str(school: School) -> str:
+    return str(cast(Any, school).id)
+
+
+def _school_name(school: School) -> str:
+    return cast(str, cast(Any, school).name)
+
+
+def _school_timezone(school: School) -> str:
+    return cast(str, cast(Any, school).timezone)
+
+
+def _school_is_active(school: School) -> bool:
+    return cast(bool, cast(Any, school).is_active)
 
 
 def _make_staff(school: School):
@@ -143,8 +159,8 @@ class TestSchoolProfileStaffAccess:
         response = self.client.get(SCHOOL_URL)
         assert response.status_code == 200
         data = response.json()
-        assert data["school_id"] == str(self.school.id), (
-            f"Expected school_id={self.school.id}, got {data.get('school_id')}"
+        assert data["school_id"] == _school_id_str(self.school), (
+            f"Expected school_id={_school_id_str(self.school)}, got {data.get('school_id')}"
         )
 
     def test_serializer_fields_present(self):
@@ -159,13 +175,13 @@ class TestSchoolProfileStaffAccess:
         """name field reflects the database value."""
         response = self.client.get(SCHOOL_URL)
         assert response.status_code == 200
-        assert response.json()["name"] == self.school.name
+        assert response.json()["name"] == _school_name(self.school)
 
     def test_timezone_matches_stored_value(self):
         """timezone field reflects the database value."""
         response = self.client.get(SCHOOL_URL)
         assert response.status_code == 200
-        assert response.json()["timezone"] == self.school.timezone
+        assert response.json()["timezone"] == _school_timezone(self.school)
 
     def test_is_active_is_boolean(self):
         """is_active field is a boolean."""
@@ -195,7 +211,7 @@ class TestSchoolProfileTenantIsolation:
         self.client.force_authenticate(user=self.staff_a)
         response = self.client.get(SCHOOL_URL)
         assert response.status_code == 200
-        assert response.json()["school_id"] == str(self.school_a.id)
+        assert response.json()["school_id"] == _school_id_str(self.school_a)
 
     def test_regular_user_b_cannot_access_school_a_via_header(self):
         """Non-staff user from school B cannot retrieve school A via X-School-Id header.
@@ -206,7 +222,7 @@ class TestSchoolProfileTenantIsolation:
         self.client.force_authenticate(user=self.regular_b)
         response = self.client.get(
             SCHOOL_URL,
-            HTTP_X_SCHOOL_ID=str(self.school_a.id),
+            HTTP_X_SCHOOL_ID=_school_id_str(self.school_a),
         )
         assert response.status_code == 404, (
             f"Expected 404 for non-staff cross-tenant access, got {response.status_code}"
@@ -224,10 +240,10 @@ class TestSchoolProfileTenantIsolation:
         self.client.force_authenticate(user=self.staff_a)
         response = self.client.get(
             SCHOOL_URL,
-            HTTP_X_SCHOOL_ID=str(self.school_b.id),
+            HTTP_X_SCHOOL_ID=_school_id_str(self.school_b),
         )
         assert response.status_code == 200
-        assert response.json()["school_id"] == str(self.school_b.id), (
+        assert response.json()["school_id"] == _school_id_str(self.school_b), (
             "Expected X-School-Id header to scope to school B"
         )
 
@@ -309,12 +325,12 @@ class TestSchoolProfilePatchPermissions:
         )
         assert response.status_code == 200
         # school_id must remain unchanged
-        assert response.json()["school_id"] == str(self.school.id)
+        assert response.json()["school_id"] == _school_id_str(self.school)
 
     def test_patch_is_active_is_ignored(self):
         """is_active is read-only; attempting to change it has no effect."""
         self.client.force_authenticate(user=self.superuser)
-        original_is_active = self.school.is_active
+        original_is_active = _school_is_active(self.school)
         response = self.client.patch(
             SCHOOL_URL,
             {"is_active": not original_is_active, "name": "Active Flag Attempt"},
@@ -322,5 +338,5 @@ class TestSchoolProfilePatchPermissions:
         )
         assert response.status_code == 200
         self.school.refresh_from_db()
-        assert self.school.is_active is original_is_active
+        assert _school_is_active(self.school) is original_is_active
         assert response.json()["is_active"] is original_is_active
