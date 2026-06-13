@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
-import { createAidWizardSession, configureAidWizardSession } from "../../api/financial_aid_wizard.js";
+import { createAidWizardSession, configureAidWizardSession } from "../../api/aid_wizard.js";
 import "../../styles/crown-wizard.css";
 
 export default function Step1Year({ context, setContext, goNext, stepIndex, totalSteps, steps }) {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
-import { saveAidBuckets } from "../../api/financial_aid_wizard.js";
+import { saveAidBuckets } from "../../api/aid_wizard.js";
 import "../../styles/crown-wizard.css";
 
 const ALL_BUCKETS = [

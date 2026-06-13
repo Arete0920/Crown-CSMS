@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
-import { stageAidAwards } from "../../api/financial_aid_wizard.js";
+import { stageAidAwards } from "../../api/aid_wizard.js";
 import "../../styles/crown-wizard.css";
 
 function emptyRow(buckets) {

@@ -1,5 +1,5 @@
 /**
- * api/financial_aid_wizard.js
+ * api/aid_wizard.js
  *
  * Uses the shared apiFetch client for auth and school scoping.
  */
