@@ -1,0 +1,11 @@
+﻿control_id,requirement,proof_location,status
+M003-001,User creation with role assignment grants scoped permission,backend/tests/test_user_management.py::TestModule003UserCreationRoleAssignment::test_user_creation_with_role_assignment_grants_scoped_permission,IMPLEMENTED
+M003-002,Role assignment does not bleed across tenants,backend/tests/test_user_management.py::TestModule003UserCreationRoleAssignment::test_role_assignment_does_not_bleed_across_tenants,IMPLEMENTED
+M003-003,Role transition removes old permission and adds new permission,backend/tests/test_user_management.py::TestModule003RoleTransitions::test_role_change_workflow_removes_old_permission_and_adds_new_permission,IMPLEMENTED
+M003-004,User can hold distinct roles in distinct tenants without cross-bleed,backend/tests/test_user_management.py::TestModule003RoleTransitions::test_user_can_hold_distinct_roles_in_distinct_tenants_without_cross_bleed,IMPLEMENTED
+M003-005,Deleted role can no longer act,backend/tests/test_user_management.py::TestModule003RoleDeactivation::test_deleted_role_can_no_longer_act,IMPLEMENTED
+M003-006,Bulk role assignment to cohort works,backend/tests/test_user_management.py::TestModule003BulkRoleOperations::test_bulk_role_assignment_to_user_cohort,IMPLEMENTED
+M003-007,Bulk assignment remains tenant scoped,backend/tests/test_user_management.py::TestModule003BulkRoleOperations::test_bulk_assignment_remains_tenant_scoped,IMPLEMENTED
+M003-008,Duplicate same-school same-role assignment is rejected,backend/tests/test_user_management.py::TestModule003RoleTenantUniqueness::test_duplicate_role_for_same_user_school_and_role_is_rejected,IMPLEMENTED
+M003-009,Same user can hold same role in different schools,backend/tests/test_user_management.py::TestModule003RoleTenantUniqueness::test_same_user_can_have_same_role_in_different_schools,IMPLEMENTED
+M003-010,Same user can hold different roles in the same school,backend/tests/test_user_management.py::TestModule003RoleTenantUniqueness::test_same_user_can_have_different_roles_in_same_school,IMPLEMENTED
