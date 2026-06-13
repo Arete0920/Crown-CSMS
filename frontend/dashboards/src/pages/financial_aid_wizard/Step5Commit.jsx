@@ -1,6 +1,6 @@
 import { useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
-import { commitAidSetup } from "../../api/financial_aid_wizard.js";
+import { commitAidSetup } from "../../api/aid_wizard.js";
 import "../../styles/crown-wizard.css";
 
 export default function Step5Commit({ context, setContext, goNext, goPrev, stepIndex, totalSteps, steps }) {

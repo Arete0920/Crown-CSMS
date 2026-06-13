@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.jsx";
-import { verifyAidSetup } from "../../api/financial_aid_wizard.js";
+import { verifyAidSetup } from "../../api/aid_wizard.js";
 import "../../styles/crown-wizard.css";
 
 export default function Step6Verify({ context, setContext, stepIndex, totalSteps, steps }) {
