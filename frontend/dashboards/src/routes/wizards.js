@@ -59,11 +59,11 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
   { path: '/course-catalog-setup', component: CourseCatalogWizard, name: 'Course Catalog Setup', apiPrefix: '/api/v1/course-catalog-wizard/sessions/', roles: ['admin', 'academics', 'director'] },
   { path: '/room-setup', component: RoomSetupWizard, name: 'Rooms Setup', apiPrefix: '/api/v1/room-setup-wizard/sessions/', roles: ['admin', 'director'] },
   { path: '/promotion-setup', component: PromotionWizard, name: 'Promotion Map Setup', apiPrefix: '/api/v1/promotion-wizard/sessions/', roles: ['admin', 'academics', 'director'] },
-  { path: '/student-import-setup', component: StudentImportWizard, name: 'Student Import', apiPrefix: '/api/v1/student-import-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'admin'] },
-  { path: '/guardian-household-setup', component: SetupWizardA, name: 'Guardian & Household Setup', apiPrefix: '/api/v1/guardian-household-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'admin'] },
-  { path: '/section-staffing-setup', component: SetupWizardC, name: 'Section Staffing', apiPrefix: '/api/v1/section-staffing-wizard/sessions/', roles: ['super_admin', 'school_admin', 'academics', 'admin'] },
-  { path: '/attendance-codes-setup', component: AttendanceSetupWizard, name: 'Attendance Codes Setup', apiPrefix: '/api/v1/attendance-codes-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'academics', 'admin'] },
-  { path: '/grade-weights-setup', component: CategoriesWizard, name: 'Grade Weights & Categories', apiPrefix: '/api/v1/grade-weights-wizard/sessions/', roles: ['super_admin', 'school_admin', 'academics', 'admin'] },
+  { path: '/student-import-setup', component: StudentImportWizard, name: 'Student Import', apiPrefix: '/api/v1/student-import-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'admin'], releaseState: 'ready' },
+  { path: '/guardian-household-setup', component: SetupWizardA, name: 'Guardian & Household Setup', apiPrefix: '/api/v1/guardian-household-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'admin'], releaseState: 'ready' },
+  { path: '/section-staffing-setup', component: SetupWizardC, name: 'Section Staffing', apiPrefix: '/api/v1/section-staffing-wizard/sessions/', roles: ['super_admin', 'school_admin', 'academics', 'admin'], releaseState: 'ready' },
+  { path: '/attendance-codes-setup', component: AttendanceSetupWizard, name: 'Attendance Codes Setup', apiPrefix: '/api/v1/attendance-codes-wizard/sessions/', roles: ['super_admin', 'school_admin', 'registrar', 'academics', 'admin'], releaseState: 'ready' },
+  { path: '/grade-weights-setup', component: CategoriesWizard, name: 'Grade Weights & Categories', apiPrefix: '/api/v1/grade-weights-wizard/sessions/', roles: ['super_admin', 'school_admin', 'academics', 'admin'], releaseState: 'ready' },
 ];
 
 function normalizeWizardRoute(route) {
