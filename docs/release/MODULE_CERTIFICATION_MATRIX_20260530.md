@@ -1,4 +1,4 @@
-﻿# Module Certification Matrix (2026-05-30)
+# Module Certification Matrix (2026-05-30)
 
 Purpose: certification coverage matrix for ModuleId 001-051 with explicit proof or not-proven status.
 
@@ -6,11 +6,11 @@ Purpose: certification coverage matrix for ModuleId 001-051 with explicit proof 
 | --- | --- | --- | --- |
 | 001 | PROVEN | audit-artifacts/module-completion/module-001-tenant-isolation/20260611_054419/04_module001_tenant_pytest.txt | domain-owner-tbd |
 | 002 | PROVEN | audit-artifacts/module-completion/module-002-authentication-authorization/20260611_174740/10_module002_auth_rbac_pytest.txt; audit-artifacts/module-completion/module-002-authentication-authorization/20260611_174740/12_module002_coverage_sufficiency.md | domain-owner-tbd |
-| 003 | NOT_PROVEN | none-captured | domain-owner-tbd |
+| 003 | PROVEN | backend/tests/test_user_management.py; backend/docs/USER_MANAGEMENT.md; audit-artifacts/module-completion/module-003-user-role-binding.csv; audit-artifacts/module-completion/module-003-user-management-roles/20260611_203413/07_module003_coverage_sufficiency.md; audit-artifacts/module-completion/current/08_module003_post_merge_proof_20260613.md | domain-owner-tbd |
 | 004 | PROVEN | backend/tests/test_51x51_evidence_04_audit_logging.py | domain-owner-tbd |
 | 005 | PROVEN | backend/tests/test_51x51_evidence_05_notifications_framework.py | domain-owner-tbd |
 | 006 | PROVEN | backend/tests/test_51x51_evidence_06_document___file_framework.py | domain-owner-tbd |
-| 007 | NOT_PROVEN | none-captured | domain-owner-tbd |
+| 007 | PROVEN | backend/tools/import_manager.py; backend/tests/test_data_import.py; backend/docs/DATA_IMPORT.md | domain-owner-tbd |
 | 008 | PROVEN | backend/tests/test_51x51_evidence_08_shared_frontend_shell.py | domain-owner-tbd |
 | 009 | PROVEN | backend/tests/test_51x51_evidence_09_shared_design_system.py | domain-owner-tbd |
 | 010 | NOT_PROVEN | none-captured | domain-owner-tbd |

@@ -1,21 +1,21 @@
 # Crown2026: Module Completion Scorecard (Reconciled)
 
 **Generated:** 2026-06-14  
-**Source:** Canonical repository matrices plus committed Module 003 and wizard flow evidence  
-**Authority:** Official 51-module matrix with 35 PROVEN, 16 NOT_PROVEN statuses; 28/28 wizard flow contracts validated  
-**Status:** Matrix reconciliation updated; Module 003 credited as PROVEN and wizard flow contracts credited from current source proof
+**Source:** Canonical repository matrices plus committed Module 003, Module 007, and wizard flow evidence  
+**Authority:** Official 51-module matrix with 36 PROVEN, 15 NOT_PROVEN statuses; 28/28 wizard flow contracts validated  
+**Status:** Matrix reconciliation updated; Module 007 credited as PROVEN from merged implementation and test evidence
 
 ---
 
 ## Executive Summary
 
-Crown2026 repository contains **51 canonical modules** with **35 PROVEN (69%)** and **16 NOT_PROVEN (31%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence and current wizard flow-contract evidence.
+Crown2026 repository contains **51 canonical modules** with **36 PROVEN (71%)** and **15 NOT_PROVEN (29%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence, merged Module 007 data-import evidence, and current wizard flow-contract evidence.
 
 All previous generated estimates based on partial module counts remain reset to canonical authority. No work should proceed from uncertified local matrices.
 
 **Key Findings:**
-- ✓ Infrastructure core (001-006, 008-009, 011-013, 015, 017, 020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051): **PROVEN** (35 modules, 69%)
-- ✗ Operational gaps (007, 010, 014, 016, 018-019, 021, 024-026, 030-031, 034, 037, 039, 050): **NOT_PROVEN** (16 modules, 31%)
+- Proven modules (36): 001-009, 011-013, 015, 017, 020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051.
+- Operational gaps (15): 010, 014, 016, 018-019, 021, 024-026, 030-031, 034, 037, 039, 050.
 
 ---
 
@@ -31,12 +31,12 @@ All previous generated estimates based on partial module counts remain reset to 
 | 004 | Audit Logging Framework | PROVEN | backend/tests/test_51x51_evidence_04_audit_logging.py | none |
 | 005 | Notifications Framework | PROVEN | backend/tests/test_51x51_evidence_05_notifications_framework.py | none |
 | 006 | Document & File Framework | PROVEN | backend/tests/test_51x51_evidence_06_document___file_framework.py | none |
-| 007 | Data Import & Migration | NOT_PROVEN | none-captured | migration validation and rollback tests required |
+| 007 | Data Import & Migration | PROVEN | backend/tools/import_manager.py; backend/tests/test_data_import.py; backend/docs/DATA_IMPORT.md | none |
 | 008 | Shared Frontend Shell | PROVEN | backend/tests/test_51x51_evidence_08_shared_frontend_shell.py | none |
 | 009 | Shared Design System | PROVEN | backend/tests/test_51x51_evidence_09_shared_design_system.py | none |
 | 010 | Error Handling & Monitoring | NOT_PROVEN | none-captured | error categorization and alerting rules required |
 
-**Completion Rate: 80% (8 of 10 PROVEN)**
+**Completion Rate: 90% (9 of 10 PROVEN)**
 
 ### Academic Core (Modules 011-023)
 
@@ -134,29 +134,28 @@ onboarding, reenrollment, billing-wizard, aid-wizard, scheduling-wizard, comms-w
 ### Wave 1: Core Infrastructure
 **Status:** COMPLETE
 
-Module 003 was reconciled to PROVEN from committed evidence. Remaining NOT_PROVEN work moves to Wave 2.
+Modules 002, 003, and 007 have been reconciled to PROVEN from committed evidence. Remaining NOT_PROVEN work continues with Module 010.
 
-### Wave 2: Academic Operations (7 modules)
+### Wave 2: Academic Operations (6 modules)
 **Unlocks dashboard live-data and remaining module certification work**
-1. Module 007: Data Import & Migration
-2. Module 010: Error Handling & Monitoring
-3. Module 014: Course & Section Management
-4. Module 016: Faculty Load & Scheduling
-5. Module 018: Classroom & Room Management
-6. Module 019: Assessment & Testing Framework
-7. Module 021: Competency Tracking
+1. Module 010: Error Handling & Monitoring
+2. Module 014: Course & Section Management
+3. Module 016: Faculty Load & Scheduling
+4. Module 018: Classroom & Room Management
+5. Module 019: Assessment & Testing Framework
+6. Module 021: Competency Tracking
 
 ### Wave 3: Student & Administrative Services (9 modules)
 **Post-academic stabilization**
-8. Module 024: Transportation & Routes
-9. Module 025: Nutrition & Food Services
-10. Module 026: After-School & Extended Care
-11. Module 030: Student Portal
-12. Module 031: Administrative Portal
-13. Module 034: Fundraising & Giving
-14. Module 037: Advanced Discipline Workflows
-15. Module 039: Christian Formation & Tracking
-16. Module 050: Business Intelligence Suite
+7. Module 024: Transportation & Routes
+8. Module 025: Nutrition & Food Services
+9. Module 026: After-School & Extended Care
+10. Module 030: Student Portal
+11. Module 031: Administrative Portal
+12. Module 034: Fundraising & Giving
+13. Module 037: Advanced Discipline Workflows
+14. Module 039: Christian Formation & Tracking
+15. Module 050: Business Intelligence Suite
 
 ---
 
@@ -164,10 +163,10 @@ Module 003 was reconciled to PROVEN from committed evidence. Remaining NOT_PROVE
 
 | Area | Total | PROVEN/VALIDATED | NOT_PROVEN/MAPPED | % Complete |
 | --- | ---: | ---: | ---: | ---: |
-| Modules | 51 | 35 | 16 | 69% |
+| Modules | 51 | 36 | 15 | 71% |
 | Dashboards | 40 | 0 | 40 | 0% |
 | Wizards | 28 | 28 | 0 | 100% |
-| **Aggregate** | **119** | **63** | **56** | **53%** |
+| **Aggregate** | **119** | **64** | **55** | **54%** |
 
 ---
 
@@ -176,14 +175,15 @@ Module 003 was reconciled to PROVEN from committed evidence. Remaining NOT_PROVE
 1. Runtime certification harness lane merged into main at c5dffc6fd7e26ea03002cc40a6c66537743f507e.
 2. Module 003 evidence exists and has been reconciled to PROVEN.
 3. Wizard flow-contract evidence exists and has been reconciled to 28/28 FLOW_CONTRACT_VALIDATED.
-4. **Next:** Begin Wave 2, Module 007 (Data Import & Migration) closure.
+4. Module 007 implementation and tests merged in PR #1009 and are reconciled here to PROVEN.
+5. **Next:** Begin Module 010 (Error Handling & Monitoring) closure.
 
 ---
 
 ## Success Criteria (Target Exit State)
 
-- ✓ All 51 modules: PROVEN (69% → 100%)
-- ✓ All 40 dashboards: LIVE (0% → 100%) or explicitly marked non-production-visible
-- ✓ All 28 wizards: FLOW_CONTRACT_VALIDATED (100% complete)
-- ✓ **Aggregate completion:** 53% → 100%
-- ✓ All required checks green on main
+- All 51 modules: PROVEN (71% -> 100%)
+- All 40 dashboards: LIVE (0% -> 100%) or explicitly marked non-production-visible
+- All 28 wizards: FLOW_CONTRACT_VALIDATED (100% complete)
+- Aggregate completion: 54% -> 100%
+- All required checks green on main

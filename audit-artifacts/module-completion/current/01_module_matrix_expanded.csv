@@ -1,11 +1,11 @@
 module_id,module_name,certification_status,evidence_file,current_proof,blocker_category,owner
 001,Tenant Isolation & Multi-Tenancy,PROVEN,audit-artifacts/module-completion/module-001-tenant-isolation/20260611_054419/04_module001_tenant_pytest.txt,64 tenant-isolation tests passed on 2026-06-11,none,domain-owner-tbd
-002,Authentication & Authorization,NOT_PROVEN,none-captured,requires RBAC matrix and test proof,auth-core,domain-owner-tbd
-003,User Management & Roles,NOT_PROVEN,none-captured,requires role binding tests,user-management,domain-owner-tbd
+002,Authentication & Authorization,PROVEN,audit-artifacts/module-completion/module-002-authentication-authorization/20260611_174740/10_module002_auth_rbac_pytest.txt; audit-artifacts/module-completion/module-002-authentication-authorization/20260611_174740/12_module002_coverage_sufficiency.md,RBAC matrix and auth coverage evidence captured,none,domain-owner-tbd
+003,User Management & Roles,PROVEN,backend/tests/test_user_management.py; backend/docs/USER_MANAGEMENT.md; audit-artifacts/module-completion/module-003-user-role-binding.csv; audit-artifacts/module-completion/module-003-user-management-roles/20260611_203413/07_module003_coverage_sufficiency.md; audit-artifacts/module-completion/current/08_module003_post_merge_proof_20260613.md,user-management and role-binding tests passed,none,domain-owner-tbd
 004,Audit Logging Framework,PROVEN,backend/tests/test_51x51_evidence_04_audit_logging.py,audit-trail validation present,none,domain-owner-tbd
 005,Notifications Framework,PROVEN,backend/tests/test_51x51_evidence_05_notifications_framework.py,notification delivery tests present,none,domain-owner-tbd
 006,Document & File Framework,PROVEN,backend/tests/test_51x51_evidence_06_document___file_framework.py,file storage and retrieval tests present,none,domain-owner-tbd
-007,Data Import & Migration,NOT_PROVEN,none-captured,requires migration validation and rollback tests,data-movement,domain-owner-tbd
+007,Data Import & Migration,PROVEN,backend/tools/import_manager.py; backend/tests/test_data_import.py; backend/docs/DATA_IMPORT.md,import validation duplicate prevention audit trail atomic rollback and rollback safety tests passed in PR #1009,none,domain-owner-tbd
 008,Shared Frontend Shell,PROVEN,backend/tests/test_51x51_evidence_08_shared_frontend_shell.py,shell routing and layout tests present,none,domain-owner-tbd
 009,Shared Design System,PROVEN,backend/tests/test_51x51_evidence_09_shared_design_system.py,component and theming tests present,none,domain-owner-tbd
 010,Error Handling & Monitoring,NOT_PROVEN,none-captured,requires error categorization and alerting rules,monitoring-core,domain-owner-tbd
