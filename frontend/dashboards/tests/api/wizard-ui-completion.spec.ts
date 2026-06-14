@@ -13,20 +13,30 @@ const lateWizardRoutes = [
   { path: "/grade-weights-setup", component: "CategoriesWizard" },
 ];
 
+function routeBlock(source: string, routePath: string): string {
+  const routeIndex = source.indexOf(`path: '${routePath}'`);
+  const nextRouteIndex = source.indexOf("{ path:", routeIndex + 1);
+  return source.slice(routeIndex, nextRouteIndex > routeIndex ? nextRouteIndex : source.length);
+}
+
 test.describe("Wizard UI completion contract", () => {
   test("late wizard routes use dedicated components, not WizardHub", () => {
     const source = fs.readFileSync(routeRegistryPath, "utf8");
 
     for (const route of lateWizardRoutes) {
-      expect(source).toContain(`path: '${route.path}'`);
-      expect(source).toContain(`component: ${route.component}`);
+      const block = routeBlock(source, route.path);
+      expect(block).toContain(`path: '${route.path}'`);
+      expect(block).toContain(`component: ${route.component}`);
+      expect(block).not.toContain("component: WizardHub");
     }
+  });
+
+  test("late wizard routes are marked ready after workflow implementation", () => {
+    const source = fs.readFileSync(routeRegistryPath, "utf8");
 
     for (const route of lateWizardRoutes) {
-      const routeIndex = source.indexOf(`path: '${route.path}'`);
-      const nextRouteIndex = source.indexOf("{ path:", routeIndex + 1);
-      const block = source.slice(routeIndex, nextRouteIndex > routeIndex ? nextRouteIndex : source.length);
-      expect(block).not.toContain("component: WizardHub");
+      const block = routeBlock(source, route.path);
+      expect(block).toContain("releaseState: 'ready'");
     }
   });
 
