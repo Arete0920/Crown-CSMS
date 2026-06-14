@@ -1,3 +1,15 @@
+## .github/workflows/accounting-verification.yml
+   3: on:
+   4:   workflow_dispatch:
+   5:   push:
+   6:     branches:
+   7:       - release/accounting-foundation-stage1
+   8:   pull_request:
+   9:     branches:
+  10:       - main
+  11:       - release/**
+  12: 
+
 ## .github/workflows/azure-drift-watchdog.yml
    3: on:
    4:   schedule:
@@ -76,19 +88,36 @@
    9:     branches: [main]
   10: 
 
+## .github/workflows/codeql.yml
+   3: on:
+   4:   push:
+   5:     branches: [ main ]
+   6:   pull_request:
+   7:     branches: [ main ]
+   8:   schedule:
+   9:     - cron: '0 3 * * 1'
+  10:   workflow_dispatch:
+  11: 
+
 ## .github/workflows/contract-gate.yml
    6: on:
    7:   pull_request:
-   8:   push:
-   9:     branches: [ "main" ]
-  10:     paths:
-  11:       - "backend/**"
-  12:       - "frontend/dashboards/src/**"
-  13:       - "frontend/dashboards/scripts/**"
-  14:       - "tools/verify_contract_gate.py"
-  15:       - "tools/strip_bom.py"
-  16:       - ".github/workflows/contract-gate.yml"
-  17: 
+   8:   workflow_dispatch:
+   9:   push:
+  10:     branches: [ "main" ]
+  11:     paths:
+  12:       - "backend/**"
+  13:       - "frontend/dashboards/src/**"
+  14:       - "frontend/dashboards/scripts/**"
+  15:       - "tools/verify_contract_gate.py"
+  16:       - "tools/verify_public_surface_policy.py"
+  17:       - "tools/strip_bom.py"
+  18:       - "docs/security/public_endpoint_policy_matrix.json"
+  19:       - "docs/security/csrf_exception_policy_matrix.json"
+  20:       - "docs/security/PUBLIC_ENDPOINT_POLICY_MATRIX.md"
+  21:       - "docs/security/CSRF_EXCEPTION_POLICY_MATRIX.md"
+  22:       - ".github/workflows/contract-gate.yml"
+  23: 
 
 ## .github/workflows/crown-magus0-gate.yml
   13: on:
@@ -98,16 +127,26 @@
   17:       - "frontend/dashboards/**"
   18:       - "tools/**"
   19:       - "requirements.txt"
-  20:       - ".github/workflows/crown-magus0-gate.yml"
-  21:   push:
-  22:     branches: ["main"]
-  23:   workflow_dispatch:
-  24:     inputs:
-  25:       full:
-  26:         description: "Run full audit (including pip-audit, slower checks)"
-  27:         type: boolean
-  28:         default: false
-  29: 
+  20:       - "backend/requirements-loadtest.txt"
+  21:       - ".github/workflows/crown-magus0-gate.yml"
+  22:   push:
+  23:     branches: ["main"]
+  24:   workflow_dispatch:
+  25:     inputs:
+  26:       full:
+  27:         description: "Run full audit (including pip-audit, slower checks)"
+  28:         type: boolean
+  29:         default: false
+  30: 
+
+## .github/workflows/crown-release-authority-gates.yml
+   8: on:
+   9:   pull_request:
+  10:     branches:
+  11:       - main
+  12:       - 'release/**'
+  13:   workflow_dispatch:
+  14: 
 
 ## .github/workflows/dashboards-build-gate.yml
    7: on:
@@ -163,18 +202,20 @@
    6:       - frontend/dashboards/package.json
    7:       - frontend/dashboards/package-lock.json
    8:       - backend/requirements.txt
-   9:       - requirements.txt
-  10:       - .github/workflows/dependency-integrity-gate.yml
-  11:   push:
-  12:     branches:
-  13:       - main
-  14:     paths:
-  15:       - frontend/dashboards/package.json
-  16:       - frontend/dashboards/package-lock.json
-  17:       - backend/requirements.txt
-  18:       - requirements.txt
-  19:       - .github/workflows/dependency-integrity-gate.yml
-  20: 
+   9:       - backend/requirements-loadtest.txt
+  10:       - requirements.txt
+  11:       - .github/workflows/dependency-integrity-gate.yml
+  12:   push:
+  13:     branches:
+  14:       - main
+  15:     paths:
+  16:       - frontend/dashboards/package.json
+  17:       - frontend/dashboards/package-lock.json
+  18:       - backend/requirements.txt
+  19:       - backend/requirements-loadtest.txt
+  20:       - requirements.txt
+  21:       - .github/workflows/dependency-integrity-gate.yml
+  22: 
 
 ## .github/workflows/dependency-review.yml
    3: on:
@@ -283,6 +324,21 @@
   19:   #   # optional: runs every hour (UTC). Comment out if you don't want scheduled smoke.
   20:   #   - cron: "0 * * * *"
   21: 
+
+## .github/workflows/false-completion-blocker.yml
+   3: on:
+   4:   workflow_dispatch:
+   5:   push:
+   6:     branches: [main]
+   7:     paths:
+   8:       - "scripts/execution/996_false_completion_blocker_gate.ps1"
+   9:       - "docs/CURRENT_RELEASE_STATUS.md"
+  10:       - "docs/release/final-95-plus-sprint/**"
+  11:       - "frontend/dashboards/src/config/dashboardTemplates/**"
+  12:       - "frontend/dashboards/src/routes/wizards.js"
+  13:       - "backend/crown_api/dashboards/**"
+  14:       - ".github/workflows/false-completion-blocker.yml"
+  15: 
 
 ## .github/workflows/frontend-bundle-budget.yml
    3: on:
@@ -416,6 +472,27 @@
    8:         required: true
    9:         type: string
   10: 
+
+## .github/workflows/p0-go-readiness.yml
+   3: on:
+   4:   workflow_dispatch:
+   5:     inputs:
+   6:       expected_sha:
+   7:         description: "Expected SHA to prove against; defaults to workflow SHA"
+   8:         required: false
+   9:         type: string
+  10:       run_azure_probe:
+  11:         description: "Run Azure P0 parity probe using configured Azure secrets"
+  12:         required: true
+  13:         default: true
+  14:         type: boolean
+  15:   push:
+  16:     branches: [main]
+  17:     paths:
+  18:       - "scripts/execution/997_azure_p0_current_parity_probe.ps1"
+  19:       - "scripts/execution/999_finish_right_4h_gauntlet.ps1"
+  20:       - ".github/workflows/p0-go-readiness.yml"
+  21: 
 
 ## .github/workflows/p0-phase1-integrity-gate.yml
    3: on:
@@ -661,6 +738,18 @@
    7:   workflow_dispatch:
    8: 
 
+## .github/workflows/route-exposure-guard.yml
+   3: on:
+   4:   workflow_dispatch:
+   5:   push:
+   6:     branches: [main]
+   7:     paths:
+   8:       - "scripts/execution/995_route_exposure_guard_gate.ps1"
+   9:       - "frontend/dashboards/src/routes/router.jsx"
+  10:       - "frontend/dashboards/src/routes/**"
+  11:       - ".github/workflows/route-exposure-guard.yml"
+  12: 
+
 ## .github/workflows/routes-gate.yml
    7: on:
    8:   pull_request:
@@ -672,6 +761,15 @@
   14:       - "tools/verify_routes_gate.ps1"
   15:       - ".github/workflows/routes-gate.yml"
   16: 
+
+## .github/workflows/sandbox-ready-evidence.yml
+   3: on:
+   4:   pull_request:
+   5:     branches: [ main ]
+   6:   push:
+   7:     branches: [ main ]
+   8:   workflow_dispatch:
+   9: 
 
 ## .github/workflows/sbom-generation.yml
    3: on:

@@ -1,11 +1,14 @@
+.github/workflows/accounting-verification.yml
 .github/workflows/azure-drift-watchdog.yml
 .github/workflows/backend-gate.yml
 .github/workflows/backend-shell-seeded-proof.yml
 .github/workflows/backend-shell-write-and-lifecycle-proof.yml
 .github/workflows/ci-meta-gate-authoring.yml
 .github/workflows/ci.yml
+.github/workflows/codeql.yml
 .github/workflows/contract-gate.yml
 .github/workflows/crown-magus0-gate.yml
+.github/workflows/crown-release-authority-gates.yml
 .github/workflows/dashboards-build-gate.yml
 .github/workflows/demo-contract-freeze.yml
 .github/workflows/demo-reset-smoke.yml
@@ -21,6 +24,7 @@
 .github/workflows/deploy-prod.yml
 .github/workflows/dev-smoke-azure-dev.yml
 .github/workflows/dev-smoke.yml
+.github/workflows/false-completion-blocker.yml
 .github/workflows/frontend-bundle-budget.yml
 .github/workflows/frontend-quality-gates.yml
 .github/workflows/frontend-shell-certification.yml
@@ -31,6 +35,7 @@
 .github/workflows/lockdown-golden-path-gate.yml
 .github/workflows/migration-lock-gate.yml
 .github/workflows/ops-reset-dev.yml
+.github/workflows/p0-go-readiness.yml
 .github/workflows/p0-phase1-integrity-gate.yml
 .github/workflows/phase1-gate.yml
 .github/workflows/phase3-demo-proof-pack.yml
@@ -52,7 +57,9 @@
 .github/workflows/rc-tier1-deployed-smoke.yml
 .github/workflows/release-scorecard.yml
 .github/workflows/release-verify.yml
+.github/workflows/route-exposure-guard.yml
 .github/workflows/routes-gate.yml
+.github/workflows/sandbox-ready-evidence.yml
 .github/workflows/sbom-generation.yml
 .github/workflows/schema-governance.yml
 .github/workflows/secret-scan.yml
