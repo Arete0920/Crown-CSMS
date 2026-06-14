@@ -54,13 +54,45 @@ REQUIRED_FILES = [
     "14_DEPLOY_PROD_RECENT.txt",
 ]
 
-BINARY_EXT_RE = re.compile(r"\.(png|jpg|jpeg|gif|pdf|zip|exe|dll|so|dylib|jar|bin)$", re.IGNORECASE)
+BINARY_EXT_RE = re.compile(
+    r"\.(png|jpg|jpeg|gif|pdf|zip|exe|dll|so|dylib|jar|bin)$", re.IGNORECASE
+)
 SECRET_PATTERNS = [
     ("AWS_ACCESS_KEY_ID", re.compile(r"AKIA[0-9A-Z]{16}")),
     # Split the literal to avoid false positives in repository secret scanners.
-    ("PRIVATE_KEY_BLOCK", re.compile(r"-----BEGIN (RSA|EC|DSA|OPENSSH|PGP) PRIVATE" + r" KEY-----")),
-    ("GENERIC_API_KEY", re.compile(r"(?i)(api[_-]?key|token|secret)\s*[:=]\s*['\"][A-Za-z0-9._-]{16,}['\"]")),
+    (
+        "PRIVATE_KEY_BLOCK",
+        re.compile(r"-----BEGIN (RSA|EC|DSA|OPENSSH|PGP) PRIVATE" + r" KEY-----"),
+    ),
+    (
+        "GENERIC_API_KEY",
+        re.compile(
+            r"(?i)(api[_-]?key|token|secret)\s*[:=]\s*['\"][A-Za-z0-9._-]{16,}['\"]"
+        ),
+    ),
 ]
+
+TEXT_SCAN_EXTENSIONS = {
+    ".py",
+    ".pyi",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".json",
+    ".yml",
+    ".yaml",
+    ".md",
+    ".txt",
+    ".ps1",
+    ".sh",
+    ".html",
+    ".css",
+    ".ini",
+    ".cfg",
+    ".toml",
+    ".env",
+}
 
 
 def run_cmd(args: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
@@ -160,12 +192,16 @@ def find_backend_urls() -> list[str]:
     if not backend.exists():
         return []
 
-    url_re = re.compile(r"['\"](/api/[^'\"]*|/health/?[^'\"]*|/[^'\"]*health[^'\"]*)['\"]")
+    url_re = re.compile(
+        r"['\"](/api/[^'\"]*|/health/?[^'\"]*|/[^'\"]*health[^'\"]*)['\"]"
+    )
     path_re = re.compile(r"\b(path|re_path)\s*\(\s*['\"]([^'\"]+)['\"]")
 
     for file_path in sorted(backend.rglob("*.py"), key=lambda p: p.as_posix()):
         rel = file_path.relative_to(ROOT).as_posix()
-        for idx, line in enumerate(file_path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
+        for idx, line in enumerate(
+            file_path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1
+        ):
             for m in url_re.finditer(line):
                 hits.add(f"{rel}:{idx} literal={m.group(1)}")
             pm = path_re.search(line)
@@ -181,7 +217,10 @@ def find_migrations() -> list[str]:
         if not base.exists():
             continue
         for p in sorted(base.rglob("*"), key=lambda x: x.as_posix()):
-            if p.is_file() and ("migrations" in p.parts or re.search(r"migration", p.name, re.IGNORECASE)):
+            if p.is_file() and (
+                "migrations" in p.parts
+                or re.search(r"migration", p.name, re.IGNORECASE)
+            ):
                 paths.add(p.relative_to(ROOT).as_posix())
     return sorted(paths)
 
@@ -205,9 +244,29 @@ def collect_python_deps() -> list[str]:
 
 def collect_node_deps() -> list[str]:
     out: list[str] = []
-    for pkg in sorted(ROOT.rglob("package.json"), key=lambda p: p.as_posix()):
-        if ".git" in pkg.parts or "node_modules" in pkg.parts:
+    tracked_rc, tracked_out, _ = run_cmd(["git", "ls-files"])
+    untracked_rc, untracked_out, _ = run_cmd(
+        ["git", "ls-files", "--others", "--exclude-standard"]
+    )
+
+    if tracked_rc != 0 and untracked_rc != 0:
+        return ["(failed to enumerate package.json files)"]
+
+    pkg_paths = []
+    for raw in (tracked_out + "\n" + untracked_out).splitlines():
+        item = raw.strip()
+        if not item or not item.endswith("package.json"):
             continue
+        pkg = (ROOT / item).resolve()
+        if any(
+            part
+            in {".git", "node_modules", ".venv", "venv", "dist", "build", "coverage"}
+            for part in pkg.parts
+        ):
+            continue
+        pkg_paths.append(pkg)
+
+    for pkg in sorted(set(pkg_paths), key=lambda p: p.as_posix()):
         rel = pkg.relative_to(ROOT).as_posix()
         try:
             data = json.loads(pkg.read_text(encoding="utf-8"))
@@ -217,7 +276,12 @@ def collect_node_deps() -> list[str]:
             continue
 
         out.append(f"[{rel}]")
-        for section in ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]:
+        for section in [
+            "dependencies",
+            "devDependencies",
+            "peerDependencies",
+            "optionalDependencies",
+        ]:
             deps = data.get(section) or {}
             if not deps:
                 continue
@@ -229,14 +293,53 @@ def collect_node_deps() -> list[str]:
     return out
 
 
+def candidate_scan_files() -> list[Path]:
+    tracked_rc, tracked_out, _ = run_cmd(["git", "ls-files"])
+    untracked_rc, untracked_out, _ = run_cmd(
+        ["git", "ls-files", "--others", "--exclude-standard"]
+    )
+
+    if tracked_rc != 0 and untracked_rc != 0:
+        return []
+
+    entries = []
+    for raw in (tracked_out + "\n" + untracked_out).splitlines():
+        item = raw.strip()
+        if not item:
+            continue
+        p = (ROOT / item).resolve()
+        parts = set(p.parts)
+        if any(
+            part
+            in {".git", "node_modules", ".venv", "venv", "dist", "build", "coverage"}
+            for part in p.parts
+        ):
+            continue
+        if "audit-artifacts" in parts:
+            continue
+        if {"docs", "release", "evidence"}.issubset(parts):
+            continue
+        if {
+            "solomon_governance_c1",
+            "governance",
+            "c1",
+            "runtime",
+            "audit_pack",
+        }.issubset(parts):
+            continue
+        if p.suffix.lower() not in TEXT_SCAN_EXTENSIONS:
+            continue
+        entries.append(p)
+
+    return sorted(set(entries), key=lambda x: x.as_posix())
+
+
 def scan_secret_metadata(excluded_roots: list[Path]) -> list[str]:
     findings: set[str] = set()
     excluded = [p.resolve() for p in excluded_roots if p.exists()]
 
-    for p in sorted(ROOT.rglob("*"), key=lambda x: x.as_posix()):
+    for p in candidate_scan_files():
         if not p.is_file():
-            continue
-        if any(part in {".git", "node_modules"} for part in p.parts):
             continue
         if BINARY_EXT_RE.search(p.name):
             continue
@@ -265,7 +368,11 @@ def write_required_files(pack_dir: Path) -> None:
     rc_status, status_out, _ = run_cmd(["git", "status", "--short", "--branch"])
 
     tracked_rc, tracked_out, tracked_err = run_cmd(["git", "ls-files"])
-    tracked_files = sorted([x for x in tracked_out.splitlines() if x.strip()]) if tracked_rc == 0 else []
+    tracked_files = (
+        sorted([x for x in tracked_out.splitlines() if x.strip()])
+        if tracked_rc == 0
+        else []
+    )
     workflows = list_workflow_files()
 
     overview_lines = [
@@ -289,88 +396,166 @@ def write_required_files(pack_dir: Path) -> None:
     write_text(pack_dir / "01_TREE.txt", "\n".join(tree_lines))
 
     wf_index = [p.relative_to(ROOT).as_posix() for p in workflows]
-    write_text(pack_dir / "02_WORKFLOWS_INDEX.txt", "\n".join(wf_index) if wf_index else "(no workflow files found)")
+    write_text(
+        pack_dir / "02_WORKFLOWS_INDEX.txt",
+        "\n".join(wf_index) if wf_index else "(no workflow files found)",
+    )
 
     trigger_blocks: list[str] = []
     for wf in workflows:
         trigger_blocks.append(f"## {wf.relative_to(ROOT).as_posix()}")
         trigger_blocks.append(parse_workflow_triggers(wf))
         trigger_blocks.append("")
-    trigger_text = "\n".join(trigger_blocks).rstrip() if trigger_blocks else "(no workflow trigger data)"
+    trigger_text = (
+        "\n".join(trigger_blocks).rstrip()
+        if trigger_blocks
+        else "(no workflow trigger data)"
+    )
     write_text(pack_dir / "03_WORKFLOWS_TRIGGERS.txt", trigger_text)
 
     if_entries: list[str] = []
     for wf in workflows:
         if_entries.extend(parse_workflow_job_ifs(wf))
-    write_text(pack_dir / "04_JOB_LEVEL_IF.txt", "\n".join(sorted(if_entries)) if if_entries else "(no job-level if conditions detected)")
+    write_text(
+        pack_dir / "04_JOB_LEVEL_IF.txt",
+        "\n".join(sorted(if_entries))
+        if if_entries
+        else "(no job-level if conditions detected)",
+    )
 
     ruleset_main = ROOT / RULESET_MAIN_NAME
     if ruleset_main.exists():
         try:
             data = json.loads(ruleset_main.read_text(encoding="utf-8"))
-            payload = {"source": RULESET_MAIN_NAME, "path": ruleset_main.relative_to(ROOT).as_posix(), "data": data}
+            payload = {
+                "source": RULESET_MAIN_NAME,
+                "path": ruleset_main.relative_to(ROOT).as_posix(),
+                "data": data,
+            }
         except Exception as exc:
-            payload = {"source": RULESET_MAIN_NAME, "path": ruleset_main.relative_to(ROOT).as_posix(), "error": str(exc)}
+            payload = {
+                "source": RULESET_MAIN_NAME,
+                "path": ruleset_main.relative_to(ROOT).as_posix(),
+                "error": str(exc),
+            }
     else:
-        payload = {"source": "unavailable", "error": f"{RULESET_MAIN_NAME} not found in repository"}
-    write_text(pack_dir / "05_BRANCH_PROTECTION_MAIN.json", json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False))
+        payload = {
+            "source": "unavailable",
+            "error": f"{RULESET_MAIN_NAME} not found in repository",
+        }
+    write_text(
+        pack_dir / "05_BRANCH_PROTECTION_MAIN.json",
+        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False),
+    )
 
     backend_urls = find_backend_urls()
-    write_text(pack_dir / "06_BACKEND_URLS.txt", "\n".join(backend_urls) if backend_urls else "(no backend URL or route patterns found)")
+    write_text(
+        pack_dir / "06_BACKEND_URLS.txt",
+        "\n".join(backend_urls)
+        if backend_urls
+        else "(no backend URL or route patterns found)",
+    )
 
     migrations = find_migrations()
-    write_text(pack_dir / "07_MIGRATIONS.txt", "\n".join(migrations) if migrations else "(no migration files found)")
+    write_text(
+        pack_dir / "07_MIGRATIONS.txt",
+        "\n".join(migrations) if migrations else "(no migration files found)",
+    )
 
     py_deps = collect_python_deps()
-    write_text(pack_dir / "08_PY_DEPS.txt", "\n".join(py_deps).rstrip() if py_deps else "(no requirements files found)")
+    write_text(
+        pack_dir / "08_PY_DEPS.txt",
+        "\n".join(py_deps).rstrip() if py_deps else "(no requirements files found)",
+    )
 
     node_deps = collect_node_deps()
-    write_text(pack_dir / "09_NODE_DEPS.txt", "\n".join(node_deps).rstrip() if node_deps else "(no package.json files found)")
+    write_text(
+        pack_dir / "09_NODE_DEPS.txt",
+        "\n".join(node_deps).rstrip() if node_deps else "(no package.json files found)",
+    )
 
-    secret_findings = scan_secret_metadata(excluded_roots=[CANONICAL_PACK, RUNTIME_PACK_ROOT])
+    secret_findings = scan_secret_metadata(
+        excluded_roots=[CANONICAL_PACK, RUNTIME_PACK_ROOT]
+    )
     secret_lines = ["Metadata only; secret values are never emitted."]
-    secret_lines.extend(secret_findings if secret_findings else ["(no findings detected by local metadata scan)"])
+    secret_lines.extend(
+        secret_findings
+        if secret_findings
+        else ["(no findings detected by local metadata scan)"]
+    )
     write_text(pack_dir / "10_SECRET_SCAN_FINDINGS.txt", "\n".join(secret_lines))
 
     tracked_binaries = [p for p in tracked_files if BINARY_EXT_RE.search(p)]
-    write_text(pack_dir / "11_TRACKED_BINARIES.txt", "\n".join(tracked_binaries) if tracked_binaries else "(no tracked binary-like files)")
+    write_text(
+        pack_dir / "11_TRACKED_BINARIES.txt",
+        "\n".join(tracked_binaries)
+        if tracked_binaries
+        else "(no tracked binary-like files)",
+    )
 
-    rc_untracked, untracked_out, _ = run_cmd(["git", "ls-files", "--others", "--exclude-standard"])
-    untracked_lines = sorted([x for x in untracked_out.splitlines() if x.strip()]) if rc_untracked == 0 else ["(failed to enumerate untracked files)"]
-    write_text(pack_dir / "12_UNTRACKED_ARTIFACTS.txt", "\n".join(untracked_lines) if untracked_lines else "(no untracked files)")
+    rc_untracked, untracked_out, _ = run_cmd(
+        ["git", "ls-files", "--others", "--exclude-standard"]
+    )
+    untracked_lines = (
+        sorted([x for x in untracked_out.splitlines() if x.strip()])
+        if rc_untracked == 0
+        else ["(failed to enumerate untracked files)"]
+    )
+    write_text(
+        pack_dir / "12_UNTRACKED_ARTIFACTS.txt",
+        "\n".join(untracked_lines) if untracked_lines else "(no untracked files)",
+    )
 
-    health_patterns = re.compile(r"health|/health|healthz|readiness|liveness", re.IGNORECASE)
+    health_patterns = re.compile(
+        r"health|/health|healthz|readiness|liveness", re.IGNORECASE
+    )
     health_hits: list[str] = []
-    for base in [ROOT / "solomon_governance_c1", ROOT / "backend", ROOT / "docs"]:
-        if not base.exists():
+    for p in candidate_scan_files():
+        if not p.is_file():
             continue
-        for p in sorted(base.rglob("*"), key=lambda x: x.as_posix()):
-            if not p.is_file():
-                continue
-            if any(part in {".git", "node_modules"} for part in p.parts):
-                continue
-            if BINARY_EXT_RE.search(p.name):
-                continue
-            resolved = p.resolve()
-            if str(resolved).startswith(str(CANONICAL_PACK.resolve())):
-                continue
-            if str(resolved).startswith(str(RUNTIME_PACK_ROOT.resolve())):
-                continue
-            text = p.read_text(encoding="utf-8", errors="ignore")
-            for idx, line in enumerate(text.splitlines(), start=1):
-                if health_patterns.search(line):
-                    health_hits.append(f"{p.relative_to(ROOT).as_posix()}:{idx}: {line.strip()}")
+        if BINARY_EXT_RE.search(p.name):
+            continue
+        resolved = p.resolve()
+        if str(resolved).startswith(str(CANONICAL_PACK.resolve())):
+            continue
+        if str(resolved).startswith(str(RUNTIME_PACK_ROOT.resolve())):
+            continue
+        text = p.read_text(encoding="utf-8", errors="ignore")
+        for idx, line in enumerate(text.splitlines(), start=1):
+            if health_patterns.search(line):
+                health_hits.append(
+                    f"{p.relative_to(ROOT).as_posix()}:{idx}: {line.strip()}"
+                )
     if not health_hits:
         health_hits = ["(no health/readiness/liveness references found)"]
     write_text(pack_dir / "13_HEALTH_PROBE.txt", "\n".join(health_hits))
 
-    deploy_names = ["deploy-prod", "deploy_prod", "prod-health-watch", "prod-integrity-proof", "proof-ceremony-prod"]
-    deploy_files = [p for p in workflows if any(name in p.name for name in deploy_names)]
+    deploy_names = [
+        "deploy-prod",
+        "deploy_prod",
+        "prod-health-watch",
+        "prod-integrity-proof",
+        "proof-ceremony-prod",
+    ]
+    deploy_files = [
+        p for p in workflows if any(name in p.name for name in deploy_names)
+    ]
     recent_blocks: list[str] = []
     for p in deploy_files:
         rel = p.relative_to(ROOT).as_posix()
         recent_blocks.append(f"## {rel}")
-        rc_log, out_log, _ = run_cmd(["git", "log", "-n", "5", "--pretty=format:%h %ad %an %s", "--date=iso", "--", rel])
+        rc_log, out_log, _ = run_cmd(
+            [
+                "git",
+                "log",
+                "-n",
+                "5",
+                "--pretty=format:%h %ad %an %s",
+                "--date=iso",
+                "--",
+                rel,
+            ]
+        )
         if rc_log == 0 and out_log.strip():
             recent_blocks.append(out_log.strip())
         else:
@@ -378,11 +563,15 @@ def write_required_files(pack_dir: Path) -> None:
         recent_blocks.append("")
     if not recent_blocks:
         recent_blocks = ["(no deploy-prod workflow files discovered)"]
-    write_text(pack_dir / "14_DEPLOY_PROD_RECENT.txt", "\n".join(recent_blocks).rstrip())
+    write_text(
+        pack_dir / "14_DEPLOY_PROD_RECENT.txt", "\n".join(recent_blocks).rstrip()
+    )
 
 
 def write_bundle_manifest(bundle_dir: Path, bundle_id: str) -> None:
-    file_hashes = {name: sha256_file(bundle_dir / name) for name in sorted(REQUIRED_FILES)}
+    file_hashes = {
+        name: sha256_file(bundle_dir / name) for name in sorted(REQUIRED_FILES)
+    }
 
     rc_branch, branch_out, _ = run_cmd(["git", "branch", "--show-current"])
     rc_head, head_out, _ = run_cmd(["git", "rev-parse", "HEAD"])
@@ -396,7 +585,10 @@ def write_bundle_manifest(bundle_dir: Path, bundle_id: str) -> None:
         "required_files": sorted(REQUIRED_FILES),
         "file_sha256": file_hashes,
     }
-    write_text(bundle_dir / MANIFEST_NAME, json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False))
+    write_text(
+        bundle_dir / MANIFEST_NAME,
+        json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False),
+    )
 
 
 def validate_bundle(bundle_dir: Path) -> list[str]:
@@ -434,7 +626,9 @@ def generate_runtime_bundle(bundle_id: str | None, force: bool) -> int:
     print(f"bundle_id={resolved_bundle_id}")
     print(f"bundle_path={bundle_dir.as_posix()}")
     print("promote_command=")
-    print(f"  python {SOL.as_posix()}/generate_audit_pack.py promote --bundle {bundle_dir.as_posix()}")
+    print(
+        f"  python {SOL.as_posix()}/generate_audit_pack.py promote --bundle {bundle_dir.as_posix()}"
+    )
     return 0
 
 
@@ -469,16 +663,28 @@ def promote_bundle(bundle: Path, force: bool) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Generate and promote deterministic audit evidence bundles")
+    parser = argparse.ArgumentParser(
+        description="Generate and promote deterministic audit evidence bundles"
+    )
     sub = parser.add_subparsers(dest="command", required=False)
 
     gen = sub.add_parser("generate", help="Generate runtime audit bundle")
-    gen.add_argument("--bundle-id", default=None, help="Optional deterministic bundle id")
-    gen.add_argument("--force", action="store_true", help="Overwrite existing runtime bundle path")
+    gen.add_argument(
+        "--bundle-id", default=None, help="Optional deterministic bundle id"
+    )
+    gen.add_argument(
+        "--force", action="store_true", help="Overwrite existing runtime bundle path"
+    )
 
-    promote = sub.add_parser("promote", help="Promote runtime bundle to canonical AUDIT_PACK")
-    promote.add_argument("--bundle", required=True, help="Path to runtime bundle directory")
-    promote.add_argument("--force", action="store_true", help="Overwrite existing canonical AUDIT_PACK")
+    promote = sub.add_parser(
+        "promote", help="Promote runtime bundle to canonical AUDIT_PACK"
+    )
+    promote.add_argument(
+        "--bundle", required=True, help="Path to runtime bundle directory"
+    )
+    promote.add_argument(
+        "--force", action="store_true", help="Overwrite existing canonical AUDIT_PACK"
+    )
 
     return parser
 
@@ -495,7 +701,9 @@ def main() -> int:
             force=getattr(args, "force", False),
         )
     if command == "promote":
-        return promote_bundle(bundle=Path(args.bundle), force=getattr(args, "force", False))
+        return promote_bundle(
+            bundle=Path(args.bundle), force=getattr(args, "force", False)
+        )
 
     print(f"FAILED: unknown command {command}")
     return 1
