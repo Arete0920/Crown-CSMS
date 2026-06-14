@@ -1,8 +1,9 @@
 from __future__ import annotations
+from uuid import UUID
 
 from core.audit_mixins import AuditMutationMixin
-from django.db.models import Count, Q
-from django.http import Http404
+from django.db.models import Count, Q, QuerySet
+from django.http import Http404, HttpRequest
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
@@ -82,7 +83,7 @@ def _parse_pagination(request) -> tuple[int, int]:
     return limit, offset
 
 
-def _role_codes(user, school_id) -> set[str]:
+def _role_codes(user, school_id: UUID) -> set[str]:
     if not user or not getattr(user, "is_authenticated", False):
         return set()
     user_id = getattr(user, "id", None)
@@ -114,7 +115,7 @@ def _guardian_household_ids_for_user(user, school_id) -> set:
     )
 
 
-def _sections_for_access(request, school_id):
+def _sections_for_access(request: HttpRequest, school_id) -> QuerySet:
     user = getattr(request, "user", None)
     roles = _role_codes(user, school_id)
 
@@ -209,6 +210,7 @@ class AcademicYearViewSet(PaginatedReadOnlyViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request, required=True)
+        assert school_id is not None
         user = getattr(self.request, "user", None)
         roles = _role_codes(user, school_id)
 
@@ -260,6 +262,7 @@ class SchoolProfileView(APIView):
 
     def patch(self, request):
         school_id = get_request_school_id(request, required=True)
+        assert school_id is not None
         user = getattr(request, "user", None)
         roles = _role_codes(user, school_id)
         if not (
@@ -281,6 +284,7 @@ class TermViewSet(PaginatedReadOnlyViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request, required=True)
+        assert school_id is not None
         user = getattr(self.request, "user", None)
         roles = _role_codes(user, school_id)
 
@@ -308,6 +312,7 @@ class CourseViewSet(PaginatedReadOnlyViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request, required=True)
+        assert school_id is not None
         user = getattr(self.request, "user", None)
         roles = _role_codes(user, school_id)
 
@@ -358,6 +363,7 @@ class SectionViewSet(PaginatedReadOnlyViewSet):
 
     def get_queryset(self):
         school_id = get_request_school_id(self.request, required=True)
+        assert school_id is not None
         user = getattr(self.request, "user", None)
         roles = _role_codes(user, school_id)
 
@@ -494,6 +500,7 @@ def student_sections(request, student_id):
 @permission_classes([IsAuthenticated])
 def parent_students(request):
     school_id = get_request_school_id(request, required=True)
+    assert school_id is not None
     user = getattr(request, "user", None)
     roles = _role_codes(user, school_id)
 
