@@ -83,7 +83,9 @@ def _parse_pagination(request) -> tuple[int, int]:
     return limit, offset
 
 
-def _role_codes(user, school_id: UUID) -> set[str]:
+def _role_codes(user, school_id: UUID | None) -> set[str]:
+    if school_id is None:
+        return set()
     if not user or not getattr(user, "is_authenticated", False):
         return set()
     user_id = getattr(user, "id", None)
