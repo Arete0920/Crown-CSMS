@@ -46,7 +46,11 @@ import StaffSetupWizard from '../pages/StaffSetupWizard.jsx';
 import CourseCatalogWizard from '../pages/CourseCatalogWizard.jsx';
 import RoomSetupWizard from '../pages/RoomSetupWizard.jsx';
 import PromotionWizard from '../pages/PromotionWizard.jsx';
-import WizardHub from '../pages/WizardHub.jsx';
+import StudentImportWizard from '../pages/StudentImportWizard.jsx';
+import SetupWizardA from '../pages/SetupWizardA.jsx';
+import SectionStaffingWizard from '../pages/SectionStaffingWizard.jsx';
+import AttendanceSetupWizard from '../pages/AttendanceSetupWizard.jsx';
+import CategoriesWizard from '../pages/CategoriesWizard.jsx';
 
 const readyReadiness = () => ({
   shellReady: true,
@@ -227,35 +231,35 @@ const RAW_WIZARD_ROUTE_DEFINITIONS = [
   },
   {
     path: '/student-import-setup',
-    component: WizardHub,
+    component: StudentImportWizard,
     name: 'Student Import',
     apiPrefix: '/api/v1/student-import-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
   },
   {
     path: '/guardian-household-setup',
-    component: WizardHub,
+    component: SetupWizardA,
     name: 'Guardian & Household Setup',
     apiPrefix: '/api/v1/guardian-household-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'admin'],
   },
   {
     path: '/section-staffing-setup',
-    component: WizardHub,
+    component: SectionStaffingWizard,
     name: 'Section Staffing',
     apiPrefix: '/api/v1/section-staffing-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'academics', 'admin'],
   },
   {
     path: '/attendance-codes-setup',
-    component: WizardHub,
+    component: AttendanceSetupWizard,
     name: 'Attendance Codes Setup',
     apiPrefix: '/api/v1/attendance-codes-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'registrar', 'academics', 'admin'],
   },
   {
     path: '/grade-weights-setup',
-    component: WizardHub,
+    component: CategoriesWizard,
     name: 'Grade Weights & Categories',
     apiPrefix: '/api/v1/grade-weights-wizard/sessions/',
     roles: ['super_admin', 'school_admin', 'academics', 'admin'],
