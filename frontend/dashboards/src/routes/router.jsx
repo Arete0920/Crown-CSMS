@@ -481,11 +481,19 @@ export const router = createBrowserRouter([
   // Keep these as literal strings in router.jsx for static gate checks.
   {
     path: '/parent/communications',
-    element: <Navigate to="/communications-dashboard" replace />,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <Navigate to="/communications-dashboard" replace />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/parent/schedule',
-    element: <Navigate to="/scheduling-dashboard" replace />,
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <Navigate to="/scheduling-dashboard" replace />
+      </RoleRouteGuard>
+    ),
   },
   ...dashboardRoutes,
   {
@@ -669,15 +677,27 @@ export const router = createBrowserRouter([
   },
   {
     path: '/school-admin-dashboard',
-    element: <SchoolAdministratorDashboard />,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>
+        <SchoolAdministratorDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/school-admin',
-    element: <SchoolAdministratorDashboard />,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>
+        <SchoolAdministratorDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: '/school-administrator',
-    element: <SchoolAdministratorDashboard />,
+    element: (
+      <RoleRouteGuard allowedRoles={ROLE_GROUPS.ADMIN_ONLY}>
+        <SchoolAdministratorDashboard />
+      </RoleRouteGuard>
+    ),
   },
   {
     path: PATHS.BOARD,
