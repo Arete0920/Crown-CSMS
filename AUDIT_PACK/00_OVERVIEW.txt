@@ -1,26 +1,14 @@
 Crown2026 Deterministic Audit Pack
-root=/workspaces/Crown2026
-git_branch=solomon/start
-git_head=ab41b8aa710e84a8ebcab3528f944c9e632d877a
+root=C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr
+git_branch=main
+git_head=e8c08078526de2ff546d599a7d63661a6dc69034
 git_status_rc=0
 
 git_status_short_branch:
-## solomon/start...origin/solomon/start
- M solomon_governance_c1/governance/c1/certification/CYCLE1_BASELINE_STATE.json
- M solomon_governance_c1/governance/c1/certification/CYCLE2_REPLAY_STATE.json
- M solomon_governance_c1/governance/c1/certification/CYCLE3_REBUILD_STATE.json
- M solomon_governance_c1/governance/c1/registers/evidence_register.csv
- M solomon_governance_c1/governance/c1/registers/human_approval_queue.csv
- M solomon_governance_c1/governance/c1/registers/review_queue.csv
- M solomon_governance_c1/governance/c1/registers/risk_exceptions.csv
- M solomon_governance_c1/governance/c1/registers/source_candidates.csv
- M solomon_governance_c1/governance/c1/review_packets/C1_REVIEW_PACKET.md
- M solomon_governance_c1/governance/c1/simulation/chunk_boundary_manifest.csv
- M solomon_governance_c1/governance/c1/simulation/ingestion_simulation_manifest.csv
- M solomon_governance_c1/governance/c1/simulation/provenance_inheritance_manifest.csv
- M solomon_governance_c1/governance/c1/simulation/quarantine_propagation_manifest.csv
-?? solomon_governance_c1/generate_audit_pack.py
-?? solomon_governance_c1/governance/c1/reports/C1_CORPUS_DRIFT_REVIEW.json
+## main...origin/main
+ M solomon_governance_c1/generate_audit_pack.py
+?? audit-pack-generate.err.txt
+?? audit-pack-generate.out.txt
 
-workflow_count=71
-tracked_file_count=6311
+workflow_count=78
+tracked_file_count=7354
