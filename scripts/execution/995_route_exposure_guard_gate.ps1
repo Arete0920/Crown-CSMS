@@ -34,7 +34,7 @@ function Add-Finding {
 function Get-RouteBlock {
     param([string]$Route)
     $escaped = [regex]::Escape($Route)
-    $pattern = "path:\s*['\"]$escaped['\"][\s\S]{0,900}?\n\s*},"
+    $pattern = ('path:\s*[''\"]{0}[''\"][\s\S]{{0,900}}?\n\s*}},' -f $escaped)
     $match = [regex]::Match($router, $pattern)
     if ($match.Success) { return $match.Value }
     return ""
