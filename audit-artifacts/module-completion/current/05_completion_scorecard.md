@@ -1,15 +1,15 @@
 # Crown2026: Module Completion Scorecard (Reconciled)
 
 **Generated:** 2026-06-14  
-**Source:** Canonical repository matrices plus committed Module 003 evidence  
-**Authority:** Official 51-module matrix with 35 PROVEN, 16 NOT_PROVEN statuses  
-**Status:** Matrix reconciliation updated; Module 003 credited as PROVEN from committed evidence
+**Source:** Canonical repository matrices plus committed Module 003 and wizard flow evidence  
+**Authority:** Official 51-module matrix with 35 PROVEN, 16 NOT_PROVEN statuses; 28/28 wizard flow contracts validated  
+**Status:** Matrix reconciliation updated; Module 003 credited as PROVEN and wizard flow contracts credited from current source proof
 
 ---
 
 ## Executive Summary
 
-Crown2026 repository contains **51 canonical modules** with **35 PROVEN (69%)** and **16 NOT_PROVEN (31%)** statuses. This scorecard reflects the authoritative certification matrix plus the committed Module 003 evidence packet and establishes the closure path for the remaining NOT_PROVEN modules.
+Crown2026 repository contains **51 canonical modules** with **35 PROVEN (69%)** and **16 NOT_PROVEN (31%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence and current wizard flow-contract evidence.
 
 All previous generated estimates based on partial module counts remain reset to canonical authority. No work should proceed from uncertified local matrices.
 
@@ -119,16 +119,13 @@ attendance, billing, financial-aid, registrar, scheduling, gradebook, student-ca
 
 **Total Wizards:** 28 (from WIZARD_CERTIFICATION_MATRIX_20260530.md)  
 **Status Distribution:**
-- 15 wizards: **FLOW_CONTRACT_VALIDATED** (step flow contracts verified)
-- 13 wizards: **MAPPED** (route registered but step flow not validated)
+- 28 wizards: **FLOW_CONTRACT_VALIDATED** (step flow contracts verified)
+- 0 wizards: **MAPPED** only
 
-**FLOW_CONTRACT_VALIDATED Wizards (15):**
-billing-wizard, aid-wizard, scheduling-wizard, comms-wizard, section-assign-wizard, bell-schedule-wizard, gradebook-setup-wizard, attendance-rules-wizard, enrollment-conversion-wizard, invoice-run-wizard, student-import-wizard, guardian-household-wizard, section-staffing-wizard, attendance-codes-wizard, grade-weights-wizard
+**FLOW_CONTRACT_VALIDATED Wizards (28):**
+onboarding, reenrollment, billing-wizard, aid-wizard, scheduling-wizard, comms-wizard, section-assign-wizard, bell-schedule-wizard, gradebook-setup-wizard, attendance-rules-wizard, enrollment-conversion-wizard, invoice-run-wizard, staff-onboarding-wizard, fee-schedule-wizard, academic-year-wizard, enrollment-period-wizard, grade-scale-wizard, term-structure-wizard, section-scheduler-wizard, staff-setup-wizard, course-catalog-wizard, room-setup-wizard, promotion-wizard, student-import-wizard, guardian-household-wizard, section-staffing-wizard, attendance-codes-wizard, grade-weights-wizard
 
-**MAPPED Wizards (13):**
-onboarding, reenrollment, staff-onboarding-wizard, fee-schedule-wizard, academic-year-wizard, enrollment-period-wizard, grade-scale-wizard, term-structure-wizard, section-scheduler-wizard, staff-setup-wizard, course-catalog-wizard, room-setup-wizard, promotion-wizard
-
-**Completion Rate:** 54% (15 of 28 with step flow validation)
+**Completion Rate:** 100% (28 of 28 with step flow validation)
 
 ---
 
@@ -140,7 +137,7 @@ onboarding, reenrollment, staff-onboarding-wizard, fee-schedule-wizard, academic
 Module 003 was reconciled to PROVEN from committed evidence. Remaining NOT_PROVEN work moves to Wave 2.
 
 ### Wave 2: Academic Operations (7 modules)
-**Unlocks wizard and dashboard wiring**
+**Unlocks dashboard live-data and remaining module certification work**
 1. Module 007: Data Import & Migration
 2. Module 010: Error Handling & Monitoring
 3. Module 014: Course & Section Management
@@ -169,8 +166,8 @@ Module 003 was reconciled to PROVEN from committed evidence. Remaining NOT_PROVE
 | --- | ---: | ---: | ---: | ---: |
 | Modules | 51 | 35 | 16 | 69% |
 | Dashboards | 40 | 0 | 40 | 0% |
-| Wizards | 28 | 15 | 13 | 54% |
-| **Aggregate** | **119** | **50** | **69** | **42%** |
+| Wizards | 28 | 28 | 0 | 100% |
+| **Aggregate** | **119** | **63** | **56** | **53%** |
 
 ---
 
@@ -178,7 +175,8 @@ Module 003 was reconciled to PROVEN from committed evidence. Remaining NOT_PROVE
 
 1. Runtime certification harness lane merged into main at c5dffc6fd7e26ea03002cc40a6c66537743f507e.
 2. Module 003 evidence exists and has been reconciled to PROVEN.
-3. **Next:** Begin Wave 2, Module 007 (Data Import & Migration) closure.
+3. Wizard flow-contract evidence exists and has been reconciled to 28/28 FLOW_CONTRACT_VALIDATED.
+4. **Next:** Begin Wave 2, Module 007 (Data Import & Migration) closure.
 
 ---
 
@@ -186,6 +184,6 @@ Module 003 was reconciled to PROVEN from committed evidence. Remaining NOT_PROVE
 
 - ✓ All 51 modules: PROVEN (69% → 100%)
 - ✓ All 40 dashboards: LIVE (0% → 100%) or explicitly marked non-production-visible
-- ✓ All 28 wizards: FLOW_CONTRACT_VALIDATED (54% → 100%) or explicitly marked non-production-visible
-- ✓ **Aggregate completion:** 42% → 100%
+- ✓ All 28 wizards: FLOW_CONTRACT_VALIDATED (100% complete)
+- ✓ **Aggregate completion:** 53% → 100%
 - ✓ All required checks green on main
