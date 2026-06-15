@@ -3,6 +3,13 @@ import { PATHS } from './paths';
 import { useCurrentUserRole } from '../hooks/useCurrentUserRole';
 import { isRoleAllowed } from './roleGuardRules';
 
+/**
+ * UX-only route guard.
+ *
+ * This component prevents obvious navigation mistakes in the browser, but it is
+ * not an authorization boundary. Protected backend API endpoints must enforce
+ * tenant, role, and permission checks server-side.
+ */
 export default function RoleGuard({ allowedRoles = [], children }) {
   const role = useCurrentUserRole();
   const location = useLocation();

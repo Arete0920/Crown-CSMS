@@ -28,6 +28,12 @@ export async function ensureDemoAutoLogin({
   const autoLogin = import.meta.env.VITE_DEMO_AUTO_LOGIN === "1";
   if (!isDemoMode || !autoLogin) return false;
 
+  if (!username || !password || !schoolId) {
+    throw new Error(
+      "Demo auto-login requires explicit VITE_DEMO_USER, VITE_DEMO_PASS, and VITE_DEMO_SCHOOL_ID",
+    );
+  }
+
   const existing = sessionStorage.getItem(tokenKey);
   if (existing && existing.length > 20) return false; // already logged in
 

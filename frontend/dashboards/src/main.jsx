@@ -14,7 +14,13 @@ import AuthProvider from './auth/AuthProvider.jsx';
 import AppErrorBoundary from './components/system/AppErrorBoundary.jsx';
 import StartupGuard from './components/system/StartupGuard.jsx';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root');
+
+if (!rootElement) {
+  throw new Error('CROWN dashboard boot failed: missing #root element');
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <ThemeProvider theme={crownTheme}>
       <CssBaseline enableColorScheme />
