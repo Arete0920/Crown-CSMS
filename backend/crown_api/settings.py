@@ -264,6 +264,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    "core.observability.middleware.RequestCorrelationMiddleware",
     'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
     'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard -- after auth so user.school_id is available for header-less fallback
