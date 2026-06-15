@@ -20,9 +20,9 @@ export function AutoLoginGate({ children }) {
 
         const did = await ensureDemoAutoLogin({
           apiBase,
-          username: import.meta.env.VITE_DEMO_USER || "head@crown-demo.local",
-          password: import.meta.env.VITE_DEMO_PASS || "demo1234",
-          schoolId: import.meta.env.VITE_DEMO_SCHOOL_ID || "b45b8c5a-6708-4597-aad9-a226627b2962",
+          username: import.meta.env.VITE_DEMO_USER,
+          password: import.meta.env.VITE_DEMO_PASS,
+          schoolId: import.meta.env.VITE_DEMO_SCHOOL_ID,
           tokenKey: TOKEN_KEY,
           schoolKey: SCHOOL_KEY,
           role: import.meta.env.VITE_DEMO_ROLE || "school_admin",
