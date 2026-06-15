@@ -4,6 +4,8 @@ Purpose: explicit inventory of wizard surfaces and certification state.
 
 Authority note: this matrix is aligned to current source proof. `frontend/dashboards/src/routes/wizard-manifest.js` inventories 28 wizard slugs, `backend/crown_api/wizard_registry.py` registers matching backend wizard routes, and `frontend/dashboards/src/tests/wizardFlowContracts.test.js` validates `_wizard.js` API flow adapters for create session, step mutation, session continuity, commit, and verify contracts.
 
+Scope limitation: `FLOW_CONTRACT_VALIDATED` means route/API adapter contract validation only. It does not certify full end-to-end functional wizard completion, production readiness, visual QA, role-by-role runtime walkthroughs, or independent governance approval. Full wizard functional-flow closure requires reproduced evidence and independent review before release signoff.
+
 | wizard_slug | certification_status | evidence | owner |
 | --- | --- | --- | --- |
 | onboarding | FLOW_CONTRACT_VALIDATED | frontend/dashboards/src/api/onboarding_wizard.js; frontend/dashboards/src/tests/wizardFlowContracts.test.js | wizard-owner-tbd |
