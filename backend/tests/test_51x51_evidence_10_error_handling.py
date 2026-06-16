@@ -18,8 +18,7 @@ import json
 import logging
 import uuid
 
-from django.test import TestCase, RequestFactory, override_settings
-from unittest.mock import patch, MagicMock
+from django.test import TestCase, RequestFactory
 
 from core.observability.middleware import RequestCorrelationMiddleware
 
