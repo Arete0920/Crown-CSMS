@@ -1,23 +1,23 @@
 # Crown2026: Module Completion Scorecard (Reconciled)
 
 **Generated:** 2026-06-16  
-**Source:** Canonical repository matrices plus committed Module 003, Module 007, Module 010, Module 014, wizard contract evidence, Module 018 room-management proof evidence, and Module 019 assessment-framework proof evidence  
-**Authority:** Official 51-module matrix with 40 PROVEN, 11 NOT_PROVEN statuses; 28/28 wizard route/API contracts validated<br>
-**Status:** Matrix reconciliation updated; Modules 018 and 019 credited as PROVEN from branch-committed proof evidence
+**Source:** Canonical repository matrices plus committed Module 003, Module 007, Module 010, Module 014, wizard contract evidence, Module 016 faculty-load proof evidence, Module 018 room-management proof evidence, and Module 019 assessment-framework proof evidence  
+**Authority:** Official 51-module matrix with 41 PROVEN, 10 NOT_PROVEN statuses; 28/28 wizard route/API contracts validated<br>
+**Status:** Matrix reconciliation updated; Modules 016, 018, and 019 credited as PROVEN from branch-committed proof evidence
 
 ---
 
 ## Executive Summary
 
-Crown2026 repository contains **51 canonical modules** with **40 PROVEN (78%)** and **11 NOT_PROVEN (22%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence, merged Module 007 data-import evidence, reconciled Module 010 proof evidence, Module 014 course/section proof evidence, current wizard route/API contract evidence, Module 018 room-management proof evidence, and Module 019 assessment-framework proof evidence.
+Crown2026 repository contains **51 canonical modules** with **41 PROVEN (80%)** and **10 NOT_PROVEN (20%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence, merged Module 007 data-import evidence, reconciled Module 010 proof evidence, Module 014 course/section proof evidence, current wizard route/API contract evidence, Module 016 faculty-load proof evidence, Module 018 room-management proof evidence, and Module 019 assessment-framework proof evidence.
 
 All previous generated estimates based on partial module counts remain reset to canonical authority. No work should proceed from uncertified local matrices.
 
 **Key Findings:**
-- Proven modules (40): 001-015, 017-020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051.
-- Operational gaps (11): 016, 021, 024-026, 030-031, 034, 037, 039, 050.
+- Proven modules (41): 001-020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051.
+- Operational gaps (10): 021, 024-026, 030-031, 034, 037, 039, 050.
 
-**Scope Boundary Note:** Module 010, Module 014, Module 018, and Module 019 proof do not certify dashboard live-data readiness, full wizard runtime completion, production readiness, independent review, or release approval.
+**Scope Boundary Note:** Module 010, Module 014, Module 016, Module 018, and Module 019 proof do not certify dashboard live-data readiness, full wizard runtime completion, production readiness, independent review, or release approval.
 
 ---
 
@@ -49,7 +49,7 @@ All previous generated estimates based on partial module counts remain reset to 
 | 013 | Student Master Record | PROVEN | backend/tests/test_51x51_evidence_13_student_master_record.py | none |
 | 014 | Course & Section Management | PROVEN | backend/tests/test_51x51_evidence_14_course_section.py; backend/academics/tests/test_sections_api.py; backend/academics/tests/test_sections_teacher_guard.py; backend/crown_api/tests/test_scheduling_api.py | none |
 | 015 | Staff & Faculty | PROVEN | backend/tests/test_51x51_evidence_15_staff___faculty.py | none |
-| 016 | Faculty Load & Scheduling | NOT_PROVEN | none-captured | load calculation and conflict resolution tests required |
+| 016 | Faculty Load & Scheduling | PROVEN | backend/academics/faculty_load.py; backend/tests/test_51x51_evidence_16_faculty_load.py | none |
 | 017 | Grade Levels & Progression | PROVEN | backend/tests/test_51x51_evidence_17_grade_levels.py | none |
 | 018 | Classroom & Room Management | PROVEN | backend/academics/room_management.py; backend/tests/test_51x51_evidence_18_room_management.py | none |
 | 019 | Assessment & Testing Framework | PROVEN | backend/academics/assessment_framework.py; backend/tests/test_51x51_evidence_19_assessment_framework.py | none |
@@ -58,7 +58,7 @@ All previous generated estimates based on partial module counts remain reset to 
 | 022 | Student Care & Discipline | PROVEN | backend/tests/test_51x51_evidence_22_student_care___discipline_summary.py | none |
 | 023 | Emergency & Medical Essentials | PROVEN | backend/tests/test_51x51_evidence_23_emergency___medical_essentials.py | none |
 
-**Completion Rate: 85% (11 of 13 PROVEN)**
+**Completion Rate: 92% (12 of 13 PROVEN)**
 
 ### Operations & Services (Modules 024-040)
 
@@ -134,22 +134,21 @@ All previous generated estimates based on partial module counts remain reset to 
 
 Modules 002, 003, 007, and 010 have been reconciled to PROVEN from committed evidence.
 
-### Wave 2: Core Closure (2 modules remaining after this branch)
+### Wave 2: Core Closure (1 module remaining after this branch)
 **Unlocks dashboard live-data and remaining module certification work**
-1. Module 016: Faculty Load & Scheduling
-2. Module 021: Competency Tracking
+1. Module 021: Competency Tracking
 
 ### Wave 3: Student & Administrative Services (9 modules)
 **Post-academic stabilization**
-3. Module 024: Transportation & Routes
-4. Module 025: Nutrition & Food Services
-5. Module 026: After-School & Extended Care
-6. Module 030: Student Portal
-7. Module 031: Administrative Portal
-8. Module 034: Fundraising & Giving
-9. Module 037: Advanced Discipline Workflows
-10. Module 039: Christian Formation & Tracking
-11. Module 050: Business Intelligence Suite
+2. Module 024: Transportation & Routes
+3. Module 025: Nutrition & Food Services
+4. Module 026: After-School & Extended Care
+5. Module 030: Student Portal
+6. Module 031: Administrative Portal
+7. Module 034: Fundraising & Giving
+8. Module 037: Advanced Discipline Workflows
+9. Module 039: Christian Formation & Tracking
+10. Module 050: Business Intelligence Suite
 
 ---
 
@@ -157,10 +156,10 @@ Modules 002, 003, 007, and 010 have been reconciled to PROVEN from committed evi
 
 | Area | Total | PROVEN/VALIDATED | NOT_PROVEN/MAPPED | % Complete |
 | --- | ---: | ---: | ---: | ---: |
-| Modules | 51 | 40 | 11 | 78% |
+| Modules | 51 | 41 | 10 | 80% |
 | Dashboards | 40 | 0 | 40 | 0% |
 | Wizards | 28 | 28 | 0 | 100% route/API contract coverage |
-| **Aggregate** | **119** | **68** | **51** | **57%** |
+| **Aggregate** | **119** | **69** | **50** | **58%** |
 
 ---
 
@@ -172,9 +171,10 @@ Modules 002, 003, 007, and 010 have been reconciled to PROVEN from committed evi
 4. Module 007 implementation and tests merged in PR #1009 and are reconciled here to PROVEN.
 5. Module 010 reconciled to PROVEN from committed backend evidence in `backend/tests/test_51x51_evidence_10_error_handling.py` and `backend/tests/test_wizard_contract.py`.
 6. Module 014 reconciled to PROVEN from committed backend evidence in `backend/tests/test_51x51_evidence_14_course_section.py` and supporting section/scheduling tests.
-7. Module 018 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/room_management.py` and `backend/tests/test_51x51_evidence_18_room_management.py`.
-8. Module 019 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/assessment_framework.py` and `backend/tests/test_51x51_evidence_19_assessment_framework.py`.
-9. **Next:** Continue closure with Module 016 and Module 021.
-10. Production remains NO-GO.
+7. Module 016 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/faculty_load.py` and `backend/tests/test_51x51_evidence_16_faculty_load.py`.
+8. Module 018 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/room_management.py` and `backend/tests/test_51x51_evidence_18_room_management.py`.
+9. Module 019 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/assessment_framework.py` and `backend/tests/test_51x51_evidence_19_assessment_framework.py`.
+10. **Next:** Continue closure with Module 021.
+11. Production remains NO-GO.
 
 ---
