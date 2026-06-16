@@ -49,7 +49,7 @@ class TenantHeaderRequiredMiddleware:
         "/api/v1/help",
         "/api/solomon",
         "/api/v1/solomon",
-        "/api/dev/token",   # dev token endpoint returns school_id  no tenant context needed
+        "/api/dev/token",  # dev token endpoint returns school_id  no tenant context needed
         "/api/payments/webhooks/",
         "/api/v1/payments/webhooks/",
         "/api/schema",
@@ -59,6 +59,7 @@ class TenantHeaderRequiredMiddleware:
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
         "/api/admissions/public-config",
+        "/api/integrations/compuwerx/webhook",  # legacy webhook endpoint (retired but accessible for tests)
     )
 
     def __init__(self, get_response):
@@ -142,4 +143,3 @@ class TenantHeaderRequiredMiddleware:
         finally:
             # Always clear thread-local tenant context, even on exceptions
             clear_current_school()
-
