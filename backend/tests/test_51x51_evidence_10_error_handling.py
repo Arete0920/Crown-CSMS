@@ -176,9 +176,6 @@ class TestModule010MiddlewareCorrelationIdGeneration(TestCase):
             "Each request without an incoming correlation ID must generate a unique one.",
         )
 
-    def test_correlation_id_is_valid_uuid_or_non_empty_string(self):
+    def test_correlation_id_is_valid_uuid(self):
         cid = self._get_cid()
-        try:
-            uuid.UUID(cid)
-        except ValueError:
-            self.assertTrue(len(cid) > 0, "Correlation ID must be non-empty.")
+        uuid.UUID(cid)  # raises ValueError if invalid
