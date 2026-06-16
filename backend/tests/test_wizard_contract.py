@@ -27,6 +27,8 @@ User = get_user_model()
 # ---------------------------------------------------------------------------
 WIZARD_ENDPOINTS = [
     # (description, base_url)
+    # Wizard #1 — Admissions Intake uses /imports/ not /sessions/ (CSV-based intake flow)
+    ("admissions_intake",            "/api/v1/onboarding/imports/"),
     ("reenrollment",    "/api/v1/reenrollment/sessions/"),
     ("billing",         "/api/v1/billing-wizard/sessions/"),
     ("financial_aid",   "/api/v1/aid-wizard/sessions/"),
