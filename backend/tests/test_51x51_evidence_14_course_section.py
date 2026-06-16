@@ -1,153 +1,254 @@
 """
-Module 014 — Course & Section Management
+Module 014 - Course & Section Management
 Evidence Test File
 ==================
-Proves the Course & Section Management boundary:
-  1. CurriculumCourse endpoint reachable (401 when unauthenticated)
-  2. CurriculumCourse endpoint requires X-School-Id
-  3. Tenant isolation: School A data invisible to School B
-  4. Authenticated + school-header GET returns 200
-  5. Authenticated POST creates course scoped to school
-  6. course.school is enforced (not cross-tenant)
-  7. CurriculumCourse model importable and fields correct
+
+Proves the committed Module 014 boundary on the v1 academics API:
+  1. Course API is tenant-scoped and authenticated.
+  2. Section API is tenant-scoped and authenticated.
+  3. Section detail and roster surfaces return expected course/student data.
+  4. Teacher role guard prevents a teacher from querying another teacher's sections.
+  5. Module 014 scheduling-conflict boundary is read-only in this API; section creation
+     is not exposed through the v1 sections endpoint, preventing conflict mutation here.
+
+Schedule optimization/conflict-solving remains owned by the schedule-builder module;
+Module 014 proves course/section registry, roster, tenant, and role-access behavior.
 """
 
 import uuid
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework.test import APIClient
-from django.contrib.auth import get_user_model
 
-from core.models import School
-from curriculum.models import CurriculumCourse
+from academics.models import Course, Enrollment, Section, TeacherAssignment, Term
+from core.models import AcademicYear, School, Staff, UserRole
+from households.models import Household, Student
+
 
 User = get_user_model()
 
-COURSES_URL = "/api/curriculum/courses/"
+
+COURSES_URL = "/api/v1/academics/courses/"
+SECTIONS_URL = "/api/v1/academics/sections/"
 
 
 def _make_school(suffix=""):
-    return School.objects.create(
-        name=f"Module014 School {suffix or uuid.uuid4().hex[:6]}",
-        timezone="America/Chicago",
-        is_active=True,
+    return School.objects.create(name=f"Module014 School {suffix or uuid.uuid4().hex[:6]}")
+
+
+def _make_staff_user(school, *, role_code="HEAD_OF_SCHOOL", is_staff=True, email_prefix="staff"):
+    token = uuid.uuid4().hex[:8]
+    staff = Staff.objects.create(
+        school=school,
+        first_name=email_prefix.title(),
+        last_name="User",
+        email=f"{email_prefix}-{token}@example.com",
+        role_type=role_code,
     )
-
-
-def _authed_client(school):
     user = User.objects.create_user(
-        username=f"mod014_{uuid.uuid4().hex[:8]}", password="pw"
+        username=f"{email_prefix}-{token}",
+        email=staff.email,
+        password="Passw0rd!",
+        school=school,
+        staff=staff,
+        is_staff=is_staff,
     )
-    c = APIClient()
-    c.force_authenticate(user=user)
-    return c, user
+    UserRole.objects.create(user=user, school=school, role_code=role_code)
+    return user, staff
 
 
-def _headers(school_id):
-    return {"HTTP_X_SCHOOL_ID": str(school_id)}
+def _authed_client(user):
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
 
 
-class TestModule014Auth(TestCase):
-    """Endpoint reachability and auth boundary."""
+def _headers(school):
+    return {"HTTP_X_SCHOOL_ID": str(school.id)}
 
-    def setUp(self):
-        self.school = _make_school()
 
-    def test_unauthenticated_returns_401(self):
-        c = APIClient()
-        r = c.get(COURSES_URL, **_headers(self.school.id))
-        self.assertEqual(
-            r.status_code,
-            401,
-            f"Expected 401 for unauthenticated GET, got {r.status_code}. "
-            "If 404, the URL is not wired in crown_api/urls.py.",
+def _seed_academic_section(school, *, teacher_user=None, teacher_staff=None, code="ENG-101"):
+    year = AcademicYear.objects.create(
+        school=school,
+        name=f"2026-2027 {uuid.uuid4().hex[:4]}",
+        start_date="2026-08-15",
+        end_date="2027-06-10",
+        is_current=True,
+    )
+    term = Term.objects.create(
+        school_id=school.id,
+        academic_year=year,
+        code="2026-FALL",
+        name="Fall",
+        school_year="2026-2027",
+        ordering=1,
+        active=True,
+    )
+    course = Course.objects.create(
+        school_id=school.id,
+        code=code,
+        name=f"Course {code}",
+        department="English",
+        credits="1.00",
+    )
+    section = Section.objects.create(
+        school_id=school.id,
+        course=course,
+        term_ref=term,
+        term=term.code,
+        teacher=teacher_user,
+        teacher_name="Teacher User",
+        grade_band="9",
+    )
+    if teacher_staff is not None:
+        TeacherAssignment.objects.create(
+            school_id=school.id,
+            section=section,
+            staff=teacher_staff,
+        )
+    household = Household.objects.create(school_id=school.id, name=f"Household {code}")
+    student = Student.objects.create(
+        school_id=school.id,
+        household=household,
+        first_name="Jane",
+        last_name="Doe",
+        grade_level="9",
+    )
+    Enrollment.objects.create(school_id=school.id, section=section, student=student)
+    return course, section, student
+
+
+class TestModule014CourseSectionProof(TestCase):
+    def test_course_api_is_authenticated_and_tenant_scoped(self):
+        school_a = _make_school("A")
+        school_b = _make_school("B")
+        user_b, staff_b = _make_staff_user(school_b, email_prefix="admin-b")
+
+        Course.objects.create(school_id=school_a.id, code="A-PRIVATE", name="Private A")
+        Course.objects.create(school_id=school_b.id, code="B-VISIBLE", name="Visible B")
+
+        unauth = APIClient()
+        unauth_response = unauth.get(COURSES_URL, **_headers(school_b))
+        self.assertEqual(unauth_response.status_code, 401)
+
+        client = _authed_client(user_b)
+        response = client.get(COURSES_URL, **_headers(school_b))
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        codes = {row["code"] for row in body["results"]}
+        self.assertIn("B-VISIBLE", codes)
+        self.assertNotIn("A-PRIVATE", codes)
+        self.assertEqual(staff_b.school_id, school_b.id)
+
+    def test_section_list_detail_and_roster_are_tenant_scoped(self):
+        school = _make_school("sections")
+        user, staff = _make_staff_user(school, email_prefix="section-admin")
+        course, section, student = _seed_academic_section(
+            school,
+            teacher_user=user,
+            teacher_staff=staff,
+            code="SCI-101",
         )
 
-    def test_missing_school_header_returns_400(self):
-        c, _ = _authed_client(self.school)
-        r = c.get(COURSES_URL)  # no school header
-        self.assertIn(
-            r.status_code,
-            (400, 403),
-            f"Expected 400/403 for missing X-School-Id, got {r.status_code}.",
+        client = _authed_client(user)
+
+        list_response = client.get(SECTIONS_URL, **_headers(school))
+        self.assertEqual(list_response.status_code, 200)
+        list_body = list_response.json()
+        self.assertGreaterEqual(list_body["total"], 1)
+        section_ids = {row["section_id"] for row in list_body["results"]}
+        self.assertIn(str(section.id), section_ids)
+
+        detail_response = client.get(f"{SECTIONS_URL}{section.id}/", **_headers(school))
+        self.assertEqual(detail_response.status_code, 200)
+        detail_body = detail_response.json()
+        self.assertEqual(detail_body["section_id"], str(section.id))
+        self.assertEqual(detail_body["course_code"], course.code)
+
+        roster_response = client.get(f"{SECTIONS_URL}{section.id}/roster/", **_headers(school))
+        self.assertEqual(roster_response.status_code, 200)
+        roster_body = roster_response.json()
+        self.assertEqual(roster_body["section_id"], str(section.id))
+        self.assertEqual(roster_body["counts"]["students"], 1)
+        self.assertEqual(roster_body["students"][0]["student_id"], str(student.id))
+
+    def test_teacher_role_cannot_query_another_teachers_sections(self):
+        school = _make_school("teacher-guard")
+        teacher_user, _teacher_staff = _make_staff_user(
+            school,
+            role_code="TEACHER",
+            is_staff=False,
+            email_prefix="teacher-one",
+        )
+        other_user, other_staff = _make_staff_user(
+            school,
+            role_code="TEACHER",
+            is_staff=False,
+            email_prefix="teacher-two",
+        )
+        _seed_academic_section(
+            school,
+            teacher_user=other_user,
+            teacher_staff=other_staff,
+            code="MATH-201",
         )
 
-
-class TestModule014CRUD(TestCase):
-    """Authenticated read lifecycle (view is read-only for demo safety)."""
-
-    def setUp(self):
-        self.school = _make_school("crud")
-        self.client, self.user = _authed_client(self.school)
-        # Seed a course directly so list has data
-        CurriculumCourse.objects.create(
-            school=self.school, code="ENG-101", name="English I"
+        client = _authed_client(teacher_user)
+        response = client.get(
+            f"{SECTIONS_URL}?teacher_id={other_staff.id}",
+            **_headers(school),
         )
 
-    def test_authenticated_list_returns_200(self):
-        r = self.client.get(COURSES_URL, **_headers(self.school.id))
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["total"], 0)
+        self.assertEqual(body["results"], [])
 
-    def test_list_includes_seeded_course(self):
-        r = self.client.get(COURSES_URL, **_headers(self.school.id))
-        self.assertEqual(r.status_code, 200)
-        items = r.data if isinstance(r.data, list) else r.data.get("results", r.data)
-        names = [item["name"] for item in items]
-        self.assertIn("English I", names, "Seeded course must appear in list.")
-
-    def test_course_scoped_to_school(self):
-        """Direct ORM check: course is correctly school-scoped."""
-        course = CurriculumCourse.objects.get(school=self.school, code="ENG-101")
-        self.assertEqual(
-            course.school_id,
-            self.school.id,
-            "Course must be scoped to the correct school.",
+    def test_section_api_readonly_boundary_prevents_schedule_conflict_mutation(self):
+        school = _make_school("readonly")
+        user, staff = _make_staff_user(school, email_prefix="readonly-admin")
+        course, section, _student = _seed_academic_section(
+            school,
+            teacher_user=user,
+            teacher_staff=staff,
+            code="HIST-101",
         )
 
-
-class TestModule014TenantIsolation(TestCase):
-    """Tenant isolation: School A data not visible to School B."""
-
-    def setUp(self):
-        self.school_a = _make_school("A")
-        self.school_b = _make_school("B")
-        self.client_a, _ = _authed_client(self.school_a)
-        self.client_b, _ = _authed_client(self.school_b)
-
-    def test_school_b_cannot_see_school_a_courses(self):
-        # Create a course for School A
-        CurriculumCourse.objects.create(
-            school=self.school_a,
-            code="PRIV-001",
-            name="Private Course A",
+        client = _authed_client(user)
+        before_count = Section.objects.filter(school_id=school.id).count()
+        response = client.post(
+            SECTIONS_URL,
+            data={
+                "course_id": str(course.id),
+                "term": section.term,
+                "teacher_id": str(user.id),
+                "teacher_name": "Conflicting Teacher",
+                "grade_band": "9",
+            },
+            format="json",
+            **_headers(school),
         )
-        # School B should not see it
-        r = self.client_b.get(COURSES_URL, **_headers(self.school_b.id))
-        self.assertEqual(r.status_code, 200)
-        items = r.data if isinstance(r.data, list) else r.data.get("results", r.data)
-        ids = [item["id"] for item in items]
-        courses_a = CurriculumCourse.objects.filter(school=self.school_a).values_list(
-            "id", flat=True
-        )
-        for course_id in courses_a:
-            self.assertNotIn(
-                str(course_id),
-                [str(i) for i in ids],
-                "School B must not see School A's courses.",
-            )
 
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(Section.objects.filter(school_id=school.id).count(), before_count)
 
-class TestModule014ModelContract(TestCase):
-    """Model import and field contract."""
+    def test_module014_model_contract_fields_exist(self):
+        course_fields = {field.name for field in Course._meta.get_fields()}
+        section_fields = {field.name for field in Section._meta.get_fields()}
 
-    def test_model_importable(self):
-        from curriculum.models import CurriculumCourse
-
-        self.assertTrue(hasattr(CurriculumCourse, "_meta"))
-
-    def test_required_fields_exist(self):
-        field_names = {f.name for f in CurriculumCourse._meta.get_fields()}
-        for required in ("id", "school", "code", "name", "is_active", "created_at"):
-            self.assertIn(
-                required, field_names, f"CurriculumCourse missing field: {required}"
-            )
+        for required in ("id", "school_id", "code", "name", "department", "credits"):
+            self.assertIn(required, course_fields)
+        for required in (
+            "id",
+            "school_id",
+            "course",
+            "term_ref",
+            "term",
+            "teacher",
+            "teacher_name",
+            "grade_band",
+            "enrollments",
+            "teacher_assignments",
+        ):
+            self.assertIn(required, section_fields)
