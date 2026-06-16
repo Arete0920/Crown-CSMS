@@ -17,7 +17,7 @@ module_id,module_name,certification_status,evidence_file,current_proof,blocker_c
 016,Faculty Load & Scheduling,NOT_PROVEN,none-captured,requires load calculation and conflict resolution tests,academic-scheduling,domain-owner-tbd
 017,Grade Levels & Progression,PROVEN,backend/tests/test_51x51_evidence_17_grade_levels.py,grade progression logic tests present,none,domain-owner-tbd
 018,Classroom & Room Management,PROVEN,backend/academics/room_management.py; backend/tests/test_51x51_evidence_18_room_management.py,room capacity validation missing/inactive-room handling tenant scoping and room time conflict tests present,none,domain-owner-tbd
-019,Assessment & Testing Framework,NOT_PROVEN,none-captured,requires assessment design and scoring tests,academics-assessment,domain-owner-tbd
+019,Assessment & Testing Framework,PROVEN,backend/academics/assessment_framework.py; backend/tests/test_51x51_evidence_19_assessment_framework.py,assessment design validation tenant-scoped violations deterministic scoring and aggregate reporting tests present,none,domain-owner-tbd
 020,Grades & Report Cards,PROVEN,backend/tests/test_51x51_evidence_20_grades___report_cards.py,grade submission and transcript tests present (PR#964),none,domain-owner-tbd
 021,Competency Tracking,NOT_PROVEN,none-captured,requires mastery rubric and evidence collection tests,academics-assessment,domain-owner-tbd
 022,Student Care & Discipline,PROVEN,backend/tests/test_51x51_evidence_22_student_care___discipline_summary.py,discipline event logging and incident tracking tests present,none,domain-owner-tbd
