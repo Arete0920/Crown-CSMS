@@ -1,23 +1,23 @@
 # Crown2026: Module Completion Scorecard (Reconciled)
 
 **Generated:** 2026-06-14  
-**Source:** Canonical repository matrices plus committed Module 003, Module 007, and wizard contract evidence  
-**Authority:** Official 51-module matrix with 37 PROVEN, 14 NOT_PROVEN statuses; 28/28 wizard route/API contracts validated<br>
-**Status:** Matrix reconciliation updated; Module 007 credited as PROVEN from merged implementation and test evidence
+**Source:** Canonical repository matrices plus committed Module 003, Module 007, Module 010, Module 014, and wizard contract evidence  
+**Authority:** Official 51-module matrix with 38 PROVEN, 13 NOT_PROVEN statuses; 28/28 wizard route/API contracts validated<br>
+**Status:** Matrix reconciliation updated; Modules 007, 010, and 014 credited as PROVEN from merged or branch-committed implementation and test evidence
 
 ---
 
 ## Executive Summary
 
-Crown2026 repository contains **51 canonical modules** with **37 PROVEN (73%)** and **14 NOT_PROVEN (27%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence, merged Module 007 data-import evidence, reconciled Module 010 proof evidence, and current wizard route/API contract evidence.
+Crown2026 repository contains **51 canonical modules** with **38 PROVEN (75%)** and **13 NOT_PROVEN (25%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence, merged Module 007 data-import evidence, reconciled Module 010 proof evidence, Module 014 course/section proof evidence, and current wizard route/API contract evidence.
 
 All previous generated estimates based on partial module counts remain reset to canonical authority. No work should proceed from uncertified local matrices.
 
 **Key Findings:**
-- Proven modules (37): 001-010, 011-013, 015, 017, 020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051.
-- Operational gaps (14): 014, 016, 018-019, 021, 024-026, 030-031, 034, 037, 039, 050.
+- Proven modules (38): 001-015, 017, 020, 022-023, 027-029, 032-033, 035-036, 038, 040-049, 051.
+- Operational gaps (13): 016, 018-019, 021, 024-026, 030-031, 034, 037, 039, 050.
 
-**Scope Boundary Note:** Module 010 proof does not certify dashboard live-data readiness, full wizard runtime completion, production readiness, independent review, or release approval.
+**Scope Boundary Note:** Module 010 and Module 014 proof do not certify dashboard live-data readiness, full wizard runtime completion, production readiness, independent review, or release approval.
 
 ---
 
@@ -47,7 +47,7 @@ All previous generated estimates based on partial module counts remain reset to 
 | 011 | School Profile | PROVEN | backend/tests/test_51x51_evidence_11_school_profile.py | none |
 | 012 | School Year & Term Structure | PROVEN | backend/tests/test_51x51_evidence_12_school_year___term.py | none |
 | 013 | Student Master Record | PROVEN | backend/tests/test_51x51_evidence_13_student_master_record.py | none |
-| 014 | Course & Section Management | NOT_PROVEN | none-captured | section authorization and schedule conflict tests required |
+| 014 | Course & Section Management | PROVEN | backend/tests/test_51x51_evidence_14_course_section.py; backend/academics/tests/test_sections_api.py; backend/academics/tests/test_sections_teacher_guard.py; backend/crown_api/tests/test_scheduling_api.py | none |
 | 015 | Staff & Faculty | PROVEN | backend/tests/test_51x51_evidence_15_staff___faculty.py | none |
 | 016 | Faculty Load & Scheduling | NOT_PROVEN | none-captured | load calculation and conflict resolution tests required |
 | 017 | Grade Levels & Progression | PROVEN | backend/tests/test_51x51_evidence_17_grade_levels.py | none |
@@ -58,7 +58,7 @@ All previous generated estimates based on partial module counts remain reset to 
 | 022 | Student Care & Discipline | PROVEN | backend/tests/test_51x51_evidence_22_student_care___discipline_summary.py | none |
 | 023 | Emergency & Medical Essentials | PROVEN | backend/tests/test_51x51_evidence_23_emergency___medical_essentials.py | none |
 
-**Completion Rate: 69% (9 of 13 PROVEN)**
+**Completion Rate: 77% (10 of 13 PROVEN)**
 
 ### Operations & Services (Modules 024-040)
 
@@ -138,27 +138,26 @@ onboarding, reenrollment, billing-wizard, aid-wizard, scheduling-wizard, comms-w
 ### Wave 1: Core Infrastructure
 **Status:** COMPLETE
 
-Modules 002, 003, 007, and 010 have been reconciled to PROVEN from committed evidence. Remaining NOT_PROVEN work continues with Module 014.
+Modules 002, 003, 007, and 010 have been reconciled to PROVEN from committed evidence.
 
-### Wave 2: Core Closure (5 modules)
+### Wave 2: Core Closure (4 modules)
 **Unlocks dashboard live-data and remaining module certification work**
-1. Module 014: Course & Section Management
-2. Module 016: Faculty Load & Scheduling
-3. Module 018: Classroom & Room Management
-4. Module 019: Assessment & Testing Framework
-5. Module 021: Competency Tracking
+1. Module 016: Faculty Load & Scheduling
+2. Module 018: Classroom & Room Management
+3. Module 019: Assessment & Testing Framework
+4. Module 021: Competency Tracking
 
 ### Wave 3: Student & Administrative Services (9 modules)
 **Post-academic stabilization**
-6. Module 024: Transportation & Routes
-7. Module 025: Nutrition & Food Services
-8. Module 026: After-School & Extended Care
-9. Module 030: Student Portal
-10. Module 031: Administrative Portal
-11. Module 034: Fundraising & Giving
-12. Module 037: Advanced Discipline Workflows
-13. Module 039: Christian Formation & Tracking
-14. Module 050: Business Intelligence Suite
+5. Module 024: Transportation & Routes
+6. Module 025: Nutrition & Food Services
+7. Module 026: After-School & Extended Care
+8. Module 030: Student Portal
+9. Module 031: Administrative Portal
+10. Module 034: Fundraising & Giving
+11. Module 037: Advanced Discipline Workflows
+12. Module 039: Christian Formation & Tracking
+13. Module 050: Business Intelligence Suite
 
 ---
 
@@ -166,10 +165,10 @@ Modules 002, 003, 007, and 010 have been reconciled to PROVEN from committed evi
 
 | Area | Total | PROVEN/VALIDATED | NOT_PROVEN/MAPPED | % Complete |
 | --- | ---: | ---: | ---: | ---: |
-| Modules | 51 | 37 | 14 | 73% |
+| Modules | 51 | 38 | 13 | 75% |
 | Dashboards | 40 | 0 | 40 | 0% |
 | Wizards | 28 | 28 | 0 | 100% route/API contract coverage |
-| **Aggregate** | **119** | **65** | **54** | **55%** |
+| **Aggregate** | **119** | **66** | **53** | **55%** |
 
 ---
 
@@ -180,15 +179,15 @@ Modules 002, 003, 007, and 010 have been reconciled to PROVEN from committed evi
 3. Wizard route/API contract evidence exists and has been reconciled to 28/28 FLOW_CONTRACT_VALIDATED with evidence-boundary caveats.
 4. Module 007 implementation and tests merged in PR #1009 and are reconciled here to PROVEN.
 5. Module 010 reconciled to PROVEN from committed backend evidence in `backend/tests/test_51x51_evidence_10_error_handling.py` and `backend/tests/test_wizard_contract.py`.
-6. **Next:** Continue closure with Module 014 after Module 010 reconciliation merge.
-7. Production remains NO-GO.
+6. Module 014 reconciled to PROVEN from committed backend evidence in `backend/tests/test_51x51_evidence_14_course_section.py` and supporting section/scheduling tests.
+7. **Next:** Continue closure with Module 016 after Module 014 reconciliation merge.
+8. Production remains NO-GO.
 
 ---
 
 ## Success Criteria (Target Exit State)
 
-- All 51 modules: PROVEN (71% -> 100%)
-- All 40 dashboards: LIVE (0% -> 100%) or explicitly marked non-production-visible
-- All 28 wizards: reproduced full functional-flow evidence and independent review before release signoff
-- Aggregate completion: 54% -> 100%
-- All required checks green on main
+- All 51 modules: PROVEN (75% -> 100%)
+- All 40 dashboards: LIVE-DATA-VALIDATED (0% -> 100%)
+- All 28 wizards: FLOW-CONTRACT-VALIDATED with supporting route/API contracts; full functional-flow proof tracked separately
+- Production readiness: GO only after gates and evidence are current-head verified

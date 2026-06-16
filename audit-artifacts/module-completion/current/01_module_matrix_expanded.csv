@@ -8,11 +8,11 @@ module_id,module_name,certification_status,evidence_file,current_proof,blocker_c
 007,Data Import & Migration,PROVEN,backend/tools/import_manager.py; backend/tests/test_data_import.py; backend/docs/DATA_IMPORT.md,import validation duplicate prevention audit trail atomic rollback and rollback safety tests passed in PR #1009,none,domain-owner-tbd
 008,Shared Frontend Shell,PROVEN,backend/tests/test_51x51_evidence_08_shared_frontend_shell.py,shell routing and layout tests present,none,domain-owner-tbd
 009,Shared Design System,PROVEN,backend/tests/test_51x51_evidence_09_shared_design_system.py,component and theming tests present,none,domain-owner-tbd
-010,Error Handling & Monitoring,NOT_PROVEN,none-captured,requires error categorization and alerting rules,monitoring-core,domain-owner-tbd
+010,Error Handling & Monitoring,PROVEN,backend/tests/test_51x51_evidence_10_error_handling.py; backend/tests/test_wizard_contract.py,request correlation middleware and wizard contract evidence credited from PR #1037,none,domain-owner-tbd
 011,School Profile,PROVEN,backend/tests/test_51x51_evidence_11_school_profile.py,school configuration tests present,none,domain-owner-tbd
 012,School Year & Term Structure,PROVEN,backend/tests/test_51x51_evidence_12_school_year___term.py,academic calendar tests present,none,domain-owner-tbd
 013,Student Master Record,PROVEN,backend/tests/test_51x51_evidence_13_student_master_record.py,student CRUD and enrollment tests present,none,domain-owner-tbd
-014,Course & Section Management,NOT_PROVEN,none-captured,requires section authorization and schedule conflict tests,academic-scheduling,domain-owner-tbd
+014,Course & Section Management,PROVEN,backend/tests/test_51x51_evidence_14_course_section.py; backend/academics/tests/test_sections_api.py; backend/academics/tests/test_sections_teacher_guard.py; backend/crown_api/tests/test_scheduling_api.py,course section tenant access roster teacher guard and read-only schedule-conflict boundary tests present,none,domain-owner-tbd
 015,Staff & Faculty,PROVEN,backend/tests/test_51x51_evidence_15_staff___faculty.py,staff provisioning and role assignment tests present,none,domain-owner-tbd
 016,Faculty Load & Scheduling,NOT_PROVEN,none-captured,requires load calculation and conflict resolution tests,academic-scheduling,domain-owner-tbd
 017,Grade Levels & Progression,PROVEN,backend/tests/test_51x51_evidence_17_grade_levels.py,grade progression logic tests present,none,domain-owner-tbd
