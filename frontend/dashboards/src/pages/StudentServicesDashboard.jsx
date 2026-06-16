@@ -5,6 +5,7 @@ import CrownCard from '../components/crown/CrownCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+import DegradationBadge from '../components/DegradationBadge.jsx';
 
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
@@ -72,7 +73,14 @@ async function fetchStudentServicesMetrics() {
     const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
-  } catch { return { ok: false, data: DEMO }; }
+  } catch (e) {
+    console.error('[Dashboard Integration] Student Services metrics fetch failed — reverting to demo data', {
+      url,
+      error: e?.message || e,
+      timestamp: new Date().toISOString()
+    });
+    return { ok: false, data: DEMO };
+  }
 }
 
 const SEV_MAP = { critical: 'red', warning: 'yellow', info: 'blue' };
@@ -115,6 +123,7 @@ export default function StudentServicesDashboard() {
       subtitle={`Snapshot: ${data.snapshot_date || DEMO.snapshot_date}`}
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
+      <DegradationBadge visible={!live && !loading} />
       <KpiStrip cards={SS_KPI} />
       {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading</p>}
 

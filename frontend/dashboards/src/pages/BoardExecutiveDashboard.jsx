@@ -11,6 +11,7 @@ import { fetchBoardCompass, fetchBoardRiskCounts } from "../api/signalsApi.js";
 import BoardCompassCard from "../components/board/BoardCompassCard.jsx";
 import AftercareBoardCard from "../components/board/AftercareBoardCard.jsx";
 import { KpiStrip } from "../components/dashboard/KpiFlipCard.jsx";
+import DegradationBadge from "../components/DegradationBadge.jsx";
 
 /* ── Auth helpers (matches Crown sessionStorage pattern) ─────────────── */
 function getSession() {
@@ -137,6 +138,7 @@ export default function BoardExecutiveDashboard() {
       subtitle={`Read-only governance view${live ? " · LIVE" : " · DEMO data"}`}
     >
       <KpiStrip cards={ADMIN_KPI} />
+      <DegradationBadge visible={!live && !loading} />
       {error && (
         <WarnBanner>{error}</WarnBanner>
       )}

@@ -65,18 +65,28 @@ export default function RoleDashboardPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetchDashboardSummary(schoolId, role).then(applyDashboardResponse);
+    fetchDashboardSummary(schoolId, role)
+      .then(applyDashboardResponse)
+      .catch((err) => {
+        console.error('[Dashboard] Failed to load dashboard summary:', { role, schoolId, error: err?.message || err });
+        setError(err?.message || 'Failed to load dashboard');
+        setLoading(false);
+      });
   }, [applyDashboardResponse, role, schoolId]);
 
   useEffect(() => {
     let mounted = true;
 
-    fetchDashboardSummary(schoolId, role).then((result) => {
-      if (!mounted) {
-        return;
-      }
-      applyDashboardResponse(result);
-    });
+    fetchDashboardSummary(schoolId, role)
+      .then((result) => {
+        if (!mounted) return;
+        applyDashboardResponse(result);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        console.error('[Dashboard] Dashboard summary fetch failed:', { error: err?.message || err });
+        setError(err?.message || 'Failed to load dashboard');
+      });
 
     return () => {
       mounted = false;
