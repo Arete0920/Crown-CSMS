@@ -177,9 +177,11 @@ class TestWizardCreateSession(TestCase):
             r.status_code, 201,
             f"{description} ({url}): expected 201, got {r.status_code}. Body: {r.data}"
         )
+        # admissions_intake returns import_id; all other wizards return session_id
+        id_key = "import_id" if description == "admissions_intake" else "session_id"
         self.assertIn(
-            "session_id", r.data,
-            f"{description} ({url}): response missing 'session_id' key."
+            id_key, r.data,
+            f"{description} ({url}): response missing '{id_key}' key."
         )
 
     def test_all_wizards_create_session(self):
@@ -211,10 +213,17 @@ class TestWizardTenantIsolation(TestCase):
         # Create session under school_a
         r = self.client_a.post(url, **_headers(self.school_a.id))
         self.assertEqual(r.status_code, 201, f"{description}: session creation failed {r.status_code}")
-        session_id = r.data["session_id"]
+
+        # admissions_intake returns import_id and uses /upload/ for detail probe;
+        # all other wizards return session_id and use /configure/ for detail probe
+        if description == "admissions_intake":
+            session_id = r.data["import_id"]
+            detail_url = f"{url}{session_id}/upload/"
+        else:
+            session_id = r.data["session_id"]
+            detail_url = f"{url}{session_id}/configure/"
 
         # School B tries to access school A's session
-        detail_url = f"{url}{session_id}/configure/"
         r2 = self.client_b.post(detail_url, {}, format="json", **_headers(self.school_b.id))
         self.assertEqual(
             r2.status_code, 404,
