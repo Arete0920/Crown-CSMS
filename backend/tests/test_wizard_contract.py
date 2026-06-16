@@ -177,7 +177,7 @@ class TestWizardCreateSession(TestCase):
             r.status_code, 201,
             f"{description} ({url}): expected 201, got {r.status_code}. Body: {r.data}"
         )
-        # admissions_intake returns import_id; all other wizards return session_id
+        # admissions_intake uses import_id; all other wizards use session_id
         id_key = "import_id" if description == "admissions_intake" else "session_id"
         self.assertIn(
             id_key, r.data,
@@ -214,8 +214,8 @@ class TestWizardTenantIsolation(TestCase):
         r = self.client_a.post(url, **_headers(self.school_a.id))
         self.assertEqual(r.status_code, 201, f"{description}: session creation failed {r.status_code}")
 
-        # admissions_intake returns import_id and uses /upload/ for detail probe;
-        # all other wizards return session_id and use /configure/ for detail probe
+        # admissions_intake returns import_id and uses /upload/ as its next step;
+        # all other wizards return session_id and use /configure/.
         if description == "admissions_intake":
             session_id = r.data["import_id"]
             detail_url = f"{url}{session_id}/upload/"
