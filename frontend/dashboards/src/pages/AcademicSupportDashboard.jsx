@@ -5,6 +5,7 @@ import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+import DegradationBadge from '../components/DegradationBadge.jsx';
 function apiBase() {
   const base = (import.meta?.env?.VITE_API_BASE_URL || '').trim();
   return base.endsWith('/') ? base.slice(0, -1) : base;
@@ -57,7 +58,14 @@ async function fetchAcademicSupportMetrics() {
     const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
-  } catch { return { ok: false, data: DEMO }; }
+  } catch (e) {
+    console.error('[Dashboard Integration] Academic Support metrics fetch failed — reverting to demo data', {
+      url,
+      error: e?.message || e,
+      timestamp: new Date().toISOString()
+    });
+    return { ok: false, data: DEMO };
+  }
 }
 
 function Pill({ color = 'gray', children }) {
@@ -112,6 +120,7 @@ export default function AcademicSupportDashboard() {
       subtitle={`Snapshot: ${data.snapshot_date || DEMO.snapshot_date}`}
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
+      <DegradationBadge visible={!live && !loading} />
       <KpiStrip cards={ADMIN_KPI} />
       {loading && <p style={{ color: 'var(--crown-muted)', padding: '4px 0' }}>Loading</p>}
 

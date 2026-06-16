@@ -5,6 +5,7 @@ import CrownCard from '../components/crown/CrownCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
 import DashboardSection from '../components/layout/DashboardSection.jsx';
 import { KpiStrip } from '../components/dashboard/KpiFlipCard.jsx';
+import DegradationBadge from '../components/DegradationBadge.jsx';
 // NOTE: This dashboard lives at /communications-director to avoid conflicting
 // with the existing /communications comms-inbox route (CommunicationsThreadsList).
 // Token: communications_director  /communications-director
@@ -54,7 +55,14 @@ async function fetchCommunicationsMetrics() {
     const res = await globalThis.fetch(url, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     return { ok: true, data: await res.json() };
-  } catch { return { ok: false, data: DEMO }; }
+  } catch (e) {
+    console.error('[Dashboard Integration] Communications metrics fetch failed — reverting to demo data', {
+      url,
+      error: e?.message || e,
+      timestamp: new Date().toISOString()
+    });
+    return { ok: false, data: DEMO };
+  }
 }
 
 const STATUS_PILL = { sent: 'green', scheduled: 'blue', draft: 'gray', failed: 'red' };
@@ -101,6 +109,7 @@ export default function CommunicationsDirectorDashboard() {
     <CrownLayout title="Communications Director" subtitle={`Snapshot: ${data.snapshot_date || DEMO.snapshot_date}`}
       right={<Pill color={live ? 'green' : 'gray'}>{live ? 'LIVE' : 'DEMO'}</Pill>}
     >
+      <DegradationBadge visible={!live && !loading} />
       <KpiStrip cards={ADMIN_KPI} />
       {loading && <p style={{ color: 'var(--crown-muted)', padding: 16 }}>Loading</p>}
 

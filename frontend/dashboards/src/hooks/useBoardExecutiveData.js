@@ -105,6 +105,16 @@ export function useBoardExecutiveData({ token, schoolId }) {
 
         if (!cancelled) { setData(next); setLive(anyLive); }
       } catch (e) {
+        console.error('[Dashboard Integration] Board Executive data fetch failed — using fallback DEMO data', {
+          endpoints: {
+            kpis: URLS.kpis,
+            trends: URLS.trends,
+            risk: URLS.risk,
+            drivers: URLS.drivers,
+          },
+          error: e?.message || e,
+          timestamp: new Date().toISOString()
+        });
         if (!cancelled) setError(e?.message || "Failed to load board data.");
       } finally {
         if (!cancelled) setLoading(false);
