@@ -114,16 +114,18 @@ class TestModule010MiddlewareUnit(TestCase):
 
         handler = CapturingHandler()
         logger = logging.getLogger("crown.request")
-        logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
+        old_level = logger.level
 
         try:
+            logger.addHandler(handler)
+            logger.setLevel(logging.DEBUG)
+
             mw = self._make_middleware(log_records)
             request = self.factory.get("/api/v1/test/")
             mw(request)
         finally:
+            logger.setLevel(old_level)
             logger.removeHandler(handler)
-
         self.assertTrue(
             len(log_records) > 0,
             "Middleware must emit at least one log record.",
