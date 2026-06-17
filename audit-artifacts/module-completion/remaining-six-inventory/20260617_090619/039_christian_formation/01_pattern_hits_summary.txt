@@ -1,0 +1,18 @@
+﻿# Module 039 Pattern Hits Summary
+
+Raw file intentionally removed from committed evidence packet because it exceeded GitHub's recommended file-size threshold.
+
+Original raw file:
+- Path: audit-artifacts\module-completion\remaining-six-inventory\20260617_090619\039_christian_formation\01_pattern_hits.txt
+- Size bytes: 55816902
+- Approximate line count: 3166
+
+Preserved evidence:
+- 02_candidate_files.txt
+- 03_candidate_tests.txt
+- 04_candidate_routes_frontend.txt
+- 02_inventory_summary.txt
+- evidence.manifest.json
+
+Decision:
+The raw hit dump is not required for module proof work. Candidate files/tests/routes and summary counts are sufficient for bounded planning.
