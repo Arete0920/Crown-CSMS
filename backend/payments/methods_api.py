@@ -5,12 +5,7 @@ from rest_framework.response import Response
 
 from households.scoping import get_request_school_id
 from payments.access import user_can_access_household_finance
-from payments.models import GatewayProvider, SavedPaymentMethod
-from payments.providers import get_gateway
-
-
-def _customer_reference(school_id, household_id) -> str:
-    return f"school-{school_id}-household-{household_id}"
+from payments.models import SavedPaymentMethod
 
 
 @api_view(["GET"])
@@ -46,33 +41,17 @@ def list_saved_payment_methods(request, household_id):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_payment_method_setup(request, household_id):
-    school_id = get_request_school_id(request, required=True)
+    get_request_school_id(request, required=True)
 
     if not user_can_access_household_finance(request.user, household_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
-    provider = request.data.get("provider", GatewayProvider.COMPUWERX)
-    return_url = request.data.get("return_url", "")
-    gateway = get_gateway(provider)
-
-    result = gateway.create_payment_method_setup(
-        customer_reference=_customer_reference(school_id, household_id),
-        return_url=return_url,
-        metadata={
-            "school_id": str(school_id),
-            "household_id": str(household_id),
-        },
-    )
-
-    if not result.ok:
-        return Response({"ok": False, "error": result.error}, status=status.HTTP_502_BAD_GATEWAY)
-
     return Response(
         {
-            "ok": True,
-            "setup_id": result.setup_id,
-            "setup_url": result.setup_url,
-        }
+            "ok": False,
+            "error": "External payment provider deferred pending vendor coordination.",
+        },
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
     )
 
 
@@ -92,7 +71,9 @@ def set_default_payment_method(request, household_id, method_id: int):
     ).first()
 
     if not method:
-        return Response({"detail": "Payment method not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Payment method not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
     SavedPaymentMethod.objects.filter(
         school_id=school_id,
@@ -120,15 +101,14 @@ def detach_payment_method(request, household_id, method_id: int):
     ).first()
 
     if not method:
-        return Response({"detail": "Payment method not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Payment method not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
-    gateway = get_gateway(method.provider)
-    result = gateway.detach_payment_method(provider_method_id=method.provider_method_id)
-    if not result.ok:
-        return Response({"ok": False, "error": result.error}, status=status.HTTP_502_BAD_GATEWAY)
-
-    method.is_active = False
-    method.is_default = False
-    method.save(update_fields=["is_active", "is_default", "updated_at"])
-
-    return Response({"ok": True})
+    return Response(
+        {
+            "ok": False,
+            "error": "External payment provider deferred pending vendor coordination.",
+        },
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+    )

@@ -150,10 +150,6 @@ CROWN_OPS_SECRET = os.getenv("CROWN_OPS_SECRET", "") or os.getenv("OPS_SECRET", 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "")
 DEV_OPS_SECRET = os.getenv("DEV_OPS_SECRET", "")
 
-COMPUWERX_BASE_URL = os.getenv("COMPUWERX_BASE_URL", "https://sandbox.compuwerx.example")
-COMPUWERX_API_KEY = os.getenv("COMPUWERX_API_KEY", "")
-COMPUWERX_WEBHOOK_SECRET = os.getenv("COMPUWERX_WEBHOOK_SECRET", "")
-COMPUWERX_TIMEOUT_SECONDS = int(os.getenv("COMPUWERX_TIMEOUT_SECONDS", "30"))
 
 # Build SHA for deployment determinism proof (Gate 1C)
 BUILD_SHA = os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "local-dev"

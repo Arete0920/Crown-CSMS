@@ -18,7 +18,7 @@ pytestmark = pytest.mark.django_db
 
 
 def test_dispute_and_payout_models_persist_expected_fields():
-    school = School.objects.create(name="Compuwerx School")
+    school = School.objects.create(name="Payment Provider School")
 
     dispute = ProviderDispute.objects.create(
         school_id=school.id,
@@ -61,7 +61,7 @@ def test_dispute_and_payout_models_persist_expected_fields():
 
 
 def test_dispute_id_is_unique():
-    school = School.objects.create(name="Compuwerx School")
+    school = School.objects.create(name="Payment Provider School")
     dispute_id = f"disp_{uuid.uuid4().hex[:12]}"
 
     ProviderDispute.objects.create(

@@ -102,7 +102,6 @@ export const PATHS = {
   SAFETY: '/safety',
   BOARD_EXECUTIVE: '/board/executive',
   AFTERCARE_ROSTER: '/aftercare/roster',
-  FINANCE_COMPUWERX_TEST: '/finance/compuwerx-test',
   FINANCE_FAMILY_ACCOUNT: '/finance/family-account',
   FINANCE_DISPUTES: '/finance/disputes',
   FINANCE_PAYOUT_RECONCILIATION: '/finance/payout-reconciliation',

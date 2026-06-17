@@ -13,7 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { fetchHouseholdFinanceSummary } from "../api/compuwerxOps";
+import { fetchHouseholdFinanceSummary } from "../api/paymentsOps";
 
 export default function FamilyAccountDetail() {
   const [loading, setLoading] = useState(true);
