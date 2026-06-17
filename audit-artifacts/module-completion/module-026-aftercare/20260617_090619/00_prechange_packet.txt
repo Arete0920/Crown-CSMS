@@ -1,0 +1,12 @@
+﻿WORK_ORDER=MODULE-026-AFTERCARE-PROOF-20260617_090619
+MODULE=026
+NAME=After-School & Extended Care
+BRANCH=feat/module-026-aftercare-proof-20260617_090619
+HEAD=4ddc0132416162bbf52beb63146e11e178ce1729
+BASE=origin/main
+SCOPE=Proof hardening only for enrollment and activity scheduling blocker
+EXPECTED_FILES=backend/tests/test_51x51_evidence_026_aftercare.py; audit-artifacts/module-completion/module-026-aftercare/20260617_090619/*
+FORBIDDEN_FILES=auth, RBAC core, migrations, workflows, package manifests, scorecard/matrix
+VALIDATION=python backend/manage.py check; python -m pytest backend/tests/test_51x51_evidence_026_aftercare.py -v --nomigrations --tb=short
+INDEPENDENT_REVIEW_REQUIRED=true
+STATUS_START=
