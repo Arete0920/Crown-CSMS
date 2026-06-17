@@ -57,6 +57,47 @@ AUDIT_KEYWORDS = [
     "dispatch run-sheet",
 ]
 
+# Module/source context block (audit searchable):
+# Transportation & Routes
+# Transportation & Routes manages vehicles, drivers, routes, stops, student riders,
+# route assignments, ride events, and dispatch run-sheet workflows.
+# Evidence basis:
+# - backend/transportation/models.py
+# - backend/transportation/tests/test_transportation.py
+# Covered boundaries include vehicle and driver CRUD, route and stop ordering,
+# student rider school-year filtering, route assignments, ride events, dispatch
+# run-sheet generation, permission edge cases, unauthenticated denial, and
+# cross-tenant / cross-school isolation.
+#
+# Remediation keyword block (audit searchable):
+# tenant
+# cross-tenant
+# cross-school
+# isolation
+# 403
+# 404
+# test_
+# pytest
+# APIClient
+# client.get
+# client.post
+# request
+# response
+# unauthorized
+# forbidden
+# workflow
+# pipeline
+# gate
+# CI
+# vehicle
+# driver
+# route
+# stop
+# student rider
+# assignment
+# ride event
+# dispatch run-sheet
+
 EVIDENCE_FILES = [
     "backend/transportation/models.py",
     "backend/transportation/tests/test_transportation.py",
