@@ -89,15 +89,10 @@ import { wizardRoutes } from "./wizards.js";
 import { PATHS } from "./paths";
 import { ROLE_GROUPS } from "./routeGroups";
 import WizardHub from "../pages/WizardHub.jsx";
-import CompuwerxTestCheckout from "../pages/CompuwerxTestCheckout.jsx";
 import FamilyAccountDetail from "../pages/FamilyAccountDetail.jsx";
-import CompuwerxDisputesDashboard from "../pages/CompuwerxDisputesDashboard.jsx";
-import CompuwerxPayoutReconciliation from "../pages/CompuwerxPayoutReconciliation.jsx";
 import SavedPaymentMethodsPage from "../pages/SavedPaymentMethodsPage.jsx";
 import FamilyStatementExportPage from "../pages/FamilyStatementExportPage.jsx";
-import CompuwerxDisputeWorkbench from "../pages/CompuwerxDisputeWorkbench.jsx";
 import PaymentExceptionsQueue from "../pages/PaymentExceptionsQueue.jsx";
-import CompuwerxBankReconciliation from "../pages/CompuwerxBankReconciliation.jsx";
 import {
   CurriculumImportPage,
   DualEnrollmentTrackerPage,
@@ -876,36 +871,10 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: PATHS.FINANCE_COMPUWERX_TEST,
-    element: (
-      <RoleRouteGuard
-        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
-      >
-        <CompuwerxTestCheckout />
-      </RoleRouteGuard>
-    ),
-  },
-  {
     path: PATHS.FINANCE_FAMILY_ACCOUNT,
     element: (
       <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
         <FamilyAccountDetail />
-      </RoleRouteGuard>
-    ),
-  },
-  {
-    path: PATHS.FINANCE_DISPUTES,
-    element: (
-      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-        <CompuwerxDisputesDashboard />
-      </RoleRouteGuard>
-    ),
-  },
-  {
-    path: PATHS.FINANCE_PAYOUT_RECONCILIATION,
-    element: (
-      <RoleRouteGuard allowedRoles={FINANCE_ALLOWED_ROLES}>
-        <CompuwerxPayoutReconciliation />
       </RoleRouteGuard>
     ),
   },
@@ -940,32 +909,12 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: PATHS.FINANCE_DISPUTE_WORKBENCH,
-    element: (
-      <RoleRouteGuard
-        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
-      >
-        <CompuwerxDisputeWorkbench />
-      </RoleRouteGuard>
-    ),
-  },
-  {
     path: PATHS.FINANCE_EXCEPTIONS,
     element: (
       <RoleRouteGuard
         allowedRoles={["super_admin", "school_admin", "finance_admin"]}
       >
         <PaymentExceptionsQueue />
-      </RoleRouteGuard>
-    ),
-  },
-  {
-    path: PATHS.FINANCE_BANK_RECONCILIATION,
-    element: (
-      <RoleRouteGuard
-        allowedRoles={["super_admin", "school_admin", "finance_admin"]}
-      >
-        <CompuwerxBankReconciliation />
       </RoleRouteGuard>
     ),
   },

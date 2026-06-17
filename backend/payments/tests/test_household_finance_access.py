@@ -31,7 +31,7 @@ def _mk_user_with_school(school, *, is_staff=False, role_groups=()):
 
 
 def test_household_summary_allows_finance_runtime_role():
-    school = School.objects.create(name="Compuwerx School")
+    school = School.objects.create(name="Payment Provider School")
     household = Household.objects.create(school_id=school.id, name="Family One")
     user = _mk_user_with_school(
         school,
@@ -54,7 +54,7 @@ def test_household_summary_allows_finance_runtime_role():
 
 
 def test_household_summary_blocks_non_finance_non_household_user():
-    school = School.objects.create(name="Compuwerx School")
+    school = School.objects.create(name="Payment Provider School")
     household = Household.objects.create(school_id=school.id, name="Family One")
     user = _mk_user_with_school(
         school,

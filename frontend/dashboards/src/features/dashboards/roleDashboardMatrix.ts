@@ -271,17 +271,17 @@ export const roleDashboardProfiles: DashboardRoleProfile[] = [
     title: "Finance Director Dashboard",
     route: "/dashboards/finance-director",
     audience: "Business office / finance director",
-    purpose: "Manage tuition, fees, payments, financial aid, balances, and CompuWerx reconciliation.",
+    purpose: "Manage tuition, fees, payments, financial aid, balances, and payment reconciliation.",
     tone: "emerald",
     primaryResponsibilities: [
       "Monitor receivables and collections",
       "Resolve payment failures",
       "Track financial aid and scholarships",
-      "Reconcile CompuWerx and ledger events",
+      "Reconcile payment and ledger events",
     ],
     kpis: [
       { label: "Receivables Current", value: "94.5%", helper: "Scheduled receivables collected", source: "Billing ledger", tone: "emerald" },
-      { label: "Failed Payments", value: "13", helper: "Processor failures needing attention", source: "CompuWerx/processor events", tone: "rose" },
+      { label: "Failed Payments", value: "13", helper: "Processor failures needing attention", source: "processor events", tone: "rose" },
       { label: "Aid Reviews", value: "7", helper: "Financial aid files awaiting review", source: "Financial aid module", tone: "amber" },
       { label: "Ledger Integrity", value: "100%", helper: "Current ledger reconciliation status", source: "Finance integrity", tone: "royal" },
     ],
@@ -289,7 +289,7 @@ export const roleDashboardProfiles: DashboardRoleProfile[] = [
       { title: "Payment failures", count: 13, urgency: "high", href: "/finance/payments/failed" },
       { title: "Aid applications", count: 7, urgency: "medium", href: "/finance/aid" },
       { title: "Balance follow-ups", count: 16, urgency: "medium", href: "/finance/balances" },
-      { title: "CompuWerx reconciliation", count: 2, urgency: "critical", href: "/finance/reconciliation" },
+      { title: "Payment reconciliation", count: 2, urgency: "critical", href: "/finance/reconciliation" },
     ],
     quickActions: [
       { label: "Open billing center", href: "/finance/billing", description: "Manage charges, plans, balances, and accounts." },
@@ -301,7 +301,7 @@ export const roleDashboardProfiles: DashboardRoleProfile[] = [
       {
         title: "Finance operating view",
         description: "Built for collections, aid, ledger truth, processor reconciliation, and family account clarity.",
-        items: ["Tuition receivables", "Payment failures", "Aid decisions", "CompuWerx reconciliation"],
+        items: ["Tuition receivables", "Payment failures", "Aid decisions", "Payment reconciliation"],
       },
     ],
   },

@@ -12,7 +12,7 @@ import { useState } from "react";
 import {
   fetchHouseholdStatementCsvUrl,
   fetchPaymentReceiptUrl,
-} from "../api/compuwerxPackage3";
+} from "../api/paymentSupport";
 
 export default function FamilyStatementExportPage() {
   const [householdId, setHouseholdId] = useState("");

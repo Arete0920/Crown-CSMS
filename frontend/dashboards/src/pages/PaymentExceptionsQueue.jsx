@@ -17,7 +17,7 @@ import {
   fetchPaymentExceptions,
   ignorePaymentException,
   retryPaymentException,
-} from "../api/compuwerxPackage3";
+} from "../api/paymentSupport";
 
 export default function PaymentExceptionsQueue() {
   const [loading, setLoading] = useState(true);

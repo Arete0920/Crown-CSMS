@@ -6,7 +6,7 @@ from payments.models import GatewayProvider, PaymentSupportException
 
 class PaymentSupportExceptionTests(TestCase):
     def test_create_exception(self):
-        school = School.objects.create(name="Compuwerx School")
+        school = School.objects.create(name="Payment Provider School")
 
         row = PaymentSupportException.objects.create(
             school_id=school.id,
