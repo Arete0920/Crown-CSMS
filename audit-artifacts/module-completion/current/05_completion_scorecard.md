@@ -175,7 +175,7 @@ Modules 016 and 021 have been reconciled to PROVEN from branch-committed evidenc
 8. Module 018 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/room_management.py` and `backend/tests/test_51x51_evidence_18_room_management.py`.
 9. Module 019 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/assessment_framework.py` and `backend/tests/test_51x51_evidence_19_assessment_framework.py`.
 10. Module 021 reconciled to PROVEN from branch-committed backend evidence in `backend/academics/competency_tracking.py` and `backend/tests/test_51x51_evidence_21_competency_tracking.py`.
-11. Module 024 reconciled to PROVEN from committed transportation evidence in `backend/transportation/models.py` and `backend/transportation/tests/test_transportation.py`.
+11. Module 024 reconciled to PROVEN from committed transportation evidence in `backend/tests/test_51x51_evidence_24_transportation_routes.py`, `backend/transportation/models.py` and `backend/transportation/tests/test_transportation.py`.
 12. **Next:** Continue closure with Module 025.
 13. Production remains NO-GO.
 
