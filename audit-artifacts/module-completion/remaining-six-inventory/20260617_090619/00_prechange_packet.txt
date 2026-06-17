@@ -1,0 +1,7 @@
+﻿WORK_ORDER=REMAINING-SIX-DEEP-INVENTORY-20260617_090619
+BRANCH=audit/remaining-six-deep-inventory-20260617_090619
+HEAD=4ddc0132416162bbf52beb63146e11e178ce1729
+BASE=origin/main
+SCOPE=Inventory only for modules 026, 030, 031, 037, 039, 050
+NON_SCOPE=No product-code edits; no scorecard edits; no product-completion claim
+STATUS_START=
