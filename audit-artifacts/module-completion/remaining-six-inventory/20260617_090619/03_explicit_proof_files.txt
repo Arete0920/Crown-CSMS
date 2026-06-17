@@ -1,0 +1,53 @@
+﻿=== EXPLICIT PROOF FILE SEARCH ===
+===== *026*.py =====
+
+FullName                                                                                                                                                  Length
+--------                                                                                                                                                  ------
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\sandbox_demo\migrations\0003_merge_20260530_1.py    286
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\tests\test_51x51_evidence_026_aftercare.py         2020
+
+
+
+===== *030*.py =====
+
+FullName                                                                                                                                             Length
+--------                                                                                                                                             ------
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\academics\migrations\0030_academics_core.py   3759
+
+
+
+===== *031*.py =====
+
+FullName                                                                                                                                                 Length
+--------                                                                                                                                                 ------
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\academics\migrations\0031_academics_readonly.py   3962
+
+
+
+===== *037*.py =====
+
+FullName                                                                                                                                                                                 Length
+--------                                                                                                                                                                                 ------
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\academics\migrations\0037_lesson_curriculumsource_assignment_lesson_and_more.py  12817
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\tests\test_51x51_evidence_037_discipline.py                                       1551
+
+
+
+===== *039*.py =====
+
+FullName                                                                                                                                                       Length
+--------                                                                                                                                                       ------
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\academics\migrations\0039_term_uniq_term_year_code.py    495
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\tests\test_51x51_evidence_039_christian_formation.py    2093
+
+
+
+===== *050*.py =====
+
+FullName                                                                                                                                              Length
+--------                                                                                                                                              ------
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\ledger\migrations\0050_ledger_allocations.py    777
+C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\remaining_six_deep_inventory_20260617_090619\backend\tests\test_51x51_evidence_050_bi_suite.py      1252
+
+
+
