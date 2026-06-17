@@ -1,4 +1,3 @@
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -6,8 +5,7 @@ from rest_framework.response import Response
 
 from crown_api.billing_api.permissions import has_finance_runtime_role
 from households.scoping import get_request_school_id
-from payments.models import ProviderDispute, ProviderDisputeAction
-from payments.providers import get_gateway
+from payments.models import ProviderDispute
 
 
 def _finance_only(user):
@@ -24,7 +22,9 @@ def dispute_detail(request, dispute_id: int):
 
     dispute = ProviderDispute.objects.filter(school_id=school_id, id=dispute_id).first()
     if not dispute:
-        return Response({"detail": "Dispute not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"detail": "Dispute not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
     actions = [
         {
@@ -64,42 +64,14 @@ def dispute_action_create(request, dispute_id: int):
 
     dispute = ProviderDispute.objects.filter(school_id=school_id, id=dispute_id).first()
     if not dispute:
-        return Response({"detail": "Dispute not found."}, status=status.HTTP_404_NOT_FOUND)
-
-    action_type = request.data.get("action_type", "").strip()
-    note = request.data.get("note", "").strip()
-    evidence = request.data.get("evidence") or {}
-
-    gateway = get_gateway(dispute.provider)
-    result = gateway.update_dispute(
-        dispute_id=dispute.dispute_id,
-        action_type=action_type,
-        note=note,
-        evidence=evidence,
-    )
-
-    if not result.ok:
-        return Response({"ok": False, "error": result.error}, status=status.HTTP_502_BAD_GATEWAY)
-
-    action = ProviderDisputeAction.objects.create(
-        dispute=dispute,
-        action_type=action_type,
-        note=note,
-        provider_response_id=result.provider_response_id,
-        payload=result.raw or {},
-        created_by=request.user,
-    )
-
-    if result.status:
-        dispute.status = result.status
-        if result.status in {"won", "lost", "closed"}:
-            dispute.closed_at = timezone.now()
-        dispute.save(update_fields=["status", "closed_at", "updated_at"])
+        return Response(
+            {"detail": "Dispute not found."}, status=status.HTTP_404_NOT_FOUND
+        )
 
     return Response(
         {
-            "ok": True,
-            "action_id": action.id,
-            "status": dispute.status,
-        }
+            "ok": False,
+            "error": "External payment provider deferred pending vendor coordination.",
+        },
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
     )

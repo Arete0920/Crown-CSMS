@@ -237,7 +237,7 @@ export default {
   activityTitle: 'Recent business office activity',
   activities: [
     'March billing batch completed â€” 481 invoices posted.',
-    'Compuwerx payout reconciled â€” $2,400 variance flagged.',
+    'Payment payout reconciled — $2,400 variance flagged.',
     '3 auto-pay card failures logged from overnight batch.',
     'Financial aid award letters sent to 18 approved families.',
     'Bank sync completed â€” 4 of 4 batches processed.',
@@ -281,7 +281,7 @@ export default {
   statusTitle: 'Business office systems',
   statusKicker: 'Financial system health',
   statuses: [
-    { label: 'Compuwerx Sync', state: 'Healthy' },
+    { label: 'Payment Provider Sync', state: 'Deferred' },
     { label: 'Payment Gateway', state: 'Processing' },
     { label: 'AR System', state: 'Current' },
     { label: 'Bank Connection', state: 'Active' },

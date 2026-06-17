@@ -59,7 +59,6 @@ class TenantHeaderRequiredMiddleware:
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
         "/api/admissions/public-config",
-        "/api/integrations/compuwerx/webhook",  # legacy webhook endpoint (retired but accessible for tests)
     )
 
     def __init__(self, get_response):

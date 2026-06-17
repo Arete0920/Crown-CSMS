@@ -18,13 +18,13 @@ import {
   detachSavedPaymentMethod,
   fetchSavedPaymentMethods,
   setDefaultPaymentMethod,
-} from "../api/compuwerxPackage3";
+} from "../api/paymentSupport";
 
 export default function SavedPaymentMethodsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]);
-  const householdId = new URLSearchParams(window.location.search).get(
+  const householdId = new URLSearchParams(globalThis.location.search).get(
     "household_id",
   );
 
@@ -52,11 +52,10 @@ export default function SavedPaymentMethodsPage() {
   async function handleAddMethod() {
     try {
       const res = await createSavedPaymentMethodSetup(householdId, {
-        provider: "compuwerx",
-        return_url: window.location.href,
+        return_url: globalThis.location.href,
       });
       if (res?.setup_url) {
-        window.location.assign(res.setup_url);
+        globalThis.location.assign(res.setup_url);
       }
     } catch (err) {
       setError(err?.message || "Unable to start payment method setup.");
@@ -96,7 +95,7 @@ export default function SavedPaymentMethodsPage() {
         {error ? <Alert severity="error">{error}</Alert> : null}
 
         <Button variant="contained" onClick={handleAddMethod}>
-          Add / Manage in Compuwerx
+          Add / Manage Payment Methods
         </Button>
 
         <Card>
@@ -104,7 +103,7 @@ export default function SavedPaymentMethodsPage() {
             <Stack spacing={2}>
               <Typography variant="h6">Methods</Typography>
               <Divider />
-              {!rows.length ? (
+              {rows.length === 0 ? (
                 <Typography color="text.secondary">
                   No saved payment methods found.
                 </Typography>
@@ -116,7 +115,7 @@ export default function SavedPaymentMethodsPage() {
                       disableGutters
                       secondaryAction={
                         <Stack direction="row" spacing={1}>
-                          {!row.is_default ? (
+                          {row.is_default === false ? (
                             <Button
                               size="small"
                               onClick={() => handleSetDefault(row.id)}
