@@ -36,13 +36,27 @@ AUDIT_KEYWORDS = [
     "404",
     "test_",
     "pytest",
+    "describe(",
+    "it(",
     "APIClient",
     "client.get",
     "client.post",
     "request",
     "response",
+    "render",
+    "screen",
+    "userEvent",
+    "vitest",
+    "testing-library",
+    "playwright",
+    "page.goto",
+    "expect(page",
+    "e2e",
+    "spec.ts",
     "unauthorized",
+    "invalid",
     "forbidden",
+    "raises",
     "workflow",
     "pipeline",
     "gate",
@@ -78,13 +92,27 @@ AUDIT_KEYWORDS = [
 # 404
 # test_
 # pytest
+# describe(
+# it(
 # APIClient
 # client.get
 # client.post
 # request
 # response
+# render
+# screen
+# userEvent
+# vitest
+# testing-library
+# playwright
+# page.goto
+# expect(page
+# e2e
+# spec.ts
 # unauthorized
+# invalid
 # forbidden
+# raises
 # workflow
 # pipeline
 # gate
@@ -122,6 +150,8 @@ def test_51x51_required_keywords_present_24():
         "tenant",
         "cross-tenant",
         "APIClient",
+        "render",
+        "playwright",
         "unauthorized",
         "workflow",
         "dispatch run-sheet",

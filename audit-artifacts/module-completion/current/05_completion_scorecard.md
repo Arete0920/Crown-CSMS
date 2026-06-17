@@ -64,7 +64,7 @@ All previous generated estimates based on partial module counts remain reset to 
 
 | module_id | name | status | evidence | blocker |
 | --- | --- | --- | --- | --- |
-| 024 | Transportation & Routes | PROVEN | backend/transportation/models.py; backend/transportation/tests/test_transportation.py | none |
+| 024 | Transportation & Routes | PROVEN | backend/transportation/models.py; backend/transportation/tests/test_transportation.py; backend/tests/test_51x51_evidence_24_transportation_routes.py | none |
 | 025 | Nutrition & Food Services | NOT_PROVEN | none-captured | meal plan and dietary accommodation tests required |
 | 026 | After-School & Extended Care | NOT_PROVEN | none-captured | enrollment and activity scheduling tests required |
 | 027 | Communications Framework | PROVEN | backend/tests/test_51x51_evidence_27_communications.py | none |
