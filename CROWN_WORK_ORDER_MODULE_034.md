@@ -145,5 +145,5 @@ If any gap target fails:
 - No implementation gaps identified
 - No breaking changes introduced
 - Scope: gap-completion only (no net-new features)
-- Isolation: Clean worktree, no mutations on main code
+- Isolation: No direct commits on main; all changes contained in this PR branch
 - Safety: Head-locked merge ready
