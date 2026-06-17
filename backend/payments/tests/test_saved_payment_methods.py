@@ -7,7 +7,7 @@ from payments.models import GatewayProvider, SavedPaymentMethod
 
 class SavedPaymentMethodTests(TestCase):
     def test_create_saved_payment_method(self):
-        school = School.objects.create(name="Compuwerx School")
+        school = School.objects.create(name="Payment Provider School")
         household = Household.objects.create(school_id=school.id, name="Family")
 
         row = SavedPaymentMethod.objects.create(

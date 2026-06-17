@@ -1,0 +1,14 @@
+## chore/quarantine-compuwerx-pending-vendor-coordination-20260617
+ M backend/tests/test_student_master_record_unit.py
+?? _tmp_remaining_six_inventory_complete_20260617_090619.ps1
+?? _tmp_remaining_six_inventory_resume_20260617_090133.ps1
+?? _tmp_repair_remaining_six_inventory_rg_20260617_090619.ps1
+?? _tmp_wave3_discovery.ps1
+?? _tmp_wave3_discovery_fix.ps1
+?? _wt_module024_diag_20260616_174747/
+?? audit-artifacts/module-completion/module-024-transportation-routes/
+?? crown-master-binder/01_vision_product/
+?? crown-master-binder/02_architecture_canons/
+?? crown-master-binder/03_operations_delivery/
+?? crown-master-binder/04_inventory_cleanup/
+?? crown-master-binder/README.md
