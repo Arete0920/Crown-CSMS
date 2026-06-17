@@ -1,0 +1,6 @@
+MODULE=025
+NAME=Nutrition & Food Services
+BRANCH=feat/module-025-nutrition-proof-20260617
+HEAD=ba6459da3a2c66c313f28d2522e15a1046df9749
+BASE_MERGE=23104c1c19a059dfcfebf492c65678a953e22729
+STATUS=?? audit-artifacts/module-completion/module-025-nutrition-food-services/
