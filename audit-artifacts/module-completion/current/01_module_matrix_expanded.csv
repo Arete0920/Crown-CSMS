@@ -23,7 +23,7 @@ module_id,module_name,certification_status,evidence_file,current_proof,blocker_c
 022,Student Care & Discipline,PROVEN,backend/tests/test_51x51_evidence_22_student_care___discipline_summary.py,discipline event logging and incident tracking tests present,none,domain-owner-tbd
 023,Emergency & Medical Essentials,PROVEN,backend/tests/test_51x51_evidence_23_emergency___medical_essentials.py,health screening and emergency contact tests present,none,domain-owner-tbd
 024,Transportation & Routes,PROVEN,backend/tests/test_51x51_evidence_24_transportation_routes.py; backend/transportation/models.py; backend/transportation/tests/test_transportation.py,transportation vehicles drivers routes stops riders assignments ride events dispatch run-sheet permissions and tenant isolation tests present,none,domain-owner-tbd
-025,Nutrition & Food Services,NOT_PROVEN,none-captured,requires meal plan and dietary accommodation tests,logistics-operations,domain-owner-tbd
+025,Nutrition & Food Services,PROVEN,backend/tests/test_51x51_evidence_25_nutrition_food_services.py; backend/crown_api/metrics_views.py; backend/crown_api/api_urls.py; PR#1062,food metrics route permission gate nutrition payload and dietary/allergen contract evidence present,none,domain-owner-tbd
 026,After-School & Extended Care,NOT_PROVEN,none-captured,requires enrollment and activity scheduling tests,student-services,domain-owner-tbd
 027,Communications Framework,PROVEN,backend/tests/test_51x51_evidence_27_communications.py,message routing and delivery tests present,none,domain-owner-tbd
 028,Parent Portal,PROVEN,backend/tests/test_51x51_evidence_28_parent_portal.py,parent account and permission tests present,none,domain-owner-tbd
