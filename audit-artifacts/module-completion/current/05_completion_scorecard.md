@@ -1,21 +1,21 @@
 # Crown2026: Module Completion Scorecard (Reconciled)
 
-**Generated:** 2026-06-16  
-**Source:** Canonical repository matrices plus committed Module 003, Module 007, Module 010, Module 014, wizard contract evidence, Module 016 faculty-load proof evidence, Module 018 room-management proof evidence, Module 019 assessment-framework proof evidence, Module 021 competency-tracking proof evidence, and Module 024 transportation proof evidence  
-**Authority:** Official 51-module matrix with 43 PROVEN, 8 NOT_PROVEN statuses; 28/28 wizard route/API contracts validated<br>
-**Status:** Matrix reconciliation updated; Modules 016, 018, 019, 021, and 024 credited as PROVEN from committed proof evidence
+**Generated:** 2026-06-17  
+**Source:** Canonical repository matrices plus committed Module 003, Module 007, Module 010, Module 014, wizard contract evidence, Module 016 faculty-load proof evidence, Module 018 room-management proof evidence, Module 019 assessment-framework proof evidence, Module 021 competency-tracking proof evidence, Module 024 transportation proof evidence, and Module 034 fundraising & advancement proof evidence (PR#1059)  
+**Authority:** Official 51-module matrix with 44 PROVEN, 7 NOT_PROVEN statuses; 28/28 wizard route/API contracts validated<br>
+**Status:** Matrix reconciliation updated; Modules 016, 018, 019, 021, 024, and 034 credited as PROVEN from committed proof evidence
 
 ---
 
 ## Executive Summary
 
-Crown2026 repository contains **51 canonical modules** with **43 PROVEN (84%)** and **8 NOT_PROVEN (16%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence, merged Module 007 data-import evidence, reconciled Module 010 proof evidence, Module 014 course/section proof evidence, current wizard route/API contract evidence, Module 016 faculty-load proof evidence, Module 018 room-management proof evidence, Module 019 assessment-framework proof evidence, Module 021 competency-tracking proof evidence, and Module 024 transportation proof evidence.
+Crown2026 repository contains **51 canonical modules** with **44 PROVEN (86%)** and **7 NOT_PROVEN (14%)** statuses. This scorecard reflects the authoritative certification matrix plus committed Module 003 evidence, merged Module 007 data-import evidence, reconciled Module 010 proof evidence, Module 014 course/section proof evidence, current wizard route/API contract evidence, Module 016 faculty-load proof evidence, Module 018 room-management proof evidence, Module 019 assessment-framework proof evidence, Module 021 competency-tracking proof evidence, Module 024 transportation proof evidence, and Module 034 fundraising & advancement proof evidence (PR#1059).
 
 All previous generated estimates based on partial module counts remain reset to canonical authority. No work should proceed from uncertified local matrices.
 
 **Key Findings:**
-- Proven modules (43): 001-024, 027-029, 032-033, 035-036, 038, 040-049, 051.
-- Operational gaps (8): 025-026, 030-031, 034, 037, 039, 050.
+- Proven modules (44): 001-024, 027-029, 032-036, 038, 040-049, 051.
+- Operational gaps (7): 025-026, 030-031, 037, 039, 050.
 
 **Scope Boundary Note:** Module 010, Module 014, Module 016, Module 018, Module 019, Module 021, and Module 024 proof do not certify dashboard live-data readiness, full wizard runtime completion, production readiness, independent review, or release approval.
 
@@ -74,7 +74,7 @@ All previous generated estimates based on partial module counts remain reset to 
 | 031 | Administrative Portal | NOT_PROVEN | none-captured | admin workspace and oversight tests required |
 | 032 | Activities & Athletics & Events | PROVEN | backend/tests/test_51x51_evidence_32_activities___athletics___events.py | none |
 | 033 | Nurse Office & Health Office | PROVEN | backend/tests/test_51x51_evidence_33_nurse_office___health_office.py | none |
-| 034 | Fundraising & Giving | NOT_PROVEN | none-captured | campaign management and donor tracking tests required |
+| 034 | Fundraising & Giving | PROVEN | backend/advancement/models.py; backend/advancement/api.py; backend/tests/test_51x51_evidence_034_fundraising.py; PR#1059 (feat/module-034: fundraising & advancement gap-completion canonical proof) | none |
 | 035 | Food Services | PROVEN | backend/tests/test_51x51_evidence_35_food_services.py | none |
 | 036 | Volunteer & Family Engagement | PROVEN | backend/tests/test_51x51_evidence_36_volunteer___family_engagement.py | none |
 | 037 | Advanced Discipline Workflows | NOT_PROVEN | none-captured | appeal process and data retention tests required |
@@ -82,7 +82,7 @@ All previous generated estimates based on partial module counts remain reset to 
 | 039 | Christian Formation & Tracking | NOT_PROVEN | none-captured | faith formation rubric and portfolio tests required |
 | 040 | Service & Outreach | PROVEN | backend/tests/test_51x51_evidence_40_service___outreach.py | none |
 
-**Completion Rate: 59% (10 of 17 PROVEN)**
+**Completion Rate: 65% (11 of 17 PROVEN)**
 
 ### Mission & Advanced Services (Modules 041-051)
 
