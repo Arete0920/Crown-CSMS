@@ -32,7 +32,7 @@ module_id,module_name,certification_status,evidence_file,current_proof,blocker_c
 031,Administrative Portal,NOT_PROVEN,none-captured,requires admin workspace and oversight tests,admin-portal,domain-owner-tbd
 032,Activities & Athletics & Events,PROVEN,backend/tests/test_51x51_evidence_32_activities___athletics___events.py,activity registration and roster tests present,none,domain-owner-tbd
 033,Nurse Office & Health Office,PROVEN,backend/tests/test_51x51_evidence_33_nurse_office___health_office.py,health encounter and medication logging tests present,none,domain-owner-tbd
-034,Fundraising & Giving,NOT_PROVEN,none-captured,requires campaign management and donor tracking tests,advancement-finance,domain-owner-tbd
+034,Fundraising & Giving,PROVEN,backend/advancement/models.py; backend/advancement/api.py; backend/tests/test_51x51_evidence_034_fundraising.py; PR#1059,donor campaign event ticket and sponsorship models API endpoints RBAC enforcement audit logging tenant isolation and metrics dashboard tests present,none,domain-owner-tbd
 035,Food Services,PROVEN,backend/tests/test_51x51_evidence_35_food_services.py,meal service scheduling and inventory tests present,none,domain-owner-tbd
 036,Volunteer & Family Engagement,PROVEN,backend/tests/test_51x51_evidence_36_volunteer___family_engagement.py,volunteer placement and time logging tests present,none,domain-owner-tbd
 037,Advanced Discipline Workflows,NOT_PROVEN,none-captured,requires appeal process and data retention tests,student-services,domain-owner-tbd
