@@ -7,7 +7,7 @@ Independent reviewer: TBD
 Status: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
 Date: 2026-06-18
 Current proof commit SHA: 43e072dc49e849c33b9d979fd2892629dcb11048
-Latest evidence packet update: 7a8390325af1cefe27bc6d744865ea8e3107fdd6
+Latest evidence packet update: 554a03929a873daac99487554030c8280c4420f2
 
 ## 1. Contract
 
@@ -68,19 +68,42 @@ Interpretation:
 - Authenticated non-staff user receives 403: PASS.
 - Unauthenticated user receives 401 as part of file-level Batch 0 tests: PASS.
 
-## 4. Frontend proof
+## 4. Frontend static proof
 
+- Static frontend proof packet: audit-artifacts/dashboard-completion/frontend-proof/batch0/dashboard-certification-center-static-proof-20260618.md
+- Static frontend proof commit: 554a03929a873daac99487554030c8280c4420f2
 - Dashboard page path: frontend/dashboards/src/pages/DashboardCertificationCenter.jsx
 - API client/hook path: frontend/dashboards/src/hooks/useDashboardData.js
 - Dashboard template path: frontend/dashboards/src/config/dashboardTemplates/dashboardCertificationCenterDashboard.js
 - Registry path: frontend/dashboards/src/config/dashboardDataRegistry.js
-- Live metadata test path: frontend/dashboards/src/config/dashboardTemplateLiveMetadata.test.js
-- Frontend test result: pending current-main rerun after permission proof update
+- Dashboard registry path: frontend/dashboards/src/config/dashboardRegistry.js
+- Route path constant: frontend/dashboards/src/routes/paths.js
+- Dashboard route generator: frontend/dashboards/src/routes/dashboardRoutes.jsx
+- Browser router: frontend/dashboards/src/routes/router.jsx
+
+Static frontend proof result:
+
+- Page component exists: PASS.
+- Page renders `CrownDashboardTemplate`: PASS.
+- Template key `dashboardCertificationCenter` exists: PASS.
+- Template static metrics do not overclaim certification: PASS.
+- Template API endpoint points to `/api/v1/dashboards/dashboard-certification-center/summary`: PASS.
+- Frontend data registry entry exists: PASS.
+- Frontend data registry fallback values remain 0 certified / 40 mapped / 0 pending review / 0%: PASS.
+- Central dashboard registry entry exists: PASS.
+- Central dashboard registry path uses `PATHS.DASHBOARD_CERTIFICATION_CENTER`: PASS.
+- Central dashboard registry role guard uses `PLATFORM_CERT_TEAM`: PASS.
+- `PLATFORM_CERT_TEAM` derives from release/compliance/master-control roles: PASS.
+- Canonical route path `/dashboard-certification-center` exists: PASS.
+- Dashboard registry routes wrap each dashboard in `RoleRouteGuard` and `ReleaseStateRoute`: PASS.
+- Main router spreads `...dashboardRoutes`: PASS.
+
+Frontend runtime test result: pending.
 
 ## 5. Runtime proof
 
 - Environment: Codespace runtime startup and HTTP reachability partial proof
-- URL: /dashboards/dashboard-certification-center
+- URL: /dashboard-certification-center
 - Runtime proof packet: audit-artifacts/dashboard-completion/runtime-proof/batch0/dashboard-certification-center-codespace-runtime-partial-20260618.md
 - Backend server startup: PASS from user-provided Codespace report
 - Frontend server startup: PASS from user-provided Codespace report
@@ -93,7 +116,7 @@ Interpretation:
 
 - Owner assignment: pending
 - Independent reviewer assignment: pending
-- Dashboard-specific role matrix proof: API-level role proof passed for staff/superuser/non-staff; frontend role experience pending
+- Dashboard-specific role matrix proof: API-level role proof passed for staff/superuser/non-staff; static frontend route guard proof passed for `PLATFORM_CERT_TEAM`; browser role experience pending
 - Dashboard-specific tenant proof: pending
 - Evidence packet review: pending
 - Certification decision: pending
@@ -136,7 +159,7 @@ Notes: TC cannot self-approve certification-affecting work.
 
 - Matrix row updated: not yet
 - Status promoted to: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
-- Remaining blockers: owner assignment, independent reviewer assignment, browser-rendered title/metrics proof, screenshot or trace artifact, frontend role experience proof, tenant proof, evidence packet review, certification decision
+- Remaining blockers: owner assignment, independent reviewer assignment, browser-rendered title/metrics proof, screenshot or trace artifact, frontend runtime test proof, browser role experience proof, tenant proof, evidence packet review, certification decision
 
 ## 10. Non-claims
 
