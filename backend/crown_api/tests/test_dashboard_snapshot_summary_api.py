@@ -124,6 +124,22 @@ def test_batch0_summary_routes_serve_sample_payloads_in_development(dashboard_ke
     assert len(data['metrics']) > 0
 
 
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    'dashboard_key',
+    ['dashboard-certification-center', 'release-reliability', 'compliance-audit'],
+)
+def test_batch0_summary_routes_require_authentication(dashboard_key):
+    client = APIClient()
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': dashboard_key}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 401
+
+
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='production')
 @pytest.mark.django_db
 def test_unknown_dashboard_returns_404():
