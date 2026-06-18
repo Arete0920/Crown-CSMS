@@ -39,27 +39,19 @@ TBD.
 
 ## Summary API
 
-/api/v1/dashboards/dashboard-certification-center/summary/
+/api/v1/dashboards/dashboard-certification-center/summary
 
 ## Payload contract
 
-```json
+~~~json
 {
   "dashboard_key": "dashboard-certification-center",
-  "module_key": "dashboard-certification-center",
-  "schema_version": "1.0",
-  "served_from": "live",
-  "source_module": "dashboard-certification-center",
-  "generated_at": "",
-  "expires_at": null,
-  "sensitivity_level": "internal",
   "metrics": [],
   "alerts": [],
   "queue": [],
-  "drilldowns": [],
-  "redactions": []
+  "meta": {}
 }
-```
+~~~
 
 ## Security
 
