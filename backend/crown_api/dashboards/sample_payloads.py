@@ -940,10 +940,10 @@ def dashboard_certification_center_sample_payload(school_id):
     return build_dashboard_payload(
         dashboard_key='dashboard-certification-center',
         metrics=[
-            metric('Dashboards Certified', '41'),
-            metric('Pending Review', '6'),
-            metric('Failed Certification', '2'),
-            metric('Cert Rate', '91%'),
+            metric('Dashboards Certified', '0'),
+            metric('Pending Review', '0'),
+            metric('Failed Certification', '0'),
+            metric('Cert Rate', '0%'),
         ],
         alerts=[
             alert('Six dashboards are still in the review queue', 'High', 'Clear the queue before end of week.'),
