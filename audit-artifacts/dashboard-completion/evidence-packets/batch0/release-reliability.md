@@ -62,7 +62,7 @@ Commit SHA: 2ebc116c
 
 ## 5. Security proof
 
-- Unauthenticated denied: PASS for dashboard summary APIs in backend/crown_api/tests/test_dashboards_role_contract.py::test_unauthenticated_returns_401
+- Unauthenticated denied: PASS for keyed endpoint /api/dashboards/release-reliability/summary in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_require_authentication
 - Unauthorized role denied: PARTIAL (covered for cross-tenant dashboard summary contract endpoints; keyed batch0 endpoint-specific role denial not yet captured)
 - Authorized role allowed: PASS in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_serve_sample_payloads_in_development
 - Direct URL tested: PASS for /api/dashboards/release-reliability/summary in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py

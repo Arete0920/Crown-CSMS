@@ -65,7 +65,7 @@ Provide a compliance dashboard summary payload for compliance monitoring with me
 
 - Auth required: yes
 - Roles allowed: authenticated user (current proof slice)
-- Roles denied: unauthenticated denied (401 proven for dashboard summary contract endpoints)
+- Roles denied: unauthenticated denied (401 proven for keyed Batch 0 summary endpoint)
 - Entitlement required: no dashboard-specific entitlement gate proven in this slice
 - Tenant enforcement: required, but keyed endpoint-specific proof is still pending
 - Cross-tenant denial behavior: required, but keyed endpoint-specific proof is still pending
@@ -77,7 +77,8 @@ Provide a compliance dashboard summary payload for compliance monitoring with me
 ## Evidence snapshot
 
 - Backend route and sample payload proof: `backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_serve_sample_payloads_in_development` (PASS)
-- Unauthenticated denial and cross-tenant baseline proof on dashboard summary contract endpoints: `backend/crown_api/tests/test_dashboards_role_contract.py` (PASS)
+- Unauthenticated denial proof on keyed Batch 0 summary endpoints: `backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_require_authentication` (PASS)
+- Cross-tenant baseline proof on dashboard summary contract endpoints: `backend/crown_api/tests/test_dashboards_role_contract.py::test_cross_tenant_access_blocked` (PASS)
 - Tenant isolation baseline proof on dashboard APIs: `backend/crown_api/tests/test_dashboard_tenant_isolation.py` (PASS)
 - Browser runtime proof: pending
 - Independent review: pending
