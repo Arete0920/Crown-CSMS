@@ -1,0 +1,52 @@
+=== Module 037 Implementation Inventory ===
+Date: 2026-06-18T00:15:36Z
+
+--- Discipline Models ---
+/home/runner/work/Crown2026/Crown2026/backend/discipline/__init__.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/admin.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/api/__init__.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/api/serializers.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/api/urls.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/api/views.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/apps.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/forms.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/management/__init__.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/management/commands/__init__.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/management/commands/seed_discipline_demo.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/migrations/0001_initial.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/migrations/0002_alter_disciplineaction_action_type.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/migrations/0003_alter_disciplineaction_action_type.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/migrations/__init__.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/models.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/permissions.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/serializers.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/services.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/signals.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/tests.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/urls.py
+/home/runner/work/Crown2026/Crown2026/backend/discipline/views.py
+
+--- Existing Discipline Tests ---
+/home/runner/work/Crown2026/Crown2026/backend/tests/__pycache__/test_51x51_evidence_037_advanced_discipline_workflows.cpython-312-pytest-9.0.3.pyc
+/home/runner/work/Crown2026/Crown2026/backend/tests/__pycache__/test_51x51_evidence_037_discipline.cpython-312-pytest-9.0.3.pyc
+/home/runner/work/Crown2026/Crown2026/backend/tests/audit_51x51/test_51x51_module_22_student_care___discipline_summary_closure.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/audit_51x51/test_51x51_module_38_extended_discipline_workflows_closure.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_51x51_evidence_037_advanced_discipline_workflows.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_51x51_evidence_037_discipline.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_51x51_evidence_22_student_care___discipline_summary.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_51x51_evidence_38_extended_discipline_workflows.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_extended_discipline_api.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_extended_discipline_negative.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_extended_discipline_tenant.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_extended_discipline_unit.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_student_care_discipline_api.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_student_care_discipline_negative.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_student_care_discipline_tenant.py
+/home/runner/work/Crown2026/Crown2026/backend/tests/test_student_care_discipline_unit.py
+
+--- Discipline API URLs (from crown_api/api_urls.py) ---
+108:    # New demo pillars (discipline, service hours, Teams integration)
+109:    path("discipline/", include("discipline.api.urls")),
+
+--- Registered URL: /api/discipline/incidents/ ---
+Confirmed via: python -c 'from django.urls import reverse; print(reverse("discipline_incidents"))'
