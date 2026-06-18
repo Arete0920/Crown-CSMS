@@ -7,6 +7,7 @@ Independent reviewer: TBD
 Status: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
 Date: 2026-06-18
 Current proof commit SHA: 43e072dc49e849c33b9d979fd2892629dcb11048
+Latest evidence packet update: 7a8390325af1cefe27bc6d744865ea8e3107fdd6
 
 ## 1. Contract
 
@@ -78,11 +79,15 @@ Interpretation:
 
 ## 5. Runtime proof
 
-- Environment: backend API test runtime only so far
-- URL: /api/v1/dashboards/dashboard-certification-center/summary
-- Browser runtime proof: pending
-- Screenshot/trace path: pending
-- Result: API authentication and permission proof passed; browser/runtime proof pending
+- Environment: Codespace runtime startup and HTTP reachability partial proof
+- URL: /dashboards/dashboard-certification-center
+- Runtime proof packet: audit-artifacts/dashboard-completion/runtime-proof/batch0/dashboard-certification-center-codespace-runtime-partial-20260618.md
+- Backend server startup: PASS from user-provided Codespace report
+- Frontend server startup: PASS from user-provided Codespace report
+- Frontend HTTP 200 reachability: PASS from user-provided Codespace report
+- Browser-rendered title/metrics proof: NOT VERIFIED
+- Screenshot/trace path: NOT PROVIDED
+- Result: PARTIAL RUNTIME INFRASTRUCTURE PROOF ONLY; browser-rendered dashboard proof remains pending
 
 ## 6. Governance proof
 
@@ -131,7 +136,7 @@ Notes: TC cannot self-approve certification-affecting work.
 
 - Matrix row updated: not yet
 - Status promoted to: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
-- Remaining blockers: owner assignment, independent reviewer assignment, browser runtime proof, frontend runtime proof, tenant proof, evidence packet review, certification decision
+- Remaining blockers: owner assignment, independent reviewer assignment, browser-rendered title/metrics proof, screenshot or trace artifact, frontend role experience proof, tenant proof, evidence packet review, certification decision
 
 ## 10. Non-claims
 
