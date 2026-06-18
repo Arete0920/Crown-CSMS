@@ -18,14 +18,20 @@ IMPLEMENTATION FILES FOUND:
 
   backend/core/management/commands/seed_permissions.py
     - ("admin.view", "View administration dashboard")
-    - admin.view assigned to PRINCIPAL, school_admin, HEAD_OF_SCHOOL roles
+    - admin.view is defined in the canonical seed list
+    - This evidence packet does not claim PRINCIPAL role mapping
 
   backend/core/permissions.py
-    - require_permission() decorator: returns 403 for unauthenticated/unpermitted users
-    - user_has_permission(): school-scoped role lookup via UserRole FK
+    - require_permission() decorator: returns deterministic 403 for unauthenticated/unpermitted users
+    - user_has_permission(): school-scoped role lookup via UserRole FK when a school is supplied
 
   backend/executive360/api/views.py
     - ExecutiveSelfOverview (GET /api/executive360/me/overview/), IsAuthenticated
+
+TEST ENVIRONMENT BOUNDARY:
+  backend/tests/conftest.py disables TENANT_HEADER_REQUIRED.
+  This proof does not claim HTTP middleware-attached request.school coverage from HTTP_X_SCHOOL_ID.
+  Tenant isolation is proven directly through user_has_permission(user, "admin.view", school=school_b) -> False.
 
 RELATED MATRICES:
   audit-artifacts/module-completion/current/01_module_matrix_expanded.csv
