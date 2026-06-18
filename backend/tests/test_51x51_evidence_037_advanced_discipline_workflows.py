@@ -75,11 +75,6 @@ AUDIT_KEYWORDS = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _school(tag=""):
     return School.objects.create(
         name=f"M037 {tag or uuid.uuid4().hex[:6]}",
@@ -112,7 +107,6 @@ def _staff_user(tag="staff"):
     return User.objects.create_user(
         username=f"m037_{tag}_{suffix}",
         email=f"m037_{tag}_{suffix}@example.com",
-        password="pass1234",
         is_staff=True,
     )
 
@@ -122,7 +116,6 @@ def _regular_user(tag="user"):
     return User.objects.create_user(
         username=f"m037_{tag}_{suffix}",
         email=f"m037_{tag}_{suffix}@example.com",
-        password="pass1234",
     )
 
 
@@ -151,17 +144,13 @@ def _incident(school, student, actor=None, **overrides):
     return inc
 
 
-# ---------------------------------------------------------------------------
-# Module metadata proof
-# ---------------------------------------------------------------------------
-
-
 class TestModule037Metadata(TestCase):
     def test_module_id_is_correct(self):
         self.assertEqual(MODULE_ID, 37)
 
     def test_module_name_present(self):
-        self.assertIn("Discipline", MODULE_NAME)
+        self.assertTrue(MODULE_NAME.strip())
+        self.assertEqual(MODULE_NAME, "Advanced Discipline Workflows")
 
     def test_audit_keywords_include_required_tokens(self):
         required = [
@@ -172,22 +161,13 @@ class TestModule037Metadata(TestCase):
             self.assertIn(token, AUDIT_KEYWORDS, f"Missing audit keyword: {token}")
 
 
-# ---------------------------------------------------------------------------
-# Auth boundary: unauthenticated → 401
-# ---------------------------------------------------------------------------
-
-
 class TestModule037AuthBoundary(TestCase):
     def setUp(self):
         self.school = _school("auth")
 
     def test_unauthed_get_incidents_returns_401(self):
         r = APIClient().get(DISCIPLINE_INCIDENTS_URL, **_hdr(self.school.id))
-        self.assertEqual(
-            r.status_code,
-            401,
-            f"Expected 401 unauthenticated, got {r.status_code}.",
-        )
+        self.assertEqual(r.status_code, 401, f"Expected 401 unauthenticated, got {r.status_code}.")
 
     def test_unauthed_post_incident_returns_401(self):
         payload = {
@@ -195,27 +175,12 @@ class TestModule037AuthBoundary(TestCase):
             "occurred_at": "2026-06-01T09:00:00Z",
             "summary": "Unauthorized test attempt",
         }
-        r = APIClient().post(
-            DISCIPLINE_INCIDENTS_URL, payload, format="json", **_hdr(self.school.id)
-        )
-        self.assertEqual(
-            r.status_code,
-            401,
-            f"Expected 401 unauthenticated POST, got {r.status_code}.",
-        )
+        r = APIClient().post(DISCIPLINE_INCIDENTS_URL, payload, format="json", **_hdr(self.school.id))
+        self.assertEqual(r.status_code, 401, f"Expected 401 unauthenticated POST, got {r.status_code}.")
 
     def test_unauthed_get_metrics_returns_401(self):
         r = APIClient().get(DISCIPLINE_METRICS_URL, **_hdr(self.school.id))
-        self.assertEqual(
-            r.status_code,
-            401,
-            f"Expected 401 unauthenticated metrics, got {r.status_code}.",
-        )
-
-
-# ---------------------------------------------------------------------------
-# Tenant isolation: cross-school access denied
-# ---------------------------------------------------------------------------
+        self.assertEqual(r.status_code, 401, f"Expected 401 unauthenticated metrics, got {r.status_code}.")
 
 
 class TestModule037TenantIsolation(TestCase):
@@ -227,37 +192,36 @@ class TestModule037TenantIsolation(TestCase):
         self.student_a = _student(self.school_a)
 
     def test_incidents_scoped_to_requesting_school(self):
-        """Staff user sees only school A incidents when querying school A."""
-        _incident(self.school_a, self.student_a, actor=self.staff_a)
+        """Staff user sees school A incident under school A and not school B."""
+        inc = _incident(self.school_a, self.student_a, actor=self.staff_a)
         client = APIClient()
         client.force_authenticate(self.staff_a)
 
         r_a = client.get(DISCIPLINE_INCIDENTS_URL, **_hdr(self.school_a.id))
         self.assertEqual(r_a.status_code, 200)
-        ids_a = {row["id"] for row in r_a.data}
+        ids_a = {str(row["id"]) for row in r_a.data}
+        self.assertIn(str(inc.id), ids_a, "Expected school A incident in school A listing.")
 
         r_b = client.get(DISCIPLINE_INCIDENTS_URL, **_hdr(self.school_b.id))
         self.assertEqual(r_b.status_code, 200)
-        ids_b = {row["id"] for row in r_b.data}
+        ids_b = {str(row["id"]) for row in r_b.data}
 
-        # School A incident must not appear in school B listing.
+        self.assertNotIn(str(inc.id), ids_b, "Cross-tenant leak: school A incident visible under school B.")
         self.assertTrue(ids_a.isdisjoint(ids_b), "Cross-tenant leak: school A incident visible under school B.")
 
     def test_non_staff_cross_tenant_header_denied(self):
-        """Non-staff user with school B header cannot access school A incidents."""
-        # Give regular_b a school_id so it can try to cross into school A.
+        """Non-staff user with school B identity cannot access school A tenant header."""
         self.regular_b.school_id = self.school_b.id
-        self.regular_b.save()
+        self.regular_b.save(update_fields=["school_id"])
 
         client = APIClient()
         client.force_authenticate(self.regular_b)
 
-        # Attempt to access school A with non-staff user bearing school B identity.
         r = client.get(DISCIPLINE_INCIDENTS_URL, **_hdr(self.school_a.id))
-        self.assertIn(
+        self.assertEqual(
             r.status_code,
-            (403, 404, 400),
-            f"Expected access denied for cross-tenant request, got {r.status_code}.",
+            404,
+            f"Expected 404 for non-staff cross-tenant request, got {r.status_code}.",
         )
 
     def test_orm_isolation_school_a_invisible_to_school_b(self):
@@ -267,18 +231,7 @@ class TestModule037TenantIsolation(TestCase):
         self.assertEqual(count_b, 0, "ORM tenant isolation failed: school B sees school A data.")
 
 
-# ---------------------------------------------------------------------------
-# Incident lifecycle and appeal workflow via action trail
-# ---------------------------------------------------------------------------
-
-
 class TestModule037AppealLifecycle(TestCase):
-    """
-    The discipline model supports appeal-like lifecycle via DisciplineAction
-    action_type=status_changed.  This test proves the full open → investigating
-    → closed trail is append-only and auditable.
-    """
-
     def setUp(self):
         self.school = _school("lifecycle")
         self.student = _student(self.school)
@@ -287,10 +240,7 @@ class TestModule037AppealLifecycle(TestCase):
     def test_incident_created_with_open_status(self):
         inc = _incident(self.school, self.student, actor=self.actor)
         self.assertEqual(inc.status, "open")
-        self.assertEqual(
-            DisciplineAction.objects.filter(incident=inc, action_type="created").count(),
-            1,
-        )
+        self.assertEqual(DisciplineAction.objects.filter(incident=inc, action_type="created").count(), 1)
 
     def test_status_transition_open_to_investigating(self):
         inc = _incident(self.school, self.student, actor=self.actor)
@@ -300,13 +250,11 @@ class TestModule037AppealLifecycle(TestCase):
             incident=inc,
             actor=self.actor,
             action_type="status_changed",
-            note="Under review — appeal submitted by parent",
+            note="Under review - appeal submitted by parent",
         )
         inc.refresh_from_db()
         self.assertEqual(inc.status, "investigating")
-        action_types = list(
-            DisciplineAction.objects.filter(incident=inc).values_list("action_type", flat=True)
-        )
+        action_types = list(DisciplineAction.objects.filter(incident=inc).values_list("action_type", flat=True))
         self.assertIn("created", action_types)
         self.assertIn("status_changed", action_types)
 
@@ -314,25 +262,13 @@ class TestModule037AppealLifecycle(TestCase):
         inc = _incident(self.school, self.student, actor=self.actor)
         inc.status = "investigating"
         inc.save(update_fields=["status"])
-        DisciplineAction.objects.create(
-            incident=inc,
-            actor=self.actor,
-            action_type="status_changed",
-            note="Appeal under review",
-        )
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="status_changed", note="Appeal under review")
         inc.status = "closed"
         inc.save(update_fields=["status"])
-        DisciplineAction.objects.create(
-            incident=inc,
-            actor=self.actor,
-            action_type="closed",
-            note="Appeal resolved — closed",
-        )
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="closed", note="Appeal resolved - closed")
         inc.refresh_from_db()
         self.assertEqual(inc.status, "closed")
-        trail = list(
-            DisciplineAction.objects.filter(incident=inc).values_list("action_type", flat=True)
-        )
+        trail = list(DisciplineAction.objects.filter(incident=inc).values_list("action_type", flat=True))
         self.assertEqual(trail[0], "created")
         self.assertIn("status_changed", trail)
         self.assertEqual(trail[-1], "closed")
@@ -342,46 +278,19 @@ class TestModule037AppealLifecycle(TestCase):
         inc.parent_notified = True
         inc.parent_notified_at = timezone.now()
         inc.save(update_fields=["parent_notified", "parent_notified_at"])
-        DisciplineAction.objects.create(
-            incident=inc,
-            actor=self.actor,
-            action_type="parent_notified",
-            note="Parent contacted re: appeal",
-        )
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="parent_notified", note="Parent contacted re: appeal")
         self.assertTrue(inc.parent_notified)
-        self.assertEqual(
-            DisciplineAction.objects.filter(
-                incident=inc, action_type="parent_notified"
-            ).count(),
-            1,
-        )
+        self.assertEqual(DisciplineAction.objects.filter(incident=inc, action_type="parent_notified").count(), 1)
 
     def test_appeal_note_attached_to_action_trail(self):
         inc = _incident(self.school, self.student, actor=self.actor)
-        DisciplineAction.objects.create(
-            incident=inc,
-            actor=self.actor,
-            action_type="note",
-            note="Parent requests appeal review of minor violation",
-        )
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="note", note="Parent requests appeal review of minor violation")
         notes = DisciplineAction.objects.filter(incident=inc, action_type="note")
         self.assertTrue(notes.exists())
         self.assertIn("appeal", notes.first().note.lower())
 
 
-# ---------------------------------------------------------------------------
-# Audit trail immutability
-# ---------------------------------------------------------------------------
-
-
 class TestModule037AuditTrailImmutability(TestCase):
-    """
-    DisciplineAction.created_at uses auto_now_add=True.
-    This makes the timestamp immutable after creation — a core audit invariant.
-    The action log grows monotonically; past entries cannot be deleted by normal
-    business logic.
-    """
-
     def setUp(self):
         self.school = _school("audit")
         self.student = _student(self.school)
@@ -389,10 +298,7 @@ class TestModule037AuditTrailImmutability(TestCase):
 
     def test_action_created_at_is_auto_now_add(self):
         f = DisciplineAction._meta.get_field("created_at")
-        self.assertTrue(
-            getattr(f, "auto_now_add", False),
-            "created_at must be auto_now_add for immutability.",
-        )
+        self.assertTrue(getattr(f, "auto_now_add", False), "created_at must be auto_now_add for immutability.")
 
     def test_action_ordering_is_chronological(self):
         ordering = DisciplineAction._meta.ordering
@@ -400,59 +306,29 @@ class TestModule037AuditTrailImmutability(TestCase):
 
     def test_multiple_actions_append_in_order(self):
         inc = _incident(self.school, self.student, actor=self.actor)
-        DisciplineAction.objects.create(
-            incident=inc, actor=self.actor, action_type="note", note="First note"
-        )
-        DisciplineAction.objects.create(
-            incident=inc, actor=self.actor, action_type="status_changed", note="Investigating"
-        )
-        DisciplineAction.objects.create(
-            incident=inc, actor=self.actor, action_type="closed", note="Resolved"
-        )
-        actions = list(
-            DisciplineAction.objects.filter(incident=inc).values_list("action_type", flat=True)
-        )
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="note", note="First note")
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="status_changed", note="Investigating")
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="closed", note="Resolved")
+        actions = list(DisciplineAction.objects.filter(incident=inc).values_list("action_type", flat=True))
         self.assertEqual(actions[0], "created")
         self.assertEqual(actions[-1], "closed")
         self.assertEqual(len(actions), 4)
 
     def test_incident_action_index_covers_audit_query(self):
         """DisciplineAction has composite index on (incident, created_at) for audit queries."""
-        index_fields = [
-            tuple(idx.fields) for idx in DisciplineAction._meta.indexes
-        ]
-        self.assertIn(
-            ("incident", "created_at"),
-            index_fields,
-            "Expected composite index on (incident, created_at) for audit trail queries.",
-        )
-
-
-# ---------------------------------------------------------------------------
-# Data retention: closed incidents remain retrievable
-# ---------------------------------------------------------------------------
+        index_fields = [tuple(idx.fields) for idx in DisciplineAction._meta.indexes]
+        self.assertIn(("incident", "created_at"), index_fields, "Expected composite index on (incident, created_at) for audit trail queries.")
 
 
 class TestModule037DataRetention(TestCase):
-    """
-    Closed/archived incidents are not deleted — they persist for data retention.
-    The status field is the archive mechanism; no physical deletion occurs in
-    normal workflow.
-    """
-
     def setUp(self):
         self.school = _school("retention")
         self.student = _student(self.school)
         self.actor = _staff_user("retention")
 
     def test_closed_incident_persists_in_orm(self):
-        inc = _incident(
-            self.school, self.student, actor=self.actor, status="closed"
-        )
-        self.assertTrue(
-            DisciplineIncident.objects.filter(pk=inc.pk, status="closed").exists(),
-            "Closed incident must remain in database (data retention).",
-        )
+        inc = _incident(self.school, self.student, actor=self.actor, status="closed")
+        self.assertTrue(DisciplineIncident.objects.filter(pk=inc.pk, status="closed").exists(), "Closed incident must remain in database (data retention).")
 
     def test_status_filter_returns_closed_incidents(self):
         _incident(self.school, self.student, status="open")
@@ -470,24 +346,12 @@ class TestModule037DataRetention(TestCase):
 
     def test_incident_action_trail_retained_after_closure(self):
         inc = _incident(self.school, self.student, actor=self.actor)
-        DisciplineAction.objects.create(
-            incident=inc, actor=self.actor, action_type="note", note="Pre-close note"
-        )
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="note", note="Pre-close note")
         inc.status = "closed"
         inc.save(update_fields=["status"])
-        DisciplineAction.objects.create(
-            incident=inc, actor=self.actor, action_type="closed", note="Closed"
-        )
-        # After closure, the full action trail must still be accessible.
+        DisciplineAction.objects.create(incident=inc, actor=self.actor, action_type="closed", note="Closed")
         action_count = DisciplineAction.objects.filter(incident=inc).count()
-        self.assertGreaterEqual(
-            action_count, 3, "Action trail must be retained after incident closure."
-        )
-
-
-# ---------------------------------------------------------------------------
-# API-level proof: authenticated requests exercise tenant-scoped responses
-# ---------------------------------------------------------------------------
+        self.assertGreaterEqual(action_count, 3, "Action trail must be retained after incident closure.")
 
 
 class TestModule037APIIncidentCRUD(TestCase):
@@ -512,9 +376,7 @@ class TestModule037APIIncidentCRUD(TestCase):
             "category": "disruption",
             "severity": "minor",
         }
-        r = client.post(
-            DISCIPLINE_INCIDENTS_URL, payload, format="json", **_hdr(self.school.id)
-        )
+        r = client.post(DISCIPLINE_INCIDENTS_URL, payload, format="json", **_hdr(self.school.id))
         self.assertEqual(r.status_code, 201, getattr(r, "data", r.content))
         self.assertIn("id", r.data)
 
@@ -522,9 +384,7 @@ class TestModule037APIIncidentCRUD(TestCase):
         inc = _incident(self.school, self.student, actor=self.staff)
         client = APIClient()
         client.force_authenticate(self.staff)
-        r = client.get(
-            f"{DISCIPLINE_INCIDENTS_URL}{inc.pk}/", **_hdr(self.school.id)
-        )
+        r = client.get(f"{DISCIPLINE_INCIDENTS_URL}{inc.pk}/", **_hdr(self.school.id))
         self.assertEqual(r.status_code, 200)
 
     def test_incident_detail_wrong_school_returns_404(self):
@@ -532,14 +392,8 @@ class TestModule037APIIncidentCRUD(TestCase):
         inc = _incident(self.school, self.student, actor=self.staff)
         client = APIClient()
         client.force_authenticate(self.staff)
-        r = client.get(
-            f"{DISCIPLINE_INCIDENTS_URL}{inc.pk}/", **_hdr(other_school.id)
-        )
-        self.assertEqual(
-            r.status_code,
-            404,
-            f"Expected 404 for cross-tenant detail access, got {r.status_code}.",
-        )
+        r = client.get(f"{DISCIPLINE_INCIDENTS_URL}{inc.pk}/", **_hdr(other_school.id))
+        self.assertEqual(r.status_code, 404, f"Expected 404 for cross-tenant detail access, got {r.status_code}.")
 
     def test_action_post_appends_to_audit_trail(self):
         inc = _incident(self.school, self.student, actor=self.staff)
@@ -564,9 +418,6 @@ class TestModule037APIIncidentCRUD(TestCase):
         self.assertIn("total", r.data)
 
 
-# ---------------------------------------------------------------------------
-# Audit searchable context block
-# ---------------------------------------------------------------------------
 # Module 037: Advanced Discipline Workflows
 # Layer: Second-Wave Module
 # Owner: Dev 3
