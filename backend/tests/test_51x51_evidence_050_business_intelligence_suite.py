@@ -15,6 +15,7 @@ Non-claims:
 - no production-readiness claim
 """
 
+from datetime import date
 import uuid
 
 import pytest
@@ -28,7 +29,7 @@ MODULE_ID = 50
 MODULE_NAME = "Business Intelligence Suite"
 ANALYTICS_HEALTH_URL = "/api/v1/analytics/health/"
 ANALYTICS_EXPORT_URL = "/api/v1/analytics/export/"
-TODAY = __import__("datetime").date.today()
+TODAY = date.today()
 
 MODULE_TEXT = """
 Business Intelligence Suite provides trends, benchmarks, comparative indicators,
