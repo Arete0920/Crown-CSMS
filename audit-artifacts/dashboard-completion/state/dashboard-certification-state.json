@@ -1,0 +1,145 @@
+{
+  "schema_version": "2026-06-18.dashboard-certification-state.v1",
+  "generated_at": "2026-06-18",
+  "status": "evidence_register_not_certification",
+  "source_of_truth_note": "This register tracks proof state only. A dashboard is certified only after required proof, independent review, and matrix promotion are complete.",
+  "totals": {
+    "dashboards_total": 40,
+    "certified": 0,
+    "mapped_only": 40,
+    "pending_independent_review": 0,
+    "certification_rate_percent": 0
+  },
+  "batches": {
+    "batch0": {
+      "status": "proof_in_progress_certification_blocked",
+      "dashboards": [
+        "dashboard-certification-center",
+        "release-reliability",
+        "compliance-audit"
+      ],
+      "blockers": [
+        "valid_owner_assignment",
+        "valid_independent_reviewer_assignment",
+        "browser_runtime_proof",
+        "tenant_proof",
+        "evidence_packet_review",
+        "certification_decision",
+        "matrix_promotion"
+      ]
+    },
+    "batch1": {
+      "status": "parked_until_batch0_controls_complete",
+      "dashboards": [
+        "attendance",
+        "billing",
+        "gradebook",
+        "communications",
+        "registrar",
+        "school-administrator"
+      ]
+    },
+    "batch2": {
+      "status": "parked_until_batch0_controls_complete",
+      "dashboards": [
+        "admissions",
+        "financial-aid",
+        "parent",
+        "teacher",
+        "student",
+        "activities-athletics"
+      ]
+    },
+    "batch3": {
+      "status": "parked_until_batch0_controls_complete",
+      "dashboards": [
+        "scheduling",
+        "health-office",
+        "transportation",
+        "food-service",
+        "facilities",
+        "safety-security",
+        "hr",
+        "it-support"
+      ]
+    },
+    "batch4": {
+      "status": "parked_until_batch0_controls_complete",
+      "dashboards": [
+        "chaplain-spiritual-life",
+        "portrait-service",
+        "curriculum-pd",
+        "fine-arts",
+        "library-media",
+        "volunteer-management",
+        "advancement",
+        "advancement-operations",
+        "alumni-relations",
+        "school-board",
+        "network-benchmarking"
+      ]
+    },
+    "batch5": {
+      "status": "parked_until_batch0_controls_complete",
+      "dashboards": [
+        "master-control",
+        "implementation-success",
+        "data-migration",
+        "integrations-automation",
+        "revenue-operations",
+        "summer-camp",
+        "extended-care",
+        "athletics-director"
+      ]
+    }
+  },
+  "dashboards": {
+    "dashboard-certification-center": {
+      "batch": "batch0",
+      "display_name": "Dashboard Certification Center",
+      "route": "/dashboard-certification-center",
+      "summary_api": "/api/v1/dashboards/dashboard-certification-center/summary",
+      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/dashboard-certification-center.md",
+      "runtime_proof": "audit-artifacts/dashboard-completion/runtime-proof/batch0/dashboard-certification-center-codespace-runtime-partial-20260618.md",
+      "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/dashboard-certification-center-static-proof-20260618.md",
+      "state": "proof_in_progress_certification_blocked",
+      "proof": {
+        "api_contract": "pass",
+        "api_authentication": "pass",
+        "api_permission": "pass",
+        "frontend_static_wiring": "pass",
+        "runtime_infrastructure": "partial_pass",
+        "browser_rendered_title_metrics": "not_verified",
+        "browser_role_experience": "not_verified",
+        "tenant_isolation": "not_verified",
+        "screenshot_or_trace": "not_provided",
+        "independent_review": "pending",
+        "matrix_promotion": "not_done"
+      },
+      "governance": {
+        "owner": "TBD",
+        "independent_reviewer": "TBD",
+        "self_review_allowed": false
+      },
+      "certification_decision": "not_certified"
+    },
+    "release-reliability": {
+      "batch": "batch0",
+      "display_name": "Release Reliability",
+      "route": "/release-reliability-dashboard",
+      "summary_api": "/api/v1/dashboards/release-reliability/summary",
+      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/release-reliability.md",
+      "state": "mapped_proof_required",
+      "certification_decision": "not_certified"
+    },
+    "compliance-audit": {
+      "batch": "batch0",
+      "display_name": "Compliance / Audit",
+      "route": "/compliance-audit-dashboard",
+      "summary_api": "/api/v1/dashboards/compliance-audit/summary",
+      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/compliance-audit.md",
+      "state": "mapped_proof_required",
+      "certification_decision": "not_certified"
+    }
+  }
+}
