@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crown.local/schemas/crown-evidence-manifest.schema.json",
+  "title": "CROWN Evidence Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "work_order",
+    "area",
+    "branch",
+    "head_sha",
+    "base_sha",
+    "status",
+    "changed_files",
+    "commands_run",
+    "tests_passed",
+    "claims_allowed",
+    "claims_forbidden",
+    "independent_review_required"
+  ],
+  "properties": {
+    "work_order": { "type": "string", "minLength": 1 },
+    "area": { "type": "string", "minLength": 1 },
+    "branch": { "type": "string", "minLength": 1 },
+    "head_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "base_sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "status": {
+      "type": "string",
+      "enum": ["VERIFIED", "NOT_VERIFIED", "NOT_DONE", "BLOCKED", "OUT_OF_SCOPE"]
+    },
+    "changed_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "result"],
+        "properties": {
+          "command": { "type": "string" },
+          "result": { "type": "string", "enum": ["PASS", "FAIL", "SKIPPED", "NOT_RUN"] },
+          "output_file": { "type": "string" }
+        }
+      }
+    },
+    "tests_passed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "claims_allowed": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "claims_forbidden": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "independent_review_required": { "type": "boolean", "const": true },
+    "related_prs": {
+      "type": "array",
+      "items": { "type": "integer" }
+    },
+    "evidence_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "notes": { "type": "string" }
+  }
+}

@@ -1,0 +1,39 @@
+name: CROWN Claims Guard
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**/*.md'
+      - '**/*.txt'
+      - '**/*.csv'
+      - '**/*.json'
+      - '**/*.yml'
+      - '**/*.yaml'
+      - '**/*.py'
+      - '**/*.ps1'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.js'
+      - '**/*.jsx'
+      - 'scripts/execution/123_crown_forbidden_claims_guard.ps1'
+
+permissions:
+  contents: read
+
+jobs:
+  forbidden-claims:
+    name: Forbidden claims guard
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run guard
+        shell: pwsh
+        run: |
+          git fetch origin main --depth=1
+          ./scripts/execution/123_crown_forbidden_claims_guard.ps1 -Base origin/main -Head HEAD

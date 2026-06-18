@@ -1,0 +1,96 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CROWN: sync main",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; git fetch origin --prune; git switch main; git pull --ff-only origin main; git status --short"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: Django check",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; python backend/manage.py check"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: focused pytest prompt",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; $p = Read-Host 'Focused pytest path'; python -m pytest $p -v --nomigrations --tb=short"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: claims guard",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; ./scripts/execution/123_crown_forbidden_claims_guard.ps1 -Base origin/main -Head HEAD"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: PR same-SHA poll prompt",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; $n = Read-Host 'PR number'; $pr = gh pr view $n --json number,state,isDraft,mergeable,headRefOid,statusCheckRollup,url | ConvertFrom-Json; $pending=@($pr.statusCheckRollup | ? { $_.status -ne 'COMPLETED' }).Count; $failed=@($pr.statusCheckRollup | ? { $_.status -eq 'COMPLETED' -and $_.conclusion -in @('FAILURE','TIMED_OUT','ACTION_REQUIRED','STALE','STARTUP_FAILURE') }).Count; $cancelled=@($pr.statusCheckRollup | ? { $_.status -eq 'COMPLETED' -and $_.conclusion -eq 'CANCELLED' }).Count; 'PR='+$pr.number; 'STATE='+$pr.state; 'DRAFT='+$pr.isDraft; 'MERGEABLE='+$pr.mergeable; 'HEAD='+$pr.headRefOid; 'PENDING='+$pending; 'FAILED='+$failed; 'CANCELLED='+$cancelled; 'URL='+$pr.url; if ($pr.state -ne 'OPEN') { throw 'PR is not open.' }; if ($pr.isDraft) { throw 'PR is draft.' }; if ($pr.mergeable -ne 'MERGEABLE') { throw 'PR is not MERGEABLE.' }; if ($pending -ne 0 -or $failed -ne 0 -or $cancelled -ne 0) { throw \"Do not merge: pending=$pending failed=$failed cancelled=$cancelled\" }"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: guarded session start prompt",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Start -WorkItem $w"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CROWN: guarded session close prompt",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$ErrorActionPreference='Stop'; $w = Read-Host 'Work item'; ./scripts/execution/122_crown_guarded_agent_session.ps1 -Mode Close -WorkItem $w"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
