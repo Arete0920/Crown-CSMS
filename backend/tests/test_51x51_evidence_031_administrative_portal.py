@@ -246,4 +246,4 @@ def test_executive360_overview_url_registered_31():
 
 def test_executive360_denies_unauthenticated_31():
     response = Client().get(reverse("executive_360_self"))
-    assert response.status_code == 403
+    assert response.status_code == 401
