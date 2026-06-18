@@ -22,7 +22,10 @@ describe('dashboard template live metadata', () => {
       expect(hasLiveMetadata(template)).toBe(true);
       expect(template.apiEndpoint.startsWith('/api/v1/')).toBe(true);
       expect(template.liveDataKey).toMatch(/^[a-z][A-Za-z0-9]*$/);
-      expect(template.apiEndpoint).toContain('/summary/');
+      expect(
+        template.apiEndpoint.endsWith('/summary')
+        || template.apiEndpoint.endsWith('/summary/')
+      ).toBe(true);
 
       if (template.key && template.key !== 'dashboard') {
         expect(template.liveDataKey.toLowerCase()).toContain(template.key.toLowerCase());

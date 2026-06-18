@@ -105,7 +105,40 @@ export const DASHBOARD_DATA_REGISTRY = {
   'implementation-success': createDataConfig(dashboardSummaryPath('implementation-success')),
   'data-migration': createDataConfig(dashboardSummaryPath('data-migration')),
   'integrations-automation': createDataConfig(dashboardSummaryPath('integrations-automation')),
-  'compliance-audit': createDataConfig(dashboardSummaryPath('compliance-audit')),
+  'compliance-audit': createDataConfig(dashboardSummaryPath('compliance-audit'), {
+    allowScaffoldFallback: true,
+    fallbackData: {
+      dashboard_key: 'compliance-audit',
+      metrics: [
+        { label: 'Active Audit Proof Streams', value: 'TBD' },
+        { label: 'Controls Passing', value: 'TBD' },
+        { label: 'Open Findings', value: 'TBD' },
+        { label: 'Reviews Due (30d)', value: 'TBD' },
+      ],
+      alerts: [
+        {
+          title: 'Compliance proof data is not live yet',
+          level: 'Medium',
+          secondary: 'Wire the summary service before using this dashboard for certification decisions.',
+        },
+        {
+          title: 'Owner and independent reviewer are still TBD',
+          level: 'High',
+          secondary: 'Assign governance roles before promotion beyond API_WIRED.',
+        },
+      ],
+      queue: [
+        'Assign compliance dashboard owner',
+        'Assign independent compliance reviewer',
+        'Wire the compliance summary service',
+        'Attach permission, tenant, and runtime proof',
+      ],
+      meta: {
+        certification_candidate: 'hybrid',
+        fallback_source: 'frontend_scaffold',
+      },
+    },
+  }),
   'revenue-operations': createDataConfig(dashboardSummaryPath('revenue-operations')),
   'release-reliability': createDataConfig(dashboardSummaryPath('release-reliability'), {
     allowScaffoldFallback: true,
@@ -141,12 +174,45 @@ export const DASHBOARD_DATA_REGISTRY = {
         'Publish release readiness summary',
       ],
       meta: {
-        served_from: 'sample',
         certification_candidate: 'hybrid',
+        fallback_source: 'frontend_scaffold',
       },
     },
   }),
 
   // Phase 9 control page
-  'dashboard-certification-center': createDataConfig('/api/v1/platform/dashboard-certification-center'),
+  'dashboard-certification-center': createDataConfig(dashboardSummaryPath('dashboard-certification-center'), {
+    allowScaffoldFallback: true,
+    fallbackData: {
+      dashboard_key: 'dashboard-certification-center',
+      metrics: [
+        { label: 'Dashboards Certified', value: '0' },
+        { label: 'Mapped Only', value: '40' },
+        { label: 'Pending Independent Review', value: '0' },
+        { label: 'Cert Rate', value: '0%' },
+      ],
+      alerts: [
+        {
+          title: 'No dashboards are certified yet',
+          level: 'High',
+          secondary: 'Current verified state remains 40 mapped dashboards and 0 live-data certified dashboards.',
+        },
+        {
+          title: 'Owner and independent reviewer are still TBD',
+          level: 'High',
+          secondary: 'Assign governance roles before certification promotion.',
+        },
+      ],
+      queue: [
+        'Assign dashboard certification owner',
+        'Assign independent dashboard certification reviewer',
+        'Wire certification proof state from the dashboard matrix',
+        'Attach permission, tenant, and runtime proof',
+      ],
+      meta: {
+        certification_candidate: 'hybrid',
+        fallback_source: 'frontend_scaffold',
+      },
+    },
+  }),
 };
