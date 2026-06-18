@@ -1,0 +1,5 @@
+=== Files Changed for Module 037 Proof ===
+backend/tests/test_51x51_evidence_037_advanced_discipline_workflows.py
+audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/ (new)
+
+=== No production code changes. Proof-only lane. ===

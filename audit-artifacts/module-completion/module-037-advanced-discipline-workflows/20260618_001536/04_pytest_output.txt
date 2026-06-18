@@ -1,0 +1,51 @@
+
+=== PYTEST DJANGO DIAGNOSTICS (EARLY) ===
+DJANGO_SETTINGS_MODULE env: crown_api.settings
+settings module: crown_api.settings
+INSTALLED_APPS has core?: True
+MIGRATION_MODULES: {}
+MIGRATION_MODULES['core']: None
+MIGRATION_MODULES['finance']: None
+core.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/__init__.py
+core.migrations.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/migrations/__init__.py
+=== END DIAGNOSTICS ===
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: crown_api.settings (from ini)
+rootdir: /home/runner/work/Crown2026/Crown2026
+configfile: pytest.ini
+plugins: django-4.7.0
+collecting ... collected 28 items
+
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037Metadata::test_audit_keywords_include_required_tokens PASSED [  3%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037Metadata::test_module_id_is_correct PASSED [  7%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037Metadata::test_module_name_present PASSED [ 10%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AuthBoundary::test_unauthed_get_incidents_returns_401 PASSED [ 14%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AuthBoundary::test_unauthed_get_metrics_returns_401 PASSED [ 17%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AuthBoundary::test_unauthed_post_incident_returns_401 PASSED [ 21%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037TenantIsolation::test_incidents_scoped_to_requesting_school PASSED [ 25%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037TenantIsolation::test_non_staff_cross_tenant_header_denied PASSED [ 28%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037TenantIsolation::test_orm_isolation_school_a_invisible_to_school_b PASSED [ 32%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AppealLifecycle::test_appeal_note_attached_to_action_trail PASSED [ 35%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AppealLifecycle::test_incident_created_with_open_status PASSED [ 39%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AppealLifecycle::test_parent_notification_recorded_in_trail PASSED [ 42%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AppealLifecycle::test_status_transition_open_to_investigating PASSED [ 46%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AppealLifecycle::test_status_transition_to_closed_completes_lifecycle PASSED [ 50%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AuditTrailImmutability::test_action_created_at_is_auto_now_add PASSED [ 53%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AuditTrailImmutability::test_action_ordering_is_chronological PASSED [ 57%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AuditTrailImmutability::test_incident_action_index_covers_audit_query PASSED [ 60%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037AuditTrailImmutability::test_multiple_actions_append_in_order PASSED [ 64%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037DataRetention::test_all_statuses_accessible PASSED [ 67%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037DataRetention::test_closed_incident_persists_in_orm PASSED [ 71%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037DataRetention::test_incident_action_trail_retained_after_closure PASSED [ 75%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037DataRetention::test_status_filter_returns_closed_incidents PASSED [ 78%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037APIIncidentCRUD::test_action_post_appends_to_audit_trail PASSED [ 82%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037APIIncidentCRUD::test_authenticated_list_returns_200 PASSED [ 85%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037APIIncidentCRUD::test_authenticated_post_creates_incident PASSED [ 89%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037APIIncidentCRUD::test_incident_detail_scoped_to_school PASSED [ 92%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037APIIncidentCRUD::test_incident_detail_wrong_school_returns_404 PASSED [ 96%]
+tests/test_51x51_evidence_037_advanced_discipline_workflows.py::TestModule037APIIncidentCRUD::test_metrics_endpoint_returns_200 PASSED [100%]
+
+============================== 28 passed in 7.31s ==============================
