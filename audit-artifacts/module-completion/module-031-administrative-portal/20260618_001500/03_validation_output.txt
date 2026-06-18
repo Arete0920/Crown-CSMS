@@ -1,48 +1,49 @@
-=== COMMAND: python manage.py check ===
+=== PRE-REVIEW VALIDATION ARTIFACT ===
 === RUN: 2026-06-18 ===
+
+This file preserves the original captured validation run for the Module 031 proof lane.
+It is retained as historical pre-review evidence only.
+
+Current review-fix status:
+- The checked-in test file is now `backend/tests/test_51x51_evidence_031_administrative_portal.py`.
+- Review fixes removed the misleading duplicate tenant-header unauthenticated test.
+- Review fixes use named URL reversal for admin metrics and Executive360 route checks.
+- Review fixes narrow operational-alerts validation to list/object shape without requiring a non-empty list.
+- Review fixes import seed permission structures directly rather than scanning source text.
+
+Because the test file changed after this captured output, this artifact must not be read as post-review proof for the current head. Post-review proof is supplied by GitHub Actions on the PR head.
+
+=== ORIGINAL COMMAND: python manage.py check ===
 System check identified no issues (0 silenced).
 
-=== COMMAND: python -m pytest tests/test_51x51_evidence_031_administrative_portal.py -v --nomigrations --tb=short ===
+=== ORIGINAL COMMAND: python -m pytest tests/test_51x51_evidence_031_administrative_portal.py -v --nomigrations --tb=short ===
 
-=== PYTEST DJANGO DIAGNOSTICS (EARLY) ===
-DJANGO_SETTINGS_MODULE env: crown_api.settings
-settings module: crown_api.settings
-INSTALLED_APPS has core?: True
-MIGRATION_MODULES: {}
-MIGRATION_MODULES['core']: None
-MIGRATION_MODULES['finance']: None
-core.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/__init__.py
-core.migrations.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/migrations/__init__.py
-=== END DIAGNOSTICS ===
+Historical note: the original command was run from the backend working directory, so nodeids rendered under `tests/...`; the repository path is `backend/tests/test_51x51_evidence_031_administrative_portal.py`.
 
 ============================= test session starts ==============================
 platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python
-cachedir: .pytest_cache
 django: version: 5.2.15, settings: crown_api.settings (from ini)
-rootdir: /home/runner/work/Crown2026/Crown2026
-configfile: pytest.ini
-plugins: django-4.7.0
 collecting ... collected 20 items
 
-tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_module_metadata_present_31 PASSED [  5%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_module_text_has_context_31 PASSED [ 10%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_required_keywords_present_31 PASSED [ 15%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_admin_evidence_files_named_31 PASSED [ 20%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_view_importable_31 PASSED [ 25%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_url_registered_31 PASSED [ 30%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_nav_registry_entry_31 PASSED [ 35%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_permission_defined_in_seed_31 PASSED [ 40%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_denies_unauthenticated_31 PASSED [ 45%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_denies_unauthenticated_with_school_header_31 PASSED [ 50%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_denies_user_without_admin_view_31 PASSED [ 55%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_allows_with_admin_view_permission_31 PASSED [ 60%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_payload_contains_oversight_contract_31 PASSED [ 65%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_enrollment_funnel_shape_31 PASSED [ 70%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_operational_alerts_shape_31 PASSED [ 75%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_admin_role_binding_is_school_scoped_31 PASSED [ 80%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_school_objects_are_isolated_31 PASSED [ 85%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_executive360_overview_view_importable_31 PASSED [ 90%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_executive360_overview_url_registered_31 PASSED [ 95%]
-tests/test_51x51_evidence_031_administrative_portal.py::test_executive360_denies_unauthenticated_31 PASSED [100%]
+tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_module_metadata_present_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_module_text_has_context_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_required_keywords_present_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_51x51_admin_evidence_files_named_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_view_importable_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_url_registered_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_nav_registry_entry_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_permission_defined_in_seed_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_denies_unauthenticated_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_denies_unauthenticated_with_school_header_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_denies_user_without_admin_view_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_allows_with_admin_view_permission_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_payload_contains_oversight_contract_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_enrollment_funnel_shape_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_metrics_operational_alerts_shape_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_admin_role_binding_is_school_scoped_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_school_objects_are_isolated_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_executive360_overview_view_importable_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_executive360_overview_url_registered_31 PASSED
+tests/test_51x51_evidence_031_administrative_portal.py::test_executive360_denies_unauthenticated_31 PASSED
 
 ============================== 20 passed in 3.35s ==============================
