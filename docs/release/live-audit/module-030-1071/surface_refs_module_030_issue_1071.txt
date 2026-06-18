@@ -1,0 +1,23 @@
+# Module 030 / Issue 1071 surface references
+# UTC: 2026-06-17T18:26:11.2596015-04:00
+
+## backend/student360/api/urls.py
+5:    path("students/<uuid:student_id>/overview/", StudentOverview.as_view(), name="student_360_overview"),
+6:    path("me/overview/", StudentSelfOverview.as_view(), name="student_360_self"),
+
+## backend/student360/api/views.py
+181:class StudentOverview(APIView):
+183:    permission_classes = [permissions.IsAuthenticated]
+520:class StudentSelfOverview(APIView):
+523:    permission_classes = [permissions.IsAuthenticated]
+
+## docs/openapi/crown-openapi.yaml
+12:        to StudentOverview.
+12521:        to StudentOverview.
+13829:  /api/v1/360/me/overview/:
+13833:        to StudentOverview.
+
+## targeted tests presence
+57:def test_student_self_overview_resolves_households_student_profile():
+207:    def test_no_auth_leakage(self):
+145:def test_section_roster_enrollment_status():
