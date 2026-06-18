@@ -1,0 +1,13 @@
+WORK_ORDER=MODULE-037-ADVANCED-DISCIPLINE-WORKFLOWS-PROOF-20260618_001536
+MODULE=037
+NAME=Advanced Discipline Workflows
+BRANCH=copilot/close-module-037-proof-closure
+HEAD=8e87b750ce12bfe2b44ca36089cfc990d202c468
+BASE=origin/main
+SCOPE=Proof closure for appeal process and data retention blocker
+NON_SCOPE=auth/RBAC core, migrations, workflows, package manifests, scorecard/matrix, dashboard live-data, release readiness
+EXPECTED_FILES=backend/tests/test_51x51_evidence_037_advanced_discipline_workflows.py; audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/*
+FORBIDDEN_FILES=authentication, RBAC, migrations, GitHub workflows, Azure resources, secrets, package manifests, canonical scorecard/matrix
+VALIDATION=python backend/manage.py check; python -m pytest backend/tests/test_51x51_evidence_037_advanced_discipline_workflows.py -v --nomigrations --tb=short
+INDEPENDENT_REVIEW_REQUIRED=true
+STATUS_START=NOT_PROVEN (requires appeal process and data retention tests)
