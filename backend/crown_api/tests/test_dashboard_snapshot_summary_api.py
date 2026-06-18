@@ -7,9 +7,13 @@ from rest_framework.test import APIClient
 from crown_api.dashboards.models import DashboardSnapshot
 
 
-def _authed_client(username='dashboard-summary-tester'):
+def _authed_client(username='dashboard-summary-tester', *, is_staff=False, is_superuser=False):
     user_model = get_user_model()
-    user = user_model.objects.create_user(username=username)
+    user = user_model.objects.create_user(
+        username=username,
+        is_staff=is_staff,
+        is_superuser=is_superuser,
+    )
     user.set_unusable_password()
     user.save(update_fields=['password'])
     client = APIClient()
@@ -108,9 +112,9 @@ def test_attendance_summary_allows_sample_payload_when_explicitly_enabled():
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     'dashboard_key',
-    ['dashboard-certification-center', 'release-reliability', 'compliance-audit'],
+    ['release-reliability', 'compliance-audit'],
 )
-def test_batch0_summary_routes_serve_sample_payloads_in_development(dashboard_key):
+def test_batch0_school_scoped_summary_routes_serve_sample_payloads_in_development(dashboard_key):
     client = _authed_client(f'dashboard-summary-batch0-{dashboard_key}')
     response = client.get(
         reverse('dashboard-summary', kwargs={'dashboard_key': dashboard_key}),
@@ -122,6 +126,49 @@ def test_batch0_summary_routes_serve_sample_payloads_in_development(dashboard_ke
     assert data['dashboard_key'] == dashboard_key
     assert data['meta']['served_from'] == 'sample'
     assert len(data['metrics']) > 0
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_dashboard_certification_center_staff_user_receives_summary_payload():
+    client = _authed_client('dashboard-cert-center-staff', is_staff=True)
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'dashboard-certification-center'}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data['dashboard_key'] == 'dashboard-certification-center'
+    assert data['meta']['served_from'] == 'sample'
+    assert data['meta']['sample_payload_allowed'] is True
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_dashboard_certification_center_non_staff_user_is_forbidden():
+    client = _authed_client('dashboard-cert-center-non-staff')
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'dashboard-certification-center'}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 403
+    assert response.json()['detail'] == 'Forbidden.'
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_dashboard_certification_center_superuser_receives_summary_payload():
+    client = _authed_client('dashboard-cert-center-superuser', is_superuser=True)
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'dashboard-certification-center'}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data['dashboard_key'] == 'dashboard-certification-center'
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
