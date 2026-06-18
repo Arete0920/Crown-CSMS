@@ -1,0 +1,30 @@
+FILES ADDED:
+  backend/tests/test_51x51_evidence_031_administrative_portal.py
+    - 20 focused pytest tests covering Module 031 Administrative Portal
+    - Module metadata, imports, URL wiring, nav registry, permission seed
+    - Auth boundary (unauthenticated denied 403)
+    - Permission boundary (non-admin user denied 403)
+    - Happy path (admin.view user gets 200)
+    - Oversight payload contract (all required keys present)
+    - Enrollment funnel shape
+    - Operational alerts shape
+    - ORM-level tenant isolation (school-scoped UserRole)
+    - Executive360 surface import and URL registration
+    - Executive360 unauthenticated denial
+
+  audit-artifacts/module-completion/module-031-administrative-portal/20260618_001500/
+    - 00_prechange_packet.txt
+    - 01_inventory.txt
+    - 02_changed_files.txt
+    - 03_validation_output.txt
+    - 04_git_diff_stat.txt
+    - 05_decision.md
+
+FILES NOT CHANGED:
+  backend/crown_api/metrics_views.py        (no change — implementation existed)
+  backend/crown_api/api_urls.py             (no change — URL existed)
+  backend/core/nav_registry.py             (no change — nav entry existed)
+  backend/core/permissions.py              (no change — permission engine intact)
+  backend/core/management/commands/seed_permissions.py  (no change)
+  backend/executive360/api/views.py         (no change)
+  audit-artifacts/module-completion/current/  (scorecard reconciliation is a separate PR)
