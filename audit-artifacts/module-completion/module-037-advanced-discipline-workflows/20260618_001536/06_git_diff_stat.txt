@@ -1,2 +1,21 @@
-?? audit-artifacts/module-completion/module-037-advanced-discipline-workflows/
-?? backend/tests/test_51x51_evidence_037_advanced_discipline_workflows.py
+Changed files summary for Module 037 proof closure
+
+Files changed in this proof lane:
+- backend/tests/test_51x51_evidence_037_advanced_discipline_workflows.py
+- audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/00_prechange_packet.txt
+- audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/01_inventory.txt
+- audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/02_changed_files.txt
+- audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/03_django_check.txt
+- audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/04_pytest_output.txt
+- audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/05_decision.md
+- audit-artifacts/module-completion/module-037-advanced-discipline-workflows/20260618_001536/06_git_diff_stat.txt
+
+Scope classification:
+- backend proof test added
+- audit evidence packet added
+- no production runtime code changed
+- no dashboard, wizard, release-readiness, or production-readiness claim
+
+Review disposition:
+- Replaces earlier untracked-file status markers with a traceable changed-file summary.
+- Current checked-in test metadata sets MODULE_NAME = "Advanced Discipline Workflows" and asserts that "Discipline" is present, so the earlier review note about that assertion is not reproduced in the current file state.
