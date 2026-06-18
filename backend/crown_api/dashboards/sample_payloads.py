@@ -941,19 +941,27 @@ def dashboard_certification_center_sample_payload(school_id):
         dashboard_key='dashboard-certification-center',
         metrics=[
             metric('Dashboards Certified', '0'),
-            metric('Pending Review', '0'),
-            metric('Failed Certification', '0'),
+            metric('Mapped Only', '40'),
+            metric('Pending Independent Review', '0'),
             metric('Cert Rate', '0%'),
         ],
         alerts=[
-            alert('Six dashboards are still in the review queue', 'High', 'Clear the queue before end of week.'),
-            alert('Two failed dashboards need correction guidance', 'Medium', 'Return feedback packages before resubmission.'),
+            alert(
+                'No dashboards are certified yet',
+                'High',
+                'Current verified state remains 40 mapped dashboards and 0 live-data certified dashboards.',
+            ),
+            alert(
+                'Owner and independent reviewer are still TBD',
+                'High',
+                'Assign governance roles before certification promotion.',
+            ),
         ],
         queue=[
-            queue_item('Complete review queue clearance'),
-            queue_item('Return correction guidance for failed dashboards'),
-            queue_item('Publish the quarterly certification report'),
-            queue_item('Verify reviewer training records'),
+            queue_item('Assign dashboard certification owner'),
+            queue_item('Assign independent dashboard certification reviewer'),
+            queue_item('Wire certification proof state from the dashboard matrix'),
+            queue_item('Attach permission, tenant, and runtime proof'),
         ],
         meta={'school_id': str(school_id), 'served_from': 'sample'},
     )
