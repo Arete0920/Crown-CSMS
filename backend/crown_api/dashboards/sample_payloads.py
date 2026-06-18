@@ -936,6 +936,37 @@ def compliance_audit_sample_payload(school_id):
     )
 
 
+def dashboard_certification_center_sample_payload(school_id):
+    return build_dashboard_payload(
+        dashboard_key='dashboard-certification-center',
+        metrics=[
+            metric('Dashboards Certified', '0'),
+            metric('Mapped Only', '40'),
+            metric('Pending Independent Review', '0'),
+            metric('Cert Rate', '0%'),
+        ],
+        alerts=[
+            alert(
+                'No dashboards are certified yet',
+                'High',
+                'Current verified state remains 40 mapped dashboards and 0 live-data certified dashboards.',
+            ),
+            alert(
+                'Owner and independent reviewer are still TBD',
+                'High',
+                'Assign governance roles before certification promotion.',
+            ),
+        ],
+        queue=[
+            queue_item('Assign dashboard certification owner'),
+            queue_item('Assign independent dashboard certification reviewer'),
+            queue_item('Wire certification proof state from the dashboard matrix'),
+            queue_item('Attach permission, tenant, and runtime proof'),
+        ],
+        meta={'school_id': str(school_id), 'served_from': 'sample'},
+    )
+
+
 def revenue_operations_sample_payload(school_id):
     return build_dashboard_payload(
         dashboard_key='revenue-operations',
@@ -1073,6 +1104,7 @@ SAMPLE_PAYLOAD_BUILDERS = {
     'alumni-relations': alumni_relations_sample_payload,
     'network-benchmarking': network_benchmarking_sample_payload,
     # Platform
+    'dashboard-certification-center': dashboard_certification_center_sample_payload,
     'compliance-audit': compliance_audit_sample_payload,
     'revenue-operations': revenue_operations_sample_payload,
     'implementation-success': implementation_success_sample_payload,
