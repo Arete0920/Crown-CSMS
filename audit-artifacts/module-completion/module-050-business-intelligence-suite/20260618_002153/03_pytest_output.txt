@@ -1,0 +1,42 @@
+=== MODULE 050 PYTEST OUTPUT ===
+
+=== PYTEST DJANGO DIAGNOSTICS (EARLY) ===
+DJANGO_SETTINGS_MODULE env: crown_api.settings
+settings module: crown_api.settings
+INSTALLED_APPS has core?: True
+MIGRATION_MODULES: {}
+MIGRATION_MODULES['core']: None
+MIGRATION_MODULES['finance']: None
+core.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/__init__.py
+core.migrations.__file__: /home/runner/work/Crown2026/Crown2026/backend/core/migrations/__init__.py
+=== END DIAGNOSTICS ===
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.0.3, pluggy-1.6.0 -- /usr/bin/python
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: crown_api.settings (from ini)
+rootdir: /home/runner/work/Crown2026/Crown2026
+configfile: pytest.ini
+plugins: django-4.7.0
+collecting ... collected 18 items
+
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_51x51_module_metadata_present_050 PASSED [  5%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_51x51_module_text_has_context_050 PASSED [ 11%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_51x51_required_keywords_present_050 PASSED [ 16%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_51x51_evidence_files_named_050 PASSED [ 22%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_model_importable_050 PASSED [ 27%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_customer_health_model_importable_050 PASSED [ 33%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_serializer_importable_050 PASSED [ 38%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_api_health_importable_050 PASSED [ 44%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_required_fields_on_predictive_run_050 PASSED [ 50%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_orm_create_and_retrieve_050 PASSED [ 55%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_orm_aggregate_by_school_050 PASSED [ 61%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_output_json_payload_structure_050 PASSED [ 66%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_tenant_isolation_050 PASSED [ 72%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_tenant_isolation_cross_query_050 PASSED [ 77%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_analytics_health_unauthenticated_denied_050 PASSED [ 83%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_analytics_export_unauthenticated_denied_050 PASSED [ 88%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_analytics_health_authenticated_allowed_050 PASSED [ 94%]
+tests/test_51x51_evidence_050_business_intelligence_suite.py::test_bi_analytics_health_response_contract_050 PASSED [100%]
+
+============================== 18 passed in 2.69s ==============================

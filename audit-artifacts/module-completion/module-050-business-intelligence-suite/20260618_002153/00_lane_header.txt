@@ -1,0 +1,8 @@
+MODULE=050
+NAME=Business Intelligence Suite
+BRANCH=copilot/module-050-close-bi-reporting-suite
+HEAD=8e87b750ce12bfe2b44ca36089cfc990d202c468
+TASK=Close Module 050 BI/reporting suite from NOT_PROVEN to PROVEN
+EXPECTED_FILES=backend/tests/test_51x51_evidence_050_business_intelligence_suite.py,audit-artifacts/module-completion/module-050-business-intelligence-suite/
+FORBIDDEN_FILES=backend runtime implementation files, frontend source files, dashboard live-data files, migrations, package manifests, deployment configuration files, unrelated module artifacts
+VALIDATION=python backend/manage.py check && python -m pytest backend/tests/test_51x51_evidence_050_business_intelligence_suite.py -v --nomigrations --tb=short
