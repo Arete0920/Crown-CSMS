@@ -105,7 +105,40 @@ export const DASHBOARD_DATA_REGISTRY = {
   'implementation-success': createDataConfig(dashboardSummaryPath('implementation-success')),
   'data-migration': createDataConfig(dashboardSummaryPath('data-migration')),
   'integrations-automation': createDataConfig(dashboardSummaryPath('integrations-automation')),
-  'compliance-audit': createDataConfig(dashboardSummaryPath('compliance-audit')),
+  'compliance-audit': createDataConfig(dashboardSummaryPath('compliance-audit'), {
+    allowScaffoldFallback: true,
+    fallbackData: {
+      dashboard_key: 'compliance-audit',
+      metrics: [
+        { label: 'Active Audits', value: '3' },
+        { label: 'Controls Passing', value: '86%' },
+        { label: 'Open Findings', value: '4' },
+        { label: 'Reviews Due (30d)', value: '6' },
+      ],
+      alerts: [
+        {
+          title: 'Diocese evidence package is due soon',
+          level: 'High',
+          secondary: 'Complete the final evidence submission before the audit window opens.',
+        },
+        {
+          title: 'Four open findings need remediation plans',
+          level: 'High',
+          secondary: 'Assign owners and document next actions this week.',
+        },
+      ],
+      queue: [
+        'Submit the Diocese audit evidence package',
+        'Remediate open findings with owners and dates',
+        'Schedule upcoming compliance reviews',
+        'Close the current evidence collection cycle',
+      ],
+      meta: {
+        served_from: 'sample',
+        certification_candidate: 'hybrid',
+      },
+    },
+  }),
   'revenue-operations': createDataConfig(dashboardSummaryPath('revenue-operations')),
   'release-reliability': createDataConfig(dashboardSummaryPath('release-reliability'), {
     allowScaffoldFallback: true,
@@ -148,5 +181,38 @@ export const DASHBOARD_DATA_REGISTRY = {
   }),
 
   // Phase 9 control page
-  'dashboard-certification-center': createDataConfig('/api/v1/platform/dashboard-certification-center'),
+  'dashboard-certification-center': createDataConfig(dashboardSummaryPath('dashboard-certification-center'), {
+    allowScaffoldFallback: true,
+    fallbackData: {
+      dashboard_key: 'dashboard-certification-center',
+      metrics: [
+        { label: 'Dashboards Certified', value: '41' },
+        { label: 'Pending Review', value: '6' },
+        { label: 'Failed Certification', value: '2' },
+        { label: 'Cert Rate', value: '91%' },
+      ],
+      alerts: [
+        {
+          title: 'Six dashboards are still in the review queue',
+          level: 'High',
+          secondary: 'Clear the queue before end of week.',
+        },
+        {
+          title: 'Two failed dashboards need correction guidance',
+          level: 'Medium',
+          secondary: 'Return feedback packages before resubmission.',
+        },
+      ],
+      queue: [
+        'Complete review queue clearance',
+        'Return correction guidance for failed dashboards',
+        'Publish the quarterly certification report',
+        'Verify reviewer training records',
+      ],
+      meta: {
+        served_from: 'sample',
+        certification_candidate: 'hybrid',
+      },
+    },
+  }),
 };

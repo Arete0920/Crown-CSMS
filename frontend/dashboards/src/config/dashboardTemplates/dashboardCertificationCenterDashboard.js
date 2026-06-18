@@ -22,7 +22,7 @@ export default {
   subtitle: 'Heritage Christian Academy',
   note: LIVE_NOTE,
   dataSource: 'live_api',
-  apiEndpoint: '/api/v1/dashboards/dashboardCertificationCenter/summary/',
+  apiEndpoint: '/api/v1/dashboards/dashboard-certification-center/summary/',
   liveDataKey: 'dashboardCertificationCenter',
 
   metrics: [
@@ -110,3 +110,4 @@ export default {
     { label: 'Cert Rate', state: '91% (target 90%)' },
   ],
 };
+
