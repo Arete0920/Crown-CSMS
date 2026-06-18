@@ -5,37 +5,37 @@ Module key: compliance-audit
 Batch: 0
 Owner: TBD
 Independent reviewer: TBD
-Status: DATA_CONTRACT_DRAFT
+Status: PROOF_IN_PROGRESS
 
 ## Purpose
 
-TBD.
+Provide a compliance dashboard summary payload for compliance monitoring with metrics, alerts, and queue actions.
 
 ## Primary users
 
 | Role | Job-to-be-done |
-|---|---|
+| ---- | -------------- |
 | TBD | TBD |
 
 ## KPIs
 
 | key | label | definition | source | filter scope | role visibility | freshness | drilldown |
-|---|---|---|---|---|---|---|---|
+| --- | ----- | ---------- | ------ | ------------ | --------------- | --------- | --------- |
 
 ## Alerts
 
 | key | severity | condition | message | action_url | role visibility |
-|---|---|---|---|---|---|
+| --- | -------- | --------- | ------- | ---------- | --------------- |
 
 ## Queue / table
 
 | field | label | source | role visibility | redaction rule |
-|---|---|---|---|---|
+| ----- | ----- | ------ | --------------- | -------------- |
 
 ## Drilldowns
 
 | label | url | type | role visibility | permission required |
-|---|---|---|---|---|
+| ----- | --- | ---- | --------------- | ------------------- |
 
 ## Summary API
 
@@ -64,15 +64,23 @@ TBD.
 ## Security
 
 - Auth required: yes
-- Roles allowed: TBD
-- Roles denied: TBD
-- Entitlement required: TBD
-- Tenant enforcement: required
-- Cross-tenant denial behavior: required
-- Sensitive fields: TBD
-- Redaction rules: TBD
+- Roles allowed: authenticated user (current proof slice)
+- Roles denied: unauthenticated denied (401 proven for dashboard summary contract endpoints)
+- Entitlement required: no dashboard-specific entitlement gate proven in this slice
+- Tenant enforcement: required, but keyed endpoint-specific proof is still pending
+- Cross-tenant denial behavior: required, but keyed endpoint-specific proof is still pending
+- Sensitive fields: no sensitive-field redaction proof captured for keyed endpoint yet
+- Redaction rules: not yet proven
 - Small-cell suppression: TBD
 - Export rules: TBD
+
+## Evidence snapshot
+
+- Backend route and sample payload proof: `backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_serve_sample_payloads_in_development` (PASS)
+- Unauthenticated denial and cross-tenant baseline proof on dashboard summary contract endpoints: `backend/crown_api/tests/test_dashboards_role_contract.py` (PASS)
+- Tenant isolation baseline proof on dashboard APIs: `backend/crown_api/tests/test_dashboard_tenant_isolation.py` (PASS)
+- Browser runtime proof: pending
+- Independent review: pending
 
 ## UI states
 
@@ -86,9 +94,9 @@ TBD.
 ## Acceptance criteria
 
 - [ ] Contract approved
-- [ ] Summary service implemented
-- [ ] API route implemented
-- [ ] UI wired
+- [x] Summary service implemented
+- [x] API route implemented
+- [x] UI wired
 - [ ] Permission proof complete
 - [ ] Tenant proof complete
 - [ ] Runtime proof complete
