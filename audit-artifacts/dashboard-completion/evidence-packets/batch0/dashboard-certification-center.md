@@ -51,23 +51,23 @@ Commit SHA: 2ebc116c
 
 ## 4. Runtime proof
 
-- Environment: not yet captured
-- URL: not yet captured
+- Environment: local backend test runtime (pytest)
+- URL: /api/dashboards/dashboard-certification-center/summary
 - User role tested: not yet captured
-- Tenant tested: not yet captured
+- Tenant tested: role-contract and tenant-isolation suites executed for dashboard APIs (non-keyed summary endpoints)
 - Playwright test path: not yet captured
 - Playwright command: not yet captured
 - Screenshot/trace path: not yet captured
-- Result: pending runtime proof
+- Result: backend runtime proof captured via automated tests; browser runtime proof pending
 
 ## 5. Security proof
 
-- Unauthenticated denied: not yet captured
-- Unauthorized role denied: not yet captured
-- Authorized role allowed: not yet captured
-- Direct URL tested: not yet captured
-- Cross-tenant blocked: not yet captured
-- Sensitive field redaction: not yet captured
+- Unauthenticated denied: PASS for dashboard summary APIs in backend/crown_api/tests/test_dashboards_role_contract.py::test_unauthenticated_returns_401
+- Unauthorized role denied: PARTIAL (covered for cross-tenant dashboard summary contract endpoints; keyed batch0 endpoint-specific role denial not yet captured)
+- Authorized role allowed: PASS in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_serve_sample_payloads_in_development
+- Direct URL tested: PASS for /api/dashboards/dashboard-certification-center/summary in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py
+- Cross-tenant blocked: PARTIAL (PASS for dashboard summary contract endpoint in backend/crown_api/tests/test_dashboards_role_contract.py::test_cross_tenant_access_blocked; keyed batch0 summary endpoint-specific cross-tenant proof pending)
+- Sensitive field redaction: not yet captured for keyed batch0 summary endpoints
 - Small-cell suppression, if applicable: not yet captured
 - Export permission proof, if applicable: not yet captured
 
@@ -105,4 +105,4 @@ Notes:
 
 - Matrix row updated:
 - Status promoted to: PROOF_IN_PROGRESS
-- Remaining blockers: runtime proof, security proof, independent review
+- Remaining blockers: keyed endpoint tenant/role denial proof, browser runtime proof, independent review
