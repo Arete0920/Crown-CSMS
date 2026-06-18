@@ -936,6 +936,29 @@ def compliance_audit_sample_payload(school_id):
     )
 
 
+def dashboard_certification_center_sample_payload(school_id):
+    return build_dashboard_payload(
+        dashboard_key='dashboard-certification-center',
+        metrics=[
+            metric('Dashboards Certified', '41'),
+            metric('Pending Review', '6'),
+            metric('Failed Certification', '2'),
+            metric('Cert Rate', '91%'),
+        ],
+        alerts=[
+            alert('Six dashboards are still in the review queue', 'High', 'Clear the queue before end of week.'),
+            alert('Two failed dashboards need correction guidance', 'Medium', 'Return feedback packages before resubmission.'),
+        ],
+        queue=[
+            queue_item('Complete review queue clearance'),
+            queue_item('Return correction guidance for failed dashboards'),
+            queue_item('Publish the quarterly certification report'),
+            queue_item('Verify reviewer training records'),
+        ],
+        meta={'school_id': str(school_id), 'served_from': 'sample'},
+    )
+
+
 def revenue_operations_sample_payload(school_id):
     return build_dashboard_payload(
         dashboard_key='revenue-operations',
@@ -1073,6 +1096,7 @@ SAMPLE_PAYLOAD_BUILDERS = {
     'alumni-relations': alumni_relations_sample_payload,
     'network-benchmarking': network_benchmarking_sample_payload,
     # Platform
+    'dashboard-certification-center': dashboard_certification_center_sample_payload,
     'compliance-audit': compliance_audit_sample_payload,
     'revenue-operations': revenue_operations_sample_payload,
     'implementation-success': implementation_success_sample_payload,

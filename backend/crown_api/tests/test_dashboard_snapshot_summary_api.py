@@ -104,6 +104,26 @@ def test_attendance_summary_allows_sample_payload_when_explicitly_enabled():
     assert data['meta']['sample_payload_allowed'] is True
 
 
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    'dashboard_key',
+    ['dashboard-certification-center', 'release-reliability', 'compliance-audit'],
+)
+def test_batch0_summary_routes_serve_sample_payloads_in_development(dashboard_key):
+    client = _authed_client(f'dashboard-summary-batch0-{dashboard_key}')
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': dashboard_key}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data['dashboard_key'] == dashboard_key
+    assert data['meta']['served_from'] == 'sample'
+    assert len(data['metrics']) > 0
+
+
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='production')
 @pytest.mark.django_db
 def test_unknown_dashboard_returns_404():
