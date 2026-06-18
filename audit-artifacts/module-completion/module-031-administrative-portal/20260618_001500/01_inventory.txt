@@ -1,0 +1,38 @@
+MODULE: 031 — Administrative Portal
+STATUS_BEFORE: NOT_PROVEN
+BLOCKER: admin workspace and oversight tests required
+
+IMPLEMENTATION FILES FOUND:
+  backend/crown_api/metrics_views.py
+    - admin_metrics() view, @require_permission("admin.view")
+    - Endpoint: GET /api/admin/metrics/ (and /api/v1/admin/metrics/ via back-compat alias)
+    - Returns: enrolled, attendance_flags_today, discipline_incidents_week,
+               messages_pending, billing_delinquencies, enrollment_funnel,
+               operational_alerts, snapshot_date
+
+  backend/crown_api/api_urls.py
+    - path('admin/metrics/', admin_metrics, name='admin-metrics')
+
+  backend/core/nav_registry.py
+    - NavItem(group="Operations", label="Administration", href="/admin", permission="admin.view")
+
+  backend/core/management/commands/seed_permissions.py
+    - ("admin.view", "View administration dashboard")
+    - admin.view is defined in the canonical seed list
+    - This evidence packet does not claim PRINCIPAL role mapping
+
+  backend/core/permissions.py
+    - require_permission() decorator: returns deterministic 403 for unauthenticated/unpermitted users
+    - user_has_permission(): school-scoped role lookup via UserRole FK when a school is supplied
+
+  backend/executive360/api/views.py
+    - ExecutiveSelfOverview (GET /api/executive360/me/overview/), IsAuthenticated
+
+TEST ENVIRONMENT BOUNDARY:
+  backend/tests/conftest.py disables TENANT_HEADER_REQUIRED.
+  This proof does not claim HTTP middleware-attached request.school coverage from HTTP_X_SCHOOL_ID.
+  Tenant isolation is proven directly through user_has_permission(user, "admin.view", school=school_b) -> False.
+
+RELATED MATRICES:
+  audit-artifacts/module-completion/current/01_module_matrix_expanded.csv
+  Row: 031,Administrative Portal,NOT_PROVEN,none-captured,requires admin workspace and oversight tests,admin-portal,domain-owner-tbd
