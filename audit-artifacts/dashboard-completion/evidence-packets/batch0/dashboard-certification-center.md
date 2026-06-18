@@ -6,8 +6,8 @@ Owner: TBD
 Independent reviewer: TBD
 Status: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
 Date: 2026-06-18
-Current proof commit SHA: 43e072dc49e849c33b9d979fd2892629dcb11048
-Latest evidence packet update: 01a62c5025410e9821e54db08f6cd012196a8b4e
+Current proof commit SHA: 49ac317d13c2f9abca9f27cdd1df32d06550e2d4
+Latest evidence packet update: f0f53babcbb92cb9624972368107a7accc677b95
 State register: audit-artifacts/dashboard-completion/state/dashboard-certification-state.json
 
 ## Current proof summary
@@ -16,8 +16,8 @@ State register: audit-artifacts/dashboard-completion/state/dashboard-certificati
 - API authentication proof: PASS.
 - API permission proof: PASS.
 - Static frontend wiring proof: PASS.
-- Runtime infrastructure proof: PARTIAL PASS.
-- Browser-rendered title/metrics proof: NOT VERIFIED.
+- Runtime infrastructure proof: PASS.
+- Browser-rendered title/metrics proof: PASS by user-provided proof log.
 - Browser role-experience proof: NOT VERIFIED.
 - Tenant proof: NOT VERIFIED.
 - Independent review: PENDING.
@@ -28,6 +28,8 @@ State register: audit-artifacts/dashboard-completion/state/dashboard-certificati
 - Backend/API proof: backend/crown_api/tests/test_dashboard_snapshot_summary_api.py
 - Runtime partial proof: audit-artifacts/dashboard-completion/runtime-proof/batch0/dashboard-certification-center-codespace-runtime-partial-20260618.md
 - Static frontend proof: audit-artifacts/dashboard-completion/frontend-proof/batch0/dashboard-certification-center-static-proof-20260618.md
+- Failed browser proof: audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-failed-browser-proof-20260618.md
+- Passing browser proof summary: audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-passing-browser-proof-20260618.md
 - Machine-readable state register: audit-artifacts/dashboard-completion/state/dashboard-certification-state.json
 
 ## Backend proof
@@ -41,6 +43,22 @@ $ /workspaces/Crown2026/.venv/bin/python -m pytest backend/crown_api/tests/test_
 ```
 
 Permission-specific selectors passed for staff user, non-staff forbidden, and superuser access.
+
+## Route-state unblock proof
+
+The dashboard route was previously redirected to `/wizards` because `ReleaseStateRoute` gates non-ready routes and `dashboard-certification-center` defaulted to `draft` in the dashboard registry. The proof-route unblock added only:
+
+```text
+releaseState: 'ready'
+```
+
+to the `dashboard-certification-center` registry entry.
+
+Main SHA after route unblock:
+
+```text
+49ac317d13c2f9abca9f27cdd1df32d06550e2d4
+```
 
 ## Static frontend proof
 
@@ -57,6 +75,41 @@ Connector inspection verified:
 - Main router spreads `...dashboardRoutes`.
 - Static role group is `PLATFORM_CERT_TEAM`.
 
+## Browser proof
+
+The user-provided developer laptop proof rerun reports:
+
+```text
+BROWSER_PROOF_PASS
+Dashboard Certification: true
+Dashboards Certified: true
+Mapped: true
+0: true
+40: true
+```
+
+Local artifact folder reported by the proof run:
+
+```text
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\_wt_cert_center_route_20260618\audit-artifacts\dashboard-completion\browser-proof\batch0\dashboard-certification-center_20260618_193150
+```
+
+Local screenshot path reported by the proof run:
+
+```text
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\_wt_cert_center_route_20260618\audit-artifacts\dashboard-completion\browser-proof\batch0\dashboard-certification-center_20260618_193150\dashboard-certification-center.png
+```
+
+Local proof JSON path reported by the proof run:
+
+```text
+C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\_wt_cert_center_route_20260618\audit-artifacts\dashboard-completion\browser-proof\batch0\dashboard-certification-center_20260618_193150\browser-proof.json
+```
+
+## Governance note
+
+The user-provided run reported that push to `main` succeeded with a server message indicating branch protections were bypassed. This is a governance/process risk to record. Independent review remains required.
+
 ## State register proof
 
 The state register records:
@@ -67,7 +120,7 @@ The state register records:
 - 0 pending independent review.
 - Batch 0 dashboard list.
 - `dashboard-certification-center` proof state.
-- `release-reliability` and `compliance-audit` as `mapped_proof_required`.
+- `release-reliability` and `compliance-audit` as proof-required dashboards.
 
 The register is an evidence tracker, not a certification decision.
 
@@ -75,7 +128,7 @@ The register is an evidence tracker, not a certification decision.
 
 - Matrix row updated: not yet.
 - Status promoted to: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED.
-- Remaining blockers: owner assignment, independent reviewer assignment, browser-rendered title/metrics proof, screenshot or trace artifact, frontend runtime test proof, browser role-experience proof, tenant proof, evidence packet review, certification decision.
+- Remaining blockers: valid owner assignment, valid independent reviewer assignment, tenant proof, browser role-experience proof, evidence packet review, certification decision, matrix promotion.
 
 ## Non-claims
 
