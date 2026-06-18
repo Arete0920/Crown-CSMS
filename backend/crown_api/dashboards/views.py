@@ -18,6 +18,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound, ValidationError
 
 
+STAFF_ONLY_DASHBOARDS = frozenset({
+    'dashboard-certification-center',
+})
+
+
 def _env_flag(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
     if raw is None:
@@ -166,6 +171,13 @@ class DashboardSummaryView(APIView):
     def get(self, request, dashboard_key):
         key = str(dashboard_key).strip().lower()
         school_id = _school_id_from_request(request)
+
+        if key in STAFF_ONLY_DASHBOARDS:
+            user = getattr(request, 'user', None)
+            if not user or not getattr(user, 'is_authenticated', False):
+                return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+            if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
+                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
 
         if key == 'portrait-service':
             school = _resolve_school_strict(request)
