@@ -6,8 +6,7 @@ Owner: TBD
 Independent reviewer: TBD
 Status: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
 Date: 2026-06-18
-Branch: feat/dashboard-batch0-control-services-20260618
-Commit SHA: ee9dc6753185fa0fe6affb77bfff129136398b27
+Current proof commit SHA: 43e072dc49e849c33b9d979fd2892629dcb11048
 
 ## 1. Contract
 
@@ -17,45 +16,84 @@ Commit SHA: ee9dc6753185fa0fe6affb77bfff129136398b27
 - Alert definitions: no certified dashboards yet, owner/reviewer still TBD
 - Queue/list definitions: assign owner, assign independent reviewer, wire proof state, attach runtime proof
 - Freshness SLA: not yet proven
-- Sensitivity classification: internal
+- Sensitivity classification: internal control dashboard; summary API is staff/superuser restricted as of commit 4666afcb95f7c948070bea914d1f1bff147d66ff
 - Export rules: not yet proven
 
 ## 2. Backend proof
 
 - Summary service path: backend/crown_api/dashboards/sample_payloads.py::dashboard_certification_center_sample_payload
-- API route: /api/dashboards/dashboard-certification-center/summary
+- API route: /api/v1/dashboards/dashboard-certification-center/summary
 - Payload builder: backend/crown_api/dashboards/payload_contract.py::build_dashboard_payload
 - Backend test path: backend/crown_api/tests/test_dashboard_snapshot_summary_api.py
-- Backend test result: prior local proof reported PASS; current PR-head CI still requires final review after all workflow runs complete
-- Connector note: backend sample payload metrics were partly aligned to 0/0/0/0%, but alerts and queue text still require final truth alignment before draft exit
+- Backend test result: PASS on Codespace main at 43e072dc49e849c33b9d979fd2892629dcb11048
+- Full file run: `13 passed in 82.00s`
 
-## 3. Frontend proof
+### Backend proof commands and results
+
+```text
+$ git status --short
+<no output>
+
+$ git rev-parse HEAD
+43e072dc49e849c33b9d979fd2892629dcb11048
+
+$ /workspaces/Crown2026/.venv/bin/python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py -q
+.............                                                            [100%]
+13 passed in 82.00s (0:01:22)
+```
+
+## 3. API permission proof
+
+Result: PASS on Codespace main at 43e072dc49e849c33b9d979fd2892629dcb11048.
+
+```text
+$ /workspaces/Crown2026/.venv/bin/python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_dashboard_certification_center_staff_user_receives_summary_payload -q
+.                                                                        [100%]
+1 passed in 80.77s (0:01:20)
+
+$ /workspaces/Crown2026/.venv/bin/python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_dashboard_certification_center_non_staff_user_is_forbidden -q
+.                                                                        [100%]
+1 passed in 80.15s (0:01:20)
+
+$ /workspaces/Crown2026/.venv/bin/python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_dashboard_certification_center_superuser_receives_summary_payload -q
+.                                                                        [100%]
+1 passed in 79.34s (0:01:19)
+```
+
+Interpretation:
+
+- Staff user receives summary payload: PASS.
+- Superuser receives summary payload: PASS.
+- Authenticated non-staff user receives 403: PASS.
+- Unauthenticated user receives 401 as part of file-level Batch 0 tests: PASS.
+
+## 4. Frontend proof
 
 - Dashboard page path: frontend/dashboards/src/pages/DashboardCertificationCenter.jsx
 - API client/hook path: frontend/dashboards/src/hooks/useDashboardData.js
 - Dashboard template path: frontend/dashboards/src/config/dashboardTemplates/dashboardCertificationCenterDashboard.js
 - Registry path: frontend/dashboards/src/config/dashboardDataRegistry.js
 - Live metadata test path: frontend/dashboards/src/config/dashboardTemplateLiveMetadata.test.js
-- Frontend test result: prior local proof reported lint 0 errors / 2 warnings, contracts PASS, dashboard completeness PASS; current PR-head CI still requires final review after all workflow runs complete
+- Frontend test result: pending current-main rerun after permission proof update
 
-## 4. Runtime proof
+## 5. Runtime proof
 
 - Environment: backend API test runtime only so far
-- URL: /api/dashboards/dashboard-certification-center/summary
+- URL: /api/v1/dashboards/dashboard-certification-center/summary
 - Browser runtime proof: pending
 - Screenshot/trace path: pending
-- Result: backend API proof partial; browser/runtime proof pending
+- Result: API authentication and permission proof passed; browser/runtime proof pending
 
-## 5. Governance proof
+## 6. Governance proof
 
 - Owner assignment: pending
 - Independent reviewer assignment: pending
-- Dashboard-specific role matrix proof: pending
+- Dashboard-specific role matrix proof: API-level role proof passed for staff/superuser/non-staff; frontend role experience pending
 - Dashboard-specific tenant proof: pending
 - Evidence packet review: pending
 - Certification decision: pending
 
-## 6. Payload sample
+## 7. Payload sample
 
 Expected truthful Certification Center payload baseline until real proof state is wired:
 
@@ -82,15 +120,20 @@ Expected truthful Certification Center payload baseline until real proof state i
 }
 ```
 
-## 7. Independent review
+## 8. Independent review
 
 Reviewer: TBD
 Date: TBD
 Decision: PENDING
 Notes: TC cannot self-approve certification-affecting work.
 
-## 8. Certification decision
+## 9. Certification decision
 
 - Matrix row updated: not yet
 - Status promoted to: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
-- Remaining blockers: owner assignment, independent reviewer assignment, backend sample payload text alignment, browser runtime proof, evidence packet completion, review-thread closure
+- Remaining blockers: owner assignment, independent reviewer assignment, browser runtime proof, frontend runtime proof, tenant proof, evidence packet review, certification decision
+
+## 10. Non-claims
+
+This evidence packet does not certify the dashboard.
+This evidence packet does not approve sandbox, pilot, production, or release GO.
