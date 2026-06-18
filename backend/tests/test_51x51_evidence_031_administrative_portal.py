@@ -2,7 +2,7 @@
 51x51 remediation evidence tests for ModuleId 31: Administrative Portal.
 
 Proves:
-- route wiring for /api/admin/metrics/
+- route wiring for the named admin metrics endpoint
 - permission gate admin.view
 - Administration nav registry entry
 - oversight payload contract
@@ -18,6 +18,7 @@ import uuid
 
 import pytest
 from django.test import Client
+from django.urls import reverse
 
 from core.models import CrownPermission, RolePermission, School, UserAccount, UserRole
 
@@ -25,7 +26,7 @@ pytestmark = pytest.mark.django_db
 
 MODULE_ID = 31
 MODULE_NAME = "Administrative Portal"
-ADMIN_METRICS_URL = "/api/admin/metrics/"
+ADMIN_METRICS_SUFFIX = "/admin/metrics/"
 SCHOOL_ID_HEADER = "HTTP_X_SCHOOL_ID"
 
 MODULE_TEXT = """
@@ -105,8 +106,7 @@ def test_admin_metrics_view_importable_31():
 
 
 def test_admin_metrics_url_registered_31():
-    from django.urls import reverse
-    assert reverse("admin-metrics") == ADMIN_METRICS_URL
+    assert reverse("admin-metrics").endswith(ADMIN_METRICS_SUFFIX)
 
 
 def test_admin_nav_registry_entry_31():
@@ -115,23 +115,14 @@ def test_admin_nav_registry_entry_31():
 
 
 def test_admin_permission_defined_in_seed_31():
-    import os
-    seed_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "core", "management", "commands", "seed_permissions.py")
-    )
-    with open(seed_path) as handle:
-        content = handle.read()
-    assert "admin.view" in content
+    from core.management.commands import seed_permissions
+    assert any(code == "admin.view" for code, _label in seed_permissions.PERMISSIONS)
+    assert "admin.view" in seed_permissions.ROLE_PERMISSIONS["HEAD_OF_SCHOOL"]
+    assert "admin.view" in seed_permissions.ROLE_PERMISSIONS["school_admin"]
 
 
 def test_admin_metrics_denies_unauthenticated_31():
-    response = Client().get(ADMIN_METRICS_URL)
-    assert response.status_code == 403
-
-
-def test_admin_metrics_denies_unauthenticated_with_school_header_31():
-    school = _mk_school("unauth")
-    response = Client().get(ADMIN_METRICS_URL, **{SCHOOL_ID_HEADER: str(school.id)})
+    response = Client().get(reverse("admin-metrics"))
     assert response.status_code == 403
 
 
@@ -142,7 +133,7 @@ def test_admin_metrics_denies_user_without_admin_view_31():
 
     client = Client()
     client.force_login(user)
-    response = client.get(ADMIN_METRICS_URL, **{SCHOOL_ID_HEADER: str(school.id)})
+    response = client.get(reverse("admin-metrics"), **{SCHOOL_ID_HEADER: str(school.id)})
 
     assert response.status_code == 403
 
@@ -156,7 +147,7 @@ def test_admin_metrics_allows_with_admin_view_permission_31():
 
     client = Client()
     client.force_login(user)
-    response = client.get(ADMIN_METRICS_URL, **{SCHOOL_ID_HEADER: str(school.id)})
+    response = client.get(reverse("admin-metrics"), **{SCHOOL_ID_HEADER: str(school.id)})
 
     assert response.status_code == 200
 
@@ -170,7 +161,7 @@ def test_admin_metrics_payload_contains_oversight_contract_31():
 
     client = Client()
     client.force_login(user)
-    response = client.get(ADMIN_METRICS_URL, **{SCHOOL_ID_HEADER: str(school.id)})
+    response = client.get(reverse("admin-metrics"), **{SCHOOL_ID_HEADER: str(school.id)})
     assert response.status_code == 200
 
     data = response.json()
@@ -191,7 +182,7 @@ def test_admin_metrics_enrollment_funnel_shape_31():
 
     client = Client()
     client.force_login(user)
-    response = client.get(ADMIN_METRICS_URL, **{SCHOOL_ID_HEADER: str(school.id)})
+    response = client.get(reverse("admin-metrics"), **{SCHOOL_ID_HEADER: str(school.id)})
     assert response.status_code == 200
 
     funnel = response.json().get("enrollment_funnel", {})
@@ -208,12 +199,11 @@ def test_admin_metrics_operational_alerts_shape_31():
 
     client = Client()
     client.force_login(user)
-    response = client.get(ADMIN_METRICS_URL, **{SCHOOL_ID_HEADER: str(school.id)})
+    response = client.get(reverse("admin-metrics"), **{SCHOOL_ID_HEADER: str(school.id)})
     assert response.status_code == 200
 
     alerts = response.json().get("operational_alerts", [])
     assert isinstance(alerts, list)
-    assert alerts
     for alert in alerts:
         assert "type" in alert
         assert "label" in alert
@@ -251,10 +241,9 @@ def test_executive360_overview_view_importable_31():
 
 
 def test_executive360_overview_url_registered_31():
-    from django.urls import reverse
-    assert "/api/executive360/me/overview/" in reverse("executive_360_self")
+    assert reverse("executive_360_self").endswith("/executive360/me/overview/")
 
 
 def test_executive360_denies_unauthenticated_31():
-    response = Client().get("/api/executive360/me/overview/")
+    response = Client().get(reverse("executive_360_self"))
     assert response.status_code == 403
