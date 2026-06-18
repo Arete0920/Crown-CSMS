@@ -4,75 +4,57 @@ Dashboard key: release-reliability
 Module key: release-reliability
 Owner: TBD
 Independent reviewer: TBD
-Status: PROOF_IN_PROGRESS
+Status: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
 Date: 2026-06-18
 Branch: feat/dashboard-batch0-control-services-20260618
-Commit SHA: 2ebc116c
+Commit SHA: ee9dc6753185fa0fe6affb77bfff129136398b27
 
 ## 1. Contract
 
 - Contract path: docs/dashboard-completion/contracts/batch0/release-reliability.md
+- API response shape: dashboard_key, metrics, alerts, queue, meta
 - KPI definitions: deployment count, open production incidents, failed checks, release readiness
 - Alert definitions: contract gate failure, build SHA mismatch, incomplete release proof packet
-- Queue/table/list definitions: gate review queue, environment alignment queue, incident postmortem queue, readiness summary queue
-- Drilldown definitions: contract draft only; no runtime drilldown proof captured yet
-- served_from rules: sample fallback allowed in non-production; backend sample payload returns served_from=sample
+- Queue/list definitions: gate review queue, environment alignment queue, incident postmortem queue, readiness summary queue
 - Freshness SLA: not yet proven
 - Sensitivity classification: internal
-- Redaction rules: not yet proven
 - Export rules: not yet proven
 
 ## 2. Backend proof
 
 - Summary service path: backend/crown_api/dashboards/sample_payloads.py::release_reliability_sample_payload
-- API route: /api/dashboards/release-reliability/summary (reverse('dashboard-summary', kwargs={'dashboard_key': 'release-reliability'}))
-- Serializer/schema: backend/crown_api/dashboards/payload_contract.py::build_dashboard_payload
-- Permission class/path: backend/crown_api/dashboards/views.py::DashboardSummaryView (IsAuthenticated)
-- Tenant enforcement path: backend/crown_api/dashboards/views.py::`_school_id_from_request` and `_resolve_school_strict`
-- Entitlement check path: not separately implemented for this dashboard in the current proof slice
-- Audit event path: not yet proven
+- API route: /api/dashboards/release-reliability/summary
+- Payload builder: backend/crown_api/dashboards/payload_contract.py::build_dashboard_payload
 - Backend test path: backend/crown_api/tests/test_dashboard_snapshot_summary_api.py
-- Backend test command: python -m pytest crown_api\tests\test_dashboard_snapshot_summary_api.py
-- Backend test result: PASS (8 passed)
+- Backend test result: prior local proof reported PASS; current PR-head CI still requires final review after all workflow runs complete
 
 ## 3. Frontend proof
 
 - Dashboard page path: frontend/dashboards/src/pages/ReleaseReliabilityDashboard.jsx
 - API client/hook path: frontend/dashboards/src/hooks/useDashboardData.js
-- KPI component path: frontend/dashboards/src/components/crown-dashboard/CrownDashboardTemplate.jsx
-- Alert/status component path: frontend/dashboards/src/components/crown-dashboard/CrownDashboardTemplate.jsx
-- Queue/table component path: frontend/dashboards/src/components/crown-dashboard/CrownDashboardTemplate.jsx
-- Empty state proof: not yet captured for this dashboard
-- Error state proof: not yet captured for this dashboard
-- Forbidden state proof: not yet captured for this dashboard
-- Frontend test path: frontend/dashboards/src/components/crown-dashboard/CrownDashboardTemplate.test.jsx; frontend/dashboards/src/tests/apiContractRegistry.test.js
-- Frontend test command: npm run lint; npm run test:contracts; npm run verify:dashboard-completeness
-- Frontend test result: PASS (lint: 0 errors, 2 warnings; test:contracts: 9 passed; verify:dashboard-completeness: PASS)
+- Registry path: frontend/dashboards/src/config/dashboardDataRegistry.js
+- Frontend test result: prior local proof reported lint 0 errors / 2 warnings, contracts PASS, dashboard completeness PASS; current PR-head CI still requires final review after all workflow runs complete
 
 ## 4. Runtime proof
 
-- Environment: local backend test runtime (pytest)
+- Environment: backend API test runtime only so far
 - URL: /api/dashboards/release-reliability/summary
-- User role tested: not yet captured
-- Tenant tested: role-contract and tenant-isolation suites executed for dashboard APIs (non-keyed summary endpoints)
-- Playwright test path: not yet captured
-- Playwright command: not yet captured
-- Screenshot/trace path: not yet captured
-- Result: backend runtime proof captured via automated tests; browser runtime proof pending
+- Browser runtime proof: pending
+- Screenshot/trace path: pending
+- Result: backend API proof partial; browser/runtime proof pending
 
-## 5. Security proof
+## 5. Governance proof
 
-- Unauthenticated denied: PASS for keyed endpoint /api/dashboards/release-reliability/summary in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_require_authentication
-- Unauthorized role denied: PARTIAL (covered for cross-tenant dashboard summary contract endpoints; keyed batch0 endpoint-specific role denial not yet captured)
-- Authorized role allowed: PASS in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py::test_batch0_summary_routes_serve_sample_payloads_in_development
-- Direct URL tested: PASS for /api/dashboards/release-reliability/summary in backend/crown_api/tests/test_dashboard_snapshot_summary_api.py
-- Cross-tenant blocked: PARTIAL (PASS for dashboard summary contract endpoint in backend/crown_api/tests/test_dashboards_role_contract.py::test_cross_tenant_access_blocked; keyed batch0 summary endpoint-specific cross-tenant proof pending)
-- Sensitive field redaction: not yet captured for keyed batch0 summary endpoints
-- Small-cell suppression, if applicable: not yet captured
-- Export permission proof, if applicable: not yet captured
+- Owner assignment: pending
+- Independent reviewer assignment: pending
+- Dashboard-specific role matrix proof: pending
+- Dashboard-specific tenant proof: pending
+- Evidence packet review: pending
+- Certification decision: pending
 
 ## 6. Payload sample
 
+```json
 {
   "dashboard_key": "release-reliability",
   "metrics": [
@@ -94,16 +76,17 @@ Commit SHA: 2ebc116c
   ],
   "meta": { "school_id": "platform", "served_from": "sample" }
 }
+```
 
 ## 7. Independent review
 
-Reviewer:
-Date:
+Reviewer: TBD
+Date: TBD
 Decision: PENDING
-Notes:
+Notes: TC cannot self-approve certification-affecting work.
 
 ## 8. Certification decision
 
-- Matrix row updated:
-- Status promoted to: PROOF_IN_PROGRESS
-- Remaining blockers: keyed endpoint tenant/role denial proof, browser runtime proof, independent review
+- Matrix row updated: not yet
+- Status promoted to: PROOF_IN_PROGRESS / CERTIFICATION_BLOCKED
+- Remaining blockers: owner assignment, independent reviewer assignment, browser runtime proof, evidence packet completion, review-thread closure
