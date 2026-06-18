@@ -39,27 +39,19 @@ Provide a compliance dashboard summary payload for compliance monitoring with me
 
 ## Summary API
 
-/api/v1/dashboards/compliance-audit/summary/
+/api/v1/dashboards/compliance-audit/summary
 
 ## Payload contract
 
-```json
+~~~json
 {
   "dashboard_key": "compliance-audit",
-  "module_key": "compliance-audit",
-  "schema_version": "1.0",
-  "served_from": "live",
-  "source_module": "compliance-audit",
-  "generated_at": "",
-  "expires_at": null,
-  "sensitivity_level": "internal",
   "metrics": [],
   "alerts": [],
   "queue": [],
-  "drilldowns": [],
-  "redactions": []
+  "meta": {}
 }
-```
+~~~
 
 ## Security
 
