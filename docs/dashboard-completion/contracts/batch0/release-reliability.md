@@ -39,27 +39,19 @@ TBD.
 
 ## Summary API
 
-/api/v1/dashboards/release-reliability/summary/
+/api/v1/dashboards/release-reliability/summary
 
 ## Payload contract
 
-```json
+~~~json
 {
   "dashboard_key": "release-reliability",
-  "module_key": "release-reliability",
-  "schema_version": "1.0",
-  "served_from": "live",
-  "source_module": "release-reliability",
-  "generated_at": "",
-  "expires_at": null,
-  "sensitivity_level": "internal",
   "metrics": [],
   "alerts": [],
   "queue": [],
-  "drilldowns": [],
-  "redactions": []
+  "meta": {}
 }
-```
+~~~
 
 ## Security
 
