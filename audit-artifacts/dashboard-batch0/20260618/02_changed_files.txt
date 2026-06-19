@@ -1,0 +1,30 @@
+CHANGED FILES
+=============
+
+backend/crown_api/dashboards/sample_payloads.py
+  + Added dashboard_certification_center_sample_payload() function (4 metrics, 3 alerts, 4 queue items)
+  + Registered 'dashboard-certification-center' in SAMPLE_PAYLOAD_BUILDERS under "Batch 0 control dashboards"
+
+backend/crown_api/tests/test_dashboard_batch0_summary_api.py  (NEW FILE)
+  + 13 tests covering all 3 Batch 0 dashboards:
+    - test_batch0_summary_requires_auth (3 parametrized)
+    - test_batch0_summary_returns_200_in_non_production (3 parametrized)
+    - test_batch0_summary_rejects_sample_in_production (3 parametrized)
+    - test_dashboard_certification_center_summary_no_school_header (1)
+    - test_batch0_summary_metrics_have_label_and_value (3 parametrized)
+
+frontend/dashboards/src/config/dashboardDataRegistry.js
+  + Replaced '/api/v1/platform/dashboard-certification-center' (non-existent endpoint)
+    with dashboardSummaryPath('dashboard-certification-center') + allowScaffoldFallback=true
+
+frontend/dashboards/src/config/dashboardCertificationRegistry.js
+  + Updated compliance-audit: scaffold → hybrid
+  + Updated release-reliability: unchanged (was already hybrid)
+  + Updated dashboard-certification-center: live → hybrid (accurate reflection of sample state)
+  + Added descriptive notes for all three Batch 0 entries
+
+docs/release/DASHBOARD_CERTIFICATION_MATRIX_20260530.md
+  + Updated compliance-audit: MAPPED → API_PROVEN
+  + Updated release-reliability: MAPPED → API_PROVEN
+  + Updated dashboard-certification-center: MAPPED → API_PROVEN
+  + Added evidence citations for each
