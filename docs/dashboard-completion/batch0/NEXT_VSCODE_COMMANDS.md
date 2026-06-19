@@ -48,7 +48,9 @@ Expected improvement:
 ```powershell
 Set-Location $WT
 git status --short
-git add frontend/dashboards/src/config/dashboardRegistry.js docs/dashboard-completion/batch0 dashboard-certification-center-packet audit-artifacts/dashboard-completion/browser-proof
+git add frontend/dashboards/src/config/dashboardRegistry.js
+git add docs/dashboard-completion/batch0
+git add audit-artifacts/dashboard-completion/browser-proof
 git commit -m "docs(batch0): refresh dashboard certification center proof after stack alignment"
 git push origin HEAD:feat/dashboard-batch0-evidence-prep-20260619
 ```
