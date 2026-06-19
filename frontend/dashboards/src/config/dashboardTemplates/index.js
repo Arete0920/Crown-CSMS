@@ -266,8 +266,10 @@ export function getDashboardTemplate(key) {
   const templateKey = DASHBOARD_TEMPLATE_MAP[key] ? key : 'dashboard';
   const validTemplate = isValidDashboardTemplate(candidate) ? candidate : schoolAdministratorDashboard;
   const enhancedTemplate = withTemplateDataSources(validTemplate, templateKey);
-  const liveDataKey = lookupDashboardDataKey(key) || enhancedTemplate.liveDataKey;
-
+  const isRegisteredTemplateKey = Boolean(DASHBOARD_TEMPLATE_MAP[key]);
+  const liveDataKey = isRegisteredTemplateKey
+    ? (lookupDashboardDataKey(key) || enhancedTemplate.liveDataKey)
+    : lookupDashboardDataKey(key);
   return {
     ...enhancedTemplate,
     liveDataKey,
