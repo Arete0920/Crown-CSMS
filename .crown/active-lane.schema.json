@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CROWN Active Lane Packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pr",
+    "branch",
+    "worktree",
+    "base_sha",
+    "head_sha",
+    "goal",
+    "allowed_files",
+    "forbidden_files",
+    "validation_commands",
+    "evidence_output_path",
+    "completion_claim_allowed",
+    "independent_review_required"
+  ],
+  "properties": {
+    "pr": {
+      "description": "Pull request number, or null before a PR exists.",
+      "type": ["integer", "null"]
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "worktree": {
+      "type": "string",
+      "minLength": 1
+    },
+    "base_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$"
+    },
+    "head_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$"
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "forbidden_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "validation_commands": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_output_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "completion_claim_allowed": {
+      "type": "boolean"
+    },
+    "independent_review_required": {
+      "type": "boolean"
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}
