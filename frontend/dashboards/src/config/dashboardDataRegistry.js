@@ -117,9 +117,9 @@ export const DASHBOARD_DATA_REGISTRY = {
       ],
       alerts: [
         {
-          title: 'Compliance proof data is not live yet',
+          title: 'Compliance dashboard is using fallback proof data',
           level: 'Medium',
-          secondary: 'Wire the summary service before using this dashboard for certification decisions.',
+          secondary: 'Replace the sample-backed summary service with a certified live compliance truth source before promotion.',
         },
         {
           title: 'Owner and independent reviewer are still TBD',
@@ -130,10 +130,11 @@ export const DASHBOARD_DATA_REGISTRY = {
       queue: [
         'Assign compliance dashboard owner',
         'Assign independent compliance reviewer',
-        'Wire the compliance summary service',
-        'Attach permission, tenant, and runtime proof',
+        'Replace the sample-backed compliance summary service',
+        'Attach permission, tenant, and browser proof',
       ],
       meta: {
+        served_from: 'fallback',
         certification_candidate: 'hybrid',
         fallback_source: 'frontend_scaffold',
       },
