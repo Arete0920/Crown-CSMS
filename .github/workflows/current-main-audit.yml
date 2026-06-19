@@ -53,6 +53,7 @@ jobs:
       DATABASE_URL: sqlite:///./ci_current_main.sqlite3
       TENANT_HEADER_REQUIRED: "1"
       CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS: "0"
+      CROWN_DEMO_TOKEN: ci-sandbox-demo-token
       VITE_SANDBOX_READY_ONLY: ""
       VITE_HIDE_UNREADY_NAV: ""
       VITE_SANDBOX_MODE: ""
@@ -195,7 +196,7 @@ jobs:
           }
 
           run_check python_compile required python -m compileall -q backend
-          run_check backend_gate required python tools/verify_backend_gate.py
+          run_check backend_gate required env CROWN_ENV=ci DJANGO_ENV=ci ENVIRONMENT=ci DATABASE_URL=sqlite:///./ci.sqlite3 python tools/verify_backend_gate.py
           run_check url_surface required python tools/verify_url_surface.py
           run_check django_deploy_check advisory bash -lc 'cd backend && python manage.py check --deploy'
           run_check public_surface_policy advisory python tools/verify_public_surface_policy.py
@@ -228,6 +229,17 @@ jobs:
             return 0
           }
 
+          report_inputs=()
+          for path in frontend/dashboards/playwright-report frontend/dashboards/test-results frontend/dashboards/artifacts; do
+            if [ -e "$path" ]; then
+              report_inputs+=("$path")
+            fi
+          done
+          if [ "${#report_inputs[@]}" -gt 0 ]; then
+            tar -czf "$root/frontend-generated-before-lint.tgz" "${report_inputs[@]}" || true
+          fi
+          rm -rf frontend/dashboards/playwright-report frontend/dashboards/test-results frontend/dashboards/artifacts frontend/dashboards/coverage
+
           run_check frontend_lint required bash -lc 'cd frontend/dashboards && npm run lint --if-present'
           run_check frontend_contracts required bash -lc 'cd frontend/dashboards && npm run test:contracts --if-present'
           if [ "${{ github.event_name != 'workflow_dispatch' || inputs.run_frontend_unit == true }}" = "true" ]; then
@@ -250,6 +262,11 @@ jobs:
           }
           $log = Join-Path $logs "audit_frontend_ps1.log"
           "=== audit_frontend_ps1 ===" | Set-Content -Path $log -Encoding UTF8
+          if (-not $IsWindows) {
+            "SKIPPED: tools/audit_frontend.ps1 shells out through cmd.exe; Linux-native frontend audit commands ran above." | Tee-Object -FilePath $log -Append
+            "audit_frontend_ps1`tadvisory`t0" | Add-Content -Path $status -Encoding UTF8
+            exit 0
+          }
           $code = 0
           try {
             ./tools/audit_frontend.ps1 2>&1 | Tee-Object -FilePath $log -Append
@@ -308,7 +325,7 @@ jobs:
               f"Required failures: **{len(required_failures)}**",
               f"Advisory failures: **{len(advisory_failures)}**",
               "",
-              "Artifacts include temp logs, `.crown-audit`, `audit-artifacts`, and frontend reports when present.",
+              "Artifacts include temp logs, staged `.crown-audit`, and a portable tarball of generated audit outputs when present.",
           ])
           summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
           (root / "00_SUMMARY.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -341,6 +358,24 @@ jobs:
             cp -R .crown-audit/. crown-audit-export/
           fi
 
+      - name: Pack generated audit outputs
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-evidence
+          inputs=()
+          for path in .crown-audit audit-artifacts frontend/dashboards/test-results frontend/dashboards/playwright-report frontend/dashboards/artifacts; do
+            if [ -e "$path" ]; then
+              inputs+=("$path")
+            fi
+          done
+          if [ "${#inputs[@]}" -gt 0 ]; then
+            tar -czf audit-evidence/generated-audit-outputs.tgz "${inputs[@]}"
+          else
+            echo "No generated audit output directories found." > audit-evidence/generated-audit-outputs.txt
+          fi
+
       - name: Upload current-main audit evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -351,7 +386,3 @@ jobs:
           path: |
             audit-evidence/**
             crown-audit-export/**
-            audit-artifacts/**
-            frontend/dashboards/test-results/**
-            frontend/dashboards/playwright-report/**
-            frontend/dashboards/artifacts/**
