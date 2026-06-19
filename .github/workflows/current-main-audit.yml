@@ -1,0 +1,388 @@
+name: Current Main Audit Evidence
+
+permissions:
+  contents: read
+  actions: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_deep_dashboard_gate:
+        description: "Run deep dashboard/module evidence gate"
+        type: boolean
+        default: true
+      run_frontend_unit:
+        description: "Run full frontend unit suite"
+        type: boolean
+        default: true
+      fail_on_advisory:
+        description: "Fail workflow on advisory evidence failures"
+        type: boolean
+        default: false
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/current-main-audit.yml"
+      - "backend/**"
+      - "frontend/dashboards/**"
+      - "scripts/execution/**"
+      - "tools/**"
+      - "docs/CURRENT_RELEASE_STATUS.md"
+  push:
+    branches: [main]
+
+concurrency:
+  group: current-main-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  current-main-audit:
+    name: Current Main Audit Evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      DJANGO_SETTINGS_MODULE: crown_api.settings
+      DJANGO_SECRET_KEY: ci-current-main-not-secret
+      SECRET_KEY: ci-current-main-not-secret
+      DJANGO_DEBUG: "0"
+      DEBUG: "0"
+      DJANGO_ENV: production
+      CROWN_ENV: prod
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      CSRF_TRUSTED_ORIGINS: http://localhost:3000
+      DATABASE_URL: sqlite:///./ci_current_main.sqlite3
+      TENANT_HEADER_REQUIRED: "1"
+      CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS: "0"
+      CROWN_DEMO_TOKEN: ci-sandbox-demo-token
+      VITE_SANDBOX_READY_ONLY: ""
+      VITE_HIDE_UNREADY_NAV: ""
+      VITE_SANDBOX_MODE: ""
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            backend/requirements.txt
+            backend/requirements-loadtest.txt
+
+      - name: Install backend dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          if [ -f backend/requirements-loadtest.txt ]; then
+            pip install -r backend/requirements-loadtest.txt
+          fi
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend/dashboards
+        shell: bash
+        run: npm ci
+
+      - name: Run clean-worktree evidence gates
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_deep_dashboard_gate == true }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          $root = Join-Path $env:RUNNER_TEMP "current-main-audit"
+          $logs = Join-Path $root "logs"
+          New-Item -ItemType Directory -Force -Path $logs | Out-Null
+          $status = Join-Path $root "status.tsv"
+          if (-not (Test-Path $status)) {
+            "name`tclassification`texit_code" | Set-Content -Path $status -Encoding UTF8
+          }
+
+          function Invoke-AuditCommand {
+            param(
+              [string]$Name,
+              [string]$Classification,
+              [scriptblock]$Command
+            )
+            $log = Join-Path $logs ("$Name.log")
+            "=== $Name ===" | Set-Content -Path $log -Encoding UTF8
+            "PWD: $(Get-Location)" | Add-Content -Path $log -Encoding UTF8
+            $code = 0
+            try {
+              & $Command 2>&1 | Tee-Object -FilePath $log -Append
+              if ($null -ne $LASTEXITCODE) { $code = [int]$LASTEXITCODE }
+            }
+            catch {
+              $code = 1
+              ($_ | Out-String) | Tee-Object -FilePath $log -Append
+            }
+            "$Name`t$Classification`t$code" | Add-Content -Path $status -Encoding UTF8
+          }
+
+          Invoke-AuditCommand "dashboard_module_completion_gate" "advisory" {
+            ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep
+          }
+
+          Invoke-AuditCommand "module_51x51_fast_audit" "advisory" {
+            ./scripts/execution/136_fast_mode_51x51_audit.ps1 -SkipLiveChecks
+          }
+
+      - name: Emit repository context
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          root="$RUNNER_TEMP/current-main-audit"
+          mkdir -p "$root/logs"
+          status="$root/status.tsv"
+          if [ ! -f "$status" ]; then
+            printf 'name\tclassification\texit_code\n' > "$status"
+          fi
+          {
+            echo "event=$GITHUB_EVENT_NAME"
+            echo "ref=$GITHUB_REF"
+            echo "sha=$GITHUB_SHA"
+            echo "run_id=$GITHUB_RUN_ID"
+            echo "run_number=$GITHUB_RUN_NUMBER"
+            echo "default_branch=main"
+            echo
+            echo "--- git head ---"
+            git rev-parse HEAD
+            echo
+            echo "--- git status ---"
+            git status --short --branch
+            echo
+            echo "--- recent commits ---"
+            git log --oneline -20
+          } | tee "$root/logs/repository_context.log"
+
+      - name: Run backend audit commands
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          root="$RUNNER_TEMP/current-main-audit"
+          logs="$root/logs"
+          mkdir -p "$logs"
+          status="$root/status.tsv"
+          if [ ! -f "$status" ]; then
+            printf 'name\tclassification\texit_code\n' > "$status"
+          fi
+
+          run_check() {
+            name="$1"
+            classification="$2"
+            shift 2
+            log="$logs/${name}.log"
+            echo "=== $name ===" | tee "$log"
+            echo "PWD: $(pwd)" | tee -a "$log"
+            echo "CMD: $*" | tee -a "$log"
+            "$@" >> "$log" 2>&1
+            code=$?
+            cat "$log"
+            printf '%s\t%s\t%s\n' "$name" "$classification" "$code" >> "$status"
+            return 0
+          }
+
+          run_check python_compile required python -m compileall -q backend
+          run_check backend_gate required env CROWN_ENV=ci DJANGO_ENV=ci ENVIRONMENT=ci DATABASE_URL=sqlite:///./ci.sqlite3 python tools/verify_backend_gate.py
+          run_check url_surface required python tools/verify_url_surface.py
+          run_check django_deploy_check advisory bash -lc 'cd backend && python manage.py check --deploy'
+          run_check public_surface_policy advisory python tools/verify_public_surface_policy.py
+
+      - name: Run frontend audit commands
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          root="$RUNNER_TEMP/current-main-audit"
+          logs="$root/logs"
+          mkdir -p "$logs"
+          status="$root/status.tsv"
+          if [ ! -f "$status" ]; then
+            printf 'name\tclassification\texit_code\n' > "$status"
+          fi
+
+          run_check() {
+            name="$1"
+            classification="$2"
+            shift 2
+            log="$logs/${name}.log"
+            echo "=== $name ===" | tee "$log"
+            echo "PWD: $(pwd)" | tee -a "$log"
+            echo "CMD: $*" | tee -a "$log"
+            "$@" >> "$log" 2>&1
+            code=$?
+            cat "$log"
+            printf '%s\t%s\t%s\n' "$name" "$classification" "$code" >> "$status"
+            return 0
+          }
+
+          report_inputs=()
+          for path in frontend/dashboards/playwright-report frontend/dashboards/test-results frontend/dashboards/artifacts; do
+            if [ -e "$path" ]; then
+              report_inputs+=("$path")
+            fi
+          done
+          if [ "${#report_inputs[@]}" -gt 0 ]; then
+            tar -czf "$root/frontend-generated-before-lint.tgz" "${report_inputs[@]}" || true
+          fi
+          rm -rf frontend/dashboards/playwright-report frontend/dashboards/test-results frontend/dashboards/artifacts frontend/dashboards/coverage
+
+          run_check frontend_lint required bash -lc 'cd frontend/dashboards && npm run lint --if-present'
+          run_check frontend_contracts required bash -lc 'cd frontend/dashboards && npm run test:contracts --if-present'
+          if [ "${{ github.event_name != 'workflow_dispatch' || inputs.run_frontend_unit == true }}" = "true" ]; then
+            run_check frontend_unit advisory bash -lc 'cd frontend/dashboards && npm run test:unit --if-present'
+          fi
+          run_check frontend_build required bash -lc 'cd frontend/dashboards && npm run build'
+          run_check frontend_npm_audit advisory bash -lc 'cd frontend/dashboards && npm audit --audit-level=moderate'
+
+      - name: Run PowerShell frontend hygiene audit
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          $root = Join-Path $env:RUNNER_TEMP "current-main-audit"
+          $logs = Join-Path $root "logs"
+          New-Item -ItemType Directory -Force -Path $logs | Out-Null
+          $status = Join-Path $root "status.tsv"
+          if (-not (Test-Path $status)) {
+            "name`tclassification`texit_code" | Set-Content -Path $status -Encoding UTF8
+          }
+          $log = Join-Path $logs "audit_frontend_ps1.log"
+          "=== audit_frontend_ps1 ===" | Set-Content -Path $log -Encoding UTF8
+          if (-not $IsWindows) {
+            "SKIPPED: tools/audit_frontend.ps1 shells out through cmd.exe; Linux-native frontend audit commands ran above." | Tee-Object -FilePath $log -Append
+            "audit_frontend_ps1`tadvisory`t0" | Add-Content -Path $status -Encoding UTF8
+            exit 0
+          }
+          $code = 0
+          try {
+            ./tools/audit_frontend.ps1 2>&1 | Tee-Object -FilePath $log -Append
+            if ($null -ne $LASTEXITCODE) { $code = [int]$LASTEXITCODE }
+          }
+          catch {
+            $code = 1
+            ($_ | Out-String) | Tee-Object -FilePath $log -Append
+          }
+          "audit_frontend_ps1`tadvisory`t$code" | Add-Content -Path $status -Encoding UTF8
+
+      - name: Summarize audit results
+        if: always()
+        shell: python
+        env:
+          FAIL_ON_ADVISORY: ${{ github.event_name == 'workflow_dispatch' && inputs.fail_on_advisory || false }}
+        run: |
+          import os
+          import pathlib
+          import sys
+
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "current-main-audit"
+          status = root / "status.tsv"
+          summary_path = pathlib.Path(os.environ["GITHUB_STEP_SUMMARY"])
+          rows = []
+          if status.exists():
+              lines = status.read_text(encoding="utf-8").splitlines()
+              for line in lines[1:]:
+                  parts = line.split("\t")
+                  if len(parts) != 3:
+                      continue
+                  name, classification, code = parts
+                  try:
+                      exit_code = int(code)
+                  except ValueError:
+                      exit_code = 1
+                  rows.append((name, classification, exit_code))
+
+          required_failures = [row for row in rows if row[1] == "required" and row[2] != 0]
+          advisory_failures = [row for row in rows if row[1] == "advisory" and row[2] != 0]
+
+          lines = [
+              "# Current Main Audit Evidence",
+              "",
+              f"SHA: `{os.environ.get('GITHUB_SHA', '')}`",
+              f"Run: `{os.environ.get('GITHUB_RUN_ID', '')}`",
+              "",
+              "| Check | Classification | Exit code | Result |",
+              "|---|---|---:|---|",
+          ]
+          for name, classification, exit_code in rows:
+              result = "PASS" if exit_code == 0 else "FAIL"
+              lines.append(f"| `{name}` | {classification} | {exit_code} | {result} |")
+          lines.extend([
+              "",
+              f"Required failures: **{len(required_failures)}**",
+              f"Advisory failures: **{len(advisory_failures)}**",
+              "",
+              "Artifacts include temp logs, staged `.crown-audit`, and a portable tarball of generated audit outputs when present.",
+          ])
+          summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          (root / "00_SUMMARY.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          fail_on_advisory = os.environ.get("FAIL_ON_ADVISORY", "false").lower() == "true"
+          if required_failures or (fail_on_advisory and advisory_failures):
+              sys.exit(1)
+
+      - name: Collect temp evidence into workspace
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          rm -rf audit-evidence
+          mkdir -p audit-evidence
+          if [ -d "$RUNNER_TEMP/current-main-audit" ]; then
+            cp -R "$RUNNER_TEMP/current-main-audit/." audit-evidence/
+          fi
+          echo "--- Current main audit evidence files ---"
+          find audit-evidence -maxdepth 3 -type f | sort || true
+
+      - name: Stage hidden audit outputs for artifact upload
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          rm -rf crown-audit-export
+          if [ -d .crown-audit ]; then
+            mkdir -p crown-audit-export
+            cp -R .crown-audit/. crown-audit-export/
+          fi
+
+      - name: Pack generated audit outputs
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-evidence
+          inputs=()
+          for path in .crown-audit audit-artifacts frontend/dashboards/test-results frontend/dashboards/playwright-report frontend/dashboards/artifacts; do
+            if [ -e "$path" ]; then
+              inputs+=("$path")
+            fi
+          done
+          if [ "${#inputs[@]}" -gt 0 ]; then
+            tar -czf audit-evidence/generated-audit-outputs.tgz "${inputs[@]}"
+          else
+            echo "No generated audit output directories found." > audit-evidence/generated-audit-outputs.txt
+          fi
+
+      - name: Upload current-main audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: current-main-audit-${{ github.run_number }}-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: warn
+          path: |
+            audit-evidence/**
+            crown-audit-export/**
