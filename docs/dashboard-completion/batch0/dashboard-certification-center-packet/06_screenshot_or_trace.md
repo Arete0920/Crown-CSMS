@@ -1,21 +1,19 @@
-# dashboard-certification-center - Screenshot or Trace
+﻿# Screenshot or Trace Evidence
 
-Status: collected
-Date: 2026-06-19
+## Current Status
+BLOCKED.
+A valid generated screenshot or browser trace has not been produced for dashboard-certification-center.
 
-## Artifact paths
+## Reason
+The generated Playwright proof attempt reaches an Access Restricted route-guard state and fails before a stable dashboard screenshot can be captured.
 
-- Screenshot:
-  - audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center_20260619_local/dashboard-certification-center-fullpage.png
-- Browser runtime metadata:
-  - audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center_20260619_local/browser-proof.json
+## Evidence Handling
+Do not use manually-authored browser-proof.json as completion proof.
 
-## Artifact facts
-
-- URL: http://127.0.0.1:4173/dashboard-certification-center
-- H1: Good morning, Certification Center!
-- Console errors captured: 2 (502 Bad Gateway resource loads)
-
-## Runtime condition note
-
-- The route rendered successfully while backend resource fetches returned 502 in local dev mode.
+## Next Required Proof
+A later generated proof run must produce:
+- browser-proof.json
+- full-page screenshot
+- zero console errors
+- successful dashboard render
+- no API 5xx failures
