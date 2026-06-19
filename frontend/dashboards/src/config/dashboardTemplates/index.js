@@ -194,7 +194,7 @@ function buildSourceSyncTruth(template, templateKey, dataSource, liveDataKey) {
 
 function annotateCollectionDataSources(items, templateKey, collectionName) {
   if (!Array.isArray(items)) {
-    return items;
+    return [];
   }
 
   return items.map((item, index) => {
