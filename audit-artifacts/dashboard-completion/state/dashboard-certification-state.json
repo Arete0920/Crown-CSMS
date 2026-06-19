@@ -1,91 +1,105 @@
 {
-  "schema_version": "2026-06-18.dashboard-certification-state.v1",
-  "generated_at": "2026-06-18",
-  "status": "evidence_register_not_certification",
-  "totals": {
-    "dashboards_total": 40,
-    "certified": 0,
-    "mapped_only": 40,
-    "pending_independent_review": 0,
-    "certification_rate_percent": 0
-  },
-  "batch0": {
-    "status": "proof_in_progress_certification_blocked",
-    "dashboards": [
-      "dashboard-certification-center",
-      "release-reliability",
-      "compliance-audit"
-    ],
-    "blockers": [
-      "valid_owner_assignment",
-      "valid_independent_reviewer_assignment",
-      "tenant_proof",
-      "browser_role_experience_proof",
-      "truth_alignment_for_release_and_compliance_dashboards",
-      "evidence_packet_review",
-      "certification_decision",
-      "matrix_promotion"
+    "schema_version": "2026-06-18.dashboard-certification-state.v1",
+    "generated_at": "2026-06-18",
+    "status": "evidence_register_not_certification",
+    "totals": {
+        "dashboards_total": 40,
+        "certified": 0,
+        "mapped_only": 40,
+        "pending_independent_review": 0,
+        "certification_rate_percent": 0
+    },
+    "batch0": {
+        "status": "proof_in_progress_pending_review",
+        "dashboards": [
+            "dashboard-certification-center",
+            "release-reliability",
+            "compliance-audit"
+        ],
+        "blockers": [
+            "valid_owner_assignment",
+            "valid_independent_reviewer_assignment",
+            "tenant_proof",
+            "browser_role_experience_proof",
+            "evidence_packet_review",
+            "certification_decision",
+            "matrix_promotion"
+        ],
+        "resolved_for_release_reliability": [
+            "truth_alignment",
+            "api_permission",
+            "tenant_header_behavior_documented",
+            "browser_rendered_title_metrics_unit_tests",
+            "registry_route_unblocked"
+        ],
+        "blockers_remaining_for_release_reliability": [
+            "independent_review",
+            "live_browser_screenshot",
+            "strict_cross_tenant_enforcement",
+            "matrix_promotion"
+        ]
+    },
+    "dashboards": {
+        "dashboard-certification-center": {
+            "route": "/dashboard-certification-center",
+            "summary_api": "/api/v1/dashboards/dashboard-certification-center/summary",
+            "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/dashboard-certification-center.md",
+            "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/dashboard-certification-center-static-proof-20260618.md",
+            "runtime_partial_proof": "audit-artifacts/dashboard-completion/runtime-proof/batch0/dashboard-certification-center-codespace-runtime-partial-20260618.md",
+            "failed_browser_proof": "audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-failed-browser-proof-20260618.md",
+            "passing_browser_proof": "audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-passing-browser-proof-20260618.md",
+            "state": "proof_in_progress_certification_blocked",
+            "proof": {
+                "api_permission": "pass",
+                "frontend_static_wiring": "pass",
+                "runtime_infrastructure": "pass",
+                "browser_rendered_title_metrics": "pass_user_provided_log",
+                "tenant_isolation": "not_verified",
+                "browser_role_experience": "not_verified",
+                "independent_review": "pending",
+                "matrix_promotion": "not_done"
+            },
+            "certification_decision": "not_certified"
+        },
+        "release-reliability": {
+            "route": "/release-reliability-dashboard",
+            "summary_api": "/api/v1/dashboards/release-reliability/summary",
+            "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/release-reliability.md",
+            "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/release-reliability-static-proof-20260618.md",
+            "state": "truth_aligned_proof_in_progress_pending_independent_review",
+            "proof": {
+                "frontend_static_wiring": "pass",
+                "truth_alignment": "pass_sample_documented",
+                "api_permission": "pass",
+                "tenant_isolation": "pass_gap_documented",
+                "browser_rendered_title_metrics": "pass_unit_tests",
+                "independent_review": "pending",
+                "matrix_promotion": "blocked_pending_independent_review",
+                "registry_release_state": "ready"
+            },
+            "certification_decision": "not_certified_pending_independent_review",
+            "browser_proof": "audit-artifacts/dashboard-completion/browser-proof/batch0/release-reliability-browser-proof-20260619.md"
+        },
+        "compliance-audit": {
+            "route": "/compliance-audit-dashboard",
+            "summary_api": "/api/v1/dashboards/compliance-audit/summary",
+            "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/compliance-audit.md",
+            "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/compliance-audit-static-proof-20260618.md",
+            "state": "static_frontend_proof_truth_alignment_required_certification_blocked",
+            "proof": {
+                "frontend_static_wiring": "pass",
+                "truth_alignment": "required",
+                "api_permission": "not_verified",
+                "tenant_isolation": "not_verified",
+                "browser_rendered_title_metrics": "not_verified",
+                "independent_review": "pending",
+                "matrix_promotion": "not_done"
+            },
+            "certification_decision": "not_certified"
+        }
+    },
+    "non_claims": [
+        "This register does not certify any dashboard.",
+        "This register does not approve sandbox, pilot, production, or release GO."
     ]
-  },
-  "dashboards": {
-    "dashboard-certification-center": {
-      "route": "/dashboard-certification-center",
-      "summary_api": "/api/v1/dashboards/dashboard-certification-center/summary",
-      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/dashboard-certification-center.md",
-      "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/dashboard-certification-center-static-proof-20260618.md",
-      "runtime_partial_proof": "audit-artifacts/dashboard-completion/runtime-proof/batch0/dashboard-certification-center-codespace-runtime-partial-20260618.md",
-      "failed_browser_proof": "audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-failed-browser-proof-20260618.md",
-      "passing_browser_proof": "audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-passing-browser-proof-20260618.md",
-      "state": "proof_in_progress_certification_blocked",
-      "proof": {
-        "api_permission": "pass",
-        "frontend_static_wiring": "pass",
-        "runtime_infrastructure": "pass",
-        "browser_rendered_title_metrics": "pass_user_provided_log",
-        "tenant_isolation": "not_verified",
-        "browser_role_experience": "not_verified",
-        "independent_review": "pending",
-        "matrix_promotion": "not_done"
-      },
-      "certification_decision": "not_certified"
-    },
-    "release-reliability": {
-      "route": "/release-reliability-dashboard",
-      "summary_api": "/api/v1/dashboards/release-reliability/summary",
-      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/release-reliability.md",
-      "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/release-reliability-static-proof-20260618.md",
-      "state": "static_frontend_proof_truth_alignment_required_certification_blocked",
-      "proof": {
-        "frontend_static_wiring": "pass",
-        "truth_alignment": "required",
-        "api_permission": "not_verified",
-        "tenant_isolation": "not_verified",
-        "browser_rendered_title_metrics": "not_verified",
-        "independent_review": "pending",
-        "matrix_promotion": "not_done"
-      },
-      "certification_decision": "not_certified"
-    },
-    "compliance-audit": {
-      "route": "/compliance-audit-dashboard",
-      "summary_api": "/api/v1/dashboards/compliance-audit/summary",
-      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/compliance-audit.md",
-      "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/compliance-audit-static-proof-20260618.md",
-      "state": "static_frontend_proof_truth_alignment_required_certification_blocked",
-      "proof": {
-        "frontend_static_wiring": "pass",
-        "truth_alignment": "required",
-        "api_permission": "not_verified",
-        "tenant_isolation": "not_verified",
-        "browser_rendered_title_metrics": "not_verified",
-        "independent_review": "pending",
-        "matrix_promotion": "not_done"
-      },
-      "certification_decision": "not_certified"
-    }
-  },
-  "non_claims": [
-    "This register does not certify any dashboard.",
-    "This register does not approve sandbox, pilot, production, or release GO."
-  ]
 }
