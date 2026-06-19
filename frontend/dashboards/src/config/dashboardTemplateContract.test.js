@@ -42,8 +42,16 @@ describe('canonical CROWN dashboard template contract', () => {
     ]);
   });
 
-  it('covers the full dashboard template registry, including aliases', () => {
+  it('covers the full dashboard template registry and required aliases', () => {
     expect(TEMPLATE_KEYS.length).toBeGreaterThanOrEqual(40);
+    expect(TEMPLATE_KEYS).toEqual(expect.arrayContaining([
+      'schoolBoard',
+      'healthOffice',
+      'foodService',
+      'itSupport',
+      'athleticsDirector',
+      'chaplainSpiritualLife',
+    ]));
   });
 
   it.each(TEMPLATE_KEYS)('%s exposes the shared CROWN dashboard sections', (templateKey) => {
