@@ -22,6 +22,10 @@ STAFF_ONLY_DASHBOARDS = frozenset({
     'dashboard-certification-center',
 })
 
+STRICT_TENANT_DASHBOARDS = frozenset({
+    'compliance-audit',
+})
+
 
 def _env_flag(name: str, default: bool = False) -> bool:
     raw = os.getenv(name)
@@ -186,6 +190,10 @@ class DashboardSummaryView(APIView):
                 return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
             if not user_has_permission(user, 'spiritual_life.view', school=school):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+            school_id = str(school.id)
+
+        if key in STRICT_TENANT_DASHBOARDS:
+            school = _resolve_school_strict(request)
             school_id = str(school.id)
 
         if key not in SAMPLE_PAYLOAD_BUILDERS:

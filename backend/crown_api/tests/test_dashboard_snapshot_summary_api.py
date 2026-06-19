@@ -1,4 +1,5 @@
 import pytest
+from core.models import School
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import override_settings
@@ -7,12 +8,13 @@ from rest_framework.test import APIClient
 from crown_api.dashboards.models import DashboardSnapshot
 
 
-def _authed_client(username='dashboard-summary-tester', *, is_staff=False, is_superuser=False):
+def _authed_client(username='dashboard-summary-tester', *, is_staff=False, is_superuser=False, school_id=None):
     user_model = get_user_model()
     user = user_model.objects.create_user(
         username=username,
         is_staff=is_staff,
         is_superuser=is_superuser,
+        school_id=school_id,
     )
     user.set_unusable_password()
     user.save(update_fields=['password'])
@@ -112,7 +114,7 @@ def test_attendance_summary_allows_sample_payload_when_explicitly_enabled():
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     'dashboard_key',
-    ['release-reliability', 'compliance-audit'],
+    ['release-reliability'],
 )
 def test_batch0_school_scoped_summary_routes_serve_sample_payloads_in_development(dashboard_key):
     client = _authed_client(f'dashboard-summary-batch0-{dashboard_key}')
@@ -126,6 +128,89 @@ def test_batch0_school_scoped_summary_routes_serve_sample_payloads_in_developmen
     assert data['dashboard_key'] == dashboard_key
     assert data['meta']['served_from'] == 'sample'
     assert len(data['metrics']) > 0
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_compliance_audit_summary_requires_explicit_tenant_header():
+    client = _authed_client('dashboard-summary-batch0-compliance-audit-no-header')
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'compliance-audit'}),
+    )
+
+    assert response.status_code == 400
+    assert response.json()['detail'] == 'X-School-Id header is required.'
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_compliance_audit_summary_rejects_invalid_tenant_header():
+    client = _authed_client('dashboard-summary-batch0-compliance-audit-invalid-header')
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'compliance-audit'}),
+        HTTP_X_SCHOOL_ID='not-a-uuid',
+    )
+
+    assert response.status_code == 400
+    assert response.json()['detail'] == 'Invalid X-School-Id (must be a UUID).'
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_compliance_audit_summary_rejects_nonexistent_school():
+    client = _authed_client('dashboard-summary-batch0-compliance-audit-missing-school')
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'compliance-audit'}),
+        HTTP_X_SCHOOL_ID='00000000-0000-0000-0000-000000000000',
+    )
+
+    assert response.status_code == 404
+    assert response.json()['detail'] == 'School not found.'
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_compliance_audit_summary_serves_sample_payload_for_request_school():
+    school = School.objects.create(name='Heritage Demo')
+    client = _authed_client('dashboard-summary-batch0-compliance-audit-allowed')
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'compliance-audit'}),
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data['dashboard_key'] == 'compliance-audit'
+    assert [metric['label'] for metric in data['metrics']] == [
+        'Open Compliance Items',
+        'Audits Completed This Year',
+        'Policies Reviewed',
+        'Training Completion Rate',
+    ]
+    assert data['meta']['served_from'] == 'sample'
+    assert data['meta']['sample_payload_allowed'] is True
+    assert data['meta']['certification_candidate'] == 'hybrid'
+    assert data['meta']['truth_source'] == 'backend/crown_api/dashboards/sample_payloads.py:compliance_audit_sample_payload'
+    assert data['meta']['school_id'] == str(school.id)
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_compliance_audit_summary_blocks_cross_tenant_access():
+    school_a = School.objects.create(name='Tenant A')
+    school_b = School.objects.create(name='Tenant B')
+    client = _authed_client(
+        'dashboard-summary-batch0-compliance-audit-cross-tenant',
+        school_id=school_a.id,
+    )
+
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'compliance-audit'}),
+        HTTP_X_SCHOOL_ID=str(school_b.id),
+    )
+
+    assert response.status_code == 404
+    assert response.json()['detail'] == 'Not found.'
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
