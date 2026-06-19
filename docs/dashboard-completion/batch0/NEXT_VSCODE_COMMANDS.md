@@ -1,23 +1,70 @@
 # Next VS Code Commands for Batch 0
 
-Run from the PR #1121 worktree.
+Run from a clean PR #1121 worktree, not from the main repo or quarantine branch.
 
-## 1. Confirm current state
+## Lane
+
+- PR: #1121
+- Branch: `feat/dashboard-batch0-evidence-prep-20260619`
+- Base: `feat/dashboard-certification-factory-20260619`
+- Target dashboard: `dashboard-certification-center`
+
+## 1. Prepare clean worktree
 
 ```powershell
+$ErrorActionPreference='Stop'
+$Repo='C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr'
 $WT='C:\Users\JMega\OneDrive\Desktop\Crown2026_worktrees\pr1121_dashboard_batch0_evidence_prep_20260619'
-Set-Location $WT
+$Branch='feat/dashboard-batch0-evidence-prep-20260619'
+
+Set-Location $Repo
+git fetch origin $Branch
+
+if (Test-Path $WT) {
+  Set-Location $WT
+  git fetch origin $Branch
+  git checkout $Branch 2>$null || git checkout -B $Branch origin/$Branch
+  git pull --ff-only origin $Branch
+} else {
+  git worktree add -b $Branch $WT origin/$Branch
+  Set-Location $WT
+}
+
 git status --short
 git rev-parse HEAD
 ```
 
-## 2. Apply the known false-ready alignment fix
+## 2. Apply targeted false-ready alignment fix
 
 ```powershell
 $path='frontend\dashboards\src\config\dashboardRegistry.js'
 $text=Get-Content $path -Raw
-$text=$text.Replace("    releaseState: 'ready',", "    releaseState: 'draft',")
-Set-Content $path $text -Encoding UTF8
+$old=@"
+  createDashboard({
+    key: 'dashboard-certification-center',
+    label: 'Dashboard Certification Center',
+    path: PATHS.DASHBOARD_CERTIFICATION_CENTER,
+    tier: 7,
+    section: 'Platform Operations',
+    allowedRoles: PLATFORM_CERT_TEAM,
+    component: DashboardCertificationCenter,
+    releaseState: 'ready',
+  }),
+"@
+$new=@"
+  createDashboard({
+    key: 'dashboard-certification-center',
+    label: 'Dashboard Certification Center',
+    path: PATHS.DASHBOARD_CERTIFICATION_CENTER,
+    tier: 7,
+    section: 'Platform Operations',
+    allowedRoles: PLATFORM_CERT_TEAM,
+    component: DashboardCertificationCenter,
+    releaseState: 'draft',
+  }),
+"@
+if (-not $text.Contains($old)) { throw 'Expected dashboard-certification-center ready block not found.' }
+$text.Replace($old,$new) | Set-Content $path -Encoding UTF8
 git diff -- $path
 ```
 
