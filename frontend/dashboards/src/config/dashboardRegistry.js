@@ -521,6 +521,7 @@ export const DASHBOARD_REGISTRY = [
     section: 'Platform Operations',
     allowedRoles: RELEASE_TEAM,
     component: ReleaseReliabilityDashboard,
+    releaseState: 'ready',
   }),
   createDashboard({
     key: 'dashboard-certification-center',
