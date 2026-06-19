@@ -1,7 +1,7 @@
 {
   "pr": null,
   "branch": "feat/dashboard-certification-factory-20260619",
-  "worktree": "C:\\Users\\JMega\\OneDrive\\Desktop\\Crown2026_worktrees\\pr1117_dashboard_certification_factory_20260619",
+  "worktree": "PR-specific clean worktree supplied by operator",
   "base_sha": "8cd17a51b1b80b7cc8c91e30f41af3df51f71e16",
   "head_sha": "37aa258c5f00b086ff9e18271e67fc0b8b890f5a",
   "goal": "Add non-promotional dashboard certification factory manifest and verifier.",
