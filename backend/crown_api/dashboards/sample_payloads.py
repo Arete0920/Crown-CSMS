@@ -932,7 +932,12 @@ def compliance_audit_sample_payload(school_id):
             queue_item('Send final compliance training reminders to staff'),
             queue_item('Publish compliance status report to board'),
         ],
-        meta={'school_id': str(school_id), 'served_from': 'sample'},
+        meta={
+            'school_id': str(school_id),
+            'served_from': 'sample',
+            'certification_candidate': 'hybrid',
+            'truth_source': 'backend/crown_api/dashboards/sample_payloads.py:compliance_audit_sample_payload',
+        },
     )
 
 

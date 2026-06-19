@@ -503,6 +503,7 @@ export const DASHBOARD_REGISTRY = [
     section: 'Platform Operations',
     allowedRoles: COMPLIANCE_TEAM,
     component: ComplianceAuditDashboard,
+    releaseState: 'ready',
   }),
   createDashboard({
     key: 'revenue-operations',
