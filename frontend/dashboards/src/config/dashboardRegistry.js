@@ -530,7 +530,7 @@ export const DASHBOARD_REGISTRY = [
     section: 'Platform Operations',
     allowedRoles: PLATFORM_CERT_TEAM,
     component: DashboardCertificationCenter,
-    releaseState: 'ready',
+    releaseState: 'draft',
   }),
 ];
 
