@@ -1,4 +1,5 @@
 import { DASHBOARD_DATA_REGISTRY } from '../dashboardDataRegistry.js';
+import { BASE_COMMUNICATIONS, BASE_FAITH_COMMUNITY } from './_baseData.js';
 
 import schoolAdministratorDashboard from './schoolAdministratorDashboard.js';
 import teacherDashboard from './teacherDashboard.js';
@@ -106,9 +107,94 @@ export const DASHBOARD_TEMPLATE_MAP = {
   chaplainSpiritualLife: spiritualLifeDashboard,
 };
 
+export const REQUIRED_DASHBOARD_TEMPLATE_SECTIONS = Object.freeze([
+  'faithCommunity.devotion',
+  'faithCommunity.prayerRequests',
+  'faithCommunity.announcements',
+  'faithCommunity.celebrations',
+  'communications.inboxItems',
+  'communications.announcementItems',
+  'communications.urgentItems',
+  'sourceSyncTruth.dataSource',
+  'sourceSyncTruth.truthLabel',
+  'sourceSyncTruth.lastSyncLabel',
+  'metrics',
+  'priorities',
+  'alerts',
+  'commandModules',
+  'quickActions',
+]);
+
+function asArray(value, fallback = []) {
+  return Array.isArray(value) && value.length > 0 ? value : fallback;
+}
+
+function normalizeFaithCommunity(template) {
+  const existing = template?.faithCommunity && typeof template.faithCommunity === 'object'
+    ? template.faithCommunity
+    : {};
+  const devotion = existing.devotion || template?.devotion || BASE_FAITH_COMMUNITY.devotion;
+  const prayerRequests = asArray(
+    existing.prayerRequests || template?.prayerRequests || template?.prayerList,
+    BASE_FAITH_COMMUNITY.prayerRequests,
+  );
+  const announcements = asArray(
+    existing.announcements || template?.announcements,
+    BASE_FAITH_COMMUNITY.announcements,
+  );
+  const celebrations = asArray(
+    existing.celebrations || template?.celebrations || template?.specialDays,
+    BASE_FAITH_COMMUNITY.celebrations,
+  );
+
+  return {
+    ...BASE_FAITH_COMMUNITY,
+    ...existing,
+    devotion,
+    prayerRequests,
+    prayerList: asArray(existing.prayerList || template?.prayerList, prayerRequests),
+    announcements,
+    celebrations,
+    specialDays: asArray(existing.specialDays || template?.specialDays, celebrations),
+  };
+}
+
+function normalizeCommunications(template) {
+  const existing = template?.communications && typeof template.communications === 'object'
+    ? template.communications
+    : {};
+  const strip = template?.communicationsStrip && typeof template.communicationsStrip === 'object'
+    ? template.communicationsStrip
+    : {};
+
+  return {
+    ...BASE_COMMUNICATIONS,
+    ...existing,
+    ...strip,
+    announcementItems: asArray(
+      existing.announcementItems || strip.announcementItems || template?.announcements,
+      BASE_COMMUNICATIONS.announcementItems,
+    ),
+    inboxItems: asArray(existing.inboxItems || strip.inboxItems, BASE_COMMUNICATIONS.inboxItems),
+    urgentItems: asArray(existing.urgentItems || strip.urgentItems, BASE_COMMUNICATIONS.urgentItems),
+  };
+}
+
+function buildSourceSyncTruth(template, templateKey, dataSource, liveDataKey) {
+  return {
+    dataSource,
+    apiEndpoint: template?.apiEndpoint || null,
+    liveDataKey,
+    truthLabel: template?.truthLabel || 'Dashboard operating snapshot',
+    lastSyncLabel: template?.lastSyncLabel || 'Updated from current dashboard configuration',
+    note: template?.note || null,
+    templateKey,
+  };
+}
+
 function annotateCollectionDataSources(items, templateKey, collectionName) {
   if (!Array.isArray(items)) {
-    return items;
+    return [];
   }
 
   return items.map((item, index) => {
@@ -123,14 +209,38 @@ function annotateCollectionDataSources(items, templateKey, collectionName) {
   });
 }
 
+function lookupDashboardDataKey(key) {
+  const normalized = String(key || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+
+  return DASHBOARD_DATA_REGISTRY[normalized] ? normalized : null;
+}
+
 function withTemplateDataSources(template, templateKey) {
   if (!template || typeof template !== 'object') {
     return template;
   }
 
+  const dataSource = template.dataSource || `${templateKey}.template`;
+  const liveDataKey = template.liveDataKey || lookupDashboardDataKey(templateKey);
+  const faithCommunity = normalizeFaithCommunity(template);
+  const communications = normalizeCommunications(template);
+
   return {
     ...template,
-    dataSource: template.dataSource || `${templateKey}.template`,
+    dataSource,
+    liveDataKey,
+    faithCommunity,
+    communications,
+    communicationsStrip: template.communicationsStrip || communications,
+    sourceSyncTruth: buildSourceSyncTruth(template, templateKey, dataSource, liveDataKey),
+    devotion: template.devotion || faithCommunity.devotion,
+    prayerRequests: faithCommunity.prayerRequests,
+    prayerList: faithCommunity.prayerList,
+    specialDays: faithCommunity.specialDays,
+    celebrations: faithCommunity.celebrations,
+    announcements: faithCommunity.announcements,
     metrics: annotateCollectionDataSources(template.metrics, templateKey, 'metrics'),
     priorities: annotateCollectionDataSources(template.priorities, templateKey, 'priorities'),
     alerts: annotateCollectionDataSources(template.alerts, templateKey, 'alerts'),
@@ -151,20 +261,21 @@ function isValidDashboardTemplate(template) {
   );
 }
 
-function lookupDashboardDataKey(key) {
-  const normalized = String(key || '')
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .toLowerCase();
-
-  return DASHBOARD_DATA_REGISTRY[normalized] ? normalized : null;
-}
-
 export function getDashboardTemplate(key) {
   const candidate = DASHBOARD_TEMPLATE_MAP[key] || schoolAdministratorDashboard;
   const templateKey = DASHBOARD_TEMPLATE_MAP[key] ? key : 'dashboard';
   const validTemplate = isValidDashboardTemplate(candidate) ? candidate : schoolAdministratorDashboard;
+  const enhancedTemplate = withTemplateDataSources(validTemplate, templateKey);
+  const isRegisteredTemplateKey = Boolean(DASHBOARD_TEMPLATE_MAP[key]);
+  const liveDataKey = isRegisteredTemplateKey
+    ? (lookupDashboardDataKey(key) || enhancedTemplate.liveDataKey)
+    : lookupDashboardDataKey(key);
   return {
-    ...withTemplateDataSources(validTemplate, templateKey),
-    liveDataKey: lookupDashboardDataKey(key),
+    ...enhancedTemplate,
+    liveDataKey,
+    sourceSyncTruth: {
+      ...enhancedTemplate.sourceSyncTruth,
+      liveDataKey,
+    },
   };
 }
