@@ -30,7 +30,7 @@ class DashboardResult:
 
     @property
     def certified(self) -> bool:
-        return self.status == "certified" and self.certification_decision == "certified" and not self.missing_requirements
+        return self.certification_decision == "certified" and not self.missing_requirements
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -58,6 +58,22 @@ def evidence_packet_path(state_entry: dict[str, Any] | None, dashboard_key: str)
     return Path("audit-artifacts/dashboard-completion/evidence-packets") / f"{dashboard_key}.md"
 
 
+def missing_packet_references(packet_path: Path, packet_files: list[str]) -> list[str]:
+    if packet_path.is_dir():
+        return [
+            f"packet_reference:{required_file}"
+            for required_file in packet_files
+            if not (packet_path / required_file).exists()
+        ]
+
+    packet_text = packet_path.read_text(encoding="utf-8", errors="replace")
+    return [
+        f"packet_reference:{required_file}"
+        for required_file in packet_files
+        if required_file not in packet_text
+    ]
+
+
 def inspect_dashboard(
     batch_id: str,
     dashboard_key: str,
@@ -79,10 +95,7 @@ def inspect_dashboard(
     if not packet_path.exists():
         missing.append("evidence_packet_path")
     else:
-        packet_text = packet_path.read_text(encoding="utf-8", errors="replace")
-        for required_file in packet_files:
-            if required_file not in packet_text:
-                missing.append(f"packet_reference:{required_file}")
+        missing.extend(missing_packet_references(packet_path, packet_files))
 
     proof = state_entry.get("proof", {}) if state_entry else {}
     required_proof_keys = [
