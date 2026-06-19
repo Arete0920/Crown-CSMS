@@ -1,0 +1,23 @@
+{
+  "schema_version": "2026-06-19.release-reliability-matrix-candidate.v1",
+  "dashboard_key": "release-reliability",
+  "candidate_status": "review_candidate_not_certified",
+  "current_state": {
+    "truth_alignment": "pass_sample_documented",
+    "api_permission": "pass",
+    "tenant_behavior": "pass_gap_documented",
+    "browser_rendered_title_metrics": "pass_unit_tests",
+    "reviewer_record": "pending",
+    "matrix_change": "candidate_only",
+    "certification_decision": "not_certified"
+  },
+  "evidence_references": [
+    "audit-artifacts/dashboard-completion/evidence-packets/batch0/release-reliability.md",
+    "audit-artifacts/dashboard-completion/state/dashboard-certification-state.json",
+    "audit-artifacts/dashboard-completion/browser-proof/batch0/release-reliability-browser-proof-20260619.md"
+  ],
+  "non_claims": [
+    "This candidate file does not certify Release Reliability.",
+    "This candidate file does not certify any other dashboard."
+  ]
+}
