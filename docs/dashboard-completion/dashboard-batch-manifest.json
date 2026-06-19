@@ -1,0 +1,114 @@
+{
+  "schema_version": "2026-06-19.dashboard-batch-manifest.v1",
+  "purpose": "Canonical dashboard batch inventory for certification factory execution. This manifest does not certify dashboards.",
+  "status": "manifest_only_not_certification",
+  "completion_standard": {
+    "only_certified_means_complete": true,
+    "required_evidence_packet_files": [
+      "01_contract.md",
+      "02_backend_summary_service_reference.txt",
+      "03_api_route_reference.txt",
+      "04_permission_tests.txt",
+      "05_tenant_tests.txt",
+      "06_frontend_render_test.txt",
+      "07_playwright_runtime_proof.txt",
+      "08_screenshot_or_trace_artifact.txt",
+      "09_payload_sample_redacted.json",
+      "10_independent_review.md",
+      "11_matrix_update.diff"
+    ],
+    "required_statuses": [
+      "DATA_CONTRACTED",
+      "API_WIRED",
+      "UI_WIRED",
+      "PERMISSION_PROVEN",
+      "TENANT_PROVEN",
+      "RUNTIME_PROVEN",
+      "CERTIFIED"
+    ]
+  },
+  "batches": [
+    {
+      "id": "batch0",
+      "name": "Control dashboards",
+      "purpose": "Create proof machinery and certification visibility before claiming business dashboard completion.",
+      "dashboards": [
+        "dashboard-certification-center",
+        "release-reliability",
+        "compliance-audit"
+      ]
+    },
+    {
+      "id": "batch1",
+      "name": "Operational school backbone",
+      "purpose": "Prove core daily operating dashboards first.",
+      "dashboards": [
+        "attendance",
+        "billing",
+        "gradebook",
+        "communications",
+        "registrar",
+        "school-administrator"
+      ]
+    },
+    {
+      "id": "batch2",
+      "name": "Commercial and role experience",
+      "purpose": "Prove buyer-visible, family-visible, teacher-visible, and student-visible value.",
+      "dashboards": [
+        "admissions",
+        "financial-aid",
+        "student-care",
+        "activities-athletics"
+      ]
+    },
+    {
+      "id": "batch3",
+      "name": "Operational expansion",
+      "purpose": "Complete operational breadth with sensitive-data and logistics proof.",
+      "dashboards": [
+        "scheduling",
+        "health-office",
+        "transportation",
+        "food-service",
+        "facilities",
+        "safety-security",
+        "hr",
+        "it-support"
+      ]
+    },
+    {
+      "id": "batch4",
+      "name": "Mission, advancement, and enrichment",
+      "purpose": "Complete CROWN differentiation and leadership-facing dashboards.",
+      "dashboards": [
+        "chaplain-spiritual-life",
+        "portrait-service",
+        "curriculum-pd",
+        "fine-arts",
+        "library-media",
+        "volunteer-management",
+        "advancement",
+        "advancement-operations",
+        "alumni-relations",
+        "school-board",
+        "network-benchmarking"
+      ]
+    },
+    {
+      "id": "batch5",
+      "name": "Platform operations and remaining specialized dashboards",
+      "purpose": "Complete platform operations and specialized service dashboards.",
+      "dashboards": [
+        "master-control",
+        "implementation-success",
+        "data-migration",
+        "integrations-automation",
+        "revenue-operations",
+        "summer-camp",
+        "extended-care",
+        "athletics-director"
+      ]
+    }
+  ]
+}
