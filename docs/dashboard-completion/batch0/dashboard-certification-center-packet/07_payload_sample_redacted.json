@@ -1,0 +1,39 @@
+{
+  "dashboard_key": "dashboard-certification-center",
+  "module_key": "dashboard-certification-center",
+  "schema_version": "1.0",
+  "served_from": "sample_or_fallback",
+  "source_reference": "frontend/dashboards/src/config/dashboardDataRegistry.js:184",
+  "api_reference": "/api/v1/dashboards/dashboard-certification-center/summary",
+  "metrics": [
+    {
+      "label": "Dashboards Certified",
+      "value": "0"
+    },
+    {
+      "label": "Mapped Only",
+      "value": "40"
+    },
+    {
+      "label": "Pending Independent Review",
+      "value": "0"
+    },
+    {
+      "label": "Cert Rate",
+      "value": "0%"
+    }
+  ],
+  "alerts": [
+    {
+      "title": "No dashboards are certified yet",
+      "level": "High"
+    },
+    {
+      "title": "Owner and independent reviewer are still TBD",
+      "level": "High"
+    }
+  ],
+  "queue": [],
+  "drilldowns": [],
+  "redaction_note": "No user identifiers included in this sample payload."
+}
