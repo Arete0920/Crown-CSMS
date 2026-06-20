@@ -503,7 +503,7 @@ export const DASHBOARD_REGISTRY = [
     section: 'Platform Operations',
     allowedRoles: COMPLIANCE_TEAM,
     component: ComplianceAuditDashboard,
-    releaseState: 'ready',
+    releaseState: 'draft',
   }),
   createDashboard({
     key: 'revenue-operations',
@@ -522,7 +522,7 @@ export const DASHBOARD_REGISTRY = [
     section: 'Platform Operations',
     allowedRoles: RELEASE_TEAM,
     component: ReleaseReliabilityDashboard,
-    releaseState: 'ready',
+    releaseState: 'draft',
   }),
   createDashboard({
     key: 'dashboard-certification-center',
