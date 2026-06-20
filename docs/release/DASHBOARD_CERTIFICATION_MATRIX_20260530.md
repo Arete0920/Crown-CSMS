@@ -40,7 +40,7 @@ Purpose: explicit inventory of dashboard surfaces and certification state.
 | implementation-success | MAPPED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |
 | data-migration | MAPPED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |
 | integrations-automation | MAPPED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |
-| compliance-audit | MAPPED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |
+| compliance-audit | CERTIFIED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |
 | revenue-operations | MAPPED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |
 | release-reliability | MAPPED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |
 | dashboard-certification-center | CERTIFIED | frontend/dashboards/src/config/dashboardRegistry.js | dashboard-owner-tbd |

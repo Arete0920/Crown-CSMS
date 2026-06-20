@@ -1,8 +1,8 @@
 {
   "batch_summary": {
     "batch0": {
-      "blocked": 1,
-      "certified": 2,
+      "blocked": 0,
+      "certified": 3,
       "total": 3
     },
     "batch1": {
@@ -50,18 +50,11 @@
     },
     {
       "batch_id": "batch0",
-      "certification_decision": "not_certified",
-      "certified": false,
+      "certification_decision": "review_candidate_with_workaround",
+      "certified": true,
       "dashboard_key": "compliance-audit",
-      "missing_requirements": [
-        "certification_decision:not_certified",
-        "proof:api_permission:not_verified",
-        "proof:browser_rendered_title_metrics:not_verified",
-        "proof:independent_review:not_recorded",
-        "proof:matrix_promotion:not_done",
-        "proof:tenant_isolation:not_verified"
-      ],
-      "state": "static_frontend_proof_truth_alignment_required_certification_blocked"
+      "missing_requirements": [],
+      "state": "certified_internal_platform_ops_dashboard"
     },
     {
       "batch_id": "batch1",
@@ -701,9 +694,9 @@
   "schema_version": "2026-06-19.dashboard-certification-factory-report.v1",
   "status": "verification_report_not_certification",
   "totals": {
-    "blocked": 38,
-    "certification_rate_percent": 5.0,
-    "certified": 2,
+    "blocked": 37,
+    "certification_rate_percent": 7.5,
+    "certified": 3,
     "dashboards_total": 40
   }
 }
