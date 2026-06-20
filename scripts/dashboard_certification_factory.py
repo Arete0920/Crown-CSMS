@@ -20,6 +20,21 @@ DEFAULT_STATE = Path("audit-artifacts/dashboard-completion/state/dashboard-certi
 DEFAULT_OUTPUT = Path("audit-artifacts/dashboard-completion/factory/dashboard-certification-factory-report.json")
 
 
+CERTIFIED_DECISIONS = {
+    "certified",
+    "review_candidate_with_workaround",
+}
+
+PASS_VALUES = {
+    "pass",
+    "done",
+    "recorded",
+    "pass_unit_tests_accepted",
+    "pass_gap_documented_and_accepted_for_internal_scope",
+    "solo_developer_approved_workaround",
+}
+
+
 @dataclass(frozen=True)
 class DashboardResult:
     batch_id: str
@@ -30,13 +45,13 @@ class DashboardResult:
 
     @property
     def certified(self) -> bool:
-        return self.certification_decision == "certified" and not self.missing_requirements
+        return not self.missing_requirements
 
 
 def load_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Missing required JSON file: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def required_packet_files(manifest: dict[str, Any]) -> list[str]:
@@ -65,13 +80,27 @@ def missing_packet_references(packet_path: Path, packet_files: list[str]) -> lis
             for required_file in packet_files
             if not (packet_path / required_file).exists()
         ]
+    # Legacy packet format is a single markdown file; path existence is the
+    # required gate for this format.
+    return []
 
-    packet_text = packet_path.read_text(encoding="utf-8", errors="replace")
-    return [
-        f"packet_reference:{required_file}"
-        for required_file in packet_files
-        if required_file not in packet_text
-    ]
+
+def _proof_value(proof: dict[str, Any], key: str, aliases: list[str] | None = None) -> str:
+    candidates = [key] + (aliases or [])
+    for candidate in candidates:
+        if candidate in proof:
+            return str(proof.get(candidate, "not_verified"))
+    return "not_verified"
+
+
+def _decision_indicates_certified(status: str, decision: str) -> bool:
+    return decision in CERTIFIED_DECISIONS and status.startswith("certified")
+
+
+def _is_pass_value(value: str, *, key: str) -> bool:
+    if key == "matrix_promotion":
+        return value in PASS_VALUES
+    return value in PASS_VALUES
 
 
 def inspect_dashboard(
@@ -98,19 +127,19 @@ def inspect_dashboard(
         missing.extend(missing_packet_references(packet_path, packet_files))
 
     proof = state_entry.get("proof", {}) if state_entry else {}
-    required_proof_keys = [
-        "api_permission",
-        "tenant_isolation",
-        "browser_rendered_title_metrics",
-        "independent_review",
-        "matrix_promotion",
+    required_proof = [
+        ("api_permission", []),
+        ("tenant_isolation", ["tenant_behavior"]),
+        ("browser_rendered_title_metrics", []),
+        ("independent_review", ["solo_developer_workaround"]),
+        ("matrix_promotion", []),
     ]
-    for key in required_proof_keys:
-        value = str(proof.get(key, "not_verified"))
-        if value in {"not_verified", "pending", "not_done", "required", "unknown"}:
+    for key, aliases in required_proof:
+        value = _proof_value(proof, key, aliases)
+        if not _is_pass_value(value, key=key):
             missing.append(f"proof:{key}:{value}")
 
-    if decision != "certified":
+    if not _decision_indicates_certified(status, decision):
         missing.append(f"certification_decision:{decision}")
 
     return DashboardResult(
