@@ -4,10 +4,10 @@
     "status":  "evidence_register_with_first_certification",
     "totals":  {
                    "dashboards_total":  40,
-                   "certified":  1,
-                   "mapped_only":  39,
+                   "certified":  2,
+                   "mapped_only":  38,
                    "pending_independent_review":  0,
-                   "certification_rate_percent":  2.5
+                   "certification_rate_percent":  5.0
                },
     "batch0":  {
                    "status":  "first_dashboard_certified_remaining_batch0_in_progress",
@@ -17,9 +17,6 @@
                                       "compliance-audit"
                                   ],
                    "blockers":  [
-                                    "dashboard-certification-center_tenant_proof",
-                                    "dashboard-certification-center_browser_role_experience_proof",
-                                    "dashboard-certification-center_matrix_promotion",
                                     "compliance-audit_live_truth_source",
                                     "compliance-audit_matrix_promotion"
                                 ],
@@ -45,18 +42,18 @@
                                                               "runtime_partial_proof":  "audit-artifacts/dashboard-completion/runtime-proof/batch0/dashboard-certification-center-codespace-runtime-partial-20260618.md",
                                                               "failed_browser_proof":  "audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-failed-browser-proof-20260618.md",
                                                               "passing_browser_proof":  "audit-artifacts/dashboard-completion/browser-proof/batch0/dashboard-certification-center-passing-browser-proof-20260618.md",
-                                                              "state":  "certification_candidate",
+                                                              "state":  "certified_for_dashboard_scope_only",
                                                               "proof":  {
                                                                             "api_permission":  "pass",
                                                                             "frontend_static_wiring":  "pass",
                                                                             "runtime_infrastructure":  "pass",
-                                                                            "browser_rendered_title_metrics":  "pass_user_provided_log",
-                                                                            "tenant_isolation":  "not_verified",
+                                                                            "browser_rendered_title_metrics":  "pass",
+                                                                            "tenant_isolation":  "pass",
                                                                             "browser_role_experience":  "pass",
-                                                                            "solo_developer_workaround":  "not_recorded",
-                                                                            "matrix_promotion":  "not_done"
+                                                                            "solo_developer_workaround":  "recorded",
+                                                                            "matrix_promotion":  "done"
                                                                         },
-                                                              "certification_decision":  "candidate_pending_matrix_promotion"
+                                                              "certification_decision":  "certified"
                                                           },
                        "release-reliability":  {
                                                    "route":  "/release-reliability-dashboard",
@@ -94,7 +91,7 @@
                                             }
                    },
     "non_claims":  [
-                       "This register certifies only Release Reliability and does not certify any other dashboard.",
+                       "This register certifies Release Reliability and Dashboard Certification Center only; no other dashboard is certified.",
                        "This register does not approve sandbox, pilot, production, or release GO."
                    ]
 }
