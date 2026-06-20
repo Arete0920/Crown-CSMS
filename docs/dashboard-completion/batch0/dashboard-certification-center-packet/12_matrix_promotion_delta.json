@@ -1,6 +1,6 @@
 {
   "dashboard": "dashboard-certification-center",
-  "date": "2026-06-19",
+  "date": "2026-06-20",
   "from_state": "proof_in_progress_certification_blocked",
   "to_state": "certified_for_dashboard_scope_only",
   "scope": "dashboard-certification-center only",

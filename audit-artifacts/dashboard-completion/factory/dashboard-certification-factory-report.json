@@ -1,8 +1,8 @@
 {
   "batch_summary": {
     "batch0": {
-      "blocked": 3,
-      "certified": 0,
+      "blocked": 1,
+      "certified": 2,
       "total": 3
     },
     "batch1": {
@@ -34,47 +34,18 @@
   "dashboards": [
     {
       "batch_id": "batch0",
-      "certification_decision": "candidate_pending_matrix_promotion",
-      "certified": false,
+      "certification_decision": "certified",
+      "certified": true,
       "dashboard_key": "dashboard-certification-center",
-      "missing_requirements": [
-        "certification_decision:candidate_pending_matrix_promotion",
-        "packet_reference:01_contract.md",
-        "packet_reference:02_backend_summary_service_reference.txt",
-        "packet_reference:03_api_route_reference.txt",
-        "packet_reference:04_permission_tests.txt",
-        "packet_reference:05_tenant_tests.txt",
-        "packet_reference:06_frontend_render_test.txt",
-        "packet_reference:07_playwright_runtime_proof.txt",
-        "packet_reference:08_screenshot_or_trace_artifact.txt",
-        "packet_reference:09_payload_sample_redacted.json",
-        "packet_reference:10_independent_review.md",
-        "packet_reference:11_matrix_update.diff",
-        "proof:independent_review:not_verified",
-        "proof:matrix_promotion:not_done",
-        "proof:tenant_isolation:not_verified"
-      ],
-      "state": "certification_candidate"
+      "missing_requirements": [],
+      "state": "certified_for_dashboard_scope_only"
     },
     {
       "batch_id": "batch0",
       "certification_decision": "review_candidate_with_workaround",
-      "certified": false,
+      "certified": true,
       "dashboard_key": "release-reliability",
-      "missing_requirements": [
-        "certification_decision:review_candidate_with_workaround",
-        "packet_reference:01_contract.md",
-        "packet_reference:02_backend_summary_service_reference.txt",
-        "packet_reference:03_api_route_reference.txt",
-        "packet_reference:04_permission_tests.txt",
-        "packet_reference:05_tenant_tests.txt",
-        "packet_reference:06_frontend_render_test.txt",
-        "packet_reference:07_playwright_runtime_proof.txt",
-        "packet_reference:08_screenshot_or_trace_artifact.txt",
-        "packet_reference:09_payload_sample_redacted.json",
-        "packet_reference:10_independent_review.md",
-        "packet_reference:11_matrix_update.diff"
-      ],
+      "missing_requirements": [],
       "state": "certified_internal_platform_ops_dashboard"
     },
     {
@@ -84,20 +55,9 @@
       "dashboard_key": "compliance-audit",
       "missing_requirements": [
         "certification_decision:not_certified",
-        "packet_reference:01_contract.md",
-        "packet_reference:02_backend_summary_service_reference.txt",
-        "packet_reference:03_api_route_reference.txt",
-        "packet_reference:04_permission_tests.txt",
-        "packet_reference:05_tenant_tests.txt",
-        "packet_reference:06_frontend_render_test.txt",
-        "packet_reference:07_playwright_runtime_proof.txt",
-        "packet_reference:08_screenshot_or_trace_artifact.txt",
-        "packet_reference:09_payload_sample_redacted.json",
-        "packet_reference:10_independent_review.md",
-        "packet_reference:11_matrix_update.diff",
         "proof:api_permission:not_verified",
         "proof:browser_rendered_title_metrics:not_verified",
-        "proof:independent_review:not_verified",
+        "proof:independent_review:not_recorded",
         "proof:matrix_promotion:not_done",
         "proof:tenant_isolation:not_verified"
       ],
@@ -741,9 +701,9 @@
   "schema_version": "2026-06-19.dashboard-certification-factory-report.v1",
   "status": "verification_report_not_certification",
   "totals": {
-    "blocked": 40,
-    "certification_rate_percent": 0.0,
-    "certified": 0,
+    "blocked": 38,
+    "certification_rate_percent": 5.0,
+    "certified": 2,
     "dashboards_total": 40
   }
 }
