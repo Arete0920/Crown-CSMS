@@ -1,18 +1,18 @@
 # Release Reliability Review Marker
 
 Dashboard key: `release-reliability`
-Status: pending reviewer record.
-Date: 2026-06-19
+Status: certified internal scope with solo-developer workaround.
+Date: 2026-06-20
 
 ## Purpose
 
-This file records the review status for the Release Reliability dashboard candidate packet.
+This file records the review status and certification marker for the Release Reliability dashboard packet.
 
 ## Current state
 
-- Reviewer record: PENDING.
+- Reviewer record: SOLO_DEVELOPER_APPROVED_WORKAROUND.
 - Evidence packet: PRESENT.
-- Certification decision: NOT CERTIFIED.
+- Certification decision: CERTIFIED (internal platform ops dashboard scope).
 
 ## Evidence references
 
@@ -20,7 +20,7 @@ This file records the review status for the Release Reliability dashboard candid
 - `audit-artifacts/dashboard-completion/state/dashboard-certification-state.json`
 - `audit-artifacts/dashboard-completion/browser-proof/batch0/release-reliability-browser-proof-20260619.md`
 
-## Non-claims
+## Scope boundary
 
-This marker does not certify Release Reliability.
-This marker does not certify any other dashboard.
+This marker certifies only `release-reliability` in internal platform operations scope.
+This marker does not certify any other dashboard and does not approve release/pilot/sandbox/production GO.
