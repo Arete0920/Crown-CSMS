@@ -1,0 +1,749 @@
+{
+  "batch_summary": {
+    "batch0": {
+      "blocked": 3,
+      "certified": 0,
+      "total": 3
+    },
+    "batch1": {
+      "blocked": 6,
+      "certified": 0,
+      "total": 6
+    },
+    "batch2": {
+      "blocked": 4,
+      "certified": 0,
+      "total": 4
+    },
+    "batch3": {
+      "blocked": 8,
+      "certified": 0,
+      "total": 8
+    },
+    "batch4": {
+      "blocked": 11,
+      "certified": 0,
+      "total": 11
+    },
+    "batch5": {
+      "blocked": 8,
+      "certified": 0,
+      "total": 8
+    }
+  },
+  "dashboards": [
+    {
+      "batch_id": "batch0",
+      "certification_decision": "candidate_pending_matrix_promotion",
+      "certified": false,
+      "dashboard_key": "dashboard-certification-center",
+      "missing_requirements": [
+        "certification_decision:candidate_pending_matrix_promotion",
+        "packet_reference:01_contract.md",
+        "packet_reference:02_backend_summary_service_reference.txt",
+        "packet_reference:03_api_route_reference.txt",
+        "packet_reference:04_permission_tests.txt",
+        "packet_reference:05_tenant_tests.txt",
+        "packet_reference:06_frontend_render_test.txt",
+        "packet_reference:07_playwright_runtime_proof.txt",
+        "packet_reference:08_screenshot_or_trace_artifact.txt",
+        "packet_reference:09_payload_sample_redacted.json",
+        "packet_reference:10_independent_review.md",
+        "packet_reference:11_matrix_update.diff",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_done",
+        "proof:tenant_isolation:not_verified"
+      ],
+      "state": "certification_candidate"
+    },
+    {
+      "batch_id": "batch0",
+      "certification_decision": "review_candidate_with_workaround",
+      "certified": false,
+      "dashboard_key": "release-reliability",
+      "missing_requirements": [
+        "certification_decision:review_candidate_with_workaround",
+        "packet_reference:01_contract.md",
+        "packet_reference:02_backend_summary_service_reference.txt",
+        "packet_reference:03_api_route_reference.txt",
+        "packet_reference:04_permission_tests.txt",
+        "packet_reference:05_tenant_tests.txt",
+        "packet_reference:06_frontend_render_test.txt",
+        "packet_reference:07_playwright_runtime_proof.txt",
+        "packet_reference:08_screenshot_or_trace_artifact.txt",
+        "packet_reference:09_payload_sample_redacted.json",
+        "packet_reference:10_independent_review.md",
+        "packet_reference:11_matrix_update.diff"
+      ],
+      "state": "certified_internal_platform_ops_dashboard"
+    },
+    {
+      "batch_id": "batch0",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "compliance-audit",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "packet_reference:01_contract.md",
+        "packet_reference:02_backend_summary_service_reference.txt",
+        "packet_reference:03_api_route_reference.txt",
+        "packet_reference:04_permission_tests.txt",
+        "packet_reference:05_tenant_tests.txt",
+        "packet_reference:06_frontend_render_test.txt",
+        "packet_reference:07_playwright_runtime_proof.txt",
+        "packet_reference:08_screenshot_or_trace_artifact.txt",
+        "packet_reference:09_payload_sample_redacted.json",
+        "packet_reference:10_independent_review.md",
+        "packet_reference:11_matrix_update.diff",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_done",
+        "proof:tenant_isolation:not_verified"
+      ],
+      "state": "static_frontend_proof_truth_alignment_required_certification_blocked"
+    },
+    {
+      "batch_id": "batch1",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "attendance",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch1",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "billing",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch1",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "gradebook",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch1",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "communications",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch1",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "registrar",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch1",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "school-administrator",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch2",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "admissions",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch2",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "financial-aid",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch2",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "student-care",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch2",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "activities-athletics",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "scheduling",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "health-office",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "transportation",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "food-service",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "facilities",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "safety-security",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "hr",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch3",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "it-support",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "chaplain-spiritual-life",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "portrait-service",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "curriculum-pd",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "fine-arts",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "library-media",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "volunteer-management",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "advancement",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "advancement-operations",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "alumni-relations",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "school-board",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch4",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "network-benchmarking",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "master-control",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "implementation-success",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "data-migration",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "integrations-automation",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "revenue-operations",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "summer-camp",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "extended-care",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    },
+    {
+      "batch_id": "batch5",
+      "certification_decision": "not_certified",
+      "certified": false,
+      "dashboard_key": "athletics-director",
+      "missing_requirements": [
+        "certification_decision:not_certified",
+        "evidence_packet_path",
+        "proof:api_permission:not_verified",
+        "proof:browser_rendered_title_metrics:not_verified",
+        "proof:independent_review:not_verified",
+        "proof:matrix_promotion:not_verified",
+        "proof:tenant_isolation:not_verified",
+        "state_register_entry"
+      ],
+      "state": "missing_state_entry"
+    }
+  ],
+  "non_claims": [
+    "This report does not certify any dashboard.",
+    "This report does not approve sandbox, pilot, production, or release GO.",
+    "Only independently reviewed matrix promotion to CERTIFIED completes a dashboard."
+  ],
+  "schema_version": "2026-06-19.dashboard-certification-factory-report.v1",
+  "status": "verification_report_not_certification",
+  "totals": {
+    "blocked": 40,
+    "certification_rate_percent": 0.0,
+    "certified": 0,
+    "dashboards_total": 40
+  }
+}
