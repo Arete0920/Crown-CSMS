@@ -122,6 +122,7 @@ function createDashboard({
   moduleType,
   owner,
   readiness,
+  evidence,
 }) {
   const effectiveReleaseState = releaseState || 'draft';
   const isReadyLike = ['ready', 'live', 'production'].includes(effectiveReleaseState);
@@ -141,6 +142,7 @@ function createDashboard({
     moduleType: moduleType || 'dashboard',
     owner: owner || 'dashboardRegistry',
     releaseState: effectiveReleaseState,
+    evidence,
     fallbackPath,
     readiness: effectiveReadiness,
   };
@@ -522,7 +524,13 @@ export const DASHBOARD_REGISTRY = [
     section: 'Platform Operations',
     allowedRoles: RELEASE_TEAM,
     component: ReleaseReliabilityDashboard,
-    releaseState: 'draft',
+    releaseState: 'ready',
+    evidence: {
+      artifact: 'audit-artifacts/dashboard-completion/evidence-packets/batch0/release-reliability.md',
+      collectedAt: '2026-06-20T08:30:00Z',
+      candidateSha: '8097d4c23e847bfaced4d9a49637a3aa0e20617b',
+      releaseBranch: 'release/security-runtime-governance-repair-little-lambs-full-build',
+    },
   }),
   createDashboard({
     key: 'dashboard-certification-center',
