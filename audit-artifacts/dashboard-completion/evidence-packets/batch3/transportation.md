@@ -1,7 +1,7 @@
-﻿# Dashboard Evidence Packet: it-support
+﻿# Dashboard Evidence Packet: transportation
 
-Dashboard key: it-support
-Module key: it-support
+Dashboard key: transportation
+Module key: transportation
 Owner: internal platform operations lane
 Independent reviewer: SOLO_DEVELOPER_APPROVED_WORKAROUND
 Status: CERTIFIED / INTERNAL_PLATFORM_OPS_DASHBOARD
@@ -15,7 +15,7 @@ Factory report: audit-artifacts/dashboard-completion/factory/dashboard-certifica
 - Frontend page: $(System.Collections.Hashtable.page).
 - Registry binding: rontend/dashboards/src/config/dashboardRegistry.js.
 - Route: $(System.Collections.Hashtable.route).
-- Backend sample payload: ackend/crown_api/dashboards/sample_payloads.py:it_support_sample_payload.
+- Backend sample payload: ackend/crown_api/dashboards/sample_payloads.py:transportation_sample_payload.
 - API contract shape accepted: dashboard_key, metrics, alerts, queue, meta.
 - API permission proof: PASS / existing authenticated dashboard summary route contract accepted for internal scope.
 - Tenant proof: PASS / tenant gap documented and accepted for internal-scope certification only.
