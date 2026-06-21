@@ -656,6 +656,23 @@
                                                               },
                                                     "certification_decision":  "review_candidate_with_workaround",
                                                     "certification_scope":  "internal_platform_ops_dashboard"
+                                                },
+                       "master-control":  {
+                                              "route":  "/master-control-dashboard",
+                                              "summary_api":  "/api/v1/dashboards/master-control/summary",
+                                              "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch5/master-control-first-blocker.md",
+                                              "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                              "state":  "mapped_first_blocker_data_contract_proven",
+                                              "proof":  {
+                                                            "sample_payload":  "pass_backend_sample_payload:master_control_sample_payload",
+                                                            "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                            "tenant_isolation":  "pending",
+                                                            "browser_rendered_title_metrics":  "pending",
+                                                            "solo_developer_workaround":  "pending",
+                                                            "matrix_promotion":  "pending"
+                                                        },
+                                              "certification_decision":  "mapped_first_blocker_only_not_certified",
+                                              "certification_scope":  "batch5_first_blocker_lane"
                                                 }
                    },
     "non_claims":  [
@@ -700,5 +717,26 @@
                                 ],
                    "certification_scope":  "internal_platform_ops_dashboard",
                    "governance":  "SOLO_DEVELOPER_APPROVED_WORKAROUND"
+               },
+    "batch5":  {
+                   "status":  "batch5_first_blocker_in_progress_master_control",
+                   "dashboards":  [
+                                      "master-control",
+                                      "implementation-success",
+                                      "data-migration",
+                                      "integrations-automation",
+                                      "revenue-operations",
+                                      "summer-camp",
+                                      "extended-care",
+                                      "athletics-director"
+                                  ],
+                   "blockers":  [
+                                    "tenant-isolation-proof",
+                                    "runtime-browser-proof",
+                                    "independent-review-or-workaround",
+                                    "matrix-promotion"
+                                ],
+                   "certification_scope":  "batch5_not_certified",
+                   "governance":  "INDEPENDENT_REVIEW_REQUIRED"
                }
 }
