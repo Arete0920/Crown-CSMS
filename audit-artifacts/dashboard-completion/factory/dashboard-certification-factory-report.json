@@ -1,10 +1,10 @@
 {
   "schema_version": "2026-06-19.dashboard-certification-factory-report.v1",
-  "status": "batch1_internal_scope_certification_report",
+  "status": "batch2_internal_scope_certification_report",
   "batch_summary": {
     "batch0": {"blocked": 0, "certified": 3, "total": 3},
     "batch1": {"blocked": 0, "certified": 6, "total": 6},
-    "batch2": {"blocked": 4, "certified": 0, "total": 4},
+    "batch2": {"blocked": 0, "certified": 4, "total": 4},
     "batch3": {"blocked": 8, "certified": 0, "total": 8},
     "batch4": {"blocked": 11, "certified": 0, "total": 11},
     "batch5": {"blocked": 8, "certified": 0, "total": 8}
@@ -19,18 +19,18 @@
     {"batch_id": "batch1", "certification_decision": "review_candidate_with_workaround", "certified": true, "dashboard_key": "communications", "missing_requirements": [], "state": "certified_internal_platform_ops_dashboard"},
     {"batch_id": "batch1", "certification_decision": "review_candidate_with_workaround", "certified": true, "dashboard_key": "registrar", "missing_requirements": [], "state": "certified_internal_platform_ops_dashboard"},
     {"batch_id": "batch1", "certification_decision": "review_candidate_with_workaround", "certified": true, "dashboard_key": "school-administrator", "missing_requirements": [], "state": "certified_internal_platform_ops_dashboard"},
-    {"batch_id": "batch2", "certification_decision": "not_certified", "certified": false, "dashboard_key": "admissions", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch2", "certification_decision": "not_certified", "certified": false, "dashboard_key": "financial-aid", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch2", "certification_decision": "not_certified", "certified": false, "dashboard_key": "student-care", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch2", "certification_decision": "not_certified", "certified": false, "dashboard_key": "activities-athletics", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "scheduling", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "health-office", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "transportation", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "food-service", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "facilities", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "safety-security", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "hr", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
-    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "it-support", "missing_requirements": ["certification_decision:not_certified", "evidence_packet_path", "proof:api_permission:not_verified", "proof:browser_rendered_title_metrics:not_verified", "proof:independent_review:not_verified", "proof:matrix_promotion:not_verified", "proof:tenant_isolation:not_verified", "state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch2", "certification_decision": "review_candidate_with_workaround", "certified": true, "dashboard_key": "admissions", "missing_requirements": [], "state": "certified_internal_platform_ops_dashboard"},
+    {"batch_id": "batch2", "certification_decision": "review_candidate_with_workaround", "certified": true, "dashboard_key": "financial-aid", "missing_requirements": [], "state": "certified_internal_platform_ops_dashboard"},
+    {"batch_id": "batch2", "certification_decision": "review_candidate_with_workaround", "certified": true, "dashboard_key": "student-care", "missing_requirements": [], "state": "certified_internal_platform_ops_dashboard"},
+    {"batch_id": "batch2", "certification_decision": "review_candidate_with_workaround", "certified": true, "dashboard_key": "activities-athletics", "missing_requirements": [], "state": "certified_internal_platform_ops_dashboard"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "scheduling", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "health-office", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "transportation", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "food-service", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "facilities", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "safety-security", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "hr", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
+    {"batch_id": "batch3", "certification_decision": "not_certified", "certified": false, "dashboard_key": "it-support", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
     {"batch_id": "batch4", "certification_decision": "not_certified", "certified": false, "dashboard_key": "chaplain-spiritual-life", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
     {"batch_id": "batch4", "certification_decision": "not_certified", "certified": false, "dashboard_key": "portrait-service", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
     {"batch_id": "batch4", "certification_decision": "not_certified", "certified": false, "dashboard_key": "curriculum-pd", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
@@ -51,15 +51,6 @@
     {"batch_id": "batch5", "certification_decision": "not_certified", "certified": false, "dashboard_key": "extended-care", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"},
     {"batch_id": "batch5", "certification_decision": "not_certified", "certified": false, "dashboard_key": "athletics-director", "missing_requirements": ["state_register_entry"], "state": "missing_state_entry"}
   ],
-  "non_claims": [
-    "This report certifies only the listed internal-scope dashboard rows.",
-    "This report does not approve sandbox, pilot, production, or release GO.",
-    "Broader readiness still requires full release certification."
-  ],
-  "totals": {
-    "blocked": 31,
-    "certification_rate_percent": 22.5,
-    "certified": 9,
-    "dashboards_total": 40
-  }
+  "non_claims": ["This report certifies only the listed internal-scope dashboard rows.", "This report does not approve sandbox, pilot, production, or release GO.", "Broader readiness still requires full release certification."],
+  "totals": {"blocked": 27, "certification_rate_percent": 32.5, "certified": 13, "dashboards_total": 40}
 }
