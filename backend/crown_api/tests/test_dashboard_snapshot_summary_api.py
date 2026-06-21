@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from core.models import School
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -201,6 +201,28 @@ def test_master_control_summary_allows_same_tenant_access():
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
 @pytest.mark.django_db
+def test_implementation_success_summary_serves_sample_payload_in_development():
+    client = _authed_client("dashboard-summary-batch5-implementation-success")
+    response = client.get(
+        reverse("dashboard-summary", kwargs={"dashboard_key": "implementation-success"}),
+        HTTP_X_SCHOOL_ID="heritage-demo",
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dashboard_key"] == "implementation-success"
+    assert data["meta"]["served_from"] == "sample"
+    assert data["meta"]["sample_payload_allowed"] is True
+    assert [metric["label"] for metric in data["metrics"]] == [
+        "Schools in Active Onboarding",
+        "Go-Lives This Quarter",
+        "Open Implementation Tickets",
+        "Avg Onboarding Days",
+    ]
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
+@pytest.mark.django_db
 def test_master_control_summary_rejects_cross_tenant_access_for_non_staff_user():
     school = School.objects.create(name="Master Control Home")
     other_school = School.objects.create(name="Master Control Other")
@@ -216,6 +238,14 @@ def test_master_control_summary_rejects_cross_tenant_access_for_non_staff_user()
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Not found."
+def test_implementation_success_summary_requires_authentication():
+    client = APIClient()
+    response = client.get(
+        reverse("dashboard-summary", kwargs={"dashboard_key": "implementation-success"}),
+        HTTP_X_SCHOOL_ID="heritage-demo",
+    )
+
+    assert response.status_code == 401
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
