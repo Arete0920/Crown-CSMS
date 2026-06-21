@@ -659,7 +659,7 @@
                                                 }
                    },
     "non_claims":  [
-                       "This register certifies Batch 0, Batch 1, Batch 2, and Batch 3 internal dashboard certification only.",
+                           "This register certifies Batch 0, Batch 1, Batch 2, Batch 3, and Batch 4 internal dashboard certification only.",
                        "This register does not approve sandbox, pilot, production, or release GO."
                    ],
     "batch3":  {
