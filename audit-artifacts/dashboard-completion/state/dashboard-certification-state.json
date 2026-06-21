@@ -1,78 +1,474 @@
-{
-  "schema_version": "2026-06-18.dashboard-certification-state.v1",
-  "generated_at": "2026-06-20",
-  "status": "evidence_register_with_batch2_certifications",
-  "totals": {
-    "dashboards_total": 40,
-    "certified": 13,
-    "mapped_only": 27,
-    "pending_independent_review": 0,
-    "certification_rate_percent": 32.5
-  },
-  "batch0": {
-    "status": "batch0_first_three_dashboards_certified_for_internal_scope",
-    "dashboards": ["dashboard-certification-center", "release-reliability", "compliance-audit"],
-    "blockers": [],
-    "certification_scope": "internal_platform_ops_dashboard",
-    "governance": "SOLO_DEVELOPER_APPROVED_WORKAROUND"
-  },
-  "batch1": {
-    "status": "batch1_operational_dashboards_certified_for_internal_scope",
-    "dashboards": ["attendance", "billing", "gradebook", "communications", "registrar", "school-administrator"],
-    "blockers": [],
-    "certification_scope": "internal_platform_ops_dashboard",
-    "governance": "SOLO_DEVELOPER_APPROVED_WORKAROUND"
-  },
-  "batch2": {
-    "status": "batch2_student_lifecycle_dashboards_certified_for_internal_scope",
-    "dashboards": ["admissions", "financial-aid", "student-care", "activities-athletics"],
-    "blockers": [],
-    "certification_scope": "internal_platform_ops_dashboard",
-    "governance": "SOLO_DEVELOPER_APPROVED_WORKAROUND"
-  },
-  "dashboards": {
-    "dashboard-certification-center": {
-      "route": "/dashboard-certification-center",
-      "summary_api": "/api/v1/dashboards/dashboard-certification-center/summary",
-      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/dashboard-certification-center.md",
-      "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/dashboard-certification-center-static-proof-20260618.md",
-      "state": "certified_for_dashboard_scope_only",
-      "proof": {"api_permission": "pass", "frontend_static_wiring": "pass", "runtime_infrastructure": "pass", "browser_rendered_title_metrics": "pass", "tenant_isolation": "pass", "browser_role_experience": "pass", "solo_developer_workaround": "recorded", "matrix_promotion": "done"},
-      "certification_decision": "certified"
-    },
-    "release-reliability": {
-      "route": "/release-reliability-dashboard",
-      "summary_api": "/api/v1/dashboards/release-reliability/summary",
-      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/release-reliability.md",
-      "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/release-reliability-static-proof-20260618.md",
-      "state": "certified_internal_platform_ops_dashboard",
-      "proof": {"api_permission": "pass", "independent_review": "solo_developer_approved_workaround", "browser_rendered_title_metrics": "pass_unit_tests_accepted", "matrix_promotion": "done", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope"},
-      "certification_decision": "review_candidate_with_workaround",
-      "certification_scope": "internal_platform_ops_dashboard"
-    },
-    "compliance-audit": {
-      "route": "/compliance-audit-dashboard",
-      "summary_api": "/api/v1/dashboards/compliance-audit/summary",
-      "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch0/compliance-audit.md",
-      "frontend_static_proof": "audit-artifacts/dashboard-completion/frontend-proof/batch0/compliance-audit-static-proof-20260618.md",
-      "state": "certified_internal_platform_ops_dashboard",
-      "proof": {"frontend_static_wiring": "pass", "truth_alignment": "pass_gap_documented_and_accepted_for_internal_scope", "api_permission": "pass", "tenant_isolation": "pass", "browser_rendered_title_metrics": "pass_unit_tests_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"},
-      "certification_decision": "review_candidate_with_workaround",
-      "certification_scope": "internal_platform_ops_dashboard"
-    },
-    "attendance": {"route": "/attendance-dashboard", "summary_api": "/api/v1/dashboards/attendance/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch1/attendance.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:attendance_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "billing": {"route": "/billing-dashboard", "summary_api": "/api/v1/dashboards/billing/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch1/billing.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:billing_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "gradebook": {"route": "/gradebook-dashboard", "summary_api": "/api/v1/dashboards/gradebook/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch1/gradebook.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:gradebook_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "communications": {"route": "/communications-dashboard", "summary_api": "/api/v1/dashboards/communications/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch1/communications.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:communications_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "registrar": {"route": "/registrar-dashboard", "summary_api": "/api/v1/dashboards/registrar/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch1/registrar.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:registrar_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "school-administrator": {"route": "/school-admin-dashboard", "summary_api": "/api/v1/dashboards/school-administrator/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch1/school-administrator.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:school_administrator_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "admissions": {"route": "/admissions-dashboard", "summary_api": "/api/v1/dashboards/admissions/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch2/admissions.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:admissions_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "financial-aid": {"route": "/financial-aid-dashboard", "summary_api": "/api/v1/dashboards/financial-aid/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch2/financial-aid.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:financial_aid_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "student-care": {"route": "/student-care-dashboard", "summary_api": "/api/v1/dashboards/student-care/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch2/student-care.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:student_care_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"},
-    "activities-athletics": {"route": "/activities-dashboard", "summary_api": "/api/v1/dashboards/activities-athletics/summary/", "evidence_packet": "audit-artifacts/dashboard-completion/evidence-packets/batch2/activities-athletics.md", "frontend_static_proof": "frontend/dashboards/src/config/dashboardRegistry.js", "state": "certified_internal_platform_ops_dashboard", "proof": {"frontend_static_wiring": "pass_connector_inspection", "sample_payload": "pass_backend_sample_payload:activities_athletics_sample_payload", "api_permission": "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract", "tenant_isolation": "pass_gap_documented_and_accepted_for_internal_scope", "browser_rendered_title_metrics": "pass_static_template_and_registry_proof_accepted", "solo_developer_workaround": "recorded", "independent_review": "solo_developer_approved_workaround", "matrix_promotion": "done"}, "certification_decision": "review_candidate_with_workaround", "certification_scope": "internal_platform_ops_dashboard"}
-  },
-  "non_claims": [
-    "This register certifies Dashboard Certification Center, Release Reliability, Compliance Audit, Batch 1, and Batch 2 internal dashboard certification only.",
-    "This register does not approve sandbox, pilot, production, or release GO."
-  ]
+﻿{
+    "schema_version":  "2026-06-18.dashboard-certification-state.v1",
+    "generated_at":  "2026-06-21",
+    "status":  "evidence_register_with_batch3_certifications",
+    "totals":  {
+                   "dashboards_total":  40,
+                   "certified":  21,
+                   "mapped_only":  19,
+                   "pending_independent_review":  0,
+                   "certification_rate_percent":  52.5
+               },
+    "batch0":  {
+                   "status":  "batch0_first_three_dashboards_certified_for_internal_scope",
+                   "dashboards":  [
+                                      "dashboard-certification-center",
+                                      "release-reliability",
+                                      "compliance-audit"
+                                  ],
+                   "blockers":  [
+
+                                ],
+                   "certification_scope":  "internal_platform_ops_dashboard",
+                   "governance":  "SOLO_DEVELOPER_APPROVED_WORKAROUND"
+               },
+    "batch1":  {
+                   "status":  "batch1_operational_dashboards_certified_for_internal_scope",
+                   "dashboards":  [
+                                      "attendance",
+                                      "billing",
+                                      "gradebook",
+                                      "communications",
+                                      "registrar",
+                                      "school-administrator"
+                                  ],
+                   "blockers":  [
+
+                                ],
+                   "certification_scope":  "internal_platform_ops_dashboard",
+                   "governance":  "SOLO_DEVELOPER_APPROVED_WORKAROUND"
+               },
+    "batch2":  {
+                   "status":  "batch2_student_lifecycle_dashboards_certified_for_internal_scope",
+                   "dashboards":  [
+                                      "admissions",
+                                      "financial-aid",
+                                      "student-care",
+                                      "activities-athletics"
+                                  ],
+                   "blockers":  [
+
+                                ],
+                   "certification_scope":  "internal_platform_ops_dashboard",
+                   "governance":  "SOLO_DEVELOPER_APPROVED_WORKAROUND"
+               },
+    "dashboards":  {
+                       "dashboard-certification-center":  {
+                                                              "route":  "/dashboard-certification-center",
+                                                              "summary_api":  "/api/v1/dashboards/dashboard-certification-center/summary",
+                                                              "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch0/dashboard-certification-center.md",
+                                                              "frontend_static_proof":  "audit-artifacts/dashboard-completion/frontend-proof/batch0/dashboard-certification-center-static-proof-20260618.md",
+                                                              "state":  "certified_for_dashboard_scope_only",
+                                                              "proof":  {
+                                                                            "api_permission":  "pass",
+                                                                            "frontend_static_wiring":  "pass",
+                                                                            "runtime_infrastructure":  "pass",
+                                                                            "browser_rendered_title_metrics":  "pass",
+                                                                            "tenant_isolation":  "pass",
+                                                                            "browser_role_experience":  "pass",
+                                                                            "solo_developer_workaround":  "recorded",
+                                                                            "matrix_promotion":  "done"
+                                                                        },
+                                                              "certification_decision":  "certified"
+                                                          },
+                       "release-reliability":  {
+                                                   "route":  "/release-reliability-dashboard",
+                                                   "summary_api":  "/api/v1/dashboards/release-reliability/summary",
+                                                   "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch0/release-reliability.md",
+                                                   "frontend_static_proof":  "audit-artifacts/dashboard-completion/frontend-proof/batch0/release-reliability-static-proof-20260618.md",
+                                                   "state":  "certified_internal_platform_ops_dashboard",
+                                                   "proof":  {
+                                                                 "api_permission":  "pass",
+                                                                 "independent_review":  "solo_developer_approved_workaround",
+                                                                 "browser_rendered_title_metrics":  "pass_unit_tests_accepted",
+                                                                 "matrix_promotion":  "done",
+                                                                 "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope"
+                                                             },
+                                                   "certification_decision":  "review_candidate_with_workaround",
+                                                   "certification_scope":  "internal_platform_ops_dashboard"
+                                               },
+                       "compliance-audit":  {
+                                                "route":  "/compliance-audit-dashboard",
+                                                "summary_api":  "/api/v1/dashboards/compliance-audit/summary",
+                                                "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch0/compliance-audit.md",
+                                                "frontend_static_proof":  "audit-artifacts/dashboard-completion/frontend-proof/batch0/compliance-audit-static-proof-20260618.md",
+                                                "state":  "certified_internal_platform_ops_dashboard",
+                                                "proof":  {
+                                                              "frontend_static_wiring":  "pass",
+                                                              "truth_alignment":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                              "api_permission":  "pass",
+                                                              "tenant_isolation":  "pass",
+                                                              "browser_rendered_title_metrics":  "pass_unit_tests_accepted",
+                                                              "solo_developer_workaround":  "recorded",
+                                                              "independent_review":  "solo_developer_approved_workaround",
+                                                              "matrix_promotion":  "done"
+                                                          },
+                                                "certification_decision":  "review_candidate_with_workaround",
+                                                "certification_scope":  "internal_platform_ops_dashboard"
+                                            },
+                       "attendance":  {
+                                          "route":  "/attendance-dashboard",
+                                          "summary_api":  "/api/v1/dashboards/attendance/summary/",
+                                          "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch1/attendance.md",
+                                          "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                          "state":  "certified_internal_platform_ops_dashboard",
+                                          "proof":  {
+                                                        "frontend_static_wiring":  "pass_connector_inspection",
+                                                        "sample_payload":  "pass_backend_sample_payload:attendance_sample_payload",
+                                                        "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                        "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                        "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                        "solo_developer_workaround":  "recorded",
+                                                        "independent_review":  "solo_developer_approved_workaround",
+                                                        "matrix_promotion":  "done"
+                                                    },
+                                          "certification_decision":  "review_candidate_with_workaround",
+                                          "certification_scope":  "internal_platform_ops_dashboard"
+                                      },
+                       "billing":  {
+                                       "route":  "/billing-dashboard",
+                                       "summary_api":  "/api/v1/dashboards/billing/summary/",
+                                       "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch1/billing.md",
+                                       "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                       "state":  "certified_internal_platform_ops_dashboard",
+                                       "proof":  {
+                                                     "frontend_static_wiring":  "pass_connector_inspection",
+                                                     "sample_payload":  "pass_backend_sample_payload:billing_sample_payload",
+                                                     "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                     "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                     "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                     "solo_developer_workaround":  "recorded",
+                                                     "independent_review":  "solo_developer_approved_workaround",
+                                                     "matrix_promotion":  "done"
+                                                 },
+                                       "certification_decision":  "review_candidate_with_workaround",
+                                       "certification_scope":  "internal_platform_ops_dashboard"
+                                   },
+                       "gradebook":  {
+                                         "route":  "/gradebook-dashboard",
+                                         "summary_api":  "/api/v1/dashboards/gradebook/summary/",
+                                         "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch1/gradebook.md",
+                                         "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                         "state":  "certified_internal_platform_ops_dashboard",
+                                         "proof":  {
+                                                       "frontend_static_wiring":  "pass_connector_inspection",
+                                                       "sample_payload":  "pass_backend_sample_payload:gradebook_sample_payload",
+                                                       "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                       "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                       "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                       "solo_developer_workaround":  "recorded",
+                                                       "independent_review":  "solo_developer_approved_workaround",
+                                                       "matrix_promotion":  "done"
+                                                   },
+                                         "certification_decision":  "review_candidate_with_workaround",
+                                         "certification_scope":  "internal_platform_ops_dashboard"
+                                     },
+                       "communications":  {
+                                              "route":  "/communications-dashboard",
+                                              "summary_api":  "/api/v1/dashboards/communications/summary/",
+                                              "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch1/communications.md",
+                                              "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                              "state":  "certified_internal_platform_ops_dashboard",
+                                              "proof":  {
+                                                            "frontend_static_wiring":  "pass_connector_inspection",
+                                                            "sample_payload":  "pass_backend_sample_payload:communications_sample_payload",
+                                                            "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                            "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                            "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                            "solo_developer_workaround":  "recorded",
+                                                            "independent_review":  "solo_developer_approved_workaround",
+                                                            "matrix_promotion":  "done"
+                                                        },
+                                              "certification_decision":  "review_candidate_with_workaround",
+                                              "certification_scope":  "internal_platform_ops_dashboard"
+                                          },
+                       "registrar":  {
+                                         "route":  "/registrar-dashboard",
+                                         "summary_api":  "/api/v1/dashboards/registrar/summary/",
+                                         "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch1/registrar.md",
+                                         "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                         "state":  "certified_internal_platform_ops_dashboard",
+                                         "proof":  {
+                                                       "frontend_static_wiring":  "pass_connector_inspection",
+                                                       "sample_payload":  "pass_backend_sample_payload:registrar_sample_payload",
+                                                       "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                       "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                       "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                       "solo_developer_workaround":  "recorded",
+                                                       "independent_review":  "solo_developer_approved_workaround",
+                                                       "matrix_promotion":  "done"
+                                                   },
+                                         "certification_decision":  "review_candidate_with_workaround",
+                                         "certification_scope":  "internal_platform_ops_dashboard"
+                                     },
+                       "school-administrator":  {
+                                                    "route":  "/school-admin-dashboard",
+                                                    "summary_api":  "/api/v1/dashboards/school-administrator/summary/",
+                                                    "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch1/school-administrator.md",
+                                                    "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                                    "state":  "certified_internal_platform_ops_dashboard",
+                                                    "proof":  {
+                                                                  "frontend_static_wiring":  "pass_connector_inspection",
+                                                                  "sample_payload":  "pass_backend_sample_payload:school_administrator_sample_payload",
+                                                                  "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                                  "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                                  "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                                  "solo_developer_workaround":  "recorded",
+                                                                  "independent_review":  "solo_developer_approved_workaround",
+                                                                  "matrix_promotion":  "done"
+                                                              },
+                                                    "certification_decision":  "review_candidate_with_workaround",
+                                                    "certification_scope":  "internal_platform_ops_dashboard"
+                                                },
+                       "admissions":  {
+                                          "route":  "/admissions-dashboard",
+                                          "summary_api":  "/api/v1/dashboards/admissions/summary/",
+                                          "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch2/admissions.md",
+                                          "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                          "state":  "certified_internal_platform_ops_dashboard",
+                                          "proof":  {
+                                                        "frontend_static_wiring":  "pass_connector_inspection",
+                                                        "sample_payload":  "pass_backend_sample_payload:admissions_sample_payload",
+                                                        "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                        "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                        "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                        "solo_developer_workaround":  "recorded",
+                                                        "independent_review":  "solo_developer_approved_workaround",
+                                                        "matrix_promotion":  "done"
+                                                    },
+                                          "certification_decision":  "review_candidate_with_workaround",
+                                          "certification_scope":  "internal_platform_ops_dashboard"
+                                      },
+                       "financial-aid":  {
+                                             "route":  "/financial-aid-dashboard",
+                                             "summary_api":  "/api/v1/dashboards/financial-aid/summary/",
+                                             "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch2/financial-aid.md",
+                                             "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                             "state":  "certified_internal_platform_ops_dashboard",
+                                             "proof":  {
+                                                           "frontend_static_wiring":  "pass_connector_inspection",
+                                                           "sample_payload":  "pass_backend_sample_payload:financial_aid_sample_payload",
+                                                           "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                           "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                           "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                           "solo_developer_workaround":  "recorded",
+                                                           "independent_review":  "solo_developer_approved_workaround",
+                                                           "matrix_promotion":  "done"
+                                                       },
+                                             "certification_decision":  "review_candidate_with_workaround",
+                                             "certification_scope":  "internal_platform_ops_dashboard"
+                                         },
+                       "student-care":  {
+                                            "route":  "/student-care-dashboard",
+                                            "summary_api":  "/api/v1/dashboards/student-care/summary/",
+                                            "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch2/student-care.md",
+                                            "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                            "state":  "certified_internal_platform_ops_dashboard",
+                                            "proof":  {
+                                                          "frontend_static_wiring":  "pass_connector_inspection",
+                                                          "sample_payload":  "pass_backend_sample_payload:student_care_sample_payload",
+                                                          "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                          "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                          "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                          "solo_developer_workaround":  "recorded",
+                                                          "independent_review":  "solo_developer_approved_workaround",
+                                                          "matrix_promotion":  "done"
+                                                      },
+                                            "certification_decision":  "review_candidate_with_workaround",
+                                            "certification_scope":  "internal_platform_ops_dashboard"
+                                        },
+                       "activities-athletics":  {
+                                                    "route":  "/activities-dashboard",
+                                                    "summary_api":  "/api/v1/dashboards/activities-athletics/summary/",
+                                                    "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch2/activities-athletics.md",
+                                                    "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                                    "state":  "certified_internal_platform_ops_dashboard",
+                                                    "proof":  {
+                                                                  "frontend_static_wiring":  "pass_connector_inspection",
+                                                                  "sample_payload":  "pass_backend_sample_payload:activities_athletics_sample_payload",
+                                                                  "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                                  "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                                  "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                                  "solo_developer_workaround":  "recorded",
+                                                                  "independent_review":  "solo_developer_approved_workaround",
+                                                                  "matrix_promotion":  "done"
+                                                              },
+                                                    "certification_decision":  "review_candidate_with_workaround",
+                                                    "certification_scope":  "internal_platform_ops_dashboard"
+                                                },
+                       "scheduling":  {
+                                          "route":  "/scheduling-dashboard",
+                                          "summary_api":  "/api/v1/dashboards/scheduling/summary/",
+                                          "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/scheduling.md",
+                                          "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                          "state":  "certified_internal_platform_ops_dashboard",
+                                          "proof":  {
+                                                        "frontend_static_wiring":  "pass_connector_inspection",
+                                                        "sample_payload":  "pass_backend_sample_payload:scheduling_sample_payload",
+                                                        "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                        "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                        "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                        "solo_developer_workaround":  "recorded",
+                                                        "independent_review":  "solo_developer_approved_workaround",
+                                                        "matrix_promotion":  "done"
+                                                    },
+                                          "certification_decision":  "review_candidate_with_workaround",
+                                          "certification_scope":  "internal_platform_ops_dashboard"
+                                      },
+                       "health-office":  {
+                                             "route":  "/health-office-dashboard",
+                                             "summary_api":  "/api/v1/dashboards/health-office/summary/",
+                                             "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/health-office.md",
+                                             "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                             "state":  "certified_internal_platform_ops_dashboard",
+                                             "proof":  {
+                                                           "frontend_static_wiring":  "pass_connector_inspection",
+                                                           "sample_payload":  "pass_backend_sample_payload:health_office_sample_payload",
+                                                           "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                           "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                           "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                           "solo_developer_workaround":  "recorded",
+                                                           "independent_review":  "solo_developer_approved_workaround",
+                                                           "matrix_promotion":  "done"
+                                                       },
+                                             "certification_decision":  "review_candidate_with_workaround",
+                                             "certification_scope":  "internal_platform_ops_dashboard"
+                                         },
+                       "transportation":  {
+                                              "route":  "/transportation-dashboard",
+                                              "summary_api":  "/api/v1/dashboards/transportation/summary/",
+                                              "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/transportation.md",
+                                              "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                              "state":  "certified_internal_platform_ops_dashboard",
+                                              "proof":  {
+                                                            "frontend_static_wiring":  "pass_connector_inspection",
+                                                            "sample_payload":  "pass_backend_sample_payload:transportation_sample_payload",
+                                                            "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                            "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                            "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                            "solo_developer_workaround":  "recorded",
+                                                            "independent_review":  "solo_developer_approved_workaround",
+                                                            "matrix_promotion":  "done"
+                                                        },
+                                              "certification_decision":  "review_candidate_with_workaround",
+                                              "certification_scope":  "internal_platform_ops_dashboard"
+                                          },
+                       "food-service":  {
+                                            "route":  "/food-service-dashboard",
+                                            "summary_api":  "/api/v1/dashboards/food-service/summary/",
+                                            "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/food-service.md",
+                                            "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                            "state":  "certified_internal_platform_ops_dashboard",
+                                            "proof":  {
+                                                          "frontend_static_wiring":  "pass_connector_inspection",
+                                                          "sample_payload":  "pass_backend_sample_payload:food_service_sample_payload",
+                                                          "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                          "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                          "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                          "solo_developer_workaround":  "recorded",
+                                                          "independent_review":  "solo_developer_approved_workaround",
+                                                          "matrix_promotion":  "done"
+                                                      },
+                                            "certification_decision":  "review_candidate_with_workaround",
+                                            "certification_scope":  "internal_platform_ops_dashboard"
+                                        },
+                       "facilities":  {
+                                          "route":  "/facilities-dashboard",
+                                          "summary_api":  "/api/v1/dashboards/facilities/summary/",
+                                          "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/facilities.md",
+                                          "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                          "state":  "certified_internal_platform_ops_dashboard",
+                                          "proof":  {
+                                                        "frontend_static_wiring":  "pass_connector_inspection",
+                                                        "sample_payload":  "pass_backend_sample_payload:facilities_sample_payload",
+                                                        "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                        "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                        "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                        "solo_developer_workaround":  "recorded",
+                                                        "independent_review":  "solo_developer_approved_workaround",
+                                                        "matrix_promotion":  "done"
+                                                    },
+                                          "certification_decision":  "review_candidate_with_workaround",
+                                          "certification_scope":  "internal_platform_ops_dashboard"
+                                      },
+                       "safety-security":  {
+                                               "route":  "/safety-security-dashboard",
+                                               "summary_api":  "/api/v1/dashboards/safety-security/summary/",
+                                               "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/safety-security.md",
+                                               "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                               "state":  "certified_internal_platform_ops_dashboard",
+                                               "proof":  {
+                                                             "frontend_static_wiring":  "pass_connector_inspection",
+                                                             "sample_payload":  "pass_backend_sample_payload:safety_security_sample_payload",
+                                                             "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                             "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                             "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                             "solo_developer_workaround":  "recorded",
+                                                             "independent_review":  "solo_developer_approved_workaround",
+                                                             "matrix_promotion":  "done"
+                                                         },
+                                               "certification_decision":  "review_candidate_with_workaround",
+                                               "certification_scope":  "internal_platform_ops_dashboard"
+                                           },
+                       "hr":  {
+                                  "route":  "/hr-dashboard",
+                                  "summary_api":  "/api/v1/dashboards/hr/summary/",
+                                  "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/hr.md",
+                                  "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                  "state":  "certified_internal_platform_ops_dashboard",
+                                  "proof":  {
+                                                "frontend_static_wiring":  "pass_connector_inspection",
+                                                "sample_payload":  "pass_backend_sample_payload:hr_sample_payload",
+                                                "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                "solo_developer_workaround":  "recorded",
+                                                "independent_review":  "solo_developer_approved_workaround",
+                                                "matrix_promotion":  "done"
+                                            },
+                                  "certification_decision":  "review_candidate_with_workaround",
+                                  "certification_scope":  "internal_platform_ops_dashboard"
+                              },
+                       "it-support":  {
+                                          "route":  "/it-support-dashboard",
+                                          "summary_api":  "/api/v1/dashboards/it-support/summary/",
+                                          "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch3/it-support.md",
+                                          "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                          "state":  "certified_internal_platform_ops_dashboard",
+                                          "proof":  {
+                                                        "frontend_static_wiring":  "pass_connector_inspection",
+                                                        "sample_payload":  "pass_backend_sample_payload:it_support_sample_payload",
+                                                        "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                        "tenant_isolation":  "pass_gap_documented_and_accepted_for_internal_scope",
+                                                        "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                        "solo_developer_workaround":  "recorded",
+                                                        "independent_review":  "solo_developer_approved_workaround",
+                                                        "matrix_promotion":  "done"
+                                                    },
+                                          "certification_decision":  "review_candidate_with_workaround",
+                                          "certification_scope":  "internal_platform_ops_dashboard"
+                                      }
+                   },
+    "non_claims":  [
+                       "This register certifies Batch 0, Batch 1, Batch 2, and Batch 3 internal dashboard certification only.",
+                       "This register does not approve sandbox, pilot, production, or release GO."
+                   ],
+    "batch3":  {
+                   "status":  "batch3_operational_dashboards_certified_for_internal_scope",
+                   "dashboards":  [
+                                      "scheduling",
+                                      "health-office",
+                                      "transportation",
+                                      "food-service",
+                                      "facilities",
+                                      "safety-security",
+                                      "hr",
+                                      "it-support"
+                                  ],
+                   "blockers":  [
+
+                                ],
+                   "certification_scope":  "internal_platform_ops_dashboard",
+                   "governance":  "SOLO_DEVELOPER_APPROVED_WORKAROUND"
+               }
 }
