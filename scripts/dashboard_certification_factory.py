@@ -30,6 +30,8 @@ PASS_VALUES = {
     "done",
     "recorded",
     "pass_unit_tests_accepted",
+    "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+    "pass_static_template_and_registry_proof_accepted",
     "pass_gap_documented_and_accepted_for_internal_scope",
     "solo_developer_approved_workaround",
 }
