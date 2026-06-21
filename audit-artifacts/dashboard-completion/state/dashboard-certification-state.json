@@ -4,10 +4,10 @@
     "status":  "evidence_register_with_batch4_certifications",
     "totals":  {
                    "dashboards_total":  40,
-                   "certified":  32,
-                   "mapped_only":  8,
+                   "certified":  33,
+                   "mapped_only":  7,
                    "pending_independent_review":  0,
-                   "certification_rate_percent":  80
+                   "certification_rate_percent":  83
                },
     "batch0":  {
                    "status":  "batch0_first_three_dashboards_certified_for_internal_scope",
@@ -657,26 +657,28 @@
                                                     "certification_decision":  "review_candidate_with_workaround",
                                                     "certification_scope":  "internal_platform_ops_dashboard"
                                                 },
-                       "master-control":  {
-                                              "route":  "/master-control-dashboard",
-                                              "summary_api":  "/api/v1/dashboards/master-control/summary",
-                                              "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch5/master-control-first-blocker.md",
-                                              "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
-                                              "state":  "mapped_first_blocker_data_contract_proven",
-                                              "proof":  {
-                                                            "sample_payload":  "pass_backend_sample_payload:master_control_sample_payload",
-                                                            "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
-                                                            "tenant_isolation":  "pending",
-                                                            "browser_rendered_title_metrics":  "pending",
-                                                            "solo_developer_workaround":  "pending",
-                                                            "matrix_promotion":  "pending"
-                                                        },
-                                              "certification_decision":  "mapped_first_blocker_only_not_certified",
-                                              "certification_scope":  "batch5_first_blocker_lane"
-                                                }
+                                             "master-control":  {
+                                                                                            "route":  "/master-control-dashboard",
+                                                                                            "summary_api":  "/api/v1/dashboards/master-control/summary",
+                                                                                            "evidence_packet":  "audit-artifacts/dashboard-completion/evidence-packets/batch5/master-control-first-blocker.md",
+                                                                                            "frontend_static_proof":  "frontend/dashboards/src/config/dashboardRegistry.js",
+                                                                                            "state":  "certified_internal_platform_ops_dashboard",
+                                                                                            "proof":  {
+                                                                                                                        "sample_payload":  "pass_backend_sample_payload:master_control_sample_payload",
+                                                                                                                        "api_permission":  "pass_existing_dashboard_summary_auth_gate_and_authenticated_route_contract",
+                                                                                                                        "tenant_isolation":  "pass_main_replay_20260621_141751",
+                                                                                                                        "browser_rendered_title_metrics":  "pass_static_template_and_registry_proof_accepted",
+                                                                                                                        "solo_developer_workaround":  "recorded",
+                                                                                                                        "independent_review":  "solo_developer_approved_workaround",
+                                                                                                                        "matrix_promotion":  "done"
+                                                                                                                },
+                                                                                            "certification_decision":  "review_candidate_with_workaround",
+                                                                                            "certification_scope":  "internal_platform_ops_dashboard"
+                                                                                                }
                    },
     "non_claims":  [
-                           "This register certifies Batch 0, Batch 1, Batch 2, Batch 3, and Batch 4 internal dashboard certification only.",
+                           "This register certifies Batch 0, Batch 1, Batch 2, Batch 3, Batch 4, and Batch 5 master-control only for internal dashboard scope.",
+                       "This register does not certify the remaining seven Batch 5 dashboards.",
                        "This register does not approve sandbox, pilot, production, or release GO."
                    ],
     "batch3":  {
@@ -719,7 +721,7 @@
                    "governance":  "SOLO_DEVELOPER_APPROVED_WORKAROUND"
                },
     "batch5":  {
-                   "status":  "batch5_first_blocker_in_progress_master_control",
+                   "status":  "batch5_master_control_certified_seven_dashboards_pending",
                    "dashboards":  [
                                       "master-control",
                                       "implementation-success",
@@ -731,12 +733,14 @@
                                       "athletics-director"
                                   ],
                    "blockers":  [
+                                    "api-permission-proof",
                                     "tenant-isolation-proof",
                                     "runtime-browser-proof",
                                     "independent-review-or-workaround",
-                                    "matrix-promotion"
+                                    "matrix-promotion-and-state-entry"
                                 ],
                    "certification_scope":  "batch5_not_certified",
+                   "remaining_seven_blocker_register":  "docs/dashboard-completion/BATCH5_REMAINING_SEVEN_BLOCKERS_20260621.md",
                    "governance":  "INDEPENDENT_REVIEW_REQUIRED"
                }
 }
