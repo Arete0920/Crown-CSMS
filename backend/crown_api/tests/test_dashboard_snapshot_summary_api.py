@@ -132,6 +132,40 @@ def test_batch0_school_scoped_summary_routes_serve_sample_payloads_in_developmen
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
 @pytest.mark.django_db
+def test_master_control_summary_serves_sample_payload_in_development():
+    client = _authed_client('dashboard-summary-batch5-master-control')
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'master-control'}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data['dashboard_key'] == 'master-control'
+    assert data['meta']['served_from'] == 'sample'
+    assert data['meta']['sample_payload_allowed'] is True
+    assert [metric['label'] for metric in data['metrics']] == [
+        'Platform Uptime (30d)',
+        'Active Tenants',
+        'Open Support Tickets',
+        'Pending Data Migrations',
+    ]
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
+def test_master_control_summary_requires_authentication():
+    client = APIClient()
+    response = client.get(
+        reverse('dashboard-summary', kwargs={'dashboard_key': 'master-control'}),
+        HTTP_X_SCHOOL_ID='heritage-demo',
+    )
+
+    assert response.status_code == 401
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV='development')
+@pytest.mark.django_db
 def test_compliance_audit_summary_requires_explicit_tenant_header():
     client = _authed_client('dashboard-summary-batch0-compliance-audit-no-header')
     response = client.get(
