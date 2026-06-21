@@ -24,6 +24,7 @@ STAFF_ONLY_DASHBOARDS = frozenset({
 
 STRICT_TENANT_DASHBOARDS = frozenset({
     'compliance-audit',
+    'master-control',
 })
 
 
@@ -77,7 +78,7 @@ def _school_id_from_request(request):
     return value or 'heritage-demo'
 
 
-def _resolve_school_strict(request):
+def _resolve_school_strict(request, *, require_user_school_binding=False):
     """Resolve school from X-School-Id header only; never uses user.school_id fallback."""
     from core.models import School
     raw = request.META.get('HTTP_X_SCHOOL_ID', '').strip()
@@ -90,11 +91,14 @@ def _resolve_school_strict(request):
     school = School.objects.filter(pk=school_id).first()
     if school is None:
         raise NotFound({"detail": "School not found."})
-    # Cross-tenant check: non-staff users may only access their own school
+    # Cross-tenant check: non-staff users may only access their own school.
+    # master-control additionally requires an explicit user-school binding.
     user = getattr(request, 'user', None)
     if user and getattr(user, 'is_authenticated', False):
         if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
             user_school_id = getattr(user, 'school_id', None)
+            if require_user_school_binding and not user_school_id:
+                raise NotFound({"detail": "Not found."})
             if user_school_id and str(user_school_id) != str(school_id):
                 raise NotFound({"detail": "Not found."})
     return school
@@ -193,7 +197,10 @@ class DashboardSummaryView(APIView):
             school_id = str(school.id)
 
         if key in STRICT_TENANT_DASHBOARDS:
-            school = _resolve_school_strict(request)
+            school = _resolve_school_strict(
+                request,
+                require_user_school_binding=(key == 'master-control'),
+            )
             school_id = str(school.id)
 
         if key not in SAMPLE_PAYLOAD_BUILDERS:

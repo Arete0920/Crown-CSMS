@@ -143,10 +143,14 @@ def test_batch0_school_scoped_summary_routes_serve_sample_payloads_in_developmen
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
 @pytest.mark.django_db
 def test_master_control_summary_serves_sample_payload_in_development():
-    client = _authed_client("dashboard-summary-batch5-master-control")
+    school = School.objects.create(name="Master Control Development")
+    client = _authed_client(
+        "dashboard-summary-batch5-master-control",
+        school_id=school.id,
+    )
     response = client.get(
         reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
-        HTTP_X_SCHOOL_ID="heritage-demo",
+        HTTP_X_SCHOOL_ID=str(school.id),
     )
 
     assert response.status_code == 200
@@ -172,6 +176,46 @@ def test_master_control_summary_requires_authentication():
     )
 
     assert response.status_code == 401
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
+@pytest.mark.django_db
+def test_master_control_summary_allows_same_tenant_access():
+    school = School.objects.create(name="Master Control Home")
+    client = _authed_client(
+        "dashboard-summary-batch5-master-control-same-tenant",
+        school_id=school.id,
+    )
+
+    response = client.get(
+        reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dashboard_key"] == "master-control"
+    assert data["meta"]["school_id"] == str(school.id)
+    assert data["meta"]["served_from"] == "sample"
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
+@pytest.mark.django_db
+def test_master_control_summary_rejects_cross_tenant_access_for_non_staff_user():
+    school = School.objects.create(name="Master Control Home")
+    other_school = School.objects.create(name="Master Control Other")
+    client = _authed_client(
+        "dashboard-summary-batch5-master-control-cross-tenant",
+        school_id=school.id,
+    )
+
+    response = client.get(
+        reverse("dashboard-summary", kwargs={"dashboard_key": "master-control"}),
+        HTTP_X_SCHOOL_ID=str(other_school.id),
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Not found."
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
