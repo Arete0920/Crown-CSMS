@@ -11,6 +11,14 @@ This file resets the dashboard-certification work to a clean GitHub branch and r
 - The committed dashboard certification matrix still does not support a 40 of 40 certification claim.
 - Local-only edits are not authoritative project truth.
 
+## Baseline evidence references
+
+- PR 1149: Batch5 master-control tenant-isolation proof blocker closure.
+- Matrix source: `docs/dashboard-completion/DASHBOARD_CERTIFICATION_MATRIX_V2.csv`.
+- State source: `audit-artifacts/dashboard-completion/state/dashboard-certification-state.json`.
+- Current matrix Batch 5 rows remain mapped until a separate promotion PR changes them.
+- Current state-register total remains below 40 of 40 until a separate promotion PR changes it.
+
 ## Correction rule
 
 Do not use local-only files as certification truth. Certification status changes must be committed on a clean branch, opened as a PR, reviewed, and merged.
