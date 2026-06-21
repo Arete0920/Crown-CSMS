@@ -1,6 +1,6 @@
 ﻿{
     "schema_version":  "2026-06-18.dashboard-certification-state.v1",
-    "generated_at":  "2026-06-20",
+    "generated_at":  "2026-06-21",
     "status":  "evidence_register_with_batch3_certifications",
     "totals":  {
                    "dashboards_total":  40,
