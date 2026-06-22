@@ -1,4 +1,4 @@
-﻿import { LIVE_NOTE } from './_baseData.js';
+import { LIVE_NOTE } from './_baseData.js';
 
 const ATTENDANCE_TREND = [
   { month: 'Sep', value: 88 }, { month: 'Oct', value: 87 }, { month: 'Nov', value: 89 },
@@ -20,7 +20,7 @@ export default {
   subtitle: 'Heritage Christian Academy',
   note: LIVE_NOTE,
   dataSource: 'live_api',
-  apiEndpoint: '/api/v1/dashboards/athletics/summary/',
+  apiEndpoint: '/api/v1/dashboards/athletics-director/summary',
   liveDataKey: 'athletics',
 
   metrics: [
