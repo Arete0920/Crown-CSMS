@@ -3,6 +3,8 @@ import os
 
 from django.conf import settings
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,20 +14,29 @@ from core.permissions import user_has_permission
 from .models import DashboardSnapshot
 from .payload_contract import validate_dashboard_payload
 from .sample_payloads import SAMPLE_PAYLOAD_BUILDERS
+from .batch5_extra_payloads import BATCH5_EXTRA_PAYLOAD_BUILDERS
 import uuid as _uuid
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotFound, ValidationError
 
+
+DASHBOARD_PAYLOAD_BUILDERS = {
+    **SAMPLE_PAYLOAD_BUILDERS,
+    **BATCH5_EXTRA_PAYLOAD_BUILDERS,
+}
 
 STAFF_ONLY_DASHBOARDS = frozenset({
     'dashboard-certification-center',
 })
 
 STRICT_TENANT_DASHBOARDS = frozenset({
+    'athletics-director',
     'compliance-audit',
+    'data-migration',
+    'extended-care',
     'implementation-success',
+    'integrations-automation',
     'master-control',
+    'revenue-operations',
+    'summer-camp',
 })
 
 
@@ -204,7 +215,7 @@ class DashboardSummaryView(APIView):
             )
             school_id = str(school.id)
 
-        if key not in SAMPLE_PAYLOAD_BUILDERS:
+        if key not in DASHBOARD_PAYLOAD_BUILDERS:
             return Response(
                 {
                     'code': 'unknown_dashboard',
@@ -240,7 +251,7 @@ class DashboardSummaryView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        payload = SAMPLE_PAYLOAD_BUILDERS[key](school_id)
+        payload = DASHBOARD_PAYLOAD_BUILDERS[key](school_id)
         payload = deepcopy(payload)
         payload.setdefault('meta', {})
         payload['meta'].setdefault('served_from', 'sample')

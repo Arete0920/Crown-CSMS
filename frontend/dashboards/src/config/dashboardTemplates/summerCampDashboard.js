@@ -22,7 +22,7 @@ export default {
   subtitle: 'Heritage Christian Academy',
   note: LIVE_NOTE,
   dataSource: 'live_api',
-  apiEndpoint: '/api/v1/dashboards/summerCamp/summary/',
+  apiEndpoint: '/api/v1/dashboards/summer-camp/summary',
   liveDataKey: 'summerCamp',
 
   metrics: [

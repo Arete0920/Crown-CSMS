@@ -1,4 +1,4 @@
-﻿import { LIVE_NOTE } from './_baseData.js';
+import { LIVE_NOTE } from './_baseData.js';
 
 const REV_TREND = [
   { month: 'Aug', value: 0 }, { month: 'Sep', value: 142000 }, { month: 'Oct', value: 288000 },
@@ -22,7 +22,7 @@ export default {
   subtitle: 'Heritage Christian Academy',
   note: LIVE_NOTE,
   dataSource: 'live_api',
-  apiEndpoint: '/api/v1/dashboards/revenueOperations/summary/',
+  apiEndpoint: '/api/v1/dashboards/revenue-operations/summary',
   liveDataKey: 'revenueOperations',
 
   metrics: [
