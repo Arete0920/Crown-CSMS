@@ -24,6 +24,7 @@ STAFF_ONLY_DASHBOARDS = frozenset({
 
 STRICT_TENANT_DASHBOARDS = frozenset({
     'compliance-audit',
+    'implementation-success',
     'master-control',
 })
 

@@ -202,10 +202,16 @@ def test_master_control_summary_allows_same_tenant_access():
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
 @pytest.mark.django_db
 def test_implementation_success_summary_serves_sample_payload_in_development():
-    client = _authed_client("dashboard-summary-batch5-implementation-success")
+    school = School.objects.create(name="Implementation Success Home")
+    client = _authed_client(
+        "dashboard-summary-batch5-implementation-success",
+        school_id=school.id,
+    )
     response = client.get(
-        reverse("dashboard-summary", kwargs={"dashboard_key": "implementation-success"}),
-        HTTP_X_SCHOOL_ID="heritage-demo",
+        reverse(
+            "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
+        ),
+        HTTP_X_SCHOOL_ID=str(school.id),
     )
 
     assert response.status_code == 200
@@ -219,6 +225,50 @@ def test_implementation_success_summary_serves_sample_payload_in_development():
         "Open Implementation Tickets",
         "Avg Onboarding Days",
     ]
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
+@pytest.mark.django_db
+def test_implementation_success_summary_allows_same_tenant_access():
+    school = School.objects.create(name="Implementation Success Same Tenant")
+    client = _authed_client(
+        "dashboard-summary-batch5-implementation-success-same-tenant",
+        school_id=school.id,
+    )
+
+    response = client.get(
+        reverse(
+            "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
+        ),
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["dashboard_key"] == "implementation-success"
+    assert data["meta"]["school_id"] == str(school.id)
+    assert data["meta"]["served_from"] == "sample"
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
+@pytest.mark.django_db
+def test_implementation_success_summary_rejects_cross_tenant_access_for_non_staff_user():
+    school = School.objects.create(name="Implementation Success Home")
+    other_school = School.objects.create(name="Implementation Success Other")
+    client = _authed_client(
+        "dashboard-summary-batch5-implementation-success-cross-tenant",
+        school_id=school.id,
+    )
+
+    response = client.get(
+        reverse(
+            "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
+        ),
+        HTTP_X_SCHOOL_ID=str(other_school.id),
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Not found."
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
@@ -238,14 +288,33 @@ def test_master_control_summary_rejects_cross_tenant_access_for_non_staff_user()
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Not found."
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
+@pytest.mark.django_db
 def test_implementation_success_summary_requires_authentication():
     client = APIClient()
     response = client.get(
-        reverse("dashboard-summary", kwargs={"dashboard_key": "implementation-success"}),
-        HTTP_X_SCHOOL_ID="heritage-demo",
+        reverse(
+            "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
+        ),
     )
 
     assert response.status_code == 401
+
+
+@override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
+@pytest.mark.django_db
+def test_implementation_success_summary_requires_explicit_tenant_header():
+    client = _authed_client("dashboard-summary-batch5-implementation-success-no-header")
+    response = client.get(
+        reverse(
+            "dashboard-summary", kwargs={"dashboard_key": "implementation-success"}
+        ),
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "X-School-Id header is required."
 
 
 @override_settings(TENANT_HEADER_REQUIRED=False, CROWN_ENV="development")
