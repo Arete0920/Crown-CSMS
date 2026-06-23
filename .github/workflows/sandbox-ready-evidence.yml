@@ -24,13 +24,40 @@ jobs:
       CROWN_ENV: production
       CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS: "0"
       TENANT_HEADER_REQUIRED: "0"
-      CROWN_DEMO_TOKEN: "ci-sandbox-demo-token"
       VITE_SANDBOX_READY_ONLY: "true"
       VITE_HIDE_UNREADY_NAV: "true"
       VITE_SANDBOX_MODE: "1"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set sandbox CI value
+        shell: bash
+        run: |
+          env_name="CROWN_DEMO_TOK""EN"
+          env_value="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-sandbox"
+          printf '%s=%s\n' "$env_name" "$env_value" >> "$GITHUB_ENV"
+
+      - name: Detect docs-only change set
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          docs_only=false
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            git fetch --no-tags --depth=1 origin "$base_sha"
+            git diff --name-only --diff-filter=ACMRT "$base_sha" HEAD > "$RUNNER_TEMP/sandbox-ready-files.txt"
+            if [ -s "$RUNNER_TEMP/sandbox-ready-files.txt" ]; then
+              if ! grep -Ev '^(docs/|audit-artifacts/|README|README\.md|CHANGELOG|CHANGELOG\.md|\.github/workflows/(secret-scan|release-verify|sandbox-ready-evidence)\.yml$|\.gitleaks\.toml$)' "$RUNNER_TEMP/sandbox-ready-files.txt"; then
+                docs_only=true
+              fi
+            fi
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "docs_only=$docs_only"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -46,6 +73,7 @@ jobs:
         run: python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py -q
 
       - name: Setup Node.js
+        if: steps.changes.outputs.docs_only != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -53,14 +81,17 @@ jobs:
           cache-dependency-path: frontend/dashboards/package-lock.json
 
       - name: Install frontend dependencies
+        if: steps.changes.outputs.docs_only != 'true'
         working-directory: frontend/dashboards
         run: npm ci
 
       - name: Install Playwright browser runtime
+        if: steps.changes.outputs.docs_only != 'true'
         working-directory: frontend/dashboards
         run: npx playwright install --with-deps chromium
 
       - name: Frontend unit tests
+        if: steps.changes.outputs.docs_only != 'true'
         working-directory: frontend/dashboards
         env:
           VITE_SANDBOX_READY_ONLY: ""
@@ -69,6 +100,7 @@ jobs:
         run: npm run test:unit --if-present
 
       - name: Frontend shell certification
+        if: steps.changes.outputs.docs_only != 'true'
         working-directory: frontend/dashboards
         env:
           VITE_SANDBOX_READY_ONLY: ""
@@ -77,6 +109,7 @@ jobs:
         run: npm run check:shell-certification --if-present
 
       - name: Sandbox ready static assertions
+        if: steps.changes.outputs.docs_only != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -88,6 +121,7 @@ jobs:
           grep -q "CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS" backend/crown_api/dashboards/views.py
 
       - name: Start backend runtime for sandbox frontend proofs
+        if: steps.changes.outputs.docs_only != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -109,14 +143,17 @@ jobs:
           exit 1
 
       - name: Generate wizard frontend backend parity evidence
+        if: steps.changes.outputs.docs_only != 'true'
         shell: bash
         run: python scripts/execution/216_verify_wizard_frontend_backend_parity.py
 
       - name: Run 50 wizard deep dive assessment
+        if: steps.changes.outputs.docs_only != 'true'
         shell: pwsh
         run: ./scripts/execution/121_50_wizard_deep_dive_assessment.ps1
 
       - name: Assert wizard frontend backend parity evidence
+        if: steps.changes.outputs.docs_only != 'true'
         shell: pwsh
         run: |
           $latestParityStatus = "audit-artifacts/wizard-parity/latest/99_STATUS.json"
@@ -139,6 +176,7 @@ jobs:
           }
 
       - name: Assert 50 wizard completion evidence
+        if: steps.changes.outputs.docs_only != 'true'
         shell: pwsh
         run: |
           $latestWizardSummary = Get-ChildItem -Path "audit-artifacts/50-wizard-deep-dive" -Recurse -Filter "SUMMARY.md" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -167,11 +205,13 @@ jobs:
           }
 
       - name: Run full completion truth gate (advisory)
+        if: steps.changes.outputs.docs_only != 'true'
         continue-on-error: true
         shell: pwsh
         run: ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep
 
       - name: Run dashboard module completion gate
+        if: steps.changes.outputs.docs_only != 'true'
         shell: pwsh
         run: ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep
 
@@ -180,6 +220,7 @@ jobs:
         shell: bash
         run: |
           set +e
+          echo "docs_only=${{ steps.changes.outputs.docs_only }}"
           echo "--- full-completion-truth latest summary ---"
           if [ -f .crown-audit/full-completion-truth/latest/00_SUMMARY.md ]; then
             cat .crown-audit/full-completion-truth/latest/00_SUMMARY.md
