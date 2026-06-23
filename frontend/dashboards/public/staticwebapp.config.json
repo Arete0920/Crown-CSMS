@@ -1,11 +1,38 @@
 {
-  "responseOverrides": {},
   "routes": [
     {
       "route": "/build.json",
       "headers": {
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
       }
+    },
+    {
+      "route": "/login",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/sandbox",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/sandbox/*",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/school-admin-dashboard",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/teacher",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/parent",
+      "rewrite": "/index.html"
+    },
+    {
+      "route": "/student",
+      "rewrite": "/index.html"
     }
   ],
   "globalHeaders": {
@@ -15,6 +42,22 @@
   },
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*", "/build.json", "/*.json", "/*.ico", "/*.png", "/*.svg"]
+    "exclude": [
+      "/assets/*",
+      "/build.json",
+      "/demo/*",
+      "/favicon.ico",
+      "/robots.txt",
+      "/manifest.webmanifest",
+      "/*.ico",
+      "/*.png",
+      "/*.svg",
+      "/*.jpg",
+      "/*.jpeg",
+      "/*.webp"
+    ]
+  },
+  "mimeTypes": {
+    ".json": "application/json"
   }
 }
