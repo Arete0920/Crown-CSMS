@@ -1,32 +1,42 @@
-name: Deploy Dashboard (Production)
+name: Deploy Dashboard (SWA)
 permissions:
   contents: read
 
-# Phase 8 Frontend proof leg.
+# Frontend Azure Static Web Apps deploy leg.
 #
-# Triggers on the same prod-deploy-* tags as the backend deploy so both
-# services are stamped from the same SHA and tag on every production push.
+# This workflow deploys the pre-built dashboard bundle to Azure Static Web Apps.
+# It supports:
+#   - prod-deploy-* tags for normal release deployment
+#   - main pushes for emergency sandbox/frontend access repairs
+#   - manual workflow_dispatch runs when an operator needs to redeploy current main
 #
 # What this workflow proves:
 #   - frontend/dashboards/public/build.json is written with the exact commit SHA
-#     and tag name at build time, then shipped inside dist/ to Azure SWA
-#   - After this workflow succeeds, proof-ceremony-after-prod.yml will fetch
-#     $PROD_DASH_BASE/build.json and assert build_sha and deploy_tag match the
-#     backend health response  completing the "both proved" chain
+#     and deploy label at build time, then shipped inside dist/ to Azure SWA
+#   - staticwebapp.config.json is copied from public/ to dist/ so Azure serves
+#     React SPA deep links such as /login and /sandbox through index.html
 #
 # Secrets required:
 #   AZURE_SWA_TOKEN  deployment token from the Azure Static Web Apps resource
 #                     (Portal  SWA resource  Settings  Deployment token)
 #   PROD_DASH_BASE   set this after confirming the SWA URL, e.g.
-#                     https://crown-dash.azurestaticapps.net
+#                     https://crown-sandbox.azurestaticapps.net
 
 on:
+  workflow_dispatch:
+    inputs:
+      deploy_label:
+        description: "Optional deploy label for build.json"
+        required: false
+        default: "manual-swa-redeploy"
   push:
+    branches:
+      - main
     tags:
       - "prod-deploy-*"
 
 concurrency:
-  group: crown-dashboard-prod-deploy
+  group: crown-dashboard-swa-deploy
   cancel-in-progress: true
 
 jobs:
@@ -36,31 +46,41 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      - name: Checkout tag
+      - name: Checkout deploy ref
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Resolve deploy SHA
+      - name: Resolve deploy SHA and label
         shell: bash
         run: |
           set -euo pipefail
           SHA="$(git rev-parse HEAD)"
-          TAG="${{ github.ref_name }}"
+          REF_NAME="${{ github.ref_name }}"
+          REF_TYPE="${GITHUB_REF_TYPE:-}"
+          INPUT_LABEL="${{ github.event.inputs.deploy_label || '' }}"
 
           if [[ -z "$SHA" || ${#SHA} -lt 40 ]]; then
             echo "ERROR: could not resolve full commit SHA (got: '$SHA')"
             exit 1
           fi
-          if [[ "$TAG" != prod-deploy-* ]]; then
-            echo "ERROR: tag must start with prod-deploy- (got: '$TAG')"
-            exit 1
+
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            if [[ "$REF_NAME" != prod-deploy-* ]]; then
+              echo "ERROR: tag must start with prod-deploy- (got: '$REF_NAME')"
+              exit 1
+            fi
+            DEPLOY_LABEL="$REF_NAME"
+          elif [[ -n "$INPUT_LABEL" ]]; then
+            DEPLOY_LABEL="$INPUT_LABEL"
+          else
+            DEPLOY_LABEL="main-swa-${SHA:0:12}"
           fi
 
-          echo "DEPLOY_SHA=$SHA"  >> "$GITHUB_ENV"
-          echo "DEPLOY_TAG=$TAG"  >> "$GITHUB_ENV"
-          echo " Deploy contract: TAG=$TAG SHA=${SHA:0:7}"
+          echo "DEPLOY_SHA=$SHA" >> "$GITHUB_ENV"
+          echo "DEPLOY_TAG=$DEPLOY_LABEL" >> "$GITHUB_ENV"
+          echo "Deploy contract: REF_TYPE=$REF_TYPE REF=$REF_NAME LABEL=$DEPLOY_LABEL SHA=${SHA:0:7}"
 
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -93,20 +113,27 @@ jobs:
           VITE_LAUNCH_UI_TAKEOVER: '1'
         run: npm run build
 
-      - name: Verify build.json in dist
+      - name: Verify SWA config and build.json in dist
         shell: bash
         run: |
           set -euo pipefail
-          FILE="frontend/dashboards/dist/build.json"
-          if [[ ! -f "$FILE" ]]; then
+          BUILD_FILE="frontend/dashboards/dist/build.json"
+          SWA_CONFIG="frontend/dashboards/dist/staticwebapp.config.json"
+
+          if [[ ! -f "$BUILD_FILE" ]]; then
             echo "ERROR: dist/build.json not found  Vite did not copy public/build.json"
             exit 1
           fi
+          if [[ ! -f "$SWA_CONFIG" ]]; then
+            echo "ERROR: dist/staticwebapp.config.json not found  Vite did not copy SWA routing config"
+            exit 1
+          fi
+
           echo "dist/build.json contents:"
-          cat "$FILE"
-          # Assert fields are present and non-empty
-          SHA_IN="$(python3 -c "import json,sys; d=json.load(open('$FILE')); sys.exit(0 if d.get('build_sha') else 1)")"  || true
-          TAG_IN="$(python3 -c "import json,sys; d=json.load(open('$FILE')); sys.exit(0 if d.get('deploy_tag') else 1)")"  || true
+          cat "$BUILD_FILE"
+          echo "dist/staticwebapp.config.json navigation fallback:"
+          grep -n "navigationFallback\|/login\|/sandbox" "$SWA_CONFIG"
+
           python3 - <<'PY'
           import json, sys
           d = json.load(open("frontend/dashboards/dist/build.json"))
@@ -114,7 +141,16 @@ jobs:
               sys.exit("FAIL: build_sha missing or empty in dist/build.json")
           if not d.get("deploy_tag"):
               sys.exit("FAIL: deploy_tag missing or empty in dist/build.json")
-          print(f"OK build_sha={d['build_sha'][:7]}  deploy_tag={d['deploy_tag']}")
+          cfg = json.load(open("frontend/dashboards/dist/staticwebapp.config.json"))
+          routes = cfg.get("routes") or []
+          route_names = {r.get("route") for r in routes}
+          required = {"/login", "/sandbox", "/sandbox/*"}
+          missing = sorted(required - route_names)
+          if missing:
+              sys.exit(f"FAIL: staticwebapp.config.json missing SPA rewrite routes: {missing}")
+          if cfg.get("navigationFallback", {}).get("rewrite") != "/index.html":
+              sys.exit("FAIL: navigationFallback.rewrite must be /index.html")
+          print(f"OK build_sha={d['build_sha'][:7]} deploy_tag={d['deploy_tag']}")
           PY
 
       - name: Validate SWA deployment token secret
@@ -142,4 +178,3 @@ jobs:
           app_location: "frontend/dashboards/dist"
           output_location: ""
           skip_app_build: true
-
