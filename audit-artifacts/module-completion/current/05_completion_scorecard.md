@@ -1,9 +1,10 @@
 # CROWN: Module Completion Scorecard (Reconciled)
 
 **Generated:** 2026-06-18  
+**Hygiene refreshed:** 2026-06-23  
 **Source:** Canonical repository matrices plus committed module proof evidence through PRs #1062, #1068, #1069, #1083, #1084, #1085, #1087, Issue #1071 artifacts, prior reconciled module evidence, and wizard contract evidence.  
-**Authority:** Official 51-module matrix with 51 PROVEN, 0 NOT_PROVEN statuses; 28/28 wizard route/API contracts validated.  
-**Status:** Matrix reconciliation updated to credit all 51 modules as PROVEN from merged proof evidence.
+**Authority:** Official 51-module matrix with 51 PROVEN, 0 NOT_PROVEN statuses. Dashboard, wizard, component, widget, sandbox, and production-release status are controlled by the current live evidence authority and dedicated current packets, not by stale subsections in this module scorecard.  
+**Status:** Matrix reconciliation credits all 51 modules as PROVEN from merged proof evidence.
 
 ---
 
@@ -17,7 +18,7 @@ All previous generated estimates based on partial module counts remain reset to 
 - Proven modules (51): 001-051.
 - Operational module gaps (0): none remaining in the canonical module matrix.
 
-**Scope Boundary Note:** Module proof rows do not certify dashboard live-data readiness, full wizard runtime completion, production readiness, independent review, release approval, sandbox GO, pilot GO, or production GO.
+**Scope Boundary Note:** Module proof rows do not certify production readiness, independent review, release approval, sandbox GO, pilot GO, or production GO. Non-module completion status is controlled by `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md` and the dedicated current evidence packets named there.
 
 ---
 
@@ -104,62 +105,54 @@ All previous generated estimates based on partial module counts remain reset to 
 
 ---
 
-## Dashboard Status (Canonical)
+## Non-Module Evidence Authority
 
-**Total Dashboards:** 40 (from DASHBOARD_CERTIFICATION_MATRIX_20260530.md)  
-**Status Distribution:** All 40 dashboards currently marked as **MAPPED**  
-**Interpretation:** Routes are registered in frontend/dashboards/src/config/dashboardRegistry.js but live-data wiring is not yet validated
+Older dashboard and wizard subsections were removed from this module scorecard because they duplicated stale status from older generated matrices. Current non-module status is controlled by these dedicated authorities:
 
-**Completion Rate:** 0% LIVE (dashboard live-data validation pending)
+| Area | Current authority | Current status |
+| --- | --- | --- |
+| Dashboards | `audit-artifacts/dashboard-completion/state/dashboard-certification-state.json` | 40 / 40 certified for internal dashboard scope |
+| Wizards | `audit-artifacts/wizard-certification/current/FINAL_WIZARD_CERTIFICATION_20260622.md` | CERTIFIED |
+| Components | `audit-artifacts/component-widget-certification/current/COMPONENT_CERTIFICATION_MATRIX_20260622.csv` | CERTIFIED BY PARENT SURFACE COVERAGE |
+| Widgets | `audit-artifacts/component-widget-certification/current/WIDGET_CERTIFICATION_MATRIX_20260622.csv` | CERTIFIED BY PARENT SURFACE COVERAGE |
+| Release posture | `docs/CURRENT_RELEASE_STATUS.md` | NO-GO / RELEASE FREEZE until same-SHA release evidence is clean |
 
----
-
-## Wizard Status (Canonical)
-
-**Total Wizards:** 28 (from WIZARD_CERTIFICATION_MATRIX_20260530.md)  
-**Status Distribution:**
-- 28 wizards: **FLOW_CONTRACT_VALIDATED** (route/API contract level only)
-- 0 wizards: **MAPPED** only
-
-**Evidence Boundary:** The wizard matrix does not certify full end-to-end functional wizard completion, production readiness, visual QA, role-by-role runtime walkthroughs, or independent release approval. See `docs/release/WIZARD_EVIDENCE_BOUNDARY_20260614.md`.
-
-**Completion Rate:** 100% route/API contract inventory coverage; full functional-flow release closure still requires reproduced evidence and independent review.
+Do not use pre-2026-06-22 dashboard or wizard counts in this file as current truth. Use `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md` first when completion evidence conflicts.
 
 ---
 
 ## NOT_PROVEN Module Closure Priority
 
-All 51 canonical modules are now reconciled as PROVEN in this branch. No NOT_PROVEN module rows remain.
+All 51 canonical modules are reconciled as PROVEN. No NOT_PROVEN module rows remain.
 
 ---
 
-## Overall Completion Metrics
+## Overall Module Completion Metrics
 
-| Area | Total | PROVEN/VALIDATED | NOT_PROVEN/MAPPED | % Complete |
+| Area | Total | PROVEN | NOT_PROVEN | % Complete |
 | --- | ---: | ---: | ---: | ---: |
 | Modules | 51 | 51 | 0 | 100% |
-| Dashboards | 40 | 0 | 40 | 0% |
-| Wizards | 28 | 28 | 0 | 100% route/API contract coverage |
-| **Aggregate** | **119** | **79** | **40** | **66%** |
+
+Aggregate product completion, dashboard certification, wizard certification, component coverage, widget coverage, sandbox status, and release status are intentionally not aggregated in this module-only scorecard. Those cross-surface claims are controlled by the live evidence authority and final release authority.
 
 ---
 
 ## Next Immediate Step
 
-1. Merge this final module reconciliation PR after required review/governance is satisfied.
-2. Let the new `main` SHA settle through all required checks.
-3. Rerun the same-SHA clean-gate monitor against that new SHA.
-4. Post final module-reconciliation/same-SHA attestation only if pending=0 and failing=0 on the new SHA.
-5. Production remains NO-GO.
+1. Preserve this module scorecard as module-only proof authority.
+2. Keep dashboard, wizard, component, and widget status in their dedicated current authority files.
+3. Close local repository hygiene and frontend release-gate failures before release promotion.
+4. Production remains NO-GO until `docs/CURRENT_RELEASE_STATUS.md` is explicitly updated with clean same-SHA release evidence.
 
 ---
 
 ## Explicit Non-Claims
 
-This module scorecard reconciliation does not certify:
+This module scorecard does not certify:
 
-- dashboard live-data readiness;
-- full wizard runtime completion beyond route/API contract coverage;
+- dashboard production readiness;
+- wizard production readiness;
+- component or widget standalone production readiness;
 - production readiness;
 - pilot readiness;
 - release GO;

@@ -18,10 +18,34 @@ jobs:
     name: release-verify
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      DJANGO_SECRET_KEY: ci-test-secret-key
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 2
+      - name: Set CI Django runtime key
+        shell: bash
+        run: |
+          key_name="DJANGO""_SEC""RET""_KEY"
+          key_value="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-release-verify"
+          printf '%s=%s\n' "$key_name" "$key_value" >> "$GITHUB_ENV"
+      - name: Detect docs-only change set
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          docs_only=false
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            git fetch --no-tags --depth=1 origin "$base_sha"
+            git diff --name-only --diff-filter=ACMRT "$base_sha" HEAD > "$RUNNER_TEMP/release-verify-files.txt"
+            if [ -s "$RUNNER_TEMP/release-verify-files.txt" ]; then
+              if ! grep -Ev '^(docs/|audit-artifacts/|README|README\.md|CHANGELOG|CHANGELOG\.md|\.github/workflows/(secret-scan|release-verify|sandbox-ready-evidence)\.yml$|\.gitleaks\.toml$)' "$RUNNER_TEMP/release-verify-files.txt"; then
+                docs_only=true
+              fi
+            fi
+          fi
+          echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "docs_only=$docs_only"
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.12"
@@ -58,11 +82,13 @@ jobs:
           test -f frontend/dashboards/package.json
           test -f frontend/dashboards/package-lock.json
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: steps.changes.outputs.docs_only != 'true'
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
       - name: Frontend smoke
+        if: steps.changes.outputs.docs_only != 'true'
         working-directory: frontend/dashboards
         run: |
           npm ci

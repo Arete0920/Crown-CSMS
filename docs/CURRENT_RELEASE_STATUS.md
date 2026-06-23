@@ -1,120 +1,117 @@
 # CROWN Current Release Status
 
-Date: 2026-06-09
+Date: 2026-06-23
 Purpose: Single canonical repository-level release posture for CROWN.
 
 ## Canonical Authority
 
 1. This file is the canonical repository-level release authority.
-2. Current controlling posture is **NO-GO / RELEASE FREEZE** until the required evidence gates below pass on the same current candidate SHA.
-3. Historical GO, SHIP, PASS, RELEASE_READY, PARTIAL, or prior candidate-SHA documents are non-authoritative unless this file explicitly promotes them.
-4. Product, sandbox, and production claims must be based on current-head evidence, not stale packets or local transcript memory.
+2. Current controlling posture is **NO-GO / RELEASE FREEZE** until final same-SHA release evidence is current, green, and explicitly promoted here.
+3. Historical GO, SHIP, PASS, RELEASE_READY, PARTIAL, prior candidate-SHA documents, local transcript notes, and superseded audit packets are non-authoritative unless this file explicitly promotes them.
+4. Product, sandbox, pilot, and production claims must be based on current repository evidence and same-SHA gate settlement, not stale packets or memory.
 
 ## Current Decision
 
-Repository-wide decision: NO-GO.
+Repository-wide decision: **NO-GO / RELEASE FREEZE**.
 
 Decision meaning:
 
-- CROWN has substantial architecture and verification infrastructure.
-- Recent release-certification harness fixes are merged into `main`.
-- Production release is blocked until current-head release-certification evidence, live-data proof, dashboard/runtime proof, and repo-hygiene proof are all current and green.
-- Broad sandbox launch is blocked until sandbox evidence gates pass on the same current candidate SHA and local worktree hygiene is closed.
+- Current repository evidence shows substantial completion progress and strong proof coverage.
+- Current completion evidence is controlled by `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md`.
+- Production release remains blocked until current-head release verification, sandbox-ready evidence, local repo hygiene, and governance evidence are all clean and same-SHA consistent.
+- Broad sandbox launch remains blocked until sandbox-ready evidence gates pass on the same current candidate SHA and local worktree hygiene is closed.
 
 ## Current GitHub Evidence Snapshot
 
-- Latest inspected main SHA: `56f2d784fd6b4dd0c261245c0f603d508cf09861`.
-- Candidate SHA: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`
-- Release authority branch: `release/security-runtime-governance-repair-little-lambs-full-build`
-- Candidate/branch metadata above is retained to keep ready-entry evidence contracts parseable; it is not a current production-release approval and does not override the repository-wide NO-GO decision.
-- PR #950: merged; current release authority refresh preserving NO-GO / RELEASE FREEZE.
-- PR #949: merged; wizard backend contract parity matrix.
-- PR #948: merged; guarded runtime wizard route and sandbox regression alignment.
-- PR #947: merged; parallel-work synchronization protocol.
-- PR #946: merged; Windows command-wrapper capture diagnostic gate.
-- PR #945: merged; repo hygiene gate packet generator.
-- PR #944: merged; frontend/backend wizard parity verifier.
-- PR #941: merged; one-file release-certification step01 fallback hardening.
-- PR #940: merged; earlier step01 branch-protection 404 fallback repair.
-- PR #939: merged; release-certification step06 deterministic finalization.
-- PR #938: merged; release-certification step02 supplemental orchestration hardening.
-- PR #933: merged; clean two-file wizard shell-readiness/auth integrity repair.
-- PR #909: closed unmerged; remains historical no-go/release-freeze evidence and must not be treated as a current release lane.
+- Default branch: `main`.
+- Current live evidence authority PR: #1161, merged into `main`.
+- Current live evidence authority merge commit: `2f405d4`.
+- Follow-up release-status PR #1162 was closed unmerged because its candidate branch did not have clean release/sandbox gates.
+- Open PR count is not controlled by this static file; verify current PR state live through the GitHub connector when making current-status decisions.
+
+## Current Product Completion Evidence
+
+Use `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md` first for current completion/status work.
+
+| Area | Current verified status | Current authority |
+| --- | --- | --- |
+| Modules | 51 / 51 PROVEN | `audit-artifacts/module-completion/current/05_completion_scorecard.md` |
+| Dashboards | 40 / 40 certified for internal dashboard scope | `audit-artifacts/dashboard-completion/state/dashboard-certification-state.json` |
+| Wizards | CERTIFIED | `audit-artifacts/wizard-certification/current/FINAL_WIZARD_CERTIFICATION_20260622.md` |
+| Components | CERTIFIED BY PARENT SURFACE COVERAGE | `audit-artifacts/component-widget-certification/current/COMPONENT_CERTIFICATION_MATRIX_20260622.csv` |
+| Widgets | CERTIFIED BY PARENT SURFACE COVERAGE | `audit-artifacts/component-widget-certification/current/WIDGET_CERTIFICATION_MATRIX_20260622.csv` |
+| Production release | NOT APPROVED | This file plus clean same-SHA release evidence required |
 
 ## Current Blocking Conditions
 
-### 1. Current-head release-certification proof is missing
+### 1. Same-SHA release verification is not yet clean
 
-A current release-certification packet must be generated from a clean current main or approved release branch and must show:
+A final current-head release-certification packet must show:
 
 - `00_release_certification_summary.json` final status PASS;
 - zero RED lanes;
 - zero AMBER lanes unless explicitly approved as non-production-blocking;
 - branch-protection evidence;
-- backend/runtime health, integrity, OpenAPI, migrations, and deploy check evidence;
+- backend/runtime health, integrity, OpenAPI, migrations, and deploy-check evidence;
 - golden path, tenant isolation, and UI evidence;
 - phase2 reporting/export/transcript and sandbox role-route regression evidence;
 - final signoff packet.
 
-### 2. Local repo hygiene is not closed
+### 2. Candidate frontend gates require hardening
 
-Local worktree state is not visible through GitHub. Current local hygiene remains blocking until a fresh local packet proves:
+The closed #1162 candidate exposed gate fragility that must be corrected before promotion:
+
+- `Release Verify` failed at frontend smoke.
+- `Sandbox Ready Evidence Gate` failed at frontend unit tests.
+
+These failures are release-gate blockers unless a current-main rerun proves they are no longer present.
+
+### 3. Local repo hygiene is not connector-visible
+
+Local worktree state is not visible through the GitHub connector. Current local hygiene remains blocking until a fresh local packet proves:
 
 - `deleted_count=0`;
 - `nested_pending=0`;
-- root untracked noise quarantined or intentionally retained outside product scope;
+- root untracked noise quarantined, deleted, or intentionally retained outside product scope;
 - all root dirty entries classified;
 - no blank triage decisions;
 - no unresolved `NEEDS REVIEW` rows;
 - no cleanup artifacts mixed into product repair branches.
 
-### 3. Dashboard live-data completion remains blocked
+### 4. Governance must remain accurate
 
-Dashboard registry coverage is not equivalent to live operational completion. Production/full-completion claims remain blocked until every production-visible dashboard has live service/API-backed data provenance or is accurately marked unavailable/non-production-visible.
-
-### 4. Wizard completion is not yet all-wizard proven
-
-Wizard architecture exists, but all-wizard completion requires current evidence for each production-visible wizard:
-
-- frontend route registered;
-- backend registry entry present;
-- frontend `apiPrefix` matches backend URL prefix;
-- component renders;
-- role access enforced;
-- tenant boundary enforced;
-- session create/load/save/resume works;
-- submit/commit persists expected records;
-- failure states are handled;
-- tests and/or UI proof artifacts are current.
+- Solo-developer workaround may be recorded where applicable.
+- Do not claim independent human review unless independent review actually occurred.
+- Do not ask the project owner to self-review or self-approve their own work.
 
 ### 5. Release authority hygiene must stay converged
 
-Only this file controls repository-level release posture. Any stale historical release, GO, SHIP, PASS, or certification document must remain explicitly superseded unless promoted here with current evidence.
+Only this file controls repository-level release posture. Stale historical release, GO, SHIP, PASS, or certification material must remain explicitly superseded unless promoted here with current same-SHA evidence.
 
 ## Allowed Language Now
 
 Allowed:
 
-- "CROWN has substantial architecture and verification infrastructure. Repository-level posture is NO-GO pending current-head evidence, live-data proof, wizard/runtime proof, and local hygiene closure."
+- "CROWN has current proof-backed completion evidence for modules, dashboards, wizards, components, and widgets within the documented certification scopes. Repository-level posture remains NO-GO pending clean same-SHA release verification, sandbox-ready evidence, local hygiene closure, and governance closure."
 - "Validated slices may be described as validated only when their evidence is current and cited."
 
 Not allowed:
 
 - "Repository is production ready."
 - "CROWN is unrestricted GO."
-- "All dashboards are complete."
-- "All wizards work."
 - "Sandbox is broadly approved."
 - "Latest head is release-certified" unless the current-head release-certification packet proves it.
+- "Independent review is complete" unless it is independently evidenced.
 
 ## Required Closure Sequence
 
 1. Close local repo-hygiene gate from the main repo root.
-2. Generate a clean current-head release-certification packet.
-3. Generate frontend/backend wizard parity and runtime matrix.
-4. Close dashboard live-data/template blockers for production-visible surfaces.
-5. Run sandbox-ready evidence gate on current head.
-6. Update this file only after the evidence above is current, green, and same-SHA consistent.
+2. Reproduce and fix the frontend smoke/unit failures surfaced by the #1162 candidate branch, unless a current-main rerun proves them gone.
+3. Generate a clean current-head release-certification packet.
+4. Run sandbox-ready evidence gate on the same current candidate SHA.
+5. Confirm same-SHA gate settlement: pending=0, failed=0, cancelled=0 for required release gates.
+6. Confirm governance language: solo-developer workaround recorded where applicable; no false independent-review claim.
+7. Update this file only after the evidence above is current, green, and same-SHA consistent.
 
 ## Current Final Status
 
