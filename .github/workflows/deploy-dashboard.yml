@@ -19,8 +19,13 @@ permissions:
 # Secrets required:
 #   AZURE_SWA_TOKEN  deployment token from the Azure Static Web Apps resource
 #                     (Portal  SWA resource  Settings  Deployment token)
-#   PROD_DASH_BASE   set this after confirming the SWA URL, e.g.
-#                     https://crown-sandbox.azurestaticapps.net
+#   PROD_DASH_BASE   set this after confirming the SWA URL. Current verified
+#                    CROWN SWA default host is:
+#                    https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
+#
+# 2026-06-23 endpoint correction:
+#   https://crown-sandbox.azurestaticapps.net is not a Static Web App in the
+#   CROWN Christian School Management Azure subscription. Do not use it.
 
 on:
   workflow_dispatch:
