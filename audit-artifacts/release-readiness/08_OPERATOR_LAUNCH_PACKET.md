@@ -4,8 +4,23 @@ Generated: 2026-04-24
 Gate: 12 (Operator Launch Packet)
 Result: PASS
 
+## 2026-06-23 Endpoint Correction
+
+Current Azure subscription verification shows the active CROWN Static Web App is `crown-dash` in the `CROWN Christian School Management` subscription, with default hostname:
+
+- Current internal frontend URL: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
+- Current internal sandbox route: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net/sandbox
+- Current internal login route: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net/login
+
+The previously documented hostname below is stale/nonexistent in the verified CROWN Azure Static Web Apps inventory and must not be used:
+
+- https://crown-sandbox.azurestaticapps.net
+
+This addendum corrects the operational endpoint without rewriting the original 2026-04-24 historical launch record.
+
 ## Launch Targets
-- Sandbox URL: https://crown-sandbox.azurestaticapps.net
+- Sandbox URL: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net/sandbox
+- Frontend base URL: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
 - Backend API URL: https://crown-api-dev.azurewebsites.net
 - Health endpoint: https://crown-api-dev.azurewebsites.net/api/health/
 

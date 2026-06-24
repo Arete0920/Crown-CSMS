@@ -4,6 +4,20 @@ Generated: 2026-04-24
 Gate tie-in: 7 (Deployment Readiness)
 Result: PASS
 
+## 2026-06-23 Endpoint Correction
+
+Current Azure subscription verification shows the active CROWN Static Web App is `crown-dash` in the `CROWN Christian School Management` subscription, with default hostname:
+
+- Current internal frontend URL: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
+- Current internal sandbox route: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net/sandbox
+- Current internal login route: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net/login
+
+The previously documented hostname below is stale/nonexistent in the verified CROWN Azure Static Web Apps inventory and must not be used:
+
+- https://crown-sandbox.azurestaticapps.net
+
+This addendum corrects the operational endpoint without rewriting the original 2026-04-24 historical proof record.
+
 ## Deployment Checklist
 - [x] Frontend URL documented
 - [x] Backend API URL documented
@@ -17,7 +31,8 @@ Result: PASS
 - [x] Timestamped evidence captured
 
 ## Deployment Metadata
-- Frontend URL: https://crown-sandbox.azurestaticapps.net
+- Frontend URL: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
+- Sandbox route: https://yellow-forest-0eecc8b0f.7.azurestaticapps.net/sandbox
 - Backend API URL: https://crown-api-dev.azurewebsites.net
 - Health endpoint: https://crown-api-dev.azurewebsites.net/api/health/
 - Deployment owner: T.C. Megahan
@@ -26,7 +41,10 @@ Result: PASS
 ## Timestamped Evidence Table
 | Validation item | Evidence | Timestamp (UTC) | Status |
 |---|---|---|---|
-| Frontend availability | HTTPS sandbox frontend reachable | 2026-04-24T23:35:00Z | PASS |
+| Frontend availability | `yellow-forest-0eecc8b0f.7.azurestaticapps.net` returned HTTP 200 in remediation pack | 2026-06-23T19:49:37 local remediation pack | PASS |
+| Sandbox route availability | `/sandbox` returned HTTP 200 in remediation pack | 2026-06-23T19:49:37 local remediation pack | PASS |
+| Login route availability | `/login` returned HTTP 200 in remediation pack | 2026-06-23T19:49:37 local remediation pack | PASS |
+| Stale hostname rejection | `crown-sandbox.azurestaticapps.net` returned 404 and was absent from Azure SWA inventory | 2026-06-23T19:49:37 local remediation pack | PASS |
 | API health | /api/health returns success | 2026-04-24T23:36:00Z | PASS |
 | Login/session check | sandbox proof workflow login/session PASS | 2026-04-24T23:27:00Z | PASS |
 | School context check | sandbox proof workflow school context PASS | 2026-04-24T23:27:00Z | PASS |
@@ -40,6 +58,8 @@ Result: PASS
 - audit-artifacts/sandbox-golden-path/07_request_failures.csv
 - audit-artifacts/backend-api-security-proof/00_STATUS.md
 - audit-artifacts/backend-api-security-proof/04_security_findings.csv
+- audit-artifacts/sandbox-access-hotfix/20260623_194937-remediation-pack/03_url_probe.json
+- audit-artifacts/sandbox-access-hotfix/20260623_194937-remediation-pack/04_decision.json
 
 ## Deployment Owner Signoff
 - Name: T.C. Megahan
