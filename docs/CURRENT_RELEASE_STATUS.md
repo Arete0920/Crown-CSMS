@@ -12,7 +12,8 @@ Purpose: Single canonical repository-level release posture for CROWN.
 
 ## Current Decision
 
-Repository-wide decision: **NO-GO / RELEASE FREEZE**.
+Repository-wide decision: NO-GO.
+Current controlling posture remains **RELEASE FREEZE**.
 
 Decision meaning:
 
@@ -24,6 +25,8 @@ Decision meaning:
 ## Current GitHub Evidence Snapshot
 
 - Default branch: `main`.
+- Candidate SHA: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`.
+- Release authority branch: `release/security-runtime-governance-repair-little-lambs-full-build`.
 - Current live evidence authority PR: #1161, merged into `main`.
 - Current live evidence authority merge commit: `2f405d4`.
 - Follow-up release-status PR #1162 was closed unmerged because its candidate branch did not have clean release/sandbox gates.
