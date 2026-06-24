@@ -10,6 +10,11 @@ const SANDBOX_DEFAULT_EMAIL = "admin@heritage.example.org";
 const SANDBOX_DEFAULT_PASS = import.meta.env.VITE_DEMO_PASS || "CrownDemo!2026";
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.local";
 
+function apiUrl(path) {
+  if (path.startsWith("http")) return path;
+  return `${API_BASE}${path}`;
+}
+
 const SANDBOX_ROLES = [
   { value: "school_admin", label: "School Admin", route: "/school-admin-dashboard" },
   { value: "teacher", label: "Teacher", route: "/teacher" },
@@ -154,7 +159,7 @@ export default function LoginPage() {
     try {
       const username = IS_SANDBOX ? email : (email || "demo@crown.example.org");
         const pass = IS_SANDBOX ? password : (password || "demo-password");
-      const response = await globalThis.fetch("/api/v1/auth/token/", {
+      const response = await globalThis.fetch(apiUrl("/api/v1/auth/token/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password: pass }),

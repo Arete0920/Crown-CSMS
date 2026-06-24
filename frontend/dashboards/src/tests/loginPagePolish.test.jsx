@@ -104,4 +104,24 @@ describe("login page polish", () => {
     expect(screen.queryByText("Sandbox Environment")).toBeNull();
     expect(screen.queryByRole("button", { name: "Use Sandbox Credentials" })).toBeNull();
   });
+
+  it("posts login credentials to the configured API base", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "sandbox");
+    vi.stubEnv("VITE_SANDBOX_MODE", "1");
+    vi.stubEnv("VITE_API_BASE_URL", "https://api.example.test");
+
+    await renderSandboxLogin();
+
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "admin@heritage.example.org" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "CrownDemo!2026" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        "https://api.example.test/api/v1/auth/token/",
+        expect.objectContaining({ method: "POST" }),
+      );
+    });
+  });
 });
