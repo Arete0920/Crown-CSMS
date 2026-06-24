@@ -1,4 +1,4 @@
-﻿name: Deploy Dashboard (SWA)
+name: Deploy Dashboard (SWA)
 permissions:
   contents: read
 
