@@ -13,6 +13,7 @@ Purpose: Single canonical repository-level release posture for CROWN.
 ## Current Decision
 
 Repository-wide decision: **SANDBOX_CANDIDATE**.
+Repository-wide decision: NO-GO.
 Current controlling posture: **SANDBOX LAUNCH ELIGIBLE** (pending authority discretionary approval).
 
 Decision meaning:
@@ -26,6 +27,7 @@ Decision meaning:
 ## Current GitHub Evidence Snapshot
 
 - **Candidate SHA (CURRENT):** `143308707333761c46a7bd7a45b3b939b7c20d28` (merged PR #1173 hotfix + batch5 connector pull).
+- Candidate SHA: `8097d4c23e847bfaced4d9a49637a3aa0e20617b`
 - Release authority branch: `main` (all closure gates verified on live main).
 - Current live evidence authority PR: #1161, merged into `main`.
 - Current live evidence authority merge commit: `2f405d4`.
