@@ -38,7 +38,7 @@ const readyWizardEvidence = () => ({
   artifact: 'audit-artifacts/wizard-independent-review/20260614_070313',
   collectedAt: '2026-06-14T07:03:13Z',
   candidateSha: '8097d4c23e847bfaced4d9a49637a3aa0e20617b',
-  releaseBranch: 'release/security-runtime-governance-repair-little-lambs-full-build',
+  releaseBranch: 'main',
 });
 
 const RAW_WIZARD_ROUTE_DEFINITIONS = [
