@@ -1,0 +1,50 @@
+DASHBOARD BATCH 0 INVENTORY (2026-06-18)
+=========================================
+
+## dashboard-certification-center
+
+BEFORE this PR:
+  - Status: MAPPED (in DASHBOARD_CERTIFICATION_MATRIX_20260530.md)
+  - Backend: NOT in SAMPLE_PAYLOAD_BUILDERS (returns 404 for any summary request)
+  - Frontend data registry: createDataConfig('/api/v1/platform/dashboard-certification-center')
+    (endpoint does not exist — platform_ops URLs are at /api/platform/ not /api/v1/platform/)
+  - Certification registry: 'live' (optimistic — no actual live data wired)
+
+AFTER this PR:
+  - Status: API_PROVEN
+  - Backend: dashboard_certification_center_sample_payload registered in SAMPLE_PAYLOAD_BUILDERS
+  - Frontend data registry: dashboardSummaryPath('dashboard-certification-center')
+    → /api/v1/dashboards/dashboard-certification-center/summary
+    with allowScaffoldFallback=true and fallbackData
+  - Certification registry: 'hybrid' (accurate — sample fallback active)
+
+## release-reliability
+
+BEFORE this PR:
+  - Status: MAPPED
+  - Backend: already in SAMPLE_PAYLOAD_BUILDERS ✓
+  - Frontend data registry: dashboardSummaryPath('release-reliability') with fallback ✓
+  - Certification registry: 'hybrid' ✓
+
+AFTER this PR:
+  - Status: API_PROVEN (tests added proving endpoint responds correctly)
+  - No functional change to backend or frontend — tests added only
+
+## compliance-audit
+
+BEFORE this PR:
+  - Status: MAPPED
+  - Backend: already in SAMPLE_PAYLOAD_BUILDERS ✓
+  - Frontend data registry: dashboardSummaryPath('compliance-audit') ✓
+  - Certification registry: 'scaffold' (understated — API was already wired)
+
+AFTER this PR:
+  - Status: API_PROVEN (tests added, certification registry updated to 'hybrid')
+  - Certification registry: 'hybrid' (accurate)
+
+## What this PR does NOT claim
+  - Live data services are not implemented
+  - Playwright runtime proof is not recorded
+  - Independent review is not completed
+  - Release GO is not claimed
+  - Dashboards are not RUNTIME_PROVEN
