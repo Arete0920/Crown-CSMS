@@ -83,8 +83,8 @@ test.describe("Nav is permission-derived — sidebar reflects role, not all link
     await page.goto(`${BASE}/admin`);
     await page.waitForTimeout(2000);
 
-    // Group headers are uppercase divs inside aside.
-    const aside = page.locator("aside.clean-sidebar");
+    // Current shell renders the permission-derived nav in the Crown sidebar.
+    const aside = page.locator("aside.crown-sidebar");
     await expect(aside).toBeVisible();
   });
 
