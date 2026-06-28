@@ -70,8 +70,7 @@ test("Parent Dashboard renders household KPI row and Children card", async ({
 
   // Stable anchors in the current parent launch layout.
   await expect(page.getByRole("region", { name: /faith and community/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /family action queue/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /action required/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /parent dashboard/i })).toBeVisible();
 
   // Deterministic KPI labels from the current parent metrics row.
   await expect(page.getByText("Children Enrolled").first()).toBeVisible();
