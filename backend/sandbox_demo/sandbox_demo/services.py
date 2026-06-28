@@ -197,8 +197,44 @@ def create_sandbox_session(
 
 
 def _clear_flagship_data(school: School) -> None:
+    from django.db.models import Q
+
+    from admissions.models import (
+        AdmissionsAuditEvent,
+        AdmissionsDecision,
+        AdmissionsReview,
+    )
+    from aid.models import (
+        AidApplication,
+        AidAuditEvent,
+        AidAward,
+        AidDocument,
+        AidReview,
+    )
     from finance.models import FinanceAllocation, FinancePayment
 
+    user_ids = list(
+        UserAccount.objects.filter(school=school).values_list("id", flat=True)
+    )
+
+    AidDocument.objects.filter(school=school).delete()
+    AidReview.objects.filter(
+        Q(school=school) | Q(reviewer_user_id__in=user_ids)
+    ).delete()
+    AidAward.objects.filter(Q(school=school) | Q(decided_by_id__in=user_ids)).delete()
+    AidAuditEvent.objects.filter(
+        Q(school=school) | Q(actor_user_id__in=user_ids)
+    ).delete()
+    AidApplication.objects.filter(school=school).delete()
+    AdmissionsReview.objects.filter(
+        Q(school=school) | Q(reviewer_user_id__in=user_ids)
+    ).delete()
+    AdmissionsDecision.objects.filter(
+        Q(school=school) | Q(decided_by_id__in=user_ids)
+    ).delete()
+    AdmissionsAuditEvent.objects.filter(
+        Q(school=school) | Q(actor_user_id__in=user_ids)
+    ).delete()
     FinanceAllocation.objects.filter(school=school).delete()
     FinanceInvoiceLine.objects.filter(invoice__school=school).delete()
     FinanceInvoice.objects.filter(school=school).delete()
