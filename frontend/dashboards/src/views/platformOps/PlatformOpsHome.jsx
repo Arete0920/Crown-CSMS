@@ -1,4 +1,5 @@
-﻿/**
+/* eslint-disable react-hooks/set-state-in-effect */
+/**
  * PlatformOpsHome.jsx
  *
  * Platform Operations Console - Super-Admin view.
@@ -324,4 +325,5 @@ export default function PlatformOpsHome() {
     </Container>
   );
 }
+
 

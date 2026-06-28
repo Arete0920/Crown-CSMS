@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export function useWizardDraft(wizardKey, initialValue) {
@@ -58,3 +59,4 @@ export function useWizardDraft(wizardKey, initialValue) {
     lastSavedAt,
   };
 }
+

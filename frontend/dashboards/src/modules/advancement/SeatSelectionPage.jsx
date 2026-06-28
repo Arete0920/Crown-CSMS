@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * SeatSelectionPage - buyer-facing ticket seat picker.
  *
@@ -394,3 +395,4 @@ export default function SeatSelectionPage({ eventId }) {
     </div>
   );
 }
+

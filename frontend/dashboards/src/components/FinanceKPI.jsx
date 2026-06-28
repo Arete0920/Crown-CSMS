@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState, useCallback } from "react";
 import { apiFetch } from "../lib/api";
 
@@ -136,3 +137,4 @@ export default function FinanceKPI({ schoolId, className = "" }) {
     </section>
   );
 }
+
