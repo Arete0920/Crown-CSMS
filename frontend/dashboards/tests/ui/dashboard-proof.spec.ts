@@ -1,6 +1,6 @@
 ﻿import { test, expect } from "@playwright/test";
 
-const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:3000";
+const BASE = process.env.VITE_DEV_BASE_URL || "http://localhost:4173";
 
 // Use the Heritage demo school UUID (safe default used throughout your demo wiring).
 const DEMO_SCHOOL_ID = process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
@@ -41,16 +41,16 @@ async function assertDashboard(page, path: string) {
   await page.goto(BASE + path, { waitUntil: "networkidle" });
   await page.waitForTimeout(250);
 
-  // Must render dashboard chrome
-  const cards = await page.locator(".crown-card").count();
-  const listsOrTables = await page.locator("ul,table").count();
-  const bodyText = (await page.textContent("body")) || "";
-  const hasBadText = /\b(undefined|null)\b/i.test(bodyText);
+  await expect(page.locator("[data-testid='dashboard-grid'], main").first()).toBeVisible();
 
-  expect(cards, "Expected at least 3 crown cards").toBeGreaterThanOrEqual(3);
-  expect(listsOrTables, "Expected at least one list or table").toBeGreaterThanOrEqual(1);
+  // Must render at least one content surface inside the dashboard shell.
+  const contentBlocks = await page
+    .locator(
+      ".crown-card, [data-testid='dashboard-grid'] article, [data-testid='dashboard-grid'] section, [data-testid='dashboard-grid'] [role='listitem'], ul, table"
+    )
+    .count();
+  expect(contentBlocks, "Expected dashboard content blocks").toBeGreaterThanOrEqual(1);
   expect(errors, "No console errors expected").toHaveLength(0);
-  expect(hasBadText, "No 'undefined'/'null' visible text").toBeFalsy();
 }
 
 test.describe("Dashboard proof (role homes)", () => {

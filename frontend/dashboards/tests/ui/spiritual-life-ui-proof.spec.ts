@@ -61,7 +61,7 @@ test.describe("Spiritual Life UI proof", () => {
 
     await expect(page.locator("main")).toBeVisible();
     await expect(page.locator("body")).toContainText(/Good morning, Chaplain!/i);
-    await expect(page.locator("body")).toContainText(/Spiritual Life & Biblical Formation Command Center/i);
+    await expect(page.locator("body")).toContainText(/Spiritual Life & Biblical Formation/i);
     await expect(page.locator("body")).toContainText(/Chapel Attendance/i);
     await expect(page.locator("body")).toContainText(/Daily Devotion Publishing/i);
     await expect(page.locator("body")).toContainText(/Spiritual Counseling & Care/i);
@@ -71,6 +71,8 @@ test.describe("Spiritual Life UI proof", () => {
     await expect(page.locator("body")).toContainText(/Christian Education Sundays/i);
     await expect(page.locator("body")).toContainText(/Christian College & Calling Pathways/i);
     await expect(page.locator("body")).toContainText(/Formation Evidence & Reports/i);
+    await expect(page.getByRole("link", { name: /Open Microsoft Teams/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Open Outlook/i })).toBeVisible();
     await expect(page.locator("a[href='/spiritual-life']").first()).toBeVisible();
   });
 });
