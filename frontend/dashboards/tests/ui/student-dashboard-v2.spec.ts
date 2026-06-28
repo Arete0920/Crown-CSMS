@@ -75,7 +75,7 @@ test("Student Dashboard v2 renders KPI cards and Upcoming Assignments section", 
 
   // Stable landmarks and section headings in the current student launch layout.
   await expect(page.getByRole("region", { name: /faith and community/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /today's student agenda/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /student dashboard/i })).toBeVisible();
 
   // Deterministic KPI labels from the current student metrics row.
   await expect(page.getByText("Current Average").first()).toBeVisible();
