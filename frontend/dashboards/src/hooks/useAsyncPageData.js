@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from 'react';
 
 export function useAsyncPageData(loader, deps = []) {
@@ -32,4 +31,3 @@ export function useAsyncPageData(loader, deps = []) {
     reload: run,
   };
 }
-

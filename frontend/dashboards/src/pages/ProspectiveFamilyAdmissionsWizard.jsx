@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from "react";
 import CrownPublicLayout from "../components/crown/CrownPublicLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
@@ -2228,4 +2227,3 @@ export default function ProspectiveFamilyAdmissionsWizard() {
     </CrownPublicLayout>
   );
 }
-

@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     fetchAdmissionsSummary,
@@ -146,4 +145,3 @@ export default function useAdmissionsDashboardData(year) {
         reload,
     };
 }
-
