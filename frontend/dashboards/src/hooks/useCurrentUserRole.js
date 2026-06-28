@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/preserve-manual-memoization */
 import { useMemo } from 'react';
 
 function readStoredUser() {

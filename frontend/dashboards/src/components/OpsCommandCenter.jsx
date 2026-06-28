@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from "react";
 import { fetchOpsSummary, fetchOpsAlerts } from "../api/ops";
 
@@ -159,5 +158,4 @@ export default function OpsCommandCenter() {
     </div>
   );
 }
-
 

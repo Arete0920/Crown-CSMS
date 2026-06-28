@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable react-hooks/immutability */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getGradebookSections, getGradebookGrades, fetchGradebookDrilldown, upsertAssignmentGrades } from "../api/gradebook";
 import { patchAssignment } from "../api/academics";
@@ -1184,8 +1182,6 @@ export function GradebookRO() {
     </CrownLayout>
   );
 }
-
-
 
 
 
