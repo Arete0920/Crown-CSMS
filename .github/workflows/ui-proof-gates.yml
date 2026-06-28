@@ -1,4 +1,4 @@
-name: UI Proof — Dashboard Gates (Student · Parent · Executive)
+name: UI Proof — Dashboard Gates (Student · Parent · Executive · Persona Matrix)
 
 on:
   workflow_dispatch:
@@ -10,9 +10,16 @@ on:
       - "frontend/dashboards/tests/ui/student-dashboard-v2.spec.ts"
       - "frontend/dashboards/tests/ui/parent-dashboard-v1.spec.ts"
       - "frontend/dashboards/tests/ui/executive-dashboard-v1.spec.ts"
+      - "frontend/dashboards/tests/ui/role-dashboard-matrix.spec.ts"
+      - "frontend/dashboards/tests/ui/role-dashboard-matrix-pack-2.spec.ts"
+      - "frontend/dashboards/tests/ui/role-dashboard-matrix-pack-3.spec.ts"
       - "frontend/dashboards/src/pages/StudentDashboard.jsx"
       - "frontend/dashboards/src/pages/ParentDashboard.jsx"
       - "frontend/dashboards/src/pages/AdminDashboard.jsx"
+      - "frontend/dashboards/src/pages/**"
+      - "frontend/dashboards/src/routes/**"
+      - "frontend/dashboards/src/config/**"
+      - "frontend/dashboards/src/auth/**"
       - "backend/student360/**"
       - "backend/parent360/**"
       - "backend/executive360/**"
@@ -27,7 +34,7 @@ permissions:
 jobs:
   dashboard-ui-gates:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -106,10 +113,6 @@ jobs:
       # because Playwright also tried to start the server when reuseExistingServer=false.
 
       - name: Run UI proof gates
-        # IMPORTANT: specs are listed explicitly — do NOT replace with `tests/ui`.
-        # The folder contains matrix specs (role-dashboard-matrix*.spec.ts) that
-        # assert sidebar nav links which don't exist in CI, causing false failures.
-        # Add new dashboard specs here individually when they are ready to gate.
         env:
           VITE_DEV_BASE_URL: http://127.0.0.1:4173
           CROWN_DEMO_TOKEN: playwright-demo-token
@@ -119,6 +122,9 @@ jobs:
             tests/ui/student-dashboard-v2.spec.ts \
             tests/ui/parent-dashboard-v1.spec.ts \
             tests/ui/executive-dashboard-v1.spec.ts \
+            tests/ui/role-dashboard-matrix.spec.ts \
+            tests/ui/role-dashboard-matrix-pack-2.spec.ts \
+            tests/ui/role-dashboard-matrix-pack-3.spec.ts \
             --reporter=line
 
       - name: Dump Playwright webServer log on failure
@@ -143,4 +149,3 @@ jobs:
           name: backend-ui-proof-log
           path: backend-ui-proof.log
           retention-days: 7
-
