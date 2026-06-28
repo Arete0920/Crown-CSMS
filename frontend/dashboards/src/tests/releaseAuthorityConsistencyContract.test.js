@@ -13,9 +13,10 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps canonical status decision as NO-GO', () => {
+  it('keeps canonical production decision as NOT APPROVED', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Repository-wide decision: NO-GO.')).toBe(true);
+    expect(source.includes('Repository-wide decision: **SANDBOX_RELEASE_CANDIDATE**.')).toBe(true);
+    expect(source.includes('Production release decision: **NOT APPROVED**.')).toBe(true);
   });
 
   it('keeps current scorecard decision as NO-GO', () => {
