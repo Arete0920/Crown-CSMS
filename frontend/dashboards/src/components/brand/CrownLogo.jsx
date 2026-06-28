@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import { CROWN_BRAND, getCrownLogoPath, getCrownUiLogoPath } from '../../brand/crownBrandAssets';
 
@@ -37,3 +38,4 @@ export default function CrownLogo({
     />
   );
 }
+

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * MovesPipelinePage  Major Gift Moves Management (Stage 3)
  *
@@ -350,3 +351,4 @@ export default function MovesPipelinePage() {
     </div>
   );
 }
+

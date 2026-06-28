@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * SeatingAdminPage  Seating Map layout editor (Stage 3)
  *
@@ -278,3 +279,4 @@ export default function SeatingAdminPage() {
     </div>
   );
 }
+

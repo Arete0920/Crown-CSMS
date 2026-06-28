@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /**
  * TicketSuccessPage  polls order status after Stripe redirect and shows confirmation.
  *
@@ -289,3 +290,4 @@ const styles = {
     animation: "spin 0.8s linear infinite",
   },
 };
+

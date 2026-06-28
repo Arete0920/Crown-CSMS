@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useMemo, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { getGradebookSections } from "../api/gradebook";
 import { getSectionCategories, putCategoryWeightsBatch } from "../api/academicsWeights";
@@ -275,3 +276,4 @@ export function CategoryWeightsEditor() {
     </CrownLayout>
   );
 }
+

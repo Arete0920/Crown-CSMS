@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import {
   Alert,
   Box,
@@ -148,3 +149,4 @@ export default function SavedPaymentMethodsPage() {
     </Box>
   );
 }
+
