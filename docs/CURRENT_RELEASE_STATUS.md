@@ -1,6 +1,6 @@
 # CROWN Current Release Status
 
-Date: 2026-06-28
+Date: 2026-06-29
 Purpose: Single canonical repository-level release posture for CROWN.
 
 ## Canonical Authority
@@ -33,9 +33,11 @@ Decision meaning:
 - PR #1180, merged 2026-06-27/2026-06-28 window: synced batch0 certification-center connector intake to current main and preserved draft gating state metadata.
 - PR #1184, merged 2026-06-28: fixed CI `dashboards-build-gate` rolldown native binding blocker by regenerating `frontend/dashboards/package-lock.json` from a clean install.
 - PR #1185, merged 2026-06-28: fixed `sandbox_seed_flagship --reset` protected aid cleanup failure and added focused regression coverage.
+- PR #1199, merged 2026-06-29: converted investor-preview runtime proof to no-login deterministic proof mode and reconciled scoped investor-preview terminology; production approval not claimed.
 - Follow-up PR #1181 was closed unmerged and must not be treated as part of current shipped authority.
 - Follow-up PR #1178 was closed unmerged as draft and must not be treated as part of current shipped authority.
 - Open PR count is not controlled by this static file; verify current PR state live through the GitHub connector when making current-status decisions.
+- Post-1199 hygiene verification: open PR queue and open issue queue verified as zero before this proof refresh; see udit-artifacts/post1199-hygiene-sandbox-proof/20260629_181531/.
 
 ## Current Product Completion Evidence
 
@@ -52,6 +54,16 @@ Use `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md` first for current completion/stat
 | Production release | NOT APPROVED | Independent governance review, release notes/changelog, production runbook, and explicit owner production authorization required |
 
 ## Gate Settlement Status
+
+### Post-1199 current-main proof refresh
+
+- Evidence path: udit-artifacts/post1199-hygiene-sandbox-proof/20260629_181531/`r
+- Main SHA: $MainSha`r
+- Deployed build SHA: $BuildSha`r
+- Open PR count: 0
+- Open issue count: 0
+- Production release remains NOT APPROVED.
+
 
 ### Settled as of 2026-06-24
 
