@@ -1,8 +1,8 @@
-# Investor Demo Runbook
+# Investor-Preview Sandbox Runbook
 
 > Authority Scope Notice (2026-05-29)
 >
-> This document is an operational runbook for demo readiness and not a controlling repository-level release authority source.
+> This document is an operational runbook for investor-preview sandbox readiness and not a controlling repository-level release authority source.
 >
 > Current controlling sources:
 > - docs/CURRENT_RELEASE_STATUS.md
@@ -10,7 +10,7 @@
 
 ## Non-negotiable rule
 
-Do not begin the investor demo unless the preflight has been run successfully on the exact build being shown.
+Do not begin the investor-preview sandbox session unless the preflight has been run successfully on the exact build being shown.
 
 ## Required command
 

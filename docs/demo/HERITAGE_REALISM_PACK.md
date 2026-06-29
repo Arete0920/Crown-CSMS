@@ -17,7 +17,7 @@ python manage.py seed_heritage_realism_pack
 - `--no-comms` - Skip seeding communications threads (faster runs)
 - `--no-finance-scripts` - Skip extra finance realism scripts (faster runs)
 
-For full realism (recommended for investor demos), run without options.
+For full realism (recommended for investor-preview sandbox sessions), run without options.
 
 ## What It Seeds
 

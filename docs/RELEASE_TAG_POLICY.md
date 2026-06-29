@@ -4,7 +4,7 @@
 
 **All `crown-*` release tags are immutable once pushed to origin.**
 
-- Tags represent specific points in history for auditing, compliance, and investor demos
+- Tags represent specific points in history for auditing, compliance, and investor-preview sandbox evidence
 - Moving a tag rewrites history and breaks SHA-based verification
 - If a follow-on fix is needed, create a new tag (e.g., `crown-0.3.1-*`), don't rewrite `crown-0.3.0-*`
 
@@ -67,7 +67,7 @@ $prod.build_sha -eq $expected
 ## Rationale
 
 Immutable tags enable:
-- **Audit trail**: "This exact code was demoed to investor X on date Y"
+- **Audit trail**: "This exact code was shown for investor-preview sandbox cohort X on date Y"
 - **SHA verification**: `/api/health/` proves deployed code matches tag
 - **Rollback confidence**: Revert to known-good commit without ambiguity
 - **CI reproducibility**: Workflows can checkout tags and get identical builds

@@ -87,7 +87,7 @@ Then perform browser smoke proof:
 Until proof gates pass, this remains suitable for:
 
 - internal review
-- facilitated investor demo rehearsal
+- facilitated investor-preview sandbox rehearsal
 - controlled sales-led demo
 
 It is not suitable yet for broad self-guided external buyer access.
