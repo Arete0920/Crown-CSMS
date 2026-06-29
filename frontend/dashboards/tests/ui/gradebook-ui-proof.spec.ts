@@ -10,7 +10,7 @@ const TEST_UI_BASE =
   process.env.CROWN_UI_URL ??
   "http://127.0.0.1:4173";
 
-test("gradebook loads assignments and rows with FK-backed data", async ({ page, request }) => {
+test("gradebook loads assignments and rows with FK-backed data", async ({ page, request }, testInfo) => {
   const loginResp = await request.post(`${TEST_API_BASE}/api/v1/auth/token/`, {
     data: { username: TEST_USER, password: TEST_PASS },
   });
@@ -85,16 +85,19 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
       if (status >= 400) apiErrors.push(`${url} returned ${status}`);
     }
 
-    if (url.includes("/gradebook/sections") && !url.includes("/grades")) seen.sections = true;
-    if (url.includes("/gradebook/sections/") && url.includes("/grades")) seen.grades = true;
+    const path = new URL(url).pathname;
+    if (path === "/api/v1/gradebook/sections/") seen.sections = true;
+    if (path === `/api/v1/gradebook/sections/${sectionId}/grades/`) seen.grades = true;
   });
 
-  const sectionsResponse = page
-    .waitForResponse((resp) => resp.url().includes("/gradebook/sections") && !resp.url().includes("/grades"), { timeout: 15000 })
-    .catch(() => null);
-  const gradesResponse = page
-    .waitForResponse((resp) => resp.url().includes(`/gradebook/sections/${sectionId}/grades`), { timeout: 15000 })
-    .catch(() => null);
+  const sectionsResponse = page.waitForResponse((resp) => {
+    const url = new URL(resp.url());
+    return url.pathname === "/api/v1/gradebook/sections/";
+  }, { timeout: 15000 });
+  const gradesResponse = page.waitForResponse((resp) => {
+    const url = new URL(resp.url());
+    return url.pathname === `/api/v1/gradebook/sections/${sectionId}/grades/`;
+  }, { timeout: 15000 });
 
   await page.goto(`${TEST_UI_BASE}/gradebook/${sectionId}`, { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(new RegExp(`/gradebook/${sectionId}$`));
@@ -108,15 +111,15 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
   const errorState = page.locator("text=/Grades unavailable|Failed to load gradebook sections|API error/i");
   const noSectionsState = page.getByRole("heading", { name: /No sections available/i });
 
-  const hasAssignmentHeader = await assignmentHeaders.first().isVisible().catch(() => false);
-  const hasGradeRow = await gradeRows.first().isVisible().catch(() => false);
-  const hasEmptyState = await emptyState.first().isVisible().catch(() => false);
-  const hasErrorState = await errorState.first().isVisible().catch(() => false);
-
-  expect(
-    hasAssignmentHeader || hasGradeRow || hasEmptyState || hasErrorState,
-    "Expected a visible gradebook proof surface"
-  ).toBe(true);
+  await expect
+    .poll(async () => {
+      const hasAssignmentHeader = await assignmentHeaders.first().isVisible().catch(() => false);
+      const hasGradeRow = await gradeRows.first().isVisible().catch(() => false);
+      const hasEmptyState = await emptyState.first().isVisible().catch(() => false);
+      const hasErrorState = await errorState.first().isVisible().catch(() => false);
+      return hasAssignmentHeader || hasGradeRow || hasEmptyState || hasErrorState;
+    }, { timeout: 15000, message: "Expected a visible gradebook proof surface" })
+    .toBe(true);
 
   if (apiErrors.length > 0) {
     throw new Error(`API calls failed: ${apiErrors.join("; ")}`);
@@ -125,7 +128,7 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
     throw new Error("Gradebook rendered an API error state instead of proof data/empty state");
   }
 
-  await page.screenshot({ path: "gradebook-proof-success.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("gradebook-proof-success.png"), fullPage: true });
 
   expect(seen.sections, "Sections API not called by browser UI").toBe(true);
   const noSectionsVisible = (await noSectionsState.count()) > 0;
