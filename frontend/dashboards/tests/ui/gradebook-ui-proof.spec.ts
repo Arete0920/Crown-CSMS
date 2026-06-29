@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
-const TEST_USER = process.env.CROWN_TEST_USER ?? "admin";
+const TEST_USER = process.env.CROWN_TEST_USER ?? "head@crown-demo.local";
 const TEST_PASS = process.env.CROWN_TEST_PASS ?? "Crown2026!";
 const TEST_SCHOOL_ID = process.env.CROWN_TEST_SCHOOL_ID ?? "19801b59-8c05-4c84-9312-5d792e4e839d";
-const TEST_ROLE = process.env.CROWN_TEST_ROLE ?? "admin";
+const TEST_ROLE = process.env.CROWN_TEST_ROLE ?? "head_of_school";
 const TEST_API_BASE = process.env.CROWN_TEST_API_BASE ?? "http://127.0.0.1:8000";
 const TEST_UI_BASE =
   process.env.CROWN_TEST_UI_BASE ??
@@ -11,42 +11,61 @@ const TEST_UI_BASE =
   "http://127.0.0.1:4173";
 
 test("gradebook loads assignments and rows with FK-backed data", async ({ page, request }) => {
-  // Step 1: Acquire JWT via API
   const loginResp = await request.post(`${TEST_API_BASE}/api/v1/auth/token/`, {
     data: { username: TEST_USER, password: TEST_PASS },
   });
+  expect(loginResp.status(), "[Setup] Login API should return 200").toBe(200);
+
   const authData: any = await loginResp.json();
-  const token = authData?.access ?? authData?.token;
+  const token = authData?.access ?? authData?.access_token ?? authData?.token;
   expect(token, "[Setup] Failed to acquire JWT token").toBeTruthy();
 
-  // Step 2: Inject JWT + school ID into sessionStorage + localStorage before page load
-  // (Ensures authenticatedFetch() can read tenant header for X-School-Id enforcement)
+  const sectionsApiResp = await request.get(`${TEST_API_BASE}/api/v1/gradebook/sections/?limit=50&offset=0`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-School-Id": TEST_SCHOOL_ID,
+    },
+  });
+  expect(sectionsApiResp.status(), "[Setup] Gradebook sections API should return 200").toBe(200);
+  const sectionsApiData: any = await sectionsApiResp.json();
+  const sections = Array.isArray(sectionsApiData?.results)
+    ? sectionsApiData.results
+    : Array.isArray(sectionsApiData)
+      ? sectionsApiData
+      : [];
+  expect(sections.length, "[Setup] At least one gradebook section must exist").toBeGreaterThan(0);
+  const preferred = sections.find((section: any) => Number(section?.roster_count ?? 0) > 0) ?? sections[0];
+  const sectionId = preferred?.section_id;
+  expect(sectionId, "[Setup] Selected gradebook section must have section_id").toBeTruthy();
+
   await page.addInitScript(
-    ({ token, schoolId, role }) => {
-      // Session storage (primary)
-      sessionStorage.setItem("crown.jwt.access", token);
-      sessionStorage.setItem("crown.school.id", schoolId);
-      sessionStorage.setItem("crown.role", role);
-
-      // Local storage (backup fallback for authClient.js)
-      localStorage.setItem("crown.jwt.access", token);
-      localStorage.setItem("crown.school.id", schoolId);
-      localStorage.setItem("crown.role", role);
-      localStorage.setItem("crown.demo.role", role);
-
+    ({ token, schoolId, role, username }) => {
       const user = {
+        email: username,
+        username,
         role,
         roles: [role],
         school_id: schoolId,
+        schoolId,
       };
+
+      sessionStorage.setItem("crown.jwt.access", token);
+      sessionStorage.setItem("crown.school.id", schoolId);
+      sessionStorage.setItem("crown.role", role);
+      sessionStorage.setItem("crown_user", JSON.stringify(user));
+      sessionStorage.setItem("crown_current_user", JSON.stringify(user));
+
+      localStorage.setItem("crown.jwt.access", token);
+      localStorage.setItem("crown.school.id", schoolId);
+      localStorage.setItem("schoolId", schoolId);
+      localStorage.setItem("crown.role", role);
+      localStorage.setItem("crown.demo.role", role);
       localStorage.setItem("crown_user", JSON.stringify(user));
       localStorage.setItem("crown_current_user", JSON.stringify(user));
-      sessionStorage.setItem("crown_user", JSON.stringify(user));
     },
-    { token, schoolId: TEST_SCHOOL_ID, role: TEST_ROLE }
+    { token, schoolId: TEST_SCHOOL_ID, role: TEST_ROLE, username: TEST_USER }
   );
 
-  // Step 3: Track API calls and log errors
   const seen = {
     sections: false,
     grades: false,
@@ -61,51 +80,57 @@ test("gradebook loads assignments and rows with FK-backed data", async ({ page, 
     const url = resp.url();
     const status = resp.status();
 
-    // Log all /api/v1/ responses for diagnostics
     if (url.includes("/api/v1/")) {
-      console.log(`[API] ${resp.request().method()} ${url} → ${status}`);
-      if (status >= 400) {
-        apiErrors.push(`${url} returned ${status}`);
-      }
+      console.log(`[API] ${resp.request().method()} ${url} -> ${status}`);
+      if (status >= 400) apiErrors.push(`${url} returned ${status}`);
     }
 
     if (url.includes("/gradebook/sections") && !url.includes("/grades")) seen.sections = true;
     if (url.includes("/gradebook/sections/") && url.includes("/grades")) seen.grades = true;
   });
 
-  // Step 4: Navigate directly to gradebook (token is already injected)
-  await page.goto(`${TEST_UI_BASE}/gradebook`, { waitUntil: "networkidle" });
-  await expect(page).toHaveURL(/\/gradebook$/);
+  const sectionsResponse = page
+    .waitForResponse((resp) => resp.url().includes("/gradebook/sections") && !resp.url().includes("/grades"), { timeout: 15000 })
+    .catch(() => null);
+  const gradesResponse = page
+    .waitForResponse((resp) => resp.url().includes(`/gradebook/sections/${sectionId}/grades`), { timeout: 15000 })
+    .catch(() => null);
 
-  // Step 4.5: Wait for page to auto-select first section and load grades
-  await page.waitForTimeout(2500);
+  await page.goto(`${TEST_UI_BASE}/gradebook/${sectionId}`, { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(new RegExp(`/gradebook/${sectionId}$`));
 
-  // Early diagnostic: check if any API errors occurred before checking elements
-  if (apiErrors.length > 0) {
-    console.log(`[ERROR] API failures detected: ${apiErrors.join(", ")}`);
-    throw new Error(`API calls failed: ${apiErrors.join("; ")}`);
-  }
+  await sectionsResponse;
+  await gradesResponse;
 
-  // Step 5: Accept either populated gradebook data or an explicit empty-state surface.
   const assignmentHeaders = page.locator("[data-testid='gradebook-assignment-header']");
   const gradeRows = page.locator("[data-testid='gradebook-row']");
   const emptyState = page.locator("text=/No assignments|No grades|No grade rows|No sections available/i");
+  const errorState = page.locator("text=/Grades unavailable|Failed to load gradebook sections|API error/i");
   const noSectionsState = page.getByRole("heading", { name: /No sections available/i });
 
-  await expect(assignmentHeaders.first().or(emptyState.first())).toBeVisible({ timeout: 15000 });
+  const hasAssignmentHeader = await assignmentHeaders.first().isVisible().catch(() => false);
+  const hasGradeRow = await gradeRows.first().isVisible().catch(() => false);
+  const hasEmptyState = await emptyState.first().isVisible().catch(() => false);
+  const hasErrorState = await errorState.first().isVisible().catch(() => false);
 
-  // Step 7: Capture screenshot for debugging
-  await page.screenshot({ path: "gradebook-proof-success.png", fullPage: true });
-
-  // Step 8: Verify API calls were made
-  expect(seen.sections, "Sections API not called").toBe(true);
-  const noSectionsVisible = (await noSectionsState.count()) > 0;
   expect(
-    seen.grades || noSectionsVisible,
-    "Gradebook grades API not called and no explicit no-sections state rendered"
+    hasAssignmentHeader || hasGradeRow || hasEmptyState || hasErrorState,
+    "Expected a visible gradebook proof surface"
   ).toBe(true);
 
-  // Step 9: Verify data is populated (optional but visible in DOM)
+  if (apiErrors.length > 0) {
+    throw new Error(`API calls failed: ${apiErrors.join("; ")}`);
+  }
+  if ((await errorState.count()) > 0) {
+    throw new Error("Gradebook rendered an API error state instead of proof data/empty state");
+  }
+
+  await page.screenshot({ path: "gradebook-proof-success.png", fullPage: true });
+
+  expect(seen.sections, "Sections API not called by browser UI").toBe(true);
+  const noSectionsVisible = (await noSectionsState.count()) > 0;
+  expect(seen.grades || noSectionsVisible, "Grades API not called by browser UI and no explicit no-sections state rendered").toBe(true);
+
   const assignmentCount = await assignmentHeaders.count();
   const rowCount = await gradeRows.count();
   const emptyStateCount = await emptyState.count();

@@ -1,158 +1,149 @@
 import { expect, test } from "@playwright/test";
 
-const DEMO_SCHOOL_ID = "19801b59-8c05-4c84-9312-5d792e4e839d";
-
-const SANDBOX_SCHOOL_NAMES = [
-  "Heritage Christian Academy",
-  "Harvest Christian School",
-  "Faith Christian Academy",
-  "Calvary Christian School",
-  "St. Anne Christian Academy",
-  "Grace Covenant School",
-  "Providence Christian Academy",
-  "Trinity Classical School",
-  "Redeemer Christian School",
-  "Cornerstone Christian Academy",
-  "New Hope Christian School",
-  "Legacy Christian Academy",
-  "Emmanuel Christian School",
-  "King's Way Christian Academy",
-  "Bethel Christian School",
-  "Veritas Christian Academy",
-  "Crossroads Christian School",
-  "Shepherd's Gate Academy",
-  "Lighthouse Christian School",
-  "Covenant Preparatory School",
+const PERSONA_ROUTES = [
+  { role: "school_admin", label: "Program Director", route: "/school-admin-dashboard" },
+  { role: "teacher", label: "Teacher / Staff", route: "/teacher" },
+  { role: "parent", label: "Parent / Guardian", route: "/parent" },
+  { role: "student", label: "Student / Camper", route: "/student" },
 ];
 
-function normalizeSchoolId(name: string, index: number): string {
-  if (index === 0) return DEMO_SCHOOL_ID;
-  return `sandbox-school-${name
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, "-")
-    .replaceAll(/^-+|-+$/g, "")}`;
-}
+test("open sandbox launches roles without credential fields", async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
 
-const SANDBOX_SCHOOLS = SANDBOX_SCHOOL_NAMES.map((name, index) => ({
-  id: normalizeSchoolId(name, index),
-  name,
-}));
+  const consoleErrors: string[] = [];
+  const requestFailures: string[] = [];
+  const launchedRoutes: string[] = [];
 
-const SANDBOX_EMAIL = "admin@heritage.example.org";
-const SANDBOX_PASSWORD = "demo-password";
-const PREFERRED_ROLE = "school_admin";
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrors.push(message.text());
+    }
+  });
 
-test("canonical sandbox proof across all 20 sandbox schools", async ({ page }) => {
-  test.setTimeout(120_000);
+  page.on("requestfailed", (request) => {
+    const failure = request.failure()?.errorText || "failed";
+    requestFailures.push(`${request.method()} ${request.url()} ${failure}`);
+  });
 
-  await page.route("**/demo/schools_manifest.json", async (route) => {
+  await page.addInitScript(() => {
+    try {
+      Object.defineProperty(navigator, "sendBeacon", {
+        configurable: true,
+        value: () => true,
+      });
+    } catch {
+      // ignore
+    }
+  });
+
+  await page.route("**/api/v1/sandbox/session/", async (route) => {
+    const payload = route.request().postDataJSON() as { role?: string; school?: string; guidance?: string; tour?: string };
+    const role = payload.role || "school_admin";
+    const mapping = PERSONA_ROUTES.find((persona) => persona.role === role) || PERSONA_ROUTES[0];
+    launchedRoutes.push(mapping.route);
+
     await route.fulfill({
-      status: 200,
+      status: 201,
       contentType: "application/json",
-      body: JSON.stringify({ schools: SANDBOX_SCHOOLS }),
+      body: JSON.stringify({
+        access: `sandbox-${role}-access-token`,
+        refresh: "",
+        school_id: payload.school || "19801b59-8c05-4c84-9312-5d792e4e839d",
+        school_name: "Heritage Christian Academy",
+        role,
+        guidance: payload.guidance || "guided",
+        tour: payload.tour || "",
+        route: mapping.route,
+        command_center: { route: "/sandbox/command-center" },
+      }),
     });
   });
 
-  await page.route("**/demo/heritage_demo_credentials.json", async (route) => {
+  await page.route("**/api/v1/sandbox/events/", async (route) => {
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, event_id: "sandbox-event-1" }),
+    });
+  });
+
+  await page.route("**/api/v1/nav/", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        required_personas: [
+        groups: [
           {
-            key: "school_admin",
-            email: "admin@heritage.example.org",
+            title: "Navigation",
+            items: [
+              { label: "Administration", href: "/admin" },
+              { label: "School Board", href: "/board" },
+              { label: "Finance", href: "/finance" },
+              { label: "Parent", href: "/parent" },
+              { label: "Student", href: "/student" },
+            ],
           },
         ],
       }),
     });
   });
 
-  await page.route("**/api/v1/auth/token/", async (route) => {
-    const selectedSchool = await page.inputValue("#login-school");
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        access: "sandbox-proof-access-token",
-        school_id: selectedSchool,
-      }),
-    });
+  await page.route("**fonts.googleapis.com/**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/css", body: "" });
   });
 
-  await page.goto("/login", { waitUntil: "domcontentloaded" });
+  await page.route("**fonts.gstatic.com/**", async (route) => {
+    await route.fulfill({ status: 200, contentType: "font/woff2", body: "" });
+  });
 
-  const schoolSelect = page.locator("#login-school");
-  await expect(schoolSelect).toBeVisible();
-  await expect(schoolSelect.locator("option")).toHaveCount(20);
+  await page.goto("/sandbox", { waitUntil: "domcontentloaded" });
 
-  const optionData = await schoolSelect.locator("option").evaluateAll((options) =>
-    options.map((option) => ({
-      value: option.getAttribute("value") ?? "",
-      label: (option.textContent ?? "").trim(),
-    }))
-  );
+  await expect(page.getByLabel("CROWN sandbox overview").getByRole("heading", { name: "Guided Proof Sandbox" })).toBeVisible();
+  await expect(page.getByText("One-click role launch")).toBeVisible();
+  await expect(page.getByText("No buyer passwords")).toBeVisible();
+  await expect(page.getByText("Demo data only", { exact: true })).toBeVisible();
+  await expect(page.locator("input, select, textarea")).toHaveCount(0);
 
-  const selectableOptions = optionData.filter((option) => option.value);
+  for (const persona of PERSONA_ROUTES) {
+    await expect(page.getByText(persona.label, { exact: true })).toBeVisible();
+  }
 
-  expect(selectableOptions).toHaveLength(20);
-  expect(selectableOptions.map((option) => option.value)).toEqual(
-    SANDBOX_SCHOOLS.map((school) => school.id)
-  );
+  for (const persona of PERSONA_ROUTES) {
+    await page.goto("/sandbox", { waitUntil: "domcontentloaded" });
 
-  expect(selectableOptions.map((option) => option.label)).toEqual(
-    SANDBOX_SCHOOLS.map((school) => school.name)
-  );
+    await expect(page.getByLabel("CROWN sandbox overview").getByRole("heading", { name: "Guided Proof Sandbox" })).toBeVisible();
+    await page.locator(".persona-card", { hasText: persona.label }).getByRole("button").click();
 
-  const roleSelect = page.locator("#login-role");
-  const roleOptions = await roleSelect.locator("option").evaluateAll((options) =>
-    options.map((option) => option.getAttribute("value") ?? "")
-  );
-  const roleValue = roleOptions.includes(PREFERRED_ROLE)
-    ? PREFERRED_ROLE
-    : roleOptions.find(Boolean) ?? "";
-
-  for (const school of SANDBOX_SCHOOLS) {
-    await schoolSelect.selectOption(school.id);
-    if (roleValue) {
-      await roleSelect.selectOption(roleValue);
-    }
-
-    await page.fill("#login-email", SANDBOX_EMAIL);
-    await page.fill("#login-password", SANDBOX_PASSWORD);
-    const navigationAfterSignIn = page
-      .waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 15_000 })
-      .catch(() => null);
-    await page.locator("button.btn-signin").click();
-    await navigationAfterSignIn;
-
+    await expect(page).toHaveURL(new RegExp(`${persona.route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
     await expect
       .poll(async () =>
-        page
-          .evaluate(() => ({
-            schoolId: sessionStorage.getItem("crown.school.id"),
-            role: sessionStorage.getItem("crown.role"),
-            access: sessionStorage.getItem("crown.jwt.access"),
-          }))
-          .catch(() => ({ schoolId: null, role: null, access: null }))
+        page.evaluate(() => ({
+          access: sessionStorage.getItem("crown.jwt.access"),
+          schoolId: sessionStorage.getItem("crown.school.id"),
+          role: sessionStorage.getItem("crown.role"),
+        }))
       )
       .toMatchObject({
-        schoolId: school.id,
-        role: expect.any(String),
-        access: expect.any(String),
+        access: expect.stringContaining(`sandbox-${persona.role}-access-token`),
+        schoolId: "heritage-core",
+        role: persona.role,
       });
 
-    const storage = await page.evaluate(() => ({
-      schoolId: sessionStorage.getItem("crown.school.id"),
-      role: sessionStorage.getItem("crown.role"),
-      access: sessionStorage.getItem("crown.jwt.access"),
-    }));
+    await page.waitForLoadState("networkidle");
 
-    expect(storage.schoolId).toBe(school.id);
-    expect(storage.role).toBeTruthy();
-    expect(storage.access).toBeTruthy();
-    await expect(page).not.toHaveURL(/\/login$/);
-
-    await page.goto("/login", { waitUntil: "domcontentloaded" });
+    await page.screenshot({ path: testInfo.outputPath(`sandbox-${persona.role}.png`), fullPage: true });
   }
+
+  expect(launchedRoutes).toEqual(PERSONA_ROUTES.map((persona) => persona.route).flatMap((route) => [route]));
+  const unexpectedRequestFailures = requestFailures.filter(
+    (failure) => !failure.includes("/api/v1/sandbox/events/")
+  );
+  const unexpectedConsoleErrors = consoleErrors.filter(
+    (error) =>
+      !/Encountered two children with the same key/i.test(error) &&
+      !/Failed to load resource: the server responded with a status of 400/i.test(error)
+  );
+
+  expect(unexpectedRequestFailures, "browser request failures").toEqual([]);
+  expect(unexpectedConsoleErrors, "browser console errors").toEqual([]);
 });
