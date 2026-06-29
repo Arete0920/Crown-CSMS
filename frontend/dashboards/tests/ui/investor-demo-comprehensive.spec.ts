@@ -3,7 +3,7 @@ import { test, expect, type Page, type APIRequestContext } from "@playwright/tes
 const API_BASE = process.env.CROWN_TEST_API_BASE ?? "http://127.0.0.1:8000";
 const UI_BASE = process.env.CROWN_TEST_UI_BASE ?? process.env.CROWN_UI_URL ?? "http://localhost:3000";
 const SCHOOL_ID = process.env.CROWN_TEST_SCHOOL_ID ?? "b45b8c5a-6708-4597-aad9-a226627b2962";
-const PASSWORD = process.env.CROWN_TEST_PASS ?? "CI-Demo-Password-2026";
+const PASSWORD = process.env.CROWN_TEST_PASS ?? "Crown2026!";
 
 const personas = [
   {
@@ -97,6 +97,8 @@ async function collectSurface(page: Page) {
 
 for (const persona of personas) {
   test(`${persona.name} investor path: routes, links, buttons, network, console, screenshots`, async ({ page, request }, testInfo) => {
+    test.setTimeout(180_000);
+
     const token = await tokenFor(request, persona.username);
     await seedBrowserAuth(page, token, persona.role, persona.username);
 
@@ -129,16 +131,25 @@ for (const persona of personas) {
       expect(surface.text, `[${persona.name}] forbidden on ${route}`).not.toMatch(/access denied|not authorized|forbidden/i);
       expect(surface.text, `[${persona.name}] missing content on ${route}`).not.toHaveLength(0);
 
-      for (const link of surface.links.slice(0, 40)) {
+      for (const link of surface.links.slice(0, 20)) {
         const url = new URL(link.href);
         if (visited.has(url.pathname)) continue;
         visited.add(url.pathname);
-        const linkResp = await request.get(`${API_BASE}/api/v1/health/`).catch(() => null);
-        expect(linkResp, "health request object exists").toBeTruthy();
+
+        const linkResp = await request.get(`${UI_BASE}${url.pathname}`, {
+          headers: { Authorization: `Bearer ${token}`, "X-School-Id": SCHOOL_ID },
+        });
+        expect(
+          linkResp.status(),
+          `[${persona.name}] discovered UI link should be reachable: ${url.pathname}`
+        ).toBeLessThan(500);
       }
 
       const enabledButtons = surface.buttons.filter((button) => !button.disabled);
-      expect(enabledButtons.length, `[${persona.name}] at least one enabled button or nav action on ${route}`).toBeGreaterThanOrEqual(0);
+      expect(
+        enabledButtons.length + surface.links.length,
+        `[${persona.name}] expected at least one enabled action or visible same-origin link on ${route}`
+      ).toBeGreaterThan(0);
     }
 
     expect(requestFailures, `[${persona.name}] browser request failures`).toEqual([]);

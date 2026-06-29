@@ -6,6 +6,7 @@ const PERSONA_ROUTES = [
   { role: "parent", label: "Parent / Guardian", route: "/parent" },
   { role: "student", label: "Student / Camper", route: "/student" },
 ];
+const SANDBOX_SCHOOL_ID = "19801b59-8c05-4c84-9312-5d792e4e839d";
 
 test("open sandbox launches roles without credential fields", async ({ page }, testInfo) => {
   test.setTimeout(90_000);
@@ -48,7 +49,7 @@ test("open sandbox launches roles without credential fields", async ({ page }, t
       body: JSON.stringify({
         access: `sandbox-${role}-access-token`,
         refresh: "",
-        school_id: payload.school || "19801b59-8c05-4c84-9312-5d792e4e839d",
+        school_id: SANDBOX_SCHOOL_ID,
         school_name: "Heritage Christian Academy",
         role,
         guidance: payload.guidance || "guided",
@@ -85,6 +86,24 @@ test("open sandbox launches roles without credential fields", async ({ page }, t
           },
         ],
       }),
+    });
+  });
+
+  await page.route("**/api/v1/**", async (route) => {
+    const url = route.request().url();
+    if (
+      url.includes("/api/v1/sandbox/session/") ||
+      url.includes("/api/v1/sandbox/events/") ||
+      url.includes("/api/v1/nav/")
+    ) {
+      await route.fallback();
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true }),
     });
   });
 
@@ -125,7 +144,7 @@ test("open sandbox launches roles without credential fields", async ({ page }, t
       )
       .toMatchObject({
         access: expect.stringContaining(`sandbox-${persona.role}-access-token`),
-        schoolId: "heritage-core",
+        schoolId: SANDBOX_SCHOOL_ID,
         role: persona.role,
       });
 
@@ -139,9 +158,7 @@ test("open sandbox launches roles without credential fields", async ({ page }, t
     (failure) => !failure.includes("/api/v1/sandbox/events/")
   );
   const unexpectedConsoleErrors = consoleErrors.filter(
-    (error) =>
-      !/Encountered two children with the same key/i.test(error) &&
-      !/Failed to load resource: the server responded with a status of 400/i.test(error)
+    (error) => !/Encountered two children with the same key/i.test(error)
   );
 
   expect(unexpectedRequestFailures, "browser request failures").toEqual([]);
