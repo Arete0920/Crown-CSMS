@@ -45,11 +45,14 @@ describe('dashboard registry contract', () => {
         expect(screen.getByText('Updated from current school operations snapshot')).toBeTruthy();
         expect(screen.getAllByText(/dashboard (records|data)/i).length).toBeGreaterThan(0);
 
-      expect(screen.getByText('Decisions Needed')).toBeTruthy();
-      expect(screen.getAllByText('Attendance Completion').length).toBeGreaterThan(0);
-      expect(screen.getByText('Tuition / AR Risk')).toBeTruthy();
-      expect(screen.getByText('Enrollment')).toBeTruthy();
-      expect(screen.getByText('Safety / Student Care')).toBeTruthy();
+      expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Permission Proof').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Tenant Proof').length).toBeGreaterThan(0);
+      expect(screen.queryByText('Attendance Completion')).toBeNull();
+      expect(screen.queryByText('Tuition / AR Risk')).toBeNull();
+      expect(screen.queryByText('Enrollment')).toBeNull();
+      expect(screen.queryByText('Safety / Student Care')).toBeNull();
 
       expect(screen.getAllByText('Admissions / Enrollment').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Attendance').length).toBeGreaterThan(0);
@@ -87,22 +90,26 @@ describe('dashboard registry contract', () => {
     expect(screen.getByAltText('CROWN Christian School Management Solution')).toBeTruthy();
     expect(screen.getByAltText('CROWN - Christian School Management Solution')).toBeTruthy();
     expect(screen.getByText('Academic Performance View')).toBeTruthy();
-    expect(screen.getByText('Assignments Graded')).toBeTruthy();
+    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
   });
 
   it('teacher, parent, and student routes use canonical shared shell', () => {
     const { unmount } = render(<TeacherDashboard />);
     expect(screen.getByText('Teacher Dashboard')).toBeTruthy();
-    expect(screen.getByText('Classes Today')).toBeTruthy();
+    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
     unmount();
 
     const parentRender = render(<ParentDashboard />);
     expect(screen.getByText('Parent Dashboard')).toBeTruthy();
-    expect(screen.getByText('Children Enrolled')).toBeTruthy();
+    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
     parentRender.unmount();
 
     render(<StudentDashboard />);
     expect(screen.getByText('Student Dashboard')).toBeTruthy();
-    expect(screen.getByText('Current Average')).toBeTruthy();
+    expect(screen.getAllByText('Live Data Certification').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Demo Data State').length).toBeGreaterThan(0);
   });
 });

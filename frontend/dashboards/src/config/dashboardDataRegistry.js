@@ -17,12 +17,70 @@ function dashboardSummaryPath(slug) {
   return `/api/v1/dashboards/${slug}/summary`;
 }
 
+export const DEMO_CRITICAL_DASHBOARD_KEYS = Object.freeze([
+  'school-administrator',
+  'admissions',
+  'registrar',
+  'billing',
+  'financial-aid',
+  'attendance',
+  'gradebook',
+  'communications',
+  'scheduling',
+  'parent',
+  'teacher',
+  'student',
+  'dashboard-certification-center',
+  'release-reliability',
+  'compliance-audit',
+]);
+
+function createDemoCriticalFallback(dashboardKey, label, options = {}) {
+  return {
+    dashboard_key: dashboardKey,
+    metrics: options.metrics ?? [
+      { label: 'Live Data Certification', value: 'Pending' },
+      { label: 'Demo Data State', value: 'Fallback' },
+      { label: 'Permission Proof', value: 'Required' },
+      { label: 'Tenant Proof', value: 'Required' },
+    ],
+    alerts: options.alerts ?? [
+      {
+        title: `${label} dashboard is using disclosed fallback data`,
+        level: 'Medium',
+        secondary: 'This is a sandbox/demo truth state. Live-data certification requires API, permission, tenant, runtime, and evidence proof before promotion.',
+      },
+    ],
+    queue: options.queue ?? [
+      `Wire ${label} live summary service`,
+      `Attach ${label} KPI/data provenance evidence`,
+      `Prove ${label} permission and tenant boundaries`,
+      `Capture ${label} browser proof and screenshot/trace`,
+    ],
+    meta: {
+      fallback_source: 'frontend_demo_truth_guard',
+      ...options.meta,
+      served_from: options.servedFrom || 'fallback',
+      certification_candidate: 'demo-critical',
+      live_certified: false,
+      sandbox_demo_only: true,
+    },
+  };
+}
+
+function createDemoCriticalDataConfig(slug, label, options = {}) {
+  return createDataConfig(dashboardSummaryPath(slug), {
+    ...options,
+    allowScaffoldFallback: true,
+    fallbackData: options.fallbackData ?? createDemoCriticalFallback(slug, label, options),
+  });
+}
+
 export const DASHBOARD_DATA_REGISTRY = {
   // Tier 1
-  attendance: createDataConfig(dashboardSummaryPath('attendance'), {
-    allowScaffoldFallback: true,
-    fallbackData: {
-      dashboard_key: 'attendance',
+  attendance: createDemoCriticalDataConfig('attendance', 'Attendance', {
+    fallbackData: createDemoCriticalFallback('attendance', 'Attendance', {
+      servedFrom: 'sample',
       metrics: [
         { label: 'Present Rate Today', value: '96.1%' },
         { label: 'Absent Students', value: '14' },
@@ -33,17 +91,17 @@ export const DASHBOARD_DATA_REGISTRY = {
         {
           title: 'Three homerooms still need final attendance submission',
           level: 'High',
-          secondary: 'Attendance office follow-up required.',
+          secondary: 'Attendance office follow-up required. Sample state is explicitly disclosed for sandbox/demo use.',
         },
         {
           title: 'Grade 10 absentee trend is above weekly threshold',
           level: 'Medium',
-          secondary: 'Review with school admin and student care.',
+          secondary: 'Review with school admin and student care. Sample state is explicitly disclosed for sandbox/demo use.',
         },
         {
           title: 'Two parent outreach messages bounced',
           level: 'Low',
-          secondary: 'Retry communication workflow.',
+          secondary: 'Retry communication workflow. Sample state is explicitly disclosed for sandbox/demo use.',
         },
       ],
       queue: [
@@ -53,28 +111,32 @@ export const DASHBOARD_DATA_REGISTRY = {
         'Publish attendance exception summary',
       ],
       meta: {
-        served_from: 'sample',
-        certification_candidate: 'hybrid',
+        documented_exception: 'sandbox_demo_sample_only',
       },
-    },
+    }),
   }),
-  billing: createDataConfig(dashboardSummaryPath('billing')),
-  'financial-aid': createDataConfig(dashboardSummaryPath('financial-aid')),
-  registrar: createDataConfig(dashboardSummaryPath('registrar')),
+  billing: createDemoCriticalDataConfig('billing', 'Billing'),
+  'financial-aid': createDemoCriticalDataConfig('financial-aid', 'Financial Aid'),
+  registrar: createDemoCriticalDataConfig('registrar', 'Registrar'),
 
   // Tier 2
-  scheduling: createDataConfig(dashboardSummaryPath('scheduling')),
-  gradebook: createDataConfig(dashboardSummaryPath('gradebook')),
+  scheduling: createDemoCriticalDataConfig('scheduling', 'Scheduling'),
+  gradebook: createDemoCriticalDataConfig('gradebook', 'Gradebook'),
   'student-care': createDataConfig(dashboardSummaryPath('student-care')),
   'activities-athletics': createDataConfig(dashboardSummaryPath('activities-athletics')),
-  communications: createDataConfig(dashboardSummaryPath('communications')),
+  communications: createDemoCriticalDataConfig('communications', 'Communications'),
 
   // Tier 3
-  'school-administrator': createDataConfig(dashboardSummaryPath('school-administrator')),
+  'school-administrator': createDemoCriticalDataConfig('school-administrator', 'School Administrator'),
   'school-board': createDataConfig(dashboardSummaryPath('school-board')),
   'master-control': createDataConfig(dashboardSummaryPath('master-control')),
-  admissions: createDataConfig(dashboardSummaryPath('admissions')),
+  admissions: createDemoCriticalDataConfig('admissions', 'Admissions'),
   advancement: createDataConfig(dashboardSummaryPath('advancement')),
+
+  // Sandbox/demo persona dashboards
+  parent: createDemoCriticalDataConfig('parent', 'Parent'),
+  teacher: createDemoCriticalDataConfig('teacher', 'Teacher'),
+  student: createDemoCriticalDataConfig('student', 'Student'),
 
   // Tier 4
   hr: createDataConfig(dashboardSummaryPath('hr')),
@@ -105,10 +167,8 @@ export const DASHBOARD_DATA_REGISTRY = {
   'implementation-success': createDataConfig(dashboardSummaryPath('implementation-success')),
   'data-migration': createDataConfig(dashboardSummaryPath('data-migration')),
   'integrations-automation': createDataConfig(dashboardSummaryPath('integrations-automation')),
-  'compliance-audit': createDataConfig(dashboardSummaryPath('compliance-audit'), {
-    allowScaffoldFallback: true,
-    fallbackData: {
-      dashboard_key: 'compliance-audit',
+  'compliance-audit': createDemoCriticalDataConfig('compliance-audit', 'Compliance / Audit', {
+    fallbackData: createDemoCriticalFallback('compliance-audit', 'Compliance / Audit', {
       metrics: [
         { label: 'Active Audit Proof Streams', value: 'TBD' },
         { label: 'Controls Passing', value: 'TBD' },
@@ -134,17 +194,13 @@ export const DASHBOARD_DATA_REGISTRY = {
         'Attach permission, tenant, and browser proof',
       ],
       meta: {
-        served_from: 'fallback',
-        certification_candidate: 'hybrid',
         fallback_source: 'frontend_scaffold',
       },
-    },
+    }),
   }),
   'revenue-operations': createDataConfig(dashboardSummaryPath('revenue-operations')),
-  'release-reliability': createDataConfig(dashboardSummaryPath('release-reliability'), {
-    allowScaffoldFallback: true,
-    fallbackData: {
-      dashboard_key: 'release-reliability',
+  'release-reliability': createDemoCriticalDataConfig('release-reliability', 'Release Reliability', {
+    fallbackData: createDemoCriticalFallback('release-reliability', 'Release Reliability', {
       metrics: [
         { label: 'Deployments This Month', value: '9' },
         { label: 'Open Production Incidents', value: '2' },
@@ -155,17 +211,17 @@ export const DASHBOARD_DATA_REGISTRY = {
         {
           title: 'Contract gate failed on last main candidate build',
           level: 'High',
-          secondary: 'Platform engineering follow-up required.',
+          secondary: 'Platform engineering follow-up required. Fallback state is explicitly disclosed.',
         },
         {
           title: 'Two environments are not on expected build SHA',
           level: 'High',
-          secondary: 'Verify deployment alignment.',
+          secondary: 'Verify deployment alignment. Fallback state is explicitly disclosed.',
         },
         {
           title: 'Release proof packet is incomplete for one deploy',
           level: 'Medium',
-          secondary: 'Complete evidence before certification.',
+          secondary: 'Complete evidence before certification. Fallback state is explicitly disclosed.',
         },
       ],
       queue: [
@@ -175,17 +231,14 @@ export const DASHBOARD_DATA_REGISTRY = {
         'Publish release readiness summary',
       ],
       meta: {
-        certification_candidate: 'hybrid',
         fallback_source: 'frontend_scaffold',
       },
-    },
+    }),
   }),
 
   // Phase 9 control page
-  'dashboard-certification-center': createDataConfig(dashboardSummaryPath('dashboard-certification-center'), {
-    allowScaffoldFallback: true,
-    fallbackData: {
-      dashboard_key: 'dashboard-certification-center',
+  'dashboard-certification-center': createDemoCriticalDataConfig('dashboard-certification-center', 'Dashboard Certification Center', {
+    fallbackData: createDemoCriticalFallback('dashboard-certification-center', 'Dashboard Certification Center', {
       metrics: [
         { label: 'Dashboards Certified', value: '0' },
         { label: 'Mapped Only', value: '40' },
@@ -211,9 +264,8 @@ export const DASHBOARD_DATA_REGISTRY = {
         'Attach permission, tenant, and runtime proof',
       ],
       meta: {
-        certification_candidate: 'hybrid',
         fallback_source: 'frontend_scaffold',
       },
-    },
+    }),
   }),
 };
