@@ -1,0 +1,90 @@
+name: Production Certification Evidence
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - frontend/dashboards/package.json
+      - frontend/dashboards/package-lock.json
+      - frontend/dashboards/playwright.config.ts
+      - frontend/dashboards/tests/certification/**
+      - .github/workflows/production-certification-evidence.yml
+  push:
+    branches:
+      - main
+    paths:
+      - frontend/dashboards/package.json
+      - frontend/dashboards/package-lock.json
+      - frontend/dashboards/playwright.config.ts
+      - frontend/dashboards/tests/certification/**
+      - .github/workflows/production-certification-evidence.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-certification-evidence-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-certification-evidence:
+    name: Production Certification Evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run production certification crawler
+        run: npm run certify:production-crawler
+        env:
+          CI: "1"
+          VITE_DEV_BASE_URL: "http://localhost:4173"
+          VITE_SANDBOX_MODE: "1"
+          VITE_DEMO_MODE: "sandbox"
+          CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
+          CROWN_DEMO_TOKEN: "playwright-demo-token"
+
+      - name: Confirm evidence summary exists
+        if: always()
+        run: |
+          test -f ../../audit-artifacts/production-certification/current/certification-summary.md
+          test -f ../../audit-artifacts/production-certification/current/certification-matrix.json
+          test -f ../../audit-artifacts/production-certification/current/route-results.csv
+
+      - name: Upload production certification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-certification-evidence-${{ github.run_number }}-${{ github.sha }}
+          path: audit-artifacts/production-certification/current/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-certification-playwright-report-${{ github.run_number }}-${{ github.sha }}
+          path: frontend/dashboards/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
