@@ -55,8 +55,43 @@ jobs:
 
           if echo "$CHANGED" | grep -q '^frontend/dashboards/package.json$'; then
             if ! echo "$CHANGED" | grep -q '^frontend/dashboards/package-lock.json$'; then
-              echo "ERROR: package.json changed without package-lock.json update"
-              exit 1
+              BASE_PKG="$(mktemp)"
+              HEAD_PKG="$(mktemp)"
+              trap 'rm -f "$BASE_PKG" "$HEAD_PKG"' EXIT
+
+              if ! git cat-file -e "$BASE_SHA:frontend/dashboards/package.json" 2>/dev/null; then
+                echo "ERROR: frontend/dashboards/package.json not found at base SHA $BASE_SHA — it may be a newly added file with no base version to compare."
+                exit 1
+              fi
+              if ! git cat-file -e "$HEAD_SHA:frontend/dashboards/package.json" 2>/dev/null; then
+                echo "ERROR: frontend/dashboards/package.json not found at head SHA $HEAD_SHA — it may have been deleted or renamed."
+                exit 1
+              fi
+
+              git show "$BASE_SHA:frontend/dashboards/package.json" > "$BASE_PKG"
+              git show "$HEAD_SHA:frontend/dashboards/package.json" > "$HEAD_PKG"
+
+              if python3 - "$BASE_PKG" "$HEAD_PKG" <<'PY'
+          import json
+          import sys
+
+          base_path, head_path = sys.argv[1], sys.argv[2]
+          with open(base_path, "r", encoding="utf-8") as f:
+            base_obj = json.load(f)
+          with open(head_path, "r", encoding="utf-8") as f:
+            head_obj = json.load(f)
+
+          base_obj.pop("scripts", None)
+          head_obj.pop("scripts", None)
+
+          sys.exit(0 if base_obj == head_obj else 1)
+          PY
+              then
+                echo "NOTICE: package.json changed only in scripts; package-lock update not required."
+              else
+                echo "ERROR: package.json changed outside scripts without package-lock.json update"
+                exit 1
+              fi
             fi
           fi
 
