@@ -242,7 +242,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
               <div
                 style={{
                   fontSize: 9, fontWeight: 800, letterSpacing: 1.2,
-                  textTransform: "uppercase", color: "rgba(255,255,255,0.35)",
+                  textTransform: "uppercase", color: "rgba(255,255,255,0.72)",
                   padding: "10px 10px 2px", marginTop: 4,
                 }}
               >
@@ -290,7 +290,7 @@ export default function CrownLayout({ title, subtitle, right, children, mainClas
                     <a
                       href={crumb.href}
                       style={{
-                        color: "#f5d27f",
+                        color: "var(--crown-primary-deep)",
                         fontWeight: 700,
                         textDecoration: "underline",
                         textUnderlineOffset: "2px",
