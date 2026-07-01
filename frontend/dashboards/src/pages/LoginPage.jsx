@@ -88,6 +88,73 @@ function buildSchoolList(manifestSchools, sandboxMode) {
   });
 }
 
+function normalizeRoleList(payload, selectedRole) {
+  const rawRoles = [
+    selectedRole,
+    payload?.role,
+    payload?.primaryRole,
+    payload?.role_code,
+    payload?.roleCode,
+    ...(Array.isArray(payload?.roles) ? payload.roles : []),
+    ...(Array.isArray(payload?.userRoles) ? payload.userRoles : []),
+  ];
+
+  return [...new Set(rawRoles
+    .map((entry) => {
+      if (typeof entry === "string") return entry;
+      return entry?.code || entry?.role || entry?.name || entry?.slug || entry?.value;
+    })
+    .filter(Boolean))];
+}
+
+function buildSessionUser(payload, role, selectedSchoolId, email) {
+  const schoolId = payload?.school_id || payload?.schoolId || payload?.school?.id || selectedSchoolId || DEMO_SCHOOL;
+  const roles = normalizeRoleList(payload, role.value);
+  const primaryRole = roles[0] || role.value;
+
+  return {
+    ...(payload?.user && typeof payload.user === "object" ? payload.user : {}),
+    ...(payload && typeof payload === "object" ? payload : {}),
+    email: payload?.email || payload?.user?.email || email,
+    username: payload?.username || payload?.user?.username || payload?.email || payload?.user?.email || email,
+    role: primaryRole,
+    primaryRole,
+    roles,
+    school_id: schoolId,
+    schoolId,
+  };
+}
+
+function persistAuthenticatedSession(payload, role, selectedSchoolId, email) {
+  const access = payload?.access || payload?.token || "";
+  const refresh = payload?.refresh || "";
+  const currentUser = buildSessionUser(payload, role, selectedSchoolId, email);
+  const schoolId = currentUser.school_id || selectedSchoolId || DEMO_SCHOOL;
+  const serializedUser = JSON.stringify(currentUser);
+  const serializedRoles = JSON.stringify(currentUser.roles || [role.value]);
+
+  sessionStorage.setItem("crown.jwt.access", access);
+  sessionStorage.setItem("crown.jwt.refresh", refresh);
+  sessionStorage.setItem("crown.school.id", schoolId);
+  sessionStorage.setItem("crown.role", role.value);
+  sessionStorage.setItem("crown.active.role", role.value);
+  sessionStorage.setItem("crown_user", serializedUser);
+  sessionStorage.setItem("crown_current_user", serializedUser);
+  sessionStorage.setItem("crown_user_roles", serializedRoles);
+
+  localStorage.setItem("crown.jwt.access", access);
+  localStorage.setItem("crown.school.id", schoolId);
+  localStorage.setItem("crown.role", role.value);
+  localStorage.setItem("crown.active.role", role.value);
+  localStorage.setItem("crown_user", serializedUser);
+  localStorage.setItem("crown_current_user", serializedUser);
+  localStorage.setItem("crown_user_roles", serializedRoles);
+
+  if (IS_SANDBOX) {
+    localStorage.setItem("crown.demo.role", role.value);
+  }
+}
+
 async function fetchSandboxCredentials() {
   try {
     const response = await axios.get("/demo/heritage_demo_credentials.json");
@@ -158,7 +225,7 @@ export default function LoginPage() {
 
     try {
       const username = IS_SANDBOX ? email : (email || "demo@crown.example.org");
-        const pass = IS_SANDBOX ? password : (password || "demo-password");
+      const pass = IS_SANDBOX ? password : (password || "demo-password");
       const response = await globalThis.fetch(apiUrl("/api/v1/auth/token/"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -171,13 +238,7 @@ export default function LoginPage() {
       }
 
       const payload = await response.json();
-      sessionStorage.setItem("crown.jwt.access", payload.access);
-      sessionStorage.setItem("crown.school.id", payload.school_id || selectedSchoolId || DEMO_SCHOOL);
-      sessionStorage.setItem("crown.role", role.value);
-      localStorage.setItem("crown.role", role.value);
-      if (IS_SANDBOX) {
-        localStorage.setItem("crown.demo.role", role.value);
-      }
+      persistAuthenticatedSession(payload, role, selectedSchoolId, username);
 
       globalThis.location.href = role.route;
     } catch (authError) {
@@ -661,4 +722,3 @@ export default function LoginPage() {
     </>
   );
 }
-

@@ -10,17 +10,33 @@ function parseStorageValue(raw) {
   }
 }
 
+function readStorageValue(key) {
+  if (typeof window === "undefined") return null;
+
+  const sessionValue = parseStorageValue(sessionStorage.getItem(key));
+  if (sessionValue) return sessionValue;
+
+  return parseStorageValue(localStorage.getItem(key));
+}
+
+function collectSeededRoleValues() {
+  if (typeof window === "undefined") return [];
+
+  return [
+    sessionStorage.getItem("crown.role"),
+    sessionStorage.getItem("crown.active.role"),
+    localStorage.getItem("crown.role"),
+    localStorage.getItem("crown.active.role"),
+    localStorage.getItem("crown.demo.role"),
+  ].filter(Boolean);
+}
+
 export function getCurrentUserRoles() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return [];
   }
 
-  const seededRoles = [
-    sessionStorage.getItem('crown.role'),
-    localStorage.getItem('crown.role'),
-    localStorage.getItem('crown.demo.role'),
-  ].filter(Boolean);
-  const seededNormalized = getUserRoles(seededRoles);
+  const seededNormalized = getUserRoles(collectSeededRoleValues());
   if (seededNormalized.length > 0) {
     return seededNormalized;
   }
@@ -30,13 +46,13 @@ export function getCurrentUserRoles() {
     return windowRoles;
   }
 
-  const directRoles = parseStorageValue(localStorage.getItem('crown_user_roles'));
+  const directRoles = readStorageValue("crown_user_roles");
   const directNormalized = getUserRoles(directRoles);
   if (directNormalized.length > 0) {
     return directNormalized;
   }
 
-  const currentUser = parseStorageValue(localStorage.getItem('crown_current_user'));
+  const currentUser = readStorageValue("crown_current_user") ?? readStorageValue("crown_user");
   const currentUserRoles = getUserRoles(currentUser);
   if (currentUserRoles.length > 0) {
     return currentUserRoles;
