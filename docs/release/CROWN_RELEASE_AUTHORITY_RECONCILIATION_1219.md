@@ -2,6 +2,7 @@
 
 Date: 2026-07-02
 Issue: #1219 (Reconcile verified evidence against CROWN release authority)
+Scope hygiene note: Reissued as docs-only packet from current main to isolate release evidence updates from non-doc changes.
 Branch anchor: release/authority-reconciliation-1219
 Head SHA at reconciliation start: 02f559661c3d777f549ee7a8f46cf23aa99425b4
 
