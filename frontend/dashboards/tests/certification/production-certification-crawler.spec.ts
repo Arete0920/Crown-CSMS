@@ -1,144 +1,267 @@
-import fs from "node:fs";
-import path from "node:path";
-import AxeBuilder from "@axe-core/playwright";
-import { test, expect } from "@playwright/test";
-import { attachNetworkRecorder } from "./network-recorder";
+import { test, expect, type Page } from "@playwright/test";
+import { certificationMatrix } from "./certification-matrix";
+import { certificationPersonas } from "./personas";
+import { certificationTenants } from "./tenants";
+import { runAccessibilityCertification } from "./accessibility";
+import { collectPageBlockers } from "./assertions";
+import { attachNetworkRecorder, type NetworkObservation } from "./network-recorder";
+import {
+  appendCertificationResult,
+  loadCertificationResults,
+  resetEvidenceRoot,
+  screenshotPathFor,
+  writeCertificationSummary,
+} from "./evidence-writer";
 
-type LiveRuntimeResult = {
-  status: "PASS" | "FAIL";
-  frontendUrl: string;
-  currentUrl: string;
-  failedRequests: Array<{ url: string; status?: number; failure?: string | null; method?: string }>;
-  missingExpectedApis: string[];
-  consoleErrors: string[];
-  criticalAccessibilityViolations: number;
-  errors: string[];
+type RoleCredential = {
+  email?: string;
+  password?: string;
 };
 
-const evidenceRoot = path.resolve(process.cwd(), "../../audit-artifacts/live-runtime-certification/current");
-const summaryPath = path.join(evidenceRoot, "certification-summary.md");
-const resultPath = path.join(evidenceRoot, "live-runtime-result.json");
-const screenshotPath = path.join(evidenceRoot, "live-runtime-login.png");
+const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
+const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
+const USE_SANDBOX_CREDENTIAL_BUTTON = process.env.CROWN_LIVE_USE_SANDBOX_CREDENTIALS !== "0";
 
-function requireEnv(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+const roleValues: Record<string, string[]> = {
+  admin: ["school_admin", "head_of_school", "admin"],
+  teacher: ["teacher"],
+  parent: ["parent"],
+  student: ["student"],
+  board: ["board", "head_of_school"],
+};
+
+function requireLiveUrl(name: string): string {
+  const raw = process.env[name];
+  if (!raw) {
+    throw new Error(`${name} is required for live runtime certification.`);
   }
-  return value;
+
+  const parsed = new URL(raw);
+  const forbiddenHosts = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
+  if (forbiddenHosts.has(parsed.hostname) || parsed.hostname.endsWith(".local")) {
+    throw new Error(`${name} must target deployed runtime, not local host: ${raw}`);
+  }
+
+  return parsed.toString().replace(/\/+$/, "");
 }
 
-function writeEvidence(result: LiveRuntimeResult): void {
-  fs.mkdirSync(evidenceRoot, { recursive: true });
-  fs.writeFileSync(resultPath, `${JSON.stringify(result, null, 2)}\n`);
+function credentialFor(role: string): RoleCredential {
+  const key = role.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+  return {
+    email: process.env[`CROWN_LIVE_${key}_EMAIL`] ?? process.env.CROWN_LIVE_EMAIL,
+    password: process.env[`CROWN_LIVE_${key}_PASSWORD`] ?? process.env.CROWN_LIVE_PASSWORD,
+  };
+}
 
-  const lines = [
-    "# Live Runtime Certification Summary",
-    "",
-    `Status: **${result.status}**`,
-    "",
-    `Frontend URL: ${result.frontendUrl}`,
-    `Current URL after login: ${result.currentUrl}`,
-    `Failed requests: ${result.failedRequests.length}`,
-    `Missing expected APIs: ${result.missingExpectedApis.length}`,
-    `Console errors: ${result.consoleErrors.length}`,
-    `Critical/serious accessibility violations: ${result.criticalAccessibilityViolations}`,
-    "",
-    "## Errors",
-    ...(result.errors.length ? result.errors.map((error) => `- ${error}`) : ["- None"]),
-  ];
-  fs.writeFileSync(summaryPath, `${lines.join("\n")}\n`);
+function absoluteLiveUrl(path: string): string {
+  return new URL(path, `${LIVE_FRONTEND_URL}/`).toString();
+}
+
+function isAllowedExternalFailure(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname.includes("favicon") || parsed.hostname.endsWith("visualstudio.com");
+  } catch {
+    return false;
+  }
+}
+
+async function selectSchool(page: Page, tenant: { schoolId: string; schoolCode: string; label: string }): Promise<void> {
+  const schoolSelect = page.locator("#login-school");
+  if (!(await schoolSelect.isVisible({ timeout: 10_000 }).catch(() => false))) {
+    return;
+  }
+
+  const selectedValue = await schoolSelect.evaluate((select, target) => {
+    const options = Array.from((select as HTMLSelectElement).options);
+    const match = options.find((option) => (
+      option.value === target.schoolId
+      || option.value === target.schoolCode
+      || option.textContent?.toLowerCase().includes(target.label.toLowerCase())
+      || option.textContent?.toLowerCase().includes(target.schoolCode.toLowerCase())
+    ));
+    return match?.value ?? null;
+  }, tenant);
+
+  if (!selectedValue) {
+    throw new Error(`Live login school option not found for tenant ${tenant.label}`);
+  }
+
+  await schoolSelect.selectOption(selectedValue);
+}
+
+async function selectRole(page: Page, role: string): Promise<void> {
+  const roleSelect = page.locator("#login-role");
+  await expect(roleSelect).toBeVisible();
+
+  const selectedValue = await roleSelect.evaluate((select, candidates) => {
+    const options = Array.from((select as HTMLSelectElement).options);
+    const values = candidates as string[];
+    const match = options.find((option) => values.includes(option.value));
+    return match?.value ?? null;
+  }, roleValues[role] ?? [role]);
+
+  if (!selectedValue) {
+    throw new Error(`Live login role option not found for role ${role}`);
+  }
+
+  await roleSelect.selectOption(selectedValue);
+}
+
+async function performLiveLogin(page: Page, role: string, tenant: { schoolId: string; schoolCode: string; label: string }): Promise<void> {
+  await page.goto(absoluteLiveUrl("/login"), { waitUntil: "domcontentloaded" });
+  await selectSchool(page, tenant);
+  await selectRole(page, role);
+
+  const credential = credentialFor(role);
+  const sandboxButton = page.getByRole("button", { name: /use sandbox credentials/i });
+  const canUseSandboxButton = USE_SANDBOX_CREDENTIAL_BUTTON
+    && await sandboxButton.isVisible({ timeout: 2_000 }).catch(() => false);
+
+  if (canUseSandboxButton) {
+    await sandboxButton.click();
+  }
+
+  if (credential.email) {
+    await page.locator("#login-email").fill(credential.email);
+  }
+
+  if (credential.password) {
+    await page.locator("#login-password").fill(credential.password);
+  }
+
+  const emailValue = await page.locator("#login-email").inputValue().catch(() => "");
+  const passwordValue = await page.locator("#login-password").inputValue().catch(() => "");
+
+  if (!emailValue || !passwordValue) {
+    throw new Error(`No live credentials available for role ${role}. Configure CROWN_LIVE_${role.toUpperCase()}_EMAIL/PASSWORD or enable the live sandbox credential button.`);
+  }
+
+  await page.getByRole("button", { name: /^sign in$/i }).click();
+  await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => undefined);
+
+  const alert = page.locator("[role='alert'], .error-banner").first();
+  if (await alert.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    throw new Error(`Live login failed for role ${role}: ${await alert.innerText()}`);
+  }
+
+  await expect(page.locator("body")).toBeVisible();
 }
 
 test.describe.configure({ mode: "serial", retries: 0 });
 
-test("live runtime login and auth-path certification", async ({ page }, testInfo) => {
-  const frontendBase = requireEnv("CROWN_LIVE_FRONTEND_URL").replace(/\/+$/, "");
-  const email = requireEnv("CROWN_LIVE_LOGIN_EMAIL");
-  const password = requireEnv("CROWN_LIVE_LOGIN_PASSWORD");
-  const roleLabel = process.env.CROWN_LIVE_ROLE_LABEL || "School Admin";
-  const schoolLabel = process.env.CROWN_LIVE_SCHOOL_LABEL || "";
-
-  const consoleErrors: string[] = [];
-  page.on("pageerror", (error) => {
-    consoleErrors.push(`[pageerror] ${error.message}`);
-  });
-  page.on("console", (message) => {
-    if (message.type() === "error") {
-      consoleErrors.push(`[console.error] ${message.text()}`);
-    }
-  });
-
-  const network = attachNetworkRecorder(page, ["/api/v1/auth/token/", "/api/v1/auth/me/"]);
-  await page.goto(`${frontendBase}/login`, { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: /Sign In/i })).toBeVisible();
-
-  if (schoolLabel) {
-    const schoolCombo = page.getByLabel("School");
-    if (await schoolCombo.count()) {
-      await schoolCombo.selectOption({ label: schoolLabel });
-    }
-  }
-
-  const roleCombo = page.getByLabel("Role");
-  if (await roleCombo.count()) {
-    await roleCombo.selectOption({ label: roleLabel });
-  }
-
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: /^Sign In$/ }).click();
-
-  await page.waitForTimeout(5000);
-  const currentUrl = page.url();
-  const bodyText = await page.locator("body").innerText().catch(() => "");
-
-  const a11y = await new AxeBuilder({ page }).analyze();
-  const criticalOrSeriousCount = a11y.violations.filter(
-    (violation) => violation.impact === "critical" || violation.impact === "serious",
-  ).length;
-
-  await page.screenshot({ path: screenshotPath, fullPage: true });
-  await testInfo.attach("live-runtime-login", { path: screenshotPath, contentType: "image/png" });
-
-  const errors: string[] = [];
-  const loginErrorPattern = /Failed to fetch|Access Restricted|You do not have permission|fix the assigned role set|Auth failed/i;
-  if (loginErrorPattern.test(bodyText)) {
-    errors.push("login page displayed an auth/network failure message");
-  }
-
-  if (/\/login(?:$|[?#])/.test(currentUrl)) {
-    errors.push("still on /login after sign-in attempt");
-  }
-
-  if (network.failed.length > 0) {
-    errors.push(`failed API/network requests: ${network.failed.length}`);
-  }
-
-  const missingExpectedApis = network.missingExpected();
-  if (missingExpectedApis.length > 0) {
-    errors.push(`missing expected API calls: ${missingExpectedApis.join(", ")}`);
-  }
-
-  if (consoleErrors.length > 0) {
-    errors.push(`console errors: ${consoleErrors.length}`);
-  }
-
-  if (criticalOrSeriousCount > 0) {
-    errors.push(`critical/serious accessibility violations: ${criticalOrSeriousCount}`);
-  }
-
-  const result: LiveRuntimeResult = {
-    status: errors.length === 0 ? "PASS" : "FAIL",
-    frontendUrl: frontendBase,
-    currentUrl,
-    failedRequests: network.failed,
-    missingExpectedApis,
-    consoleErrors,
-    criticalAccessibilityViolations: criticalOrSeriousCount,
-    errors,
-  };
-
-  writeEvidence(result);
-  expect(errors, errors.join("\n")).toEqual([]);
+test.beforeAll(() => {
+  resetEvidenceRoot();
 });
+
+test.afterAll(() => {
+  writeCertificationSummary();
+
+  const failed = loadCertificationResults().filter((row) => row.status === "FAIL");
+  const details = failed.map((row) => `${row.id} / ${row.persona} / ${row.tenant}: ${row.errors.join("; ")}`);
+  expect(failed, details.join("\n")).toEqual([]);
+});
+
+for (const surface of certificationMatrix) {
+  for (const personaId of surface.personas) {
+    for (const tenantId of surface.tenants) {
+      const persona = certificationPersonas.find((candidate) => candidate.id === personaId);
+      const tenant = certificationTenants.find((candidate) => candidate.id === tenantId);
+
+      if (!persona) {
+        throw new Error(`Unknown certification persona: ${personaId}`);
+      }
+
+      if (!tenant) {
+        throw new Error(`Unknown certification tenant: ${tenantId}`);
+      }
+
+      test(`${surface.id} / ${persona.id} / ${tenant.id}`, async ({ page }, testInfo) => {
+        const consoleErrors: string[] = [];
+        const nonApiFailedRequests: NetworkObservation[] = [];
+
+        page.on("pageerror", (error) => {
+          consoleErrors.push(`[pageerror] ${error.message}`);
+        });
+
+        page.on("console", (message) => {
+          if (message.type() === "error") {
+            consoleErrors.push(`[console.error] ${message.text()}`);
+          }
+        });
+
+        page.on("requestfailed", (request) => {
+          const url = request.url();
+          if (url.includes("/api/") || isAllowedExternalFailure(url)) {
+            return;
+          }
+          nonApiFailedRequests.push({
+            url,
+            method: request.method(),
+            failure: request.failure()?.errorText ?? "request failed",
+          });
+        });
+
+        const expectedFragments = [
+          LIVE_API_BASE_URL,
+          ...(surface.expectedApiFragments ?? []),
+        ];
+        const network = attachNetworkRecorder(page, expectedFragments);
+        const errors: string[] = [];
+
+        try {
+          await performLiveLogin(page, persona.role, tenant);
+          await page.goto(absoluteLiveUrl(surface.route), { waitUntil: "networkidle" });
+          await expect(page.locator("body")).toBeVisible();
+        } catch (error) {
+          errors.push(error instanceof Error ? error.message : String(error));
+        }
+
+        const accessibility = await runAccessibilityCertification(page);
+        const screenshotPath = screenshotPathFor(surface.id, persona.id, tenant.id);
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+        await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
+
+        const pageErrors = await collectPageBlockers(
+          page,
+          network,
+          accessibility,
+          surface.expectedText ?? [],
+          false,
+        );
+        errors.push(...pageErrors);
+
+        if (!(surface.allowConsoleErrors ?? false) && consoleErrors.length > 0) {
+          errors.push(`console errors: ${consoleErrors.length}`);
+        }
+
+        if (nonApiFailedRequests.length > 0) {
+          errors.push(`failed non-API network requests: ${nonApiFailedRequests.length}`);
+        }
+
+        const missingExpectedApis = network.missingExpected();
+        const failedRequests = [...network.failed, ...nonApiFailedRequests];
+
+        appendCertificationResult({
+          id: surface.id,
+          label: surface.label,
+          kind: surface.kind,
+          route: surface.route,
+          persona: persona.id,
+          tenant: tenant.id,
+          status: errors.length === 0 ? "PASS" : "FAIL",
+          errors,
+          screenshotPath,
+          networkObserved: network.observed.length,
+          networkFailed: failedRequests.length,
+          failedRequests,
+          consoleErrors,
+          missingExpectedApis,
+          accessibilityViolationDetails: accessibility.violations,
+          accessibilityViolations: accessibility.violationCount,
+          criticalAccessibilityViolations: accessibility.criticalOrSeriousCount,
+        });
+      });
+    }
+  }
+}

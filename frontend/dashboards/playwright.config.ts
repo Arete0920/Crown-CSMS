@@ -5,28 +5,34 @@ import { defineConfig, devices } from "@playwright/test";
  *
  * Local dev: `npm run test:e2e` (starts Vite via webServer automatically)
  * Headed:    `npm run test:e2e:headed`
- * CI:        `npm run test:e2e` (PLAYWRIGHT_CI=1 → retries=2, no headed)
+ * CI:        `npm run test:e2e` (PLAYWRIGHT_CI=1 -> retries=2, no headed)
  *
- * VITE_DEV_BASE_URL env var overrides the baseURL (e.g. for staging).
+ * VITE_DEV_BASE_URL env var overrides the local preview baseURL.
+ * CROWN_LIVE_FRONTEND_URL is used only by live runtime certification.
  */
 
-// Port 4173 = Vite preview default — avoids collision with port 3000 dev servers
-// in concurrent CI jobs. Can be overridden via VITE_DEV_BASE_URL env var.
-const BASE_URL = process.env.VITE_DEV_BASE_URL ?? "http://localhost:4173";
+const IS_LIVE_RUNTIME_CERTIFICATION = process.env.CROWN_CERTIFICATION_LIVE_RUNTIME === "1";
+const BASE_URL = IS_LIVE_RUNTIME_CERTIFICATION
+  ? process.env.CROWN_LIVE_FRONTEND_URL
+  : (process.env.VITE_DEV_BASE_URL ?? "http://localhost:4173");
+
+if (IS_LIVE_RUNTIME_CERTIFICATION && !BASE_URL) {
+  throw new Error("CROWN_LIVE_FRONTEND_URL is required when CROWN_CERTIFICATION_LIVE_RUNTIME=1.");
+}
 
 export default defineConfig({
   testDir: "./tests",
 
   /* Give each test 30 s; navigation on first load can be slow in CI */
-  timeout: 30_000,
-  expect: { timeout: 8_000 },
+  timeout: IS_LIVE_RUNTIME_CERTIFICATION ? 60_000 : 30_000,
+  expect: { timeout: IS_LIVE_RUNTIME_CERTIFICATION ? 10_000 : 8_000 },
 
-  /* Retry once in CI so transient startup timing doesn't fail the gate */
-  retries: process.env.CI ? 2 : 0,
+  /* Retry once in normal CI; live runtime certification must be deterministic evidence. */
+  retries: IS_LIVE_RUNTIME_CERTIFICATION ? 0 : (process.env.CI ? 2 : 0),
 
-  /* Run tests in parallel within a file in CI; sequentially locally for easier debugging */
-  fullyParallel: !!process.env.CI,
-  workers: process.env.CI ? 2 : 1,
+  /* Live runtime evidence is serial by design so route failures are readable. */
+  fullyParallel: IS_LIVE_RUNTIME_CERTIFICATION ? false : !!process.env.CI,
+  workers: IS_LIVE_RUNTIME_CERTIFICATION ? 1 : (process.env.CI ? 2 : 1),
 
   reporter: [
     ["list"],
@@ -36,7 +42,7 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     screenshot: "only-on-failure",
-    trace: "on-first-retry",
+    trace: IS_LIVE_RUNTIME_CERTIFICATION ? "retain-on-failure" : "on-first-retry",
     video: "off",
   },
 
@@ -47,18 +53,17 @@ export default defineConfig({
     },
   ],
 
-  /* Auto-start the Vite server when running locally or in CI.
-   * CI: build first then serve via preview (deterministic, no HMR noise).
-   *     reuseExistingServer=false ensures a clean server each run.
-   * Local: serve preview and reuse an existing server if already running. */
-  webServer: {
-    command: process.env.CI
-      ? "npm run build && npm run preview -- --port 4173 --strictPort"
-      : "npm run preview -- --port 4173 --strictPort",
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: process.env.CI ? 180_000 : 60_000,
-    stdout: "ignore",
-    stderr: "pipe",
-  },
+  /* Auto-start Vite only for local/scaffold lanes. Live certification must target deployed runtime. */
+  ...(IS_LIVE_RUNTIME_CERTIFICATION ? {} : {
+    webServer: {
+      command: process.env.CI
+        ? "npm run build && npm run preview -- --port 4173 --strictPort"
+        : "npm run preview -- --port 4173 --strictPort",
+      url: BASE_URL,
+      reuseExistingServer: !process.env.CI,
+      timeout: process.env.CI ? 180_000 : 60_000,
+      stdout: "ignore",
+      stderr: "pipe",
+    },
+  }),
 });
