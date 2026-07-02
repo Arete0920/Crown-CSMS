@@ -1,246 +1,144 @@
-import { test, expect, type Page } from "@playwright/test";
-import { certificationMatrix } from "./certification-matrix";
-import { certificationPersonas } from "./personas";
-import { certificationTenants } from "./tenants";
-import { runAccessibilityCertification } from "./accessibility";
-import { collectPageBlockers } from "./assertions";
+import fs from "node:fs";
+import path from "node:path";
+import AxeBuilder from "@axe-core/playwright";
+import { test, expect } from "@playwright/test";
 import { attachNetworkRecorder } from "./network-recorder";
-import {
-  appendCertificationResult,
-  loadCertificationResults,
-  resetEvidenceRoot,
-  screenshotPathFor,
-  writeCertificationSummary,
-} from "./evidence-writer";
 
-type SandboxSession = {
-  access: string;
-  refresh?: string;
-  school_id: string;
-  school_name?: string;
-  role: string;
-  currentUser: {
-    email: string;
-    username: string;
-    role: string;
-    roles: string[];
-    school_id: string;
-    schoolId: string;
-    token: string;
-  };
+type LiveRuntimeResult = {
+  status: "PASS" | "FAIL";
+  frontendUrl: string;
+  currentUrl: string;
+  failedRequests: Array<{ url: string; status?: number; failure?: string | null; method?: string }>;
+  missingExpectedApis: string[];
+  consoleErrors: string[];
+  criticalAccessibilityViolations: number;
+  errors: string[];
 };
 
-const IGNORED_CONSOLE_PATTERNS = [
-  /net::ERR_/,
-  /Failed to fetch/,
-  /Failed to load resource/,
-  /favicon/i,
-  /ResizeObserver loop/,
-];
+const evidenceRoot = path.resolve(process.cwd(), "../../audit-artifacts/live-runtime-certification/current");
+const summaryPath = path.join(evidenceRoot, "certification-summary.md");
+const resultPath = path.join(evidenceRoot, "live-runtime-result.json");
+const screenshotPath = path.join(evidenceRoot, "live-runtime-login.png");
 
-function mapCertificationRoleToSandboxRole(role: string): string {
-  switch (role) {
-    case "admin":
-      return "school_admin";
-    case "teacher":
-      return "teacher";
-    case "parent":
-      return "parent";
-    case "student":
-      return "student";
-    case "board":
-      return "board";
-    default:
-      throw new Error(`Unsupported certification role: ${role}`);
+function requireEnv(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
   }
+  return value;
 }
 
-async function createSandboxSession(_page: Page, role: string, schoolId: string): Promise<SandboxSession> {
-  return {
-    access: `cert-${role}-access-token`,
-    refresh: "",
-    school_id: schoolId,
-    school_name: "Certification Demo School",
-    role,
-    currentUser: {
-      email: `cert-${role}@example.local`,
-      username: `cert-${role}`,
-      role,
-      roles: [role],
-      school_id: schoolId,
-      schoolId,
-      token: `cert-${role}-token`,
-    },
-  };
-}
+function writeEvidence(result: LiveRuntimeResult): void {
+  fs.mkdirSync(evidenceRoot, { recursive: true });
+  fs.writeFileSync(resultPath, `${JSON.stringify(result, null, 2)}\n`);
 
-async function installCertificationApiStubs(page: Page, role: string, schoolId: string): Promise<void> {
-  await page.route("**/api/**", async (route) => {
-    const url = new URL(route.request().url());
-    const path = url.pathname;
-
-    if (path === "/api/v1/nav/") {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          groups: [
-            {
-              title: "Navigation",
-              items: [
-                { label: "Administration", href: "/admin" },
-                { label: "Teacher", href: "/teacher" },
-                { label: "Parent", href: "/parent" },
-                { label: "Student", href: "/student" },
-                { label: "Wizards", href: "/wizards" },
-              ],
-            },
-          ],
-        }),
-      });
-    }
-
-    if (path === "/api/v1/wizards/") {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ wizards: [] }),
-      });
-    }
-
-    if (path === "/api/v1/auth/me/" || path === "/api/auth/me/") {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          email: `cert-${role}@example.local`,
-          username: `cert-${role}`,
-          role,
-          roles: [role],
-          school_id: schoolId,
-          schoolId,
-        }),
-      });
-    }
-
-    return route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ ok: true }),
-    });
-  });
+  const lines = [
+    "# Live Runtime Certification Summary",
+    "",
+    `Status: **${result.status}**`,
+    "",
+    `Frontend URL: ${result.frontendUrl}`,
+    `Current URL after login: ${result.currentUrl}`,
+    `Failed requests: ${result.failedRequests.length}`,
+    `Missing expected APIs: ${result.missingExpectedApis.length}`,
+    `Console errors: ${result.consoleErrors.length}`,
+    `Critical/serious accessibility violations: ${result.criticalAccessibilityViolations}`,
+    "",
+    "## Errors",
+    ...(result.errors.length ? result.errors.map((error) => `- ${error}`) : ["- None"]),
+  ];
+  fs.writeFileSync(summaryPath, `${lines.join("\n")}\n`);
 }
 
 test.describe.configure({ mode: "serial", retries: 0 });
 
-test.beforeAll(() => {
-  resetEvidenceRoot();
-});
+test("live runtime login and auth-path certification", async ({ page }, testInfo) => {
+  const frontendBase = requireEnv("CROWN_LIVE_FRONTEND_URL").replace(/\/+$/, "");
+  const email = requireEnv("CROWN_LIVE_LOGIN_EMAIL");
+  const password = requireEnv("CROWN_LIVE_LOGIN_PASSWORD");
+  const roleLabel = process.env.CROWN_LIVE_ROLE_LABEL || "School Admin";
+  const schoolLabel = process.env.CROWN_LIVE_SCHOOL_LABEL || "";
 
-test.afterAll(() => {
-  writeCertificationSummary();
+  const consoleErrors: string[] = [];
+  page.on("pageerror", (error) => {
+    consoleErrors.push(`[pageerror] ${error.message}`);
+  });
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      consoleErrors.push(`[console.error] ${message.text()}`);
+    }
+  });
 
-  const failed = loadCertificationResults().filter((row) => row.status === "FAIL");
-  const details = failed.map((row) => `${row.id} / ${row.persona} / ${row.tenant}: ${row.errors.join("; ")}`);
-  expect(failed, details.join("\n")).toEqual([]);
-});
+  const network = attachNetworkRecorder(page, ["/api/v1/auth/token/", "/api/v1/auth/me/"]);
+  await page.goto(`${frontendBase}/login`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: /Sign In/i })).toBeVisible();
 
-for (const surface of certificationMatrix) {
-  for (const personaId of surface.personas) {
-    for (const tenantId of surface.tenants) {
-      const persona = certificationPersonas.find((candidate) => candidate.id === personaId);
-      const tenant = certificationTenants.find((candidate) => candidate.id === tenantId);
-
-      if (!persona) {
-        throw new Error(`Unknown certification persona: ${personaId}`);
-      }
-
-      if (!tenant) {
-        throw new Error(`Unknown certification tenant: ${tenantId}`);
-      }
-
-      test(`${surface.id} / ${persona.id} / ${tenant.id}`, async ({ page }, testInfo) => {
-        const consoleErrors: string[] = [];
-        page.on("pageerror", (error) => {
-          consoleErrors.push(`[pageerror] ${error.message}`);
-        });
-        page.on("console", (message) => {
-          if (message.type() === "error") {
-            const text = message.text();
-            if (IGNORED_CONSOLE_PATTERNS.some((pattern) => pattern.test(text))) {
-              return;
-            }
-            consoleErrors.push(`[console.error] ${text}`);
-          }
-        });
-
-        const sandboxRole = mapCertificationRoleToSandboxRole(persona.role);
-        const session = await createSandboxSession(page, sandboxRole, tenant.schoolId);
-        await installCertificationApiStubs(page, sandboxRole, tenant.schoolId);
-        await page.addInitScript((sessionData) => {
-          sessionStorage.setItem("crown.jwt.access", sessionData.access);
-          sessionStorage.setItem("crown.jwt.refresh", sessionData.refresh || "");
-          sessionStorage.setItem("crown.school.id", sessionData.school_id);
-          sessionStorage.setItem("crown.school.name", sessionData.school_name || "");
-          sessionStorage.setItem("crown.role", sessionData.role);
-          sessionStorage.setItem("crown.active.role", sessionData.role);
-          sessionStorage.setItem("crown_user", JSON.stringify(sessionData.currentUser));
-          sessionStorage.setItem("crown_current_user", JSON.stringify(sessionData.currentUser));
-          sessionStorage.setItem("crown_user_roles", JSON.stringify(sessionData.currentUser.roles));
-
-          localStorage.setItem("crown.jwt.access", sessionData.access);
-          localStorage.setItem("crown.school.id", sessionData.school_id);
-          localStorage.setItem("crown.role", sessionData.role);
-          localStorage.setItem("crown_user", JSON.stringify(sessionData.currentUser));
-          localStorage.setItem("crown_current_user", JSON.stringify(sessionData.currentUser));
-          localStorage.setItem("crown_user_roles", JSON.stringify(sessionData.currentUser.roles));
-        }, session);
-
-        const network = attachNetworkRecorder(page, surface.expectedApiFragments ?? []);
-        const target = surface.route;
-
-        await page.goto(target, { waitUntil: "networkidle" });
-        await expect(page.locator("body")).toBeVisible();
-
-        const accessibility = await runAccessibilityCertification(page);
-        const screenshotPath = screenshotPathFor(surface.id, persona.id, tenant.id);
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-        await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
-
-        const missingExpectedApis = network.missingExpected();
-        const errors = await collectPageBlockers(
-          page,
-          network,
-          accessibility,
-          surface.expectedText ?? [],
-          surface.allowFailedRequests ?? false,
-        );
-
-        if (!(surface.allowConsoleErrors ?? false) && consoleErrors.length > 0) {
-          errors.push(`console errors: ${consoleErrors.length}`);
-        }
-
-        appendCertificationResult({
-          id: surface.id,
-          label: surface.label,
-          kind: surface.kind,
-          route: surface.route,
-          persona: persona.id,
-          tenant: tenant.id,
-          status: errors.length === 0 ? "PASS" : "FAIL",
-          errors,
-          screenshotPath,
-          networkObserved: network.observed.length,
-          networkFailed: network.failed.length,
-          failedRequests: network.failed,
-          consoleErrors,
-          missingExpectedApis,
-          accessibilityViolationDetails: accessibility.violations,
-          accessibilityViolations: accessibility.violationCount,
-          criticalAccessibilityViolations: accessibility.criticalOrSeriousCount,
-        });
-
-      });
+  if (schoolLabel) {
+    const schoolCombo = page.getByLabel("School");
+    if (await schoolCombo.count()) {
+      await schoolCombo.selectOption({ label: schoolLabel });
     }
   }
-}
+
+  const roleCombo = page.getByLabel("Role");
+  if (await roleCombo.count()) {
+    await roleCombo.selectOption({ label: roleLabel });
+  }
+
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: /^Sign In$/ }).click();
+
+  await page.waitForTimeout(5000);
+  const currentUrl = page.url();
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+
+  const a11y = await new AxeBuilder({ page }).analyze();
+  const criticalOrSeriousCount = a11y.violations.filter(
+    (violation) => violation.impact === "critical" || violation.impact === "serious",
+  ).length;
+
+  await page.screenshot({ path: screenshotPath, fullPage: true });
+  await testInfo.attach("live-runtime-login", { path: screenshotPath, contentType: "image/png" });
+
+  const errors: string[] = [];
+  const loginErrorPattern = /Failed to fetch|Access Restricted|You do not have permission|fix the assigned role set|Auth failed/i;
+  if (loginErrorPattern.test(bodyText)) {
+    errors.push("login page displayed an auth/network failure message");
+  }
+
+  if (/\/login(?:$|[?#])/.test(currentUrl)) {
+    errors.push("still on /login after sign-in attempt");
+  }
+
+  if (network.failed.length > 0) {
+    errors.push(`failed API/network requests: ${network.failed.length}`);
+  }
+
+  const missingExpectedApis = network.missingExpected();
+  if (missingExpectedApis.length > 0) {
+    errors.push(`missing expected API calls: ${missingExpectedApis.join(", ")}`);
+  }
+
+  if (consoleErrors.length > 0) {
+    errors.push(`console errors: ${consoleErrors.length}`);
+  }
+
+  if (criticalOrSeriousCount > 0) {
+    errors.push(`critical/serious accessibility violations: ${criticalOrSeriousCount}`);
+  }
+
+  const result: LiveRuntimeResult = {
+    status: errors.length === 0 ? "PASS" : "FAIL",
+    frontendUrl: frontendBase,
+    currentUrl,
+    failedRequests: network.failed,
+    missingExpectedApis,
+    consoleErrors,
+    criticalAccessibilityViolations: criticalOrSeriousCount,
+    errors,
+  };
+
+  writeEvidence(result);
+  expect(errors, errors.join("\n")).toEqual([]);
+});
