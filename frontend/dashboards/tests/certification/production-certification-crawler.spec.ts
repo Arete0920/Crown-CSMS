@@ -43,6 +43,7 @@ const SANDBOX_TENANT_SCHOOL_KEYS: Record<string, string> = {
 const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
 const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
 const USE_SANDBOX_CREDENTIAL_BUTTON = process.env.CROWN_LIVE_USE_SANDBOX_CREDENTIALS !== "0";
+const LIVE_SANDBOX_INVITE_ID = resolveSandboxInviteId();
 
 const roleValues: Record<string, string[]> = {
   admin: ["school_admin", "head_of_school", "admin"],
@@ -84,16 +85,35 @@ function sandboxSchoolKeyFor(tenant: { id: string; schoolId: string }): string {
   return SANDBOX_TENANT_SCHOOL_KEYS[tenant.id] ?? tenant.schoolId;
 }
 
+function resolveSandboxInviteId(): string {
+  const envInvite = process.env.CROWN_LIVE_SANDBOX_INVITE_ID?.trim();
+  if (envInvite) {
+    return envInvite;
+  }
+
+  try {
+    return new URL(LIVE_FRONTEND_URL).searchParams.get("invite")?.trim() ?? "";
+  } catch {
+    return "";
+  }
+}
+
 async function primeSandboxPersona(role: string, tenant: { id: string; schoolId: string }): Promise<void> {
+  const payload: Record<string, string> = {
+    role: sandboxRoleKeyFor(role),
+    school: sandboxSchoolKeyFor(tenant),
+    guidance: "guided",
+    track: "school",
+  };
+
+  if (LIVE_SANDBOX_INVITE_ID) {
+    payload.invite_id = LIVE_SANDBOX_INVITE_ID;
+  }
+
   const response = await fetch(`${LIVE_API_BASE_URL}/api/v1/sandbox/session/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      role: sandboxRoleKeyFor(role),
-      school: sandboxSchoolKeyFor(tenant),
-      guidance: "guided",
-      track: "school",
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -103,7 +123,11 @@ async function primeSandboxPersona(role: string, tenant: { id: string; schoolId:
 }
 
 function absoluteLiveUrl(path: string): string {
-  return new URL(path, `${LIVE_FRONTEND_URL}/`).toString();
+  const url = new URL(path, `${LIVE_FRONTEND_URL}/`);
+  if (LIVE_SANDBOX_INVITE_ID) {
+    url.searchParams.set("invite", LIVE_SANDBOX_INVITE_ID);
+  }
+  return url.toString();
 }
 
 function isAllowedExternalFailure(url: string): boolean {
