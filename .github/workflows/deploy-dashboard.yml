@@ -121,7 +121,7 @@ jobs:
           if [[ "${GITHUB_REF_TYPE:-}" != "tag" ]]; then
             export VITE_SANDBOX_MODE='1'
             export VITE_DEMO_MODE='sandbox'
-            export VITE_API_BASE_URL='https://crown-api-dev.azurewebsites.net'
+            export VITE_API_BASE_URL='https://crown-api-prod.azurewebsites.net'
             echo "Sandbox build env enabled for non-tag deploys"
           else
             echo "Production tag deploy: sandbox build env disabled"
