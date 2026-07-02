@@ -11,6 +11,10 @@ export type CertificationSurface = {
   allowConsoleErrors?: boolean;
 };
 
+const CORE_TENANTS = ["heritage", "harvest", "faith"];
+const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
+const NAV_API = ["/api/v1/nav"];
+
 export const certificationMatrix: CertificationSurface[] = [
   {
     id: "sandbox-landing",
@@ -18,9 +22,9 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/sandbox",
     kind: "route",
     personas: ["sandbox-admin", "sandbox-teacher", "sandbox-parent"],
-    tenants: ["heritage"],
+    tenants: CORE_TENANTS,
     expectedText: ["CROWN"],
-    expectedApiFragments: [],
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "sandbox-command-center",
@@ -28,8 +32,8 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/sandbox/command-center",
     kind: "dashboard",
     personas: ["sandbox-admin"],
-    tenants: ["heritage"],
-    expectedApiFragments: [],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: [...AUTH_API, ...NAV_API],
   },
   {
     id: "admin-dashboard",
@@ -37,8 +41,17 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/admin",
     kind: "dashboard",
     personas: ["sandbox-admin"],
-    tenants: ["heritage"],
-    expectedApiFragments: ["/api/v1/nav"],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: [...AUTH_API, ...NAV_API],
+  },
+  {
+    id: "school-admin-dashboard",
+    label: "School admin dashboard",
+    route: "/school-admin-dashboard",
+    kind: "dashboard",
+    personas: ["sandbox-admin"],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: [...AUTH_API, ...NAV_API],
   },
   {
     id: "teacher-dashboard",
@@ -46,8 +59,8 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/teacher",
     kind: "dashboard",
     personas: ["sandbox-teacher"],
-    tenants: ["heritage"],
-    expectedApiFragments: [],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "parent-dashboard",
@@ -55,8 +68,8 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/parent",
     kind: "dashboard",
     personas: ["sandbox-parent"],
-    tenants: ["heritage"],
-    expectedApiFragments: [],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "student-dashboard",
@@ -64,8 +77,8 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/student",
     kind: "dashboard",
     personas: ["sandbox-student"],
-    tenants: ["heritage"],
-    expectedApiFragments: [],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "board-dashboard",
@@ -73,8 +86,8 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/board",
     kind: "dashboard",
     personas: ["sandbox-board"],
-    tenants: ["heritage"],
-    expectedApiFragments: [],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "wizard-hub",
@@ -82,7 +95,7 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/wizards",
     kind: "wizard",
     personas: ["sandbox-admin"],
-    tenants: ["heritage"],
-    expectedApiFragments: ["/api/v1/nav"],
+    tenants: CORE_TENANTS,
+    expectedApiFragments: [...AUTH_API, ...NAV_API, "/api/v1/wizards"],
   },
 ];

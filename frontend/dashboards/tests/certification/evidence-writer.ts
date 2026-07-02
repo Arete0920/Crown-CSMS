@@ -37,10 +37,10 @@ export type CertificationResultRow = {
 
 export const evidenceRoot = path.resolve(
   process.cwd(),
-  "../../audit-artifacts/scaffold-certification/current",
+  "../../audit-artifacts/production-certification/current",
 );
 
-const expectedEvidenceRootSuffix = path.join("audit-artifacts", "scaffold-certification", "current");
+const expectedEvidenceRootSuffix = path.join("audit-artifacts", "production-certification", "current");
 const expectedCwdSuffix = path.join("frontend", "dashboards");
 
 const resultsPath = path.join(evidenceRoot, "certification-matrix.json");
@@ -165,7 +165,7 @@ export function writeCertificationSummary(): void {
   const consoleErrorCount = rows.reduce((sum, row) => sum + row.consoleErrors.length, 0);
 
   const lines = [
-    "# CROWN Scaffold Certification Crawler Summary",
+    "# CROWN Live Runtime Production Certification Summary",
     "",
     `Status: **${failed.length === 0 ? "PASS" : "FAIL"}**`,
     "",
@@ -212,8 +212,8 @@ export function writeCertificationSummary(): void {
     "- console-errors.json",
     "- accessibility-violations.json",
     "- screenshots/",
-    "- traces/ (reserved; trace capture not enabled in this scaffold)",
-    "- har/ (reserved; HAR capture not enabled in this scaffold)",
+    "- playwright-report/",
+    "- traces/ (retained on failure by Playwright)",
     "",
   ];
 

@@ -1,8 +1,17 @@
-name: Scaffold Certification Evidence
-run-name: Scaffold Certification Evidence (${{ github.ref_name }})
+name: Production Certification Evidence
+run-name: Production Certification Evidence (${{ github.ref_name }})
 
 on:
   workflow_dispatch:
+    inputs:
+      live_frontend_url:
+        description: "Deployed frontend URL to certify"
+        required: false
+        type: string
+      live_api_base_url:
+        description: "Deployed backend/API base URL expected during certification"
+        required: false
+        type: string
   pull_request:
     branches:
       - main
@@ -26,12 +35,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: scaffold-certification-evidence-${{ github.workflow }}-${{ github.ref }}
+  group: production-certification-evidence-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  scaffold-certification-evidence:
-    name: Scaffold Certification Evidence
+  production-certification-evidence:
+    name: Production Certification Evidence
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -55,29 +64,28 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Run scaffold certification crawler
-        run: npm run certify:scaffold-crawler
+      - name: Run production certification crawler against deployed runtime
+        run: npm run certify:production-crawler
         env:
           CI: "1"
-          VITE_DEV_BASE_URL: "http://localhost:4173"
-          VITE_SANDBOX_MODE: "1"
-          VITE_DEMO_MODE: "sandbox"
-          CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
-          CROWN_DEMO_TOKEN: "playwright-demo-token"
+          CROWN_CERTIFICATION_LIVE_RUNTIME: "1"
+          CROWN_LIVE_FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
+          CROWN_LIVE_API_BASE_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          CROWN_LIVE_USE_SANDBOX_CREDENTIALS: "1"
 
       - name: Confirm evidence summary exists
         if: always()
         run: |
-          test -f ../../audit-artifacts/scaffold-certification/current/certification-summary.md
-          test -f ../../audit-artifacts/scaffold-certification/current/certification-matrix.json
-          test -f ../../audit-artifacts/scaffold-certification/current/route-results.csv
+          test -f ../../audit-artifacts/production-certification/current/certification-summary.md
+          test -f ../../audit-artifacts/production-certification/current/certification-matrix.json
+          test -f ../../audit-artifacts/production-certification/current/route-results.csv
 
-      - name: Upload scaffold certification evidence
+      - name: Upload production certification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: scaffold-certification-evidence-${{ github.run_number }}-${{ github.sha }}
-          path: audit-artifacts/scaffold-certification/current/
+          name: production-certification-evidence-${{ github.run_number }}-${{ github.sha }}
+          path: audit-artifacts/production-certification/current/
           if-no-files-found: warn
           retention-days: 30
 
