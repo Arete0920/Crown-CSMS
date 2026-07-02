@@ -2,6 +2,7 @@
 
 Date: 2026-07-02
 Issue: #1220 (Prepare same-SHA live sandbox and role-path proof plan)
+Scope hygiene note: Reissued as docs-only packet from current main to isolate release evidence updates from non-doc changes.
 
 ## Status
 

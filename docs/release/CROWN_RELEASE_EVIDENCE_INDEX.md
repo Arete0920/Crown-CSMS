@@ -2,6 +2,7 @@
 
 Status: NO-GO / same-SHA live runtime proof failed
 Updated: 2026-07-02
+Scope hygiene note: Reissued as docs-only packet from current main to isolate release evidence updates from non-doc changes.
 
 ## Purpose
 
