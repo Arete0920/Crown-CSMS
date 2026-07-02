@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 from dataclasses import asdict, dataclass
 
-DEMO_SCHOOL_ID = os.getenv("CROWN_DEMO_SCHOOL_ID", "19801b59-8c05-4c84-9312-5d792e4e839d")
+DEMO_SCHOOL_ID = os.getenv(
+    "CROWN_DEMO_SCHOOL_ID", "19801b59-8c05-4c84-9312-5d792e4e839d"
+)
 
 
 @dataclass(frozen=True)
@@ -245,6 +247,25 @@ SANDBOX_PERSONAS = {
             "Confirm no administrative functions are visible.",
         ),
     ),
+    "board": SandboxPersona(
+        key="board",
+        label="School Board",
+        role_code="board",
+        route="/board",
+        email="board@heritage.example.org",
+        first_name="Evelyn",
+        last_name="Grant",
+        track_keys=("school",),
+        tour_title="Governance summary proof path",
+        promise="Review governance-safe school health, finance, enrollment, and mission indicators from the board view.",
+        steps=(
+            "Open the board dashboard.",
+            "Review mission, enrollment, and finance indicators.",
+            "Open board packet or report links.",
+            "Confirm governance-safe summaries without operational overreach.",
+            "Validate board routes remain distinct from admin workflows.",
+        ),
+    ),
 }
 
 
@@ -253,8 +274,14 @@ def get_track(track_key: str | None) -> dict:
 
 
 def get_school(school_key_or_id: str | None) -> SandboxSchool:
+    aliases = {
+        "heritage": "heritage-core",
+        "harvest": "harvest-small-school",
+        "faith": "faith-admissions",
+    }
     if not school_key_or_id:
         return SANDBOX_SCHOOLS["heritage-core"]
+    school_key_or_id = aliases.get(school_key_or_id, school_key_or_id)
     if school_key_or_id in SANDBOX_SCHOOLS:
         return SANDBOX_SCHOOLS[school_key_or_id]
     for school in SANDBOX_SCHOOLS.values():
