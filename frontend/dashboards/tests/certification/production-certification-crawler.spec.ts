@@ -18,6 +18,28 @@ type RoleCredential = {
   password?: string;
 };
 
+const SANDBOX_ROLE_KEYS: Record<string, string> = {
+  admin: "school_admin",
+  teacher: "teacher",
+  parent: "parent",
+  student: "student",
+  board: "board",
+};
+
+const SANDBOX_ROLE_CREDENTIALS: Record<string, RoleCredential> = {
+  admin: { email: "admin@heritage.example.org", password: "CrownDemo!2026" },
+  teacher: { email: "teacher.lower@heritage.example.org", password: "CrownDemo!2026" },
+  parent: { email: "parent.reed@heritage.example.org", password: "CrownDemo!2026" },
+  student: { email: "student.avery.reed11@heritage.example.org", password: "CrownDemo!2026" },
+  board: { email: "board@heritage.example.org", password: "CrownDemo!2026" },
+};
+
+const SANDBOX_TENANT_SCHOOL_KEYS: Record<string, string> = {
+  heritage: "heritage-core",
+  harvest: "harvest-small-school",
+  faith: "faith-admissions",
+};
+
 const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
 const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
 const USE_SANDBOX_CREDENTIAL_BUTTON = process.env.CROWN_LIVE_USE_SANDBOX_CREDENTIALS !== "0";
@@ -47,10 +69,37 @@ function requireLiveUrl(name: string): string {
 
 function credentialFor(role: string): RoleCredential {
   const key = role.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+  const fallback = SANDBOX_ROLE_CREDENTIALS[role] ?? {};
   return {
-    email: process.env[`CROWN_LIVE_${key}_EMAIL`] ?? process.env.CROWN_LIVE_EMAIL,
-    password: process.env[`CROWN_LIVE_${key}_PASSWORD`] ?? process.env.CROWN_LIVE_PASSWORD,
+    email: process.env[`CROWN_LIVE_${key}_EMAIL`] ?? process.env.CROWN_LIVE_EMAIL ?? fallback.email,
+    password: process.env[`CROWN_LIVE_${key}_PASSWORD`] ?? process.env.CROWN_LIVE_PASSWORD ?? fallback.password,
   };
+}
+
+function sandboxRoleKeyFor(role: string): string {
+  return SANDBOX_ROLE_KEYS[role] ?? role;
+}
+
+function sandboxSchoolKeyFor(tenant: { id: string; schoolId: string }): string {
+  return SANDBOX_TENANT_SCHOOL_KEYS[tenant.id] ?? tenant.schoolId;
+}
+
+async function primeSandboxPersona(role: string, tenant: { id: string; schoolId: string }): Promise<void> {
+  const response = await fetch(`${LIVE_API_BASE_URL}/api/v1/sandbox/session/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      role: sandboxRoleKeyFor(role),
+      school: sandboxSchoolKeyFor(tenant),
+      guidance: "guided",
+      track: "school",
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Sandbox session priming failed for role ${role} / tenant ${tenant.id}: ${response.status} ${body}`);
+  }
 }
 
 function absoluteLiveUrl(path: string): string {
@@ -109,6 +158,10 @@ async function selectRole(page: Page, role: string): Promise<void> {
 }
 
 async function performLiveLogin(page: Page, role: string, tenant: { schoolId: string; schoolCode: string; label: string }): Promise<void> {
+  if (USE_SANDBOX_CREDENTIAL_BUTTON) {
+    await primeSandboxPersona(role, tenant);
+  }
+
   await page.goto(absoluteLiveUrl("/login"), { waitUntil: "domcontentloaded" });
   await selectSchool(page, tenant);
   await selectRole(page, role);

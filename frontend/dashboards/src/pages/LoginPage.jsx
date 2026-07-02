@@ -20,6 +20,7 @@ const SANDBOX_ROLES = [
   { value: "teacher", label: "Teacher", route: "/teacher" },
   { value: "parent", label: "Parent", route: "/parent" },
   ...(ENABLE_SANDBOX_STUDENT ? [{ value: "student", label: "Student/Learner", route: "/student" }] : []),
+  { value: "board", label: "School Board", route: "/board" },
 ];
 
 const PROD_ROLES = [
@@ -155,13 +156,15 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email) {
   }
 }
 
-async function fetchSandboxCredentials() {
+async function fetchSandboxCredentials(roleKey = "school_admin") {
   try {
     const response = await axios.get("/demo/heritage_demo_credentials.json");
     const personas = Array.isArray(response.data?.required_personas) ? response.data.required_personas : [];
+    const matchedPersona = personas.find((persona) => persona.key === roleKey || persona.role === roleKey);
     const adminPersona = personas.find((persona) => persona.key === "school_admin") || personas[0];
+    const activePersona = matchedPersona || adminPersona;
     return {
-      email: adminPersona?.email || SANDBOX_DEFAULT_EMAIL,
+      email: activePersona?.email || SANDBOX_DEFAULT_EMAIL,
       password: SANDBOX_DEFAULT_PASS,
     };
   } catch {
@@ -203,15 +206,17 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!IS_SANDBOX) return;
-    fetchSandboxCredentials().then((credentials) => {
+    fetchSandboxCredentials(selectedRole).then((credentials) => {
       setEmail(credentials.email);
       setPassword(credentials.password);
     });
-  }, []);
+  }, [selectedRole]);
 
   function fillSandboxCredentials() {
-    setEmail(SANDBOX_DEFAULT_EMAIL);
-    setPassword(SANDBOX_DEFAULT_PASS);
+    fetchSandboxCredentials(selectedRole).then((credentials) => {
+      setEmail(credentials.email);
+      setPassword(credentials.password);
+    });
   }
 
   async function handleSignIn(event) {
