@@ -1,0 +1,103 @@
+name: Live Runtime Certification Evidence
+run-name: Live Runtime Certification Evidence (${{ github.ref_name }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      frontend_url:
+        description: Fully-qualified frontend URL (for example https://yellow-forest-0eecc8b0f.7.azurestaticapps.net)
+        required: true
+        type: string
+      role_label:
+        description: Login role label from the live login page
+        required: false
+        default: School Admin
+        type: string
+      school_label:
+        description: Optional school label from the live login page
+        required: false
+        default: Heritage Christian Academy
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-runtime-certification-evidence-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  live-runtime-certification-evidence:
+    name: Live Runtime Certification Evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Validate required credentials
+        shell: bash
+        env:
+          CROWN_LIVE_LOGIN_EMAIL: ${{ secrets.CROWN_LIVE_LOGIN_EMAIL }}
+          CROWN_LIVE_LOGIN_PASSWORD: ${{ secrets.CROWN_LIVE_LOGIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CROWN_LIVE_LOGIN_EMAIL:-}" ]]; then
+            echo "ERROR: secret CROWN_LIVE_LOGIN_EMAIL is required for live runtime certification"
+            exit 1
+          fi
+          if [[ -z "${CROWN_LIVE_LOGIN_PASSWORD:-}" ]]; then
+            echo "ERROR: secret CROWN_LIVE_LOGIN_PASSWORD is required for live runtime certification"
+            exit 1
+          fi
+
+      - name: Run live runtime certification crawler
+        run: npm run certify:production-crawler
+        env:
+          CI: "1"
+          CROWN_LIVE_FRONTEND_URL: ${{ inputs.frontend_url }}
+          CROWN_LIVE_ROLE_LABEL: ${{ inputs.role_label }}
+          CROWN_LIVE_SCHOOL_LABEL: ${{ inputs.school_label }}
+          CROWN_LIVE_LOGIN_EMAIL: ${{ secrets.CROWN_LIVE_LOGIN_EMAIL }}
+          CROWN_LIVE_LOGIN_PASSWORD: ${{ secrets.CROWN_LIVE_LOGIN_PASSWORD }}
+
+      - name: Confirm live runtime evidence summary exists
+        if: always()
+        run: |
+          test -f ../../audit-artifacts/live-runtime-certification/current/certification-summary.md
+          test -f ../../audit-artifacts/live-runtime-certification/current/live-runtime-result.json
+
+      - name: Upload live runtime certification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: live-runtime-certification-evidence-${{ github.run_number }}-${{ github.sha }}
+          path: audit-artifacts/live-runtime-certification/current/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: live-runtime-certification-playwright-report-${{ github.run_number }}-${{ github.sha }}
+          path: frontend/dashboards/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14

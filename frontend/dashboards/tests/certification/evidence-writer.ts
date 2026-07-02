@@ -37,10 +37,10 @@ export type CertificationResultRow = {
 
 export const evidenceRoot = path.resolve(
   process.cwd(),
-  "../../audit-artifacts/production-certification/current",
+  "../../audit-artifacts/scaffold-certification/current",
 );
 
-const expectedEvidenceRootSuffix = path.join("audit-artifacts", "production-certification", "current");
+const expectedEvidenceRootSuffix = path.join("audit-artifacts", "scaffold-certification", "current");
 const expectedCwdSuffix = path.join("frontend", "dashboards");
 
 const resultsPath = path.join(evidenceRoot, "certification-matrix.json");
@@ -165,7 +165,7 @@ export function writeCertificationSummary(): void {
   const consoleErrorCount = rows.reduce((sum, row) => sum + row.consoleErrors.length, 0);
 
   const lines = [
-    "# CROWN Production Certification Crawler Summary",
+    "# CROWN Scaffold Certification Crawler Summary",
     "",
     `Status: **${failed.length === 0 ? "PASS" : "FAIL"}**`,
     "",
