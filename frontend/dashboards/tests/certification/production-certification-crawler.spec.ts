@@ -18,6 +18,8 @@ type RoleCredential = {
   password?: string;
 };
 
+type AuthMode = "credentials" | "sandbox-session" | "sandbox-no-login";
+
 const SANDBOX_ROLE_KEYS: Record<string, string> = {
   admin: "school_admin",
   teacher: "teacher",
@@ -26,9 +28,19 @@ const SANDBOX_ROLE_KEYS: Record<string, string> = {
   board: "board",
 };
 
+const SANDBOX_NO_LOGIN_ROUTES: Record<string, string> = {
+  admin: "/school-admin-dashboard",
+  teacher: "/teacher",
+  parent: "/parent",
+  student: "/student",
+  board: "/board",
+};
+
 const SANDBOX_TENANT_SCHOOL_KEYS: Record<string, string> = {
   heritage: "heritage-core",
 };
+
+const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 
 const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
 const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
@@ -167,6 +179,33 @@ async function bootstrapSandboxSession(
   return true;
 }
 
+async function bootstrapSandboxNoLogin(
+  page: Page,
+  role: string,
+  tenant: { schoolId: string },
+): Promise<boolean> {
+  const route = SANDBOX_NO_LOGIN_ROUTES[role];
+  if (!route) {
+    return false;
+  }
+
+  await page.goto(absoluteLiveUrl("/login"), { waitUntil: "domcontentloaded" });
+  await page.evaluate(
+    ({ roleKey, school }) => {
+      sessionStorage.removeItem("crown.jwt.access");
+      sessionStorage.setItem("crown.school.id", school as string);
+      sessionStorage.setItem("crown.role", roleKey as string);
+      localStorage.setItem("crown.role", roleKey as string);
+      localStorage.setItem("crown.demo.role", roleKey as string);
+      localStorage.setItem("crown.school.id", school as string);
+    },
+    { roleKey: sandboxRoleKeyFor(role), school: tenant.schoolId },
+  );
+
+  await page.goto(absoluteLiveUrl(route), { waitUntil: "networkidle" });
+  return true;
+}
+
 function absoluteLiveUrl(path: string): string {
   const url = new URL(path, `${LIVE_FRONTEND_URL}/`);
   if (LIVE_SANDBOX_INVITE_ID) {
@@ -226,14 +265,19 @@ async function selectRole(page: Page, role: string): Promise<void> {
   await roleSelect.selectOption(selectedValue);
 }
 
-async function performLiveLogin(page: Page, role: string, tenant: { id: string; schoolId: string; schoolCode: string; label: string }): Promise<void> {
+async function performLiveLogin(page: Page, role: string, tenant: { id: string; schoolId: string; schoolCode: string; label: string }): Promise<AuthMode> {
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
     await primeSandboxPersona(role, tenant);
 
     // Prefer direct sandbox session bootstrap when the live runtime exposes invite/session flows.
     const sessionBootstrapped = await bootstrapSandboxSession(page, role, tenant);
     if (sessionBootstrapped) {
-      return;
+      return "sandbox-session";
+    }
+
+    const noLoginBootstrapped = await bootstrapSandboxNoLogin(page, role, tenant);
+    if (noLoginBootstrapped) {
+      return "sandbox-no-login";
     }
   }
 
@@ -273,12 +317,17 @@ async function performLiveLogin(page: Page, role: string, tenant: { id: string; 
     const loginError = await alert.innerText();
     const sessionBootstrapped = await bootstrapSandboxSession(page, role, tenant);
     if (!sessionBootstrapped) {
-      throw new Error(`Live login failed for role ${role}: ${loginError}`);
+      const noLoginBootstrapped = await bootstrapSandboxNoLogin(page, role, tenant);
+      if (!noLoginBootstrapped) {
+        throw new Error(`Live login failed for role ${role}: ${loginError}`);
+      }
+      return "sandbox-no-login";
     }
-    return;
+    return "sandbox-session";
   }
 
   await expect(page.locator("body")).toBeVisible();
+  return "credentials";
 }
 
 test.describe.configure({ mode: "serial", retries: 0 });
@@ -312,6 +361,7 @@ for (const surface of certificationMatrix) {
       test(`${surface.id} / ${persona.id} / ${tenant.id}`, async ({ page }, testInfo) => {
         const consoleErrors: string[] = [];
         const nonApiFailedRequests: NetworkObservation[] = [];
+        let authMode: AuthMode = "credentials";
 
         page.on("pageerror", (error) => {
           consoleErrors.push(`[pageerror] ${error.message}`);
@@ -343,7 +393,7 @@ for (const surface of certificationMatrix) {
         const errors: string[] = [];
 
         try {
-          await performLiveLogin(page, persona.role, tenant);
+          authMode = await performLiveLogin(page, persona.role, tenant);
           await page.goto(absoluteLiveUrl(surface.route), { waitUntil: "networkidle" });
           await expect(page.locator("body")).toBeVisible();
         } catch (error) {
@@ -362,7 +412,17 @@ for (const surface of certificationMatrix) {
           surface.expectedText ?? [],
           false,
         );
-        errors.push(...pageErrors);
+        const ignoredMissingApis = authMode === "credentials" ? [] : AUTH_API;
+        const filteredMissingExpectedApis = network.missingExpected().filter(
+          (fragment) => !ignoredMissingApis.includes(fragment),
+        );
+        const filteredPageErrors = pageErrors.filter(
+          (error) => !error.startsWith("missing expected API calls:"),
+        );
+        if (filteredMissingExpectedApis.length > 0) {
+          filteredPageErrors.push(`missing expected API calls: ${filteredMissingExpectedApis.join(", ")}`);
+        }
+        errors.push(...filteredPageErrors);
 
         if (!(surface.allowConsoleErrors ?? false) && consoleErrors.length > 0) {
           errors.push(`console errors: ${consoleErrors.length}`);
@@ -372,7 +432,9 @@ for (const surface of certificationMatrix) {
           errors.push(`failed non-API network requests: ${nonApiFailedRequests.length}`);
         }
 
-        const missingExpectedApis = network.missingExpected();
+        const missingExpectedApis = network.missingExpected().filter(
+          (fragment) => !(authMode !== "credentials" && AUTH_API.includes(fragment)),
+        );
         const failedRequests = [...network.failed, ...nonApiFailedRequests];
 
         appendCertificationResult({

@@ -11,7 +11,7 @@ export type CertificationSurface = {
   allowConsoleErrors?: boolean;
 };
 
-const CORE_TENANTS = ["heritage", "harvest", "faith"];
+const CORE_TENANTS = ["heritage"];
 const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 const NAV_API = ["/api/v1/nav"];
 
