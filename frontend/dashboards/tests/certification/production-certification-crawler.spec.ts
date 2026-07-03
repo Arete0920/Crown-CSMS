@@ -28,8 +28,6 @@ const SANDBOX_ROLE_KEYS: Record<string, string> = {
 
 const SANDBOX_TENANT_SCHOOL_KEYS: Record<string, string> = {
   heritage: "heritage-core",
-  harvest: "harvest-small-school",
-  faith: "faith-admissions",
 };
 
 const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
@@ -101,7 +99,7 @@ async function primeSandboxPersona(role: string, tenant: { id: string; schoolId:
     payload.invite_id = LIVE_SANDBOX_INVITE_ID;
   }
 
-  const response = await fetch(`${LIVE_API_BASE_URL}/api/v1/sandbox/session/`, {
+  const response = await globalThis.fetch(`${LIVE_API_BASE_URL}/api/v1/sandbox/session/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -133,7 +131,7 @@ async function bootstrapSandboxSession(
     payload.invite_id = LIVE_SANDBOX_INVITE_ID;
   }
 
-  const response = await fetch(`${LIVE_API_BASE_URL}/api/v1/sandbox/session/`, {
+  const response = await globalThis.fetch(`${LIVE_API_BASE_URL}/api/v1/sandbox/session/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
