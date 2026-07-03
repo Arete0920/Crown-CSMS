@@ -43,7 +43,10 @@ const SANDBOX_NO_LOGIN_ROUTES: Record<string, string> = {
   board: "/board",
 };
 
-const HERITAGE_SCHOOL_UUID = "19801b59-8c05-4c84-9312-5d792e4e839d";
+const HERITAGE_SCHOOL_UUID =
+  process.env.CROWN_LIVE_SCHOOL_ID
+  || process.env.CROWN_DEMO_SCHOOL_ID
+  || "19801b59-8c05-4c84-9312-5d792e4e839d";
 
 const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 
@@ -51,6 +54,8 @@ const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
 const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
 const USE_SANDBOX_CREDENTIAL_BUTTON = process.env.CROWN_LIVE_USE_SANDBOX_CREDENTIALS !== "0";
 const LIVE_SANDBOX_INVITE_ID = resolveSandboxInviteId();
+
+assertLiveSchoolIdConfiguration();
 
 const roleValues: Record<string, string[]> = {
   admin: ["school_admin", "head_of_school", "admin"],
@@ -73,6 +78,24 @@ function requireLiveUrl(name: string): string {
   }
 
   return parsed.toString().replace(/\/+$/, "");
+}
+
+function assertLiveSchoolIdConfiguration(): void {
+  const host = new URL(LIVE_API_BASE_URL).hostname.toLowerCase();
+  const isProductionApi = host.includes("crown-api-prod") || host.includes("prod");
+  if (!isProductionApi) {
+    return;
+  }
+
+  const liveSchoolId = process.env.CROWN_LIVE_SCHOOL_ID?.trim();
+  if (liveSchoolId) {
+    return;
+  }
+
+  throw new Error(
+    "CROWN_LIVE_SCHOOL_ID is required for production API certification. "
+    + "Refusing to use demo/default school UUID against production runtime.",
+  );
 }
 
 function credentialFor(role: string): RoleCredential {

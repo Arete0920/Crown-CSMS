@@ -71,6 +71,7 @@ jobs:
           CROWN_CERTIFICATION_LIVE_RUNTIME: "1"
           CROWN_LIVE_FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
           CROWN_LIVE_API_BASE_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          CROWN_LIVE_SCHOOL_ID: ${{ vars.CROWN_LIVE_SCHOOL_ID || secrets.CROWN_LIVE_SCHOOL_ID || vars.CROWN_DEMO_SCHOOL_ID || '' }}
           CROWN_LIVE_USE_SANDBOX_CREDENTIALS: "1"
           CROWN_LIVE_SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
 
