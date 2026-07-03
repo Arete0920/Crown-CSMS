@@ -276,8 +276,6 @@ def get_track(track_key: str | None) -> dict:
 def get_school(school_key_or_id: str | None) -> SandboxSchool:
     aliases = {
         "heritage": "heritage-core",
-        "harvest": "harvest-small-school",
-        "faith": "faith-admissions",
     }
     if not school_key_or_id:
         return SANDBOX_SCHOOLS["heritage-core"]
