@@ -303,7 +303,7 @@ class SandboxFeedbackView(APIView):
             return Response(
                 {
                     "detail": "Invalid rating.",
-                    "code": "sandbox_feedback_invalid",
+                    "code": "sandbox_feedback_invalid_rating",
                 },
                 status=400,
             )
