@@ -9,15 +9,15 @@ $RepoRoot = git rev-parse --show-toplevel
 Set-Location $RepoRoot
 
 $ForbiddenClaims = @(
-    "production ready",
-    "release ready",
-    "sandbox ready",
-    "dashboard live-data complete",
-    "wizard functional-flow complete",
-    "all wizards complete",
-    "all modules complete",
-    "independently approved",
-    "fully certified"
+    "production ready", # forbidden claim
+    "release ready", # forbidden claim
+    "sandbox ready", # forbidden claim
+    "dashboard live-data complete", # forbidden claim
+    "wizard functional-flow complete", # forbidden claim
+    "all wizards complete", # forbidden claim
+    "all modules complete", # forbidden claim
+    "independently approved", # forbidden claim
+    "fully certified" # forbidden claim
 )
 
 $AllowedEvidenceMarkers = @(
