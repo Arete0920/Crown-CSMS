@@ -26,14 +26,6 @@ const SANDBOX_ROLE_KEYS: Record<string, string> = {
   board: "board",
 };
 
-const SANDBOX_ROLE_CREDENTIALS: Record<string, RoleCredential> = {
-  admin: { email: "admin@heritage.example.org", password: "CrownDemo!2026" },
-  teacher: { email: "teacher.lower@heritage.example.org", password: "CrownDemo!2026" },
-  parent: { email: "parent.reed@heritage.example.org", password: "CrownDemo!2026" },
-  student: { email: "student.avery.reed11@heritage.example.org", password: "CrownDemo!2026" },
-  board: { email: "board@heritage.example.org", password: "CrownDemo!2026" },
-};
-
 const SANDBOX_TENANT_SCHOOL_KEYS: Record<string, string> = {
   heritage: "heritage-core",
   harvest: "harvest-small-school",
@@ -70,10 +62,9 @@ function requireLiveUrl(name: string): string {
 
 function credentialFor(role: string): RoleCredential {
   const key = role.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
-  const fallback = SANDBOX_ROLE_CREDENTIALS[role] ?? {};
   return {
-    email: process.env[`CROWN_LIVE_${key}_EMAIL`] ?? process.env.CROWN_LIVE_EMAIL ?? fallback.email,
-    password: process.env[`CROWN_LIVE_${key}_PASSWORD`] ?? process.env.CROWN_LIVE_PASSWORD ?? fallback.password,
+    email: process.env[`CROWN_LIVE_${key}_EMAIL`] ?? process.env.CROWN_LIVE_EMAIL,
+    password: process.env[`CROWN_LIVE_${key}_PASSWORD`] ?? process.env.CROWN_LIVE_PASSWORD,
   };
 }
 
@@ -237,7 +228,7 @@ async function selectRole(page: Page, role: string): Promise<void> {
   await roleSelect.selectOption(selectedValue);
 }
 
-async function performLiveLogin(page: Page, role: string, tenant: { schoolId: string; schoolCode: string; label: string }): Promise<void> {
+async function performLiveLogin(page: Page, role: string, tenant: { id: string; schoolId: string; schoolCode: string; label: string }): Promise<void> {
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
     await primeSandboxPersona(role, tenant);
 
@@ -273,7 +264,7 @@ async function performLiveLogin(page: Page, role: string, tenant: { schoolId: st
   const passwordValue = await page.locator("#login-password").inputValue().catch(() => "");
 
   if (!emailValue || !passwordValue) {
-    throw new Error(`No live credentials available for role ${role}. Configure CROWN_LIVE_${role.toUpperCase()}_EMAIL/PASSWORD or enable the live sandbox credential button.`);
+    throw new Error(`No live credentials available for role ${role}. Configure CROWN_LIVE_${role.toUpperCase()}_EMAIL/PASSWORD or provide a working live sandbox credential button/invite.`);
   }
 
   await page.getByRole("button", { name: /^sign in$/i }).click();
