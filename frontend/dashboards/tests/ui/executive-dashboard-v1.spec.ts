@@ -24,6 +24,14 @@ async function seedSession(page, role: string) {
   );
 }
 
+function isWizardsUrl(url: URL) {
+  return url.pathname === "/wizards" || url.pathname.startsWith("/wizards/");
+}
+
+async function expectNotOnWizards(page) {
+  await expect(page).toHaveURL((url) => !isWizardsUrl(url));
+}
+
 test("School Administrator dashboard renders key workflow and metrics sections", async ({
   page,
 }) => {
@@ -61,6 +69,7 @@ test("School Administrator dashboard renders key workflow and metrics sections",
   );
 
   await page.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded" });
+  await expectNotOnWizards(page);
 
   // The /admin launch surface has evolved; accept either legacy or current header copy.
   await expect(page.locator("body")).toContainText(
@@ -70,15 +79,16 @@ test("School Administrator dashboard renders key workflow and metrics sections",
 
   const wizardHubHeading = page.getByRole("heading", { name: /wizard hub/i });
   if (await wizardHubHeading.isVisible()) {
-    // /admin can legitimately land on the setup wizard launch surface.
+    // /admin can legitimately land on the setup wizard launch surface, but not the /wizards route fallback.
+    await expectNotOnWizards(page);
     await expect(wizardHubHeading).toBeVisible();
-    await expect(page.locator("body")).toContainText(/setup wizards/i);
+    await expect(page.getByText(/setup wizards/i).first()).toBeVisible();
     return;
   }
 
-  // Stable anchors in the current admin launch layout.
-  await expect(page.getByRole("heading", { name: /execution queue/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /action required/i })).toBeVisible();
+  // Stable visible anchors in the current admin launch layout.
+  await expect(page.getByText(/whole-school system health/i).first()).toBeVisible();
+  await expect(page.getByText(/department readiness table/i).first()).toBeVisible();
 
   // Deterministic watch-card labels in the current layout.
   await expect(page.getByRole("heading", { name: /42 open applications/i })).toBeVisible();
