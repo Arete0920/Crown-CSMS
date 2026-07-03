@@ -32,7 +32,7 @@ $AllowedEvidenceMarkers = @(
     "Scope boundary"
 )
 
-$ChangedFiles = @(git diff --name-only $Base...$Head -- 2>$null)
+$ChangedFiles = @(git diff --name-only "$Base...$Head" -- 2>$null)
 if (-not $ChangedFiles -or $ChangedFiles.Count -eq 0) {
     Write-Host "CROWN forbidden-claims guard: no changed files."
     exit 0

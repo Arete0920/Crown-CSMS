@@ -126,6 +126,58 @@ async function primeSandboxPersona(role: string, tenant: { id: string; schoolId:
   }
 }
 
+async function bootstrapSandboxSession(
+  page: Page,
+  role: string,
+  tenant: { id: string; schoolId: string },
+): Promise<boolean> {
+  const payload: Record<string, string> = {
+    role: sandboxRoleKeyFor(role),
+    school: sandboxSchoolKeyFor(tenant),
+    guidance: "guided",
+    track: "school",
+  };
+
+  if (LIVE_SANDBOX_INVITE_ID) {
+    payload.invite_id = LIVE_SANDBOX_INVITE_ID;
+  }
+
+  const response = await fetch(`${LIVE_API_BASE_URL}/api/v1/sandbox/session/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const session = await response.json();
+  if (!session?.access) {
+    return false;
+  }
+
+  const roleValue = sandboxRoleKeyFor(role);
+  const schoolId = session.school_id ?? tenant.schoolId;
+  await page.evaluate(
+    ({ access, roleKey, school }) => {
+      sessionStorage.setItem("crown.jwt.access", access as string);
+      sessionStorage.setItem("crown.role", roleKey as string);
+      sessionStorage.setItem("crown.school.id", school as string);
+      localStorage.setItem("crown.role", roleKey as string);
+      localStorage.setItem("crown.demo.role", roleKey as string);
+      localStorage.setItem("crown.school.id", school as string);
+    },
+    { access: session.access, roleKey: roleValue, school: schoolId },
+  );
+
+  const route = typeof session.route === "string" && session.route
+    ? session.route
+    : "/school-admin-dashboard";
+  await page.goto(absoluteLiveUrl(route), { waitUntil: "networkidle" });
+  return true;
+}
+
 function absoluteLiveUrl(path: string): string {
   const url = new URL(path, `${LIVE_FRONTEND_URL}/`);
   if (LIVE_SANDBOX_INVITE_ID) {
@@ -188,6 +240,12 @@ async function selectRole(page: Page, role: string): Promise<void> {
 async function performLiveLogin(page: Page, role: string, tenant: { schoolId: string; schoolCode: string; label: string }): Promise<void> {
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
     await primeSandboxPersona(role, tenant);
+
+    // Prefer direct sandbox session bootstrap when the live runtime exposes invite/session flows.
+    const sessionBootstrapped = await bootstrapSandboxSession(page, role, tenant);
+    if (sessionBootstrapped) {
+      return;
+    }
   }
 
   await page.goto(absoluteLiveUrl("/login"), { waitUntil: "domcontentloaded" });
@@ -223,7 +281,12 @@ async function performLiveLogin(page: Page, role: string, tenant: { schoolId: st
 
   const alert = page.locator("[role='alert'], .error-banner").first();
   if (await alert.isVisible({ timeout: 2_000 }).catch(() => false)) {
-    throw new Error(`Live login failed for role ${role}: ${await alert.innerText()}`);
+    const loginError = await alert.innerText();
+    const sessionBootstrapped = await bootstrapSandboxSession(page, role, tenant);
+    if (!sessionBootstrapped) {
+      throw new Error(`Live login failed for role ${role}: ${loginError}`);
+    }
+    return;
   }
 
   await expect(page.locator("body")).toBeVisible();
