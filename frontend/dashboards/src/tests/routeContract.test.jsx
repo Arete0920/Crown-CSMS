@@ -37,4 +37,11 @@ describe('route contract', () => {
     expect(PATHS.COMMUNICATIONS).toBe('/communications');
     expect(PATHS.SCHOOL_ADMIN_DASHBOARD).toBe('/school-admin-dashboard');
   });
+
+  it('school administrator dashboard route is release-ready', () => {
+    const schoolAdmin = DASHBOARD_REGISTRY.find((item) => item.key === 'school-administrator');
+    expect(schoolAdmin).toBeDefined();
+    expect(schoolAdmin.path).toBe('/school-admin-dashboard');
+    expect(schoolAdmin.releaseState).toBe('ready');
+  });
 });
