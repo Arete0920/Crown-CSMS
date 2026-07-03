@@ -1,21 +1,28 @@
 # Pilot and Investor Readiness Proof Pack
 
-Authority Scope Notice (2026-05-29)
+Authority Scope Notice (2026-07-02)
 
 This document is a readiness proof-pack artifact and not a controlling repository-level release authority source.
 
-Current controlling release-authority sources:
+Current controlling release-authority source:
 
 - docs/CURRENT_RELEASE_STATUS.md
-- docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+
+Related non-authority planning and evidence indexes may be useful for review, but they do not override `docs/CURRENT_RELEASE_STATUS.md`.
 
 Status: Packaging and evidence playbook
-Updated: 2026-04-14
+Updated: 2026-07-02
+
+## Current decision posture
+
+- Production release: **NO-GO unless current release authority explicitly says otherwise**.
+- Pilot entry: **NO-GO unless PE-001 through PE-015 are green and Founder/Product Owner signoff is recorded**.
+- Investor/demo language must remain bounded to the current evidence state.
 
 ## Positioning Statement
 
-Crown is presented using evidence-backed release-state language with explicit in-scope and out-of-scope boundaries.
-Do not claim full institutional readiness unless all gate conditions are green.
+CROWN is presented using evidence-backed release-state language with explicit in-scope and out-of-scope boundaries.
+Do not claim full institutional readiness unless all gate conditions are green and current release authority supports the claim.
 
 ## Required Proof Pack Contents
 
@@ -47,13 +54,14 @@ Do not claim full institutional readiness unless all gate conditions are green.
 
 ## Final Production Release Gate Criteria
 
-Final production-ready release claim only when all are true:
+A production-ready release claim is allowed only when all are true:
 
-1. Core and first-wave module proof lanes are green.
-2. Second-wave operational lanes are green or explicitly waived.
-3. Add-on claims are limited to proven modules.
-4. Final release gate is PASS or approved with explicit exceptions.
-5. Investor narrative language matches evidence state.
+1. Current release authority says production is approved.
+2. Same-SHA live runtime proof is green for the approved release scope.
+3. Core and pilot-scope module proof lanes are green at the decision SHA.
+4. Operational readiness gates are green or explicitly scoped out by current release authority.
+5. Add-on claims are limited to proven modules.
+6. Investor narrative language matches evidence state.
 
 ## Messaging Discipline
 
@@ -66,7 +74,9 @@ Use:
 Avoid:
 
 - "fully complete platform"
-- "all workflows production-hardened" (unless proven)
+- "all workflows production-hardened" unless proven at the decision SHA
+- "production ready" unless current release authority explicitly supports it
+- "pilot approved" unless the pilot-entry checklist is fully green and signed
 
 ## Owner Checklist
 
