@@ -18,6 +18,13 @@ type RoleCredential = {
   password?: string;
 };
 
+type CertificationTenant = {
+  id: string;
+  schoolKey: string;
+  schoolId: string;
+  label: string;
+};
+
 type AuthMode = "credentials" | "sandbox-session" | "sandbox-no-login";
 
 const SANDBOX_ROLE_KEYS: Record<string, string> = {
@@ -36,9 +43,7 @@ const SANDBOX_NO_LOGIN_ROUTES: Record<string, string> = {
   board: "/board",
 };
 
-const SANDBOX_TENANT_SCHOOL_KEYS: Record<string, string> = {
-  heritage: "heritage-core",
-};
+const HERITAGE_SCHOOL_UUID = "19801b59-8c05-4c84-9312-5d792e4e839d";
 
 const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 
@@ -82,8 +87,8 @@ function sandboxRoleKeyFor(role: string): string {
   return SANDBOX_ROLE_KEYS[role] ?? role;
 }
 
-function sandboxSchoolKeyFor(tenant: { id: string; schoolId: string }): string {
-  return SANDBOX_TENANT_SCHOOL_KEYS[tenant.id] ?? tenant.schoolId;
+function sandboxSchoolKeyFor(tenant: CertificationTenant): string {
+  return tenant.schoolKey;
 }
 
 function resolveSandboxInviteId(): string {
@@ -99,7 +104,7 @@ function resolveSandboxInviteId(): string {
   }
 }
 
-async function primeSandboxPersona(role: string, tenant: { id: string; schoolId: string }): Promise<void> {
+async function primeSandboxPersona(role: string, tenant: CertificationTenant): Promise<void> {
   const payload: Record<string, string> = {
     role: sandboxRoleKeyFor(role),
     school: sandboxSchoolKeyFor(tenant),
@@ -130,7 +135,7 @@ async function primeSandboxPersona(role: string, tenant: { id: string; schoolId:
 async function bootstrapSandboxSession(
   page: Page,
   role: string,
-  tenant: { id: string; schoolId: string },
+  tenant: CertificationTenant,
 ): Promise<boolean> {
   const payload: Record<string, string> = {
     role: sandboxRoleKeyFor(role),
@@ -159,15 +164,31 @@ async function bootstrapSandboxSession(
   }
 
   const roleValue = sandboxRoleKeyFor(role);
-  const schoolId = session.school_id ?? tenant.schoolId;
+  const schoolId = tenant.schoolId;
   await page.evaluate(
     ({ access, roleKey, school }) => {
       sessionStorage.setItem("crown.jwt.access", access as string);
       sessionStorage.setItem("crown.role", roleKey as string);
       sessionStorage.setItem("crown.school.id", school as string);
+      sessionStorage.setItem("crown_school_id", school as string);
       localStorage.setItem("crown.role", roleKey as string);
       localStorage.setItem("crown.demo.role", roleKey as string);
       localStorage.setItem("crown.school.id", school as string);
+      localStorage.setItem("crown_school_id", school as string);
+      localStorage.setItem("schoolId", school as string);
+      localStorage.setItem("school_id", school as string);
+      (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ = school as string;
+
+      const currentUserRaw = localStorage.getItem("crown_current_user");
+      if (currentUserRaw) {
+        try {
+          const currentUser = JSON.parse(currentUserRaw) as Record<string, unknown>;
+          currentUser.school_id = school;
+          localStorage.setItem("crown_current_user", JSON.stringify(currentUser));
+        } catch {
+          // Ignore malformed cached profile; test flow remains deterministic via explicit tenant keys.
+        }
+      }
     },
     { access: session.access, roleKey: roleValue, school: schoolId },
   );
@@ -182,7 +203,7 @@ async function bootstrapSandboxSession(
 async function bootstrapSandboxNoLogin(
   page: Page,
   role: string,
-  tenant: { schoolId: string },
+  tenant: CertificationTenant,
 ): Promise<boolean> {
   const route = SANDBOX_NO_LOGIN_ROUTES[role];
   if (!route) {
@@ -194,10 +215,26 @@ async function bootstrapSandboxNoLogin(
     ({ roleKey, school }) => {
       sessionStorage.removeItem("crown.jwt.access");
       sessionStorage.setItem("crown.school.id", school as string);
+      sessionStorage.setItem("crown_school_id", school as string);
       sessionStorage.setItem("crown.role", roleKey as string);
       localStorage.setItem("crown.role", roleKey as string);
       localStorage.setItem("crown.demo.role", roleKey as string);
       localStorage.setItem("crown.school.id", school as string);
+      localStorage.setItem("crown_school_id", school as string);
+      localStorage.setItem("schoolId", school as string);
+      localStorage.setItem("school_id", school as string);
+      (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ = school as string;
+
+      const currentUserRaw = localStorage.getItem("crown_current_user");
+      if (currentUserRaw) {
+        try {
+          const currentUser = JSON.parse(currentUserRaw) as Record<string, unknown>;
+          currentUser.school_id = school;
+          localStorage.setItem("crown_current_user", JSON.stringify(currentUser));
+        } catch {
+          // Ignore malformed cached profile; test flow remains deterministic via explicit tenant keys.
+        }
+      }
     },
     { roleKey: sandboxRoleKeyFor(role), school: tenant.schoolId },
   );
@@ -223,7 +260,7 @@ function isAllowedExternalFailure(url: string): boolean {
   }
 }
 
-async function selectSchool(page: Page, tenant: { schoolId: string; schoolCode: string; label: string }): Promise<void> {
+async function selectSchool(page: Page, tenant: CertificationTenant): Promise<void> {
   const schoolSelect = page.locator("#login-school");
   if (!(await schoolSelect.isVisible({ timeout: 10_000 }).catch(() => false))) {
     return;
@@ -233,9 +270,9 @@ async function selectSchool(page: Page, tenant: { schoolId: string; schoolCode: 
     const options = Array.from((select as HTMLSelectElement).options);
     const match = options.find((option) => (
       option.value === target.schoolId
-      || option.value === target.schoolCode
+      || option.value === target.schoolKey
       || option.textContent?.toLowerCase().includes(target.label.toLowerCase())
-      || option.textContent?.toLowerCase().includes(target.schoolCode.toLowerCase())
+      || option.textContent?.toLowerCase().includes(target.schoolKey.toLowerCase())
     ));
     return match?.value ?? null;
   }, tenant);
@@ -265,7 +302,7 @@ async function selectRole(page: Page, role: string): Promise<void> {
   await roleSelect.selectOption(selectedValue);
 }
 
-async function performLiveLogin(page: Page, role: string, tenant: { id: string; schoolId: string; schoolCode: string; label: string }): Promise<AuthMode> {
+async function performLiveLogin(page: Page, role: string, tenant: CertificationTenant): Promise<AuthMode> {
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
     await primeSandboxPersona(role, tenant);
 
@@ -359,6 +396,10 @@ for (const surface of certificationMatrix) {
       }
 
       test(`${surface.id} / ${persona.id} / ${tenant.id}`, async ({ page }, testInfo) => {
+        if (tenant.id === "heritage" && tenant.schoolId !== HERITAGE_SCHOOL_UUID) {
+          throw new Error(`Heritage tenant schoolId must be ${HERITAGE_SCHOOL_UUID}; got ${tenant.schoolId}`);
+        }
+
         const consoleErrors: string[] = [];
         const nonApiFailedRequests: NetworkObservation[] = [];
         let authMode: AuthMode = "credentials";
