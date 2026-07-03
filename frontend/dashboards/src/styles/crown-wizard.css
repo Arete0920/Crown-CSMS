@@ -16,25 +16,28 @@
 }
 
 .crown-wizard-step-pill {
-  border: 1px solid var(--crown-border, rgba(255,255,255,0.15));
-  background: var(--crown-card, rgba(255,255,255,0.04));
-  color: var(--crown-muted, #b8c5e6);
+  border: 1px solid var(--crown-border, #d6e3f5);
+  background: var(--crown-card, #ffffff);
+  color: var(--crown-muted, #42566e);
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 12px;
   line-height: 1;
+  -webkit-user-select: none;
   user-select: none;
 }
 
 .crown-wizard-step-pill.active {
-  border-color: var(--crown-gold, #d4af37);
-  color: var(--crown-gold-2, #f1d88a);
-  box-shadow: 0 0 0 2px rgba(212,175,55,0.14);
+  border-color: var(--crown-primary-strong, #1e4faf);
+  color: var(--crown-primary-strong, #1e4faf);
+  background: var(--crown-primary-faint, #edf3ff);
+  box-shadow: 0 0 0 2px rgba(30, 79, 175, 0.14);
 }
 
 .crown-wizard-step-pill.done {
-  border-color: rgba(78,225,138,0.45);
-  color: rgba(78,225,138,0.9);
+  border-color: rgba(31, 122, 69, 0.32);
+  color: var(--crown-success, #1f7a45);
+  background: var(--crown-success-soft, #dcfce7);
 }
 
 .crown-wizard-actions {
@@ -44,7 +47,7 @@
   gap: 12px;
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid var(--crown-border, rgba(255,255,255,0.12));
+  border-top: 1px solid var(--crown-border, #d6e3f5);
 }
 
 .crown-wizard-actions-right {
@@ -58,7 +61,7 @@
 .crown-alert {
   border: 1px solid rgba(255,93,93,0.35);
   background: rgba(255,93,93,0.10);
-  color: #6b1f1f;
+  color: #551313;
   padding: 10px 12px;
   border-radius: 10px;
   margin: 10px 0;
@@ -77,7 +80,7 @@
   border-collapse: separate;
   border-spacing: 0;
   border-radius: 10px;
-  border: 1px solid var(--crown-border, rgba(255,255,255,0.12));
+  border: 1px solid var(--crown-border, #d6e3f5);
   overflow: hidden;
   font-size: 13px;
 }
@@ -85,15 +88,15 @@
 .crown-table th,
 .crown-table td {
   padding: 9px 12px;
-  border-bottom: 1px solid var(--crown-border, rgba(255,255,255,0.08));
+  border-bottom: 1px solid var(--crown-border, #d6e3f5);
   text-align: left;
   vertical-align: top;
 }
 
 .crown-table th {
   font-weight: 600;
-  background: rgba(255,255,255,0.04);
-  color: var(--crown-muted, #b8c5e6);
+  background: var(--crown-surface-soft, #f2f7ff);
+  color: var(--crown-muted, #42566e);
 }
 
 .crown-table tbody tr:hover {
