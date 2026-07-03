@@ -57,16 +57,6 @@ def _validate_invite(
     if invite is None:
         if open_session_allowed:
             return None
-        public_school_keys = set(SANDBOX_PERSONAS.keys())
-        known_school_ids = {school.id for school in catalog_payload()["schools"]}
-        known_school_keys = {school["key"] for school in catalog_payload()["schools"]}
-        known_school_aliases = {"heritage", "harvest", "faith"}
-        if role in public_school_keys and (
-            school_key in known_school_keys
-            or school_key in known_school_ids
-            or school_key in known_school_aliases
-        ):
-            return None
         return Response(
             {
                 "detail": "Sandbox invite is required.",
@@ -313,7 +303,7 @@ class SandboxFeedbackView(APIView):
             return Response(
                 {
                     "detail": "Invalid rating.",
-                    "code": "sandbox_feedback_invalid_rating",
+                    "code": "sandbox_feedback_invalid",
                 },
                 status=400,
             )
