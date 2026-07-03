@@ -1,25 +1,44 @@
+# CROWN repository ignore rules
 
-# â”€â”€ Prod logs (never commit) â”€â”€
+# Production and application logs
 prod_logs/
 prod_logs_latest/
 prod_logs_now/
+app_logs/
+ops_logs/
 app_logs.zip
+webapp_logs.zip
+*.log
+*.out
+*.err
+check_output*.txt
+**/workflow-logs/
 
-# â”€â”€ Secrets (never commit) â”€â”€
+# Secrets and local environment files
 secrets/
+local.secrets.ps1
+local.secrets.sh
+*.local.secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+.env*.local
+**/.env*.local
+.env.release
+*.local
+*.bak
+*.backup
+*.tmp
 
-# â”€â”€ Audit/phase snapshot folders â”€â”€
-MEDIUM_STRIKE_*/
-_PHASE*_INVENTORY_*/
-_PHASE*_TRIAGE_*/
-_PHASE*_APPLY_*/
-_PHASE*_VERIFY_*/
-_workflow_audit/
-
-# â”€â”€ OS noise â”€â”€
+# OS and editor noise
 .DS_Store
 Thumbs.db
 desktop.ini
+.vscode/
+.vscode/*.log
+.vscode/*.tmp
+
 # Python
 .venv/
 venv/
@@ -27,147 +46,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
-
-# Node
-node_modules/
-dist/
-build/
-.vite/
-frontend/dashboards/node_modules/
-frontend/dashboards/dist/
-frontend/dashboards/test-results/
-frontend/dashboards/playwright-report/
-
-# Demo proof/log artifacts
-BOOTPASS_*.log
-ONEPASS_*.log
-*.log
-*.out
-*.err
-docs/demo-proof/**/proof/
-docs/demo-proof/**/out/
-docs/demo-proof/**/tmp/
-
-# Local generated artifacts
-db.sqlite3
-ci.sqlite3
-backend/db.sqlite3
-backend/ci.sqlite3
-backend/ci_audit.sqlite3
-_tmp/
-_local_proofs/
-app_logs/
-media/
-WING.worktrees/
-.worktrees/
-
-# Local secrets (never commit â€” contains rotated credentials)
-local.secrets.ps1
-local.secrets.sh
-*.local.secrets
-
-# Audit runner output (attach to PRs/tags manually)
-artifacts/
-audit-logs/
-docs/audit/evidence/GH_RUNS_LATEST.json
-docs/audit/evidence/OPEN_PRS_LATEST.json
-docs/audit/evidence/OPEN_PR_BLOCKERS.csv
-docs/audit/evidence/OPEN_PR_HEALTH.csv
-docs/audit/evidence/health.json
-docs/audit/evidence/integrity.json
-
-# Editor/OS
-.vscode/
-Thumbs.db
-.DS_Store
-
-# Developer scratch
-._scratch_local/
-
-# Local closeout / session tracking docs (not production artifacts)
-closeout/
-PACK3_ACCURATE_STATUS.md
-PACK3_VISUAL_PROOF_CHECKLIST.md
-pr_smoke_404.txt
-test_student360_auth.ps1
-
-# Audit pack outputs (generated locally, never commit)
-AUDIT_PACK/
-AUDIT_PACK_*/
-AUDIT_*.txt
-DEPLOYMENT_CONTRACT_*.txt
-pytest_out.txt
-_local_artifacts/
-
-# Governance runtime bundles (generated, never commit - permanent freeze)
-# These are runtime-generated, untracked evidence bundles
-# Canonical governance state is in solomon_governance_c1/governance/c1/
-# Runtime bundles are ephemeral governance evidence, managed by SUPERSESSION_INDEX.json
-solomon_governance_c1/governance/c1/runtime/audit_pack/
-runtime/audit_pack/
-
-# Test coverage
-coverage/
-
-# Local dev process artifacts (django server output, local db)
-ci_local.sqlite3
-django_err.txt
-django_out.txt
-
-# Ad-hoc scratch files
-student360_test.txt
-tools/_step1a.py
-
-# Screenshot artifacts from design/browser capture sessions
-*.png
-*.jpg
-*.jpeg
-!frontend/dashboards/public/**
-!docs/**/*.png
-
-# PR body scratch files (created by CI agent during PR workflow)
-pr_*.txt
-# Temp agent/automation scratch files
-_*.txt
-commit_result.txt
-PYTEST_PROOF_*.txt
-
-# CI-generated build artifact (written by CI before npm build, not a source file)
-frontend/dashboards/public/build.json
-
-# Ops war-room and Azure evidence artifacts
-_warroom/
-_azure_evidence/
-_azure_evidence.zip
-release_proof/
-release_proof.zip
-ops_logs/
-
-# war-room and local diagnostics
-_warroom/
-_azure_evidence/
-
-# local generated archives
-*.zip
-
-# transient logs and dumps
-prod_logs/
-prod_logs_now/
-prod_logs_latest/
-app_logs.zip
-webapp_logs.zip
-*.log
-.env*.local
-**/.env*.local
-!*.example
-
-# >>> Crown VS Code hardening block >>>
-.vscode/*.log
-.vscode/*.tmp
-
-# Python
-__pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -179,18 +57,108 @@ coverage.xml
 node_modules/
 dist/
 build/
+.vite/
 coverage/
+frontend/dashboards/node_modules/
+frontend/dashboards/dist/
+frontend/dashboards/test-results/
+frontend/dashboards/playwright-report/
 
-# Local databases / temp runtime files
+# Local databases and runtime files
+db.sqlite3
 ci.sqlite3
+ci_local.sqlite3
+backend/db.sqlite3
+backend/ci.sqlite3
+backend/ci_audit.sqlite3
 *.sqlite3
-_tmp_*/
-_PHASE*/
 *.pid
 *.seed
+media/
+django_err.txt
+django_out.txt
 
-# Audit / evidence / generated artifacts
+# Generated local artifacts and scratch
+_tmp/
+_tmp_*/
+_tmp_pr*.json
+_local_proofs/
+_local_artifacts/
+._scratch_local/
+.local-backups/
+artifacts/
+audit-logs/
+AUDIT_PACK/
 AUDIT_PACK_*/
+AUDIT_*.txt
+DEPLOYMENT_CONTRACT_*.txt
+pytest_out.txt
+commit_result.txt
+PYTEST_PROOF_*.txt
+student360_test.txt
+closeout/
+PACK3_ACCURATE_STATUS.md
+PACK3_VISUAL_PROOF_CHECKLIST.md
+pr_smoke_404.txt
+pr_*.txt
+pr_*.json
+pr*.json
+checks*.json
+checks*.txt
+*_checks.txt
+run_*.json
+runs.json
+pr_threads.json
+audit-pr-*.diff
+gitleaks-sarif/
+_*.txt
+test_student360_auth.ps1
+tools/_step1a.py
+
+# Audit and phase snapshot folders
+MEDIUM_STRIKE_*/
+_PHASE*_INVENTORY_*/
+_PHASE*_TRIAGE_*/
+_PHASE*_APPLY_*/
+_PHASE*_VERIFY_*/
+_PHASE*/
+_workflow_audit/
+
+# Demo proof/log artifacts
+BOOTPASS_*.log
+ONEPASS_*.log
+docs/demo-proof/**/proof/
+docs/demo-proof/**/out/
+docs/demo-proof/**/tmp/
+
+# Screenshot artifacts from design/browser capture sessions
+*.png
+*.jpg
+*.jpeg
+!frontend/dashboards/public/**
+!docs/**/*.png
+
+# CI-generated build artifact
+frontend/dashboards/public/build.json
+
+# Governance runtime bundles
+# Canonical governance state is in solomon_governance_c1/governance/c1/.
+# Runtime bundles are ephemeral evidence, managed by SUPERSESSION_INDEX.json.
+solomon_governance_c1/governance/c1/runtime/audit_pack/
+runtime/audit_pack/
+
+# Ops war-room and Azure evidence artifacts
+_warroom/
+_azure_evidence/
+_azure_evidence.zip
+release_proof/
+release_proof.zip
+*.zip
+WING.worktrees/
+.worktrees/
+
+# Generated audit/evidence folders
+# Keep authoritative current evidence committed intentionally by explicit git add.
 audit-artifacts/
 !audit-artifacts/
 audit-artifacts/*
@@ -200,58 +168,22 @@ audit-artifacts/*
 !audit-artifacts/production-excellence-95-plus/**
 !audit-artifacts/final-95-plus-sprint/
 !audit-artifacts/final-95-plus-sprint/**
-artifacts/
+!audit-artifacts/repo-hygiene/
+!audit-artifacts/repo-hygiene/**
 docs/audit/evidence/
 docs/audit/reports/
 docs/status/
 
-# OS noise
-.DS_Store
-Thumbs.db
-# <<< Crown VS Code hardening block <<<
-# Crown2026 remediation ignore rules
+# Crown remediation and public repo hardening residue
 contracts/
 login.json
 test_login.json
 schools_prod.txt
-.env.release
 local.secrets.ps1.example
-
-# Crown public repo hardening
-.local-backups/
-*.local
-*.bak
-*.backup
-*.tmp
+_sandbox_pack/
+*.best-sandbox-backup-*
 backend/crown_api/settings.py.phase*
-.env
-.env.*
-!.env.example
-!.env.sample
-.DS_Store
-Thumbs.db
-
 workflow-inventory-report.json
 release-scorecard.json
 workflow-permissions-audit.json
 workflow-secrets-inventory.json
-
-# SOLOMON C1 runtime artifacts
-solomon_governance_c1/governance/c1/runtime/
-
-# GitHub CLI audit temp files (session investigation artifacts — never commit)
-_tmp_pr*.json
-pr_*.json
-pr*.json
-checks*.json
-checks*.txt
-*_checks.txt
-audit-pr-*.diff
-run_*.json
-runs.json
-pr_threads.json
-gitleaks-sarif/
-
-# Sandbox pack local extraction and generated script backups
-_sandbox_pack/
-*.best-sandbox-backup-*
