@@ -149,10 +149,10 @@
 }
 
 .launch-sidebar-nav a.is-active {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--launch-royal) 0%, var(--launch-royal-strong) 100%);
   color: #ffffff;
-  border-color: #1d4ed8;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+  border-color: var(--launch-royal-strong);
+  box-shadow: 0 10px 20px rgba(23, 63, 145, 0.24);
 }
 
 .launch-nav-icon {
@@ -169,8 +169,8 @@
 }
 
 .launch-sidebar-nav a.is-active .launch-nav-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: #0f172a;
+  background: rgba(12, 44, 105, 0.48);
+  color: #ffffff;
 }
 
 .launch-user-card {

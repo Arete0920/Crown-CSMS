@@ -6,37 +6,38 @@
 */
 
 :root {
-  --crown-bg: #f7faff;
-  --crown-bg-soft: #eef5ff;
+  --crown-bg: #f8fbff;
+  --crown-bg-soft: #eff4fb;
   --crown-surface: #ffffff;
-  --crown-surface-soft: #f4f8ff;
-  --crown-border: #d8e6ff;
-  --crown-border-strong: #b8d4ff;
-  --crown-primary: #3b82f6;
-  --crown-primary-strong: #2563eb;
-  --crown-primary-deep: #1d4ed8;
-  --crown-primary-soft: #dbeafe;
-  --crown-primary-faint: #eff6ff;
+  --crown-surface-soft: #f2f7ff;
+  --crown-card: #ffffff;
+  --crown-border: #d6e3f5;
+  --crown-border-strong: #b7cfe9;
+  --crown-primary: #2a5ec4;
+  --crown-primary-strong: #1e4faf;
+  --crown-primary-deep: #173f91;
+  --crown-primary-soft: #dbe7fb;
+  --crown-primary-faint: #edf3ff;
   --crown-accent: #8b5cf6;
   --crown-accent-soft: #ede9fe;
-  --crown-gold: #d99a2b;
+  --crown-gold: #c28a24;
   --crown-gold-soft: #fff3d6;
-  --crown-success: #16a34a;
+  --crown-success: #1f7a45;
   --crown-success-soft: #dcfce7;
-  --crown-warning: #d97706;
+  --crown-warning: #a86a12;
   --crown-warning-soft: #fef3c7;
-  --crown-danger: #dc2626;
+  --crown-danger: #b4232c;
   --crown-danger-soft: #fee2e2;
-  --crown-text: #172033;
-  --crown-muted: #5f6f89;
-  --crown-subtle: #8291aa;
+  --crown-text: #122033;
+  --crown-muted: #42566e;
+  --crown-subtle: #6a7f99;
   --crown-radius-sm: 10px;
   --crown-radius-md: 14px;
   --crown-radius-lg: 20px;
   --crown-radius-xl: 28px;
-  --crown-shadow-soft: 0 8px 24px rgba(37, 99, 235, 0.08);
-  --crown-shadow-card: 0 16px 40px rgba(37, 99, 235, 0.10);
-  --crown-shadow-lift: 0 22px 58px rgba(37, 99, 235, 0.14);
+  --crown-shadow-soft: 0 8px 24px rgba(23, 63, 145, 0.07);
+  --crown-shadow-card: 0 14px 34px rgba(23, 63, 145, 0.09);
+  --crown-shadow-lift: 0 20px 48px rgba(23, 63, 145, 0.12);
 }
 
 html {
@@ -45,8 +46,8 @@ html {
 
 body {
   background:
-    radial-gradient(circle at 10% 0%, rgba(59, 130, 246, 0.14), transparent 32rem),
-    radial-gradient(circle at 90% 5%, rgba(139, 92, 246, 0.09), transparent 30rem),
+    radial-gradient(circle at 10% 0%, rgba(30, 79, 175, 0.12), transparent 32rem),
+    radial-gradient(circle at 90% 5%, rgba(194, 138, 36, 0.08), transparent 30rem),
     linear-gradient(180deg, var(--crown-bg) 0%, var(--crown-bg-soft) 100%);
   color: var(--crown-text);
   text-rendering: optimizeLegibility;
