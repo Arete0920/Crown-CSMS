@@ -27,6 +27,24 @@ type CertificationTenant = {
 
 type AuthMode = "credentials" | "sandbox-session" | "sandbox-no-login";
 
+type BrowserAuthState = {
+  hasToken: boolean;
+  hasSchoolId: boolean;
+  token: string;
+  schoolId: string;
+  tokenSources: string[];
+  schoolIdSources: string[];
+};
+
+type ApiProbeResult = {
+  ok: boolean;
+  status: number;
+  url: string;
+  code: string;
+  hasAuthorizationHeader: boolean;
+  hasSchoolIdHeader: boolean;
+};
+
 const SANDBOX_ROLE_KEYS: Record<string, string> = {
   admin: "school_admin",
   teacher: "teacher",
@@ -41,6 +59,14 @@ const SANDBOX_NO_LOGIN_ROUTES: Record<string, string> = {
   parent: "/parent",
   student: "/student",
   board: "/board",
+};
+
+const DASHBOARD_SUMMARY_SLUGS: Record<string, string> = {
+  admin: "school-administrator",
+  teacher: "teacher",
+  parent: "parent",
+  student: "student",
+  board: "school-board",
 };
 
 const CERTIFICATION_TENANT_MODE = (process.env.CROWN_CERTIFICATION_TENANT_MODE || "sandbox").trim().toLowerCase();
@@ -127,6 +153,10 @@ function sandboxRoleKeyFor(role: string): string {
 
 function sandboxSchoolKeyFor(tenant: CertificationTenant): string {
   return tenant.schoolKey;
+}
+
+function dashboardSummarySlugFor(role: string): string {
+  return DASHBOARD_SUMMARY_SLUGS[role] ?? role;
 }
 
 function resolveSandboxInviteId(): string {
@@ -304,6 +334,167 @@ async function seedClientAuthStorage(
     },
     { role: roleKey, school: schoolId, access: accessToken },
   );
+}
+
+async function readBrowserAuthState(page: Page): Promise<BrowserAuthState> {
+  return page.evaluate(() => {
+    const tokenCandidates = [
+      ["session:crown.jwt.access", sessionStorage.getItem("crown.jwt.access") || ""],
+      ["session:crown_auth_token", sessionStorage.getItem("crown_auth_token") || ""],
+      ["session:access_token", sessionStorage.getItem("access_token") || ""],
+      ["local:crown.jwt.access", localStorage.getItem("crown.jwt.access") || ""],
+      ["local:crown_auth_token", localStorage.getItem("crown_auth_token") || ""],
+      ["local:access_token", localStorage.getItem("access_token") || ""],
+      ["global:__CROWN_AUTH_TOKEN__", (globalThis as { __CROWN_AUTH_TOKEN__?: string }).__CROWN_AUTH_TOKEN__ || ""],
+    ];
+    const schoolCandidates = [
+      ["session:crown.school.id", sessionStorage.getItem("crown.school.id") || ""],
+      ["session:crown_school_id", sessionStorage.getItem("crown_school_id") || ""],
+      ["session:schoolId", sessionStorage.getItem("schoolId") || ""],
+      ["session:school_id", sessionStorage.getItem("school_id") || ""],
+      ["local:crown.school.id", localStorage.getItem("crown.school.id") || ""],
+      ["local:crown_school_id", localStorage.getItem("crown_school_id") || ""],
+      ["local:schoolId", localStorage.getItem("schoolId") || ""],
+      ["local:school_id", localStorage.getItem("school_id") || ""],
+      ["global:__CROWN_SCHOOL_ID__", (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ || ""],
+    ];
+
+    const currentUserRaw = sessionStorage.getItem("crown_current_user") || localStorage.getItem("crown_current_user") || "";
+    if (currentUserRaw) {
+      try {
+        const currentUser = JSON.parse(currentUserRaw);
+        tokenCandidates.push(["crown_current_user.token", currentUser.token || currentUser.access || currentUser.access_token || ""]);
+        schoolCandidates.push(["crown_current_user.school_id", currentUser.school_id || currentUser.schoolId || ""]);
+      } catch {
+        // Ignore malformed legacy user payloads.
+      }
+    }
+
+    const tokenEntry = tokenCandidates.find(([, value]) => Boolean(value));
+    const schoolEntry = schoolCandidates.find(([, value]) => Boolean(value));
+
+    return {
+      hasToken: Boolean(tokenEntry?.[1]),
+      hasSchoolId: Boolean(schoolEntry?.[1]),
+      token: tokenEntry?.[1] || "",
+      schoolId: schoolEntry?.[1] || "",
+      tokenSources: tokenCandidates.filter(([, value]) => Boolean(value)).map(([source]) => source),
+      schoolIdSources: schoolCandidates.filter(([, value]) => Boolean(value)).map(([source]) => source),
+    };
+  });
+}
+
+async function probeApiFromBrowser(
+  page: Page,
+  url: string,
+  token: string,
+  schoolId: string,
+): Promise<ApiProbeResult> {
+  return page.evaluate(async ({ targetUrl, accessToken, school }) => {
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    if (school) {
+      headers["X-School-Id"] = school;
+    }
+
+    try {
+      const response = await fetch(targetUrl, {
+        method: "GET",
+        credentials: "include",
+        headers,
+      });
+      return {
+        ok: response.ok,
+        status: response.status,
+        url: targetUrl,
+        code: response.ok ? "OK" : `HTTP_${response.status}`,
+        hasAuthorizationHeader: Boolean(accessToken),
+        hasSchoolIdHeader: Boolean(school),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        status: 0,
+        url: targetUrl,
+        code: error instanceof Error ? error.message : "FETCH_FAILED",
+        hasAuthorizationHeader: Boolean(accessToken),
+        hasSchoolIdHeader: Boolean(school),
+      };
+    }
+  }, { targetUrl: url, accessToken: token, school: schoolId });
+}
+
+function classifyProbe(name: string, probe: ApiProbeResult): string | null {
+  if (probe.ok) {
+    return null;
+  }
+
+  if (!probe.hasAuthorizationHeader) {
+    return `AUTH_PREFLIGHT_${name}: TOKEN_NOT_SEEDED url=${probe.url}`;
+  }
+
+  if (!probe.hasSchoolIdHeader) {
+    return `AUTH_PREFLIGHT_${name}: SCHOOL_ID_NOT_SEEDED url=${probe.url}`;
+  }
+
+  if (probe.status === 401) {
+    return `AUTH_PREFLIGHT_${name}: API_401_WITH_TOKEN_AND_SCHOOL_ID url=${probe.url}`;
+  }
+
+  if (probe.status === 403) {
+    return `AUTH_PREFLIGHT_${name}: API_403_WITH_TOKEN_AND_SCHOOL_ID url=${probe.url}`;
+  }
+
+  if (probe.status === 404) {
+    return `AUTH_PREFLIGHT_${name}: API_404_MISSING_ROUTE url=${probe.url}`;
+  }
+
+  if (probe.status >= 500) {
+    return `AUTH_PREFLIGHT_${name}: API_${probe.status}_SERVER_ERROR url=${probe.url}`;
+  }
+
+  return `AUTH_PREFLIGHT_${name}: ${probe.code} status=${probe.status} url=${probe.url}`;
+}
+
+async function runAuthPreflight(page: Page, role: string, tenant: CertificationTenant): Promise<string[]> {
+  const authState = await readBrowserAuthState(page);
+  const errors: string[] = [];
+
+  if (!authState.hasToken) {
+    errors.push(`AUTH_PREFLIGHT: TOKEN_NOT_SEEDED role=${role} tenant=${tenant.id}`);
+  }
+
+  if (!authState.hasSchoolId) {
+    errors.push(`AUTH_PREFLIGHT: SCHOOL_ID_NOT_SEEDED role=${role} tenant=${tenant.id}`);
+  }
+
+  if (errors.length > 0) {
+    return errors;
+  }
+
+  const summarySlug = dashboardSummarySlugFor(role);
+  const summaryUrl = `${LIVE_API_BASE_URL}/api/v1/dashboards/${summarySlug}/summary`;
+  const navUrl = `${LIVE_API_BASE_URL}/api/v1/nav`;
+
+  const summaryProbe = await probeApiFromBrowser(page, summaryUrl, authState.token, authState.schoolId);
+  const navProbe = await probeApiFromBrowser(page, navUrl, authState.token, authState.schoolId);
+
+  const summaryError = classifyProbe("DASHBOARD_SUMMARY", summaryProbe);
+  const navError = classifyProbe("NAV", navProbe);
+
+  if (summaryError) {
+    errors.push(`${summaryError} role=${role} tenant=${tenant.id} tokenSources=${authState.tokenSources.join("+")} schoolIdSources=${authState.schoolIdSources.join("+")}`);
+  }
+
+  if (navError) {
+    errors.push(`${navError} role=${role} tenant=${tenant.id} tokenSources=${authState.tokenSources.join("+")} schoolIdSources=${authState.schoolIdSources.join("+")}`);
+  }
+
+  return errors;
 }
 
 function isAllowedExternalFailure(url: string): boolean {
@@ -547,13 +738,20 @@ for (const surface of certificationMatrix) {
         const expectedFragments = [...(surface.expectedApiFragments ?? [])];
         const network = attachNetworkRecorder(page, expectedFragments);
         const errors: string[] = [];
+        let shouldCollectPageBlockers = true;
 
         try {
           authMode = await performLiveLogin(page, persona.role, tenant);
-          await page.goto(absoluteLiveUrl(surface.route), { waitUntil: "networkidle" });
-          await expect(page.locator("body")).toBeVisible();
+          const preflightErrors = await runAuthPreflight(page, persona.role, tenant);
+          if (preflightErrors.length > 0) {
+            errors.push(...preflightErrors);
+            shouldCollectPageBlockers = false;
+          } else {
+            await page.goto(absoluteLiveUrl(surface.route), { waitUntil: "networkidle" });
+            await expect(page.locator("body")).toBeVisible();
+          }
         } catch (error) {
-          errors.push(error instanceof Error ? error.message : String(error));
+          errors.push(error instanceof Error ? messageForError(error) : String(error));
         }
 
         const accessibility = await runAccessibilityCertification(page);
@@ -562,17 +760,19 @@ for (const surface of certificationMatrix) {
         await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
 
         let pageErrors: string[] = [];
-        try {
-          pageErrors = await collectPageBlockers(
-            page,
-            network,
-            accessibility,
-            surface.expectedText ?? [],
-            false,
-          );
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          pageErrors = [`page blocker collection failed: ${message}`];
+        if (shouldCollectPageBlockers) {
+          try {
+            pageErrors = await collectPageBlockers(
+              page,
+              network,
+              accessibility,
+              surface.expectedText ?? [],
+              false,
+            );
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            pageErrors = [`page blocker collection failed: ${message}`];
+          }
         }
         const ignoredMissingApis = authMode === "credentials" ? [] : AUTH_API;
         const filteredMissingExpectedApis = network.missingExpected().filter(
@@ -581,7 +781,7 @@ for (const surface of certificationMatrix) {
         const filteredPageErrors = pageErrors.filter(
           (error) => !error.startsWith("missing expected API calls:"),
         );
-        if (filteredMissingExpectedApis.length > 0) {
+        if (filteredMissingExpectedApis.length > 0 && shouldCollectPageBlockers) {
           filteredPageErrors.push(`missing expected API calls: ${filteredMissingExpectedApis.join(", ")}`);
         }
         errors.push(...filteredPageErrors);
@@ -594,9 +794,9 @@ for (const surface of certificationMatrix) {
           errors.push(`failed non-API network requests: ${nonApiFailedRequests.length}`);
         }
 
-        const missingExpectedApis = network.missingExpected().filter(
-          (fragment) => !(authMode !== "credentials" && AUTH_API.includes(fragment)),
-        );
+        const missingExpectedApis = shouldCollectPageBlockers
+          ? network.missingExpected().filter((fragment) => !(authMode !== "credentials" && AUTH_API.includes(fragment)))
+          : [];
         const failedRequests = dedupeFailedRequests([...network.failed, ...nonApiFailedRequests]);
 
         appendCertificationResult({
@@ -621,4 +821,8 @@ for (const surface of certificationMatrix) {
       });
     }
   }
+}
+
+function messageForError(error: Error): string {
+  return error.message || String(error);
 }
