@@ -367,6 +367,8 @@ DRF_DEFAULT_RENDERERS = (
 # DRF Configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        # CROWN sandbox/session access tokens (typ=access) used by production certification.
+        "crown_api.auth_middleware.CrownAccessTokenAuthentication",
         # JWT first ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â its authenticate_header() returns 'Bearer realm="api"'
         # which causes DRF to emit 401 (not 403) for unauthenticated requests.
         "rest_framework_simplejwt.authentication.JWTAuthentication",
