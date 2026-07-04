@@ -65,10 +65,11 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Run production certification crawler against deployed runtime
-        run: npm run certify:production-crawler
+        run: npm run certify:production
         env:
           CI: "1"
           CROWN_CERTIFICATION_LIVE_RUNTIME: "1"
+          CROWN_EXPECTED_DEPLOYED_SHA: ${{ github.sha }}
           CROWN_LIVE_FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
           CROWN_LIVE_API_BASE_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
           CROWN_CERTIFICATION_TENANT_MODE: "sandbox"
@@ -96,7 +97,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b540449e92b4886f43607fa02 # v4
         with:
           name: production-certification-playwright-report-${{ github.run_number }}-${{ github.sha }}
           path: frontend/dashboards/playwright-report/
