@@ -250,13 +250,28 @@ async function seedClientAuthStorage(
 ): Promise<void> {
   await page.addInitScript(
     ({ role, school, access }) => {
+      const currentUser = JSON.stringify({
+        role,
+        school_id: school,
+        schoolId: school,
+        token: access || "",
+        access: access || "",
+        access_token: access || "",
+      });
+
       try {
         if (access) {
           sessionStorage.setItem("crown.jwt.access", access);
+          sessionStorage.setItem("crown_auth_token", access);
+          sessionStorage.setItem("access_token", access);
         }
         sessionStorage.setItem("crown.role", role);
+        sessionStorage.setItem("crown.demo.role", role);
         sessionStorage.setItem("crown.school.id", school);
         sessionStorage.setItem("crown_school_id", school);
+        sessionStorage.setItem("schoolId", school);
+        sessionStorage.setItem("school_id", school);
+        sessionStorage.setItem("crown_current_user", currentUser);
       } catch {
         // Storage APIs can be blocked on transient opaque documents.
       }
@@ -264,6 +279,8 @@ async function seedClientAuthStorage(
       try {
         if (access) {
           localStorage.setItem("crown.jwt.access", access);
+          localStorage.setItem("crown_auth_token", access);
+          localStorage.setItem("access_token", access);
         }
         localStorage.setItem("crown.role", role);
         localStorage.setItem("crown.demo.role", role);
@@ -271,12 +288,16 @@ async function seedClientAuthStorage(
         localStorage.setItem("crown_school_id", school);
         localStorage.setItem("schoolId", school);
         localStorage.setItem("school_id", school);
+        localStorage.setItem("crown_current_user", currentUser);
       } catch {
         // Storage unavailability will surface later via runtime blocker assertions.
       }
 
       try {
-        (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ = school;
+        (globalThis as { __CROWN_SCHOOL_ID__?: string; __CROWN_AUTH_TOKEN__?: string }).__CROWN_SCHOOL_ID__ = school;
+        if (access) {
+          (globalThis as { __CROWN_AUTH_TOKEN__?: string }).__CROWN_AUTH_TOKEN__ = access;
+        }
       } catch {
         // Non-fatal.
       }
@@ -431,7 +452,12 @@ async function performLiveLogin(page: Page, role: string, tenant: CertificationT
 
   const accessToken = await page.evaluate(() => (
     sessionStorage.getItem("crown.jwt.access")
+    || sessionStorage.getItem("crown_auth_token")
+    || sessionStorage.getItem("access_token")
     || localStorage.getItem("crown.jwt.access")
+    || localStorage.getItem("crown_auth_token")
+    || localStorage.getItem("access_token")
+    || (globalThis as { __CROWN_AUTH_TOKEN__?: string }).__CROWN_AUTH_TOKEN__
     || ""
   )).catch(() => "");
   if (!accessToken) {
