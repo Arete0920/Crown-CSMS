@@ -43,8 +43,12 @@ const SANDBOX_NO_LOGIN_ROUTES: Record<string, string> = {
   board: "/board",
 };
 
-const HERITAGE_SCHOOL_UUID =
-  process.env.CROWN_LIVE_SCHOOL_ID
+const CERTIFICATION_TENANT_MODE = (process.env.CROWN_CERTIFICATION_TENANT_MODE || "sandbox").trim().toLowerCase();
+const USES_SANDBOX_TENANT = CERTIFICATION_TENANT_MODE !== "live";
+const HERITAGE_SCHOOL_UUID = (
+  USES_SANDBOX_TENANT
+    ? process.env.CROWN_DEMO_SCHOOL_ID
+    : process.env.CROWN_LIVE_SCHOOL_ID)
   || process.env.CROWN_DEMO_SCHOOL_ID
   || "19801b59-8c05-4c84-9312-5d792e4e839d";
 
@@ -86,14 +90,21 @@ function assertLiveSchoolIdConfiguration(): void {
     return;
   }
 
+  if (USES_SANDBOX_TENANT) {
+    const demoSchoolId = process.env.CROWN_DEMO_SCHOOL_ID?.trim() || HERITAGE_SCHOOL_UUID;
+    if (demoSchoolId) {
+      return;
+    }
+  }
+
   const liveSchoolId = process.env.CROWN_LIVE_SCHOOL_ID?.trim();
   if (liveSchoolId) {
     return;
   }
 
   throw new Error(
-    "CROWN_LIVE_SCHOOL_ID is required for production API certification. "
-    + "Refusing to use demo/default school UUID against production runtime.",
+    "CROWN_LIVE_SCHOOL_ID is required for live production tenant certification. "
+    + "For investor/demo certification use CROWN_CERTIFICATION_TENANT_MODE=sandbox and CROWN_DEMO_SCHOOL_ID.",
   );
 }
 
@@ -152,7 +163,12 @@ async function primeSandboxPersona(role: string, tenant: CertificationTenant): P
   if (!response.ok) {
     const body = await response.text();
     if (response.status === 403 && body.includes("sandbox_invite_required")) {
-      // Live runtime may enforce invite-only sandbox priming; fall back to direct login assertions.
+      if (IS_PRODUCTION_API && USES_SANDBOX_TENANT) {
+        throw new Error(
+          "Live sandbox session requires CROWN_LIVE_SANDBOX_INVITE_ID. "
+          + "Investor demo must use an invite-backed Heritage sandbox session, not GP School or password login.",
+        );
+      }
       return;
     }
     throw new Error(`Sandbox session priming failed for role ${role} / tenant ${tenant.id}: ${response.status} ${body}`);
@@ -191,7 +207,7 @@ async function bootstrapSandboxSession(
   }
 
   const roleValue = sandboxRoleKeyFor(role);
-  const schoolId = tenant.schoolId;
+  const schoolId = typeof session.school_id === "string" && session.school_id ? session.school_id : tenant.schoolId;
   await page.evaluate(
     ({ access, roleKey, school }) => {
       sessionStorage.setItem("crown.jwt.access", access as string);
@@ -305,11 +321,6 @@ async function selectSchool(page: Page, tenant: CertificationTenant): Promise<vo
   }, tenant);
 
   if (!selectedValue) {
-    const liveSchoolId = process.env.CROWN_LIVE_SCHOOL_ID?.trim();
-    if (IS_PRODUCTION_API && liveSchoolId && tenant.schoolId === liveSchoolId) {
-      return;
-    }
-
     const availableOptions = await schoolSelect.evaluate((select) => (
       Array.from((select as HTMLSelectElement).options).map((option) => ({
         value: option.value,
