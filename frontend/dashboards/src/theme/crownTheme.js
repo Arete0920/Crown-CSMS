@@ -4,17 +4,21 @@ import { colors } from "./tokens";
 /**
  * Crown MUI Theme
  * Apply via <ThemeProvider theme={crownTheme}> at the app root.
- * Scoped to MUI components only — existing crown-* CSS classes are unaffected.
+ * Scoped to MUI components only - existing crown-* CSS classes are unaffected.
  */
 export const crownTheme = createTheme({
   palette: {
-    primary: { main: colors.primary },
+    primary: { main: colors.primary, dark: colors.primaryDeep ?? colors.primaryStrong },
     success: { main: colors.success },
     warning: { main: colors.warning },
     error:   { main: colors.danger },
+    text: {
+      primary: colors.text,
+      secondary: colors.neutral,
+    },
     background: {
       default: colors.background,
-      paper:   "#ffffff",
+      paper:   colors.paper,
     },
   },
   typography: {
@@ -33,10 +37,11 @@ export const crownTheme = createTheme({
       styleOverrides: {
         root: {
           border: `1px solid ${colors.border}`,
-          boxShadow: "none",
+          boxShadow: "0 8px 20px rgba(23, 63, 145, 0.08)",
           transition: "all 150ms ease-in-out",
           "&:hover": {
             transform: "translateY(-2px)",
+            boxShadow: "0 12px 24px rgba(23, 63, 145, 0.12)",
           },
         },
       },
@@ -53,7 +58,7 @@ export const crownTheme = createTheme({
       styleOverrides: {
         root: {
           border: `1px solid ${colors.border}`,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          boxShadow: "0 6px 18px rgba(23, 63, 145, 0.08)",
         },
       },
     },

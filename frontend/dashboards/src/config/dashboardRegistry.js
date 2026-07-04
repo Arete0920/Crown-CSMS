@@ -253,7 +253,11 @@ export const DASHBOARD_REGISTRY = [
     section: 'Leadership & Growth',
     allowedRoles: SCHOOL_ADMIN,
     component: SchoolAdministratorDashboard,
-    releaseState: 'draft',
+    releaseState: 'ready',
+    evidence: {
+      artifact: 'audit-artifacts/dashboard-completion/evidence-packets/batch1/school-administrator.md',
+      collectedAt: '2026-06-22T00:00:00Z',
+    },
   }),
   createDashboard({
     key: 'school-board',
@@ -584,7 +588,7 @@ export function getDefaultDashboardPath(userRoles) {
   return getAccessibleDashboards(userRoles)[0]?.path || '/';
 }
 
-const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
+const isDev = import.meta.env?.DEV;
 
 if (isDev) {
   validateDashboardRegistry(DASHBOARD_REGISTRY);
