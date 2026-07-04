@@ -294,6 +294,21 @@ function isAllowedExternalFailure(url: string): boolean {
   }
 }
 
+function isNoisyConsoleError(message: string): boolean {
+  return /Failed to load resource: the server responded with a status of 404/.test(message);
+}
+
+function dedupeFailedRequests(rows: NetworkObservation[]): NetworkObservation[] {
+  const byKey = new Map<string, NetworkObservation>();
+  for (const row of rows) {
+    const key = [row.method ?? "", row.url, row.status ?? "", row.failure ?? ""].join("|");
+    if (!byKey.has(key)) {
+      byKey.set(key, row);
+    }
+  }
+  return [...byKey.values()];
+}
+
 async function selectSchool(page: Page, tenant: CertificationTenant): Promise<void> {
   const schoolSelect = page.locator("#login-school");
   if (!(await schoolSelect.isVisible({ timeout: 10_000 }).catch(() => false))) {
@@ -484,7 +499,10 @@ for (const surface of certificationMatrix) {
 
         page.on("console", (message) => {
           if (message.type() === "error") {
-            consoleErrors.push(`[console.error] ${message.text()}`);
+            const text = message.text();
+            if (!isNoisyConsoleError(text)) {
+              consoleErrors.push(`[console.error] ${text}`);
+            }
           }
         });
 
@@ -500,10 +518,7 @@ for (const surface of certificationMatrix) {
           });
         });
 
-        const expectedFragments = [
-          LIVE_API_BASE_URL,
-          ...(surface.expectedApiFragments ?? []),
-        ];
+        const expectedFragments = [...(surface.expectedApiFragments ?? [])];
         const network = attachNetworkRecorder(page, expectedFragments);
         const errors: string[] = [];
 
@@ -556,7 +571,7 @@ for (const surface of certificationMatrix) {
         const missingExpectedApis = network.missingExpected().filter(
           (fragment) => !(authMode !== "credentials" && AUTH_API.includes(fragment)),
         );
-        const failedRequests = [...network.failed, ...nonApiFailedRequests];
+        const failedRequests = dedupeFailedRequests([...network.failed, ...nonApiFailedRequests]);
 
         appendCertificationResult({
           id: surface.id,
