@@ -48,6 +48,55 @@ def _get_invite(invite_id: str | None):
     return SandboxInvite.objects.filter(pk=invite_id).first()
 
 
+def _invite_expiry_from_request(request):
+    expires_at_raw = request.data.get("expires_at")
+    if expires_at_raw:
+        try:
+            return timezone.datetime.fromisoformat(
+                str(expires_at_raw).replace("Z", "+00:00")
+            ), None
+        except (TypeError, ValueError):
+            return None, Response(
+                {
+                    "detail": "Invalid sandbox invite expiration timestamp.",
+                    "code": "sandbox_invite_expires_at_invalid",
+                },
+                status=400,
+            )
+
+    raw_days = request.data.get("days")
+    if raw_days in (None, ""):
+        return None, Response(
+            {
+                "detail": "Invite duration in days is required.",
+                "code": "sandbox_invite_days_invalid",
+            },
+            status=400,
+        )
+
+    try:
+        days = int(raw_days)
+    except (TypeError, ValueError):
+        return None, Response(
+            {
+                "detail": "Invite duration in days must be a whole number.",
+                "code": "sandbox_invite_days_invalid",
+            },
+            status=400,
+        )
+
+    if days < 1 or days > 30:
+        return None, Response(
+            {
+                "detail": "Invite duration in days must be between 1 and 30.",
+                "code": "sandbox_invite_days_invalid",
+            },
+            status=400,
+        )
+
+    return timezone.now() + timedelta(days=days), None
+
+
 def _validate_invite(
     invite: SandboxInvite | None, *, role: str, school_key: str, track: str
 ):
@@ -125,16 +174,9 @@ class SandboxInviteCreateView(APIView):
                 status=403,
             )
 
-        expires_at_raw = request.data.get("expires_at")
-        expires_at = None
-        if expires_at_raw:
-            expires_at = timezone.datetime.fromisoformat(
-                str(expires_at_raw).replace("Z", "+00:00")
-            )
-        if expires_at is None:
-            expires_at = timezone.now() + timedelta(
-                days=int(request.data.get("days") or 14)
-            )
+        expires_at, expires_error = _invite_expiry_from_request(request)
+        if expires_error:
+            return expires_error
 
         invite = SandboxInvite.objects.create(
             organization_label=request.data.get("organization_label")
