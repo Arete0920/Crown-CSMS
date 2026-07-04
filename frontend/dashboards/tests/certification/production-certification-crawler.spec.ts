@@ -327,6 +327,24 @@ async function selectSchool(page: Page, tenant: CertificationTenant): Promise<vo
   await schoolSelect.selectOption(selectedValue);
 }
 
+async function selectRole(page: Page, role: string): Promise<void> {
+  const roleSelect = page.locator("#login-role");
+  await expect(roleSelect).toBeVisible();
+
+  const selectedValue = await roleSelect.evaluate((select, candidates) => {
+    const options = Array.from((select as HTMLSelectElement).options);
+    const values = candidates as string[];
+    const match = options.find((option) => values.includes(option.value));
+    return match?.value ?? null;
+  }, roleValues[role] ?? [role]);
+
+  if (!selectedValue) {
+    throw new Error(`Live login role option not found for role ${role}`);
+  }
+
+  await roleSelect.selectOption(selectedValue);
+}
+
 async function performLiveLogin(page: Page, role: string, tenant: CertificationTenant): Promise<AuthMode> {
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
     await primeSandboxPersona(role, tenant);
@@ -401,7 +419,33 @@ async function performLiveLogin(page: Page, role: string, tenant: CertificationT
 }
 
 test.describe.configure({ mode: "serial", retries: 0 });
-  await seedClientAuthStorage(page, sandboxRoleKeyFor(role), tenant.schoolId);
+
+test.beforeAll(() => {
+  resetEvidenceRoot();
+});
+
+test.afterAll(() => {
+  writeCertificationSummary();
+
+  const failed = loadCertificationResults().filter((row) => row.status === "FAIL");
+  const details = failed.map((row) => `${row.id} / ${row.persona} / ${row.tenant}: ${row.errors.join("; ")}`);
+  expect(failed, details.join("\n")).toEqual([]);
+});
+
+for (const surface of certificationMatrix) {
+  for (const personaId of surface.personas) {
+    for (const tenantId of surface.tenants) {
+      const persona = certificationPersonas.find((candidate) => candidate.id === personaId);
+      const tenantSeed = certificationTenants.find((candidate) => candidate.id === tenantId);
+
+      if (!persona) {
+        throw new Error(`Unknown certification persona: ${personaId}`);
+      }
+
+      if (!tenantSeed) {
+        throw new Error(`Unknown certification tenant: ${tenantId}`);
+      }
+
       const tenant: CertificationTenant = tenantSeed.id === "heritage"
         ? { ...tenantSeed, schoolId: HERITAGE_SCHOOL_UUID }
         : tenantSeed;
