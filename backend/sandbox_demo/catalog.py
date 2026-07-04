@@ -8,6 +8,13 @@ DEMO_SCHOOL_ID = os.getenv(
 )
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return str(raw).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 @dataclass(frozen=True)
 class SandboxPersona:
     key: str
@@ -250,7 +257,7 @@ SANDBOX_PERSONAS = {
     "board": SandboxPersona(
         key="board",
         label="School Board",
-        role_code="board",
+        role_code="HEAD_OF_SCHOOL",
         route="/board",
         email="board@heritage.example.org",
         first_name="Evelyn",
@@ -269,8 +276,20 @@ SANDBOX_PERSONAS = {
 }
 
 
+def _active_sandbox_tracks() -> dict:
+    if _env_flag("CROWN_SANDBOX_EXPOSE_LEGACY_SCHOOLS", default=False):
+        return SANDBOX_TRACKS
+    return {"school": SANDBOX_TRACKS["school"]}
+
+
+def _active_sandbox_schools() -> dict:
+    if _env_flag("CROWN_SANDBOX_EXPOSE_LEGACY_SCHOOLS", default=False):
+        return SANDBOX_SCHOOLS
+    return {"heritage-core": SANDBOX_SCHOOLS["heritage-core"]}
+
+
 def get_track(track_key: str | None) -> dict:
-    return SANDBOX_TRACKS.get(track_key or "") or SANDBOX_TRACKS["school"]
+    return _active_sandbox_tracks().get(track_key or "") or SANDBOX_TRACKS["school"]
 
 
 def get_school(school_key_or_id: str | None) -> SandboxSchool:
@@ -279,10 +298,11 @@ def get_school(school_key_or_id: str | None) -> SandboxSchool:
     }
     if not school_key_or_id:
         return SANDBOX_SCHOOLS["heritage-core"]
-    school_key_or_id = aliases.get(school_key_or_id, school_key_or_id)
-    if school_key_or_id in SANDBOX_SCHOOLS:
-        return SANDBOX_SCHOOLS[school_key_or_id]
-    for school in SANDBOX_SCHOOLS.values():
+    school_key_or_id = aliases.get(str(school_key_or_id).strip(), str(school_key_or_id).strip())
+    active_schools = _active_sandbox_schools()
+    if school_key_or_id in active_schools:
+        return active_schools[school_key_or_id]
+    for school in active_schools.values():
         if school.id == school_key_or_id:
             return school
     return SANDBOX_SCHOOLS["heritage-core"]
@@ -293,8 +313,10 @@ def get_persona(persona_key: str | None) -> SandboxPersona:
 
 
 def catalog_payload() -> dict:
+    tracks = _active_sandbox_tracks()
+    schools = _active_sandbox_schools()
     return {
-        "tracks": list(SANDBOX_TRACKS.values()),
-        "schools": [asdict(school) for school in SANDBOX_SCHOOLS.values()],
+        "tracks": list(tracks.values()),
+        "schools": [asdict(school) for school in schools.values()],
         "personas": [asdict(persona) for persona in SANDBOX_PERSONAS.values()],
     }
