@@ -414,6 +414,29 @@ async function performLiveLogin(page: Page, role: string, tenant: CertificationT
     return "sandbox-session";
   }
 
+  const accessToken = await page.evaluate(() => (
+    sessionStorage.getItem("crown.jwt.access")
+    || localStorage.getItem("crown.jwt.access")
+    || ""
+  )).catch(() => "");
+  if (!accessToken) {
+    const sessionBootstrapped = await bootstrapSandboxSession(page, role, tenant);
+    if (sessionBootstrapped) {
+      return "sandbox-session";
+    }
+    if (IS_PRODUCTION_API) {
+      throw new Error(
+        `Live auth bootstrap failed for role ${role}: login completed without crown.jwt.access token. `
+        + "Production certification requires a valid live token or sandbox session access token.",
+      );
+    }
+    const noLoginBootstrapped = await bootstrapSandboxNoLogin(page, role, tenant);
+    if (noLoginBootstrapped) {
+      return "sandbox-no-login";
+    }
+    throw new Error(`Live login failed for role ${role}: login completed without token.`);
+  }
+
   await expect(page.locator("body")).toBeVisible();
   return "credentials";
 }
