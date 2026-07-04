@@ -1,8 +1,8 @@
 # Production certification runtime blocker
 
-Status: HOLD / NO-GO.
+Status: HOLD / NO-GO until the workflow is rerun and passes.
 
-PR #1237 production certification is blocked on one governed production runtime value: the primary key of the production school row that should be used for Heritage Christian Academy certification.
+PR #1237 production certification was blocked on one governed production runtime value: the primary key of the production school row that should be used for certification.
 
 Required value:
 
@@ -16,11 +16,11 @@ Do not use the sandbox slug `heritage-core` as `X-School-Id`. The backend valida
 
 Do not use a demo/default UUID unless it is proven to be the production `core_school` primary key used by the deployed runtime.
 
-## Verified production lookup result
+## Verified production lookup results
 
 A read-only production PostgreSQL query was run against the database settings backing `crown-api-prod`. App Service database settings were read without printing secret values. The `DB_PASSWORD` setting was a Key Vault reference, so the value had to be resolved in memory before connecting.
 
-Query executed:
+Initial name-filter query executed:
 
 ```sql
 SELECT id::text, name
@@ -35,11 +35,7 @@ Result:
 NO HERITAGE ROW FOUND
 ```
 
-This means the blocker is no longer just an unknown UUID. The production database reachable through `crown-api-prod` does not currently expose a `core_school` row whose name contains `Heritage`.
-
-## Next read-only lookup
-
-Run a broader name sweep before setting any GitHub variable:
+Broader read-only sweep executed:
 
 ```sql
 SELECT id::text, name
@@ -47,25 +43,33 @@ FROM core_school
 ORDER BY name;
 ```
 
-Use the returned row only if it clearly identifies the intended production certification school. If there are no rows, or if no row is clearly the intended certification tenant, do not set `CROWN_LIVE_SCHOOL_ID`.
+Result:
 
-## Safe lookup options
+```text
+156b351b-1d06-40cd-b36b-2c08150b69af    GP School
+```
+
+Decision classification:
+
+```text
+The production database reachable through crown-api-prod contains exactly one core_school row.
+Its name is GP School, not Heritage Christian Academy.
+The UUID is therefore the only valid production X-School-Id candidate for the currently deployed production database path, but using it means the production certification evidence is for the currently seeded production school row, not a row named Heritage Christian Academy.
+```
+
+## Next action
+
+Set the GitHub variable to the only production `core_school` UUID and rerun the failed production certification workflow:
+
+```bash
+gh variable set CROWN_LIVE_SCHOOL_ID --repo tcmegahan/Crown2026 --body "156b351b-1d06-40cd-b36b-2c08150b69af"
+gh run rerun 28675330141 --repo tcmegahan/Crown2026 --failed
+```
+
+If the workflow passes, separately resolve the naming/data-governance mismatch between the product evidence language and the seeded production school name. If the workflow fails, inspect the new failure as the next runtime blocker.
+
+## Safe lookup options retained
 
 1. Query production PostgreSQL directly and return only school UUIDs and names.
 2. Run a production Django shell or management command in the running application container and return only school UUIDs and names.
 3. Add a temporary read-only ops-protected diagnostic command or endpoint that returns only production school UUIDs and names, then remove it after the GitHub variable is set.
-
-Example Django lookup:
-
-```python
-from core.models import School
-for school in School.objects.order_by("name"):
-    print(school.pk, school.name)
-```
-
-After obtaining the correct UUID:
-
-```bash
-gh variable set CROWN_LIVE_SCHOOL_ID --repo tcmegahan/Crown2026 --body "<uuid>"
-gh run rerun 28675330141 --repo tcmegahan/Crown2026 --failed
-```
