@@ -10,11 +10,6 @@ from crown_api.jwt_utils import decode_access, _b64url_decode
 
 
 def _is_crown_access_token(token: str) -> bool:
-    """
-    Quick check if this is one of our access tokens (typ=access in payload).
-    Returns False if it's a SimpleJWT or other token format.
-    Does NOT verify signature - just peeks at payload structure.
-    """
     try:
         parts = token.split(".")
         if len(parts) != 3:
@@ -30,7 +25,6 @@ def _extract_bearer_token(auth_header: str) -> str | None:
     scheme, _, token = auth_header.partition(" ")
     if scheme.lower() != "bearer":
         return None
-
     cleaned_token = token.strip()
     return cleaned_token or None
 
@@ -45,7 +39,6 @@ def _user_from_crown_payload(payload: dict):
     if not user or not getattr(user, "is_active", False):
         return None
 
-    # Attach request-scoped claims for tenant and role helpers without persisting.
     if payload.get("school_id"):
         setattr(user, "school_id", payload.get("school_id"))
     if payload.get("role"):
@@ -69,23 +62,13 @@ def authenticate_crown_access_token(token: str):
 
 
 class CrownAccessTokenAuthentication(BaseAuthentication):
-    """
-    DRF authentication bridge for CROWN's signed sandbox/runtime access token.
-
-    SimpleJWT intentionally cannot parse this token family, so views that rely on
-    invite-backed sandbox sessions must authenticate it before SimpleJWT attempts
-    to reject the Bearer token as invalid.
-    """
-
     def authenticate(self, request):
         token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
         if not token:
             return None
-
         authenticated = authenticate_crown_access_token(token)
         if authenticated is None:
             return None
-
         return authenticated
 
     def authenticate_header(self, request):
@@ -93,18 +76,11 @@ class CrownAccessTokenAuthentication(BaseAuthentication):
 
 
 class JwtAuthMiddleware:
-    """
-    Minimal JWT auth middleware:
-      - Reads Authorization: Bearer <access>
-      - Verifies CROWN access tokens
-      - Sets request.user to the real UserAccount instance
-    Does NOT block requests by default; views enforce auth via decorators/helpers.
-    """
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        request.user = getattr(request, "user", None)  # preserve if already set
+        request.user = getattr(request, "user", None)
 
         token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
         if token:
@@ -113,14 +89,12 @@ class JwtAuthMiddleware:
                 user, payload = authenticated
                 request.user = user
                 request.auth = payload
+                request.META["HTTP_AUTHORIZATION"] = ""
 
         return self.get_response(request)
 
 
 def require_auth(view_func):
-    """
-    Decorator for endpoints that require a valid JWT access token.
-    """
     def _wrapped(request, *args, **kwargs):
         user = getattr(request, "user", None)
         if not getattr(user, "is_authenticated", False):
