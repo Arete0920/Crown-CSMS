@@ -7,6 +7,11 @@ const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
 const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
 const EXPECTED_DEPLOYED_SHA = (process.env.CROWN_EXPECTED_DEPLOYED_SHA || process.env.GITHUB_SHA || "").trim();
 const SKIP_SHA_CHECK = process.env.CROWN_SKIP_DEPLOYED_SHA_CHECK === "1";
+const TENANT_HEADER_SCHOOL_ID = (
+  process.env.CROWN_LIVE_SCHOOL_ID
+  || process.env.CROWN_DEMO_SCHOOL_ID
+  || "19801b59-8c05-4c84-9312-5d792e4e839d"
+).trim();
 
 const evidenceRoot = path.resolve(process.cwd(), "../../audit-artifacts/production-certification/current");
 
@@ -41,11 +46,14 @@ function shaMatches(actual: string, expected: string): boolean {
   return cleanActual.startsWith(cleanExpected) || cleanExpected.startsWith(cleanActual);
 }
 
-async function fetchJson(url: string): Promise<{ ok: boolean; status: number; payload: any; error?: string }> {
+async function fetchJson(
+  url: string,
+  extraHeaders: Record<string, string> = {},
+): Promise<{ ok: boolean; status: number; payload: any; error?: string }> {
   try {
     const response = await globalThis.fetch(url, {
       method: "GET",
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", ...extraHeaders },
     });
     const text = await response.text();
     let payload: any = text;
@@ -127,7 +135,7 @@ test("deployed runtime build SHA matches certification SHA", async () => {
   }
 
   const apiUrl = `${LIVE_API_BASE_URL}/api/v1/version/`;
-  const apiVersion = await fetchJson(apiUrl);
+  const apiVersion = await fetchJson(apiUrl, { "X-School-Id": TENANT_HEADER_SCHOOL_ID });
   const apiSha = String(apiVersion.payload?.build_sha || "").trim();
 
   if (!apiVersion.ok) {
