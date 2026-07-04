@@ -7,6 +7,7 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from crown_api.jwt_utils import decode_access, _b64url_decode
+from crown_api.auth_models import CrownUser
 
 
 def _is_crown_access_token(token: str) -> bool:
@@ -17,7 +18,7 @@ def _is_crown_access_token(token: str) -> bool:
         payload_bytes = _b64url_decode(parts[1])
         payload = json.loads(payload_bytes.decode("utf-8"))
         return payload.get("typ") == "access"
-    except (TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
         return False
 
 
@@ -34,16 +35,28 @@ def _user_from_crown_payload(payload: dict):
     if not user_id:
         return None
 
-    User = get_user_model()
-    user = User.objects.filter(pk=user_id).first()
-    if not user or not getattr(user, "is_active", False):
+    user_model = get_user_model()
+    user = user_model.objects.filter(pk=user_id).first()
+    if user and getattr(user, "is_active", False):
+        if payload.get("school_id"):
+            setattr(user, "school_id", payload.get("school_id"))
+        if payload.get("role"):
+            setattr(user, "role", payload.get("role"))
+        return user
+
+    # Legacy fallback: /api/auth/* token flow still issues tokens for CrownUser.
+    legacy_user = CrownUser.objects.filter(pk=user_id).first()
+    if not legacy_user or not getattr(legacy_user, "is_active", False):
         return None
 
     if payload.get("school_id"):
-        setattr(user, "school_id", payload.get("school_id"))
+        setattr(legacy_user, "school_id", payload.get("school_id"))
     if payload.get("role"):
-        setattr(user, "role", payload.get("role"))
-    return user
+        setattr(legacy_user, "role", payload.get("role"))
+
+    # require_auth checks user.is_authenticated, which CrownUser does not define.
+    setattr(legacy_user, "is_authenticated", True)
+    return legacy_user
 
 
 def authenticate_crown_access_token(token: str):
