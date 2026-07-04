@@ -222,9 +222,11 @@ class SandboxSessionView(APIView):
 
     def post(self, request):
         role = request.data.get("role") or "school_admin"
-        school_key = request.data.get("school") or "heritage-core"
+        requested_school_key = request.data.get("school") or "heritage-core"
+        school = get_school(requested_school_key)
+        school_key = school.key
         guidance = request.data.get("guidance") or "guided"
-        track = request.data.get("track") or get_school(school_key).track
+        track = request.data.get("track") or school.track
         tour = request.data.get("tour") or ""
         invite_id = request.data.get("invite_id") or request.query_params.get("invite")
 
