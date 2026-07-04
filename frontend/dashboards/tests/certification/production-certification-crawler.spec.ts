@@ -208,33 +208,7 @@ async function bootstrapSandboxSession(
 
   const roleValue = sandboxRoleKeyFor(role);
   const schoolId = typeof session.school_id === "string" && session.school_id ? session.school_id : tenant.schoolId;
-  await page.evaluate(
-    ({ access, roleKey, school }) => {
-      sessionStorage.setItem("crown.jwt.access", access as string);
-      sessionStorage.setItem("crown.role", roleKey as string);
-      sessionStorage.setItem("crown.school.id", school as string);
-      sessionStorage.setItem("crown_school_id", school as string);
-      localStorage.setItem("crown.role", roleKey as string);
-      localStorage.setItem("crown.demo.role", roleKey as string);
-      localStorage.setItem("crown.school.id", school as string);
-      localStorage.setItem("crown_school_id", school as string);
-      localStorage.setItem("schoolId", school as string);
-      localStorage.setItem("school_id", school as string);
-      (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ = school as string;
-
-      const currentUserRaw = localStorage.getItem("crown_current_user");
-      if (currentUserRaw) {
-        try {
-          const currentUser = JSON.parse(currentUserRaw) as Record<string, unknown>;
-          currentUser.school_id = school;
-          localStorage.setItem("crown_current_user", JSON.stringify(currentUser));
-        } catch {
-          // Ignore malformed cached profile; test flow remains deterministic via explicit tenant keys.
-        }
-      }
-    },
-    { access: session.access, roleKey: roleValue, school: schoolId },
-  );
+  await seedClientAuthStorage(page, roleValue, schoolId, session.access);
 
   const route = typeof session.route === "string" && session.route
     ? session.route
@@ -254,33 +228,7 @@ async function bootstrapSandboxNoLogin(
   }
 
   await page.goto(absoluteLiveUrl("/login"), { waitUntil: "domcontentloaded" });
-  await page.evaluate(
-    ({ roleKey, school }) => {
-      sessionStorage.removeItem("crown.jwt.access");
-      sessionStorage.setItem("crown.school.id", school as string);
-      sessionStorage.setItem("crown_school_id", school as string);
-      sessionStorage.setItem("crown.role", roleKey as string);
-      localStorage.setItem("crown.role", roleKey as string);
-      localStorage.setItem("crown.demo.role", roleKey as string);
-      localStorage.setItem("crown.school.id", school as string);
-      localStorage.setItem("crown_school_id", school as string);
-      localStorage.setItem("schoolId", school as string);
-      localStorage.setItem("school_id", school as string);
-      (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ = school as string;
-
-      const currentUserRaw = localStorage.getItem("crown_current_user");
-      if (currentUserRaw) {
-        try {
-          const currentUser = JSON.parse(currentUserRaw) as Record<string, unknown>;
-          currentUser.school_id = school;
-          localStorage.setItem("crown_current_user", JSON.stringify(currentUser));
-        } catch {
-          // Ignore malformed cached profile; test flow remains deterministic via explicit tenant keys.
-        }
-      }
-    },
-    { roleKey: sandboxRoleKeyFor(role), school: tenant.schoolId },
-  );
+  await seedClientAuthStorage(page, sandboxRoleKeyFor(role), tenant.schoolId);
 
   await page.goto(absoluteLiveUrl(route), { waitUntil: "networkidle" });
   return true;
@@ -369,7 +317,15 @@ async function selectSchool(page: Page, tenant: CertificationTenant): Promise<vo
         value: option.value,
         label: option.textContent?.trim() ?? "",
       }))
-  await seedClientAuthStorage(page, roleValue, schoolId, session.access);
+    ));
+    throw new Error(
+      `Live login school option not found for tenant ${tenant.label}. `
+      + `Available options: ${JSON.stringify(availableOptions)}`,
+    );
+  }
+
+  await schoolSelect.selectOption(selectedValue);
+}
 
 async function performLiveLogin(page: Page, role: string, tenant: CertificationTenant): Promise<AuthMode> {
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
