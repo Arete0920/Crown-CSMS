@@ -84,7 +84,10 @@ class JwtAuthMiddleware:
 
         token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
         if token:
-            authenticated = authenticate_crown_access_token(token)
+            try:
+                authenticated = authenticate_crown_access_token(token)
+            except AuthenticationFailed:
+                authenticated = None
             if authenticated is not None:
                 user, payload = authenticated
                 request.user = user
