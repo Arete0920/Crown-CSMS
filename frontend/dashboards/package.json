@@ -47,7 +47,8 @@
     "test:release:routes": "playwright test tests/release-auth-golden-path.spec.ts",
     "test:release:a11y": "playwright test tests/release-accessibility.spec.ts",
     "certify:scaffold-crawler": "playwright test tests/certification/scaffold-certification-crawler.spec.ts --workers=1 --reporter=line",
-    "certify:production-crawler": "playwright test tests/certification/production-certification-crawler.spec.ts --workers=1 --reporter=line",
+    "certify:production-preflight": "playwright test tests/certification/production-runtime-preflight.spec.ts --workers=1 --reporter=line",
+    "certify:production-crawler": "npm run certify:production-preflight && playwright test tests/certification/production-certification-crawler.spec.ts --workers=1 --reporter=line",
     "certify:scaffold": "npm run build && npm run certify:scaffold-crawler",
     "certify:production": "npm run certify:production-crawler"
   },
