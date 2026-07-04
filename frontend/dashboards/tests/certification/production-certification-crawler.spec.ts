@@ -481,13 +481,19 @@ for (const surface of certificationMatrix) {
         await page.screenshot({ path: screenshotPath, fullPage: true });
         await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
 
-        const pageErrors = await collectPageBlockers(
-          page,
-          network,
-          accessibility,
-          surface.expectedText ?? [],
-          false,
-        );
+        let pageErrors: string[] = [];
+        try {
+          pageErrors = await collectPageBlockers(
+            page,
+            network,
+            accessibility,
+            surface.expectedText ?? [],
+            false,
+          );
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          pageErrors = [`page blocker collection failed: ${message}`];
+        }
         const ignoredMissingApis = authMode === "credentials" ? [] : AUTH_API;
         const filteredMissingExpectedApis = network.missingExpected().filter(
           (fragment) => !ignoredMissingApis.includes(fragment),
