@@ -390,6 +390,8 @@ jobs:
         env:
           PROD_BASE_URL: ${{ secrets.PROD_BASE_URL }}
           PROBE_TENANT_ID: ${{ secrets.PROBE_TENANT_ID }}
+          EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
+          EXPECTED_SHA_SHORT: ${{ steps.vars.outputs.deploy_sha_short }}
         run: |
           $ErrorActionPreference = "Stop"
 
@@ -404,6 +406,31 @@ jobs:
             return ($resp.Content | ConvertFrom-Json)
           }
 
+          function Test-ShaMatch([string]$ObservedSha, [string]$ExpectedSha, [string]$ExpectedShaShort) {
+            if ([string]::IsNullOrWhiteSpace($ObservedSha)) {
+              return $false
+            }
+
+            $observed = $ObservedSha.Trim().ToLowerInvariant()
+            $expected = if ([string]::IsNullOrWhiteSpace($ExpectedSha)) { "" } else { $ExpectedSha.Trim().ToLowerInvariant() }
+            $expectedShort = if ([string]::IsNullOrWhiteSpace($ExpectedShaShort)) { "" } else { $ExpectedShaShort.Trim().ToLowerInvariant() }
+
+            if (-not [string]::IsNullOrWhiteSpace($expected) -and $observed -eq $expected) {
+              return $true
+            }
+            if (-not [string]::IsNullOrWhiteSpace($expectedShort) -and $observed -eq $expectedShort) {
+              return $true
+            }
+            if (-not [string]::IsNullOrWhiteSpace($expectedShort) -and $observed.StartsWith($expectedShort)) {
+              return $true
+            }
+            if (-not [string]::IsNullOrWhiteSpace($expected) -and $expected.StartsWith($observed) -and $observed.Length -ge 7) {
+              return $true
+            }
+
+            return $false
+          }
+
           $integrityPath = "/api/integrity/"
 
           $maxAttempts = 20
@@ -413,9 +440,24 @@ jobs:
               if ([string]::IsNullOrWhiteSpace($env:PROBE_TENANT_ID)) {
                 $integrity = Get-Json "$baseUrl$integrityPath" @{ Accept = "application/json" }
                 $code = if ($null -ne $integrity.code) { "$($integrity.code)".ToLowerInvariant() } else { "" }
-                if ($code -ne "missing_tenant") {
+
+                $status =
+                  if ($null -ne $integrity.status) { "$($integrity.status)".ToLowerInvariant() }
+                  elseif ($null -ne $integrity.ok) { "$($integrity.ok)".ToLowerInvariant() }
+                  else { "" }
+
+                $buildSha = if ($null -ne $integrity.build_sha) { "$($integrity.build_sha)" } else { "" }
+                $missingTenant = $code -eq "missing_tenant"
+                $okStatus = $status -in @("ok", "true")
+
+                if (-not $missingTenant -and -not $okStatus) {
                   $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
-                  throw "Integrity probe without tenant header expected code=missing_tenant. Payload: $payload"
+                  throw "Integrity probe without tenant header expected code=missing_tenant or status=ok/ok=true. Payload: $payload"
+                }
+
+                if ($okStatus -and -not (Test-ShaMatch $buildSha $env:EXPECTED_SHA $env:EXPECTED_SHA_SHORT)) {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe without tenant header returned ok/true but build_sha did not match expected deploy SHA. expected=$($env:EXPECTED_SHA) short=$($env:EXPECTED_SHA_SHORT) observed=$buildSha payload=$payload"
                 }
               }
               else {
@@ -432,6 +474,12 @@ jobs:
                 if ($status -notin @("ok", "true")) {
                   $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
                   throw "Integrity probe did not return ok/true. Payload: $payload"
+                }
+
+                $buildSha = if ($null -ne $integrity.build_sha) { "$($integrity.build_sha)" } else { "" }
+                if (-not [string]::IsNullOrWhiteSpace($buildSha) -and -not (Test-ShaMatch $buildSha $env:EXPECTED_SHA $env:EXPECTED_SHA_SHORT)) {
+                  $payload = $integrity | ConvertTo-Json -Depth 10 -Compress
+                  throw "Integrity probe returned mismatched build_sha for tenant-aware request. expected=$($env:EXPECTED_SHA) short=$($env:EXPECTED_SHA_SHORT) observed=$buildSha payload=$payload"
                 }
               }
 
