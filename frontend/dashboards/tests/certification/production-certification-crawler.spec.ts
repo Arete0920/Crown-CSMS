@@ -305,7 +305,21 @@ async function selectSchool(page: Page, tenant: CertificationTenant): Promise<vo
   }, tenant);
 
   if (!selectedValue) {
-    throw new Error(`Live login school option not found for tenant ${tenant.label}`);
+    const liveSchoolId = process.env.CROWN_LIVE_SCHOOL_ID?.trim();
+    if (IS_PRODUCTION_API && liveSchoolId && tenant.schoolId === liveSchoolId) {
+      return;
+    }
+
+    const availableOptions = await schoolSelect.evaluate((select) => (
+      Array.from((select as HTMLSelectElement).options).map((option) => ({
+        value: option.value,
+        label: option.textContent?.trim() ?? "",
+      }))
+    ));
+    throw new Error(
+      `Live login school option not found for tenant ${tenant.label}. `
+      + `Available options: ${JSON.stringify(availableOptions)}`,
+    );
   }
 
   await schoolSelect.selectOption(selectedValue);
