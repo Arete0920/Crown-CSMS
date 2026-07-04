@@ -106,6 +106,27 @@ class SandboxAccessRequestWorkflowTests(TestCase):
             self.assertEqual(response.status_code, 400)
             self.assertEqual(response.json()["code"], "sandbox_invite_days_invalid")
 
+    @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=False)
+    def test_session_requires_invite_when_open_session_disabled(self):
+        response = self.client.post(
+            reverse("sandbox-session"),
+            {"role": "school_admin", "school": "heritage", "track": "school"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "sandbox_invite_required")
+
+    @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
+    def test_session_allows_missing_invite_only_when_open_session_enabled(self):
+        response = self.client.post(
+            reverse("sandbox-session"),
+            {"role": "school_admin", "school": "heritage", "track": "school"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["school_id"], "19801b59-8c05-4c84-9312-5d792e4e839d")
+        self.assertEqual(response.json()["role"], "school_admin")
+
     @override_settings(CROWN_OPS_SECRET="test-ops-secret")
     def test_revoked_invite_blocks_session(self):
         invite = SandboxInvite.objects.create(
