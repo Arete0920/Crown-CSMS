@@ -15,10 +15,19 @@ function getApiBaseUrl() {
   return trimTrailingSlash(envBaseUrl);
 }
 
-function readLocalJson(key) {
-  if (typeof window === 'undefined') return null;
+function readStorageValue(storageName, key) {
+  if (typeof window === 'undefined') return '';
 
-  const raw = window.localStorage.getItem(key);
+  try {
+    const storage = window[storageName];
+    if (!storage) return '';
+    return storage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function readJsonCandidate(raw) {
   if (!raw) return null;
 
   try {
@@ -28,6 +37,18 @@ function readLocalJson(key) {
   }
 }
 
+function readStoredJson(key) {
+  return (
+    readJsonCandidate(readStorageValue('sessionStorage', key)) ||
+    readJsonCandidate(readStorageValue('localStorage', key)) ||
+    null
+  );
+}
+
+function firstNonEmpty(...values) {
+  return values.find((value) => value !== undefined && value !== null && String(value).trim() !== '') || '';
+}
+
 function getTenantId() {
   if (typeof window === 'undefined') return '';
 
@@ -35,17 +56,20 @@ function getTenantId() {
     return String(window.__CROWN_SCHOOL_ID__);
   }
 
-  const direct = window.localStorage.getItem('crown_school_id');
-  if (direct) {
-    return String(direct);
-  }
+  const currentUser = readStoredJson('crown_current_user');
 
-  const currentUser = readLocalJson('crown_current_user');
-  if (currentUser && currentUser.school_id) {
-    return String(currentUser.school_id);
-  }
-
-  return '';
+  return String(firstNonEmpty(
+    readStorageValue('sessionStorage', 'crown.school.id'),
+    readStorageValue('sessionStorage', 'crown_school_id'),
+    readStorageValue('sessionStorage', 'schoolId'),
+    readStorageValue('sessionStorage', 'school_id'),
+    readStorageValue('localStorage', 'crown.school.id'),
+    readStorageValue('localStorage', 'crown_school_id'),
+    readStorageValue('localStorage', 'schoolId'),
+    readStorageValue('localStorage', 'school_id'),
+    currentUser && currentUser.school_id,
+    currentUser && currentUser.schoolId,
+  ));
 }
 
 function getAuthToken() {
@@ -55,17 +79,19 @@ function getAuthToken() {
     return String(window.__CROWN_AUTH_TOKEN__);
   }
 
-  const direct = window.localStorage.getItem('crown_auth_token');
-  if (direct) {
-    return String(direct);
-  }
+  const currentUser = readStoredJson('crown_current_user');
 
-  const currentUser = readLocalJson('crown_current_user');
-  if (currentUser && currentUser.token) {
-    return String(currentUser.token);
-  }
-
-  return '';
+  return String(firstNonEmpty(
+    readStorageValue('sessionStorage', 'crown.jwt.access'),
+    readStorageValue('sessionStorage', 'crown_auth_token'),
+    readStorageValue('sessionStorage', 'access_token'),
+    readStorageValue('localStorage', 'crown.jwt.access'),
+    readStorageValue('localStorage', 'crown_auth_token'),
+    readStorageValue('localStorage', 'access_token'),
+    currentUser && currentUser.token,
+    currentUser && currentUser.access,
+    currentUser && currentUser.access_token,
+  ));
 }
 
 function buildUrl(path, query = {}) {
