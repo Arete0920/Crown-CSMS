@@ -52,6 +52,7 @@ const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 
 const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
 const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
+const IS_PRODUCTION_API = isProductionApiHost(LIVE_API_BASE_URL);
 const USE_SANDBOX_CREDENTIAL_BUTTON = process.env.CROWN_LIVE_USE_SANDBOX_CREDENTIALS !== "0";
 const LIVE_SANDBOX_INVITE_ID = resolveSandboxInviteId();
 
@@ -81,9 +82,7 @@ function requireLiveUrl(name: string): string {
 }
 
 function assertLiveSchoolIdConfiguration(): void {
-  const host = new URL(LIVE_API_BASE_URL).hostname.toLowerCase();
-  const isProductionApi = host.includes("crown-api-prod") || host.includes("prod");
-  if (!isProductionApi) {
+  if (!IS_PRODUCTION_API) {
     return;
   }
 
@@ -96,6 +95,11 @@ function assertLiveSchoolIdConfiguration(): void {
     "CROWN_LIVE_SCHOOL_ID is required for production API certification. "
     + "Refusing to use demo/default school UUID against production runtime.",
   );
+}
+
+function isProductionApiHost(url: string): boolean {
+  const host = new URL(url).hostname.toLowerCase();
+  return host.includes("crown-api-prod") || host.includes("prod");
 }
 
 function credentialFor(role: string): RoleCredential {
@@ -335,9 +339,11 @@ async function performLiveLogin(page: Page, role: string, tenant: CertificationT
       return "sandbox-session";
     }
 
-    const noLoginBootstrapped = await bootstrapSandboxNoLogin(page, role, tenant);
-    if (noLoginBootstrapped) {
-      return "sandbox-no-login";
+    if (!IS_PRODUCTION_API) {
+      const noLoginBootstrapped = await bootstrapSandboxNoLogin(page, role, tenant);
+      if (noLoginBootstrapped) {
+        return "sandbox-no-login";
+      }
     }
   }
 
@@ -377,6 +383,12 @@ async function performLiveLogin(page: Page, role: string, tenant: CertificationT
     const loginError = await alert.innerText();
     const sessionBootstrapped = await bootstrapSandboxSession(page, role, tenant);
     if (!sessionBootstrapped) {
+      if (IS_PRODUCTION_API) {
+        throw new Error(
+          `Live auth bootstrap failed for role ${role}: ${loginError}. `
+          + "Production certification requires live credentials or sandbox session access token; sandbox-no-login fallback is disabled.",
+        );
+      }
       const noLoginBootstrapped = await bootstrapSandboxNoLogin(page, role, tenant);
       if (!noLoginBootstrapped) {
         throw new Error(`Live login failed for role ${role}: ${loginError}`);
