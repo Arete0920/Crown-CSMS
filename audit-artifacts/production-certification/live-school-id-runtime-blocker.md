@@ -1,75 +1,46 @@
-# Production certification runtime blocker
+# Superseded production school-id blocker note
 
-Status: HOLD / NO-GO until the workflow is rerun and passes.
+Status: **SUPERSEDED / HISTORICAL**.
 
-PR #1237 production certification was blocked on one governed production runtime value: the primary key of the production school row that should be used for certification.
+This artifact is retained only to document an earlier production-runtime finding. It is **not current release guidance** and must not be used as an instruction to certify the Heritage sandbox/demo lane against the old `GP School` production row.
 
-Required value:
+## Superseded finding
 
-```text
-core_school.pk / core_school.id for the production certification school row
-```
+Earlier production database inspection found that the production database reachable through `crown-api-prod` contained a `core_school` row named `GP School` and no row named `Heritage Christian Academy`.
 
-This value must be supplied as `CROWN_LIVE_SCHOOL_ID` in GitHub Actions variables or secrets before the production certification crawler can honestly pass against `https://crown-api-prod.azurewebsites.net`.
+That finding explained why a strict production-school certification path could not honestly use the Heritage school name unless the Azure/database seed state was corrected or the certification lane was explicitly switched to sandbox/demo authority.
 
-Do not use the sandbox slug `heritage-core` as `X-School-Id`. The backend validates `X-School-Id` as a UUID and then checks that the UUID exists in `core_school`.
+## Current PR #1237 direction
 
-Do not use a demo/default UUID unless it is proven to be the production `core_school` primary key used by the deployed runtime.
+PR #1237 no longer treats the `GP School` row as the active certification target for the investor/demo sandbox lane.
 
-## Verified production lookup results
-
-A read-only production PostgreSQL query was run against the database settings backing `crown-api-prod`. App Service database settings were read without printing secret values. The `DB_PASSWORD` setting was a Key Vault reference, so the value had to be resolved in memory before connecting.
-
-Initial name-filter query executed:
-
-```sql
-SELECT id::text, name
-FROM core_school
-WHERE name ILIKE '%Heritage%'
-ORDER BY name;
-```
-
-Result:
+The active same-SHA certification configuration now uses the governed Heritage sandbox/demo path:
 
 ```text
-NO HERITAGE ROW FOUND
+CROWN_CERTIFICATION_TENANT_MODE=sandbox
+CROWN_DEMO_SCHOOL_ID=19801b59-8c05-4c84-9312-5d792e4e839d
+CROWN_LIVE_SCHOOL_LABEL=Heritage Christian Academy
+CROWN_LIVE_SANDBOX_INVITE_ID=<GitHub secret or variable>
 ```
 
-Broader read-only sweep executed:
+The active tenant list is narrowed to the `heritage` tenant with `schoolKey=heritage-core`.
 
-```sql
-SELECT id::text, name
-FROM core_school
-ORDER BY name;
-```
+## Do not use this old command
 
-Result:
-
-```text
-156b351b-1d06-40cd-b36b-2c08150b69af    GP School
-```
-
-Decision classification:
-
-```text
-The production database reachable through crown-api-prod contains exactly one core_school row.
-Its name is GP School, not Heritage Christian Academy.
-The UUID is therefore the only valid production X-School-Id candidate for the currently deployed production database path, but using it means the production certification evidence is for the currently seeded production school row, not a row named Heritage Christian Academy.
-```
-
-## Next action
-
-Set the GitHub variable to the only production `core_school` UUID and rerun the failed production certification workflow:
+The earlier command below is intentionally invalidated for the current Heritage sandbox/demo certification lane and must not be followed as current guidance:
 
 ```bash
 gh variable set CROWN_LIVE_SCHOOL_ID --repo tcmegahan/Crown2026 --body "156b351b-1d06-40cd-b36b-2c08150b69af"
-gh run rerun 28675330141 --repo tcmegahan/Crown2026 --failed
 ```
 
-If the workflow passes, separately resolve the naming/data-governance mismatch between the product evidence language and the seeded production school name. If the workflow fails, inspect the new failure as the next runtime blocker.
+Using that value would certify against the old production `GP School` row, not the current Heritage sandbox/demo scope.
 
-## Safe lookup options retained
+## Current proof standard
 
-1. Query production PostgreSQL directly and return only school UUIDs and names.
-2. Run a production Django shell or management command in the running application container and return only school UUIDs and names.
-3. Add a temporary read-only ops-protected diagnostic command or endpoint that returns only production school UUIDs and names, then remove it after the GitHub variable is set.
+The GP-school mismatch is considered resolved only when the current same-SHA Production Certification Evidence workflow passes against the active PR head and the resulting artifact shows the `heritage` tenant path without `GP School` leakage.
+
+Until that passes, release posture remains:
+
+```text
+NO-GO / HOLD
+```
