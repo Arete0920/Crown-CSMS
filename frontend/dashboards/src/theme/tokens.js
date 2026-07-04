@@ -15,11 +15,16 @@ export const spacing = {
 };
 
 export const colors = {
-  primary: "#1B3A6F",     // Crown blue
-  success: "#2E7D32",
-  warning: "#ED6C02",
-  danger: "#D32F2F",
-  neutral: "#6B7280",
-  border: "rgba(0,0,0,0.06)",
-  background: "#F7F9FC",
+  primary: "#2A5EC4",
+  primaryStrong: "#1E4FAF",
+  primaryDeep: "#173F91",
+  success: "#1F7A45",
+  warning: "#A86A12",
+  danger: "#B4232C",
+  text: "#122033",
+  neutral: "#42566E",
+  border: "#D6E3F5",
+  background: "#F8FBFF",
+  backgroundSoft: "#EFF4FB",
+  paper: "#FFFFFF",
 };

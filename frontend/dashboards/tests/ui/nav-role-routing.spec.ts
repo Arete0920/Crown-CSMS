@@ -5,6 +5,10 @@ const IS_SANDBOX = process.env.VITE_DEMO_MODE === "sandbox" || process.env.VITE_
 const DEMO_SCHOOL_ID =
   process.env.CROWN_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
 const DEMO_TOKEN = process.env.CROWN_DEMO_TOKEN || "playwright-demo-token";
+const ADMIN_DASHBOARD_TEXT = /School Administrator Dashboard|School Administrator|School Snapshot/i;
+const ADMIN_PATHS = IS_SANDBOX
+  ? ["/school-admin-dashboard"]
+  : ["/school-admin", "/school-admin-dashboard"];
 
 async function seedDemoSession(page: Page, role: string) {
   await page.addInitScript(
@@ -18,11 +22,27 @@ async function seedDemoSession(page: Page, role: string) {
         localStorage.setItem("crown.school.id", schoolId);
         localStorage.setItem("crown.demo.role", role);
       } catch {
-        // ignore — storage may be unavailable in some contexts
+        // ignore -- storage may be unavailable in some contexts
       }
     },
     { role, token: DEMO_TOKEN, schoolId: DEMO_SCHOOL_ID }
   );
+}
+
+function isWizardsUrl(url: URL) {
+  return url.pathname === "/wizards" || url.pathname.startsWith("/wizards/");
+}
+
+async function expectNoWizardsFallback(page: Page) {
+  await expect(page).toHaveURL((url) => !isWizardsUrl(url));
+  await page.waitForTimeout(500);
+  await expect(page).toHaveURL((url) => !isWizardsUrl(url));
+}
+
+async function expectAdminDashboardRouteSettled(page: Page) {
+  await expect(page).toHaveURL((url) => ADMIN_PATHS.includes(url.pathname));
+  await expect(page.locator("body")).toContainText(ADMIN_DASHBOARD_TEXT);
+  await expectNoWizardsFallback(page);
 }
 
 async function installNavProofApiStubs(page: Page) {
@@ -67,15 +87,13 @@ async function installNavProofApiStubs(page: Page) {
   });
 }
 
-// ── 1. Role → Route Redirect ────────────────────────────────────────────────
+// -- 1. Role -> Route Redirect ------------------------------------------------
 //    Every role that maps to a persona dashboard must land there when hitting /.
 
 const REDIRECT_CASES = [
   {
     role: IS_SANDBOX ? "school_admin" : "admin",
-    expectPaths: IS_SANDBOX
-      ? ["/school-admin-dashboard", "/wizards"]
-      : ["/school-admin", "/school-admin-dashboard", "/wizards"],
+    expectPaths: ADMIN_PATHS,
   },
   {
     role: "director",
@@ -95,7 +113,7 @@ const REDIRECT_CASES = [
   { role: "biz_office", expectPaths: ["/finance"] },
 ];
 
-// ── 2. Sidebar nav labels ───────────────────────────────────────────────────
+// -- 2. Sidebar nav labels ----------------------------------------------------
 //    All 8 links that CrownLayout.jsx renders must appear in the aside.
 
 const NAV_LABEL_PATTERNS = [
@@ -111,7 +129,7 @@ const NAV_LABEL_PATTERNS = [
 
 const NAV_ITEM_SELECTOR = "aside button, aside a";
 
-// ── 3. Active-link highlight ────────────────────────────────────────────────
+// -- 3. Active-link highlight -------------------------------------------------
 //    The link whose href matches the current path must be bold (font-weight 700).
 //    We land on each route as an admin so the sidebar is always rendered.
 
@@ -121,15 +139,15 @@ const ACTIVE_CASES = [
   { path: "/finance", labelPattern: /Finance/i },
 ];
 
-// ── Tests ───────────────────────────────────────────────────────────────────
+// -- Tests --------------------------------------------------------------------
 
 test.describe("Nav + Role Routing", () => {
   test.beforeEach(async ({ page }) => {
     await installNavProofApiStubs(page);
   });
 
-  // ── 1. Redirects ──────────────────────────────────────────────────────────
-  test.describe("Role → route redirect", () => {
+  // -- 1. Redirects -----------------------------------------------------------
+  test.describe("Role -> route redirect", () => {
     for (const c of REDIRECT_CASES) {
       test(`"/" redirects for role=${c.role}`, async ({ page }) => {
         await seedDemoSession(page, c.role);
@@ -139,14 +157,30 @@ test.describe("Nav + Role Routing", () => {
     }
   });
 
-  // ── 2. Sidebar labels ─────────────────────────────────────────────────────
+  test.describe("Admin route no-fallback proof", () => {
+    test('"/admin" lands on school admin dashboard, not /wizards', async ({ page }) => {
+      await seedDemoSession(page, IS_SANDBOX ? "school_admin" : "admin");
+      await page.goto(BASE + "/admin", { waitUntil: "networkidle" });
+
+      await expectAdminDashboardRouteSettled(page);
+    });
+
+    test('"/school-admin-dashboard" renders admin dashboard, not /wizards', async ({ page }) => {
+      await seedDemoSession(page, IS_SANDBOX ? "school_admin" : "admin");
+      await page.goto(BASE + "/school-admin-dashboard", { waitUntil: "networkidle" });
+
+      await expectAdminDashboardRouteSettled(page);
+    });
+  });
+
+  // -- 2. Sidebar labels ------------------------------------------------------
   test.describe("Sidebar nav labels", () => {
     test("all 8 nav links are visible on /school-admin", async ({ page }) => {
       await seedDemoSession(page, IS_SANDBOX ? "school_admin" : "admin");
       await page.goto(BASE + (IS_SANDBOX ? "/school-admin-dashboard" : "/school-admin"), { waitUntil: "networkidle" });
 
       if (IS_SANDBOX) {
-        await expect(page.locator("body")).toContainText(/School Administrator Dashboard|School Snapshot/i);
+        await expect(page.locator("body")).toContainText(ADMIN_DASHBOARD_TEXT);
         return;
       }
 
@@ -156,7 +190,7 @@ test.describe("Nav + Role Routing", () => {
     });
   });
 
-  // ── 3. Active link bold ───────────────────────────────────────────────────
+  // -- 3. Active link bold ----------------------------------------------------
   test.describe("Active nav highlight", () => {
     for (const c of ACTIVE_CASES) {
       test(`active nav link is bold when on ${c.path}`, async ({ page }) => {
@@ -164,7 +198,7 @@ test.describe("Nav + Role Routing", () => {
         await page.goto(BASE + c.path, { waitUntil: "networkidle" });
 
         if (IS_SANDBOX && c.path === "/school-admin-dashboard") {
-          await expect(page.locator("body")).toContainText(/School Administrator Dashboard|School Snapshot/i);
+          await expect(page.locator("body")).toContainText(ADMIN_DASHBOARD_TEXT);
           return;
         }
 

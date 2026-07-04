@@ -258,16 +258,16 @@ export default function LoginPage() {
         @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Spectral:wght@500;600&display=swap');
 
         :root {
-          --lp-navy-900: #0C223C;
-          --lp-navy-700: #183A63;
-          --lp-slate-100: #F4F7FB;
-          --lp-slate-200: #E3EAF3;
-          --lp-slate-500: #5B6E83;
-          --lp-gold-500: #C6A54A;
-          --lp-gold-100: #FBF6E8;
-          --lp-danger-100: #FEF2F2;
-          --lp-danger-600: #B42318;
-          --lp-white: #FFFFFF;
+          --lp-navy-900: var(--crown-primary-deep, #173F91);
+          --lp-navy-700: var(--crown-primary-strong, #1E4FAF);
+          --lp-slate-100: var(--crown-bg-soft, #EFF4FB);
+          --lp-slate-200: var(--crown-border, #D6E3F5);
+          --lp-slate-500: var(--crown-muted, #42566E);
+          --lp-gold-500: var(--crown-gold, #C28A24);
+          --lp-gold-100: var(--crown-gold-soft, #FFF3D6);
+          --lp-danger-100: var(--crown-danger-soft, #FEE2E2);
+          --lp-danger-600: var(--crown-danger, #B4232C);
+          --lp-white: var(--crown-surface, #FFFFFF);
         }
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -506,12 +506,17 @@ export default function LoginPage() {
           width: 100%;
           border: 0;
           border-radius: 10px;
-          background: linear-gradient(120deg, #12345A 0%, #1E4A7A 100%);
-          color: #FFFFFF;
+          background: linear-gradient(120deg, var(--lp-navy-900) 0%, var(--lp-navy-700) 100%);
+          color: #FFFFFF !important;
+          -webkit-text-fill-color: #FFFFFF !important;
           padding: 12px 14px;
           font-size: 15px;
           font-weight: 700;
           cursor: pointer;
+        }
+
+        .btn-signin:not([disabled]):hover {
+          filter: brightness(1.03);
         }
 
         .btn-signin[disabled] {
