@@ -73,8 +73,19 @@ async function fetchJson(
   }
 }
 
-function writeFailureEvidence(errors: string[]): void {
+function resetFailureEvidenceRoot(): void {
+  const intendedSuffix = path.join("audit-artifacts", "production-certification", "current");
+  const normalizedRoot = path.normalize(evidenceRoot);
+  if (!normalizedRoot.endsWith(intendedSuffix)) {
+    throw new Error(`Refusing to clear unexpected evidence root: ${evidenceRoot}`);
+  }
+
+  fs.rmSync(evidenceRoot, { recursive: true, force: true });
   fs.mkdirSync(evidenceRoot, { recursive: true });
+}
+
+function writeFailureEvidence(errors: string[]): void {
+  resetFailureEvidenceRoot();
   fs.writeFileSync(
     path.join(evidenceRoot, "certification-summary.md"),
     [
@@ -137,21 +148,19 @@ test("deployed runtime build SHA matches certification SHA", async () => {
   const apiUrl = `${LIVE_API_BASE_URL}/api/v1/version/`;
   const apiVersion = await fetchJson(apiUrl, { "X-School-Id": TENANT_HEADER_SCHOOL_ID });
   const apiSha = String(apiVersion.payload?.build_sha || "").trim();
-
   if (!apiVersion.ok) {
-    errors.push(`DEPLOYED_RUNTIME_PREFLIGHT: API_VERSION_UNAVAILABLE status=${apiVersion.status} url=${apiUrl} error=${apiVersion.error || ""}`);
+    errors.push(`API_SHA_UNAVAILABLE status=${apiVersion.status} error=${apiVersion.error || JSON.stringify(apiVersion.payload)}`);
   } else if (!shaMatches(apiSha, EXPECTED_DEPLOYED_SHA)) {
-    errors.push(`DEPLOYED_RUNTIME_PREFLIGHT: API_SHA_MISMATCH expected=${EXPECTED_DEPLOYED_SHA} actual=${apiSha || "missing"} url=${apiUrl}`);
+    errors.push(`API_SHA_MISMATCH expected=${EXPECTED_DEPLOYED_SHA} actual=${apiSha || "missing"}`);
   }
 
   const frontendUrl = new URL("/build.json", `${LIVE_FRONTEND_URL}/`).toString();
   const frontendBuild = await fetchJson(frontendUrl);
-  const frontendSha = String(frontendBuild.payload?.build_sha || "").trim();
-
+  const frontendSha = String(frontendBuild.payload?.commit || frontendBuild.payload?.build_sha || "").trim();
   if (!frontendBuild.ok) {
-    errors.push(`DEPLOYED_RUNTIME_PREFLIGHT: FRONTEND_BUILD_UNAVAILABLE status=${frontendBuild.status} url=${frontendUrl} error=${frontendBuild.error || ""}`);
+    errors.push(`FRONTEND_SHA_UNAVAILABLE status=${frontendBuild.status} error=${frontendBuild.error || JSON.stringify(frontendBuild.payload)}`);
   } else if (!shaMatches(frontendSha, EXPECTED_DEPLOYED_SHA)) {
-    errors.push(`DEPLOYED_RUNTIME_PREFLIGHT: FRONTEND_SHA_MISMATCH expected=${EXPECTED_DEPLOYED_SHA} actual=${frontendSha || "missing"} url=${frontendUrl}`);
+    errors.push(`FRONTEND_SHA_MISMATCH expected=${EXPECTED_DEPLOYED_SHA} actual=${frontendSha || "missing"}`);
   }
 
   if (errors.length > 0) {
