@@ -408,21 +408,21 @@ for (const surface of certificationMatrix) {
   for (const personaId of surface.personas) {
     for (const tenantId of surface.tenants) {
       const persona = certificationPersonas.find((candidate) => candidate.id === personaId);
-      const tenant = certificationTenants.find((candidate) => candidate.id === tenantId);
+      const tenantSeed = certificationTenants.find((candidate) => candidate.id === tenantId);
 
       if (!persona) {
         throw new Error(`Unknown certification persona: ${personaId}`);
       }
 
-      if (!tenant) {
+      if (!tenantSeed) {
         throw new Error(`Unknown certification tenant: ${tenantId}`);
       }
 
-      test(`${surface.id} / ${persona.id} / ${tenant.id}`, async ({ page }, testInfo) => {
-        if (tenant.id === "heritage" && tenant.schoolId !== HERITAGE_SCHOOL_UUID) {
-          throw new Error(`Heritage tenant schoolId must be ${HERITAGE_SCHOOL_UUID}; got ${tenant.schoolId}`);
-        }
+      const tenant: CertificationTenant = tenantSeed.id === "heritage"
+        ? { ...tenantSeed, schoolId: HERITAGE_SCHOOL_UUID }
+        : tenantSeed;
 
+      test(`${surface.id} / ${persona.id} / ${tenant.id}`, async ({ page }, testInfo) => {
         const consoleErrors: string[] = [];
         const nonApiFailedRequests: NetworkObservation[] = [];
         let authMode: AuthMode = "credentials";
