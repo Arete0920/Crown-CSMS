@@ -1,8 +1,10 @@
 # backend/crown_api/auth_middleware.py
 import json
-from types import SimpleNamespace
 
+from django.contrib.auth import get_user_model
 from django.http import JsonResponse
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 
 from crown_api.jwt_utils import decode_access, _b64url_decode
 
@@ -33,12 +35,69 @@ def _extract_bearer_token(auth_header: str) -> str | None:
     return cleaned_token or None
 
 
+def _user_from_crown_payload(payload: dict):
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+
+    User = get_user_model()
+    user = User.objects.filter(pk=user_id).first()
+    if not user or not getattr(user, "is_active", False):
+        return None
+
+    # Attach request-scoped claims for tenant and role helpers without persisting.
+    if payload.get("school_id"):
+        setattr(user, "school_id", payload.get("school_id"))
+    if payload.get("role"):
+        setattr(user, "role", payload.get("role"))
+    return user
+
+
+def authenticate_crown_access_token(token: str):
+    if not _is_crown_access_token(token):
+        return None
+
+    result = decode_access(token)
+    if not result.ok or not result.payload:
+        raise AuthenticationFailed(result.error or "invalid_crown_access_token")
+
+    user = _user_from_crown_payload(result.payload)
+    if user is None:
+        raise AuthenticationFailed("crown_access_user_not_found")
+
+    return user, result.payload
+
+
+class CrownAccessTokenAuthentication(BaseAuthentication):
+    """
+    DRF authentication bridge for CROWN's signed sandbox/runtime access token.
+
+    SimpleJWT intentionally cannot parse this token family, so views that rely on
+    invite-backed sandbox sessions must authenticate it before SimpleJWT attempts
+    to reject the Bearer token as invalid.
+    """
+
+    def authenticate(self, request):
+        token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
+        if not token:
+            return None
+
+        authenticated = authenticate_crown_access_token(token)
+        if authenticated is None:
+            return None
+
+        return authenticated
+
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'
+
+
 class JwtAuthMiddleware:
     """
     Minimal JWT auth middleware:
       - Reads Authorization: Bearer <access>
-      - Verifies token
-      - Sets request.user with {id, email, role, school_id, is_authenticated=True}
+      - Verifies CROWN access tokens
+      - Sets request.user to the real UserAccount instance
     Does NOT block requests by default; views enforce auth via decorators/helpers.
     """
     def __init__(self, get_response):
@@ -47,26 +106,13 @@ class JwtAuthMiddleware:
     def __call__(self, request):
         request.user = getattr(request, "user", None)  # preserve if already set
 
-        auth = request.META.get("HTTP_AUTHORIZATION") or ""
-        token = _extract_bearer_token(auth)
+        token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
         if token:
-            #Only process tokens that are definitely ours (typ=access in payload)
-            # This allows SimpleJWT and other auth systems to coexist
-            if not _is_crown_access_token(token):
-                return self.get_response(request)
-
-            res = decode_access(token)
-            if res.ok and res.payload:
-                p = res.payload
-                request.user = SimpleNamespace(
-                    id=p.get("sub"),
-                    email=p.get("email"),
-                    role=p.get("role"),
-                    school_id=p.get("school_id"),
-                    is_authenticated=True,
-                    is_active=True,
-                )
-                request.auth = p
+            authenticated = authenticate_crown_access_token(token)
+            if authenticated is not None:
+                user, payload = authenticated
+                request.user = user
+                request.auth = payload
 
         return self.get_response(request)
 
