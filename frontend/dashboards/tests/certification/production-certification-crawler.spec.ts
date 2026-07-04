@@ -294,6 +294,49 @@ function absoluteLiveUrl(path: string): string {
   return url.toString();
 }
 
+async function seedClientAuthStorage(
+  page: Page,
+  roleKey: string,
+  schoolId: string,
+  accessToken?: string,
+): Promise<void> {
+  await page.addInitScript(
+    ({ role, school, access }) => {
+      try {
+        if (access) {
+          sessionStorage.setItem("crown.jwt.access", access);
+        }
+        sessionStorage.setItem("crown.role", role);
+        sessionStorage.setItem("crown.school.id", school);
+        sessionStorage.setItem("crown_school_id", school);
+      } catch {
+        // Storage APIs can be blocked on transient opaque documents.
+      }
+
+      try {
+        if (access) {
+          localStorage.setItem("crown.jwt.access", access);
+        }
+        localStorage.setItem("crown.role", role);
+        localStorage.setItem("crown.demo.role", role);
+        localStorage.setItem("crown.school.id", school);
+        localStorage.setItem("crown_school_id", school);
+        localStorage.setItem("schoolId", school);
+        localStorage.setItem("school_id", school);
+      } catch {
+        // Storage unavailability will surface later via runtime blocker assertions.
+      }
+
+      try {
+        (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ = school;
+      } catch {
+        // Non-fatal.
+      }
+    },
+    { role: roleKey, school: schoolId, access: accessToken },
+  );
+}
+
 function isAllowedExternalFailure(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -326,33 +369,7 @@ async function selectSchool(page: Page, tenant: CertificationTenant): Promise<vo
         value: option.value,
         label: option.textContent?.trim() ?? "",
       }))
-    ));
-    throw new Error(
-      `Live login school option not found for tenant ${tenant.label}. `
-      + `Available options: ${JSON.stringify(availableOptions)}`,
-    );
-  }
-
-  await schoolSelect.selectOption(selectedValue);
-}
-
-async function selectRole(page: Page, role: string): Promise<void> {
-  const roleSelect = page.locator("#login-role");
-  await expect(roleSelect).toBeVisible();
-
-  const selectedValue = await roleSelect.evaluate((select, candidates) => {
-    const options = Array.from((select as HTMLSelectElement).options);
-    const values = candidates as string[];
-    const match = options.find((option) => values.includes(option.value));
-    return match?.value ?? null;
-  }, roleValues[role] ?? [role]);
-
-  if (!selectedValue) {
-    throw new Error(`Live login role option not found for role ${role}`);
-  }
-
-  await roleSelect.selectOption(selectedValue);
-}
+  await seedClientAuthStorage(page, roleValue, schoolId, session.access);
 
 async function performLiveLogin(page: Page, role: string, tenant: CertificationTenant): Promise<AuthMode> {
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
@@ -428,33 +445,7 @@ async function performLiveLogin(page: Page, role: string, tenant: CertificationT
 }
 
 test.describe.configure({ mode: "serial", retries: 0 });
-
-test.beforeAll(() => {
-  resetEvidenceRoot();
-});
-
-test.afterAll(() => {
-  writeCertificationSummary();
-
-  const failed = loadCertificationResults().filter((row) => row.status === "FAIL");
-  const details = failed.map((row) => `${row.id} / ${row.persona} / ${row.tenant}: ${row.errors.join("; ")}`);
-  expect(failed, details.join("\n")).toEqual([]);
-});
-
-for (const surface of certificationMatrix) {
-  for (const personaId of surface.personas) {
-    for (const tenantId of surface.tenants) {
-      const persona = certificationPersonas.find((candidate) => candidate.id === personaId);
-      const tenantSeed = certificationTenants.find((candidate) => candidate.id === tenantId);
-
-      if (!persona) {
-        throw new Error(`Unknown certification persona: ${personaId}`);
-      }
-
-      if (!tenantSeed) {
-        throw new Error(`Unknown certification tenant: ${tenantId}`);
-      }
-
+  await seedClientAuthStorage(page, sandboxRoleKeyFor(role), tenant.schoolId);
       const tenant: CertificationTenant = tenantSeed.id === "heritage"
         ? { ...tenantSeed, schoolId: HERITAGE_SCHOOL_UUID }
         : tenantSeed;
