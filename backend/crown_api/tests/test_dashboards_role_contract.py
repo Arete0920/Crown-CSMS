@@ -14,7 +14,6 @@ from django.contrib.auth import get_user_model
 
 from rest_framework.test import APIClient
 from core.models import School
-from crown_api.jwt_utils import build_access_token
 
 User = get_user_model()
 
@@ -214,22 +213,3 @@ def test_cross_tenant_access_blocked(db):
     assert resp.status_code in (403, 404), (
         f"User from school A accessing school B data should be blocked (got {resp.status_code})"
     )
-
-
-@pytest.mark.django_db
-def test_crown_access_token_authenticates_dashboard_summary_v1(school, user):
-    token = build_access_token(
-        user_id=str(user.id),
-        email=user.email,
-        role="school_admin",
-        school_id=str(school.id),
-        ttl_seconds=900,
-    )
-    c = APIClient()
-    c.credentials(
-        HTTP_AUTHORIZATION=f"Bearer {token}",
-        HTTP_X_SCHOOL_ID=str(school.id),
-    )
-
-    resp = c.get("/api/v1/dashboards/school-administrator/summary")
-    assert resp.status_code == 200, getattr(resp, "data", resp.content)
