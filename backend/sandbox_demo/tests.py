@@ -35,6 +35,16 @@ class SandboxInviteWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["code"], "sandbox_invite_required")
 
+    @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=False)
+    def test_missing_invite_returns_explicit_invite_required_code(self):
+        response = self.client.post(
+            reverse("sandbox-session"),
+            {"role": "teacher", "school": "heritage", "track": "school"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["code"], "sandbox_invite_required")
+
     @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
     def test_session_allows_missing_invite_only_when_open_session_enabled(self):
         response = self.client.post(
