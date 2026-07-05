@@ -78,7 +78,41 @@ jobs:
             exit 1
           fi
 
-          TOKEN=$(python -c "import os,sys; exec(\"import json,sys,urllib.error,urllib.request\\nbase = os.environ['CERT_API_BASE_URL'].rstrip('/')\\nusername = os.environ['CI_SMOKE_USERNAME']\\npassword = os.environ['CI_SMOKE_PASSWORD']\\npayload = json.dumps({'username': username, 'password': password}).encode()\\nrequest = urllib.request.Request(f'{base}/api/v1/auth/token/', data=payload, headers={'Content-Type': 'application/json'}, method='POST')\\ntry:\\n    with urllib.request.urlopen(request, timeout=20) as response:\\n        data = json.loads(response.read())\\nexcept urllib.error.HTTPError as error:\\n    body = error.read().decode()\\n    print(f'Token mint failed: {error.code} {body}', file=sys.stderr)\\n    raise SystemExit(1)\\naccess = data.get('access') or data.get('token')\\nif not access:\\n    print(f'No access token in response: {data}', file=sys.stderr)\\n    raise SystemExit(1)\\nprint(access, end='')\")"
+          TOKEN=$(python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          base = os.environ['CERT_API_BASE_URL'].rstrip('/')
+          username = os.environ['CI_SMOKE_USERNAME']
+          password = os.environ['CI_SMOKE_PASSWORD']
+
+          payload = json.dumps({'username': username, 'password': password}).encode()
+          request = urllib.request.Request(
+              f'{base}/api/v1/auth/token/',
+              data=payload,
+              headers={'Content-Type': 'application/json'},
+              method='POST',
+          )
+
+          try:
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  data = json.loads(response.read())
+          except urllib.error.HTTPError as error:
+              body = error.read().decode()
+              print(f'Token mint failed: {error.code} {body}', file=sys.stderr)
+              raise SystemExit(1)
+
+          access = data.get('access') or data.get('token')
+          if not access:
+              print(f'No access token in response: {data}', file=sys.stderr)
+              raise SystemExit(1)
+
+          print(access, end='')
+          PY
+          )
 
           echo "CROWN_DEMO_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
