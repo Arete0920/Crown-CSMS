@@ -18,7 +18,7 @@ def _is_crown_access_token(token: str) -> bool:
         payload_bytes = _b64url_decode(parts[1])
         payload = json.loads(payload_bytes.decode("utf-8"))
         return payload.get("typ") == "access"
-    except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
+    except Exception:
         return False
 
 
@@ -31,12 +31,15 @@ def _extract_bearer_token(auth_header: str) -> str | None:
 
 
 def _user_from_crown_payload(payload: dict):
-    user_id = payload.get("sub")
+    user_id = str(payload.get("sub") or "").strip()
     if not user_id:
         return None
 
     user_model = get_user_model()
-    user = user_model.objects.filter(pk=user_id).first()
+    try:
+        user = user_model.objects.filter(pk=user_id).first()
+    except (TypeError, ValueError):
+        user = None
     if user and getattr(user, "is_active", False):
         if payload.get("school_id"):
             setattr(user, "school_id", payload.get("school_id"))
@@ -45,7 +48,10 @@ def _user_from_crown_payload(payload: dict):
         return user
 
     # Legacy fallback: /api/auth/* token flow still issues tokens for CrownUser.
-    legacy_user = CrownUser.objects.filter(pk=user_id).first()
+    try:
+        legacy_user = CrownUser.objects.filter(pk=user_id).first()
+    except (TypeError, ValueError):
+        return None
     if not legacy_user or not getattr(legacy_user, "is_active", False):
         return None
 
