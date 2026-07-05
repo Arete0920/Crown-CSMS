@@ -16,33 +16,18 @@ import {
 type RoleCredential = {
   email?: string;
   password?: string;
-};
-
-type CertificationTenant = {
-  id: string;
-  schoolKey: string;
-  schoolId: string;
-  label: string;
-};
-
 type AuthMode = "credentials" | "sandbox-session" | "sandbox-no-login";
 
 type BrowserAuthState = {
   hasToken: boolean;
-  hasSchoolId: boolean;
   token: string;
-  schoolId: string;
-  tokenSources: string[];
   schoolIdSources: string[];
 };
 
 type ApiProbeResult = {
   ok: boolean;
-  status: number;
   url: string;
   code: string;
-  hasAuthorizationHeader: boolean;
-  hasSchoolIdHeader: boolean;
 };
 
 const SANDBOX_ROLE_KEYS: Record<string, string> = {
@@ -50,10 +35,11 @@ const SANDBOX_ROLE_KEYS: Record<string, string> = {
   teacher: "teacher",
   parent: "parent",
   student: "student",
-  board: "board",
+              token: access || "",
+              access: access || "",
+              access_token: access || "",
 };
 
-const SANDBOX_NO_LOGIN_ROUTES: Record<string, string> = {
   admin: "/school-admin-dashboard",
   teacher: "/teacher",
   parent: "/parent",
@@ -62,10 +48,7 @@ const SANDBOX_NO_LOGIN_ROUTES: Record<string, string> = {
 };
 
 const DASHBOARD_SUMMARY_SLUGS: Record<string, string> = {
-  admin: "school-administrator",
   teacher: "teacher",
-  parent: "parent",
-  student: "student",
   board: "school-board",
 };
 
@@ -73,39 +56,19 @@ const CERTIFICATION_TENANT_MODE = (process.env.CROWN_CERTIFICATION_TENANT_MODE |
 const USES_SANDBOX_TENANT = CERTIFICATION_TENANT_MODE !== "live";
 const HERITAGE_SCHOOL_UUID = (
   USES_SANDBOX_TENANT
-    ? process.env.CROWN_DEMO_SCHOOL_ID
-    : process.env.CROWN_LIVE_SCHOOL_ID)
-  || process.env.CROWN_DEMO_SCHOOL_ID
   || "19801b59-8c05-4c84-9312-5d792e4e839d";
-
-const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
-
-const LIVE_FRONTEND_URL = requireLiveUrl("CROWN_LIVE_FRONTEND_URL");
-const LIVE_API_BASE_URL = requireLiveUrl("CROWN_LIVE_API_BASE_URL").replace(/\/+$/, "");
-const IS_PRODUCTION_API = isProductionApiHost(LIVE_API_BASE_URL);
-const USE_SANDBOX_CREDENTIAL_BUTTON = process.env.CROWN_LIVE_USE_SANDBOX_CREDENTIALS !== "0";
 const LIVE_SANDBOX_INVITE_ID = resolveSandboxInviteId();
-
+const PROVIDED_CERTIFICATION_TOKEN = process.env.CROWN_DEMO_TOKEN?.trim() || "";
 assertLiveSchoolIdConfiguration();
 
-const roleValues: Record<string, string[]> = {
   admin: ["school_admin", "head_of_school", "admin"],
-  teacher: ["teacher"],
-  parent: ["parent"],
-  student: ["student"],
-  board: ["board", "head_of_school"],
 };
 
-function requireLiveUrl(name: string): string {
   const raw = process.env[name];
-  if (!raw) {
     throw new Error(`${name} is required for live runtime certification.`);
   }
-
   const parsed = new URL(raw);
   const forbiddenHosts = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
-  if (forbiddenHosts.has(parsed.hostname) || parsed.hostname.endsWith(".local")) {
-    throw new Error(`${name} must target deployed runtime, not local host: ${raw}`);
   }
 
   return parsed.toString().replace(/\/+$/, "");
@@ -113,10 +76,11 @@ function requireLiveUrl(name: string): string {
 
 function assertLiveSchoolIdConfiguration(): void {
   if (!IS_PRODUCTION_API) {
-    return;
+              token: access || "",
+              access: access || "",
+              access_token: access || "",
   }
 
-  if (USES_SANDBOX_TENANT) {
     const demoSchoolId = process.env.CROWN_DEMO_SCHOOL_ID?.trim() || HERITAGE_SCHOOL_UUID;
     if (demoSchoolId) {
       return;
@@ -125,10 +89,7 @@ function assertLiveSchoolIdConfiguration(): void {
 
   const liveSchoolId = process.env.CROWN_LIVE_SCHOOL_ID?.trim();
   if (liveSchoolId) {
-    return;
   }
-
-  throw new Error(
     "CROWN_LIVE_SCHOOL_ID is required for live production tenant certification. "
     + "For investor/demo certification use CROWN_CERTIFICATION_TENANT_MODE=sandbox and CROWN_DEMO_SCHOOL_ID.",
   );
@@ -136,9 +97,6 @@ function assertLiveSchoolIdConfiguration(): void {
 
 function isProductionApiHost(url: string): boolean {
   const host = new URL(url).hostname.toLowerCase();
-  return host.includes("crown-api-prod") || host.includes("prod");
-}
-
 function credentialFor(role: string): RoleCredential {
   const key = role.toUpperCase().replace(/[^A-Z0-9]+/g, "_");
   return {
@@ -146,23 +104,20 @@ function credentialFor(role: string): RoleCredential {
     password: process.env[`CROWN_LIVE_${key}_PASSWORD`] ?? process.env.CROWN_LIVE_PASSWORD,
   };
 }
-
+              token: access || "",
+              access: access || "",
+              access_token: access || "",
 function sandboxRoleKeyFor(role: string): string {
   return SANDBOX_ROLE_KEYS[role] ?? role;
-}
 
 function sandboxSchoolKeyFor(tenant: CertificationTenant): string {
   return tenant.schoolKey;
 }
 
-function dashboardSummarySlugFor(role: string): string {
-  return DASHBOARD_SUMMARY_SLUGS[role] ?? role;
 }
 
 function resolveSandboxInviteId(): string {
-  const envInvite = process.env.CROWN_LIVE_SANDBOX_INVITE_ID?.trim();
   if (envInvite) {
-    return envInvite;
   }
 
   try {
@@ -280,14 +235,15 @@ async function seedClientAuthStorage(
 ): Promise<void> {
   await page.addInitScript(
     ({ role, school, access }) => {
-      const currentUser = JSON.stringify({
+      const currentUser = {
         role,
+        roles: [role],
         school_id: school,
         schoolId: school,
         token: access || "",
         access: access || "",
         access_token: access || "",
-      });
+      };
 
       try {
         if (access) {
@@ -301,7 +257,7 @@ async function seedClientAuthStorage(
         sessionStorage.setItem("crown_school_id", school);
         sessionStorage.setItem("schoolId", school);
         sessionStorage.setItem("school_id", school);
-        sessionStorage.setItem("crown_current_user", currentUser);
+        sessionStorage.setItem("crown_current_user", JSON.stringify(currentUser));
       } catch {
         // Storage APIs can be blocked on transient opaque documents.
       }
@@ -318,16 +274,16 @@ async function seedClientAuthStorage(
         localStorage.setItem("crown_school_id", school);
         localStorage.setItem("schoolId", school);
         localStorage.setItem("school_id", school);
-        localStorage.setItem("crown_current_user", currentUser);
+        localStorage.setItem("crown_current_user", JSON.stringify(currentUser));
       } catch {
         // Storage unavailability will surface later via runtime blocker assertions.
       }
 
       try {
-        (globalThis as { __CROWN_SCHOOL_ID__?: string; __CROWN_AUTH_TOKEN__?: string }).__CROWN_SCHOOL_ID__ = school;
         if (access) {
           (globalThis as { __CROWN_AUTH_TOKEN__?: string }).__CROWN_AUTH_TOKEN__ = access;
         }
+        (globalThis as { __CROWN_SCHOOL_ID__?: string }).__CROWN_SCHOOL_ID__ = school;
       } catch {
         // Non-fatal.
       }
@@ -573,6 +529,12 @@ async function selectRole(page: Page, role: string): Promise<void> {
 }
 
 async function performLiveLogin(page: Page, role: string, tenant: CertificationTenant): Promise<AuthMode> {
+  if (PROVIDED_CERTIFICATION_TOKEN) {
+    await page.goto(absoluteLiveUrl("/login"), { waitUntil: "domcontentloaded" });
+    await seedClientAuthStorage(page, sandboxRoleKeyFor(role), tenant.schoolId, PROVIDED_CERTIFICATION_TOKEN);
+    return "provided-token";
+  }
+
   if (USE_SANDBOX_CREDENTIAL_BUTTON) {
     await primeSandboxPersona(role, tenant);
 
