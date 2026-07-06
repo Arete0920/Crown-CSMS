@@ -74,6 +74,12 @@ async function fetchJson(
 }
 
 function resetFailureEvidenceRoot(): void {
+  const expectedCwdSuffix = path.join("frontend", "dashboards");
+  const normalizedCwd = path.normalize(process.cwd());
+  if (!normalizedCwd.endsWith(expectedCwdSuffix)) {
+    throw new Error(`Refusing to delete evidence root outside frontend/dashboards cwd: ${process.cwd()}`);
+  }
+
   const intendedSuffix = path.join("audit-artifacts", "production-certification", "current");
   const normalizedRoot = path.normalize(evidenceRoot);
   if (!normalizedRoot.endsWith(intendedSuffix)) {
