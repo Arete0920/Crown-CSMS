@@ -478,8 +478,7 @@ async function runAuthPreflight(page: Page, role: string, tenant: CertificationT
 
   const summarySlug = dashboardSummarySlugFor(role);
   const summaryUrl = `${LIVE_API_BASE_URL}/api/v1/dashboards/${summarySlug}/summary`;
-  const navUrl = `${LIVE_API_BASE_URL}/api/v1/nav`;
-
+  const navUrl = `${LIVE_API_BASE_URL}/api/v1/nav/`;
   const summaryProbe = await probeApiFromBrowser(page, summaryUrl, authState.token, authState.schoolId);
   const navProbe = await probeApiFromBrowser(page, navUrl, authState.token, authState.schoolId);
 
