@@ -48,6 +48,7 @@ def _get_invite(invite_id: str | None):
     return SandboxInvite.objects.filter(pk=invite_id).first()
 
 
+def _invite_expiry_from_request(request):
     expires_at_raw = request.data.get("expires_at")
     if expires_at_raw:
         try:
