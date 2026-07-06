@@ -402,7 +402,7 @@ async function probeApiFromBrowser(
     }
 
     try {
-      const response = await fetch(targetUrl, {
+      const response = await globalThis.fetch(targetUrl, {
         method: "GET",
         credentials: "include",
         headers,
