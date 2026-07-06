@@ -6,13 +6,13 @@ into the global URL router (crown_api/api_urls.py).
 If any of these fail it means the app's urls.py was never included in the
 project router — the exact silent regression that hit Phase 4B on first deploy.
 """
-import uuid
-
 import pytest
 from django.urls import resolve, Resolver404
 
 
-BILLING_RUN_ID = str(uuid.uuid4())
+# Fixed deterministic UUID avoids pytest-xdist node-ID mismatch caused by
+# re-importing the module in each worker with a new random uuid4().
+BILLING_RUN_ID = "11111111-1111-4111-8111-111111111111"
 
 EXPECTED_ROUTES = [
     ("/api/financial-aid/applications/", "financial-aid-applications"),
