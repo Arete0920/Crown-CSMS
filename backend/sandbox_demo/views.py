@@ -30,12 +30,16 @@ DISALLOWED_EVENT_FIELDS = {
 
 
 def _ops_allowed(request) -> bool:
-    expected = getattr(settings, "CROWN_OPS_SECRET", "") or getattr(settings, "DEV_OPS_SECRET", "")
+    expected = getattr(settings, "CROWN_OPS_SECRET", "") or getattr(
+        settings, "DEV_OPS_SECRET", ""
+    )
     provided = request.headers.get("X-Crown-Ops-Secret", "")
     if expected and provided and provided == expected:
         return True
     user = getattr(request, "user", None)
-    return bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
+    return bool(
+        getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)
+    )
 
 
 def _get_invite(invite_id: str | None):
@@ -44,24 +48,111 @@ def _get_invite(invite_id: str | None):
     return SandboxInvite.objects.filter(pk=invite_id).first()
 
 
-def _validate_invite(invite: SandboxInvite | None, *, role: str, school_key: str, track: str):
-    open_session_allowed = bool(getattr(settings, "CROWN_SANDBOX_ALLOW_OPEN_SESSION", False))
+def _invite_expiry_from_request(request):
+    expires_at_raw = request.data.get("expires_at")
+    if expires_at_raw:
+        try:
+            dt = timezone.datetime.fromisoformat(str(expires_at_raw).replace("Z", "+00:00"))
+            if timezone.is_naive(dt):
+                raise ValueError("expires_at must include timezone information")
+            now = timezone.now()
+            if dt <= now or dt > now + timedelta(days=30):
+                raise ValueError("expires_at must be in the future and within 30 days")
+            return dt, None
+        except (TypeError, ValueError):
+            return None, Response(
+                {
+                    "detail": "Invalid sandbox invite expiration timestamp.",
+                    "code": "sandbox_invite_expires_at_invalid",
+                },
+                status=400,
+            )
+
+    raw_days = request.data.get("days")
+    if raw_days in (None, ""):
+        return None, Response(
+            {
+                "detail": "Invite duration in days is required.",
+                "code": "sandbox_invite_days_invalid",
+            },
+            status=400,
+        )
+
+    try:
+        days = int(raw_days)
+    except (TypeError, ValueError):
+        return None, Response(
+            {
+                "detail": "Invite duration in days must be a whole number.",
+                "code": "sandbox_invite_days_invalid",
+            },
+            status=400,
+        )
+
+    if days < 1 or days > 30:
+        return None, Response(
+            {
+                "detail": "Invite duration in days must be between 1 and 30.",
+                "code": "sandbox_invite_days_invalid",
+            },
+            status=400,
+        )
+
+    return timezone.now() + timedelta(days=days), None
+
+
+def _validate_invite(
+    invite: SandboxInvite | None, *, role: str, school_key: str, track: str
+):
+    open_session_allowed = bool(
+        getattr(settings, "CROWN_SANDBOX_ALLOW_OPEN_SESSION", False)
+    )
     if invite is None:
         if open_session_allowed:
             return None
-        return Response({"detail": "Sandbox invite is required.", "code": "sandbox_invite_required"}, status=403)
+        return Response(
+            {
+                "detail": "Sandbox invite is required.",
+                "code": "sandbox_invite_required",
+            },
+            status=403,
+        )
 
     if not invite.is_usable():
-        return Response({"detail": "Sandbox invite is expired or revoked.", "code": "sandbox_invite_invalid"}, status=403)
+        return Response(
+            {
+                "detail": "Sandbox invite is expired or revoked.",
+                "code": "sandbox_invite_invalid",
+            },
+            status=403,
+        )
 
     if invite.track and invite.track != track:
-        return Response({"detail": "Invite is not valid for this sandbox track.", "code": "sandbox_invite_track_mismatch"}, status=403)
+        return Response(
+            {
+                "detail": "Invite is not valid for this sandbox track.",
+                "code": "sandbox_invite_track_mismatch",
+            },
+            status=403,
+        )
 
     if invite.allowed_roles and role not in invite.allowed_roles:
-        return Response({"detail": "Invite does not allow this role.", "code": "sandbox_invite_role_not_allowed"}, status=403)
+        return Response(
+            {
+                "detail": "Invite does not allow this role.",
+                "code": "sandbox_invite_role_not_allowed",
+            },
+            status=403,
+        )
 
     if invite.allowed_seed_packs and school_key not in invite.allowed_seed_packs:
-        return Response({"detail": "Invite does not allow this demo school.", "code": "sandbox_invite_school_not_allowed"}, status=403)
+        return Response(
+            {
+                "detail": "Invite does not allow this demo school.",
+                "code": "sandbox_invite_school_not_allowed",
+            },
+            status=403,
+        )
 
     invite.mark_used()
     return None
@@ -79,26 +170,37 @@ class SandboxInviteCreateView(APIView):
 
     def post(self, request):
         if not _ops_allowed(request):
-            return Response({"detail": "Ops secret or admin user required.", "code": "sandbox_ops_required"}, status=403)
+            return Response(
+                {
+                    "detail": "Ops secret or admin user required.",
+                    "code": "sandbox_ops_required",
+                },
+                status=403,
+            )
 
-        expires_at_raw = request.data.get("expires_at")
-        expires_at = None
-        if expires_at_raw:
-            expires_at = timezone.datetime.fromisoformat(str(expires_at_raw).replace("Z", "+00:00"))
-        if expires_at is None:
-            expires_at = timezone.now() + timedelta(days=int(request.data.get("days") or 14))
+        expires_at, expires_error = _invite_expiry_from_request(request)
+        if expires_error:
+            return expires_error
 
         invite = SandboxInvite.objects.create(
-            organization_label=request.data.get("organization_label") or "External evaluator",
+            organization_label=request.data.get("organization_label")
+            or "External evaluator",
             track=request.data.get("track") or "school",
-            allowed_roles=request.data.get("allowed_roles") or list(SANDBOX_PERSONAS.keys()),
-            allowed_seed_packs=request.data.get("allowed_seed_packs") or ["heritage-core"],
+            allowed_roles=request.data.get("allowed_roles")
+            or list(SANDBOX_PERSONAS.keys()),
+            allowed_seed_packs=request.data.get("allowed_seed_packs")
+            or ["heritage-core"],
             default_guidance=request.data.get("default_guidance") or "guided",
             expires_at=expires_at,
-            created_by=request.user if getattr(request.user, "is_authenticated", False) and hasattr(request.user, "pk") else None,
+            created_by=request.user
+            if getattr(request.user, "is_authenticated", False)
+            and hasattr(request.user, "pk")
+            else None,
         )
 
-        base_url = request.data.get("base_url") or request.build_absolute_uri("/").rstrip("/")
+        base_url = request.data.get("base_url") or request.build_absolute_uri(
+            "/"
+        ).rstrip("/")
         return Response(
             {
                 "invite_id": invite.id,
@@ -115,7 +217,10 @@ class SandboxInviteResolveView(APIView):
     def get(self, request, invite_id: str):
         invite = SandboxInvite.objects.filter(pk=invite_id).first()
         if not invite:
-            return Response({"detail": "Invite not found.", "code": "sandbox_invite_not_found"}, status=404)
+            return Response(
+                {"detail": "Invite not found.", "code": "sandbox_invite_not_found"},
+                status=404,
+            )
         return Response(
             {
                 "invite_id": invite.id,
@@ -125,7 +230,9 @@ class SandboxInviteResolveView(APIView):
                 "allowed_seed_packs": invite.allowed_seed_packs,
                 "default_guidance": invite.default_guidance,
                 "expires_at": invite.expires_at.isoformat(),
-                "revoked_at": invite.revoked_at.isoformat() if invite.revoked_at else None,
+                "revoked_at": invite.revoked_at.isoformat()
+                if invite.revoked_at
+                else None,
                 "usable": invite.is_usable(),
             }
         )
@@ -136,13 +243,24 @@ class SandboxInviteRevokeView(APIView):
 
     def post(self, request, invite_id: str):
         if not _ops_allowed(request):
-            return Response({"detail": "Ops secret or admin user required.", "code": "sandbox_ops_required"}, status=403)
+            return Response(
+                {
+                    "detail": "Ops secret or admin user required.",
+                    "code": "sandbox_ops_required",
+                },
+                status=403,
+            )
         invite = SandboxInvite.objects.filter(pk=invite_id).first()
         if not invite:
-            return Response({"detail": "Invite not found.", "code": "sandbox_invite_not_found"}, status=404)
+            return Response(
+                {"detail": "Invite not found.", "code": "sandbox_invite_not_found"},
+                status=404,
+            )
         invite.revoked_at = timezone.now()
         invite.save(update_fields=["revoked_at"])
-        return Response({"invite_id": invite.id, "revoked_at": invite.revoked_at.isoformat()})
+        return Response(
+            {"invite_id": invite.id, "revoked_at": invite.revoked_at.isoformat()}
+        )
 
 
 class SandboxSessionView(APIView):
@@ -150,14 +268,18 @@ class SandboxSessionView(APIView):
 
     def post(self, request):
         role = request.data.get("role") or "school_admin"
-        school_key = request.data.get("school") or "heritage-core"
+        requested_school_key = request.data.get("school") or "heritage-core"
+        school = get_school(requested_school_key)
+        school_key = school.key
         guidance = request.data.get("guidance") or "guided"
-        track = request.data.get("track") or get_school(school_key).track
+        track = request.data.get("track") or school.track
         tour = request.data.get("tour") or ""
         invite_id = request.data.get("invite_id") or request.query_params.get("invite")
 
         invite = _get_invite(invite_id)
-        invite_error = _validate_invite(invite, role=role, school_key=school_key, track=track)
+        invite_error = _validate_invite(
+            invite, role=role, school_key=school_key, track=track
+        )
         if invite_error:
             return invite_error
 
@@ -187,7 +309,13 @@ class SandboxEventView(APIView):
 
     def post(self, request):
         if DISALLOWED_EVENT_FIELDS.intersection(set(request.data.keys())):
-            return Response({"detail": "Unsafe sandbox event payload.", "code": "sandbox_event_payload_unsafe"}, status=400)
+            return Response(
+                {
+                    "detail": "Unsafe sandbox event payload.",
+                    "code": "sandbox_event_payload_unsafe",
+                },
+                status=400,
+            )
 
         invite = _get_invite(request.data.get("invite_id"))
         event = SandboxEvent.objects.create(
@@ -210,11 +338,23 @@ class SandboxFeedbackView(APIView):
     def post(self, request):
         note = request.data.get("note") or ""
         if note_has_prohibited_data(note):
-            return Response({"detail": "Feedback appears to contain prohibited real-data patterns.", "code": "sandbox_feedback_real_data_blocked"}, status=400)
+            return Response(
+                {
+                    "detail": "Feedback appears to contain prohibited real-data patterns.",
+                    "code": "sandbox_feedback_real_data_blocked",
+                },
+                status=400,
+            )
 
         rating = request.data.get("rating") or "clear"
         if rating not in {"clear", "unclear", "not_relevant", "blocked"}:
-            return Response({"detail": "Invalid rating.", "code": "sandbox_feedback_invalid_rating"}, status=400)
+            return Response(
+                {
+                    "detail": "Invalid rating.",
+                    "code": "sandbox_feedback_invalid_rating",
+                },
+                status=400,
+            )
 
         invite = _get_invite(request.data.get("invite_id"))
         feedback = SandboxFeedback.objects.create(

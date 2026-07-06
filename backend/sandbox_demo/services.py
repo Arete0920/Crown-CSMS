@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import uuid
 from dataclasses import asdict
@@ -133,7 +134,9 @@ def ensure_persona_user(school: School, persona: SandboxPersona) -> UserAccount:
     )
 
     # Keep sandbox logins deterministic for local/demo proof runs when explicitly configured.
-    fallback_password = getattr(settings, "CROWN_SANDBOX_FALLBACK_PASSWORD", "")
+    fallback_password = getattr(
+        settings, "CROWN_SANDBOX_FALLBACK_PASSWORD", ""
+    ) or os.getenv("CROWN_DEMO_PASSWORD", "")
     if fallback_password:
         user.set_password(fallback_password)
     else:

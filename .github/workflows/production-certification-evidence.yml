@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -65,13 +65,19 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Run production certification crawler against deployed runtime
-        run: npm run certify:production-crawler
+        run: npm run certify:production
         env:
           CI: "1"
           CROWN_CERTIFICATION_LIVE_RUNTIME: "1"
+          CROWN_EXPECTED_DEPLOYED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           CROWN_LIVE_FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
           CROWN_LIVE_API_BASE_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          CROWN_CERTIFICATION_TENANT_MODE: "sandbox"
+          CROWN_DEMO_SCHOOL_ID: ${{ vars.CROWN_DEMO_SCHOOL_ID || '19801b59-8c05-4c84-9312-5d792e4e839d' }}
+          CROWN_LIVE_SCHOOL_ID: ${{ vars.CROWN_LIVE_SCHOOL_ID || '' }}
+          CROWN_LIVE_SCHOOL_LABEL: ${{ vars.CROWN_LIVE_SCHOOL_LABEL || 'Heritage Christian Academy' }}
           CROWN_LIVE_USE_SANDBOX_CREDENTIALS: "1"
+          CROWN_LIVE_SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
 
       - name: Confirm evidence summary exists
         if: always()
