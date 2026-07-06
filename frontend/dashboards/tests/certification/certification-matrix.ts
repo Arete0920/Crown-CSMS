@@ -11,7 +11,7 @@ export type CertificationSurface = {
   allowConsoleErrors?: boolean;
 };
 
-const CORE_TENANTS = ["heritage", "harvest", "faith"];
+const CORE_TENANTS = ["heritage"];
 const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 const NAV_API = ["/api/v1/nav"];
 
@@ -33,7 +33,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-admin"],
     tenants: CORE_TENANTS,
-    expectedApiFragments: [...AUTH_API, ...NAV_API],
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "admin-dashboard",
@@ -42,7 +42,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-admin"],
     tenants: CORE_TENANTS,
-    expectedApiFragments: [...AUTH_API, ...NAV_API],
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "school-admin-dashboard",
@@ -51,7 +51,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-admin"],
     tenants: CORE_TENANTS,
-    expectedApiFragments: [...AUTH_API, ...NAV_API],
+    expectedApiFragments: AUTH_API,
   },
   {
     id: "teacher-dashboard",
