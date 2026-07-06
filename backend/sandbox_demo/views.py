@@ -48,13 +48,15 @@ def _get_invite(invite_id: str | None):
     return SandboxInvite.objects.filter(pk=invite_id).first()
 
 
-def _invite_expiry_from_request(request):
     expires_at_raw = request.data.get("expires_at")
     if expires_at_raw:
         try:
             dt = timezone.datetime.fromisoformat(str(expires_at_raw).replace("Z", "+00:00"))
             if timezone.is_naive(dt):
                 raise ValueError("expires_at must include timezone information")
+            now = timezone.now()
+            if dt <= now or dt > now + timedelta(days=30):
+                raise ValueError("expires_at must be in the future and within 30 days")
             return dt, None
         except (TypeError, ValueError):
             return None, Response(
