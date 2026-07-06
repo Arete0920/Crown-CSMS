@@ -36,6 +36,30 @@ class SandboxInviteWorkflowTests(TestCase):
         self.assertEqual(response.json()["code"], "sandbox_invite_required")
 
     @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=False)
+    def test_invite_create_rejects_naive_expires_at(self):
+        response = self.client.post(
+            "/api/v1/sandbox/invites/",
+            {
+                "expires_at": "2026-07-06T12:00:00",
+            },
+            format="json",
+            HTTP_X_CROWN_SANDBOX_OPS_SECRET=self.ops_secret,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["code"], "sandbox_invite_expires_at_invalid")
+
+    def test_invite_create_rejects_far_future_expires_at(self):
+        response = self.client.post(
+            "/api/v1/sandbox/invites/",
+            {
+                "expires_at": "2099-07-06T12:00:00+00:00",
+            },
+            format="json",
+            HTTP_X_CROWN_SANDBOX_OPS_SECRET=self.ops_secret,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["code"], "sandbox_invite_expires_at_invalid")
+
     def test_missing_invite_returns_explicit_invite_required_code(self):
         response = self.client.post(
             reverse("sandbox-session"),

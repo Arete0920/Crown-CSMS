@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { certificationMatrix } from "./certification-matrix";
 import { certificationPersonas } from "./personas";
-import { certificationTenants } from "./tenants";
+import { certificationTenants, type CertificationTenant } from "./tenants";
 import { runAccessibilityCertification } from "./accessibility";
 import { collectPageBlockers } from "./assertions";
 import { attachNetworkRecorder, type NetworkObservation } from "./network-recorder";
@@ -16,13 +16,6 @@ import {
 type RoleCredential = {
   email?: string;
   password?: string;
-};
-
-type CertificationTenant = {
-  id: string;
-  schoolKey: string;
-  schoolId: string;
-  label: string;
 };
 
 type AuthMode = "credentials" | "sandbox-session" | "sandbox-no-login";
@@ -71,12 +64,11 @@ const DASHBOARD_SUMMARY_SLUGS: Record<string, string> = {
 
 const CERTIFICATION_TENANT_MODE = (process.env.CROWN_CERTIFICATION_TENANT_MODE || "sandbox").trim().toLowerCase();
 const USES_SANDBOX_TENANT = CERTIFICATION_TENANT_MODE !== "live";
+const DEFAULT_HERITAGE_SCHOOL_UUID = "19801b59-8c05-4c84-9312-5d792e4e839d";
 const HERITAGE_SCHOOL_UUID = (
   USES_SANDBOX_TENANT
-    ? process.env.CROWN_DEMO_SCHOOL_ID
-    : process.env.CROWN_LIVE_SCHOOL_ID)
-  || process.env.CROWN_DEMO_SCHOOL_ID
-  || "19801b59-8c05-4c84-9312-5d792e4e839d";
+    ? (process.env.CROWN_DEMO_SCHOOL_ID || DEFAULT_HERITAGE_SCHOOL_UUID)
+    : (process.env.CROWN_LIVE_SCHOOL_ID || "")).trim();
 
 const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 
@@ -265,8 +257,9 @@ async function bootstrapSandboxNoLogin(
 }
 
 function absoluteLiveUrl(path: string): string {
-  const url = new URL(path, `${LIVE_FRONTEND_URL}/`);
-  if (LIVE_SANDBOX_INVITE_ID) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const url = new URL(normalizedPath, `${LIVE_FRONTEND_URL}/`);
+  if (LIVE_SANDBOX_INVITE_ID && normalizedPath === "/login") {
     url.searchParams.set("invite", LIVE_SANDBOX_INVITE_ID);
   }
   return url.toString();
