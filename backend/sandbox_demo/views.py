@@ -52,9 +52,10 @@ def _invite_expiry_from_request(request):
     expires_at_raw = request.data.get("expires_at")
     if expires_at_raw:
         try:
-            return timezone.datetime.fromisoformat(
-                str(expires_at_raw).replace("Z", "+00:00")
-            ), None
+            dt = timezone.datetime.fromisoformat(str(expires_at_raw).replace("Z", "+00:00"))
+            if timezone.is_naive(dt):
+                raise ValueError("expires_at must include timezone information")
+            return dt, None
         except (TypeError, ValueError):
             return None, Response(
                 {
