@@ -18,7 +18,7 @@ def _is_crown_access_token(token: str) -> bool:
         payload_bytes = _b64url_decode(parts[1])
         payload = json.loads(payload_bytes.decode("utf-8"))
         return payload.get("typ") == "access"
-    except Exception:
+    except (TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
         return False
 
 
@@ -119,6 +119,8 @@ class JwtAuthMiddleware:
                 setattr(request, "_crown_authenticated", authenticated)
                 # Remove the bearer header once middleware auth succeeds to avoid
                 # downstream SimpleJWT re-parsing/rejecting CROWN access tokens.
+                # CrownAccessTokenAuthentication reuses request._crown_authenticated
+                # so DRF can authenticate without the original bearer header.
                 request.META.pop("HTTP_AUTHORIZATION", None)
 
         return self.get_response(request)
