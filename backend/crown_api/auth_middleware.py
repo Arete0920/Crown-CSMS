@@ -111,7 +111,7 @@ class JwtAuthMiddleware:
                 user, payload = authenticated
                 request.user = user
                 request.auth = payload
-                # Keep the bearer header intact for DRF APIView/@api_view authentication.
+                # Keep the bearer header intact for DRF APIView and @api_view authentication.
                 # CrownAccessTokenAuthentication is ordered before SimpleJWT in REST_FRAMEWORK,
                 # so CROWN access tokens must remain visible to DRF.
 
