@@ -1,105 +1,140 @@
 # CROWN Release Authority Reconciliation (#1219)
 
-Date: 2026-07-02
+Date: 2026-07-06
 Issue: #1219 (Reconcile verified evidence against CROWN release authority)
-Scope hygiene note: Reissued as docs-only packet from current main to isolate release evidence updates from non-doc changes.
-Branch anchor: release/authority-reconciliation-1219
-Head SHA at reconciliation start: 02f559661c3d777f549ee7a8f46cf23aa99425b4
+Scope hygiene note: Reissued after #1237 and #1265 so the authority record uses current runtime evidence rather than superseded failed evidence.
+Branch anchor: docs/authority-reconciliation-current-20260706
+Evaluated main evidence state: `docs/release/CROWN_RELEASE_EVIDENCE_INDEX.md` after PR #1265
 
 ## Status
 
-Binary production release disposition: NO-GO.
+Binary production release disposition: HOLD.
 
-This document is a reconciliation record only. It does not approve sandbox launch, investor-preview launch, or production release. Production remains not approved until the runtime, authority, governance, and signoff gates are closed with current evidence.
+CROWN is no longer blocked by failed same-SHA runtime proof. PR #1237 produced passing same-SHA live runtime evidence and PR #1265 recorded that evidence in the release evidence index on main. Production release remains not approved because the controlling release authority still has open non-runtime gates.
+
+This document is a reconciliation record only. It does not approve sandbox launch, investor-preview launch, pilot launch, GA, superiority claims, or unrestricted production release.
 
 ## Scope
 
 - Reconcile currently verified evidence against controlling release authority requirements.
-- Distinguish artifact verification from release authorization.
-- Record unresolved blockers and controlling issue dependencies.
+- Distinguish runtime certification from release authorization.
+- Record resolved runtime blockers and remaining non-runtime blockers.
+- Preserve a binary disposition for #1219.
 
 ## Non-Scope
 
-- No release approval decision.
-- No closure of #1219 or #1220.
-- No claim that same-SHA live runtime role-path proof is complete.
+- No production release approval.
+- No pilot approval.
+- No dashboard data-provenance approval.
+- No rollback/restore recovery approval.
+- No legal/compliance/customer-signoff approval.
 
 ## Evidence Inputs Used
 
-1. docs/release/CROWN_RELEASE_EVIDENCE_INDEX.md (updated 2026-07-02)
-2. docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md
-3. docs/CURRENT_RELEASE_STATUS.md
-4. Issue #1219 (https://github.com/tcmegahan/Crown2026/issues/1219)
-5. Issue #1220 (https://github.com/tcmegahan/Crown2026/issues/1220)
-6. Issue #1221 (https://github.com/tcmegahan/Crown2026/issues/1221)
-7. Production Certification Evidence run 28574455949 (same-SHA workflow_dispatch)
+1. `docs/release/CROWN_RELEASE_EVIDENCE_INDEX.md` (updated 2026-07-06 by PR #1265)
+2. `docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md`
+3. `docs/CURRENT_RELEASE_STATUS.md`
+4. Issue #1219
+5. Issue #1242 (dashboard plumbing/data provenance)
+6. Issue #1266 (rollback/restore recovery path)
+7. PR #1237 (same-SHA runtime certification repair)
+8. Production Certification Evidence run 28791168838 / artifact 8109603650
 
 ## Verified Facts (Current)
 
-- Main-branch production certification artifact metadata is recorded and verified in the release evidence index:
-  - main SHA: c1350dbe7e451009c093559642f15c7816c673ff
-  - workflow run id: 28477778845
-  - artifact id: 7994362465
-  - digest: sha256:76ed2116c37ce309ed35e226917f3c8e6bcbd4da9257e7d86bb07964f21476bf
-- Same-SHA live runtime certification was executed after #1227 merge and failed:
-   - main SHA: 402c4e7a0cee7c771c82d5ec0954273219a2346e
-   - workflow run id: 28574455949
-   - artifact id: 8032405394
-   - result: FAIL (33 total checks, 0 passed, 33 failed)
-   - role/tenant attempts captured: admin/teacher/parent/student/board across heritage/harvest/faith
-- Issue #1219 is OPEN and explicitly requires authority comparison to be documented in-repo before closure.
-- Issue #1220 is OPEN and is explicitly planning/evidence coordination only.
-- Issue #1221 is OPEN and defines live production runtime certification proof as an unclosed blocker.
+- Same-SHA live runtime proof is recorded as passed in the release evidence index:
+  - certified head SHA: `85b83ff1441c0f7b4f69db349e3d1df76c09f6d0`
+  - merge commit SHA: `0337b10f17e1e623407924f3c9fe7cf1341239ca`
+  - workflow run id: `28791168838`
+  - artifact id: `8109603650`
+  - certification result: PASS (11 total checks, 11 passed, 0 failed)
+  - failed network observations: 0
+  - console errors: 0
+  - critical/serious accessibility violations: 0
+- Failed same-SHA run `28574455949` is retained only as superseded audit history.
+- Issue #1220 is closed because #1237 produced passing same-SHA live runtime evidence and merged.
+- Issue #1219 is open and requires the authority comparison to be documented in-repo before closure.
+- Issue #1242 remains open for dashboard plumbing/data-provenance proof.
+- Issue #1266 remains open for rollback/restore recovery proof.
 
-## Authority Comparison
-
-### #1219 Required Checks
+## #1219 Required Checks
 
 1. Confirm exact main SHA being evaluated: SATISFIED.
-   - Evidence: docs/release/CROWN_RELEASE_EVIDENCE_INDEX.md
+   - Evidence: `docs/release/CROWN_RELEASE_EVIDENCE_INDEX.md` after PR #1265.
 2. Confirm Production Certification Evidence artifact verified and recorded: SATISFIED.
-   - Evidence: docs/release/CROWN_RELEASE_EVIDENCE_INDEX.md
+   - Evidence: run `28791168838`, artifact `8109603650`, PASS 11/11 recorded in the release evidence index.
 3. Identify controlling release authority source: SATISFIED.
-   - Evidence: docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md and docs/CURRENT_RELEASE_STATUS.md
-4. Compare verified evidence against each required gate: PARTIAL (FAILING ON RUNTIME PROOF).
-   - Verified: production certification artifact exists and metadata is recorded.
-   - Not yet evaluated in this record: the full gate stack enumerated in docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md, including full-completion truth, release-authority meta, dashboard provenance, data migration/reconciliation, financial controls, performance/load, observability/incident readiness, compliance/customer readiness, subprocessors, backup/restore, support access, pilot entry/exit, final owner acceptance, and competitor/superiority proof.
-   - Current same-SHA live runtime evidence exists but is failing, so runtime role-path and endpoint proof remain unclosed blockers (#1220/#1221).
+   - Evidence: `docs/release/CROWN_RELEASE_AUTHORITY_INDEX_20260529.md` and `docs/CURRENT_RELEASE_STATUS.md`.
+4. Compare verified evidence against each required gate: SATISFIED FOR THIS RECONCILIATION; HOLD RESULT.
+   - Runtime certification gate has moved from failed to passed.
+   - Several controlling authority gates remain open and prevent GO.
 5. Distinguish scaffold evidence from live proof: SATISFIED.
-   - Deterministic/scaffold artifact evidence is not sufficient for live runtime certification.
+   - Deterministic/scaffold artifact evidence is not treated as sufficient by itself.
+   - The current runtime pass is recorded separately as same-SHA live runtime proof.
 6. Distinguish artifact existence from release approval: SATISFIED.
-   - Artifact exists; binary disposition remains HOLD and production remains not approved.
+   - Artifact existence and runtime certification do not approve release.
 7. Record remaining blockers with issue links: SATISFIED.
-   - #1220 and #1221 remain open blockers for runtime and role-path proof.
+   - Remaining blockers are listed below.
 8. Record binary disposition (GO / NO-GO / HOLD): SATISFIED.
-   - NO-GO.
+   - HOLD.
+
+## Controlling Authority Gate Comparison
+
+| # | Authority requirement | Current state | Evidence / owner |
+|---|---|---|---|
+| 1 | Full-completion truth gate passes without `-AllowPreviewData` | OPEN | Needs current full-completion truth artifact |
+| 2 | Dashboard completion gate passes with deep frontend/backend/runtime checks | OPEN | #1242 / #1255 |
+| 3 | Dashboard data provenance gate passes for every ready dashboard/widget | OPEN | #1242 / #1255 |
+| 4 | Backend sample/fallback payloads cannot be certified in production/full-completion mode | PARTIAL / OPEN | Needs current full-completion and dashboard provenance artifacts |
+| 5 | Current CI/workflow evidence exists for reviewed branch/commit | PARTIAL / SATISFIED FOR RUNTIME | #1237 / #1265, but non-runtime gates remain |
+| 6 | Backend tests are green | PARTIAL / NEEDS CURRENT MAIN CONFIRMATION | Latest visible PR-head checks green; main regression claim must be verified separately |
+| 7 | Frontend tests/build/contract tests are green | PARTIAL | CI evidence exists, but release-authority gate stack still controls GO |
+| 8 | Playwright/runtime workflow proof is green | SATISFIED FOR ACTIVE RUNTIME SCOPE | #1237, run 28791168838, artifact 8109603650 |
+| 9 | Tenant isolation and RBAC/object authorization are green | PARTIAL / OPEN | Needs current tenant/RBAC evidence packet |
+| 10 | All 29 wizards proven end-to-end or explicitly scoped out | OPEN | Wizard certification evidence still required |
+| 11 | Module proof register has no blocked/proof-required/unknown/in-progress/not-certified rows | OPEN | Module proof register still requires current proof review |
+| 12 | Domain model certification has no unproven required core SIS entities | OPEN | Domain model certification artifact required |
+| 13 | Migration/import/reconciliation gate passes | OPEN | Gate artifact required |
+| 14 | Financial-controls gate passes | OPEN | Gate artifact required |
+| 15 | Performance/load gate passes | OPEN | Gate artifact required |
+| 16 | Observability/incident-readiness gate passes | OPEN | Gate artifact required |
+| 17 | Compliance/customer-readiness packet legally/product-owner approved | OPEN | Legal/product owner approval not recorded |
+| 18 | Actual subprocessors are confirmed | OPEN | Subprocessor register verification required |
+| 19 | Backup/restore test is complete | OPEN | #1266 / restore drill evidence required |
+| 20 | Incident response process is tested | OPEN | #1266 and observability/IR proof required |
+| 21 | Support access process is active and auditable | OPEN | Support access evidence required |
+| 22 | Pilot entry is signed before any pilot claim | OPEN | Pilot entry checklist/signoff required |
+| 23 | Pilot exit is signed before any GA claim | OPEN | Future GA blocker |
+| 24 | Founder/Product Owner final acceptance is signed | OPEN | Final release signoff required |
+| 25 | Competitor matrix evidence-backed before superiority claim | OPEN | Superiority claim remains prohibited |
 
 ## Remaining Blockers
 
-1. Same-SHA runtime role-path run failed 33/33 checks and cannot be accepted for release closure (#1220/#1221).
-2. Token auth failure pattern persists: POST /api/v1/auth/token/ -> 401 across most role/tenant paths.
-3. Board role path is blocked by missing role option in live login flow.
-4. One heritage admin path still attempted a dev API host call and failed CORS (host consistency blocker).
-5. Full gate-by-gate comparison against every controlling authority blocker remains required before #1219 closure.
+1. Dashboard plumbing/data provenance remains open (#1242 / #1255).
+2. Rollback/restore recovery proof remains open (#1266).
+3. Full release-authority gate stack has not been proven green for every controlling authority requirement.
+4. Legal/compliance/customer-readiness approvals are not recorded as complete.
+5. Pilot entry and founder/product-owner final acceptance are not signed.
+6. Any invite-validation regression reported externally must be verified/fixed before a clean release-readiness claim.
 
 ## Guardrail Statement
 
-Do not close #1219 or #1220 from this document alone.
+Do not close #1242 by inference from runtime certification.
+
+Do not close #1266 by inference from runtime certification.
 
 Do not mark production release approved from this document alone.
 
+Do not claim pilot approval, GA, or superiority without the specific controlling signoff artifacts.
+
 ## Reconciled Decision
 
-Binary disposition: NO-GO.
+Binary disposition: HOLD.
 
-Reason: same-SHA live runtime proof exists but failed; role/tenant path certification is not passing, endpoint/host consistency is not clean, and full gate-by-gate authority comparison remains unclosed.
+Reason: same-SHA live runtime proof is now passing and recorded, but controlling release authority still has open dashboard provenance, recovery, operational, compliance/customer-readiness, pilot/signoff, and final acceptance gates.
 
 ## Closure Preconditions (For #1219)
 
-Before #1219 can close, repository evidence must include:
+#1219 may close after this reconciliation is merged if the release authority owner accepts HOLD as the recorded binary disposition and the remaining blockers are tracked separately by #1242, #1266, and downstream launch/compliance/signoff trackers.
 
-1. This partial reconciliation record plus a completed full gate-by-gate authority comparison against every controlling blocker.
-2. Linked evidence packet for same-SHA live runtime role-path execution (from #1220/#1221 lane).
-3. Explicit confirmation that unresolved blocker stack no longer includes open runtime-proof gates.
-
-Until then, #1219 remains OPEN and binary production release disposition remains NO-GO.
+Closure of #1219 would mean the authority comparison is documented. It would not mean production release is approved.
