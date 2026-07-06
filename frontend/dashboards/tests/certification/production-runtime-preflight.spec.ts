@@ -116,16 +116,26 @@ function writeFailureEvidence(errors: string[]): void {
   fs.writeFileSync(
     path.join(evidenceRoot, "certification-matrix.json"),
     JSON.stringify(
-      {
-        status: "FAIL",
-        checks: [
-          {
-            id: "deployed-runtime-preflight",
-            status: "FAIL",
-            errors,
-          },
-        ],
-      },
+      [
+        {
+          id: "deployed-runtime-preflight",
+          label: "Deployed runtime preflight",
+          kind: "preflight",
+          route: "/same-sha",
+          persona: "same-sha",
+          tenant: "azure",
+          status: "FAIL",
+          errors,
+          networkObserved: 0,
+          networkFailed: 0,
+          failedRequests: [],
+          consoleErrors: [],
+          missingExpectedApis: [],
+          accessibilityViolationDetails: [],
+          accessibilityViolations: 0,
+          criticalAccessibilityViolations: 0,
+        },
+      ],
       null,
       2,
     ) + "\n",
