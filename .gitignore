@@ -170,6 +170,8 @@ audit-artifacts/*
 !audit-artifacts/final-95-plus-sprint/**
 !audit-artifacts/repo-hygiene/
 !audit-artifacts/repo-hygiene/**
+!audit-artifacts/roadmap-25-item/
+!audit-artifacts/roadmap-25-item/**
 docs/audit/evidence/
 docs/audit/reports/
 docs/status/

@@ -18,12 +18,12 @@ The financial_aid views use Django's @login_required decorator (session auth),
 so 302 is the expected production behaviour. This test would catch a regression
 where a refactor swapped in an AllowAny permission or dropped the decorator.
 """
-import uuid
-
 import pytest
 from rest_framework.test import APIClient
 
-BILLING_RUN_ID = str(uuid.uuid4())
+# Fixed deterministic UUID avoids pytest-xdist node-ID mismatch caused by
+# re-importing the module in each worker with a new random uuid4().
+BILLING_RUN_ID = "11111111-1111-4111-8111-111111111111"
 
 # (method, path)
 ENDPOINTS = [
