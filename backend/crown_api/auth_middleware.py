@@ -82,6 +82,11 @@ def authenticate_crown_access_token(token: str):
 
 class CrownAccessTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
+        underlying_request = getattr(request, "_request", request)
+        pre_authenticated = getattr(underlying_request, "_crown_authenticated", None)
+        if pre_authenticated is not None:
+            return pre_authenticated
+
         token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
         if not token:
             return None
@@ -111,9 +116,10 @@ class JwtAuthMiddleware:
                 user, payload = authenticated
                 request.user = user
                 request.auth = payload
-                # Keep the bearer header intact for DRF APIView and @api_view authentication.
-                # CrownAccessTokenAuthentication is ordered before SimpleJWT in REST_FRAMEWORK,
-                # so CROWN access tokens must remain visible to DRF.
+                setattr(request, "_crown_authenticated", authenticated)
+                # Remove the bearer header once middleware auth succeeds to avoid
+                # downstream SimpleJWT re-parsing/rejecting CROWN access tokens.
+                request.META.pop("HTTP_AUTHORIZATION", None)
 
         return self.get_response(request)
 
