@@ -358,6 +358,11 @@ async function performLiveLogin(page: Page, role: string, tenant: CertificationT
     if (sessionBootstrapped) {
       return "sandbox-session";
     }
+
+    // Even if sandbox session bootstrap fails, ensure the tenant ID is available in storage
+    // so that subsequent dashboard API calls can include the X-School-Id header.
+    const roleKey = sandboxRoleKeyFor(role);
+    await seedClientAuthStorage(page, roleKey, tenant.schoolId);
   }
 
   await page.goto(absoluteLiveUrl("/login"), { waitUntil: "domcontentloaded" });
