@@ -588,7 +588,7 @@ export function getDefaultDashboardPath(userRoles) {
   return getAccessibleDashboards(userRoles)[0]?.path || '/';
 }
 
-const isDev = import.meta.env?.DEV;
+const isDev = typeof import.meta !== "undefined" && import.meta.env?.DEV;
 
 if (isDev) {
   validateDashboardRegistry(DASHBOARD_REGISTRY);
