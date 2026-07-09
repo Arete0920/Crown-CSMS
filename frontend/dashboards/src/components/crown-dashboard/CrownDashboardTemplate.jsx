@@ -390,7 +390,6 @@ function renderStandardLayout(config, model, hasRouterContext) {
   );
 }
 
-// eslint-disable-next-line react/prop-types -- config and roleKey validated via runtime guard below
 export default function CrownDashboardTemplate({ config, roleKey }) {
   const hasRouterContext = useInRouterContext();
 
