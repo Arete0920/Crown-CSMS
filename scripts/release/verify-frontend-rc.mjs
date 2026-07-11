@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = process.cwd();
-const frontendDir = path.join(root, 'frontend', 'dashboards');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(scriptDir, '..', '..');
+const frontendDir = path.join(repoRoot, 'frontend', 'dashboards');
 const distDir = path.join(frontendDir, 'dist');
 
 function fail(message) {
