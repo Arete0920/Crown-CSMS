@@ -23,7 +23,10 @@ class Command(BaseCommand):
 
         attendance_payload = attendance_sample_payload(school_id)
         attendance_payload['meta']['served_from'] = 'seed-command'
-        attendance_payload['meta']['certification_candidate'] = 'hybrid'
+        attendance_payload['meta']['live_certified'] = False
+        attendance_payload['meta']['provenance'] = 'snapshot'
+        attendance_payload['meta']['non_live_reason'] = 'seeded_snapshot'
+        attendance_payload['meta'].pop('certification_candidate', None)
 
         DashboardSnapshot.objects.update_or_create(
             school_id=school_id,
@@ -37,7 +40,10 @@ class Command(BaseCommand):
 
         release_payload = release_reliability_sample_payload('platform')
         release_payload['meta']['served_from'] = 'seed-command'
-        release_payload['meta']['certification_candidate'] = 'hybrid'
+        release_payload['meta']['live_certified'] = False
+        release_payload['meta']['provenance'] = 'snapshot'
+        release_payload['meta']['non_live_reason'] = 'seeded_snapshot'
+        release_payload['meta'].pop('certification_candidate', None)
 
         DashboardSnapshot.objects.update_or_create(
             school_id=school_id,

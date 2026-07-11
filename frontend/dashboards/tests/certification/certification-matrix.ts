@@ -5,6 +5,7 @@ export type CertificationSurface = {
   kind: "route" | "dashboard" | "wizard" | "module";
   personas: string[];
   tenants: string[];
+  requireLiveProvenance?: boolean;
   expectedText?: string[];
   expectedApiFragments?: string[];
   allowFailedRequests?: boolean;
@@ -23,6 +24,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "route",
     personas: ["sandbox-admin", "sandbox-teacher", "sandbox-parent"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedText: ["CROWN"],
     expectedApiFragments: AUTH_API,
   },
@@ -33,6 +35,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-admin"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: AUTH_API,
   },
   {
@@ -42,6 +45,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-admin"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: AUTH_API,
   },
   {
@@ -51,6 +55,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-admin"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: AUTH_API,
   },
   {
@@ -60,6 +65,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-teacher"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: AUTH_API,
   },
   {
@@ -69,6 +75,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-parent"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: AUTH_API,
   },
   {
@@ -78,6 +85,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-student"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: AUTH_API,
   },
   {
@@ -87,6 +95,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "dashboard",
     personas: ["sandbox-board"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: AUTH_API,
   },
   {
@@ -96,6 +105,7 @@ export const certificationMatrix: CertificationSurface[] = [
     kind: "wizard",
     personas: ["sandbox-admin"],
     tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
     expectedApiFragments: [...AUTH_API, ...NAV_API, "/api/v1/wizards"],
   },
 ];
