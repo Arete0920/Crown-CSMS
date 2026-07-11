@@ -23,6 +23,8 @@ local.secrets.sh
 .env.*
 !.env.example
 !.env.sample
+!.env.sandbox.example
+!.env.local.example
 .env*.local
 **/.env*.local
 .env.release
@@ -30,6 +32,24 @@ local.secrets.sh
 *.bak
 *.backup
 *.tmp
+
+# Private keys, certificates, keystores, and secret-bearing exports
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+*.kdbx
+*.private.*
+*.secret.*
+*private-key*
+*service-account*
+*prod-secret*
+*production-secret*
 
 # OS and editor noise
 .DS_Store
