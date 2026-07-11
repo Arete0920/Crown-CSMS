@@ -15,10 +15,17 @@ export type ProvenanceObservation = {
   source: "meta.served_from" | "meta.provenance" | "meta.source" | "root.provenance";
 };
 
+export type MissingProvenanceObservation = {
+  url: string;
+  method?: string;
+  status?: number;
+};
+
 export type NetworkRecorder = {
   observed: NetworkObservation[];
   failed: NetworkObservation[];
   nonLiveProvenance: ProvenanceObservation[];
+  missingProvenance: MissingProvenanceObservation[];
   missingExpected: () => string[];
   finalize: () => Promise<void>;
 };
@@ -54,10 +61,54 @@ function recordIfNonLive(
   });
 }
 
+export function classifyProvenance(body: unknown): {
+  hasProvenance: boolean;
+  nonLiveValues: ProvenanceObservation[];
+} {
+  const nonLiveValues: ProvenanceObservation[] = [];
+
+  if (!body || typeof body !== "object") {
+    return { hasProvenance: false, nonLiveValues };
+  }
+
+  const root = body as Record<string, unknown>;
+  const metaCandidate = root.meta;
+  const meta = metaCandidate && typeof metaCandidate === "object"
+    ? (metaCandidate as Record<string, unknown>)
+    : null;
+
+  let hasProvenance = false;
+
+  if (meta) {
+    if (meta.served_from !== undefined) {
+      hasProvenance = true;
+    }
+    if (meta.provenance !== undefined) {
+      hasProvenance = true;
+    }
+    if (meta.source !== undefined) {
+      hasProvenance = true;
+    }
+
+    recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, meta.served_from, "meta.served_from");
+    recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, meta.provenance, "meta.provenance");
+    recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, meta.source, "meta.source");
+  }
+
+  if (root.provenance !== undefined) {
+    hasProvenance = true;
+  }
+
+  recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, root.provenance, "root.provenance");
+
+  return { hasProvenance, nonLiveValues };
+}
+
 export function attachNetworkRecorder(page: Page, expectedApiFragments: string[] = []): NetworkRecorder {
   const observed: NetworkObservation[] = [];
   const failed: NetworkObservation[] = [];
   const nonLiveProvenance: ProvenanceObservation[] = [];
+  const missingProvenance: MissingProvenanceObservation[] = [];
   const pendingBodyInspections: Array<Promise<void>> = [];
 
   page.on("response", (response: Response) => {
@@ -88,23 +139,23 @@ export function attachNetworkRecorder(page: Page, expectedApiFragments: string[]
 
     const inspectBody = response.json()
       .then((body: unknown) => {
-        if (!body || typeof body !== "object") {
-          return;
+        const classification = classifyProvenance(body);
+        for (const nonLiveValue of classification.nonLiveValues) {
+          nonLiveProvenance.push({
+            ...nonLiveValue,
+            url,
+            method: row.method,
+            status: row.status,
+          });
         }
 
-        const root = body as Record<string, unknown>;
-        const metaCandidate = root.meta;
-        const meta = metaCandidate && typeof metaCandidate === "object"
-          ? (metaCandidate as Record<string, unknown>)
-          : null;
-
-        if (meta) {
-          recordIfNonLive(nonLiveProvenance, row, meta.served_from, "meta.served_from");
-          recordIfNonLive(nonLiveProvenance, row, meta.provenance, "meta.provenance");
-          recordIfNonLive(nonLiveProvenance, row, meta.source, "meta.source");
+        if (!classification.hasProvenance && status < 400) {
+          missingProvenance.push({
+            url,
+            method: row.method,
+            status: row.status,
+          });
         }
-
-        recordIfNonLive(nonLiveProvenance, row, root.provenance, "root.provenance");
       })
       .catch(() => {
         // Not all API responses are JSON objects with provenance metadata.
@@ -132,6 +183,7 @@ export function attachNetworkRecorder(page: Page, expectedApiFragments: string[]
     observed,
     failed,
     nonLiveProvenance,
+    missingProvenance,
     missingExpected: () => {
       const seen = [...observed, ...failed];
       return expectedApiFragments.filter(
