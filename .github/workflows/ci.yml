@@ -18,68 +18,66 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          fetch-depth: 0  # Need full history to verify tags
+          fetch-depth: 0
           fetch-tags: true
 
       - name: Verify release tags are immutable
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --tags --force origin
-          echo "Verifying immutable release tags..."
 
-          # Validate registry format: all SHAs must be full 40-char hex
-          echo "Validating registry format..."
+          registry="docs/RELEASE_TAGS.json"
+          if [[ ! -f "$registry" ]]; then
+            echo "CRITICAL: release tag registry is missing: $registry"
+            exit 1
+          fi
+
+          echo "Refreshing release tags from origin using the checkout remote..."
+          git fetch --no-recurse-submodules origin "+refs/tags/*:refs/tags/*"
+
+          echo "Validating release tag registry format..."
+          if ! jq -e 'type == "object" and length > 0' "$registry" >/dev/null; then
+            echo "CRITICAL: release tag registry must be a non-empty JSON object"
+            exit 1
+          fi
+
           while IFS= read -r sha; do
             if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
-              echo " CRITICAL: Invalid SHA format in registry: $sha"
-              echo "   Registry must contain full 40-character commit SHAs only"
+              echo "CRITICAL: invalid SHA format in registry: $sha"
+              echo "Registry values must be full 40-character lowercase commit SHAs"
               exit 1
             fi
-          done < <(jq -r '.[]' docs/RELEASE_TAGS.json)
-          echo " Registry format valid (all full SHAs)"
-          echo ""
-
-          # Read all expected tags from RELEASE_TAGS.json
-          tags=$(jq -r 'keys[]' docs/RELEASE_TAGS.json)
+          done < <(jq -r '.[]' "$registry")
 
           failed=0
-          for tag in $tags; do
-            expected_sha=$(jq -r ".[\"$tag\"]" docs/RELEASE_TAGS.json)
-            # Explicitly resolve to commit (not tag object)
+          while IFS= read -r tag; do
+            expected_sha=$(jq -r --arg tag "$tag" '.[$tag]' "$registry")
+
             if ! git show-ref --verify --quiet "refs/tags/$tag"; then
-              echo " CRITICAL: Tag $tag not found in repository"
+              echo "CRITICAL: tag not found in repository: $tag"
               failed=1
               continue
             fi
 
             actual_sha=$(git rev-parse "${tag}^{commit}")
-
-            echo "Checking $tag:"
+            echo "Checking $tag"
             echo "  Expected: $expected_sha"
             echo "  Actual:   $actual_sha"
 
             if [[ "$actual_sha" != "$expected_sha" ]]; then
-              echo "   CRITICAL: Tag $tag has been moved!"
-              echo "     Expected commit: $expected_sha"
-              echo "     Current commit:  $actual_sha"
-              echo ""
+              echo "CRITICAL: immutable release tag mismatch: $tag"
               failed=1
             else
-              echo "   Verified"
+              echo "  Verified"
             fi
-            echo ""
-          done
+          done < <(jq -r 'keys[]' "$registry")
 
-          if [[ $failed -eq 1 ]]; then
-            echo " Tag immutability violated. Create new tags instead of moving existing ones."
+          if [[ $failed -ne 0 ]]; then
+            echo "Release tag immutability verification failed. Create a new tag instead of moving an existing tag."
             exit 1
           fi
 
-          echo " All release tags verified immutable"
+          echo "All registered release tags are present and immutable"
 
   test:
     runs-on: ubuntu-latest
@@ -101,18 +99,18 @@ jobs:
           for pattern in "${FORBIDDEN[@]}"; do
             matches=$(grep -rn "$pattern" frontend/ --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" || true)
             if [ -n "$matches" ]; then
-              echo " Forbidden import found: $pattern"
+              echo "Forbidden import found: $pattern"
               echo "$matches"
               failed=1
             fi
           done
           if [ $failed -eq 1 ]; then
             echo ""
-            echo " Forbidden imports detected. These packages are not in dependencies."
-            echo "   Use Unicode characters or inline SVG instead."
+            echo "Forbidden imports detected. These packages are not in dependencies."
+            echo "Use Unicode characters or inline SVG instead."
             exit 1
           fi
-          echo " No forbidden imports found"
+          echo "No forbidden imports found"
 
       - name: Set up Python 3.12
         uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
@@ -154,28 +152,23 @@ jobs:
           SERVER_PID=$!
           sleep 5
 
-          # Test health endpoint
           response=$(curl --max-time 30 -f http://localhost:8000/api/health/ || echo "FAILED")
-
-          # Kill server
           kill $SERVER_PID || true
 
-          # Check response
           if [[ "$response" == "FAILED" ]]; then
-            echo " Health endpoint failed"
+            echo "Health endpoint failed"
             exit 1
           fi
 
-          echo " Health endpoint responding: $response"
+          echo "Health endpoint responding: $response"
         continue-on-error: false
 
       - name: Fail fast summary
         if: failure()
         run: |
-          echo " CI failed - check logs above"
+          echo "CI failed - check logs above"
           echo "Possible causes:"
           echo "  - Missing migrations (run: python manage.py makemigrations)"
           echo "  - Test failures (run: python manage.py test)"
           echo "  - Health endpoint broken (check crown_api/health_views.py)"
           exit 1
-
