@@ -554,6 +554,13 @@ for (const surface of certificationMatrix) {
           errors.push(`non-live provenance detected: ${detail}`);
         }
 
+        if ((surface.requireLiveProvenance ?? true) && network.missingProvenance.length > 0) {
+          const detail = network.missingProvenance
+            .map((entry) => `${entry.method ?? "GET"} ${entry.url}`)
+            .join(", ");
+          errors.push(`missing provenance detected: ${detail}`);
+        }
+
         const missingExpectedApis = network.missingExpected().filter(
           (fragment) => !(authMode !== "credentials" && AUTH_API.includes(fragment)),
         );
@@ -573,6 +580,7 @@ for (const surface of certificationMatrix) {
           networkFailed: failedRequests.length,
           failedRequests,
           nonLiveProvenance: network.nonLiveProvenance,
+          missingProvenance: network.missingProvenance,
           consoleErrors,
           missingExpectedApis,
           accessibilityViolationDetails: accessibility.violations,
