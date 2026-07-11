@@ -1,136 +1,113 @@
 # CROWN Current Release Status
 
-Date: 2026-06-29
-Purpose: Single canonical repository-level release posture for CROWN.
+Date: 2026-07-11
+Purpose: Canonical repository-level release posture for CROWN.
 
 ## Canonical Authority
 
-1. This file is the canonical repository-level release authority.
-2. Current controlling posture is **SANDBOX RELEASE CANDIDATE / PRODUCTION NOT APPROVED**.
+1. This file is the repository-level release authority.
+2. Current controlling posture is **CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED**.
 3. Historical GO, SHIP, PASS, RELEASE_READY, PARTIAL, prior candidate-SHA documents, local transcript notes, and superseded audit packets are non-authoritative unless this file explicitly promotes them.
-4. Product, sandbox, pilot, and production claims must be based on current repository evidence and same-SHA gate settlement, not stale packets or memory.
+4. Product, sandbox, pilot, and production claims require current repository evidence and same-SHA gate settlement.
 5. This file does not approve unrestricted production release.
 
 ## Current Decision
 
-Repository-wide decision: **SANDBOX_RELEASE_CANDIDATE**.
-Production release decision: **NOT APPROVED**.
-Current controlling posture: **CONTROLLED SANDBOX / TIER 0 ELIGIBLE PENDING AUTHORITY APPROVAL AND LIVE PROOF REFRESH**.
+- Repository-wide decision: **SANDBOX_RELEASE_CANDIDATE**.
+- Production release decision: **NOT APPROVED**.
+- Current controlling posture: **CONTROLLED SANDBOX ONLY; LIVE PROOF AND OPERATIONAL BLOCKERS REMAIN OPEN**.
 
-Decision meaning:
+## Current Repository Snapshot
 
-- CROWN is no longer accurately described by the older June 24-only release-freeze posture without acknowledging later merged sandbox and CI fixes.
-- The repository has current evidence supporting controlled sandbox/investor-preview candidate posture.
-- Production release remains blocked pending independent governance review, release notes/changelog, production deployment runbook confirmation, and explicit owner production authorization.
-- Completion evidence remains controlled by `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md` plus the current follow-up PR evidence listed below.
-- If main receives additional commits, same-SHA release/sandbox evidence must be re-run before any broader cohort or production claim.
+- Repository: `tcmegahan/Crown2026`
+- Default branch: `main`
+- Current main SHA observed through the GitHub connector on 2026-07-11: `7bf185e5f65ec4bf2b765d6edb485d06ea7096b3`
+- Latest main change: PR #1302, a two-line ESLint-comment cleanup with no runtime, backend, or release-authority change.
+- Current-main same-SHA required-gate settlement: **NOT PROVEN by the connector snapshot**.
+- Production deployment SHA alignment with current main: **NOT PROVEN by this document**.
+- Open PR state and open issue state must be checked live; counts in historical evidence packets are not current authority.
 
-## Current GitHub Evidence Snapshot
+## Active Release-Critical Work
 
-- Prior sandbox candidate SHA: `143308707333761c46a7bd7a45b3b939b7c20d28` from PR #1173.
-- PR #1173, merged 2026-06-24: fixed dashboard SWA sandbox/prod env flag handling and release-authority wording.
-- PR #1176, merged 2026-06-24: removed dashboard deploy workflow UTF-8 BOM hygiene risk.
-- PR #1180, merged 2026-06-27/2026-06-28 window: synced batch0 certification-center connector intake to current main and preserved draft gating state metadata.
-- PR #1184, merged 2026-06-28: fixed CI `dashboards-build-gate` rolldown native binding blocker by regenerating `frontend/dashboards/package-lock.json` from a clean install.
-- PR #1185, merged 2026-06-28: fixed `sandbox_seed_flagship --reset` protected aid cleanup failure and added focused regression coverage.
-- PR #1199, merged 2026-06-29: converted investor-preview runtime proof to no-login deterministic proof mode and reconciled scoped investor-preview terminology; production approval not claimed.
-- Follow-up PR #1181 was closed unmerged and must not be treated as part of current shipped authority.
-- Follow-up PR #1178 was closed unmerged as draft and must not be treated as part of current shipped authority.
-- Open PR count is not controlled by this static file; verify current PR state live through the GitHub connector when making current-status decisions.
-- Post-1199 hygiene verification: open PR queue and open issue queue verified as zero before this proof refresh; see udit-artifacts/post1199-hygiene-sandbox-proof/20260629_181531/.
+### Dashboard plumbing and data provenance
 
-## Current Product Completion Evidence
+- #1281 — controlling blocker burn-down lane.
+- #1274 — authenticated dashboard live-data proof for school administrator, teacher, and parent.
+- #1287 — production tenant-context propagation and `X-School-Id` proof.
+- #1289 / PR #1285 — no-pretend provenance and snapshot-versus-live certification.
 
-Use `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md` first for current completion/status work.
+PR #1285 is draft-only until it is synchronized with current main and its required checks settle with pending=0, failed=0, cancelled=0. Snapshot, sample, fallback, or unknown data must not be certified as live.
 
-| Area | Current verified status | Current authority |
+### Recovery and deployment operations
+
+- #1270 — automated rollback, controlled rollback drill, restore evidence, and recovery decision tree.
+- Deployment success alone is insufficient without proven recovery and restoration capability.
+
+### Security and secrets
+
+- #1294 — production secrets management and Vault readiness.
+- #1295 / PR #1301 — repository secret-scanning and ignore guardrails.
+- #1296 — rotation, audit, and break-glass runbook.
+
+Ignore rules are preventive controls only. They do not prove that the repository or deployment environment is secret-clean.
+
+### Payment-provider readiness
+
+- #1298 — provider-agnostic readiness for Stripe, CompuWerx, and Metro Merchant Services.
+- No provider may be represented as production-enabled until contracts, credentials, webhook behavior, settlement/refund controls, tenant isolation, and security obligations are verified.
+
+### Visual and release-visible QA
+
+- #1272 / PR #1300 — Microsoft asset integrity on `/board`.
+- #1276 — complete release-visible route sweep with browser, network, and console evidence.
+- PR #1279 remains draft until synchronized with current main and locally validated.
+
+## Product Completion Evidence
+
+Historical completion evidence remains useful for product-surface coverage, but it does not independently authorize production.
+
+| Area | Repository evidence posture | Release meaning |
 | --- | --- | --- |
-| Modules | 51 / 51 PROVEN | `audit-artifacts/module-completion/current/05_completion_scorecard.md` |
-| Dashboards | 40 / 40 certified for internal dashboard scope | `audit-artifacts/dashboard-completion/state/dashboard-certification-state.json` plus follow-up PR evidence |
-| Wizards | CERTIFIED | `audit-artifacts/wizard-certification/current/FINAL_WIZARD_CERTIFICATION_20260622.md` |
-| Components | CERTIFIED BY PARENT SURFACE COVERAGE | `audit-artifacts/component-widget-certification/current/COMPONENT_CERTIFICATION_MATRIX_20260622.csv` |
-| Widgets | CERTIFIED BY PARENT SURFACE COVERAGE | `audit-artifacts/component-widget-certification/current/WIDGET_CERTIFICATION_MATRIX_20260622.csv` |
-| Sandbox / investor preview | CANDIDATE | This file plus #1173, #1184, #1185 evidence; live deployed proof refresh required |
-| Production release | NOT APPROVED | Independent governance review, release notes/changelog, production runbook, and explicit owner production authorization required |
+| Modules | 51 / 51 previously recorded as PROVEN | Product-scope evidence only |
+| Dashboards | 40 / 40 previously certified for internal scope | Live authenticated provenance still requires closure |
+| Wizards | Previously certified | Does not authorize production |
+| Components and widgets | Previously certified by parent-surface coverage | Does not authorize production |
+| Controlled sandbox | Candidate | Requires current live proof refresh and owner authorization |
+| Production | NOT APPROVED | Blocked by current P0 evidence and operational work |
 
-## Gate Settlement Status
+## Required Production Entry Gates
 
-### Post-1199 current-main proof refresh
+Production authorization requires all of the following on one current release SHA:
 
-- Evidence path: udit-artifacts/post1199-hygiene-sandbox-proof/20260629_181531/`r
-- Main SHA: $MainSha`r
-- Deployed build SHA: $BuildSha`r
-- Open PR count: 0
-- Open issue count: 0
-- Production release remains NOT APPROVED.
+1. Required GitHub checks settled with pending=0, failed=0, cancelled=0.
+2. Current deployed build SHA proven equal to the approved release SHA.
+3. Authenticated school-administrator, teacher, and parent browser flows proven.
+4. Tenant context proven across login, navigation, dashboard API calls, and data access.
+5. Dashboard provenance proves live authenticated API data; sample, snapshot, fallback, and unknown classifications do not pass.
+6. Automated rollback and restore/recovery evidence completed.
+7. Current secret scan, Key Vault configuration evidence, rotation policy, and break-glass process completed.
+8. Payment-provider production boundary resolved without unsupported activation claims.
+9. Release-visible visual QA completed with no unexplained console or network failures.
+10. Release notes, changelog, deployment runbook, and final authority record updated.
+11. Explicit Founder/Product Owner production authorization recorded after all preceding gates pass.
 
-
-### Settled as of 2026-06-24
-
-| Step | Status | Evidence | Time |
-| --- | --- | --- | --- |
-| Local Repo Hygiene | PASS | 0 modified, 0 staged, 0 deleted | 2026-06-24 |
-| Release Verify Gate | PASS | GitHub Actions run on main | 2026-06-24T10:50:31Z |
-| Sandbox Ready Evidence Gate | PASS | GitHub Actions run on main | 2026-06-24T11:07:32Z |
-| Backend Health | PASS | Django system check: 0 issues | 2026-06-24 |
-| Release Certification Packet | GENERATED | `audit-artifacts/release-verification/current-20260624/` | 2026-06-24 |
-| Sandbox Gate Final | PASS | GitHub Actions run on same SHA | 2026-06-24T11:07:32Z |
-
-### Follow-up fixes after 2026-06-24
-
-| PR | Status | Release impact | Remaining requirement |
-| --- | --- | --- | --- |
-| #1173 | MERGED | Corrects sandbox/prod env flag behavior in dashboard deploy workflow | Live proof remains required before buyer access |
-| #1176 | MERGED | Removes workflow BOM hygiene risk | No further action if workflow parses and runs cleanly |
-| #1184 | MERGED | Fixes CI dashboard build gate native binding blocker | Confirm current-main dashboard build gate green after merge |
-| #1185 | MERGED | Fixes flagship sandbox reset protected-aid cleanup failure | Confirm `sandbox_seed_flagship --reset` and focused regression on current main |
-
-## Allowed Language Now
+## Allowed Language
 
 Allowed:
 
 - "CROWN is in controlled sandbox release-candidate posture."
-- "CROWN has completed module, dashboard, wizard, component, and widget certification per current repository evidence."
-- "Recent merged fixes addressed sandbox deployment, CI dashboard build, and sandbox seed/reset blockers."
-- "Tier 0 internal sandbox review is eligible after authority approval and current live proof refresh."
-- "Production release is not yet approved."
+- "CROWN has substantial product-surface completion evidence."
+- "Production release is not approved."
+- "Current production readiness depends on authenticated tenant-scoped live-data proof, operational recovery, secrets controls, visual QA, and same-SHA gate settlement."
 
 Not allowed:
 
 - "CROWN is unrestricted production ready."
 - "CROWN is production GO."
+- "All dashboards are live" when evidence includes snapshot, sample, fallback, or unknown data.
 - "Independent review is complete" unless independently evidenced and documented.
-- "Sandbox is broadly approved" beyond the controlled/Tier 0 authority scope.
-- "Follow-up unmerged PRs are part of shipped release authority."
-
-## Next Actions for Authority
-
-### To approve controlled Tier 0 sandbox review
-
-1. Confirm current main includes #1173, #1176, #1184, and #1185.
-2. Confirm current PR state has no open release-blocking PRs.
-3. Confirm current-main dashboard build gate is green after #1184.
-4. Confirm `python manage.py sandbox_seed_flagship --reset` passes after #1185.
-5. Confirm live sandbox endpoint proof after the latest main deployment.
-6. Record owner authority approval for Tier 0 internal review.
-
-### To approve broader sandbox / buyer / investor cohort access
-
-1. Complete all Tier 0 checks above.
-2. Confirm role-based sandbox launch paths for target personas.
-3. Confirm school selector and flagship demo data reset stability.
-4. Confirm no live endpoint regression after latest deployment.
-5. Record authority approval for the named cohort and scope.
-
-### To approve production release
-
-1. Complete independent governance review and document it.
-2. Prepare and commit release notes and changelog.
-3. Confirm production deployment process per separate operational runbook.
-4. Confirm same-SHA gate settlement: pending=0, failed=0, cancelled=0 for required release gates.
-5. Confirm governance language: no false independent-review claim; solo-maintainer workaround recorded where applicable.
-6. Update this file only after the evidence above is current, green, and same-SHA consistent.
+- "An open or unmerged PR is shipped authority."
 
 ## Current Final Status
 
-**SANDBOX RELEASE CANDIDATE / PRODUCTION NOT APPROVED**.
+**CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED**.
