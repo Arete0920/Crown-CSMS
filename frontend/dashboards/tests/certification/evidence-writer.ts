@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { NetworkObservation } from "./network-recorder";
+import type { ProvenanceObservation } from "./network-recorder";
 
 type AccessibilityViolationDetail = {
   id: string;
@@ -28,6 +29,7 @@ export type CertificationResultRow = {
   networkObserved: number;
   networkFailed: number;
   failedRequests: NetworkObservation[];
+  nonLiveProvenance: ProvenanceObservation[];
   consoleErrors: string[];
   missingExpectedApis: string[];
   accessibilityViolationDetails: AccessibilityViolationDetail[];
@@ -47,6 +49,7 @@ const resultsPath = path.join(evidenceRoot, "certification-matrix.json");
 const routeCsvPath = path.join(evidenceRoot, "route-results.csv");
 const summaryPath = path.join(evidenceRoot, "certification-summary.md");
 const failedRequestsPath = path.join(evidenceRoot, "failed-requests.json");
+const nonLiveProvenancePath = path.join(evidenceRoot, "non-live-provenance.json");
 const consoleErrorsPath = path.join(evidenceRoot, "console-errors.json");
 const accessibilityViolationsPath = path.join(evidenceRoot, "accessibility-violations.json");
 
@@ -66,6 +69,7 @@ export function resetEvidenceRoot(): void {
   fs.mkdirSync(path.join(evidenceRoot, "har"), { recursive: true });
   fs.writeFileSync(resultsPath, "[]\n");
   fs.writeFileSync(failedRequestsPath, "[]\n");
+  fs.writeFileSync(nonLiveProvenancePath, "[]\n");
   fs.writeFileSync(consoleErrorsPath, "[]\n");
   fs.writeFileSync(accessibilityViolationsPath, "[]\n");
   fs.writeFileSync(
@@ -94,6 +98,18 @@ export function appendCertificationResult(row: CertificationResultRow): void {
       failedRequests: row.failedRequests,
     });
     fs.writeFileSync(failedRequestsPath, `${JSON.stringify(failedRequests, null, 2)}\n`);
+  }
+
+  if (row.nonLiveProvenance.length > 0) {
+    const nonLiveRows = JSON.parse(fs.readFileSync(nonLiveProvenancePath, "utf8")) as Array<Record<string, unknown>>;
+    nonLiveRows.push({
+      id: row.id,
+      route: row.route,
+      persona: row.persona,
+      tenant: row.tenant,
+      nonLiveProvenance: row.nonLiveProvenance,
+    });
+    fs.writeFileSync(nonLiveProvenancePath, `${JSON.stringify(nonLiveRows, null, 2)}\n`);
   }
 
   if (row.consoleErrors.length > 0) {
@@ -163,6 +179,7 @@ export function writeCertificationSummary(): void {
   const criticalA11y = rows.reduce((sum, row) => sum + row.criticalAccessibilityViolations, 0);
   const failedNetwork = rows.reduce((sum, row) => sum + row.networkFailed, 0);
   const consoleErrorCount = rows.reduce((sum, row) => sum + row.consoleErrors.length, 0);
+  const nonLiveProvenanceCount = rows.reduce((sum, row) => sum + row.nonLiveProvenance.length, 0);
 
   const lines = [
     "# CROWN Live Runtime Production Certification Summary",
@@ -173,6 +190,7 @@ export function writeCertificationSummary(): void {
     `Passed: ${rows.length - failed.length}`,
     `Failed: ${failed.length}`,
     `Failed network observations: ${failedNetwork}`,
+    `Non-live provenance observations: ${nonLiveProvenanceCount}`,
     `Console errors: ${consoleErrorCount}`,
     `Critical/serious accessibility violations: ${criticalA11y}`,
     "",
@@ -196,6 +214,12 @@ export function writeCertificationSummary(): void {
       `- ${row.id} / ${row.persona} / ${row.tenant}: ${message}`
     ))),
     "",
+    "## Non-live provenance detail",
+    "",
+    ...rows.flatMap((row) => row.nonLiveProvenance.map((entry) => (
+      `- ${row.id} / ${row.persona} / ${row.tenant}: ${entry.value} via ${entry.source} (${entry.method ?? "GET"} ${entry.url})`
+    ))),
+    "",
     "## Accessibility violation detail",
     "",
     ...rows.flatMap((row) => row.accessibilityViolationDetails
@@ -209,6 +233,7 @@ export function writeCertificationSummary(): void {
     "- certification-matrix.json",
     "- route-results.csv",
     "- failed-requests.json",
+    "- non-live-provenance.json",
     "- console-errors.json",
     "- accessibility-violations.json",
     "- screenshots/",
