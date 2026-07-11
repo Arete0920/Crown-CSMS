@@ -1,12 +1,31 @@
 ﻿# backend/core/tenant_header_middleware.py
 from __future__ import annotations
 
+import os
+
 from django.conf import settings
 from django.http import JsonResponse
 
 from core.models import School
 from core.tenant_models import set_current_school, clear_current_school
 from crown_api.tenant import resolve_tenant_school_id
+
+
+def _is_production_runtime() -> bool:
+    env = (
+        str(getattr(settings, "CROWN_ENV", "") or "")
+        or str(getattr(settings, "DJANGO_ENV", "") or "")
+        or str(getattr(settings, "ENVIRONMENT", "") or "")
+        or str(os.getenv("CROWN_ENV", "") or "")
+        or str(os.getenv("DJANGO_ENV", "") or "")
+        or str(os.getenv("ENVIRONMENT", "") or "")
+        or str(os.getenv("AZURE_ENVIRONMENT", "") or "")
+    ).strip().lower()
+    return env in {"prod", "production", "live"} or bool(os.getenv("WEBSITE_HOSTNAME"))
+
+
+def _dev_open_dashboard_bypass_enabled() -> bool:
+    return bool(getattr(settings, "CROWN_DEV_OPEN_API", False)) and not _is_production_runtime()
 
 
 class TenantHeaderRequiredMiddleware:
@@ -96,6 +115,9 @@ class TenantHeaderRequiredMiddleware:
                             status=400,
                         )
                     return self.get_response(request)
+
+            if _dev_open_dashboard_bypass_enabled() and normalized_path.startswith('/api/dashboards'):
+                return self.get_response(request)
 
             # Resolve tenant: header wins over user.school_id fallback.
             # resolve_tenant_school_id() handles both paths since we now run

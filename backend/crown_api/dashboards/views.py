@@ -9,6 +9,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
+class DevOpenApiPermissions:
+    """Allow local/dev access when the project explicitly enables it."""
+
+    @staticmethod
+    def has_permission(request, view):
+        if _dev_open_api_enabled():
+            return True
+        return IsAuthenticated().has_permission(request, view)
+
 from core.permissions import user_has_permission
 
 from .models import DashboardSnapshot
@@ -60,6 +70,11 @@ def _is_production_runtime() -> bool:
     return env in {'prod', 'production', 'live'} or bool(os.getenv('WEBSITE_HOSTNAME'))
 
 
+def _dev_open_api_enabled() -> bool:
+    # Never allow dev-open bypass in production-like runtimes.
+    return bool(getattr(settings, 'CROWN_DEV_OPEN_API', False)) and not _is_production_runtime()
+
+
 def _sample_dashboard_payloads_allowed() -> bool:
     """
     Allow sample dashboard payloads only when the environment explicitly says so
@@ -95,6 +110,12 @@ def _resolve_school_strict(request, *, require_user_school_binding=False):
     from core.models import School
     raw = request.META.get('HTTP_X_SCHOOL_ID', '').strip()
     if not raw:
+        if _dev_open_api_enabled():
+            demo_school_id = getattr(settings, 'CROWN_DEMO_SCHOOL_ID', None) or '11111111-1111-1111-1111-111111111111'
+            school = School.objects.filter(pk=demo_school_id).first()
+            if school is None:
+                school = School.objects.create(id=_uuid.UUID(demo_school_id), name='Heritage Demo School')
+            return school
         raise ValidationError({"detail": "X-School-Id header is required."})
     try:
         school_id = _uuid.UUID(raw)
@@ -117,19 +138,24 @@ def _resolve_school_strict(request, *, require_user_school_binding=False):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([DevOpenApiPermissions])
 def dashboard_me(request):
-    """Return authenticated user's school context and roles."""
+    """Return the current school context and roles for the requesting user."""
     school = _resolve_school_strict(request)
     from core.models import UserRole
-    roles = list(
-        UserRole.objects.filter(user=request.user, school=school).values_list('role_code', flat=True)
-    )
-    if not roles:
-        # User associated with school via school_id field — include implicit identity
-        user_school_id = getattr(request.user, 'school_id', None)
-        if user_school_id and str(user_school_id) == str(school.id):
-            roles = ['SCHOOL_MEMBER']
+
+    user = getattr(request, 'user', None)
+    roles = []
+    if user and getattr(user, 'is_authenticated', False):
+        roles = list(
+            UserRole.objects.filter(user=user, school=school).values_list('role_code', flat=True)
+        )
+        if not roles:
+            # User associated with school via school_id field — include implicit identity
+            user_school_id = getattr(user, 'school_id', None)
+            if user_school_id and str(user_school_id) == str(school.id):
+                roles = ['SCHOOL_MEMBER']
+
     return Response({
         "school_id": str(school.id),
         "roles": roles,
@@ -139,7 +165,7 @@ def dashboard_me(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([DevOpenApiPermissions])
 def dashboard_summary(request):
     """Return dashboard summary widgets for the school."""
     school = _resolve_school_strict(request)
@@ -160,7 +186,7 @@ def dashboard_summary(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([DevOpenApiPermissions])
 def dashboard_drilldown(request):
     """Return drilldown data for a specific dashboard widget."""
     school = _resolve_school_strict(request)
@@ -176,7 +202,7 @@ def dashboard_drilldown(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([DevOpenApiPermissions])
 def dashboard_alerts(request):
     """Return school-level alerts."""
     _resolve_school_strict(request)
@@ -186,7 +212,7 @@ def dashboard_alerts(request):
 
 
 class DashboardSummaryView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [DevOpenApiPermissions]
 
     def get(self, request, dashboard_key):
         key = str(dashboard_key).strip().lower()
