@@ -196,7 +196,10 @@ for (const surface of certificationMatrix) {
           localStorage.setItem("crown_user_roles", JSON.stringify(sessionData.currentUser.roles));
         }, session);
 
-        const network = attachNetworkRecorder(page, surface.expectedApiFragments ?? []);
+        const network = attachNetworkRecorder(page, {
+          expectedApiFragments: surface.expectedApiFragments ?? [],
+          provenanceRequiredApiFragments: surface.provenanceRequiredApiFragments ?? [],
+        });
         const target = surface.route;
 
         await page.goto(target, { waitUntil: "networkidle" });

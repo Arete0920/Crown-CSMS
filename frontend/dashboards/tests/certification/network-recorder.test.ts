@@ -1,40 +1,75 @@
 import { describe, expect, it } from "vitest";
-import { classifyProvenance } from "./network-recorder";
+import { evaluateProvenanceRequirement } from "./network-recorder";
 
-describe("classifyProvenance", () => {
-  it("fails closed when provenance metadata is missing", () => {
-    const result = classifyProvenance({
-      data: { value: 1 },
+describe("evaluateProvenanceRequirement", () => {
+  const designatedDataApi = ["/api/dashboards/"];
+
+  it("auth JSON without provenance does not fail", () => {
+    const result = evaluateProvenanceRequirement({
+      url: "/api/v1/auth/me",
+      status: 200,
+      body: { user: { id: "u1" } },
+      provenanceRequiredApiFragments: designatedDataApi,
     });
 
-    expect(result.hasProvenance).toBe(false);
+    expect(result.enforced).toBe(false);
+    expect(result.missing).toBe(false);
     expect(result.nonLiveValues).toEqual([]);
   });
 
-  it("detects explicit non-live provenance", () => {
-    const result = classifyProvenance({
-      meta: { served_from: "snapshot" },
+  it("navigation JSON without provenance does not fail", () => {
+    const result = evaluateProvenanceRequirement({
+      url: "/api/v1/nav",
+      status: 200,
+      body: { links: [] },
+      provenanceRequiredApiFragments: designatedDataApi,
     });
 
-    expect(result.hasProvenance).toBe(true);
-    expect(result.nonLiveValues).toEqual([
-      {
-        url: "",
-        method: undefined,
-        status: undefined,
-        value: "snapshot",
-        source: "meta.served_from",
-      },
-    ]);
+    expect(result.enforced).toBe(false);
+    expect(result.missing).toBe(false);
+    expect(result.nonLiveValues).toEqual([]);
   });
 
-  it("accepts live provenance markers", () => {
-    const result = classifyProvenance({
-      meta: { served_from: "live_db" },
-      provenance: "api",
+  it("designated dashboard API JSON without provenance fails", () => {
+    const result = evaluateProvenanceRequirement({
+      url: "/api/dashboards/summary/",
+      status: 200,
+      body: { metrics: [] },
+      provenanceRequiredApiFragments: designatedDataApi,
     });
 
-    expect(result.hasProvenance).toBe(true);
+    expect(result.enforced).toBe(true);
+    expect(result.missing).toBe(true);
+    expect(result.nonLiveValues).toEqual([]);
+  });
+
+  it.each(["snapshot", "sample", "fallback", "unknown"])(
+    "designated API with %s provenance fails",
+    (value) => {
+      const result = evaluateProvenanceRequirement({
+        url: "/api/dashboards/summary/",
+        status: 200,
+        body: { meta: { served_from: value } },
+        provenanceRequiredApiFragments: designatedDataApi,
+      });
+
+      expect(result.enforced).toBe(true);
+      expect(result.missing).toBe(false);
+      expect(result.nonLiveValues.length).toBeGreaterThan(0);
+      expect(result.nonLiveValues[0]?.value).toBe(value);
+    },
+  );
+
+  it("designated API with explicit live provenance passes", () => {
+    const result = evaluateProvenanceRequirement({
+      url: "/api/dashboards/summary/",
+      status: 200,
+      body: { meta: { served_from: "live_db" } },
+      provenanceRequiredApiFragments: designatedDataApi,
+    });
+
+    expect(result.enforced).toBe(true);
+    expect(result.missing).toBe(false);
     expect(result.nonLiveValues).toEqual([]);
   });
 });

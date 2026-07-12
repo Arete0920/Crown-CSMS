@@ -497,7 +497,10 @@ for (const surface of certificationMatrix) {
         });
 
         const expectedFragments = [...(surface.expectedApiFragments ?? [])];
-        const network = attachNetworkRecorder(page, expectedFragments);
+        const network = attachNetworkRecorder(page, {
+          expectedApiFragments: expectedFragments,
+          provenanceRequiredApiFragments: surface.provenanceRequiredApiFragments ?? [],
+        });
         const errors: string[] = [];
 
         try {

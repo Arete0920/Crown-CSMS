@@ -30,6 +30,11 @@ export type NetworkRecorder = {
   finalize: () => Promise<void>;
 };
 
+export type NetworkRecorderOptions = {
+  expectedApiFragments?: string[];
+  provenanceRequiredApiFragments?: string[];
+};
+
 const NON_LIVE_PROVENANCE_VALUES = new Set(["snapshot", "sample", "fallback", "unknown"]);
 
 function normalizeProvenanceValue(value: unknown): string | null {
@@ -104,7 +109,59 @@ export function classifyProvenance(body: unknown): {
   return { hasProvenance, nonLiveValues };
 }
 
-export function attachNetworkRecorder(page: Page, expectedApiFragments: string[] = []): NetworkRecorder {
+export function isProvenanceDesignatedEndpoint(url: string, fragments: string[]): boolean {
+  return fragments.some((fragment) => url.includes(fragment));
+}
+
+export function evaluateProvenanceRequirement(params: {
+  url: string;
+  method?: string;
+  status?: number;
+  body: unknown;
+  provenanceRequiredApiFragments: string[];
+}): {
+  enforced: boolean;
+  missing: boolean;
+  nonLiveValues: ProvenanceObservation[];
+} {
+  const {
+    url,
+    method,
+    status,
+    body,
+    provenanceRequiredApiFragments,
+  } = params;
+
+  const enforced = isProvenanceDesignatedEndpoint(url, provenanceRequiredApiFragments);
+  if (!enforced) {
+    return { enforced: false, missing: false, nonLiveValues: [] };
+  }
+
+  const classification = classifyProvenance(body);
+  const nonLiveValues = classification.nonLiveValues.map((entry) => ({
+    ...entry,
+    url,
+    method,
+    status,
+  }));
+
+  return {
+    enforced: true,
+    missing: !classification.hasProvenance && (status ?? 0) < 400,
+    nonLiveValues,
+  };
+}
+
+export function attachNetworkRecorder(
+  page: Page,
+  optionsOrExpectedFragments: NetworkRecorderOptions | string[] = [],
+): NetworkRecorder {
+  const options = Array.isArray(optionsOrExpectedFragments)
+    ? { expectedApiFragments: optionsOrExpectedFragments, provenanceRequiredApiFragments: [] }
+    : optionsOrExpectedFragments;
+  const expectedApiFragments = options.expectedApiFragments ?? [];
+  const provenanceRequiredApiFragments = options.provenanceRequiredApiFragments ?? [];
+
   const observed: NetworkObservation[] = [];
   const failed: NetworkObservation[] = [];
   const nonLiveProvenance: ProvenanceObservation[] = [];
@@ -139,8 +196,15 @@ export function attachNetworkRecorder(page: Page, expectedApiFragments: string[]
 
     const inspectBody = response.json()
       .then((body: unknown) => {
-        const classification = classifyProvenance(body);
-        for (const nonLiveValue of classification.nonLiveValues) {
+        const evaluation = evaluateProvenanceRequirement({
+          url,
+          method: row.method,
+          status: row.status,
+          body,
+          provenanceRequiredApiFragments,
+        });
+
+        for (const nonLiveValue of evaluation.nonLiveValues) {
           nonLiveProvenance.push({
             ...nonLiveValue,
             url,
@@ -149,7 +213,7 @@ export function attachNetworkRecorder(page: Page, expectedApiFragments: string[]
           });
         }
 
-        if (!classification.hasProvenance && status < 400) {
+        if (evaluation.missing) {
           missingProvenance.push({
             url,
             method: row.method,
