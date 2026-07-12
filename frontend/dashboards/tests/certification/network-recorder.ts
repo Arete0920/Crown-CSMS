@@ -173,6 +173,26 @@ export function evaluateProvenanceRequirement(params: {
   };
 }
 
+export function shouldRecordMissingProvenanceForNonJson(params: {
+  url: string;
+  status?: number;
+  contentType?: string;
+  provenanceRequiredApiFragments: string[];
+}): boolean {
+  const {
+    url,
+    status,
+    contentType = "",
+    provenanceRequiredApiFragments,
+  } = params;
+
+  return (
+    (status ?? 0) < 400
+    && !contentType.toLowerCase().includes("json")
+    && isProvenanceDesignatedEndpoint(url, provenanceRequiredApiFragments)
+  );
+}
+
 export function attachNetworkRecorder(
   page: Page,
   optionsOrExpectedFragments: NetworkRecorderOptions | string[] = [],
@@ -212,6 +232,18 @@ export function attachNetworkRecorder(
 
     const contentType = response.headers()["content-type"] || "";
     if (!contentType.toLowerCase().includes("json")) {
+      if (shouldRecordMissingProvenanceForNonJson({
+        url,
+        status,
+        contentType,
+        provenanceRequiredApiFragments,
+      })) {
+        missingProvenance.push({
+          url,
+          method: row.method,
+          status: row.status,
+        });
+      }
       return;
     }
 
@@ -238,8 +270,8 @@ export function attachNetworkRecorder(
       })
       .catch(() => {
         if (
-          status < 400 &&
-          isProvenanceDesignatedEndpoint(url, provenanceRequiredApiFragments)
+          status < 400
+          && isProvenanceDesignatedEndpoint(url, provenanceRequiredApiFragments)
         ) {
           missingProvenance.push({
             url,
