@@ -38,6 +38,11 @@ const IGNORED_CONSOLE_PATTERNS = [
   /ResizeObserver loop/,
 ];
 
+const SCAFFOLD_AUTH_API = new Set([
+  "/api/v1/auth/token",
+  "/api/v1/auth/me",
+]);
+
 function mapCertificationRoleToSandboxRole(role: string): string {
   switch (role) {
     case "admin":
@@ -104,7 +109,10 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ wizards: [] }),
+        body: JSON.stringify({
+          wizards: [],
+          meta: { served_from: "scaffold" },
+        }),
       });
     }
 
@@ -126,7 +134,10 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ ok: true }),
+      body: JSON.stringify({
+        ok: true,
+        meta: { served_from: "scaffold" },
+      }),
     });
   });
 }
@@ -196,13 +207,20 @@ for (const surface of certificationMatrix) {
           localStorage.setItem("crown_user_roles", JSON.stringify(sessionData.currentUser.roles));
         }, session);
 
-        const network = attachNetworkRecorder(page, surface.expectedApiFragments ?? []);
+        const expectedApiFragments = (surface.expectedApiFragments ?? []).filter(
+          (fragment) => !SCAFFOLD_AUTH_API.has(fragment),
+        );
+        const network = attachNetworkRecorder(page, {
+          expectedApiFragments,
+          provenanceRequiredApiFragments: surface.provenanceRequiredApiFragments ?? [],
+        });
         const target = surface.route;
 
         await page.goto(target, { waitUntil: "networkidle" });
         await expect(page.locator("body")).toBeVisible();
 
         const accessibility = await runAccessibilityCertification(page);
+        await network.finalize();
         const screenshotPath = screenshotPathFor(surface.id, persona.id, tenant.id);
         await page.screenshot({ path: screenshotPath, fullPage: true });
         await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
@@ -215,6 +233,13 @@ for (const surface of certificationMatrix) {
           surface.expectedText ?? [],
           surface.allowFailedRequests ?? false,
         );
+
+        if (network.missingProvenance.length > 0) {
+          const detail = network.missingProvenance
+            .map((entry) => `${entry.method ?? "GET"} ${entry.url}`)
+            .join(", ");
+          errors.push(`missing scaffold provenance detected: ${detail}`);
+        }
 
         if (!(surface.allowConsoleErrors ?? false) && consoleErrors.length > 0) {
           errors.push(`console errors: ${consoleErrors.length}`);
@@ -233,13 +258,14 @@ for (const surface of certificationMatrix) {
           networkObserved: network.observed.length,
           networkFailed: network.failed.length,
           failedRequests: network.failed,
+          nonLiveProvenance: network.nonLiveProvenance,
+          missingProvenance: network.missingProvenance,
           consoleErrors,
           missingExpectedApis,
           accessibilityViolationDetails: accessibility.violations,
           accessibilityViolations: accessibility.violationCount,
           criticalAccessibilityViolations: accessibility.criticalOrSeriousCount,
         });
-
       });
     }
   }
