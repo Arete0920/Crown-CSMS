@@ -219,7 +219,16 @@ export function attachNetworkRecorder(
         }
       })
       .catch(() => {
-        // A malformed or empty JSON response is handled by the ordinary request/status gates.
+        if (
+          status < 400 &&
+          isProvenanceDesignatedEndpoint(url, provenanceRequiredApiFragments)
+        ) {
+          missingProvenance.push({
+            url,
+            method: row.method,
+            status: row.status,
+          });
+        }
       })
       .finally(() => {
         pendingBodyInspections.delete(inspectBody);
