@@ -16,7 +16,7 @@ export type CertificationSurface = {
 const CORE_TENANTS = ["heritage"];
 const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
 const NAV_API = ["/api/v1/nav"];
-const DASHBOARD_DATA_API = ["/api/dashboards/"];
+const DASHBOARD_DATA_API = ["/api/v1/dashboards/", "/api/dashboards/"];
 const WIZARD_DATA_API = ["/api/v1/wizards"];
 
 export const certificationMatrix: CertificationSurface[] = [
