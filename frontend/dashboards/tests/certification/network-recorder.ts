@@ -112,8 +112,21 @@ export function classifyProvenance(body: unknown): {
   return { hasProvenance, nonLiveValues };
 }
 
+function extractPathname(url: string): string {
+  try {
+    return new URL(url, "http://crown.local").pathname;
+  } catch {
+    return url.split(/[?#]/, 1)[0] ?? "";
+  }
+}
+
 export function isProvenanceDesignatedEndpoint(url: string, fragments: string[]): boolean {
-  return fragments.some((fragment) => url.includes(fragment));
+  const pathname = extractPathname(url);
+
+  return fragments.some((fragment) => {
+    const fragmentPathname = extractPathname(fragment.trim());
+    return fragmentPathname.length > 0 && pathname.includes(fragmentPathname);
+  });
 }
 
 export function evaluateProvenanceRequirement(params: {
