@@ -124,7 +124,12 @@ export function isProvenanceDesignatedEndpoint(url: string, fragments: string[])
   const pathname = extractPathname(url);
 
   return fragments.some((fragment) => {
-    const fragmentPathname = extractPathname(fragment.trim());
+    const trimmedFragment = fragment.trim();
+    if (!trimmedFragment) {
+      return false;
+    }
+
+    const fragmentPathname = extractPathname(trimmedFragment);
     return fragmentPathname.length > 0 && pathname.includes(fragmentPathname);
   });
 }
