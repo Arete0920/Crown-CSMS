@@ -25,6 +25,7 @@ class Command(BaseCommand):
             raise CommandError('--school-id must be a non-empty school identifier.')
 
         attendance_payload = attendance_sample_payload(school_id)
+        attendance_payload['meta']['school_id'] = school_id
         attendance_payload['meta']['served_from'] = 'seed-command'
         attendance_payload['meta']['live_certified'] = False
         attendance_payload['meta']['provenance'] = 'snapshot'
@@ -42,6 +43,7 @@ class Command(BaseCommand):
         )
 
         release_payload = release_reliability_sample_payload(school_id)
+        release_payload['meta']['school_id'] = school_id
         release_payload['meta']['served_from'] = 'seed-command'
         release_payload['meta']['live_certified'] = False
         release_payload['meta']['provenance'] = 'snapshot'
