@@ -240,7 +240,7 @@ class DashboardSummaryView(APIView):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
 
         if key == 'portrait-service':
-            school = _resolve_school_strict(request)
+            school = _resolve_school_strict(request, allow_dev_open_fallback=False)
             if not user_has_permission(user, 'spiritual_life.view', school=school):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
             school_id = str(school.id)
