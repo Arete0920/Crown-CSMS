@@ -50,10 +50,6 @@ def crown_director_allowed(request):
     if getattr(settings, "CROWN_DEV_OPEN_API", False):
         return True
 
-    # Staff/superuser always allowed for director APIs.
-    if user and getattr(user, "is_staff", False):
-        return True
-
     # Superuser always allowed
     if user and getattr(user, "is_superuser", False):
         return True
@@ -809,12 +805,6 @@ def director_actions(request):
     if not getattr(request.user, "is_staff", False) and not getattr(request.user, "is_superuser", False):
         return Response(
             {"error": "Forbidden. Staff access required."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    if not crown_director_allowed(request):
-        return Response(
-            {"error": "Unauthorized. Director access required."},
             status=status.HTTP_403_FORBIDDEN,
         )
 
