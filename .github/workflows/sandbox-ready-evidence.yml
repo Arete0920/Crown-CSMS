@@ -108,6 +108,16 @@ jobs:
           VITE_SANDBOX_MODE: ""
         run: npm run check:shell-certification --if-present
 
+      - name: Run scaffold certification crawler
+        if: steps.changes.outputs.docs_only != 'true'
+        working-directory: frontend/dashboards
+        env:
+          CI: "1"
+          VITE_SANDBOX_READY_ONLY: ""
+          VITE_HIDE_UNREADY_NAV: ""
+          VITE_SANDBOX_MODE: ""
+        run: npm run certify:scaffold-crawler
+
       - name: Sandbox ready static assertions
         if: steps.changes.outputs.docs_only != 'true'
         shell: bash
