@@ -1,9 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { evaluateProvenanceRequirement } from "./network-recorder";
+import {
+  evaluateProvenanceRequirement,
+  isProvenanceDesignatedEndpoint,
+} from "./network-recorder";
+
+const designatedDataApi = ["/api/v1/dashboards/", "/api/dashboards/"];
+
+describe("isProvenanceDesignatedEndpoint", () => {
+  it.each([
+    "/api/v1/dashboards/school-administrator/summary",
+    "/api/dashboards/school-administrator/summary",
+    "https://crown.example/api/v1/dashboards/school-administrator/summary?tenant=heritage",
+  ])("matches a designated dashboard pathname: %s", (url) => {
+    expect(isProvenanceDesignatedEndpoint(url, designatedDataApi)).toBe(true);
+  });
+
+  it.each([
+    "https://crown.example/api/v1/auth/me?next=/api/v1/dashboards/summary",
+    "https://api-v1-dashboards.example/api/v1/auth/me",
+    "/api/v1/nav?returnTo=/api/dashboards/summary",
+  ])("does not match dashboard text outside the pathname: %s", (url) => {
+    expect(isProvenanceDesignatedEndpoint(url, designatedDataApi)).toBe(false);
+  });
+
+  it("ignores empty endpoint fragments", () => {
+    expect(isProvenanceDesignatedEndpoint("/api/v1/auth/me", [""])).toBe(false);
+  });
+});
 
 describe("evaluateProvenanceRequirement", () => {
-  const designatedDataApi = ["/api/dashboards/"];
-
   it("auth JSON without provenance does not fail", () => {
     const result = evaluateProvenanceRequirement({
       url: "/api/v1/auth/me",
@@ -30,9 +55,22 @@ describe("evaluateProvenanceRequirement", () => {
     expect(result.nonLiveValues).toEqual([]);
   });
 
-  it("designated dashboard API JSON without provenance fails", () => {
+  it("designated canonical dashboard API JSON without provenance fails", () => {
     const result = evaluateProvenanceRequirement({
-      url: "/api/dashboards/summary/",
+      url: "/api/v1/dashboards/school-administrator/summary",
+      status: 200,
+      body: { metrics: [] },
+      provenanceRequiredApiFragments: designatedDataApi,
+    });
+
+    expect(result.enforced).toBe(true);
+    expect(result.missing).toBe(true);
+    expect(result.nonLiveValues).toEqual([]);
+  });
+
+  it("designated compatibility dashboard API JSON without provenance fails", () => {
+    const result = evaluateProvenanceRequirement({
+      url: "/api/dashboards/school-administrator/summary",
       status: 200,
       body: { metrics: [] },
       provenanceRequiredApiFragments: designatedDataApi,
@@ -51,7 +89,7 @@ describe("evaluateProvenanceRequirement", () => {
     { provenance: "" },
   ])("blank provenance value is treated as missing: %o", (body) => {
     const result = evaluateProvenanceRequirement({
-      url: "/api/dashboards/summary/",
+      url: "/api/v1/dashboards/school-administrator/summary",
       status: 200,
       body,
       provenanceRequiredApiFragments: designatedDataApi,
@@ -66,7 +104,7 @@ describe("evaluateProvenanceRequirement", () => {
     "designated API with %s provenance fails",
     (value) => {
       const result = evaluateProvenanceRequirement({
-        url: "/api/dashboards/summary/",
+        url: "/api/v1/dashboards/school-administrator/summary",
         status: 200,
         body: { meta: { served_from: value } },
         provenanceRequiredApiFragments: designatedDataApi,
@@ -83,7 +121,7 @@ describe("evaluateProvenanceRequirement", () => {
     "designated API with explicit %s provenance passes",
     (value) => {
       const result = evaluateProvenanceRequirement({
-        url: "/api/dashboards/summary/",
+        url: "/api/v1/dashboards/school-administrator/summary",
         status: 200,
         body: { meta: { served_from: value } },
         provenanceRequiredApiFragments: designatedDataApi,
@@ -97,7 +135,7 @@ describe("evaluateProvenanceRequirement", () => {
 
   it("error responses do not create missing-provenance noise", () => {
     const result = evaluateProvenanceRequirement({
-      url: "/api/dashboards/summary/",
+      url: "/api/v1/dashboards/school-administrator/summary",
       status: 503,
       body: { code: "dashboard_live_data_required" },
       provenanceRequiredApiFragments: designatedDataApi,
