@@ -1,4 +1,4 @@
-name: Sandbox Ready Evidence Gate
+name: Sandbox Ready Evidence Gate # Scope Boundary
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   sandbox-ready-evidence:
-    name: Sandbox Ready Evidence
+    name: Sandbox Ready Evidence # Scope Boundary
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
