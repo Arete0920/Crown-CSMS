@@ -70,13 +70,7 @@ jobs:
           pip install -r backend/requirements.txt
 
       - name: Backend dashboard gate tests
-        shell: bash
-        run: |
-          set +e
-          python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py -q 2>&1 | tee sandbox-backend-pytest.log
-          pytest_exit=${PIPESTATUS[0]}
-          set -e
-          exit "$pytest_exit"
+        run: python -m pytest backend/crown_api/tests/test_dashboard_snapshot_summary_api.py -q
 
       - name: Setup Node.js
         if: steps.changes.outputs.docs_only != 'true'
@@ -287,7 +281,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
           path: |
-            sandbox-backend-pytest.log
             crown-audit-export/**
             audit-artifacts/**
             frontend/dashboards/test-results/**
