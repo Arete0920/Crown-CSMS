@@ -50,6 +50,10 @@ def crown_director_allowed(request):
     if getattr(settings, "CROWN_DEV_OPEN_API", False):
         return True
 
+    # Staff/superuser always allowed for director APIs.
+    if user and getattr(user, "is_staff", False):
+        return True
+
     # Superuser always allowed
     if user and getattr(user, "is_superuser", False):
         return True
