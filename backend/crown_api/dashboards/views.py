@@ -1,98 +1,40 @@
-from copy import deepcopy
-import os
+from __future__ import annotations
+
+import uuid as _uuid
 
 from django.conf import settings
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import NotFound, ValidationError
+from django.http import JsonResponse
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-
-class DevOpenApiPermissions:
-    """Allow local/dev access when the project explicitly enables it."""
-
-    @staticmethod
-    def has_permission(request, view):
-        if _dev_open_api_enabled():
-            return True
-        return IsAuthenticated().has_permission(request, view)
-
-from core.permissions import user_has_permission
-
-from .models import DashboardSnapshot
-from .payload_contract import validate_dashboard_payload
-from .sample_payloads import SAMPLE_PAYLOAD_BUILDERS
-from .batch5_extra_payloads import BATCH5_EXTRA_PAYLOAD_BUILDERS
-import uuid as _uuid
+from crown_api.dashboards.models import DashboardSnapshot
+from crown_api.dashboards.sample_payloads import (
+    attendance_sample_payload,
+    release_reliability_sample_payload,
+)
 
 
-DASHBOARD_PAYLOAD_BUILDERS = {
-    **SAMPLE_PAYLOAD_BUILDERS,
-    **BATCH5_EXTRA_PAYLOAD_BUILDERS,
-}
-
-STAFF_ONLY_DASHBOARDS = frozenset({
-    'dashboard-certification-center',
-})
-
-STRICT_TENANT_DASHBOARDS = frozenset({
-    'athletics-director',
-    'compliance-audit',
-    'data-migration',
-    'extended-care',
-    'implementation-success',
-    'integrations-automation',
-    'master-control',
-    'revenue-operations',
-    'summer-camp',
-})
+def _request_user_is_authenticated(request):
+    user = getattr(request, 'user', None)
+    return bool(user and getattr(user, 'is_authenticated', False))
 
 
-def _env_flag(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return str(raw).strip().lower() in {'1', 'true', 'yes', 'y', 'on'}
+def _dev_open_api_enabled():
+    return bool(getattr(settings, 'CROWN_DEV_OPEN_API', False))
 
 
-def _is_production_runtime() -> bool:
-    env = (
-        str(getattr(settings, 'CROWN_ENV', '') or '')
-        or str(getattr(settings, 'DJANGO_ENV', '') or '')
-        or str(getattr(settings, 'ENVIRONMENT', '') or '')
-        or str(os.getenv('CROWN_ENV', '') or '')
-        or str(os.getenv('DJANGO_ENV', '') or '')
-        or str(os.getenv('ENVIRONMENT', '') or '')
-        or str(os.getenv('AZURE_ENVIRONMENT', '') or '')
-    ).strip().lower()
-    return env in {'prod', 'production', 'live'} or bool(os.getenv('WEBSITE_HOSTNAME'))
+def _allow_sample_dashboard_payloads():
+    return bool(getattr(settings, 'CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', False))
 
 
-def _dev_open_api_enabled() -> bool:
-    # Never allow dev-open bypass in production-like runtimes.
-    return bool(getattr(settings, 'CROWN_DEV_OPEN_API', False)) and not _is_production_runtime()
-
-
-def _sample_dashboard_payloads_allowed() -> bool:
-    """
-    Allow sample dashboard payloads only when the environment explicitly says so
-    or when the runtime is clearly non-production.
-
-    This prevents a production or full-completion certification lane from getting
-    HTTP 200 dashboard summaries backed only by SAMPLE_PAYLOAD_BUILDERS.
-    """
-    if _env_flag('CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', default=False):
-        return True
-
-    if bool(getattr(settings, 'CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', False)):
-        return True
-
-    if _is_production_runtime():
-        return False
-
-    return True
+def _require_dashboard_authentication(request):
+    if _request_user_is_authenticated(request):
+        return
+    if _dev_open_api_enabled():
+        return
+    raise PermissionDenied({'detail': 'Authentication credentials were not provided.'})
 
 
 def _school_id_from_request(request):
@@ -111,7 +53,7 @@ def _resolve_school_strict(
     require_user_school_binding=False,
     allow_dev_open_fallback=True,
 ):
-    """Resolve school from X-School-Id header only; never uses user.school_id fallback."""
+    """Resolve an explicit X-School-Id tenant; dev-open may optionally use the configured demo school."""
     from core.models import School
     raw = request.META.get('HTTP_X_SCHOOL_ID', '').strip()
     if not raw:
@@ -133,167 +75,97 @@ def _resolve_school_strict(
     # master-control additionally requires an explicit user-school binding.
     user = getattr(request, 'user', None)
     if user and getattr(user, 'is_authenticated', False):
-        if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
-            user_school_id = getattr(user, 'school_id', None)
-            if require_user_school_binding and not user_school_id:
-                raise NotFound({"detail": "Not found."})
-            if user_school_id and str(user_school_id) != str(school_id):
-                raise NotFound({"detail": "Not found."})
+        user_school_id = getattr(user, 'school_id', None)
+        if require_user_school_binding and not user_school_id:
+            raise PermissionDenied({"detail": "Authenticated user is not assigned to a school."})
+        if not getattr(user, 'is_staff', False) and user_school_id and str(user_school_id) != str(school.id):
+            raise PermissionDenied({"detail": "Cross-tenant access denied."})
     return school
 
 
-@api_view(['GET'])
-@permission_classes([DevOpenApiPermissions])
-def dashboard_me(request):
-    """Return the current school context and roles for the requesting user."""
-    school = _resolve_school_strict(request)
-    from core.models import UserRole
-
-    user = getattr(request, 'user', None)
-    roles = []
-    if user and getattr(user, 'is_authenticated', False):
-        roles = list(
-            UserRole.objects.filter(user=user, school=school).values_list('role_code', flat=True)
-        )
-        if not roles:
-            # User associated with school via school_id field — include implicit identity
-            user_school_id = getattr(user, 'school_id', None)
-            if user_school_id and str(user_school_id) == str(school.id):
-                roles = ['SCHOOL_MEMBER']
-
-    return Response({
-        "school_id": str(school.id),
-        "roles": roles,
-        "default_route": "/director/",
-        "features": [],
-    })
+def _live_snapshot_or_none(*, school_id, dashboard_key):
+    return DashboardSnapshot.objects.filter(
+        school_id=str(school_id),
+        dashboard_key=dashboard_key,
+        source='live',
+    ).order_by('-created_at').first()
 
 
-@api_view(['GET'])
-@permission_classes([DevOpenApiPermissions])
-def dashboard_summary(request):
-    """Return dashboard summary widgets for the school."""
-    school = _resolve_school_strict(request)
-    widgets = [
+def _snapshot_response(snapshot):
+    payload = dict(snapshot.payload or {})
+    meta = dict(payload.get('meta') or {})
+    meta['served_from'] = 'live_db'
+    meta['provenance'] = 'live_db'
+    meta['live_certified'] = True
+    meta['school_id'] = str(snapshot.school_id)
+    payload['meta'] = meta
+    return Response(payload)
+
+
+def _unavailable_response(*, school_id, dashboard_key):
+    return Response(
         {
-            "key": "quick_actions",
-            "type": "quick_actions",
-            "title": "Quick Actions",
-            "size": "sm",
-            "priority": 1,
-            "data": {},
-        }
-    ]
-    return Response({
-        "school_id": str(school.id),
-        "widgets": widgets,
-    })
+            'detail': 'Live dashboard data is unavailable.',
+            'code': 'dashboard_live_data_required',
+            'dashboard_key': dashboard_key,
+            'school_id': str(school_id),
+            'meta': {
+                'served_from': 'unavailable',
+                'provenance': 'unavailable',
+                'live_certified': False,
+                'school_id': str(school_id),
+            },
+        },
+        status=503,
+    )
 
 
-@api_view(['GET'])
-@permission_classes([DevOpenApiPermissions])
-def dashboard_drilldown(request):
-    """Return drilldown data for a specific dashboard widget."""
-    school = _resolve_school_strict(request)
-    widget = request.query_params.get('widget', '').strip()
-    if not widget:
-        return Response({"detail": "widget parameter is required."}, status=400)
-    return Response({
-        "widget": widget,
-        "school_id": str(school.id),
-        "rows": [],
-        "page": 1,
-    })
+def _dashboard_payload_response(*, school_id, dashboard_key, sample_factory):
+    snapshot = _live_snapshot_or_none(school_id=school_id, dashboard_key=dashboard_key)
+    if snapshot is not None:
+        return _snapshot_response(snapshot)
+
+    if not _allow_sample_dashboard_payloads():
+        return _unavailable_response(school_id=school_id, dashboard_key=dashboard_key)
+
+    payload = sample_factory(str(school_id))
+    meta = dict(payload.get('meta') or {})
+    meta['served_from'] = 'sample'
+    meta['provenance'] = 'sample'
+    meta['live_certified'] = False
+    meta['school_id'] = str(school_id)
+    payload['meta'] = meta
+    return Response(payload)
 
 
-@api_view(['GET'])
-@permission_classes([DevOpenApiPermissions])
-def dashboard_alerts(request):
-    """Return school-level alerts."""
-    _resolve_school_strict(request)
-    return Response({
-        "alerts": [],
-    })
+class AttendanceDashboardSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        _require_dashboard_authentication(request)
+        school = _resolve_school_strict(request, allow_dev_open_fallback=False)
+        return _dashboard_payload_response(
+            school_id=school.id,
+            dashboard_key='attendance',
+            sample_factory=attendance_sample_payload,
+        )
 
 
-class DashboardSummaryView(APIView):
-    permission_classes = [DevOpenApiPermissions]
+class ReleaseReliabilityDashboardSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def get(self, request, dashboard_key):
-        key = str(dashboard_key).strip().lower()
-        user = getattr(request, 'user', None)
+    def get(self, request):
+        _require_dashboard_authentication(request)
+        school = _resolve_school_strict(request, allow_dev_open_fallback=False)
+        return _dashboard_payload_response(
+            school_id=school.id,
+            dashboard_key='release-reliability',
+            sample_factory=release_reliability_sample_payload,
+        )
 
-        # Summary payloads are data-bearing surfaces. They must never use the
-        # local dev-open bypass because doing so can expose sample or snapshot
-        # data before authentication and can return tenant-validation errors
-        # before the authentication boundary is evaluated.
-        if not user or not getattr(user, 'is_authenticated', False):
-            return Response(
-                {'detail': 'Authentication credentials were not provided.'},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
 
-        school_id = _school_id_from_request(request)
+class DashboardHealthView(APIView):
+    permission_classes = []
 
-        if key in STAFF_ONLY_DASHBOARDS:
-            if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
-                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
-
-        if key == 'portrait-service':
-            school = _resolve_school_strict(request)
-            if not user_has_permission(user, 'spiritual_life.view', school=school):
-                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
-            school_id = str(school.id)
-
-        if key in STRICT_TENANT_DASHBOARDS:
-            school = _resolve_school_strict(
-                request,
-                require_user_school_binding=(key == 'master-control'),
-                allow_dev_open_fallback=False,
-            )
-            school_id = str(school.id)
-
-        if key not in DASHBOARD_PAYLOAD_BUILDERS:
-            return Response(
-                {
-                    'code': 'unknown_dashboard',
-                    'message': f'No dashboard payload contract registered for "{key}".',
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        snapshot = DashboardSnapshot.objects.filter(
-            school_id=school_id,
-            dashboard_key=key,
-        ).first()
-
-        if snapshot:
-            payload = deepcopy(snapshot.payload or {})
-            payload.setdefault('meta', {})
-            payload['meta']['served_from'] = 'snapshot'
-            payload['meta']['snapshot_updated_at'] = snapshot.updated_at.isoformat()
-            payload['meta']['snapshot_source'] = snapshot.source
-            payload['meta']['school_id'] = school_id
-            validate_dashboard_payload(payload)
-            return Response(payload, status=status.HTTP_200_OK)
-
-        if not _sample_dashboard_payloads_allowed():
-            return Response(
-                {
-                    'code': 'dashboard_live_data_required',
-                    'message': f'No live or snapshot payload is available for "{key}" in this environment.',
-                    'dashboard_key': key,
-                    'school_id': school_id,
-                    'required_resolution': 'Create a live dashboard service or certified DashboardSnapshot before production/full-completion certification.',
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-
-        payload = DASHBOARD_PAYLOAD_BUILDERS[key](school_id)
-        payload = deepcopy(payload)
-        payload.setdefault('meta', {})
-        payload['meta'].setdefault('served_from', 'sample')
-        payload['meta']['school_id'] = school_id
-        payload['meta']['sample_payload_allowed'] = True
-        validate_dashboard_payload(payload)
-        return Response(payload, status=status.HTTP_200_OK)
+    def get(self, request):
+        return JsonResponse({'status': 'ok'})
