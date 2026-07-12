@@ -38,6 +38,11 @@ const IGNORED_CONSOLE_PATTERNS = [
   /ResizeObserver loop/,
 ];
 
+const SCAFFOLD_AUTH_API = new Set([
+  "/api/v1/auth/token",
+  "/api/v1/auth/me",
+]);
+
 function mapCertificationRoleToSandboxRole(role: string): string {
   switch (role) {
     case "admin":
@@ -202,8 +207,11 @@ for (const surface of certificationMatrix) {
           localStorage.setItem("crown_user_roles", JSON.stringify(sessionData.currentUser.roles));
         }, session);
 
+        const expectedApiFragments = (surface.expectedApiFragments ?? []).filter(
+          (fragment) => !SCAFFOLD_AUTH_API.has(fragment),
+        );
         const network = attachNetworkRecorder(page, {
-          expectedApiFragments: surface.expectedApiFragments ?? [],
+          expectedApiFragments,
           provenanceRequiredApiFragments: surface.provenanceRequiredApiFragments ?? [],
         });
         const target = surface.route;
