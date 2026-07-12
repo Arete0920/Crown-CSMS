@@ -105,12 +105,17 @@ def _school_id_from_request(request):
     return value or 'heritage-demo'
 
 
-def _resolve_school_strict(request, *, require_user_school_binding=False):
-    """Resolve school from X-School-Id header only; never uses user.school_id fallback."""
+def _resolve_school_strict(
+    request,
+    *,
+    require_user_school_binding=False,
+    allow_dev_open_fallback=True,
+):
+    """Resolve X-School-Id; an optional dev-open fallback may use the configured demo school."""
     from core.models import School
     raw = request.META.get('HTTP_X_SCHOOL_ID', '').strip()
     if not raw:
-        if _dev_open_api_enabled():
+        if allow_dev_open_fallback and _dev_open_api_enabled():
             demo_school_id = getattr(settings, 'CROWN_DEMO_SCHOOL_ID', None) or '11111111-1111-1111-1111-111111111111'
             school = School.objects.filter(pk=demo_school_id).first()
             if school is None:
@@ -216,20 +221,26 @@ class DashboardSummaryView(APIView):
 
     def get(self, request, dashboard_key):
         key = str(dashboard_key).strip().lower()
+        user = getattr(request, 'user', None)
+
+        # Summary payloads are data-bearing surfaces. They must never use the
+        # local dev-open bypass because doing so can expose sample or snapshot
+        # data before authentication and can return tenant-validation errors
+        # before the authentication boundary is evaluated.
+        if not user or not getattr(user, 'is_authenticated', False):
+            return Response(
+                {'detail': 'Authentication credentials were not provided.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         school_id = _school_id_from_request(request)
 
         if key in STAFF_ONLY_DASHBOARDS:
-            user = getattr(request, 'user', None)
-            if not user or not getattr(user, 'is_authenticated', False):
-                return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
             if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
 
         if key == 'portrait-service':
-            school = _resolve_school_strict(request)
-            user = getattr(request, 'user', None)
-            if not user or not getattr(user, 'is_authenticated', False):
-                return Response({'detail': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+            school = _resolve_school_strict(request, allow_dev_open_fallback=False)
             if not user_has_permission(user, 'spiritual_life.view', school=school):
                 return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
             school_id = str(school.id)
@@ -238,6 +249,7 @@ class DashboardSummaryView(APIView):
             school = _resolve_school_strict(
                 request,
                 require_user_school_binding=(key == 'master-control'),
+                allow_dev_open_fallback=False,
             )
             school_id = str(school.id)
 

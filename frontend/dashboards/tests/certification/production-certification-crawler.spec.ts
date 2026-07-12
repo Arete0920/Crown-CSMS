@@ -497,7 +497,10 @@ for (const surface of certificationMatrix) {
         });
 
         const expectedFragments = [...(surface.expectedApiFragments ?? [])];
-        const network = attachNetworkRecorder(page, expectedFragments);
+        const network = attachNetworkRecorder(page, {
+          expectedApiFragments: expectedFragments,
+          provenanceRequiredApiFragments: surface.provenanceRequiredApiFragments ?? [],
+        });
         const errors: string[] = [];
 
         try {
@@ -509,6 +512,7 @@ for (const surface of certificationMatrix) {
         }
 
         const accessibility = await runAccessibilityCertification(page);
+        await network.finalize();
         const screenshotPath = screenshotPathFor(surface.id, persona.id, tenant.id);
         await page.screenshot({ path: screenshotPath, fullPage: true });
         await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
@@ -546,6 +550,20 @@ for (const surface of certificationMatrix) {
           errors.push(`failed non-API network requests: ${nonApiFailedRequests.length}`);
         }
 
+        if ((surface.requireLiveProvenance ?? true) && network.nonLiveProvenance.length > 0) {
+          const detail = network.nonLiveProvenance
+            .map((entry) => `${entry.value} via ${entry.source}`)
+            .join(", ");
+          errors.push(`non-live provenance detected: ${detail}`);
+        }
+
+        if ((surface.requireLiveProvenance ?? true) && network.missingProvenance.length > 0) {
+          const detail = network.missingProvenance
+            .map((entry) => `${entry.method ?? "GET"} ${entry.url}`)
+            .join(", ");
+          errors.push(`missing provenance detected: ${detail}`);
+        }
+
         const missingExpectedApis = network.missingExpected().filter(
           (fragment) => !(authMode !== "credentials" && AUTH_API.includes(fragment)),
         );
@@ -564,6 +582,8 @@ for (const surface of certificationMatrix) {
           networkObserved: network.observed.length,
           networkFailed: failedRequests.length,
           failedRequests,
+          nonLiveProvenance: network.nonLiveProvenance,
+          missingProvenance: network.missingProvenance,
           consoleErrors,
           missingExpectedApis,
           accessibilityViolationDetails: accessibility.violations,
