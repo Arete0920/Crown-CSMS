@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from crown_api.dashboards.models import DashboardSnapshot
 from crown_api.dashboards.sample_payloads import (
@@ -19,7 +19,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        school_id = str(options['school_id']).strip()
+        raw_school_id = options.get('school_id')
+        school_id = '' if raw_school_id is None else str(raw_school_id).strip()
+        if not school_id:
+            raise CommandError('--school-id must be a non-empty school identifier.')
 
         attendance_payload = attendance_sample_payload(school_id)
         attendance_payload['meta']['served_from'] = 'seed-command'
@@ -38,7 +41,7 @@ class Command(BaseCommand):
             },
         )
 
-        release_payload = release_reliability_sample_payload('platform')
+        release_payload = release_reliability_sample_payload(school_id)
         release_payload['meta']['served_from'] = 'seed-command'
         release_payload['meta']['live_certified'] = False
         release_payload['meta']['provenance'] = 'snapshot'
