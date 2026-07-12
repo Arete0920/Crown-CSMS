@@ -104,7 +104,10 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
       return route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ wizards: [] }),
+        body: JSON.stringify({
+          wizards: [],
+          meta: { served_from: "scaffold" },
+        }),
       });
     }
 
@@ -126,7 +129,10 @@ async function installCertificationApiStubs(page: Page, role: string, schoolId: 
     return route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ ok: true }),
+      body: JSON.stringify({
+        ok: true,
+        meta: { served_from: "scaffold" },
+      }),
     });
   });
 }
@@ -206,6 +212,7 @@ for (const surface of certificationMatrix) {
         await expect(page.locator("body")).toBeVisible();
 
         const accessibility = await runAccessibilityCertification(page);
+        await network.finalize();
         const screenshotPath = screenshotPathFor(surface.id, persona.id, tenant.id);
         await page.screenshot({ path: screenshotPath, fullPage: true });
         await testInfo.attach("certification-screenshot", { path: screenshotPath, contentType: "image/png" });
@@ -218,6 +225,13 @@ for (const surface of certificationMatrix) {
           surface.expectedText ?? [],
           surface.allowFailedRequests ?? false,
         );
+
+        if (network.missingProvenance.length > 0) {
+          const detail = network.missingProvenance
+            .map((entry) => `${entry.method ?? "GET"} ${entry.url}`)
+            .join(", ");
+          errors.push(`missing scaffold provenance detected: ${detail}`);
+        }
 
         if (!(surface.allowConsoleErrors ?? false) && consoleErrors.length > 0) {
           errors.push(`console errors: ${consoleErrors.length}`);
@@ -236,13 +250,14 @@ for (const surface of certificationMatrix) {
           networkObserved: network.observed.length,
           networkFailed: network.failed.length,
           failedRequests: network.failed,
+          nonLiveProvenance: network.nonLiveProvenance,
+          missingProvenance: network.missingProvenance,
           consoleErrors,
           missingExpectedApis,
           accessibilityViolationDetails: accessibility.violations,
           accessibilityViolations: accessibility.violationCount,
           criticalAccessibilityViolations: accessibility.criticalOrSeriousCount,
         });
-
       });
     }
   }
