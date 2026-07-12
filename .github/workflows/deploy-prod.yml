@@ -311,6 +311,7 @@ jobs:
           fi
 
       - name: Deploy to Azure Web App
+        id: deploy_webapp
         uses: azure/webapps-deploy@b733af8291ed8f84a5ac5b92f571c2e149f25047 # v2
         with:
           app-name: ${{ env.WEBAPP_NAME }}
@@ -617,12 +618,10 @@ jobs:
           echo "OK: Deployment successful"
           echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
 
-      - name: Rollback on failure
-        if: failure()
+      - name: Rollback on deploy failure
+        if: ${{ failure() && steps.deploy_webapp.outcome == 'failure' }}
         run: |
-          echo "ERROR: Deployment failed - rolling back"
-          # Azure will handle automatic rollback based on health check
-          exit 1
+          echo "ERROR: Deploy step failed. Automatic platform recovery/rollback policy applies."
 
   notification:
     needs: build-and-deploy

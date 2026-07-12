@@ -46,9 +46,9 @@ def required_env(name: str) -> str:
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Dev API open toggle (development only). Default closed when running on Azure.
+# Dev API open toggle (development only). Default closed unless explicitly enabled.
 _is_azure = bool(os.getenv("WEBSITE_HOSTNAME") or os.getenv("WEBSITE_INSTANCE_ID"))
-CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=not _is_azure)
+CROWN_DEV_OPEN_API = _env_bool("CROWN_DEV_OPEN_API", default=False)
 
 # SOLOMON read-only API gate. Keep closed until Phase 3 is explicitly enabled.
 CROWN_SOLOMON_API_ENABLED = _env_bool("CROWN_SOLOMON_API_ENABLED", default=False)
