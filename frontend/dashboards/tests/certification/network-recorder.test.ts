@@ -43,7 +43,26 @@ describe("evaluateProvenanceRequirement", () => {
     expect(result.nonLiveValues).toEqual([]);
   });
 
-  it.each(["snapshot", "sample", "fallback", "unknown"])(
+  it.each([
+    { meta: { served_from: null } },
+    { meta: { served_from: "" } },
+    { meta: { served_from: "   " } },
+    { meta: { provenance: null } },
+    { provenance: "" },
+  ])("blank provenance value is treated as missing: %o", (body) => {
+    const result = evaluateProvenanceRequirement({
+      url: "/api/dashboards/summary/",
+      status: 200,
+      body,
+      provenanceRequiredApiFragments: designatedDataApi,
+    });
+
+    expect(result.enforced).toBe(true);
+    expect(result.missing).toBe(true);
+    expect(result.nonLiveValues).toEqual([]);
+  });
+
+  it.each(["snapshot", "sample", "fallback", "unknown", "seed-command", "scaffold", "cached"])(
     "designated API with %s provenance fails",
     (value) => {
       const result = evaluateProvenanceRequirement({
@@ -60,11 +79,27 @@ describe("evaluateProvenanceRequirement", () => {
     },
   );
 
-  it("designated API with explicit live provenance passes", () => {
+  it.each(["live", "live_db"])(
+    "designated API with explicit %s provenance passes",
+    (value) => {
+      const result = evaluateProvenanceRequirement({
+        url: "/api/dashboards/summary/",
+        status: 200,
+        body: { meta: { served_from: value } },
+        provenanceRequiredApiFragments: designatedDataApi,
+      });
+
+      expect(result.enforced).toBe(true);
+      expect(result.missing).toBe(false);
+      expect(result.nonLiveValues).toEqual([]);
+    },
+  );
+
+  it("error responses do not create missing-provenance noise", () => {
     const result = evaluateProvenanceRequirement({
       url: "/api/dashboards/summary/",
-      status: 200,
-      body: { meta: { served_from: "live_db" } },
+      status: 503,
+      body: { code: "dashboard_live_data_required" },
       provenanceRequiredApiFragments: designatedDataApi,
     });
 
