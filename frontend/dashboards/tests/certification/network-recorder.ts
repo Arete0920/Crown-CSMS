@@ -35,7 +35,7 @@ export type NetworkRecorderOptions = {
   provenanceRequiredApiFragments?: string[];
 };
 
-const NON_LIVE_PROVENANCE_VALUES = new Set(["snapshot", "sample", "fallback", "unknown"]);
+const LIVE_PROVENANCE_VALUES = new Set(["live", "live_db"]);
 
 function normalizeProvenanceValue(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -46,24 +46,28 @@ function normalizeProvenanceValue(value: unknown): string | null {
   return normalized || null;
 }
 
-function recordIfNonLive(
+function classifyProvenanceValue(
   target: ProvenanceObservation[],
   row: NetworkObservation,
   value: unknown,
   source: ProvenanceObservation["source"],
-): void {
+): boolean {
   const normalized = normalizeProvenanceValue(value);
-  if (!normalized || !NON_LIVE_PROVENANCE_VALUES.has(normalized)) {
-    return;
+  if (!normalized) {
+    return false;
   }
 
-  target.push({
-    url: row.url,
-    method: row.method,
-    status: row.status,
-    value: normalized,
-    source,
-  });
+  if (!LIVE_PROVENANCE_VALUES.has(normalized)) {
+    target.push({
+      url: row.url,
+      method: row.method,
+      status: row.status,
+      value: normalized,
+      source,
+    });
+  }
+
+  return true;
 }
 
 export function classifyProvenance(body: unknown): {
@@ -81,30 +85,29 @@ export function classifyProvenance(body: unknown): {
   const meta = metaCandidate && typeof metaCandidate === "object"
     ? (metaCandidate as Record<string, unknown>)
     : null;
+  const emptyRow: NetworkObservation = { url: "" };
 
-  let hasProvenance = false;
+  const provenanceValues: Array<{
+    value: unknown;
+    source: ProvenanceObservation["source"];
+  }> = [];
 
   if (meta) {
-    if (meta.served_from !== undefined) {
-      hasProvenance = true;
-    }
-    if (meta.provenance !== undefined) {
-      hasProvenance = true;
-    }
-    if (meta.source !== undefined) {
-      hasProvenance = true;
-    }
-
-    recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, meta.served_from, "meta.served_from");
-    recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, meta.provenance, "meta.provenance");
-    recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, meta.source, "meta.source");
+    provenanceValues.push(
+      { value: meta.served_from, source: "meta.served_from" },
+      { value: meta.provenance, source: "meta.provenance" },
+      { value: meta.source, source: "meta.source" },
+    );
   }
 
-  if (root.provenance !== undefined) {
-    hasProvenance = true;
-  }
+  provenanceValues.push({ value: root.provenance, source: "root.provenance" });
 
-  recordIfNonLive(nonLiveValues, { url: "", method: undefined, status: undefined }, root.provenance, "root.provenance");
+  let hasProvenance = false;
+  for (const entry of provenanceValues) {
+    if (classifyProvenanceValue(nonLiveValues, emptyRow, entry.value, entry.source)) {
+      hasProvenance = true;
+    }
+  }
 
   return { hasProvenance, nonLiveValues };
 }
@@ -166,7 +169,7 @@ export function attachNetworkRecorder(
   const failed: NetworkObservation[] = [];
   const nonLiveProvenance: ProvenanceObservation[] = [];
   const missingProvenance: MissingProvenanceObservation[] = [];
-  const pendingBodyInspections: Array<Promise<void>> = [];
+  const pendingBodyInspections = new Set<Promise<void>>();
 
   page.on("response", (response: Response) => {
     const url = response.url();
@@ -177,7 +180,7 @@ export function attachNetworkRecorder(
       return;
     }
 
-    const row = {
+    const row: NetworkObservation = {
       url,
       status,
       method: response.request().method(),
@@ -190,11 +193,12 @@ export function attachNetworkRecorder(
     }
 
     const contentType = response.headers()["content-type"] || "";
-    if (!contentType.toLowerCase().includes("application/json")) {
+    if (!contentType.toLowerCase().includes("json")) {
       return;
     }
 
-    const inspectBody = response.json()
+    let inspectBody: Promise<void>;
+    inspectBody = response.json()
       .then((body: unknown) => {
         const evaluation = evaluateProvenanceRequirement({
           url,
@@ -204,14 +208,7 @@ export function attachNetworkRecorder(
           provenanceRequiredApiFragments,
         });
 
-        for (const nonLiveValue of evaluation.nonLiveValues) {
-          nonLiveProvenance.push({
-            ...nonLiveValue,
-            url,
-            method: row.method,
-            status: row.status,
-          });
-        }
+        nonLiveProvenance.push(...evaluation.nonLiveValues);
 
         if (evaluation.missing) {
           missingProvenance.push({
@@ -222,10 +219,13 @@ export function attachNetworkRecorder(
         }
       })
       .catch(() => {
-        // Not all API responses are JSON objects with provenance metadata.
+        // A malformed or empty JSON response is handled by the ordinary request/status gates.
+      })
+      .finally(() => {
+        pendingBodyInspections.delete(inspectBody);
       });
 
-    pendingBodyInspections.push(inspectBody);
+    pendingBodyInspections.add(inspectBody);
   });
 
   page.on("requestfailed", (request: Request) => {
@@ -255,7 +255,9 @@ export function attachNetworkRecorder(
       );
     },
     finalize: async () => {
-      await Promise.allSettled(pendingBodyInspections);
+      while (pendingBodyInspections.size > 0) {
+        await Promise.allSettled([...pendingBodyInspections]);
+      }
     },
   };
 }
