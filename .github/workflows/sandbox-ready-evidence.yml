@@ -1,4 +1,4 @@
-name: Sandbox Ready Evidence Gate
+name: Sandbox Evidence Gate
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   sandbox-ready-evidence:
-    name: Sandbox Ready Evidence
+    name: Sandbox Evidence
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -118,7 +118,7 @@ jobs:
           VITE_SANDBOX_MODE: ""
         run: npm run certify:scaffold-crawler
 
-      - name: Sandbox ready static assertions
+      - name: Sandbox static assertions
         if: steps.changes.outputs.docs_only != 'true'
         shell: bash
         run: |
@@ -287,7 +287,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: sandbox-ready-evidence-${{ github.run_number }}-${{ github.sha }}
+          name: sandbox-evidence-${{ github.run_number }}-${{ github.sha }}
           if-no-files-found: warn
           retention-days: 14
           path: |
