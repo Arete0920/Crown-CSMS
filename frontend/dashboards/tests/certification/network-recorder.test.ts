@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   evaluateProvenanceRequirement,
   isProvenanceDesignatedEndpoint,
+  shouldRecordMissingProvenanceForNonJson,
 } from "./network-recorder";
 
 const designatedDataApi = ["/api/v1/dashboards/", "/api/dashboards/"];
@@ -25,6 +26,38 @@ describe("isProvenanceDesignatedEndpoint", () => {
 
   it("ignores empty endpoint fragments", () => {
     expect(isProvenanceDesignatedEndpoint("/api/v1/auth/me", [""])).toBe(false);
+  });
+});
+
+describe("shouldRecordMissingProvenanceForNonJson", () => {
+  it.each(["text/html", "text/plain", ""])(
+    "fails closed for designated successful non-JSON responses: %s",
+    (contentType) => {
+      expect(shouldRecordMissingProvenanceForNonJson({
+        url: "/api/v1/dashboards/school-administrator/summary",
+        status: 200,
+        contentType,
+        provenanceRequiredApiFragments: designatedDataApi,
+      })).toBe(true);
+    },
+  );
+
+  it("does not add provenance noise for designated error responses", () => {
+    expect(shouldRecordMissingProvenanceForNonJson({
+      url: "/api/v1/dashboards/school-administrator/summary",
+      status: 502,
+      contentType: "text/html",
+      provenanceRequiredApiFragments: designatedDataApi,
+    })).toBe(false);
+  });
+
+  it("does not enforce provenance on non-designated non-JSON responses", () => {
+    expect(shouldRecordMissingProvenanceForNonJson({
+      url: "/api/v1/auth/me",
+      status: 200,
+      contentType: "text/html",
+      provenanceRequiredApiFragments: designatedDataApi,
+    })).toBe(false);
   });
 });
 
