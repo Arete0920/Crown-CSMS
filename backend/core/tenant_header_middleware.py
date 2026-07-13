@@ -122,10 +122,7 @@ class TenantHeaderRequiredMiddleware:
                 user = getattr(request, "user", None)
                 if not user or not getattr(user, "is_authenticated", False):
                     return JsonResponse(
-                        {
-                            "detail": "Authentication credentials were not provided.",
-                            "code": "not_authenticated",
-                        },
+                        {"detail": "Authentication credentials were not provided."},
                         status=401,
                     )
 
