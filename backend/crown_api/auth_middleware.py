@@ -15,6 +15,7 @@ from crown_api.jwt_utils import _b64url_decode, decode_access
 
 
 MUTATING_METHODS = {"POST"}
+LEDGER_MUTATING_DIRECTOR_ACTIONS = {"POST_ACCEPTED_AWARDS"}
 
 
 def _is_crown_access_token(token: str) -> bool:
@@ -88,7 +89,7 @@ def authenticate_crown_access_token(token: str):
 
 
 def _director_actions_target_school_id(request):
-    """Resolve and validate the school targeted by a director action request."""
+    """Resolve the school targeted by ledger-mutating director actions only."""
     try:
         raw_body = request.body or b"{}"
         payload = json.loads(raw_body.decode("utf-8"))
@@ -97,6 +98,10 @@ def _director_actions_target_school_id(request):
 
     if not isinstance(payload, dict):
         return None, JsonResponse({"detail": "JSON body must be an object."}, status=400)
+
+    action = str(payload.get("action") or "").strip()
+    if action not in LEDGER_MUTATING_DIRECTOR_ACTIONS:
+        return None, None
 
     raw_target_school_id = str(payload.get("school_id") or "").strip()
     if not raw_target_school_id:
@@ -219,6 +224,10 @@ class JwtAuthMiddleware:
             target_school_id, error_response = _director_actions_target_school_id(request)
             if error_response is not None:
                 return _audit_early_director_response(request, error_response)
+
+            # Non-ledger director actions retain their existing view-level contract.
+            if target_school_id is None:
+                return self.get_response(request)
 
             if not _director_actions_allowed(user, target_school_id):
                 response = JsonResponse(
