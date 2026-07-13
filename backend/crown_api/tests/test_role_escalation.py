@@ -2,12 +2,13 @@
 Security tests: Role escalation prevention.
 
 Verifies that a normal user cannot elevate their own role or another user's
-role through the API.  These tests exercise permission-layer hardening
+role through the API. These tests exercise permission-layer hardening
 (Stage 1 Security Hardening — OWASP A01:2021 Broken Access Control).
 """
-import pytest
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
+
+from core.models import School
 
 User = get_user_model()
 
@@ -21,6 +22,7 @@ class RoleEscalationTests(TestCase):
             email="normal@test.com",
             password="testpass123!",
         )
+        self.school = School.objects.create(name="Role Escalation Test School")
         self.client = Client()
         self.client.force_login(self.normal_user)
 
@@ -67,9 +69,6 @@ class RoleEscalationTests(TestCase):
             data='{"role": "admin"}',
             content_type="application/json",
         )
-        # Acceptable outcomes: redirect-to-login (302), auth required (401/403),
-        # not-found (404), method not allowed (405).
-        # A 2xx would mean the anonymous request succeeded — that must never happen.
         self.assertNotIn(
             response.status_code,
             range(200, 300),
@@ -82,17 +81,23 @@ class RoleEscalationTests(TestCase):
     # ------------------------------------------------------------------
 
     def test_normal_user_cannot_call_director_actions(self):
-        """POST /api/director/actions/ by non-director must be rejected."""
+        """A valid school-scoped POST by a non-director must be permission denied."""
+        school_id = str(self.school.id)
         response = self.client.post(
             "/api/director/actions/",
-            data='{"action": "grant_role", "role": "director"}',
+            data={
+                "action": "POST_ACCEPTED_AWARDS",
+                "school_id": school_id,
+                "ids": ["00000000-0000-0000-0000-000000000001"],
+            },
             content_type="application/json",
-            HTTP_X_SCHOOL_ID="19801b59-8c05-4c84-9312-5d792e4e839d",
+            HTTP_X_SCHOOL_ID=school_id,
         )
         self.assertIn(
             response.status_code,
-            (400, 401, 403),
-            msg=f"Expected 400/401/403 for director actions, got {response.status_code}.",
+            (401, 403),
+            msg=f"Expected 401/403 permission denial for director actions, "
+                f"got {response.status_code}.",
         )
 
     # ------------------------------------------------------------------
