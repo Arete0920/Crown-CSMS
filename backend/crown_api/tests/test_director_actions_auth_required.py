@@ -12,8 +12,9 @@ from finance.models import ChartAccount
 
 
 class DirectorActionsAuthRequiredTests(TestCase):
-    def test_director_actions_requires_auth_and_director_role(self):
+    def test_director_actions_requires_auth_and_school_scoped_director_role(self):
         school = School.objects.create(name="Auth Test School")
+        other_school = School.objects.create(name="Other Auth Test School")
         year = AcademicYear.objects.create(
             school=school,
             name="2024-2025",
@@ -105,7 +106,20 @@ class DirectorActionsAuthRequiredTests(TestCase):
         award.refresh_from_db()
         self.assertIsNone(award.ledger_entry_id)
 
-        # 4) Staff with an allowed director role -> 200
+        # 4) Staff with an allowed role at another school remains forbidden -> 403
+        UserRole.objects.create(user=staff, school=other_school, role_code="AID_DIRECTOR")
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        self.assertEqual(resp.status_code, 403)
+
+        award.refresh_from_db()
+        self.assertIsNone(award.ledger_entry_id)
+
+        # 5) Staff with an allowed director role for the target school -> 200
         UserRole.objects.create(user=staff, school=school, role_code="AID_DIRECTOR")
         resp = self.client.post(
             "/api/director/actions/",
@@ -117,6 +131,29 @@ class DirectorActionsAuthRequiredTests(TestCase):
 
         award.refresh_from_db()
         self.assertIsNotNone(award.ledger_entry_id)
+
+    def test_director_actions_rejects_mismatched_tenant_header(self):
+        school = School.objects.create(name="Header Target School")
+        other_school = School.objects.create(name="Header Other School")
+        User = get_user_model()
+        staff = User.objects.create_user(
+            username="director_actions_header_staff",
+            email="director_actions_header_staff@test.com",
+            password="password123",
+            is_staff=True,
+        )
+        UserRole.objects.create(user=staff, school=school, role_code="AID_DIRECTOR")
+        self.client.force_login(staff)
+
+        resp = self.client.post(
+            "/api/director/actions/",
+            data={"action": "POST_ACCEPTED_AWARDS", "school_id": str(school.id), "ids": ["1"]},
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(other_school.id),
+        )
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["detail"], "X-School-Id must match the request school_id.")
 
     @override_settings(CROWN_ENV="dev", DEV_SEED_KEY="test-dev-seed-key")
     def test_force_seed_user_security(self):
