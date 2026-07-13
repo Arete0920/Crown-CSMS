@@ -6,8 +6,17 @@ from django.http import JsonResponse
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
+from core.models import UserRole
 from crown_api.jwt_utils import decode_access, _b64url_decode
 from crown_api.auth_models import CrownUser
+
+
+DIRECTOR_ACTION_ROLE_CODES = {
+    "AID_DIRECTOR",
+    "FINANCE_DIRECTOR",
+    "REGISTRAR",
+    "HEAD_OF_SCHOOL",
+}
 
 
 def _is_crown_access_token(token: str) -> bool:
@@ -80,6 +89,23 @@ def authenticate_crown_access_token(token: str):
     return user, result.payload
 
 
+def _director_actions_allowed(user) -> bool:
+    """Fail closed for the ledger-mutating director actions endpoint."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        return False
+
+    return UserRole.objects.filter(
+        user_id=user_id,
+        role_code__in=DIRECTOR_ACTION_ROLE_CODES,
+    ).exists()
+
+
 class CrownAccessTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
         underlying_request = getattr(request, "_request", request)
@@ -122,6 +148,20 @@ class JwtAuthMiddleware:
                 # CrownAccessTokenAuthentication reuses request._crown_authenticated
                 # so DRF can authenticate without the original bearer header.
                 request.META.pop("HTTP_AUTHORIZATION", None)
+
+        normalized_path = (getattr(request, "path", "") or "").rstrip("/")
+        if normalized_path.endswith("/director/actions"):
+            user = getattr(request, "user", None)
+            if not getattr(user, "is_authenticated", False):
+                return JsonResponse(
+                    {"detail": "Authentication credentials were not provided."},
+                    status=401,
+                )
+            if not _director_actions_allowed(user):
+                return JsonResponse(
+                    {"detail": "Forbidden. Director access required."},
+                    status=403,
+                )
 
         return self.get_response(request)
 
