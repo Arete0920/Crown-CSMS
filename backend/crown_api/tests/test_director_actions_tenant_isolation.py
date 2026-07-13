@@ -57,7 +57,7 @@ class DirectorTenantIsolationTest(TestCase):
             decision_status=AidAward.DECISION_OFFERED,
         )
 
-    def test_director_cannot_modify_other_school_award(self):
+    def test_director_action_rejects_header_body_tenant_mismatch(self):
         self.client.login(username="director", password="pass")
 
         response = self.client.post(
