@@ -14,7 +14,7 @@ from crown_api.director_roles import ALLOWED_DIRECTOR_ROLE_CODES
 from crown_api.jwt_utils import _b64url_decode, decode_access
 
 
-MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+MUTATING_METHODS = {"POST"}
 
 
 def _is_crown_access_token(token: str) -> bool:

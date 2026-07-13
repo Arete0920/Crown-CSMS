@@ -79,7 +79,7 @@ test.describe("Crown2026 UI Proof Gate", () => {
   const adminSeedRole = isSandbox ? "school_admin" : "admin";
   // RoleHomeRedirect resolves admin roles to /admin, while router policy may
   // canonicalize that route to /school-admin-dashboard in sandbox/demo builds.
-  const expectedAdminHome = /\/(?:admin|school-admin-dashboard|school-admin|wizards)$/;
+  const expectedAdminHome = /\/(?:admin|school-admin-dashboard|school-admin)$/;
 
   test("/ redirects admin role → canonical admin home", async ({ page }) => {
     const getErrors = attachErrorCollector(page);
