@@ -1,4 +1,4 @@
-﻿# backend/core/tenant_header_middleware.py
+# backend/core/tenant_header_middleware.py
 from __future__ import annotations
 
 import os
@@ -28,14 +28,19 @@ def _dev_open_dashboard_bypass_enabled() -> bool:
     return bool(getattr(settings, "CROWN_DEV_OPEN_API", False)) and not _is_production_runtime()
 
 
+def _is_dashboard_api_path(path: str) -> bool:
+    return path.startswith(("/api/dashboards", "/api/v1/dashboards"))
+
+
 class TenantHeaderRequiredMiddleware:
     """
     Enforces tenant resolution for /api/* calls.
 
     Policy (in priority order):
-    1. X-School-Id header  used when present (primary)
-    2. Authenticated user.school_id  fallback for session/JWT users without a header
-    3. Missing tenant  400
+    1. Unauthenticated production dashboard calls return 401 before tenant validation
+    2. X-School-Id header is used when present (primary)
+    3. Authenticated user.school_id is the fallback for users without a header
+    4. Missing tenant returns 400
 
     IMPORTANT: This middleware MUST run after AuthenticationMiddleware and
     JwtAuthMiddleware so request.user is populated and the user.school_id
@@ -68,12 +73,12 @@ class TenantHeaderRequiredMiddleware:
         "/api/v1/help",
         "/api/solomon",
         "/api/v1/solomon",
-        "/api/dev/token",  # dev token endpoint returns school_id  no tenant context needed
+        "/api/dev/token",
         "/api/payments/webhooks/",
         "/api/v1/payments/webhooks/",
         "/api/schema",
         "/api/docs",
-        "/api/director/force_seed_user",  # dev-only admin utility; predates tenant scoping
+        "/api/director/force_seed_user",
         "/api/v1/admissions/submit",
         "/api/admissions/submit",
         "/api/v1/admissions/public-config",
@@ -85,26 +90,20 @@ class TenantHeaderRequiredMiddleware:
 
     def __call__(self, request):
         try:
-            # CORS preflight  pass through so CORS middleware adds headers
             if request.method == "OPTIONS":
                 return self.get_response(request)
 
-            # Tenant enforcement can be disabled in test/dev via env flag
             if not getattr(settings, "TENANT_HEADER_REQUIRED", True):
                 return self.get_response(request)
 
             path = getattr(request, "path", "") or ""
             normalized_path = path.rstrip("/") or "/"
 
-            # Only enforce on /api/* paths
             if not normalized_path.startswith("/api/"):
                 return self.get_response(request)
 
-            # Exempt auth, health, schema, docs
             for prefix in self.EXEMPT_PREFIXES:
                 if normalized_path.startswith(prefix):
-                    # Preserve header validation semantics when callers explicitly
-                    # provide X-School-Id on exempt routes.
                     resolved = resolve_tenant_school_id(request)
                     if resolved.source == "header_invalid":
                         return JsonResponse(
@@ -116,12 +115,17 @@ class TenantHeaderRequiredMiddleware:
                         )
                     return self.get_response(request)
 
-            if _dev_open_dashboard_bypass_enabled() and normalized_path.startswith('/api/dashboards'):
+            if _dev_open_dashboard_bypass_enabled() and _is_dashboard_api_path(normalized_path):
                 return self.get_response(request)
 
-            # Resolve tenant: header wins over user.school_id fallback.
-            # resolve_tenant_school_id() handles both paths since we now run
-            # after AuthenticationMiddleware (request.user is populated).
+            if _is_dashboard_api_path(normalized_path) and _is_production_runtime():
+                user = getattr(request, "user", None)
+                if not user or not getattr(user, "is_authenticated", False):
+                    return JsonResponse(
+                        {"detail": "Authentication credentials were not provided."},
+                        status=401,
+                    )
+
             resolved = resolve_tenant_school_id(request)
             school_id = resolved.school_id
 
@@ -143,7 +147,6 @@ class TenantHeaderRequiredMiddleware:
                     status=400,
                 )
 
-            # Validate the school actually exists in this database
             school = School.objects.filter(pk=school_id).only("id", "name").first()
             if school is None:
                 return JsonResponse(
@@ -154,7 +157,6 @@ class TenantHeaderRequiredMiddleware:
                     status=404,
                 )
 
-            # Attach for downstream view usage
             request.school_id = str(school_id)
             request.school = school
             set_current_school(school)
@@ -162,5 +164,4 @@ class TenantHeaderRequiredMiddleware:
             return self.get_response(request)
 
         finally:
-            # Always clear thread-local tenant context, even on exceptions
             clear_current_school()
