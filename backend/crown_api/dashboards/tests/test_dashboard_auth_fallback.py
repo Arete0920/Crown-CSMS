@@ -37,8 +37,11 @@ def test_dashboard_alerts_allows_dev_open_api_without_auth():
 )
 def test_dev_open_does_not_bypass_tenant_in_production():
     client = APIClient()
-    response = client.get('/api/dashboards/summary/')
+    response = client.get('/api/v1/dashboards/summary/')
     assert response.status_code == 401
+    assert response.json() == {
+        'detail': 'Authentication credentials were not provided.'
+    }
 
 
 @pytest.mark.django_db
@@ -50,8 +53,14 @@ def test_dev_open_does_not_bypass_tenant_in_production():
 def test_production_mode_never_auto_creates_demo_school():
     client = APIClient()
     demo_school_id = '11111111-1111-1111-1111-111111111111'
-    response = client.get('/api/dashboards/summary/', HTTP_X_SCHOOL_ID=demo_school_id)
+    response = client.get(
+        '/api/v1/dashboards/summary/',
+        HTTP_X_SCHOOL_ID=demo_school_id,
+    )
     assert response.status_code == 401
+    assert response.json() == {
+        'detail': 'Authentication credentials were not provided.'
+    }
     assert School.objects.filter(pk=demo_school_id).exists() is False
 
 
