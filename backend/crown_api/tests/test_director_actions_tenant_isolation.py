@@ -1,4 +1,5 @@
 import datetime
+import json
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -62,11 +63,13 @@ class DirectorTenantIsolationTest(TestCase):
 
         response = self.client.post(
             reverse("director_actions"),
-            data={
-                "action": "POST_ACCEPTED_AWARDS",
-                "school_id": str(self.school_b.id),
-                "ids": [str(self.award_other_school.id)],
-            },
+            data=json.dumps(
+                {
+                    "action": "POST_ACCEPTED_AWARDS",
+                    "school_id": str(self.school_b.id),
+                    "ids": [str(self.award_other_school.id)],
+                }
+            ),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=str(self.school_a.id),
         )
