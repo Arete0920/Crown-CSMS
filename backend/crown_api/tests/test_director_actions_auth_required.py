@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 
 from django.contrib.auth import get_user_model
@@ -57,7 +58,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
 
         resp = self.client.post(
             "/api/director/actions/",
-            data=payload,
+            data=json.dumps(payload),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
@@ -82,7 +83,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.client.force_login(nonstaff)
         resp = self.client.post(
             "/api/director/actions/",
-            data=payload,
+            data=json.dumps(payload),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
@@ -108,7 +109,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.client.force_login(staff)
         resp = self.client.post(
             "/api/director/actions/",
-            data=payload,
+            data=json.dumps(payload),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
@@ -120,7 +121,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         UserRole.objects.create(user=staff, school=other_school, role_code="AID_DIRECTOR")
         resp = self.client.post(
             "/api/director/actions/",
-            data=payload,
+            data=json.dumps(payload),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
@@ -132,7 +133,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
         UserRole.objects.create(user=staff, school=school, role_code="AID_DIRECTOR")
         resp = self.client.post(
             "/api/director/actions/",
-            data=payload,
+            data=json.dumps(payload),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
@@ -156,7 +157,9 @@ class DirectorActionsAuthRequiredTests(TestCase):
 
         resp = self.client.post(
             "/api/director/actions/",
-            data={"action": "POST_ACCEPTED_AWARDS", "school_id": str(school.id), "ids": ["1"]},
+            data=json.dumps(
+                {"action": "POST_ACCEPTED_AWARDS", "school_id": str(school.id), "ids": ["1"]}
+            ),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=str(other_school.id),
         )
