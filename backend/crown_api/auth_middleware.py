@@ -1,5 +1,6 @@
 # backend/crown_api/auth_middleware.py
 import json
+from uuid import UUID
 
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
@@ -89,12 +90,44 @@ def authenticate_crown_access_token(token: str):
     return user, result.payload
 
 
-def _director_actions_allowed(user) -> bool:
+def _director_actions_target_school_id(request):
+    """Resolve and validate the school targeted by a director action request."""
+    try:
+        raw_body = request.body or b"{}"
+        payload = json.loads(raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None, JsonResponse({"detail": "Invalid JSON body."}, status=400)
+
+    if not isinstance(payload, dict):
+        return None, JsonResponse({"detail": "JSON body must be an object."}, status=400)
+
+    target_school_id = str(payload.get("school_id") or "").strip()
+    if not target_school_id:
+        return None, JsonResponse({"detail": "school_id is required."}, status=400)
+
+    try:
+        UUID(target_school_id)
+    except (TypeError, ValueError, AttributeError):
+        return None, JsonResponse({"detail": "school_id must be a valid UUID."}, status=400)
+
+    header_school_id = str(request.META.get("HTTP_X_SCHOOL_ID") or "").strip()
+    if header_school_id and header_school_id != target_school_id:
+        return None, JsonResponse(
+            {"detail": "X-School-Id must match the request school_id."},
+            status=400,
+        )
+
+    return target_school_id, None
+
+
+def _director_actions_allowed(user, school_id: str) -> bool:
     """Fail closed for the ledger-mutating director actions endpoint."""
     if not user or not getattr(user, "is_authenticated", False):
         return False
     if getattr(user, "is_superuser", False):
         return True
+    if not getattr(user, "is_staff", False):
+        return False
 
     user_id = getattr(user, "id", None)
     if not user_id:
@@ -102,6 +135,7 @@ def _director_actions_allowed(user) -> bool:
 
     return UserRole.objects.filter(
         user_id=user_id,
+        school_id=school_id,
         role_code__in=DIRECTOR_ACTION_ROLE_CODES,
     ).exists()
 
@@ -157,9 +191,14 @@ class JwtAuthMiddleware:
                     {"detail": "Authentication credentials were not provided."},
                     status=401,
                 )
-            if not _director_actions_allowed(user):
+
+            target_school_id, error_response = _director_actions_target_school_id(request)
+            if error_response is not None:
+                return error_response
+
+            if not _director_actions_allowed(user, target_school_id):
                 return JsonResponse(
-                    {"detail": "Forbidden. Director access required."},
+                    {"detail": "Forbidden. Director access required for this school."},
                     status=403,
                 )
 
