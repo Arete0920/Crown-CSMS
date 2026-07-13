@@ -26,7 +26,6 @@ const DEMO_SCHOOL_ID =
 const DEMO_TOKEN =
   process.env.CROWN_DEMO_TOKEN ?? "playwright-demo-token";
 
-// ── Auth seeding ──────────────────────────────────────────────────────────────
 async function seedDemoSession(page: Page, role: string): Promise<void> {
   await page.addInitScript(
     ({ role, token, schoolId }) => {
@@ -55,14 +54,12 @@ async function seedDemoSession(page: Page, role: string): Promise<void> {
   );
 }
 
-// ── Console error collection ──────────────────────────────────────────────────
-// Filters out benign browser noise so only real JS errors fail the gate.
 const IGNORED_PATTERNS = [
-  /net::ERR_/,             // network failures hitting stub API in CI
-  /Failed to fetch/,       // same
-  /Failed to load resource/,  // API 4xx/5xx from backend in dev/CI (UI-only test)
-  /favicon/i,              // favicon 404 common in CI
-  /ResizeObserver loop/,   // browser implementation noise
+  /net::ERR_/,
+  /Failed to fetch/,
+  /Failed to load resource/,
+  /favicon/i,
+  /ResizeObserver loop/,
 ];
 
 function attachErrorCollector(page: Page): () => string[] {
@@ -77,18 +74,14 @@ function attachErrorCollector(page: Page): () => string[] {
   return () => errors;
 }
 
-// ── Critical paths ────────────────────────────────────────────────────────────
-
 test.describe("Crown2026 UI Proof Gate", () => {
   const isSandbox = process.env.VITE_DEMO_MODE === "sandbox" || process.env.VITE_SANDBOX_MODE === "1";
   const adminSeedRole = isSandbox ? "school_admin" : "admin";
-  const expectedAdminHome =
-    isSandbox
-      ? /\/(?:school-admin-dashboard|school-admin|wizards)?$/
-      : /\/(?:admin|wizards)$/;
+  // RoleHomeRedirect resolves admin roles to /admin, while router policy may
+  // canonicalize that route to /school-admin-dashboard in sandbox/demo builds.
+  const expectedAdminHome = /\/(?:admin|school-admin-dashboard|school-admin|wizards)$/;
 
-  // ── 1. Role home redirect ───────────────────────────────────────────────────
-  test("/ redirects admin role → /admin", async ({ page }) => {
+  test("/ redirects admin role → canonical admin home", async ({ page }) => {
     const getErrors = attachErrorCollector(page);
     await seedDemoSession(page, adminSeedRole);
     await page.goto(BASE + "/", { waitUntil: "networkidle" });
@@ -118,13 +111,11 @@ test.describe("Crown2026 UI Proof Gate", () => {
     expect(getErrors()).toHaveLength(0);
   });
 
-  // ── 2. Admin dashboard ──────────────────────────────────────────────────────
   test("/admin renders heading and quick-action links", async ({ page }) => {
     const getErrors = attachErrorCollector(page);
     await seedDemoSession(page, adminSeedRole);
     await page.goto(BASE + (isSandbox ? "/school-admin-dashboard" : "/admin"), { waitUntil: "networkidle" });
 
-    // Dashboard identity should be visible even if semantics use h4/h6 hierarchy.
     await expect(page.locator("h1, h2, h3, h4, h5, h6").first()).toBeVisible();
     await expect(page.locator("body")).toContainText(
       /Live \/ Role Scoped|Offline \/ Fallback|Crown Dashboard|School Administrator Dashboard|School Snapshot|Executive Dashboard|School Administrator|Good morning, Sarah!|Wizard Hub/i
@@ -133,20 +124,17 @@ test.describe("Crown2026 UI Proof Gate", () => {
     expect(getErrors()).toHaveLength(0);
   });
 
-  // ── 3. Teacher attendance ───────────────────────────────────────────────────
   test("/teacher/attendance renders without JS errors", async ({ page }) => {
     const getErrors = attachErrorCollector(page);
     await seedDemoSession(page, "teacher");
     await page.goto(BASE + "/teacher/attendance", { waitUntil: "networkidle" });
 
-    // Page heading or form control must be present
     const heading = page.locator("h1, h2, h3").first();
     await expect(heading).toBeVisible();
 
     expect(getErrors()).toHaveLength(0);
   });
 
-  // ── 4. Parent dashboard ─────────────────────────────────────────────────────
   test("/parent renders heading without JS errors", async ({ page }) => {
     const getErrors = attachErrorCollector(page);
     await seedDemoSession(page, "parent");
@@ -157,7 +145,6 @@ test.describe("Crown2026 UI Proof Gate", () => {
     expect(getErrors()).toHaveLength(0);
   });
 
-  // ── 5. Gradebook RO ──────────────────────────────────────────────────────
   test("/gradebook renders heading without JS errors", async ({ page }) => {
     const getErrors = attachErrorCollector(page);
     await seedDemoSession(page, adminSeedRole);
@@ -168,7 +155,6 @@ test.describe("Crown2026 UI Proof Gate", () => {
     expect(getErrors()).toHaveLength(0);
   });
 
-  // ── 6. Login page is publicly accessible (no session) ──────────────────────
   test("/login renders without session", async ({ page }) => {
     const getErrors = attachErrorCollector(page);
     await page.goto(BASE + "/login", { waitUntil: "networkidle" });
