@@ -30,7 +30,11 @@ def test_dashboard_alerts_allows_dev_open_api_without_auth():
 
 
 @pytest.mark.django_db
-@override_settings(CROWN_DEV_OPEN_API=True, CROWN_ENV='production')
+@override_settings(
+    CROWN_DEV_OPEN_API=True,
+    CROWN_ENV='production',
+    TENANT_HEADER_REQUIRED=True,
+)
 def test_dev_open_does_not_bypass_tenant_in_production():
     client = APIClient()
     response = client.get('/api/dashboards/summary/')
@@ -38,7 +42,11 @@ def test_dev_open_does_not_bypass_tenant_in_production():
 
 
 @pytest.mark.django_db
-@override_settings(CROWN_DEV_OPEN_API=True, CROWN_ENV='production')
+@override_settings(
+    CROWN_DEV_OPEN_API=True,
+    CROWN_ENV='production',
+    TENANT_HEADER_REQUIRED=True,
+)
 def test_production_mode_never_auto_creates_demo_school():
     client = APIClient()
     demo_school_id = '11111111-1111-1111-1111-111111111111'
