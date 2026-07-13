@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 
 from django.contrib.auth import get_user_model
@@ -7,13 +8,15 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from aid.models import AidAward
-from core.models import AcademicYear, Family, School, Student
+from audit.models import AuditLog
+from core.models import AcademicYear, Family, School, Student, UserRole
 from finance.models import ChartAccount
 
 
 class DirectorActionsAuthRequiredTests(TestCase):
-    def test_director_actions_requires_auth_and_staff(self):
+    def test_director_actions_requires_auth_and_school_scoped_director_role(self):
         school = School.objects.create(name="Auth Test School")
+        other_school = School.objects.create(name="Other Auth Test School")
         year = AcademicYear.objects.create(
             school=school,
             name="2024-2025",
@@ -22,7 +25,6 @@ class DirectorActionsAuthRequiredTests(TestCase):
             is_current=True,
         )
 
-        # Required for mark_accepted_and_post()
         ChartAccount.objects.get_or_create(
             school=school,
             code="AID",
@@ -54,14 +56,24 @@ class DirectorActionsAuthRequiredTests(TestCase):
             "ids": [str(award.id)],
         }
 
-        # 1) Unauthenticated -> 401 (JWT configured — DRF emits 401, not 403)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
         self.assertEqual(resp.status_code, 401)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="POST",
+                model="/api/director/actions/",
+                metadata__status_code=401,
+            ).exists()
+        )
 
         award.refresh_from_db()
         self.assertIsNone(award.ledger_entry_id)
 
-        # 2) Authenticated but non-staff -> 403
         User = get_user_model()
         nonstaff = User.objects.create_user(
             username="director_actions_nonstaff",
@@ -69,13 +81,25 @@ class DirectorActionsAuthRequiredTests(TestCase):
             password="password123",
         )
         self.client.force_login(nonstaff)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
         self.assertEqual(resp.status_code, 403)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                user_id=nonstaff.id,
+                action="POST",
+                model="/api/director/actions/",
+                metadata__status_code=403,
+            ).exists()
+        )
 
         award.refresh_from_db()
         self.assertIsNone(award.ledger_entry_id)
 
-        # 3) Staff -> 200
         staff = User.objects.create_user(
             username="director_actions_staff",
             email="director_actions_staff@test.com",
@@ -83,32 +107,88 @@ class DirectorActionsAuthRequiredTests(TestCase):
             is_staff=True,
         )
         self.client.force_login(staff)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        self.assertEqual(resp.status_code, 403)
+
+        award.refresh_from_db()
+        self.assertIsNone(award.ledger_entry_id)
+
+        UserRole.objects.create(user=staff, school=other_school, role_code="AID_DIRECTOR")
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        self.assertEqual(resp.status_code, 403)
+
+        award.refresh_from_db()
+        self.assertIsNone(award.ledger_entry_id)
+
+        UserRole.objects.create(user=staff, school=school, role_code="AID_DIRECTOR")
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
         self.assertEqual(resp.status_code, 200)
 
         award.refresh_from_db()
         self.assertIsNotNone(award.ledger_entry_id)
 
+    def test_director_actions_rejects_mismatched_tenant_header(self):
+        school = School.objects.create(name="Header Target School")
+        other_school = School.objects.create(name="Header Other School")
+        User = get_user_model()
+        staff = User.objects.create_user(
+            username="director_actions_header_staff",
+            email="director_actions_header_staff@test.com",
+            password="password123",
+            is_staff=True,
+        )
+        UserRole.objects.create(user=staff, school=school, role_code="AID_DIRECTOR")
+        self.client.force_login(staff)
+
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=json.dumps(
+                {"action": "POST_ACCEPTED_AWARDS", "school_id": str(school.id), "ids": ["1"]}
+            ),
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(other_school.id),
+        )
+
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["detail"], "X-School-Id must match the request school_id.")
+
+    def test_director_actions_options_reaches_drf(self):
+        resp = self.client.options("/api/director/actions/")
+        self.assertNotIn(resp.status_code, {400, 403})
+        self.assertFalse(
+            AuditLog.objects.filter(action="OPTIONS", model="/api/director/actions/").exists()
+        )
+
     @override_settings(CROWN_ENV="dev", DEV_SEED_KEY="test-dev-seed-key")
     def test_force_seed_user_security(self):
-        """Regression test for force_seed_user endpoint security."""
         url = "/api/director/force_seed_user/"
 
-        # 1) Outside dev -> 404
         with override_settings(CROWN_ENV="prod"):
             resp = self.client.post(url)
             self.assertEqual(resp.status_code, 404)
 
-        # 2) In dev, anonymous POST -> 403
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(resp.json(), {"detail": "Forbidden."})
 
-        # 3) Wrong key -> 403
         resp = self.client.post(url, HTTP_X_DEV_SEED_KEY="wrong-key")
         self.assertEqual(resp.status_code, 403)
 
-        # 4) Correct key -> 200, no credentials in response
         resp = self.client.post(url, HTTP_X_DEV_SEED_KEY="test-dev-seed-key")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
@@ -117,7 +197,6 @@ class DirectorActionsAuthRequiredTests(TestCase):
         self.assertNotIn("Crown2026!", str(data))
         self.assertTrue("admin" not in str(data).lower() or "admin_created" in data)
 
-        # 5) JWT staff -> 200
         User = get_user_model()
         staff = User.objects.create_user(
             username="seed_staff",
@@ -131,7 +210,6 @@ class DirectorActionsAuthRequiredTests(TestCase):
 
     @override_settings(CROWN_ENV="prod", DEV_SEED_KEY="test-dev-seed-key")
     def test_force_seed_user_prod_always_404(self):
-        """Absolute deny: force_seed_user returns 404 in prod even with valid key."""
         resp = self.client.post(
             "/api/director/force_seed_user/", HTTP_X_DEV_SEED_KEY="test-dev-seed-key"
         )

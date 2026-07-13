@@ -1,15 +1,17 @@
+import datetime
+import json
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+
+from aid.models import AidAward
+from core.models import AcademicYear, Family, School, Student, UserRole
 
 
 class DirectorTenantIsolationTest(TestCase):
 
     def setUp(self):
-        from django.contrib.auth import get_user_model
-        from aid.models import AidAward
-        from core.models import School, AcademicYear, Student, Family
-        import datetime
-
         User = get_user_model()
 
         self.school_a = School.objects.create(name="School A")
@@ -18,9 +20,15 @@ class DirectorTenantIsolationTest(TestCase):
         self.director = User.objects.create_user(
             username="director",
             password="pass",
+            is_staff=True,
         )
         self.director.school = self.school_a
         self.director.save()
+        UserRole.objects.create(
+            user=self.director,
+            school=self.school_a,
+            role_code="AID_DIRECTOR",
+        )
 
         academic_year = AcademicYear.objects.create(
             school=self.school_b,
@@ -50,16 +58,24 @@ class DirectorTenantIsolationTest(TestCase):
             decision_status=AidAward.DECISION_OFFERED,
         )
 
-    def test_director_cannot_modify_other_school_award(self):
+    def test_director_action_rejects_header_body_tenant_mismatch(self):
         self.client.login(username="director", password="pass")
 
         response = self.client.post(
             reverse("director_actions"),
-            {
-                "action": "approve_award",
-                "award_id": self.award_other_school.id,
-            },
+            data=json.dumps(
+                {
+                    "action": "POST_ACCEPTED_AWARDS",
+                    "school_id": str(self.school_b.id),
+                    "ids": [str(self.award_other_school.id)],
+                }
+            ),
+            content_type="application/json",
             HTTP_X_SCHOOL_ID=str(self.school_a.id),
         )
 
-        self.assertIn(response.status_code, [403, 404])
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()["detail"],
+            "X-School-Id must match the request school_id.",
+        )
