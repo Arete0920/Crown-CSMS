@@ -7,12 +7,12 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from aid.models import AidAward
-from core.models import AcademicYear, Family, School, Student
+from core.models import AcademicYear, Family, School, Student, UserRole
 from finance.models import ChartAccount
 
 
 class DirectorActionsAuthRequiredTests(TestCase):
-    def test_director_actions_requires_auth_and_staff(self):
+    def test_director_actions_requires_auth_and_director_role(self):
         school = School.objects.create(name="Auth Test School")
         year = AcademicYear.objects.create(
             school=school,
@@ -54,28 +54,39 @@ class DirectorActionsAuthRequiredTests(TestCase):
             "ids": [str(award.id)],
         }
 
-        # 1) Unauthenticated -> 401 (JWT configured — DRF emits 401, not 403)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+        # 1) Unauthenticated -> 401
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
         self.assertEqual(resp.status_code, 401)
 
         award.refresh_from_db()
         self.assertIsNone(award.ledger_entry_id)
 
-        # 2) Authenticated but non-staff -> 403
         User = get_user_model()
+
+        # 2) Authenticated but non-staff -> 403
         nonstaff = User.objects.create_user(
             username="director_actions_nonstaff",
             email="director_actions_nonstaff@test.com",
             password="password123",
         )
         self.client.force_login(nonstaff)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
         self.assertEqual(resp.status_code, 403)
 
         award.refresh_from_db()
         self.assertIsNone(award.ledger_entry_id)
 
-        # 3) Staff -> 200
+        # 3) Ordinary staff without a director role -> 403
         staff = User.objects.create_user(
             username="director_actions_staff",
             email="director_actions_staff@test.com",
@@ -83,7 +94,25 @@ class DirectorActionsAuthRequiredTests(TestCase):
             is_staff=True,
         )
         self.client.force_login(staff)
-        resp = self.client.post("/api/director/actions/", data=payload, content_type="application/json", HTTP_X_SCHOOL_ID=str(school.id))
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        self.assertEqual(resp.status_code, 403)
+
+        award.refresh_from_db()
+        self.assertIsNone(award.ledger_entry_id)
+
+        # 4) Staff with an allowed director role -> 200
+        UserRole.objects.create(user=staff, school=school, role_code="AID_DIRECTOR")
+        resp = self.client.post(
+            "/api/director/actions/",
+            data=payload,
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
         self.assertEqual(resp.status_code, 200)
 
         award.refresh_from_db()
