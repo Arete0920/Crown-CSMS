@@ -1,4 +1,4 @@
-﻿# Deploy SHA Parity Capture
+# Deploy SHA Parity Capture
 
 Generated UTC: 2026-07-12T17:38:08.0793038Z
 
