@@ -5,8 +5,10 @@ Verifies that a normal user cannot elevate their own role or another user's
 role through the API. These tests exercise permission-layer hardening
 (Stage 1 Security Hardening — OWASP A01:2021 Broken Access Control).
 """
+import json
+
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.test import Client, TestCase
 
 from core.models import School
 
@@ -85,11 +87,13 @@ class RoleEscalationTests(TestCase):
         school_id = str(self.school.id)
         response = self.client.post(
             "/api/director/actions/",
-            data={
-                "action": "POST_ACCEPTED_AWARDS",
-                "school_id": school_id,
-                "ids": ["00000000-0000-0000-0000-000000000001"],
-            },
+            data=json.dumps(
+                {
+                    "action": "POST_ACCEPTED_AWARDS",
+                    "school_id": school_id,
+                    "ids": ["00000000-0000-0000-0000-000000000001"],
+                }
+            ),
             content_type="application/json",
             HTTP_X_SCHOOL_ID=school_id,
         )
