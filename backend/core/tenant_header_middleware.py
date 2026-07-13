@@ -28,6 +28,10 @@ def _dev_open_dashboard_bypass_enabled() -> bool:
     return bool(getattr(settings, "CROWN_DEV_OPEN_API", False)) and not _is_production_runtime()
 
 
+def _is_dashboard_api_path(path: str) -> bool:
+    return path.startswith(("/api/dashboards", "/api/v1/dashboards"))
+
+
 class TenantHeaderRequiredMiddleware:
     """
     Enforces tenant resolution for /api/* calls.
@@ -111,10 +115,10 @@ class TenantHeaderRequiredMiddleware:
                         )
                     return self.get_response(request)
 
-            if _dev_open_dashboard_bypass_enabled() and normalized_path.startswith("/api/dashboards"):
+            if _dev_open_dashboard_bypass_enabled() and _is_dashboard_api_path(normalized_path):
                 return self.get_response(request)
 
-            if normalized_path.startswith("/api/dashboards") and _is_production_runtime():
+            if _is_dashboard_api_path(normalized_path) and _is_production_runtime():
                 user = getattr(request, "user", None)
                 if not user or not getattr(user, "is_authenticated", False):
                     return JsonResponse(
