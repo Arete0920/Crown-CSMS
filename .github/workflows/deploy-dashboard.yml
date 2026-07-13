@@ -15,6 +15,8 @@ permissions:
 #     and deploy label at build time, then shipped inside dist/ to Azure SWA
 #   - staticwebapp.config.json is copied from public/ to dist/ so Azure serves
 #     React SPA deep links such as /login and /sandbox through index.html
+#   - the deployed Azure runtime passes the production Playwright certification
+#     crawler before the workflow can finish successfully
 #
 # Secrets required:
 #   AZURE_SWA_TOKEN  deployment token from the Azure Static Web Apps resource
@@ -193,3 +195,14 @@ jobs:
           app_location: "frontend/dashboards/dist"
           output_location: ""
           skip_app_build: true
+
+  certify-live-azure:
+    name: "Certify live Azure runtime"
+    needs: build-and-deploy
+    uses: ./.github/workflows/production-certification-evidence.yml
+    with:
+      live_frontend_url: ${{ vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
+      live_api_base_url: ${{ vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+      expected_frontend_sha: ${{ github.sha }}
+      expected_api_sha: ""
+    secrets: inherit

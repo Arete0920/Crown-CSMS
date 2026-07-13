@@ -2,34 +2,46 @@ name: Production Certification Evidence
 run-name: Production Certification Evidence (${{ github.ref_name }})
 
 on:
+  workflow_call:
+    inputs:
+      live_frontend_url:
+        description: "Deployed frontend URL to certify"
+        required: true
+        type: string
+      live_api_base_url:
+        description: "Deployed backend/API base URL expected during certification"
+        required: true
+        type: string
+      expected_frontend_sha:
+        description: "Exact frontend commit SHA expected in deployed build.json"
+        required: true
+        type: string
+      expected_api_sha:
+        description: "Optional backend commit SHA expected from /api/v1/version/"
+        required: false
+        default: ""
+        type: string
   workflow_dispatch:
     inputs:
       live_frontend_url:
         description: "Deployed frontend URL to certify"
         required: false
+        default: "https://yellow-forest-0eecc8b0f.7.azurestaticapps.net"
         type: string
       live_api_base_url:
         description: "Deployed backend/API base URL expected during certification"
         required: false
+        default: "https://crown-api-prod.azurewebsites.net"
         type: string
-  pull_request:
-    branches:
-      - main
-    paths:
-      - frontend/dashboards/package.json
-      - frontend/dashboards/package-lock.json
-      - frontend/dashboards/playwright.config.ts
-      - frontend/dashboards/tests/certification/**
-      - .github/workflows/production-certification-evidence.yml
-  push:
-    branches:
-      - main
-    paths:
-      - frontend/dashboards/package.json
-      - frontend/dashboards/package-lock.json
-      - frontend/dashboards/playwright.config.ts
-      - frontend/dashboards/tests/certification/**
-      - .github/workflows/production-certification-evidence.yml
+      expected_frontend_sha:
+        description: "Exact frontend commit SHA expected in deployed build.json"
+        required: true
+        type: string
+      expected_api_sha:
+        description: "Optional backend commit SHA expected from /api/v1/version/"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -64,12 +76,75 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Wait for exact frontend deployment and backend health
+        shell: bash
+        env:
+          FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
+          API_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          EXPECTED_FRONTEND_SHA: ${{ inputs.expected_frontend_sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          frontend = os.environ["FRONTEND_URL"].rstrip("/") + "/build.json"
+          health = os.environ["API_URL"].rstrip("/") + "/api/health/"
+          expected = os.environ["EXPECTED_FRONTEND_SHA"].strip()
+          if not expected:
+              raise SystemExit("EXPECTED_FRONTEND_SHA is required")
+
+          def fetch(url):
+              req = urllib.request.Request(url, headers={"Accept": "application/json"})
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as response:
+                      return response.status, response.read().decode("utf-8", "replace")
+              except urllib.error.HTTPError as exc:
+                  return exc.code, exc.read().decode("utf-8", "replace")
+
+          last = []
+          for attempt in range(1, 31):
+              last = []
+              try:
+                  status, body = fetch(frontend)
+                  payload = json.loads(body)
+                  actual = str(payload.get("build_sha") or payload.get("commit") or "").strip()
+                  if status != 200:
+                      last.append(f"frontend status={status} body={body[:300]}")
+                  elif not actual:
+                      last.append("frontend build SHA missing")
+                  elif not (actual.startswith(expected) or expected.startswith(actual)):
+                      last.append(f"frontend SHA expected={expected} actual={actual}")
+              except Exception as exc:
+                  last.append(f"frontend error={exc}")
+
+              try:
+                  status, body = fetch(health)
+                  if status != 200:
+                      last.append(f"api health status={status} body={body[:300]}")
+              except Exception as exc:
+                  last.append(f"api health error={exc}")
+
+              if not last:
+                  print(f"Azure deployment ready on attempt {attempt}")
+                  break
+
+              print(f"Attempt {attempt}/30 not ready: {'; '.join(last)}")
+              time.sleep(10)
+          else:
+              raise SystemExit("Azure deployment did not become ready: " + "; ".join(last))
+          PY
+
       - name: Run production certification crawler against deployed runtime
         run: npm run certify:production
         env:
           CI: "1"
           CROWN_CERTIFICATION_LIVE_RUNTIME: "1"
-          CROWN_EXPECTED_DEPLOYED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          CROWN_EXPECTED_FRONTEND_SHA: ${{ inputs.expected_frontend_sha }}
+          CROWN_EXPECTED_API_SHA: ${{ inputs.expected_api_sha || '' }}
           CROWN_LIVE_FRONTEND_URL: ${{ inputs.live_frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
           CROWN_LIVE_API_BASE_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
           CROWN_CERTIFICATION_TENANT_MODE: "sandbox"
