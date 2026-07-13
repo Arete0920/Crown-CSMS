@@ -1,13 +1,21 @@
 # backend/crown_api/auth_middleware.py
 import json
+from uuid import UUID
 
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-from crown_api.jwt_utils import decode_access, _b64url_decode
+from audit.models import AuditLog
+from core.models import UserRole
 from crown_api.auth_models import CrownUser
+from crown_api.director_roles import ALLOWED_DIRECTOR_ROLE_CODES
+from crown_api.jwt_utils import _b64url_decode, decode_access
+
+
+MUTATING_METHODS = {"POST"}
+LEDGER_MUTATING_DIRECTOR_ACTIONS = {"POST_ACCEPTED_AWARDS"}
 
 
 def _is_crown_access_token(token: str) -> bool:
@@ -80,6 +88,83 @@ def authenticate_crown_access_token(token: str):
     return user, result.payload
 
 
+def _director_actions_target_school_id(request):
+    """Resolve the school targeted by ledger-mutating director actions only."""
+    try:
+        raw_body = request.body or b"{}"
+        payload = json.loads(raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None, JsonResponse({"detail": "Invalid JSON body."}, status=400)
+
+    if not isinstance(payload, dict):
+        return None, JsonResponse({"detail": "JSON body must be an object."}, status=400)
+
+    action = str(payload.get("action") or "").strip()
+    if action not in LEDGER_MUTATING_DIRECTOR_ACTIONS:
+        return None, None
+
+    raw_target_school_id = str(payload.get("school_id") or "").strip()
+    if not raw_target_school_id:
+        return None, JsonResponse({"detail": "school_id is required."}, status=400)
+
+    try:
+        target_school_uuid = UUID(raw_target_school_id)
+    except (TypeError, ValueError, AttributeError):
+        return None, JsonResponse({"detail": "school_id must be a valid UUID."}, status=400)
+
+    raw_header_school_id = str(request.META.get("HTTP_X_SCHOOL_ID") or "").strip()
+    if raw_header_school_id:
+        try:
+            header_school_uuid = UUID(raw_header_school_id)
+        except (TypeError, ValueError, AttributeError):
+            return None, JsonResponse(
+                {"detail": "X-School-Id must be a valid UUID."},
+                status=400,
+            )
+        if header_school_uuid != target_school_uuid:
+            return None, JsonResponse(
+                {"detail": "X-School-Id must match the request school_id."},
+                status=400,
+            )
+
+    return str(target_school_uuid), None
+
+
+def _director_actions_allowed(user, school_id: str) -> bool:
+    """Fail closed for the ledger-mutating director actions endpoint."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    if not getattr(user, "is_staff", False):
+        return False
+
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        return False
+
+    return UserRole.objects.filter(
+        user_id=user_id,
+        school_id=school_id,
+        role_code__in=ALLOWED_DIRECTOR_ROLE_CODES,
+    ).exists()
+
+
+def _audit_early_director_response(request, response):
+    """Mirror AuditMiddleware for responses returned before downstream middleware."""
+    try:
+        AuditLog.objects.create(
+            user_id=getattr(getattr(request, "user", None), "id", None),
+            action=request.method,
+            model=request.path,
+            metadata={"status_code": response.status_code},
+        )
+    except Exception:
+        # Auditing must never turn a rejected request into an application error.
+        pass
+    return response
+
+
 class CrownAccessTokenAuthentication(BaseAuthentication):
     def authenticate(self, request):
         underlying_request = getattr(request, "_request", request)
@@ -122,6 +207,34 @@ class JwtAuthMiddleware:
                 # CrownAccessTokenAuthentication reuses request._crown_authenticated
                 # so DRF can authenticate without the original bearer header.
                 request.META.pop("HTTP_AUTHORIZATION", None)
+
+        normalized_path = (getattr(request, "path", "") or "").rstrip("/")
+        if (
+            normalized_path.endswith("/director/actions")
+            and request.method in MUTATING_METHODS
+        ):
+            user = getattr(request, "user", None)
+            if not getattr(user, "is_authenticated", False):
+                response = JsonResponse(
+                    {"detail": "Authentication credentials were not provided."},
+                    status=401,
+                )
+                return _audit_early_director_response(request, response)
+
+            target_school_id, error_response = _director_actions_target_school_id(request)
+            if error_response is not None:
+                return _audit_early_director_response(request, error_response)
+
+            # Non-ledger director actions retain their existing view-level contract.
+            if target_school_id is None:
+                return self.get_response(request)
+
+            if not _director_actions_allowed(user, target_school_id):
+                response = JsonResponse(
+                    {"detail": "Forbidden. Director access required for this school."},
+                    status=403,
+                )
+                return _audit_early_director_response(request, response)
 
         return self.get_response(request)
 

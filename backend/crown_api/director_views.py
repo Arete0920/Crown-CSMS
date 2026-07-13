@@ -25,14 +25,10 @@ from core.models import (
     StudentTuition,
     UserRole,
 )
+from crown_api.director_roles import ALLOWED_DIRECTOR_ROLE_CODES
 
 
-ALLOWED_ROLE_CODES = {
-    "AID_DIRECTOR",
-    "FINANCE_DIRECTOR",
-    "REGISTRAR",
-    "HEAD_OF_SCHOOL",
-}
+ALLOWED_ROLE_CODES = ALLOWED_DIRECTOR_ROLE_CODES
 
 
 def crown_director_allowed(request):
@@ -805,12 +801,6 @@ def director_actions(request):
     if not getattr(request.user, "is_staff", False) and not getattr(request.user, "is_superuser", False):
         return Response(
             {"error": "Forbidden. Staff access required."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
-    if not crown_director_allowed(request):
-        return Response(
-            {"error": "Unauthorized. Director access required."},
             status=status.HTTP_403_FORBIDDEN,
         )
 
