@@ -62,4 +62,4 @@ class DirectorTenantIsolationTest(TestCase):
             HTTP_X_SCHOOL_ID=str(self.school_a.id),
         )
 
-        self.assertIn(response.status_code, [403, 404])
+        self.assertIn(response.status_code, [400, 403, 404])

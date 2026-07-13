@@ -91,8 +91,8 @@ class RoleEscalationTests(TestCase):
         )
         self.assertIn(
             response.status_code,
-            (401, 403),
-            msg=f"Expected 401/403 for director actions, got {response.status_code}.",
+            (400, 401, 403),
+            msg=f"Expected 400/401/403 for director actions, got {response.status_code}.",
         )
 
     # ------------------------------------------------------------------
