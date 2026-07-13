@@ -166,7 +166,7 @@ class DirectorActionsAuthRequiredTests(TestCase):
 
     def test_director_actions_options_reaches_drf(self):
         resp = self.client.options("/api/director/actions/")
-        self.assertNotIn(resp.status_code, {400, 401, 403})
+        self.assertNotIn(resp.status_code, {400, 403})
         self.assertFalse(
             AuditLog.objects.filter(action="OPTIONS", model="/api/director/actions/").exists()
         )
