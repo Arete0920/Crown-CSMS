@@ -8,12 +8,32 @@
 const TOKEN_KEY = "crown.jwt.access";
 const SCHOOL_KEY = "crown.school.id";
 
+function normalizeApiBaseUrl(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
+function getApiBaseUrl() {
+  return normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
+}
+
+export function resolveApiUrl(input) {
+  if (typeof input !== "string" || /^https?:\/\//i.test(input)) {
+    return input;
+  }
+
+  const apiBase = getApiBaseUrl();
+  if (!apiBase) return input;
+
+  const path = input.startsWith("/") ? input : `/${input}`;
+  return `${apiBase}${path}`;
+}
+
 export function getSelectedSchoolId() {
   try {
     // sessionStorage is primary (written during app init/login)
     const session = sessionStorage.getItem(SCHOOL_KEY);
     if (session) return session;
-    
+
     // Fall back to localStorage if sessionStorage empty
     // localStorage persists across browser sessions; sessionStorage clears on close
     // This ensures tenant header is sent even if user refreshed during session
@@ -80,14 +100,15 @@ export async function authenticatedFetch(input, init = {}) {
     credentials: init.credentials ?? "include",
   };
 
-  const resp = await globalThis.fetch(input, finalInit);
+  const resolvedInput = typeof input === "string" ? resolveApiUrl(input) : input;
+  const resp = await globalThis.fetch(resolvedInput, finalInit);
 
   // Throw structured error with status/url/body for diagnostics
   if (!resp.ok) {
     const text = await resp.text().catch(() => "");
     const err = new Error(`HTTP ${resp.status} ${resp.statusText}`);
     err.status = resp.status;
-    err.url = typeof input === "string" ? input : (input?.url || "");
+    err.url = typeof resolvedInput === "string" ? resolvedInput : (resolvedInput?.url || "");
     err.body = text.slice(0, 500);
     throw err;
   }
@@ -98,10 +119,11 @@ export async function authenticatedFetch(input, init = {}) {
 /**
  * JWT login helper.
  * Expects backend endpoint:
- *   POST /api/auth/token/  { username, password } -> { access, refresh }
+ *   POST /api/v1/auth/token/  { username, password } -> { access, refresh }
  */
 export async function jwtLogin({ username, password, apiBase = "" }) {
-  const resp = await globalThis.fetch(`${apiBase}/api/v1/auth/token/`, {
+  const base = normalizeApiBaseUrl(apiBase || getApiBaseUrl());
+  const resp = await globalThis.fetch(`${base}/api/v1/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
