@@ -9,9 +9,9 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from audit.models import AuditLog
 from core.models import UserRole
-from crown_api.director_views import ALLOWED_ROLE_CODES
-from crown_api.jwt_utils import decode_access, _b64url_decode
 from crown_api.auth_models import CrownUser
+from crown_api.director_roles import ALLOWED_DIRECTOR_ROLE_CODES
+from crown_api.jwt_utils import _b64url_decode, decode_access
 
 
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
@@ -21,4 +21,219 @@ def _is_crown_access_token(token: str) -> bool:
     try:
         parts = token.split(".")
         if len(parts) != 3:
-            return
+            return False
+        payload_bytes = _b64url_decode(parts[1])
+        payload = json.loads(payload_bytes.decode("utf-8"))
+        return payload.get("typ") == "access"
+    except (TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
+        return False
+
+
+def _extract_bearer_token(auth_header: str) -> str | None:
+    scheme, _, token = auth_header.partition(" ")
+    if scheme.lower() != "bearer":
+        return None
+    cleaned_token = token.strip()
+    return cleaned_token or None
+
+
+def _user_from_crown_payload(payload: dict):
+    user_id = str(payload.get("sub") or "").strip()
+    if not user_id:
+        return None
+
+    user_model = get_user_model()
+    try:
+        user = user_model.objects.filter(pk=user_id).first()
+    except (TypeError, ValueError):
+        user = None
+    if user and getattr(user, "is_active", False):
+        if payload.get("school_id"):
+            setattr(user, "school_id", payload.get("school_id"))
+        if payload.get("role"):
+            setattr(user, "role", payload.get("role"))
+        return user
+
+    # Legacy fallback: /api/auth/* token flow still issues tokens for CrownUser.
+    try:
+        legacy_user = CrownUser.objects.filter(pk=user_id).first()
+    except (TypeError, ValueError):
+        return None
+    if not legacy_user or not getattr(legacy_user, "is_active", False):
+        return None
+
+    if payload.get("school_id"):
+        setattr(legacy_user, "school_id", payload.get("school_id"))
+    if payload.get("role"):
+        setattr(legacy_user, "role", payload.get("role"))
+
+    # require_auth checks user.is_authenticated, which CrownUser does not define.
+    setattr(legacy_user, "is_authenticated", True)
+    return legacy_user
+
+
+def authenticate_crown_access_token(token: str):
+    if not _is_crown_access_token(token):
+        return None
+
+    result = decode_access(token)
+    if not result.ok or not result.payload:
+        raise AuthenticationFailed(result.error or "invalid_crown_access_token")
+
+    user = _user_from_crown_payload(result.payload)
+    if user is None:
+        raise AuthenticationFailed("crown_access_user_not_found")
+
+    return user, result.payload
+
+
+def _director_actions_target_school_id(request):
+    """Resolve and validate the school targeted by a director action request."""
+    try:
+        raw_body = request.body or b"{}"
+        payload = json.loads(raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None, JsonResponse({"detail": "Invalid JSON body."}, status=400)
+
+    if not isinstance(payload, dict):
+        return None, JsonResponse({"detail": "JSON body must be an object."}, status=400)
+
+    raw_target_school_id = str(payload.get("school_id") or "").strip()
+    if not raw_target_school_id:
+        return None, JsonResponse({"detail": "school_id is required."}, status=400)
+
+    try:
+        target_school_uuid = UUID(raw_target_school_id)
+    except (TypeError, ValueError, AttributeError):
+        return None, JsonResponse({"detail": "school_id must be a valid UUID."}, status=400)
+
+    raw_header_school_id = str(request.META.get("HTTP_X_SCHOOL_ID") or "").strip()
+    if raw_header_school_id:
+        try:
+            header_school_uuid = UUID(raw_header_school_id)
+        except (TypeError, ValueError, AttributeError):
+            return None, JsonResponse(
+                {"detail": "X-School-Id must be a valid UUID."},
+                status=400,
+            )
+        if header_school_uuid != target_school_uuid:
+            return None, JsonResponse(
+                {"detail": "X-School-Id must match the request school_id."},
+                status=400,
+            )
+
+    return str(target_school_uuid), None
+
+
+def _director_actions_allowed(user, school_id: str) -> bool:
+    """Fail closed for the ledger-mutating director actions endpoint."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    if not getattr(user, "is_staff", False):
+        return False
+
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        return False
+
+    return UserRole.objects.filter(
+        user_id=user_id,
+        school_id=school_id,
+        role_code__in=ALLOWED_DIRECTOR_ROLE_CODES,
+    ).exists()
+
+
+def _audit_early_director_response(request, response):
+    """Mirror AuditMiddleware for responses returned before downstream middleware."""
+    try:
+        AuditLog.objects.create(
+            user_id=getattr(getattr(request, "user", None), "id", None),
+            action=request.method,
+            model=request.path,
+            metadata={"status_code": response.status_code},
+        )
+    except Exception:
+        # Auditing must never turn a rejected request into an application error.
+        pass
+    return response
+
+
+class CrownAccessTokenAuthentication(BaseAuthentication):
+    def authenticate(self, request):
+        underlying_request = getattr(request, "_request", request)
+        pre_authenticated = getattr(underlying_request, "_crown_authenticated", None)
+        if pre_authenticated is not None:
+            return pre_authenticated
+
+        token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
+        if not token:
+            return None
+        authenticated = authenticate_crown_access_token(token)
+        if authenticated is None:
+            return None
+        return authenticated
+
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'
+
+
+class JwtAuthMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.user = getattr(request, "user", None)
+
+        token = _extract_bearer_token(request.META.get("HTTP_AUTHORIZATION") or "")
+        if token:
+            try:
+                authenticated = authenticate_crown_access_token(token)
+            except AuthenticationFailed:
+                authenticated = None
+            if authenticated is not None:
+                user, payload = authenticated
+                request.user = user
+                request.auth = payload
+                setattr(request, "_crown_authenticated", authenticated)
+                # Remove the bearer header once middleware auth succeeds to avoid
+                # downstream SimpleJWT re-parsing/rejecting CROWN access tokens.
+                # CrownAccessTokenAuthentication reuses request._crown_authenticated
+                # so DRF can authenticate without the original bearer header.
+                request.META.pop("HTTP_AUTHORIZATION", None)
+
+        normalized_path = (getattr(request, "path", "") or "").rstrip("/")
+        if (
+            normalized_path.endswith("/director/actions")
+            and request.method in MUTATING_METHODS
+        ):
+            user = getattr(request, "user", None)
+            if not getattr(user, "is_authenticated", False):
+                response = JsonResponse(
+                    {"detail": "Authentication credentials were not provided."},
+                    status=401,
+                )
+                return _audit_early_director_response(request, response)
+
+            target_school_id, error_response = _director_actions_target_school_id(request)
+            if error_response is not None:
+                return _audit_early_director_response(request, error_response)
+
+            if not _director_actions_allowed(user, target_school_id):
+                response = JsonResponse(
+                    {"detail": "Forbidden. Director access required for this school."},
+                    status=403,
+                )
+                return _audit_early_director_response(request, response)
+
+        return self.get_response(request)
+
+
+def require_auth(view_func):
+    def _wrapped(request, *args, **kwargs):
+        user = getattr(request, "user", None)
+        if not getattr(user, "is_authenticated", False):
+            return JsonResponse({"ok": False, "error": "Unauthorized"}, status=401)
+        return view_func(request, *args, **kwargs)
+    return _wrapped
