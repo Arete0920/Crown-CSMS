@@ -2,51 +2,45 @@
 
 Christian School Management Solution
 
-## Getting started
+## Repository authority
 
-**For developers:** See [CROWN Developer Setup](docs/engineering/DEV_SETUP.md) for the canonical local development guide.
+This is the sole active and authoritative CROWN repository.
 
-Do not rely on older duplicated setup instructions if they conflict with that guide.
+- Repository: `tcmegahan/Crown2026`
+- Visibility: private
+- Default branch: `main`
+- Public-facing product name: CROWN
 
-## Current public status
+The former `tcmegahan/Crown-Christian` repository has been permanently deleted and is not an authority source.
 
-CROWN is currently treated as a release-candidate and sandbox-hardening codebase unless a later signed release note explicitly states otherwise.
+## Start here
 
-Do not represent this repository as generally available production software until the release gates in this repository are green and current.
+1. [Repository Manifest](REPOSITORY_MANIFEST.md)
+2. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
+3. [Developer Setup](docs/engineering/DEV_SETUP.md)
+4. [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
+5. [Security Policy](SECURITY.md)
 
-## Public repo rules
+Older documents, generated evidence, and archived status snapshots do not override these sources.
 
-This is a public repository.
+## Current release posture
 
-Never commit:
-- passwords
-- API keys
-- bearer tokens
-- refresh tokens
-- real student data
-- real family data
-- real staff data
-- real school financial data
-- production .env files
-- production database dumps
-- private certificates
-- tenant secrets
-- Microsoft 365 client secrets
+CROWN remains a controlled sandbox release candidate unless a later authorized release record explicitly changes that posture.
 
-Sandbox data must be clearly labeled as sandbox data.
+Do not represent CROWN as generally available production software until the current release gates are green, operational transfer is proven, and an authorized release record approves production use.
 
-## Security
+## Private repository rules
 
-Use private security reporting. Do not open public issues for vulnerabilities. See SECURITY.md.
+Private visibility does not reduce security, privacy, or data-handling requirements. Never commit passwords, API keys, tokens, production environment files, real school data, production database dumps, private certificates, tenant secrets, Microsoft credentials, or unredacted confidential communications.
 
-## Known limitations
+Sandbox data must be synthetic and clearly labeled.
 
-See docs/KNOWN_LIMITATIONS.md.
+## Development accountability
 
-## Public repo status
+CROWN is a founder-directed, collaboratively developed, human-reviewed, and human-accepted product. Repository history is not, by itself, a complete record of product authorship, design responsibility, collaboration, review, or acceptance.
 
-See docs/PUBLIC_REPO_STATUS.md.
+Verified contributor names, GitHub usernames, roles, and responsibility areas will be recorded during the ownership-transfer review. No person will be credited for work without confirmation.
 
-## Release evidence
+## Handoff standard
 
-See docs/release/README.md.
+A successor should be able to clone, configure, test, operate, deploy, recover, and administer CROWN using repository documentation and transferred credentials. Ownership, security access, external services, unresolved risks, and acceptance evidence must be documented before transfer is declared complete.
