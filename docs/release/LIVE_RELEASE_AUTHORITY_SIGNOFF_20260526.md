@@ -1,11 +1,20 @@
 # Live Release Authority Signoff - 2026-05-26
 
+> Superseded Authority Notice
+>
+> This file is a historical release-slice signoff snapshot. It is not current repository-level authority.
+>
+> Current controlling authority: `docs/CURRENT_RELEASE_STATUS.md`.
+>
+> Do not use this file alone to authorize merge, deploy, tag, or production-ready claims.
+> Current authorization requires same-SHA gate settlement on the current release SHA.
+
 Scope note: This signoff is authoritative for the documented release-governance slice only.
 Repository-wide current authority is documented in docs/CURRENT_RELEASE_STATUS.md.
 
 ## Decision
 
-- FINAL GO for release approval.
+- HISTORICAL FINAL GO for the 2026-05-26 documented slice only (superseded for current decisions).
 
 ## Decision Basis
 
@@ -63,4 +72,4 @@ Repository-wide current authority is documented in docs/CURRENT_RELEASE_STATUS.m
 
 ## Release Authority Statement
 
-Release authority is granted for this slice. Runtime proof, governance hardening, and required hosted CI gates are complete and green on the merged mainline state. The previous PR-attached-checks anomaly is no longer the controlling release blocker for this slice because the authoritative hosted gates succeeded on the merge commit.
+Historical release authority was granted for this documented slice. Current release authorization must be taken only from `docs/CURRENT_RELEASE_STATUS.md` with same-SHA required-check settlement on the current release SHA.
