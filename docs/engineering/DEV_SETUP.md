@@ -4,26 +4,24 @@
 **Owner:** CROWN Engineering  
 **Purpose:** One source of truth for local development setup.
 
-This document replaces duplicated local setup instructions in older build, onboarding, and canon documents.
+This guide is editor-neutral. PyCharm, another approved editor, or a terminal-based environment may be used. No specific editor or paid subscription is required.
 
-If another document conflicts with this file, this file controls unless a later signed engineering decision explicitly replaces it.
+## 1. Repository access
 
----
-
-## 1. Repository
-
-Clone and enter the repository:
+CROWN is private. Access requires explicit collaborator authorization.
 
 ```bash
 git clone https://github.com/tcmegahan/Crown2026.git
 cd Crown2026
 ```
 
-For an existing local checkout, open the repository root in VS Code.
+Work from an isolated branch or worktree. Do not commit directly to `main`.
 
-## 2. Python virtual environment
+## 2. Python environment
 
-Canonical approach: repo-root `.venv`.
+Use a repository-root `.venv`.
+
+Linux or macOS:
 
 ```bash
 python3 -m venv .venv
@@ -32,25 +30,13 @@ python -m pip install --upgrade pip
 pip install -r backend/requirements.txt
 ```
 
-On Windows with PowerShell:
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r backend\requirements.txt
-```
-
-**Best practice:** Call the interpreter explicitly in scripts rather than relying on an activated shell:
-
-```bash
-./.venv/bin/python backend/manage.py check
-```
-
-or on Windows:
-
-```powershell
-.\.venv\Scripts\python.exe backend\manage.py check
 ```
 
 ## 3. Frontend dependencies
@@ -61,93 +47,66 @@ npm ci
 cd ../..
 ```
 
-## 4. Required local secrets
+Use the Node and npm versions required by the current package and CI configuration. Do not upgrade dependencies as part of unrelated work.
 
-Copy the local secrets example and fill in local-only values:
+## 4. Local configuration and secrets
+
+Use only local placeholder or development values. Never commit passwords, API keys, tokens, production environment files, production database dumps, real school data, tenant secrets, private certificates, or confidential communications.
+
+Where the local secrets template is present:
 
 ```bash
 cp local.secrets.example local.secrets
 ```
 
-**Never commit:**
+Windows PowerShell:
 
-- passwords
-- API keys
-- bearer tokens
-- refresh tokens
-- production `.env` files
-- production database dumps
-- real student data
-- real family data
-- real staff data
-- real school financial data
-- tenant secrets
-- private certificates
+```powershell
+Copy-Item local.secrets.example local.secrets
+```
 
-## 5. Backend checks
+## 5. Backend verification
 
 ```bash
-source .venv/bin/activate
 python backend/manage.py check
 python backend/manage.py migrate
+pytest backend -m "not integration and not slow"
 ```
 
-Or without activating the environment:
+Do not create or apply new migrations unless the approved work explicitly includes migration changes.
+
+## 6. Start the backend
 
 ```bash
-./.venv/bin/python backend/manage.py check
-./.venv/bin/python backend/manage.py migrate
-```
-
-## 6. Start backend
-
-```bash
-source .venv/bin/activate
 python backend/manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
-Backend health check:
+Verify:
 
 ```bash
 curl -i http://127.0.0.1:8000/health/
 ```
 
-Expected:
+Expected: HTTP 200, a JSON response, and no traceback.
 
-- HTTP 200
-- JSON body
-- no traceback
+## 7. Start the frontend
 
-## 7. Start frontend
-
-Open a second terminal:
+In a second terminal:
 
 ```bash
 cd frontend/dashboards
 npm run dev -- --host 127.0.0.1 --port 3000
 ```
 
-Frontend health check:
+Verify:
 
 ```bash
 curl -i http://127.0.0.1:3000/
 ```
 
-Expected:
+Expected: HTTP 200.
 
-- HTTP 200
-
-## 8. Canonical verification commands
-
-Backend fast check:
-
-```bash
-source .venv/bin/activate
-python backend/manage.py check
-pytest backend -m "not integration and not slow"
-```
-
-Frontend fast check:
+## 8. Frontend verification
 
 ```bash
 cd frontend/dashboards
@@ -160,74 +119,26 @@ npm run build
 Accessibility release check:
 
 ```bash
-cd frontend/dashboards
 npm run test:release:a11y
 ```
 
-## 9. Local troubleshooting
+Run focused tests before broad suites.
 
-Check backend port:
+## 9. Pull-request closeout
 
-```bash
-# Linux/macOS
-lsof -i :8000
+Every pull request must identify:
 
-# Windows
-netstat -ano | findstr ":8000"
-```
+- purpose and bounded scope;
+- files changed and intentionally excluded;
+- validation performed;
+- known failures or limitations;
+- independent-review status;
+- rollback approach where applicable.
 
-Check frontend port:
+Human owners retain implementation, approval, security, and release accountability. Repository account attribution is not a substitute for a verified contributor record.
 
-```bash
-# Linux/macOS
-lsof -i :3000
+## 10. Handoff verification
 
-# Windows
-netstat -ano | findstr ":3000"
-```
+A successor must be able to complete these steps from a clean clone without undocumented local assumptions. Before ownership transfer, independently verify setup, tests, deployment access, rollback, recovery, secrets access, and administrative control.
 
-Kill by PID only when necessary:
-
-```bash
-# Linux/macOS
-kill -9 <PID>
-
-# Windows PowerShell
-taskkill /PID <PID> /F
-```
-
-**Do not repeatedly kill all Python or Node processes without checking ports first.**
-
-## 10. Postgres for local data (if needed)
-
-If your local setup requires a database server:
-
-```bash
-# Via Docker
-docker run -d \
-  --name crown-postgres \
-  -e POSTGRES_PASSWORD=localdev \
-  -e POSTGRES_DB=crown_dev \
-  -p 5432:5432 \
-  postgres:15
-```
-
-Update `backend/.env` with:
-
-```
-DATABASE_URL=<local-postgres-connection-string>
-```
-
-## 11. Day 1 safety note
-
-This file is documentation authority only.
-
-It does not certify:
-
-- pilot readiness
-- GA readiness
-- production readiness
-- compliance completion
-- release approval
-
-For production deployment and release decisions, see your engineering leadership.
+This guide does not certify pilot, production, compliance, or release approval. Use `docs/CURRENT_RELEASE_STATUS.md` for current release authority.
