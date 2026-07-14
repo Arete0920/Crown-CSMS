@@ -34,7 +34,9 @@ Use this section for:
 
 ### `operations/`
 
-Runbooks, deployment procedures, environment notes, release handling, incident handling, recovery procedures, and operator guidance.
+Canonical gateway for runbooks, deployment procedures, environment notes, release handling, incident handling, recovery procedures, and operator guidance.
+
+Start with `operations/README.md`. New operational documentation belongs in this directory.
 
 Use this section for:
 
@@ -44,6 +46,10 @@ Use this section for:
 - CI and CD operational notes
 - rotation and maintenance procedures
 - environment readiness guidance
+
+### `ops/`
+
+Legacy supporting operational material pending file-by-file inventory and reconciliation. Do not add new documents here. Material in this directory does not override `operations/README.md` or the Canonical Document Index.
 
 ### `security/`
 
@@ -113,6 +119,7 @@ When updating documentation:
 - avoid redundant summaries when a source-of-truth document already exists
 - move stale or superseded material into `archive/`
 - keep the repository root minimal
+- place new operational documentation under `operations/`, not `ops/`
 
 ## Naming guidance
 
