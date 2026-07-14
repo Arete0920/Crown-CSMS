@@ -152,6 +152,26 @@ test.afterAll(() => {
   writeCertificationSummary();
 
   const failed = loadCertificationResults().filter((row) => row.status === "FAIL");
+  if (failed.length > 0) {
+    console.error("SCAFFOLD_CERTIFICATION_FAILED_ROUTES_BEGIN");
+    for (const row of failed) {
+      console.error(JSON.stringify({
+        id: row.id,
+        route: row.route,
+        persona: row.persona,
+        tenant: row.tenant,
+        errors: row.errors,
+        missingExpectedApis: row.missingExpectedApis,
+        failedRequests: row.failedRequests,
+        missingProvenance: row.missingProvenance ?? [],
+        nonLiveProvenance: row.nonLiveProvenance ?? [],
+        consoleErrors: row.consoleErrors,
+        criticalAccessibilityViolations: row.criticalAccessibilityViolations,
+      }));
+    }
+    console.error("SCAFFOLD_CERTIFICATION_FAILED_ROUTES_END");
+  }
+
   const details = failed.map((row) => `${row.id} / ${row.persona} / ${row.tenant}: ${row.errors.join("; ")}`);
   expect(failed, details.join("\n")).toEqual([]);
 });
