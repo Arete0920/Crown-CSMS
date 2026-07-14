@@ -15,7 +15,7 @@ The former `tcmegahan/Crown-Christian` repository has been permanently deleted a
 
 ## Start here
 
-1. [Repository Manifest](REPOSITORY_MANIFEST.md)
+1. [Repository Manifest](docs/canonical/REPOSITORY_MANIFEST.md)
 2. [Canonical Document Index](docs/canonical/CANONICAL_DOCUMENT_INDEX.md)
 3. [Developer Setup](docs/engineering/DEV_SETUP.md)
 4. [Current Release Status](docs/CURRENT_RELEASE_STATUS.md)
