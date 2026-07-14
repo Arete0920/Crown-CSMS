@@ -16,6 +16,7 @@ A document is authoritative only when listed here as `CANONICAL` or when a later
 | Repository structure | `docs/canonical/REPOSITORY_MANIFEST.md` | CANONICAL |
 | Developer setup | `docs/engineering/DEV_SETUP.md` | CANONICAL |
 | Documentation navigation | `docs/README.md` | CANONICAL |
+| Operations navigation | `docs/operations/README.md` | CANONICAL OPERATIONS GATEWAY |
 | Current release posture | `docs/CURRENT_RELEASE_STATUS.md` | CANONICAL RELEASE AUTHORITY |
 | Security reporting | `SECURITY.md` | CANONICAL |
 | Contribution rules | `CONTRIBUTING.md` | CANONICAL, review during ownership transfer |
@@ -26,7 +27,8 @@ A document is authoritative only when listed here as `CANONICAL` or when a later
 | Subject | Document or area | Status |
 |---|---|---|
 | System context | `docs/architecture/` | CONSOLIDATION REQUIRED |
-| Deployment and recovery | `docs/operations/`, `docs/ops/` | CONSOLIDATION REQUIRED |
+| Current operations material | `docs/operations/` | CONTROLLED BY `docs/operations/README.md` |
+| Legacy operations material | `docs/ops/` | LEGACY SUPPORTING; INVENTORY REQUIRED |
 | Historical development provenance | `docs/provenance/` | HISTORICAL/SUPPORTING |
 | Release evidence | `docs/release/evidence/` | GENERATED OR SUPPORTING EVIDENCE |
 | Completion snapshots | `docs/completion/` | MIXED AGE; NOT CURRENT AUTHORITY |
