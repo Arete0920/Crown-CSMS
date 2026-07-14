@@ -7,6 +7,8 @@
 > Current controlling release-authority sources:
 > - docs/CURRENT_RELEASE_STATUS.md
 > - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+>
+> Current merge/deploy authority requires same-SHA gate settlement on the active release SHA.
 
 ## 1) Verified Release / Governance Status
 
@@ -18,7 +20,7 @@
   - `Release Verify`
 - PR #855 (signoff reconciliation) was merged by squash.
 - Merge commit: `a397a47c33d1c8ddc7f7b29b5303ba2a33a96938`.
-- `origin/main` release authority memo now reflects `FINAL GO`:
+- Immutable commit `a397a47c33d1c8ddc7f7b29b5303ba2a33a96938` contained the `FINAL GO` memo for that 2026-05-26 slice:
   - `docs/release/LIVE_RELEASE_AUTHORITY_SIGNOFF_20260526.md`
 
 ### Governance evidence anchors
@@ -131,11 +133,11 @@ powershell.exe -ExecutionPolicy Bypass -File .\scripts\release\12_verify_backend
 powershell.exe -ExecutionPolicy Bypass -File .\scripts\release\13_verify_workflows_and_deploy_risk.ps1
 ```
 
-### Recent release-truth spot checks
+### Historical release-truth spot checks
 ```powershell
 gh pr view 855 --repo tcmegahan/Crown2026 --json state,mergedAt,mergeCommit,headRefName,baseRefName,url
-git fetch origin main
-git show origin/main:docs/release/LIVE_RELEASE_AUTHORITY_SIGNOFF_20260526.md | Select-String -Pattern "## Decision","FINAL GO" -CaseSensitive
+git fetch --no-tags origin a397a47c33d1c8ddc7f7b29b5303ba2a33a96938
+git show a397a47c33d1c8ddc7f7b29b5303ba2a33a96938:docs/release/LIVE_RELEASE_AUTHORITY_SIGNOFF_20260526.md | Select-String -Pattern "## Decision","FINAL GO" -CaseSensitive
 ```
 
 ### Source references
@@ -145,16 +147,16 @@ git show origin/main:docs/release/LIVE_RELEASE_AUTHORITY_SIGNOFF_20260526.md | S
 - `audit-artifacts/runtime-release-closure/20260418_070051/13.ps1`
 - `audit-artifacts/runtime-release-closure/20260418_070051/15.ps1`
 
-## 7) Immediate Next Actions (Repo Truth + Production-Readiness Review)
+## 7) Immediate Next Actions (Historical Context Only)
 
-1. Freeze this brief as current authority baseline for this cycle.
+1. Keep this brief as historical context only; use `docs/CURRENT_RELEASE_STATUS.md` for current authority.
 2. Resolve open ownership unknowns in `ASSUMPTIONS_REGISTER.md` with named owners and due dates.
 3. Publish/confirm a single route ownership canon for Core vs Modules boundaries.
 4. Run the high-risk verification set once per release-candidate cut and archive outputs under `audit-artifacts/verify-high-risk/`.
 5. Enforce evidence-first updates: no authority statement changes without matching hosted gate evidence and artifact references.
 6. Continue competitor review as pattern-only input (no code import, no scope expansion) under controlled benchmark guardrails.
-7. Start next production-readiness review from this brief, then diff only new evidence since merge commit `a397a47c33d1c8ddc7f7b29b5303ba2a33a96938`.
+7. Start the next production-readiness review from current controlling authority, then diff evidence after merge commit `a397a47c33d1c8ddc7f7b29b5303ba2a33a96938`.
 
 ## 8) Authority Statement
 
-As of 2026-05-26, current authority posture for this release slice is `FINAL GO`, with PR #854 and PR #855 merged and release signoff reconciled on `main`.
+As of 2026-05-26, this file recorded a historical `FINAL GO` decision for that documented release slice. It is not current repository-level authority for merge/deploy decisions.

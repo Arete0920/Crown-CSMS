@@ -7,12 +7,14 @@
 > Current controlling release-authority sources:
 > - docs/CURRENT_RELEASE_STATUS.md
 > - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+>
+> Current merge/deploy decisions require same-SHA required-check settlement on the active release SHA.
 
 ## Executive Decision
-- Release authority posture for this slice is `FINAL GO`.
+- Historical release authority posture for this documented slice was `FINAL GO`.
 - Runtime governance + dashboard truth closure was merged via PR #854.
 - Signoff reconciliation was merged via PR #855.
-- `origin/main` reflects `FINAL GO` in `docs/release/LIVE_RELEASE_AUTHORITY_SIGNOFF_20260526.md`.
+- Immutable commit `a397a47c33d1c8ddc7f7b29b5303ba2a33a96938` contained `docs/release/LIVE_RELEASE_AUTHORITY_SIGNOFF_20260526.md` with the historical `FINAL GO` decision for that slice.
 
 ## Release Truth (Verified)
 - PR #854 merge commit: `865bb5d4f2e88bf41b07fad66725403a19529f72`.
@@ -65,14 +67,14 @@ powershell -ExecutionPolicy Bypass -File scripts/release/13_verify_workflows_and
 .venv/Scripts/python.exe tools/verify_workflow_policy.py
 ```
 
-## Immediate Next Actions (Repo Truth + Production Readiness)
-1. Freeze this brief as authority baseline for this cycle.
+## Immediate Next Actions (Historical Context Only)
+1. Keep this brief as historical context only; use `docs/CURRENT_RELEASE_STATUS.md` for current authority.
 2. Resolve ownership unknowns with named owners + due dates.
 3. Publish single route ownership canon for Core vs Modules.
 4. Run high-risk verification set each release-candidate cut and archive outputs.
 5. Enforce evidence-first authority updates only.
 6. Keep competitor benchmarking pattern-only (no code import, no uncontrolled scope expansion).
-7. Start next readiness review by diffing evidence after merge `a397a47c33d1c8ddc7f7b29b5303ba2a33a96938`.
+7. Start the next readiness review from current controlling authority and diff evidence after merge `a397a47c33d1c8ddc7f7b29b5303ba2a33a96938`.
 
 ## Source of Truth Documents
 - `audit-artifacts/runtime-release-closure/20260418_070051/CROWN_CURRENT_AUTHORITY_BRIEF_20260526.md`
