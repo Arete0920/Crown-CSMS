@@ -7,8 +7,27 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "../..")
 Set-Location $repoRoot
 
-function Resolve-ManifestPath([string]$manifestAssetPath) {
+function Resolve-ManifestPath([AllowNull()][AllowEmptyString()][string]$manifestAssetPath) {
+  if ([string]::IsNullOrWhiteSpace($manifestAssetPath)) {
+    return $null
+  }
+
   return "frontend/dashboards/public" + ($manifestAssetPath -replace '^/brand', '/brand')
+}
+
+function Test-ManifestAsset([AllowNull()][AllowEmptyString()][string]$manifestAssetPath) {
+  $resolvedPath = Resolve-ManifestPath $manifestAssetPath
+  if ([string]::IsNullOrWhiteSpace($resolvedPath)) {
+    return [PSCustomObject]@{
+      resolvedPath = $null
+      exists = $false
+    }
+  }
+
+  return [PSCustomObject]@{
+    resolvedPath = $resolvedPath
+    exists = (Test-Path -LiteralPath $resolvedPath -PathType Leaf)
+  }
 }
 
 $crownManifestPath = "frontend/dashboards/public/brand/crown/manifest.json"
@@ -19,25 +38,23 @@ $msManifest = Get-Content $msManifestPath -Raw | ConvertFrom-Json
 
 $crownAssets = @()
 foreach ($prop in $crownManifest.assets.PSObject.Properties) {
-  $path = Resolve-ManifestPath $prop.Value.path
-  $exists = Test-Path $path
+  $asset = Test-ManifestAsset $prop.Value.path
   $crownAssets += [PSCustomObject]@{
     key = $prop.Name
     path = $prop.Value.path
-    resolvedPath = $path
-    exists = $exists
+    resolvedPath = $asset.resolvedPath
+    exists = $asset.exists
   }
 }
 
 $msAssets = @()
 foreach ($prop in $msManifest.assets.PSObject.Properties) {
-  $path = Resolve-ManifestPath $prop.Value.path
-  $exists = Test-Path $path
+  $asset = Test-ManifestAsset $prop.Value.path
   $msAssets += [PSCustomObject]@{
     key = $prop.Name
     path = $prop.Value.path
-    resolvedPath = $path
-    exists = $exists
+    resolvedPath = $asset.resolvedPath
+    exists = $asset.exists
   }
 }
 
@@ -54,7 +71,7 @@ $faviconAssets = @()
 foreach ($f in $faviconRequired) {
   $faviconAssets += [PSCustomObject]@{
     path = $f
-    exists = (Test-Path $f)
+    exists = (Test-Path -LiteralPath $f -PathType Leaf)
   }
 }
 
