@@ -13,7 +13,7 @@ A document is authoritative only when listed here as `CANONICAL` or when a later
 | Subject | Document | Status |
 |---|---|---|
 | Repository orientation | `README.md` | CANONICAL |
-| Repository structure | `REPOSITORY_MANIFEST.md` | CANONICAL |
+| Repository structure | `docs/canonical/REPOSITORY_MANIFEST.md` | CANONICAL |
 | Developer setup | `docs/engineering/DEV_SETUP.md` | CANONICAL |
 | Documentation navigation | `docs/README.md` | CANONICAL |
 | Current release posture | `docs/CURRENT_RELEASE_STATUS.md` | CANONICAL RELEASE AUTHORITY |
