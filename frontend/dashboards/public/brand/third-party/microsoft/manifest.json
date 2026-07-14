@@ -3,73 +3,22 @@
   "assetPolicy": "Official Microsoft assets only. No generated, placeholder, recolored, traced, altered, or Microsoft-like replacement logos.",
   "sourceRegister": "/brand/third-party/microsoft/usage/microsoft-logo-source-register.md",
   "assets": {
-    "microsoft365": {
-      "path": "/brand/third-party/microsoft/microsoft-365/microsoft-365-logo.svg",
-      "usage": ["integrations", "m365Readiness", "settings"]
-    },
-    "teams": {
-      "path": "/brand/third-party/microsoft/apps/teams-logo.svg",
-      "usage": ["communications", "teamsIntegration", "classroomCollaboration"]
-    },
-    "outlook": {
-      "path": "/brand/third-party/microsoft/apps/outlook-logo.svg",
-      "usage": ["communications", "email", "calendar"]
-    },
-    "word": {
-      "path": "/brand/third-party/microsoft/apps/word-logo.svg",
-      "usage": ["documents", "templates", "reports"]
-    },
-    "excel": {
-      "path": "/brand/third-party/microsoft/apps/excel-logo.svg",
-      "usage": ["spreadsheets", "exports", "finance"]
-    },
-    "powerpoint": {
-      "path": "/brand/third-party/microsoft/apps/powerpoint-logo.svg",
-      "usage": ["presentations", "boardReports"]
-    },
-    "onenote": {
-      "path": "/brand/third-party/microsoft/apps/onenote-logo.svg",
-      "usage": ["notes", "classroom", "staffNotes"]
-    },
-    "onedrive": {
-      "path": "/brand/third-party/microsoft/apps/onedrive-logo.svg",
-      "usage": ["documents", "uploads", "familyFiles"]
-    },
-    "sharepoint": {
-      "path": "/brand/third-party/microsoft/apps/sharepoint-logo.svg",
-      "usage": ["documents", "policies", "knowledgeBase"]
-    },
-    "forms": {
-      "path": "/brand/third-party/microsoft/apps/forms-logo.svg",
-      "usage": ["forms", "surveys", "parentSubmissions"]
-    },
-    "planner": {
-      "path": "/brand/third-party/microsoft/apps/planner-logo.svg",
-      "usage": ["tasks", "workflows"]
-    },
-    "bookings": {
-      "path": "/brand/third-party/microsoft/apps/bookings-logo.svg",
-      "usage": ["tours", "appointments", "conferences"]
-    },
-    "entra": {
-      "path": "/brand/third-party/microsoft/identity-security/entra-id-logo.svg",
-      "usage": ["identity", "sso", "security"]
-    },
-    "azure": {
-      "path": "/brand/third-party/microsoft/identity-security/azure-logo.svg",
-      "usage": ["hosting", "deployment", "infrastructure"]
-    },
-    "intune": {
-      "path": "/brand/third-party/microsoft/identity-security/intune-logo.svg",
-      "usage": ["devices", "endpointManagement"]
-    },
-    "defender": {
-      "path": "/brand/third-party/microsoft/identity-security/defender-logo.svg",
-      "usage": ["security", "compliance"]
-    },
-    "microsoftEducation": {
-      "path": "/brand/third-party/microsoft/education/microsoft-education-logo.svg",
-      "usage": ["educationIntegrations", "schoolSetup"]
-    }
+    "microsoft365": { "path": null, "usage": ["integrations", "m365Readiness", "settings"] },
+    "teams": { "path": null, "usage": ["communications", "teamsIntegration", "classroomCollaboration"] },
+    "outlook": { "path": null, "usage": ["communications", "email", "calendar"] },
+    "word": { "path": null, "usage": ["documents", "templates", "reports"] },
+    "excel": { "path": null, "usage": ["spreadsheets", "exports", "finance"] },
+    "powerpoint": { "path": null, "usage": ["presentations", "boardReports"] },
+    "onenote": { "path": null, "usage": ["notes", "classroom", "staffNotes"] },
+    "onedrive": { "path": null, "usage": ["documents", "uploads", "familyFiles"] },
+    "sharepoint": { "path": null, "usage": ["documents", "policies", "knowledgeBase"] },
+    "forms": { "path": null, "usage": ["forms", "surveys", "parentSubmissions"] },
+    "planner": { "path": null, "usage": ["tasks", "workflows"] },
+    "bookings": { "path": null, "usage": ["tours", "appointments", "conferences"] },
+    "entra": { "path": null, "usage": ["identity", "sso", "security"] },
+    "azure": { "path": null, "usage": ["hosting", "deployment", "infrastructure"] },
+    "intune": { "path": null, "usage": ["devices", "endpointManagement"] },
+    "defender": { "path": null, "usage": ["security", "compliance"] },
+    "microsoftEducation": { "path": null, "usage": ["educationIntegrations", "schoolSetup"] }
   }
 }
