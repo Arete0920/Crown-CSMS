@@ -2,12 +2,12 @@
 /**
  * Crown Full Surface Verification Runner
  * Executes each surface gate in sequence; breaks and exits 1 on first failure.
- * Writes a timestamped JSON manifest + raw log to artifacts/verification/.
+ * Writes timestamped evidence plus stable latest/failure files for CI diagnosis.
  */
 
 import { spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -15,32 +15,52 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const ARTIFACT_DIR = join(ROOT, "artifacts", "verification");
 
+function positiveIntegerEnv(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const parsed = Number(raw);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${name} must be a positive integer; received ${JSON.stringify(raw)}.`);
+  }
+  return parsed;
+}
+
 const TIMESTAMP = new Date().toISOString().replace(/[:.]/g, "-");
 const MANIFEST_FILE = join(ARTIFACT_DIR, `verification-manifest-${TIMESTAMP}.json`);
 const LOG_FILE = join(ARTIFACT_DIR, `verification-raw-${TIMESTAMP}.log`);
-const DEFAULT_GATE_TIMEOUT_MS = Number(process.env.CROWN_VERIFY_GATE_TIMEOUT_MS || 20 * 60 * 1000);
+const LATEST_MANIFEST_FILE = join(ARTIFACT_DIR, "verification-latest.json");
+const LATEST_LOG_FILE = join(ARTIFACT_DIR, "verification-latest.log");
+const FAILURE_FILE = join(ARTIFACT_DIR, "verification-failure.log");
+const DEFAULT_GATE_TIMEOUT_MS = positiveIntegerEnv("CROWN_VERIFY_GATE_TIMEOUT_MS", 20 * 60 * 1000);
+const FAILURE_TAIL_LINES = positiveIntegerEnv("CROWN_VERIFY_FAILURE_TAIL_LINES", 120);
 
-// ── Surface gate command list ──────────────────────────────────────────────
 const commands = [
-  { label: "lint",                          cmd: "npm run lint" },
-  { label: "build",                         cmd: "npm run build" },
-  { label: "test:contracts",               cmd: "npm run test:contracts" },
+  { label: "lint", cmd: "npm run lint" },
+  { label: "build", cmd: "npm run build" },
+  { label: "test:contracts", cmd: "npm run test:contracts" },
   { label: "check:shell-backend-contract-parity", cmd: "npm run check:shell-backend-contract-parity" },
-  { label: "ui:proof:nav",                 cmd: "npm run ui:proof:nav" },
-  { label: "ui:proof:matrix-pack-3",       cmd: "npm run ui:proof:matrix-pack-3" },
-  { label: "test:release:routes",          cmd: "npm run test:release:routes" },
-  { label: "test:release:a11y",            cmd: "npm run test:release:a11y" },
+  { label: "ui:proof:nav", cmd: "npm run ui:proof:nav" },
+  { label: "ui:proof:matrix-pack-3", cmd: "npm run ui:proof:matrix-pack-3" },
+  { label: "test:release:routes", cmd: "npm run test:release:routes" },
+  { label: "test:release:a11y", cmd: "npm run test:release:a11y" },
 ];
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-function log(msg) {
-  process.stdout.write(msg + "\n");
-  rawLog.push(msg);
+function consoleLog(message) {
+  process.stdout.write(`${message}\n`);
+}
+
+function appendRaw(message) {
+  rawLog.push(message);
+}
+
+function record(message) {
+  consoleLog(message);
+  appendRaw(message);
 }
 
 function runCmd(cmd) {
-  const [prog, ...args] = cmd.split(" ");
-  const result = spawnSync(prog, args, {
+  const [program, ...args] = cmd.split(" ");
+  const result = spawnSync(program, args, {
     cwd: ROOT,
     shell: true,
     encoding: "utf8",
@@ -55,63 +75,100 @@ function runCmd(cmd) {
   };
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+function outputLines(stdout, stderr) {
+  return [
+    ...stdout.split("\n").filter(Boolean).map((line) => `stdout | ${line}`),
+    ...stderr.split("\n").filter(Boolean).map((line) => `stderr | ${line}`),
+  ];
+}
+
+function failureTail(lines) {
+  return lines.slice(-FAILURE_TAIL_LINES).join("\n");
+}
+
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 
 const rawLog = [];
 const results = [];
 let failed = false;
+let failureEvidence = "";
 
-log(`[crown:verify] CROWN FULL SURFACE VERIFICATION`);
-log(`[crown:verify] Started: ${new Date().toISOString()}`);
-log(`[crown:verify] Artifact dir: ${ARTIFACT_DIR}`);
-log(`[crown:verify] Total gates: ${commands.length}`);
-  log(`[crown:verify] Gate timeout: ${DEFAULT_GATE_TIMEOUT_MS}ms`);
-log("─".repeat(72));
+record("[crown:verify] CROWN FULL SURFACE VERIFICATION");
+record(`[crown:verify] Started: ${new Date().toISOString()}`);
+record(`[crown:verify] Artifact dir: ${ARTIFACT_DIR}`);
+record(`[crown:verify] Total gates: ${commands.length}`);
+record(`[crown:verify] Gate timeout: ${DEFAULT_GATE_TIMEOUT_MS}ms`);
+record("-".repeat(72));
 
 for (const { label, cmd } of commands) {
-  log(`\n[GATE] ${label}`);
-  log(`  cmd: ${cmd}`);
+  record(`\n[GATE] ${label}`);
+  record(`  cmd: ${cmd}`);
 
   const start = Date.now();
   const { stdout, stderr, status, timedOut } = runCmd(cmd);
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
   const passed = status === 0;
+  const lines = outputLines(stdout, stderr);
 
-  if (stdout) stdout.split("\n").forEach((l) => log(`  | ${l}`));
-  if (stderr) stderr.split("\n").forEach((l) => log(`  ! ${l}`));
-  if (timedOut) log(`  ! command timed out after ${DEFAULT_GATE_TIMEOUT_MS}ms`);
+  for (const line of lines) appendRaw(`  ${line}`);
+  if (timedOut) appendRaw(`  command timed out after ${DEFAULT_GATE_TIMEOUT_MS}ms`);
 
   const outcome = passed ? "PASS" : "FAIL";
-  log(`  → ${outcome} (exit ${status}, ${elapsed}s)`);
+  record(`  -> ${outcome} (exit ${status}, ${elapsed}s)`);
 
-  results.push({ label, cmd, status, elapsed: `${elapsed}s`, outcome });
+  results.push({ label, cmd, status, elapsed: `${elapsed}s`, outcome, timedOut });
 
   if (!passed) {
     failed = true;
-    log(`\n[crown:verify] ABORT: gate "${label}" failed with exit ${status}.`);
+    const tail = failureTail(lines);
+    failureEvidence = [
+      `gate=${label}`,
+      `command=${cmd}`,
+      `exit=${status}`,
+      `timed_out=${timedOut}`,
+      `elapsed=${elapsed}s`,
+      "",
+      tail || "(command produced no stdout/stderr)",
+      "",
+    ].join("\n");
+
+    consoleLog(`::error title=CROWN full verification failed::Gate ${label} failed with exit ${status}`);
+    consoleLog("[crown:verify] ACTIONABLE FAILURE TAIL");
+    consoleLog(failureEvidence);
+    appendRaw("[crown:verify] ACTIONABLE FAILURE TAIL");
+    appendRaw(failureEvidence);
+    record(`[crown:verify] ABORT: gate "${label}" failed with exit ${status}.`);
     break;
   }
 }
 
-log("─".repeat(72));
-log(`[crown:verify] Finished: ${new Date().toISOString()}`);
+record("-".repeat(72));
+record(`[crown:verify] Finished: ${new Date().toISOString()}`);
 
 const summary = {
   timestamp: new Date().toISOString(),
-  passed: results.filter((r) => r.outcome === "PASS").length,
-  failed: results.filter((r) => r.outcome === "FAIL").length,
+  passed: results.filter((result) => result.outcome === "PASS").length,
+  failed: results.filter((result) => result.outcome === "FAIL").length,
   total: commands.length,
+  completed: results.length,
   overall: failed ? "FAIL" : "PASS",
+  failed_gate: results.find((result) => result.outcome === "FAIL")?.label ?? null,
   gates: results,
 };
 
-log(`[crown:verify] Summary: ${summary.passed}/${commands.length} gates PASS — overall: ${summary.overall}`);
+record(`[crown:verify] Summary: ${summary.passed}/${commands.length} gates PASS - overall: ${summary.overall}`);
 
-writeFileSync(MANIFEST_FILE, JSON.stringify(summary, null, 2), "utf8");
-writeFileSync(LOG_FILE, rawLog.join("\n"), "utf8");
+const manifestJson = `${JSON.stringify(summary, null, 2)}\n`;
+const rawLogText = `${rawLog.join("\n")}\n`;
+writeFileSync(MANIFEST_FILE, manifestJson, "utf8");
+writeFileSync(LOG_FILE, rawLogText, "utf8");
+writeFileSync(LATEST_MANIFEST_FILE, manifestJson, "utf8");
+writeFileSync(LATEST_LOG_FILE, rawLogText, "utf8");
+writeFileSync(FAILURE_FILE, failureEvidence || "No failure. Full verification passed.\n", "utf8");
 
-log(`[crown:verify] Manifest: ${MANIFEST_FILE}`);
-log(`[crown:verify] Log:      ${LOG_FILE}`);
+consoleLog(`[crown:verify] Manifest: ${MANIFEST_FILE}`);
+consoleLog(`[crown:verify] Log: ${LOG_FILE}`);
+consoleLog(`[crown:verify] Latest manifest: ${LATEST_MANIFEST_FILE}`);
+consoleLog(`[crown:verify] Failure evidence: ${FAILURE_FILE}`);
 
 process.exit(failed ? 1 : 0);
