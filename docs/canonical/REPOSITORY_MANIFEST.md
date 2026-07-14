@@ -17,7 +17,8 @@ This manifest explains the intended role of the repository's major areas. It is 
 | `.github/` | Repository governance | Pull-request templates, ownership rules, workflows, and GitHub configuration. |
 | `docs/architecture/` | Architecture | System boundaries, runtime entrypoints, tenancy, integrations, and deployment design. |
 | `docs/engineering/` | Engineering | Setup, contribution practices, testing, and engineering policy. |
-| `docs/operations/` and `docs/ops/` | Operations | Deployment, recovery, maintenance, rotation, and operator procedures. |
+| `docs/operations/` | Canonical operations home | Deployment, recovery, maintenance, rotation, incident, and operator procedures governed by `docs/operations/README.md`. |
+| `docs/ops/` | Legacy supporting operations material | Existing operational documents pending file-by-file inventory and reconciliation. New documents must not be added here. |
 | `docs/security/` | Security | Security policies, controls, and evidence boundaries. |
 | `docs/canonical/` | Document authority | Canonical document index and authority rules. |
 | `docs/provenance/` | Historical provenance | Human contribution, development lineage, and supporting attribution records. |
@@ -50,6 +51,7 @@ The repository root should contain only immediate orientation, governance, build
 5. Superseded canonical documents must identify their replacement.
 6. Workflow deletion or modification requires focused review.
 7. Security, authentication, tenancy, deployment, migrations, and package manifests require evidence-based change control.
+8. New operational documentation belongs under `docs/operations/`; `docs/ops/` is frozen pending reconciliation.
 
 ## Handoff validation
 
