@@ -1,0 +1,112 @@
+name: CROWN Work Item
+description: Create a scoped defect, architecture, operational, security, release, or technical-debt work item.
+title: "[TYPE] "
+labels: []
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Work type
+      options:
+        - Defect
+        - Architecture decision
+        - Security finding
+        - Operational readiness
+        - Release blocker
+        - Technical debt
+        - Documentation
+        - Feature
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 - release or security critical
+        - P1 - high
+        - P2 - normal
+        - P3 - backlog
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or objective
+      description: State the verified problem or required outcome. Separate evidence from assumptions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Current evidence
+      description: Include exact files, routes, commands, logs, screenshots, commits, or runtime observations.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and exclusions
+      description: Identify allowed domains or files and explicitly state what must not be changed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Security, tenant, data, and operational risks
+      description: State whether each category applies and the principal risk.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use testable checklist items.
+      value: |
+        - [ ]
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and related work
+      description: Link related issues, pull requests, ADRs, vendors, infrastructure, or decisions.
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Required validation and evidence
+      description: Identify the tests, review, migration reconciliation, runtime proof, or drill required for closure.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback or reversal
+      description: Describe how the change can be safely reversed or why rollback is not applicable.
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: Proposed owner
+      description: Use a verified GitHub username when known.
+
+  - type: checkboxes
+    id: claims
+    attributes:
+      label: Claim controls
+      options:
+        - label: This issue does not independently authorize production release.
+          required: true
+        - label: I have not represented sample, scaffold, snapshot, or fallback data as live production evidence.
+          required: true
