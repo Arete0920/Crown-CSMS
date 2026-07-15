@@ -10,6 +10,7 @@ Purpose: Canonical repository-level release posture for CROWN.
 3. Historical GO, SHIP, PASS, RELEASE_READY, PARTIAL, prior candidate-SHA documents, local transcript notes, and superseded audit packets are non-authoritative unless this file explicitly promotes them.
 4. Product, sandbox, pilot, and production claims require current repository evidence and same-SHA gate settlement.
 5. This file does not approve unrestricted production release.
+6. The repository snapshot below is a point-in-time observation. Live GitHub state controls when this document and current repository state differ.
 
 ## Current Decision
 
@@ -22,9 +23,10 @@ Purpose: Canonical repository-level release posture for CROWN.
 - Repository: `tcmegahan/Crown2026`
 - Visibility: private
 - Default branch: `main`
-- Current main SHA observed through the GitHub connector on 2026-07-15: `6a8492e874d9fee26cbc848e2a74b94d0946c3c7`
-- Latest main change: PR #1349, a documentation-only architecture-authority change with no runtime, workflow, deployment, security-control, or ownership change.
-- PR #1349 integration checks completed successfully before merge; this does not by itself prove post-merge current-main or deployed-runtime settlement.
+- Current main SHA observed through the GitHub connector on 2026-07-15: `7c28cfcd4ab1d48d7de336c8ec9dcc76143a0ee4`
+- Latest main change: PR #1350, a documentation and CI-classification authority correction that reconciled repository authority and sandbox gate scope.
+- PR #1350 integration checks completed successfully before merge; this does not by itself prove post-merge current-main or deployed-runtime settlement.
+- PR #1354 remains open for repository ownership, attribution, and human-review governance. An open or unmerged PR is not shipped authority.
 - Current-main same-SHA required-gate settlement: **NOT PROVEN by this document**.
 - Production deployment SHA alignment with current main: **NOT PROVEN by this document**.
 - Open PR and issue state must be checked live; counts in historical evidence packets are not current authority.
@@ -50,7 +52,8 @@ Purpose: Canonical repository-level release posture for CROWN.
 
 ### Payment-provider readiness
 
-- #1298 — tenant-selected provider readiness for Stripe, CompuWerx naming pending vendor normalization, and Metro Merchant Services.
+- #1298 — tenant-selected provider readiness for CompuWerx and Metro Merchant Services.
+- Stripe is not an approved CROWN payment provider and must not be represented as supported without a separate explicit Product Owner decision.
 - No provider may be represented as production-enabled for a school until contracts, credentials, webhook behavior, settlement and refund controls, tenant isolation, and security obligations are verified.
 
 ### Visual and release-visible QA
