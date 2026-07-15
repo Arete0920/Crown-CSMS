@@ -1,4 +1,3 @@
-# backend/core/tenant_header_middleware.py
 from __future__ import annotations
 
 import os
@@ -7,8 +6,8 @@ from django.conf import settings
 from django.http import JsonResponse
 
 from core.models import School
-from core.tenant_models import set_current_school, clear_current_school
-from crown_api.tenant import resolve_tenant_school_id
+from core.tenant_models import clear_current_school, set_current_school
+from crown_api.tenant import bind_tenant_context, build_tenant_context
 
 
 def _is_production_runtime() -> bool:
@@ -34,24 +33,11 @@ def _is_dashboard_api_path(path: str) -> bool:
 
 class TenantHeaderRequiredMiddleware:
     """
-    Enforces tenant resolution for /api/* calls.
+    Enforce and bind the canonical tenant context for protected API requests.
 
-    Policy (in priority order):
-    1. Unauthenticated production dashboard calls return 401 before tenant validation
-    2. X-School-Id header is used when present (primary)
-    3. Authenticated user.school_id is the fallback for users without a header
-    4. Missing tenant returns 400
-
-    IMPORTANT: This middleware MUST run after AuthenticationMiddleware and
-    JwtAuthMiddleware so request.user is populated and the user.school_id
-    fallback path works correctly.
-
-    Exempted paths: /api/auth/*, /api/v1/auth/*, /api/health/*, /api/v1/health/*,
-    /api/integrity/*, /api/schema/*, /api/docs/*
-
-    Attaches request.school (School instance) and request.school_id (str UUID)
-    for downstream view usage, and sets the thread-local tenant context so audit
-    and scoping utilities pick up the right school.
+    This remains after authentication middleware so authenticated-school fallback
+    and staff override authorization are available before business logic executes.
+    Existing exemptions are intentionally unchanged during the first migration lane.
     """
 
     EXEMPT_PREFIXES = (
@@ -104,8 +90,8 @@ class TenantHeaderRequiredMiddleware:
 
             for prefix in self.EXEMPT_PREFIXES:
                 if normalized_path.startswith(prefix):
-                    resolved = resolve_tenant_school_id(request)
-                    if resolved.source == "header_invalid":
+                    context = build_tenant_context(request)
+                    if context.source == "header_invalid":
                         return JsonResponse(
                             {
                                 "detail": "Invalid X-School-Id (must be UUID).",
@@ -113,6 +99,7 @@ class TenantHeaderRequiredMiddleware:
                             },
                             status=400,
                         )
+                    bind_tenant_context(request, context)
                     return self.get_response(request)
 
             if _dev_open_dashboard_bypass_enabled() and _is_dashboard_api_path(normalized_path):
@@ -126,10 +113,9 @@ class TenantHeaderRequiredMiddleware:
                         status=401,
                     )
 
-            resolved = resolve_tenant_school_id(request)
-            school_id = resolved.school_id
+            context = build_tenant_context(request)
 
-            if resolved.source == "header_invalid":
+            if context.source == "header_invalid":
                 return JsonResponse(
                     {
                         "detail": "Invalid X-School-Id (must be UUID).",
@@ -138,7 +124,7 @@ class TenantHeaderRequiredMiddleware:
                     status=400,
                 )
 
-            if not school_id:
+            if not context.school_id:
                 return JsonResponse(
                     {
                         "detail": "Missing required header: X-School-Id.",
@@ -147,7 +133,17 @@ class TenantHeaderRequiredMiddleware:
                     status=400,
                 )
 
-            school = School.objects.filter(pk=school_id).only("id", "name").first()
+            if context.override_requested and not context.override_authorized:
+                return JsonResponse(
+                    {"detail": "Not found.", "code": "tenant_access_denied"},
+                    status=404,
+                )
+
+            school = (
+                School.objects.filter(pk=context.school_id, is_active=True)
+                .only("id", "name", "is_active")
+                .first()
+            )
             if school is None:
                 return JsonResponse(
                     {
@@ -157,10 +153,9 @@ class TenantHeaderRequiredMiddleware:
                     status=404,
                 )
 
-            request.school_id = str(school_id)
-            request.school = school
+            context = build_tenant_context(request, school=school)
+            bind_tenant_context(request, context)
             set_current_school(school)
-
             return self.get_response(request)
 
         finally:

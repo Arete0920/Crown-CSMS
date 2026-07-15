@@ -8,6 +8,7 @@ from uuid import UUID
 TENANT_HEADER = "HTTP_X_SCHOOL_ID"  # Django stores headers as HTTP_*
 TENANT_HEADER_LEGACY = "HTTP_X_CROWN_SCHOOL_ID"  # Legacy alias
 TENANT_ATTR = "tenant_school_id"
+CANONICAL_TENANT_ATTR = "crown_tenant"
 
 
 @dataclass(frozen=True)
@@ -17,7 +18,21 @@ class TenantResolution:
     header_present: bool = False  # True if X-School-Id header was supplied (valid or invalid)
 
 
-def _parse_uuid(value: str) -> Optional[UUID]:
+@dataclass(frozen=True)
+class TenantContext:
+    """Immutable request tenant contract used during the staged middleware migration."""
+
+    school_id: Optional[UUID]
+    school: Optional[object]
+    source: str
+    header_present: bool
+    principal_school_id: Optional[UUID]
+    override_requested: bool
+    override_authorized: bool
+    actor_type: str
+
+
+def _parse_uuid(value: object) -> Optional[UUID]:
     try:
         return UUID(str(value).strip())
     except Exception:
@@ -25,79 +40,113 @@ def _parse_uuid(value: str) -> Optional[UUID]:
 
 
 def _get_tenant_header(request) -> Optional[str]:
-    """
-    Extract tenant header from request.
-    Canonical first, then legacy for backward compatibility.
-    """
-    # Django test client uses HTTP_ prefix
-    return (
-        request.META.get(TENANT_HEADER)
-        or request.META.get(TENANT_HEADER_LEGACY)
-    )
+    """Extract the canonical tenant header, then the legacy alias."""
+    return request.META.get(TENANT_HEADER) or request.META.get(TENANT_HEADER_LEGACY)
+
+
+def _authenticated_principal(request):
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False):
+        return user, "user"
+
+    force_user = getattr(request, "_force_auth_user", None)
+    if force_user is not None and getattr(force_user, "is_authenticated", False):
+        return force_user, "drf_force"
+
+    return None, "anonymous"
 
 
 def resolve_tenant_school_id(request) -> TenantResolution:
     """
-    Single source of truth for tenant resolution.
+    Resolve the requested tenant identifier without authorizing cross-school access.
 
     Priority:
-    1) X-School-Id header (canonical + legacy) — ALWAYS wins if present
-    2) Authenticated user / JWT-derived user with school_id attribute
-    3) DRF test client force_authenticate() (request._force_auth_user)
+    1) X-School-Id header (canonical + legacy), including invalid-header evidence
+    2) Authenticated user / JWT-derived user school
+    3) DRF force_authenticate user school
     4) None
-    
-    CRITICAL: If header is present but invalid UUID, mark as "header_invalid"
-    so scoping layer returns 400, not 500.
     """
-    # 1) HEADER PATH — WINS if present (even if invalid)
     raw_header = _get_tenant_header(request)
     if raw_header is not None:
         parsed = _parse_uuid(raw_header)
         if not parsed:
-            # Header present but invalid UUID → mark for scoping to return 400
             return TenantResolution(school_id=None, source="header_invalid", header_present=True)
         return TenantResolution(school_id=parsed, source="header", header_present=True)
 
-    # 2) Authenticated user path (JWT middleware sets this)
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
-        user_school_id = getattr(user, "school_id", None)
-        if user_school_id:
-            parsed = _parse_uuid(str(user_school_id))
-            if parsed:
-                return TenantResolution(school_id=parsed, source="user", header_present=False)
+        parsed = _parse_uuid(getattr(user, "school_id", None))
+        if parsed:
+            return TenantResolution(school_id=parsed, source="user", header_present=False)
 
-    # 3) DRF test client force_authenticate() path
-    # APIClient.force_authenticate sets request._force_auth_user before the view runs.
     force_user = getattr(request, "_force_auth_user", None)
     if force_user is not None:
-        user_school_id = getattr(force_user, "school_id", None)
-        if user_school_id:
-            parsed = _parse_uuid(str(user_school_id))
-            if parsed:
-                return TenantResolution(school_id=parsed, source="drf_force", header_present=False)
+        parsed = _parse_uuid(getattr(force_user, "school_id", None))
+        if parsed:
+            return TenantResolution(school_id=parsed, source="drf_force", header_present=False)
 
-    # 4) No tenant found
     return TenantResolution(school_id=None, source="none", header_present=False)
 
 
-def get_tenant_school_id(request, *, required: bool = True) -> Optional[UUID]:
-    """
-    Returns the resolved tenant school_id (UUID) from request.<tenant attr>.
-    If not present, resolves and stamps it.
+def build_tenant_context(request, *, school=None) -> TenantContext:
+    """Build the canonical tenant context while preserving resolver compatibility."""
+    resolution = resolve_tenant_school_id(request)
+    principal, actor_type = _authenticated_principal(request)
+    principal_school_id = _parse_uuid(getattr(principal, "school_id", None)) if principal else None
 
-    If required=True and cannot resolve, raises PermissionError (handled upstream).
-    """
+    override_requested = bool(
+        resolution.header_present
+        and resolution.school_id
+        and principal
+        and resolution.school_id != principal_school_id
+    )
+    override_authorized = bool(
+        override_requested
+        and (getattr(principal, "is_staff", False) or getattr(principal, "is_superuser", False))
+    )
+
+    return TenantContext(
+        school_id=resolution.school_id,
+        school=school,
+        source=resolution.source,
+        header_present=resolution.header_present,
+        principal_school_id=principal_school_id,
+        override_requested=override_requested,
+        override_authorized=override_authorized,
+        actor_type=actor_type,
+    )
+
+
+def bind_tenant_context(request, context: TenantContext) -> TenantContext:
+    """Stamp canonical and legacy request attributes from one context object."""
+    setattr(request, CANONICAL_TENANT_ATTR, context)
+    setattr(request, TENANT_ATTR, context.school_id)
+    setattr(request, "_tenant_resolution_source", context.source)
+    setattr(request, "_tenant_header_present", context.header_present)
+
+    if context.school is not None:
+        setattr(request, "school_id", str(context.school_id))
+        setattr(request, "school", context.school)
+        setattr(request, "tenant_school", context.school)
+
+    if context.override_authorized:
+        setattr(request, "_crown_school_override_id", context.school_id)
+
+    return context
+
+
+def get_tenant_school_id(request, *, required: bool = True) -> Optional[UUID]:
+    """Return the canonical tenant school ID, resolving and binding when absent."""
+    context = getattr(request, CANONICAL_TENANT_ATTR, None)
+    if context is not None and context.school_id:
+        return context.school_id
+
     existing = getattr(request, TENANT_ATTR, None)
     if existing:
         return existing
 
-    res = resolve_tenant_school_id(request)
-    setattr(request, TENANT_ATTR, res.school_id)
-
-    if required and not res.school_id:
+    context = bind_tenant_context(request, build_tenant_context(request))
+    if required and not context.school_id:
         raise PermissionError("TENANT_REQUIRED")
 
-    return res.school_id
-
-    return res.school_id
+    return context.school_id

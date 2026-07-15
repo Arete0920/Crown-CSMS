@@ -10,24 +10,27 @@ from crown_api.models import Household, Person, Student
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 
+
 class AdmissionsLinksApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
+        self.school = School.objects.create(name="Crown Academy")
         self.staff_user = UserAccount.objects.create_user(
             username="staffuser",
             email="staff@example.com",
             password=TEST_AUTH_SECRET,
             is_staff=True,
+            school=self.school,
         )
         self.nonstaff_user = UserAccount.objects.create_user(
             username="normaluser",
             email="normal@example.com",
             password=TEST_AUTH_SECRET,
             is_staff=False,
+            school=self.school,
         )
 
-        self.school = School.objects.create(name="Crown Academy")
         self.year = AcademicYear.objects.create(
             school=self.school,
             name="2026–2027",
@@ -85,5 +88,3 @@ class AdmissionsLinksApiTests(TestCase):
         self.client.credentials(HTTP_X_SCHOOL_ID=str(self.school.id))
         resp = self.client.get("/api/admissions/applications/")
         self.assertEqual(resp.status_code, 403)
-
-
