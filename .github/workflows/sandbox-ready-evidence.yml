@@ -59,7 +59,7 @@ jobs:
               docs_only=true
               while IFS= read -r changed_file; do
                 case "$changed_file" in
-                  docs/*|audit-artifacts/*|README|README.md|CHANGELOG|CHANGELOG.md|CONTRIBUTING|CONTRIBUTING.md|SECURITY|SECURITY.md|CODE_OF_CONDUCT|CODE_OF_CONDUCT.md|SUPPORT|SUPPORT.md|LICENSE|LICENSE.*|.gitleaks.toml|.github/ISSUE_TEMPLATE/*|.github/workflows/secret-scan.yml|.github/workflows/release-verify.yml|.github/workflows/sandbox-ready-evidence.yml)
+                  docs/*|audit-artifacts/*|README|README.md|CHANGELOG|CHANGELOG.md|CONTRIBUTING|CONTRIBUTING.md|SECURITY|SECURITY.md|CODE_OF_CONDUCT|CODE_OF_CONDUCT.md|SUPPORT|SUPPORT.md|LICENSE|LICENSE.*|.gitleaks.toml|.github/CODEOWNERS|.github/PULL_REQUEST_TEMPLATE.md|.github/pull_request_template.md|.github/ISSUE_TEMPLATE/*|.github/workflows/secret-scan.yml|.github/workflows/release-verify.yml|.github/workflows/sandbox-ready-evidence.yml)
                     ;;
                   *)
                     docs_only=false
