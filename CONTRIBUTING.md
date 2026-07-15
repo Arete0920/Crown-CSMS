@@ -4,7 +4,7 @@
 
 This repository uses a controlled, proof-first contribution model.
 
-Repository lineage: Crown2026 is the current active platform repository. Crown-Christian is retained as an archived legacy repository.
+Repository lineage: `tcmegahan/Crown2026` is the sole active and authoritative CROWN repository. The former `tcmegahan/Crown-Christian` repository has been permanently deleted and is not an authority source.
 
 Every change must be tightly scoped, reviewable, and supported by raw proof.
 
@@ -34,6 +34,8 @@ Each PR should include:
 - raw local proof
 - raw CI proof
 - rollback plan
+
+Proof must match the change scope. Documentation-only PRs must not be represented as runtime certification and should not invoke runtime proof ceremonies.
 
 Use `.github/pull_request_template.md` as the PR shape.
 

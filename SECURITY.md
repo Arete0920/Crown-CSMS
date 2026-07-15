@@ -25,9 +25,11 @@ Never commit:
 - database dumps
 - Microsoft 365 client secrets
 
-## Public repository rule
+## Repository data-handling rule
 
 All examples must use placeholders or environment variables. Sandbox credentials must not be committed even if they are non-production.
+
+Private repository visibility does not reduce security, privacy, or data-handling requirements.
 
 ## Tenant isolation
 
