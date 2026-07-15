@@ -1,130 +1,107 @@
-﻿# Branch Protection Settings for main
+# Branch Protection Target and Verification for `main`
 
-## Current Status
-**main branch**: NOT PROTECTED (no rules)
+## Authority boundary
 
-## Recommended Rules (Apply These)
+This file defines the required branch-protection target and the evidence needed to verify it. It does not prove the current live GitHub configuration.
 
-### 1. Dismiss stale PR approvals
-- âœ… **Enabled**
-- When new commits are pushed, dismiss stale reviews
+Current live branch-protection state: **UNVERIFIED EXTERNALLY**.
 
-### 2. Require review from Code Owners
-- âœ… **Enabled**
-- PRs must have at least one approval from `.github/CODEOWNERS`
+Do not describe `main` as protected or unprotected from repository text alone. Confirm the current state in GitHub repository administration and attach a dated evidence record.
 
-### 3. Require status checks to pass
-- âœ… **Enabled**
-- Require the following checks (strict):
-  - `Secret Scan/Scan for secrets`
-  - `Proof Ceremony/proof-ceremony`
-  - `Tests/pytest (pull_request)`
-  - `Spine Audit (Canon Guard)`
-  - `CI - Tests and Checks/test-api`
-  - `CI - Tests and Checks/verify-immutable-tags`
+## Required target
 
-### 4. Require branches to be up to date
-- âœ… **Enabled**
-- Branches must be up to date before merging
+Apply a ruleset or branch-protection rule to `main` with the following controls:
 
-### 5. Restrict who can push
-- âœ… **Enabled (DO NOT allow forced pushes)**
-- `Dismiss stale reviews`: Yes
-- `Allow force pushes`: **NO**
-- `Include administrators`: **YES** (admins also follow the rules)
+1. Require a pull request before merge.
+2. Require at least one approving human review for material changes.
+3. Dismiss stale approvals when new commits are pushed.
+4. Require Code Owner review where CODEOWNERS applies.
+5. Require designated status checks to pass.
+6. Require the branch to be current with `main` before merge, unless an approved merge-queue policy provides equivalent control.
+7. Block force pushes.
+8. Block branch deletion.
+9. Apply the rule to administrators unless an explicitly documented emergency process provides equivalent control and auditability.
+10. Preserve an auditable emergency override path; do not use undocumented bypasses.
 
-### 6. Require approval count
-- Minimum of **1** approval (can be you + CODEOWNERS member)
+## Required-check governance
 
-## How to Apply (Web UI)
+The exact required-check list must be derived from current workflow names and reviewed after workflow consolidation. Historical names in this document are not automatically current authority.
 
-1. Go to: https://github.com/tcmegahan/Crown2026/settings/branches
-2. Click **Add rule**
-3. Branch name: `main`
-4. Enable:
-   - âœ… Require a pull request before merging
-   - âœ… Require approvals (1)
-   - âœ… Dismiss stale pull request approvals when new commits are pushed
-   - âœ… Require review from Code Owners
-   - âœ… Require status checks to pass before merging
-   - âœ… Require branches to be up to date before merging
-   - âœ… Include administrators
-   - âŒ Allow force pushes (keep disabled)
-   - âœ… Allow deletions (your choice, typically disabled)
+Before changing required checks:
 
-5. Status checks required (add these):
-   ```
-   Secret Scan/Scan for secrets
-   Proof Ceremony/proof-ceremony
-   Tests/pytest (pull_request)
-   Spine Audit (Canon Guard)
-   CI - Tests and Checks/test-api
-   CI - Tests and Checks/verify-immutable-tags
-   ```
+- inventory live required checks in GitHub settings;
+- map each check to the workflow and proof it actually provides;
+- identify duplicate, renamed, retired, neutral, skipped, and path-conditional checks;
+- verify that documentation-only changes have a successful non-runtime path;
+- verify that runtime changes cannot bypass required runtime evidence;
+- record the change and rollback procedure.
 
-6. Click **Create**
+## Check authoring rule
 
-## Result
+A required check must always reach a terminal success or failure result for every pull request to which the rule applies. Avoid job-level conditions that leave a required check skipped or neutral. Prefer step-level applicability checks with an explicit successful non-applicable path.
 
-- No one (including you) can directly push to main
-- All PRs must have:
-  - âœ… Green CI checks
-  - âœ… At least 1 approval (you or CODEOWNERS)
-  - âœ… Up-to-date branch
-- Stale reviews auto-dismiss on new commits
-- Admins cannot bypass (enforce_admins = true)
-
-## What This Prevents
-
-| Scenario | Before | After |
-|----------|--------|-------|
-| Hot-fix push | âœ… Possible | âŒ Blocked |
-| Merge broken CI | âœ… Possible | âŒ Blocked |
-| Merge without review | âœ… Possible | âŒ Blocked |
-| Admin bypass | âœ… Possible | âŒ Blocked |
-| Stale review override | âœ… Possible | âŒ Auto-dismissed |
-
-## CI Gate Authoring Rules (Enforced)
-
-**Required checks must never be job-skipped on PRs.**
-
-GitHub maps a skipped job to `neutral`. A `neutral` result on a required check blocks merge permanently.
-
-### Rule
-
-> Required checks must produce `SUCCESS` or `FAILURE` on every PR, never `SKIPPED`.
-> Use **step-level** `if:` guards + a pass-through step for non-applicable branches.
-> Never use a **job-level** `if:` to gate required checks.
-
-### Correct Pattern
+Example:
 
 ```yaml
 jobs:
-  my-required-gate:
+  required-gate:
     runs-on: ubuntu-latest
     steps:
-      - name: Pass (not applicable to this branch)
-        if: ${{ github.event.pull_request.head.ref != 'rc/target-branch' }}
-        run: echo "Gate not applicable -- passed."
+      - name: Pass when not applicable
+        if: ${{ !steps.scope.outputs.applies }}
+        run: echo "Gate not applicable to this change; classified and passed."
 
-      - name: Real check step
-        if: ${{ github.event.pull_request.head.ref == 'rc/target-branch' }}
-        run: python tools/verify_something.py
+      - name: Execute required proof
+        if: ${{ steps.scope.outputs.applies }}
+        run: python tools/verify_required_proof.py
 ```
 
-### Anti-Pattern (Never Do This)
+## Human-review standard
 
-```yaml
-jobs:
-  my-required-gate:
-    if: ${{ github.event.pull_request.head.ref == 'rc/target-branch' }}  # BLOCKS MERGE ON ALL OTHER PRs
-    runs-on: ubuntu-latest
-    steps:
-      - run: python tools/verify_something.py
-```
+- Automated checks do not replace human review for governance, security-boundary, data-model, release-authority, or production-operation changes.
+- The pull-request author must not represent self-review as independent review.
+- Exact reviewer identities must be verified before requesting review or changing repository permissions.
+- Documentation-only changes may follow a lighter path only when the live ruleset and approved policy explicitly allow it.
 
-### Incident Reference
+## Emergency override standard
 
-2026-02-22: `rc-promotion-gate` job-level `if:` caused `neutral` on PR #323, blocking merge.
-Fixed by moving filter to step-level with a pass-through step. Confirmed via proof PR #324 (all checks SUCCESS).
+Any emergency bypass must record:
 
+- triggering incident;
+- requestor and approver;
+- exact commit SHA;
+- checks bypassed;
+- risk accepted;
+- deployment or mitigation performed;
+- follow-up issue;
+- time-bounded restoration of normal controls.
+
+## Verification procedure
+
+Capture a dated record from live GitHub settings showing:
+
+- active ruleset or branch rule name;
+- target branch pattern;
+- pull-request requirement;
+- approval count;
+- stale-review dismissal;
+- Code Owner requirement;
+- administrator enforcement or bypass policy;
+- force-push and deletion settings;
+- exact required checks;
+- merge queue status, if used;
+- authorized bypass actors;
+- verification date and reviewer.
+
+Redact security-sensitive details where necessary, but do not omit the control result.
+
+## Current repository dependencies
+
+- #1337 — consolidate and map CI/certification workflows before finalizing the durable required-check set.
+- #1343 — reconcile repository authority and buyer-defensible governance evidence.
+- #1354 — ownership, attribution, and human-review governance; remains unapproved until human review is documented.
+- #1357 — collaboration framework; does not itself change live repository settings.
+
+## Release implication
+
+Branch protection is one control in the production-entry system. Even a fully verified ruleset does not authorize production without the remaining release gates in `docs/CURRENT_RELEASE_STATUS.md`.

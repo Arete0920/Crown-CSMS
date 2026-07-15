@@ -11,6 +11,7 @@ Purpose: Canonical repository-level release posture for CROWN.
 4. Product, sandbox, pilot, and production claims require current repository evidence and same-SHA gate settlement.
 5. This file does not approve unrestricted production release.
 6. The repository snapshot below is a point-in-time observation. Live GitHub state controls when this document and current repository state differ.
+7. Architecture issue comments and preparation packets are proposed work until an ADR is reviewed, accepted, and committed under `docs/architecture/decisions/`.
 
 ## Current Decision
 
@@ -23,12 +24,14 @@ Purpose: Canonical repository-level release posture for CROWN.
 - Repository: `tcmegahan/Crown2026`
 - Visibility: private
 - Default branch: `main`
-- Current main SHA observed through the GitHub connector on 2026-07-15: `7c28cfcd4ab1d48d7de336c8ec9dcc76143a0ee4`
-- Latest main change: PR #1350, a documentation and CI-classification authority correction that reconciled repository authority and sandbox gate scope.
-- PR #1350 integration checks completed successfully before merge; this does not by itself prove post-merge current-main or deployed-runtime settlement.
-- PR #1354 remains open for repository ownership, attribution, and human-review governance. An open or unmerged PR is not shipped authority.
+- Current main SHA observed through the GitHub connector on 2026-07-15: `95f684b16ed42c8b39b876cbeccb3c679a8219de`
+- Latest main change: PR #1357, which added the collaboration operating model, workstream register, ADR template, and structured work-item intake.
+- PR #1357 completed and merged after all listed workflows settled successfully; this does not prove deployed-runtime alignment or production readiness.
+- PR #1354 remains open for repository ownership, attribution, and human-review governance. It has no submitted human reviews and must not be represented as having independent approval.
+- PR #1359 remains open and draft for architecture-authority drift correction. It is documentation-only and must pass its current checks before review or merge.
 - Current-main same-SHA required-gate settlement: **NOT PROVEN by this document**.
 - Production deployment SHA alignment with current main: **NOT PROVEN by this document**.
+- Branch-protection configuration: **NOT VERIFIED by repository documentation**; confirm in live GitHub administration settings.
 - Open PR and issue state must be checked live; counts in historical evidence packets are not current authority.
 
 ## Active Release-Critical Work
@@ -38,6 +41,13 @@ Purpose: Canonical repository-level release posture for CROWN.
 - #1274 — authenticated dashboard live-data proof for school administrator, teacher, and parent.
 - #1287 — live tenant-context propagation and `X-School-Id` or trusted authenticated-school-context proof.
 - Snapshot, sample, fallback, scaffold, hybrid, or unknown data must not be certified as live without current authenticated evidence.
+
+### Architecture convergence
+
+- #1351 — frontend API-client inventory and ADR preparation; no canonical client decision is accepted yet.
+- #1352 — tenant-resolution and enforcement inventory and ADR preparation; no canonical middleware decision is accepted yet.
+- #1353 — household, guardian, and student data-model inventory and migration preparation; no canonical model migration is accepted yet.
+- Source-level duplication is verified, but implementation defects, data corruption, or cross-tenant disclosure must not be claimed without direct evidence.
 
 ### Recovery and deployment operations
 
@@ -106,6 +116,7 @@ Allowed:
 - "CROWN has substantial product-surface completion evidence."
 - "Production release is not approved."
 - "Current production readiness depends on authenticated tenant-scoped live-data proof, operational recovery, external secrets controls, payment activation controls, visual QA, same-SHA settlement, and transfer validation."
+- "Architecture consolidation work is prepared or proposed" when the relevant ADR has not been accepted and committed.
 
 Not allowed:
 
@@ -115,6 +126,7 @@ Not allowed:
 - "Independent review is complete" unless independently evidenced and documented.
 - "Ownership transfer is complete" unless repository, infrastructure, external services, credentials, contracts, recovery access, and successor validation are documented.
 - "An open or unmerged PR is shipped authority."
+- "Canonical ADR" or "accepted architecture" for an issue comment or unreviewed preparation packet.
 
 ## Current Final Status
 
