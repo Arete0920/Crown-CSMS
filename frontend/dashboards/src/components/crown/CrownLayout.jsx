@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { authenticatedFetch } from "../../utils/authClient.js";
 
 /**
  * CrownLayout  app shell with permission-derived sidebar + main content area.
@@ -9,18 +10,6 @@ import React, { useEffect, useMemo, useState } from "react";
  *   right     JSX slotted to the top-right of the page header
  *   children  page body
  */
-
-function getSchoolId() {
-  try {
-    return sessionStorage.getItem("crown.school.id") || "";
-  } catch { return ""; }
-}
-
-function getToken() {
-  try {
-    return sessionStorage.getItem("crown.jwt.access") || "";
-  } catch { return ""; }
-}
 
 function getProfile() {
   try {
@@ -69,14 +58,7 @@ function buildBreadcrumb(pathname) {
 }
 
 async function fetchNav() {
-  const schoolId = getSchoolId();
-  const token    = getToken();
-  const headers  = {};
-  if (schoolId) headers["X-School-Id"]    = schoolId;
-  if (token)    headers["Authorization"]  = `Bearer ${token}`;
-
-  const res = await globalThis.fetch("/api/v1/nav/", { headers });
-  if (!res.ok) throw new Error(`nav ${res.status}`);
+  const res = await authenticatedFetch("/api/v1/nav/");
   return res.json();
 }
 
