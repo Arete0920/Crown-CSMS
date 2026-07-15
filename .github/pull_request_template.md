@@ -1,5 +1,12 @@
 # CROWN PR — Active Lane Required
 
+## Ownership and Authority
+
+- Product Owner: John T. C. Megahan
+- Repository Owner: @tcmegahan
+- Technical direction and acceptance authority: John T. C. Megahan
+- Production authorization granted by this PR: no
+
 ## Active Lane
 
 - PR:
@@ -50,7 +57,7 @@
 
 - [ ] This PR does not claim dashboard certification unless the matrix row is independently reviewed and promoted to CERTIFIED.
 - [ ] This PR does not use sample data as production proof.
-- [ ] This PR does not ask TC to self-review or self-approve.
+- [ ] This PR does not ask the Product Owner to self-review or self-approve an independent-review requirement.
 
 ## Proof (required)
 
