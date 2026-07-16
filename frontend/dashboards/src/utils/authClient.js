@@ -1,12 +1,14 @@
 /**
- * authClient.js
- * - Stores JWT access token in sessionStorage (memory-ish, clears on browser close).
- * - Provides authenticatedFetch which adds Authorization header if token exists.
- * - Keeps cookie/session auth working (we DO NOT disable credentials).
+ * Canonical frontend API transport.
+ *
+ * Owns API-base resolution, authentication, tenant context, correlation IDs,
+ * timeout/cancellation, credentials, and structured failures. Feature modules
+ * should not duplicate this behavior.
  */
 
 const TOKEN_KEY = "crown.jwt.access";
 const SCHOOL_KEY = "crown.school.id";
+const DEFAULT_TIMEOUT_MS = 15000;
 
 function normalizeApiBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
@@ -16,27 +18,55 @@ function getApiBaseUrl() {
   return normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 }
 
-export function resolveApiUrl(input) {
-  if (typeof input !== "string" || /^https?:\/\//i.test(input)) {
-    return input;
+function createCorrelationId() {
+  try {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  } catch {
+    // Fall through to a deterministic-format local identifier.
   }
+  return `crown-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
+function isAbsoluteHttpUrl(value) {
+  return typeof value === "string" && /^https?:\/\//i.test(value);
+}
+
+function isSameBrowserOrigin(value) {
+  if (!isAbsoluteHttpUrl(value) || typeof window === "undefined") return false;
+  try {
+    return new URL(value).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+export function resolveApiUrl(input) {
+  if (typeof input !== "string" || isAbsoluteHttpUrl(input)) return input;
   const apiBase = getApiBaseUrl();
   if (!apiBase) return input;
-
   const path = input.startsWith("/") ? input : `/${input}`;
   return `${apiBase}${path}`;
 }
 
+export function buildApiUrl(input, query = {}) {
+  const resolved = resolveApiUrl(input);
+  if (typeof resolved !== "string") return resolved;
+  const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+  const url = new URL(resolved, origin);
+  Object.entries(query || {}).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    url.searchParams.set(key, String(value));
+  });
+  if (!isAbsoluteHttpUrl(resolved) && !getApiBaseUrl()) {
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+  return url.toString();
+}
+
 export function getSelectedSchoolId() {
   try {
-    // sessionStorage is primary (written during app init/login)
     const session = sessionStorage.getItem(SCHOOL_KEY);
     if (session) return session;
-
-    // Fall back to localStorage if sessionStorage empty
-    // localStorage persists across browser sessions; sessionStorage clears on close
-    // This ensures tenant header is sent even if user refreshed during session
     return localStorage.getItem("schoolId") || localStorage.getItem(SCHOOL_KEY) || "";
   } catch {
     return "";
@@ -45,11 +75,11 @@ export function getSelectedSchoolId() {
 
 export function setSelectedSchoolId(schoolId) {
   try {
-    const v = (schoolId || "").trim();
-    if (v) sessionStorage.setItem(SCHOOL_KEY, v);
+    const value = String(schoolId || "").trim();
+    if (value) sessionStorage.setItem(SCHOOL_KEY, value);
     else sessionStorage.removeItem(SCHOOL_KEY);
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
   }
 }
 
@@ -69,8 +99,8 @@ export function setAccessToken(token) {
   try {
     if (token) sessionStorage.setItem(TOKEN_KEY, token);
     else sessionStorage.removeItem(TOKEN_KEY);
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
   }
 }
 
@@ -79,62 +109,89 @@ export function clearAccessToken() {
 }
 
 export async function authenticatedFetch(input, init = {}) {
-  const token = getAccessToken();
-  const headers = new Headers(init.headers || {});
+  const {
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    signal,
+    query,
+    correlationId = createCorrelationId(),
+    ...requestInit
+  } = init;
 
-  // Add bearer token if available
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
+  const relativeApiInput = typeof input === "string" && !isAbsoluteHttpUrl(input);
+  const resolvedInput = typeof input === "string" ? buildApiUrl(input, query) : input;
+  const trustedApiRequest = relativeApiInput
+    || (typeof resolvedInput === "string" && isSameBrowserOrigin(resolvedInput));
+  const headers = new Headers(requestInit.headers || {});
+
+  if (trustedApiRequest) {
+    const token = getAccessToken();
+    if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+    const schoolId = getSelectedSchoolId();
+    if (schoolId && !headers.has("X-School-Id")) headers.set("X-School-Id", schoolId);
+    if (!headers.has("X-Correlation-Id")) headers.set("X-Correlation-Id", correlationId);
   }
 
-  // Optional tenant override for staff/superusers only (backend enforces).
-  const schoolId = getSelectedSchoolId();
-  if (schoolId && !headers.has("X-School-Id")) {
-    headers.set("X-School-Id", schoolId);
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeoutId = timeoutMs > 0 ? setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs) : null;
+
+  const abortFromCaller = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", abortFromCaller, { once: true });
   }
 
-  // Keep cookies working for session-auth paths
-  const finalInit = {
-    ...init,
-    headers,
-    credentials: init.credentials ?? "include",
-  };
-
-  const resolvedInput = typeof input === "string" ? resolveApiUrl(input) : input;
-  const resp = await globalThis.fetch(resolvedInput, finalInit);
-
-  // Throw structured error with status/url/body for diagnostics
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => "");
-    const err = new Error(`HTTP ${resp.status} ${resp.statusText}`);
-    err.status = resp.status;
-    err.url = typeof resolvedInput === "string" ? resolvedInput : (resolvedInput?.url || "");
-    err.body = text.slice(0, 500);
-    throw err;
+  try {
+    const response = await globalThis.fetch(resolvedInput, {
+      ...requestInit,
+      headers,
+      credentials: trustedApiRequest ? (requestInit.credentials ?? "include") : requestInit.credentials,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      const error = new Error(`HTTP ${response.status} ${response.statusText}`);
+      error.status = response.status;
+      error.url = typeof resolvedInput === "string" ? resolvedInput : (resolvedInput?.url || "");
+      error.body = text.slice(0, 2000);
+      error.correlationId = response.headers?.get?.("x-correlation-id") || correlationId;
+      throw error;
+    }
+    return response;
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      error.timedOut = timedOut;
+      error.correlationId = correlationId;
+    }
+    throw error;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (signal) signal.removeEventListener("abort", abortFromCaller);
   }
-
-  return resp;
 }
 
-/**
- * JWT login helper.
- * Expects backend endpoint:
- *   POST /api/v1/auth/token/  { username, password } -> { access, refresh }
- */
+export async function authenticatedJson(input, init = {}) {
+  const response = await authenticatedFetch(input, init);
+  const contentType = response.headers?.get?.("content-type") || "";
+  if (contentType.includes("application/json")) return response.json();
+  return response.text();
+}
+
 export async function jwtLogin({ username, password, apiBase = "" }) {
   const base = normalizeApiBaseUrl(apiBase || getApiBaseUrl());
-  const resp = await globalThis.fetch(`${base}/api/v1/auth/token/`, {
+  const response = await globalThis.fetch(`${base}/api/v1/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`Login failed (${resp.status}): ${text}`);
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Login failed (${response.status}): ${text}`);
   }
-
-  const data = await resp.json();
+  const data = await response.json();
   if (!data?.access) throw new Error("Login response missing access token");
   setAccessToken(data.access);
   return data;
