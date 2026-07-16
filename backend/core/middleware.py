@@ -4,6 +4,8 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
+from crown_api.tenant import CANONICAL_TENANT_ATTR, bind_tenant_context, build_tenant_context
+
 logger = logging.getLogger("crown.audit")
 
 
@@ -52,27 +54,19 @@ class DemoWriteBlockMiddleware:
 
 
 class TenantIsolationMiddleware(MiddlewareMixin):
-    EXEMPT_PATHS = [
-        "/api/health/",
-        "/api/schema/",
-        "/api/docs/",
-        "/admin/",
-        "/api/auth/",
-    ]
+    """Compatibility adapter for the canonical tenant request contract.
+
+    Enforcement remains in TenantHeaderRequiredMiddleware. This legacy layer no
+    longer resolves ``request.user.profile.school``; it delegates to the canonical
+    resolver and only binds compatibility attributes when they are not already
+    present.
+    """
 
     def process_request(self, request):
-        request.tenant_school = None
-        if not request.user.is_authenticated:
-            return None
-        if request.user.is_superuser:
-            return None
-        for path in self.EXEMPT_PATHS:
-            if request.path.startswith(path):
-                return None
-        try:
-            request.tenant_school = request.user.profile.school
-        except AttributeError:
-            pass
+        context = getattr(request, CANONICAL_TENANT_ATTR, None)
+        if context is None:
+            context = build_tenant_context(request)
+            bind_tenant_context(request, context)
         return None
 
 
@@ -81,7 +75,8 @@ class TenantQuerySetMixin:
 
     def get_queryset(self):
         qs = super().get_queryset()
-        school = getattr(self.request, "tenant_school", None)
+        context = getattr(self.request, CANONICAL_TENANT_ATTR, None)
+        school = getattr(context, "school", None) or getattr(self.request, "tenant_school", None)
         if school is None:
             if self.request.user.is_superuser:
                 return qs
@@ -103,7 +98,8 @@ class AuditLogMixin:
         instance.delete()
 
     def _audit_log(self, action, instance):
-        school = getattr(self.request, "tenant_school", None)
+        context = getattr(self.request, CANONICAL_TENANT_ATTR, None)
+        school = getattr(context, "school", None) or getattr(self.request, "tenant_school", None)
         logger.info(
             "AUDIT | action=%s | model=%s | pk=%s | school=%s | user=%s | ip=%s",
             action,
