@@ -14,19 +14,23 @@ permissions:
   id-token: write
 
 concurrency:
-  group: prod-rollback-on-failure-${{ github.workflow }}-${{ github.event.workflow_run.id }}
+  group: prod-rollback-on-failure-${{ github.event.workflow_run.id }}
   cancel-in-progress: false
 
 jobs:
   rollback:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       RESOURCE_GROUP: crown-rg
       WEBAPP_NAME: crown-api-prod
       REGISTRY: crownregistry.azurecr.io
+      REGISTRY_NAME: crownregistry
       IMAGE_NAME: crown2026
+      FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+      FAILED_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+      FAILED_RUN_CREATED_AT: ${{ github.event.workflow_run.created_at }}
 
     steps:
       - name: Checkout
@@ -38,16 +42,15 @@ jobs:
           set -euo pipefail
           SRC_REPO="${{ github.event.workflow_run.head_repository.full_name }}"
           THIS_REPO="${{ github.repository }}"
-          SRC_SHA="${{ github.event.workflow_run.head_sha }}"
           if [[ "$SRC_REPO" != "$THIS_REPO" ]]; then
             echo "ERROR: upstream workflow_run repository mismatch ($SRC_REPO != $THIS_REPO)"
             exit 1
           fi
-          if [[ -z "$SRC_SHA" ]]; then
-            echo "ERROR: missing workflow_run head_sha context"
+          if [[ ! "$FAILED_RUN_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: missing or invalid workflow_run head_sha: '$FAILED_RUN_SHA'"
             exit 1
           fi
-          echo "Trusted workflow_run context verified for sha=$SRC_SHA"
+          echo "Trusted failed deploy context verified: run=$FAILED_RUN_ID sha=$FAILED_RUN_SHA"
 
       - name: Azure Login
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
@@ -56,206 +59,221 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Pre-rollback live health check and decide rollback necessity
-        shell: bash
+      - name: Recheck live health before rollback
         id: health_recheck
+        shell: bash
         run: |
           set -euo pipefail
-          WEBAPP_NAME="${{ env.WEBAPP_NAME }}"
           HEALTH_URL="https://${WEBAPP_NAME}.azurewebsites.net/api/health/"
-          ROLLBACK_REASON=""
+          HTTP_CODE=$(curl --max-time 15 -sS -o /tmp/pre_rollback_health.json -w "%{http_code}" "$HEALTH_URL" || true)
+          DB_STATUS=$(jq -r '.db // ""' /tmp/pre_rollback_health.json 2>/dev/null || true)
+          LIVE_SHA=$(jq -r '.build_sha // ""' /tmp/pre_rollback_health.json 2>/dev/null || true)
 
-          echo "Performing live health check before rollback decision..."
-          HTTP_CODE=$(curl --max-time 10 -s -o /tmp/health_check.json -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "timeout")
+          echo "pre_rollback_http=$HTTP_CODE"
+          echo "pre_rollback_db=$DB_STATUS"
+          echo "pre_rollback_build_sha=$LIVE_SHA"
 
-          if [ "$HTTP_CODE" == "200" ]; then
-            # Try jq first, fall back to grep
-            if command -v jq &>/dev/null; then
-              DB_STATUS=$(jq -r '.db // ""' /tmp/health_check.json 2>/dev/null || echo "")
-            else
-              DB_STATUS=$(grep -o '"db"\s*:\s*"[^"]*"' /tmp/health_check.json 2>/dev/null | cut -d'"' -f4 | head -1 || echo "")
-            fi
-
-            if [ "$DB_STATUS" == "ok" ]; then
-              echo "✓ RUNTIME HEALTHY: HTTP 200, db=ok"
-              echo "Upstream deploy failed, but live runtime health is still good."
-              echo "Skipping rollback. Opening advisory-only issue."
-              echo "rollback_needed=false" >> "$GITHUB_OUTPUT"
-              echo "health_status=healthy" >> "$GITHUB_OUTPUT"
-              ROLLBACK_REASON="Deploy automation failed; runtime health confirmed healthy."
-              exit 0
-            fi
+          if [[ "$HTTP_CODE" == "200" && "$DB_STATUS" == "ok" ]]; then
+            echo "rollback_needed=false" >> "$GITHUB_OUTPUT"
+            echo "health_status=healthy" >> "$GITHUB_OUTPUT"
+            echo "live_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
+            echo "Runtime remains healthy; rollback is not required."
+          else
+            echo "rollback_needed=true" >> "$GITHUB_OUTPUT"
+            echo "health_status=unhealthy" >> "$GITHUB_OUTPUT"
+            echo "live_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
+            echo "Runtime is unhealthy or unavailable; immutable rollback is required."
           fi
 
-          echo "❌ RUNTIME UNHEALTHY: HTTP $HTTP_CODE or db != ok"
-          echo "Proceeding with rollback to stable image."
-          echo "rollback_needed=true" >> "$GITHUB_OUTPUT"
-          echo "health_status=unhealthy" >> "$GITHUB_OUTPUT"
-          ROLLBACK_REASON="Runtime health check failed (HTTP $HTTP_CODE). Executing emergency rollback."
-
-      - name: Roll back to stable image tag
+      - name: Resolve last-known-good immutable deploy SHA
+        id: rollback_target
         if: ${{ steps.health_recheck.outputs.rollback_needed == 'true' }}
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          echo "Rolling back $REGISTRY/$IMAGE_NAME from deploy attempt to :latest stable tag..."
+          RUNS_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs?status=success&per_page=100"
+          curl --max-time 30 -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "$RUNS_URL" > /tmp/successful_runs.json
+
+          ROLLBACK_ROW=$(jq -r \
+            --arg failed_sha "$FAILED_RUN_SHA" \
+            --arg failed_created "$FAILED_RUN_CREATED_AT" \
+            '[.workflow_runs[]
+              | select(.name == "Production Deploy" or .name == "Production Deploy (Dispatch v2)")
+              | select(.conclusion == "success")
+              | select(.head_sha != $failed_sha)
+              | select(.created_at < $failed_created)
+              | select(.head_sha | test("^[0-9a-f]{40}$"))]
+             | sort_by(.created_at)
+             | reverse
+             | .[0]
+             | if . == null then empty else [.head_sha, (.id|tostring), .html_url, .created_at] | @tsv end' \
+            /tmp/successful_runs.json)
+
+          if [[ -z "$ROLLBACK_ROW" ]]; then
+            echo "ERROR: no previous successful immutable production deployment was found."
+            exit 1
+          fi
+
+          IFS=$'\t' read -r ROLLBACK_SHA SOURCE_RUN_ID SOURCE_RUN_URL SOURCE_CREATED_AT <<< "$ROLLBACK_ROW"
+          if [[ ! "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: resolved rollback SHA is invalid: '$ROLLBACK_SHA'"
+            exit 1
+          fi
+
+          TAG_EXISTS=$(az acr repository show-tags \
+            --name "$REGISTRY_NAME" \
+            --repository "$IMAGE_NAME" \
+            --query "[?@=='$ROLLBACK_SHA'] | [0]" \
+            -o tsv \
+            --only-show-errors)
+          if [[ "$TAG_EXISTS" != "$ROLLBACK_SHA" ]]; then
+            echo "ERROR: immutable rollback image is unavailable: $REGISTRY/$IMAGE_NAME:$ROLLBACK_SHA"
+            exit 1
+          fi
+
+          echo "rollback_sha=$ROLLBACK_SHA" >> "$GITHUB_OUTPUT"
+          echo "source_run_id=$SOURCE_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "source_run_url=$SOURCE_RUN_URL" >> "$GITHUB_OUTPUT"
+          echo "source_created_at=$SOURCE_CREATED_AT" >> "$GITHUB_OUTPUT"
+          echo "Resolved immutable rollback target: sha=$ROLLBACK_SHA source_run=$SOURCE_RUN_ID"
+
+      - name: Restore immutable last-known-good image
+        id: restore
+        if: ${{ steps.health_recheck.outputs.rollback_needed == 'true' }}
+        shell: bash
+        env:
+          ROLLBACK_SHA: ${{ steps.rollback_target.outputs.rollback_sha }}
+        run: |
+          set -euo pipefail
+          IMAGE_REF="$REGISTRY/$IMAGE_NAME:$ROLLBACK_SHA"
+          echo "Restoring immutable image $IMAGE_REF"
+
           az webapp config container set \
             --name "$WEBAPP_NAME" \
             --resource-group "$RESOURCE_GROUP" \
             --docker-registry-server-url "https://$REGISTRY" \
-            --docker-custom-image-name "$REGISTRY/$IMAGE_NAME:latest" \
+            --docker-custom-image-name "$IMAGE_REF" \
             --output none \
             --only-show-errors
-          echo "Waiting 10 seconds for Azure to apply rollback..."
-          sleep 10
-          az webapp restart --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" --only-show-errors
 
-      - name: Verify rollback health (only if rollback was executed)
+          az webapp config appsettings set \
+            --name "$WEBAPP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --settings BUILD_SHA="$ROLLBACK_SHA" \
+            --output none \
+            --only-show-errors
+
+          az webapp restart \
+            --name "$WEBAPP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --only-show-errors
+
+          echo "image_ref=$IMAGE_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Verify restored runtime identity and health
+        id: verify
         if: ${{ steps.health_recheck.outputs.rollback_needed == 'true' }}
         shell: bash
+        env:
+          ROLLBACK_SHA: ${{ steps.rollback_target.outputs.rollback_sha }}
         run: |
           set -euo pipefail
-          echo "Verifying rolled-back image is healthy..."
-          for i in $(seq 1 24); do
-            status=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" "https://$WEBAPP_NAME.azurewebsites.net/api/health/" || true)
-            if [ "$status" = "200" ]; then
-              echo "✓ Rollback health check PASSED."
+          HEALTH_URL="https://${WEBAPP_NAME}.azurewebsites.net/api/health/"
+
+          for attempt in $(seq 1 30); do
+            HTTP_CODE=$(curl --max-time 20 -sS -o /tmp/rollback_health.json -w "%{http_code}" "$HEALTH_URL" || true)
+            DB_STATUS=$(jq -r '.db // ""' /tmp/rollback_health.json 2>/dev/null || true)
+            LIVE_SHA=$(jq -r '.build_sha // ""' /tmp/rollback_health.json 2>/dev/null || true)
+
+            if [[ "$HTTP_CODE" == "200" && "$DB_STATUS" == "ok" && "$LIVE_SHA" == "$ROLLBACK_SHA" ]]; then
+              echo "Rollback verification passed: http=200 db=ok build_sha=$LIVE_SHA"
+              echo "verified_sha=$LIVE_SHA" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            echo "Rollback health attempt $i/24: HTTP $status"
+
+            echo "Attempt $attempt/30: http=$HTTP_CODE db=$DB_STATUS build_sha=$LIVE_SHA expected=$ROLLBACK_SHA"
             sleep 10
           done
-          echo "❌ Rollback failed to restore healthy /api/health/."
+
+          echo "ERROR: immutable rollback did not restore the expected healthy runtime identity."
+          cat /tmp/rollback_health.json 2>/dev/null || true
           exit 1
 
       - name: Open incident or advisory issue
         if: always()
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          HEALTH_STATUS: ${{ steps.health_recheck.outputs.health_status }}
+          ROLLBACK_NEEDED: ${{ steps.health_recheck.outputs.rollback_needed }}
+          PRE_ROLLBACK_SHA: ${{ steps.health_recheck.outputs.live_sha }}
+          ROLLBACK_SHA: ${{ steps.rollback_target.outputs.rollback_sha }}
+          SOURCE_RUN_ID: ${{ steps.rollback_target.outputs.source_run_id }}
+          SOURCE_RUN_URL: ${{ steps.rollback_target.outputs.source_run_url }}
+          RESTORED_IMAGE: ${{ steps.restore.outputs.image_ref }}
+          VERIFIED_SHA: ${{ steps.verify.outputs.verified_sha }}
         with:
           script: |
-            const healthStatus = '${{ steps.health_recheck.outputs.health_status }}';
-            const rollbackNeeded = '${{ steps.health_recheck.outputs.rollback_needed }}' === 'true';
             const timestamp = new Date().toISOString();
-            const runId = context.payload.workflow_run?.id;
+            const rollbackNeeded = process.env.ROLLBACK_NEEDED === 'true';
+            const rollbackVerified = Boolean(process.env.VERIFIED_SHA);
+            const upstreamUrl = context.payload.workflow_run?.html_url;
 
-            let title, body, labels;
-            let jobDiagnostics = [];
-            let runnerStartupFailure = false;
+            let title;
+            let labels;
+            let summary;
 
-            if (runId) {
-              const { data } = await github.rest.actions.listJobsForWorkflowRun({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: runId,
-                per_page: 100
-              });
-
-              const jobs = data.jobs || [];
-              const summarizeJob = (job) => {
-                const startedAt = job.started_at ? Date.parse(job.started_at) : null;
-                const completedAt = job.completed_at ? Date.parse(job.completed_at) : null;
-                const elapsedSeconds =
-                  startedAt && completedAt ? Math.max(0, Math.round((completedAt - startedAt) / 1000)) : null;
-                const stepCount = Array.isArray(job.steps) ? job.steps.length : 0;
-                return {
-                  name: job.name || 'unnamed',
-                  elapsedSeconds,
-                  runnerId: job.runner_id ?? 0,
-                  runnerName: job.runner_name || '',
-                  stepCount
-                };
-              };
-
-              jobDiagnostics = jobs.map(summarizeJob);
-              const failedJobs = jobs
-                .filter((job) => job.conclusion === 'failure')
-                .map(summarizeJob);
-              runnerStartupFailure =
-                failedJobs.length > 0 &&
-                failedJobs.every((job) =>
-                  job.runnerId === 0 &&
-                  job.runnerName === '' &&
-                  job.stepCount === 0 &&
-                  job.elapsedSeconds !== null &&
-                  job.elapsedSeconds < 10
-                );
-            }
-
-            const diagnosticsSection =
-              jobDiagnostics.length === 0
-                ? []
-                : [
-                    '',
-                    '## Job Diagnostics',
-                    ...jobDiagnostics.map((job) =>
-                      `- ${job.name}: elapsed=${job.elapsedSeconds ?? 'n/a'}s, runner_id=${job.runnerId}, runner_name=${job.runnerName || '(blank)'}, steps=${job.stepCount}`
-                    )
-                  ];
-
-            if (!rollbackNeeded && healthStatus === 'healthy') {
-              if (runnerStartupFailure) {
-                title = `[ADVISORY] Prod deploy runner startup failed but runtime healthy (${timestamp})`;
-                body = [
-                  `Upstream workflow: ${context.payload.workflow_run?.name}`,
-                  `Run URL: ${context.payload.workflow_run?.html_url}`,
-                  `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
-                  '',
-                  '## Summary',
-                  'Deploy workflow failed before a GitHub Actions runner started.',
-                  'Live health check confirmed runtime is HEALTHY (HTTP 200, db=ok).',
-                  '**Rollback was SKIPPED** — no emergency action needed.',
-                  '',
-                  '## Likely Root Cause',
-                  '- Upstream job metadata matches the runner outage signature (`runner_id=0`, empty `runner_name`, no steps, sub-10s failure).',
-                  '- Job logs may be unavailable because the failed job never started on a runner.',
-                  ...diagnosticsSection,
-                  '',
-                  '## Action Required',
-                  '- Re-run the deploy after GitHub Actions runner capacity recovers',
-                  '- Review workflow job metadata if the pattern recurs',
-                  '- Only tune health-check backoff if a future deploy reaches the health-check step and still times out'
-                ].join('\n');
-                labels = ['production-advisory'];
-              } else {
-                title = `[ADVISORY] Prod deploy automation failed but runtime healthy (${timestamp})`;
-                body = [
-                  `Upstream workflow: ${context.payload.workflow_run?.name}`,
-                  `Run URL: ${context.payload.workflow_run?.html_url}`,
-                  `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
-                  '',
-                  '## Summary',
-                  'Deploy workflow failed, but live health check confirmed runtime is HEALTHY (HTTP 200, db=ok).',
-                  '**Rollback was SKIPPED** — no emergency action needed.',
-                  ...diagnosticsSection,
-                  '',
-                  '## Action Required',
-                  '- Review deploy logs and job metadata for the automation root cause',
-                  '- If the failure reached the deploy health check, consider increasing backoff attempts or timeout',
-                  '- Monitor the next deploy attempt to confirm the timing is resolved'
-                ].join('\n');
-                labels = ['production-advisory', 'automation-timeout'];
-              }
-            } else {
-              // True failure case: runtime unhealthy, emergency rollback executed
-              title = `[INCIDENT] Prod deploy failed — emergency rollback executed (${timestamp})`;
-              body = [
-                `Upstream workflow: ${context.payload.workflow_run?.name}`,
-                `Run URL: ${context.payload.workflow_run?.html_url}`,
-                `Upstream conclusion: ${context.payload.workflow_run?.conclusion}`,
-                `Live health check result: ${healthStatus || 'inconclusive'}`,
-                '',
-                '## Summary',
-                'Deploy workflow failed. Live health check confirmed runtime UNHEALTHY.',
-                'Automatic emergency rollback has been executed to stable `:latest` image tag.',
-                '',
-                '## Immediate Actions',
-                '- Review deploy logs to understand deployment failure',
-                '- Validate rolled-back app health, data integrity, and business logic',
-                '- Check App Insights/logs for runtime errors during deployment',
-                '- Root-cause analysis before attempting new deploy'
-              ].join('\n');
+            if (!rollbackNeeded && process.env.HEALTH_STATUS === 'healthy') {
+              title = `[ADVISORY] Prod deploy failed but runtime remained healthy (${timestamp})`;
+              labels = ['production-advisory'];
+              summary = [
+                'The production deployment workflow failed, but the live runtime remained healthy.',
+                '**Rollback was skipped because production was not demonstrably unhealthy.**'
+              ];
+            } else if (rollbackVerified) {
+              title = `[INCIDENT] Prod deploy failed — immutable rollback verified (${timestamp})`;
               labels = ['production-alert', 'incident', 'rollback-executed'];
+              summary = [
+                'The failed deployment left the runtime unhealthy or unavailable.',
+                'CROWN restored a previously successful immutable image and verified exact runtime identity.'
+              ];
+            } else {
+              title = `[INCIDENT] Prod deploy failed — rollback not verified (${timestamp})`;
+              labels = ['production-alert', 'incident', 'rollback-failed'];
+              summary = [
+                'The failed deployment left the runtime unhealthy or unavailable.',
+                '**Automated immutable rollback did not complete with verified health and build identity.**',
+                'Manual incident control is required immediately.'
+              ];
             }
+
+            const body = [
+              `Upstream workflow: ${context.payload.workflow_run?.name}`,
+              `Upstream run: ${upstreamUrl}`,
+              `Failed candidate SHA: ${context.payload.workflow_run?.head_sha}`,
+              `Pre-rollback live SHA: ${process.env.PRE_ROLLBACK_SHA || '(unavailable)'}`,
+              '',
+              '## Summary',
+              ...summary,
+              '',
+              '## Recovery Evidence',
+              `- Rollback required: ${rollbackNeeded}`,
+              `- Last-known-good source run: ${process.env.SOURCE_RUN_URL || '(not applicable or unresolved)'}`,
+              `- Last-known-good source run ID: ${process.env.SOURCE_RUN_ID || '(not applicable or unresolved)'}`,
+              `- Immutable rollback SHA: ${process.env.ROLLBACK_SHA || '(not applicable or unresolved)'}`,
+              `- Restored image: ${process.env.RESTORED_IMAGE || '(not applicable or unresolved)'}`,
+              `- Verified live SHA: ${process.env.VERIFIED_SHA || '(not verified)'}`,
+              '',
+              '## Required Follow-up',
+              '- Review the original deployment failure before another production attempt.',
+              '- Reconcile this incident with issue #1270 and the release authority evidence.',
+              '- Do not report production recovery as proven unless the verified live SHA is present above.'
+            ].join('\n');
 
             await github.rest.issues.create({
               owner: context.repo.owner,
