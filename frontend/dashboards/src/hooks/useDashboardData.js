@@ -24,10 +24,19 @@ function isFallbackRuntimeAllowed() {
   return !isProduction;
 }
 
+function toRegistryKey(dashboardKey) {
+  return String(dashboardKey || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+}
+
 export default function useDashboardData(dashboardKey, options = {}) {
-  const config = DASHBOARD_DATA_REGISTRY[dashboardKey];
+  const registryKey = toRegistryKey(dashboardKey);
+  const config = DASHBOARD_DATA_REGISTRY[dashboardKey] || DASHBOARD_DATA_REGISTRY[registryKey];
   const certification =
-    DASHBOARD_CERTIFICATION_REGISTRY[dashboardKey] || {
+    DASHBOARD_CERTIFICATION_REGISTRY[dashboardKey]
+    || DASHBOARD_CERTIFICATION_REGISTRY[registryKey]
+    || {
       status: 'scaffold',
       owner: 'Unknown',
       notes: '',

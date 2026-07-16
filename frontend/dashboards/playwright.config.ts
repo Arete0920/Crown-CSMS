@@ -12,6 +12,7 @@ import { defineConfig, devices } from "@playwright/test";
  */
 
 const IS_LIVE_RUNTIME_CERTIFICATION = process.env.CROWN_CERTIFICATION_LIVE_RUNTIME === "1";
+const IS_SCAFFOLD_CERTIFICATION = process.env.npm_lifecycle_event === "certify:scaffold-crawler";
 const BASE_URL = IS_LIVE_RUNTIME_CERTIFICATION
   ? process.env.CROWN_LIVE_FRONTEND_URL
   : (process.env.VITE_DEV_BASE_URL ?? "http://localhost:4173");
@@ -64,6 +65,10 @@ export default defineConfig({
       timeout: process.env.CI ? 180_000 : 60_000,
       stdout: "ignore",
       stderr: "pipe",
+      env: {
+        ...process.env,
+        ...(IS_SCAFFOLD_CERTIFICATION ? { VITE_SANDBOX_MODE: "1" } : {}),
+      },
     },
   }),
 });

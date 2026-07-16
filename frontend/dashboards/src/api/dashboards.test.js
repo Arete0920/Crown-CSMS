@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const authenticatedFetch = vi.fn();
+const { authenticatedFetch } = vi.hoisted(() => ({
+  authenticatedFetch: vi.fn(),
+}));
 
 vi.mock("../utils/authClient.js", () => ({
   authenticatedFetch,

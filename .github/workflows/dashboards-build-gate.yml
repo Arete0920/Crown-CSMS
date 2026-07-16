@@ -2,35 +2,38 @@ name: dashboards-build-gate
 permissions:
   contents: read
 
-# No-op change to trigger required check context on backend-only PRs.
-
 on:
   pull_request:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
     paths:
-      - "frontend/dashboards/**"
-      - ".github/workflows/dashboards-build-gate.yml"
+      - frontend/dashboards/**
+      - .github/workflows/dashboards-build-gate.yml
 
 concurrency:
   group: dashboards-build-gate-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
+
 jobs:
-  dashboards-build-gate:
-    name: dashboards-build-gate
+  build:
+    name: dashboard-build-internal
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      build_outcome: ${{ steps.build.outcome }}
     defaults:
       run:
         working-directory: frontend/dashboards
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Use Node 20
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: frontend/dashboards/package-lock.json
 
       - name: Install
@@ -41,30 +44,10 @@ jobs:
         run: |
           FOUND=0
           OPTS="--include=*.jsx --include=*.js --include=*.ts --include=*.tsx"
-
-          # Family 1: empty body - .catch(() => {}) or .catch(() =>)
-          if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*\{?\s*\}?\s*\)' frontend/dashboards/src/; then
-            echo "ERROR: Family 1 - empty catch body detected."
-            FOUND=1
-          fi
-
-          # Family 2: null-setter - .catch(() => setSomething(null))
-          if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*set\w+\s*\(\s*null\s*\)\s*\)' frontend/dashboards/src/; then
-            echo "ERROR: Family 2 - null-setting catch handler detected."
-            FOUND=1
-          fi
-
-          # Family 3: explicit undefined - .catch(() => undefined)
-          if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*undefined\s*\)' frontend/dashboards/src/; then
-            echo "ERROR: Family 3 - undefined-returning catch handler detected."
-            FOUND=1
-          fi
-
-          if [ "$FOUND" -eq 1 ]; then
-            echo "Stage 1 guard FAILED: silent catch handler(s) detected."
-            exit 1
-          fi
-          echo "Stage 1 guard OK: all 3 silent-catch families clean."
+          if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*\{?\s*\}?\s*\)' frontend/dashboards/src/; then FOUND=1; fi
+          if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*set\w+\s*\(\s*null\s*\)\s*\)' frontend/dashboards/src/; then FOUND=1; fi
+          if grep -rn $OPTS -P '\.catch\s*\(\s*\(\s*\)\s*=>\s*undefined\s*\)' frontend/dashboards/src/; then FOUND=1; fi
+          test "$FOUND" -eq 0
 
       - name: Write build.json
         run: |
@@ -72,9 +55,39 @@ jobs:
           printf '{"build_sha":"%s","deploy_tag":"%s"}' "${{ github.sha }}" "${{ github.ref_name }}" > public/build.json
 
       - name: Build
+        id: build
+        continue-on-error: true
         env:
-          VITE_API_BASE_URL: "http://localhost:8000"
+          VITE_API_BASE_URL: http://localhost:8000
           VITE_BUILD_SHA: ${{ github.sha }}
           VITE_DEPLOY_TAG: ${{ github.ref_name }}
-        run: npm run build
+        run: npm run build > dashboard-build.log 2>&1
 
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dashboard-build-log
+          path: frontend/dashboards/dashboard-build.log
+          if-no-files-found: error
+          retention-days: 7
+
+  report:
+    name: dashboards-build-gate
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build log
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: dashboard-build-log
+
+      - name: Report result
+        env:
+          BUILD_OUTCOME: ${{ needs.build.outputs.build_outcome }}
+        run: |
+          cat dashboard-build.log
+          if [ "$BUILD_OUTCOME" != "success" ]; then
+            exit 1
+          fi

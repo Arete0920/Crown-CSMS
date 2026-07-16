@@ -2,7 +2,6 @@ name: Tests
 permissions:
   contents: read
 
-
 on:
   pull_request:
   push:
@@ -22,7 +21,7 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Runner env probe
         shell: bash
@@ -37,13 +36,13 @@ jobs:
           df -h || true
 
       - name: Set up Python
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
         with:
           python-version: "3.12"
 
       - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
+        run: python -m pip install --upgrade pip
+
       - name: Verify requirements single source of truth
         shell: bash
         working-directory: .
@@ -58,16 +57,48 @@ jobs:
             echo "  $GOT"
             exit 1
           fi
-      - name: Install requirements
-        run: |
-          pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Install requirements
+        run: pip install -r requirements.txt
+
+      - name: Run tenant fixture regression tests
+        shell: bash
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
           DJANGO_SECRET_KEY: ci-test-secret-key
           BUILD_SHA: ${{ github.sha }}
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python -m pytest -q
+          python -m pytest -q \
+            advancement/tests/test_advancement_stage3_4.py \
+            core/tests/test_nav_endpoint.py \
+            financial_aid/tests/test_financial_aid_authz.py
 
+      - name: Run tests
+        id: pytest
+        shell: bash
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          DJANGO_SECRET_KEY: ci-test-secret-key
+          BUILD_SHA: ${{ github.sha }}
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          set -o pipefail
+          python -m pytest -q 2>&1 | tee pytest.log
+
+      - name: Emit pytest failure summary
+        if: failure() && steps.pytest.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "::group::Pytest failure summary"
+          grep -E '^FAILED |^ERROR |^E   |^=+ .* (failed|error).*=+' pytest.log | tail -n 240 || true
+          echo "::endgroup::"
+
+      - name: Upload pytest log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: tests-pytest-log
+          path: backend/pytest.log
+          if-no-files-found: error
+          retention-days: 7
