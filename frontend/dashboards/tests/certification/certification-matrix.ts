@@ -19,6 +19,7 @@ const NAV_API = ["/api/v1/nav"];
 const DASHBOARD_SUMMARY_API = (slug: string): string[] => [
   `/api/v1/dashboards/${slug}/summary`,
 ];
+const UNIFIED_ROLE_DASHBOARD_API = ["/api/dashboards/summary/"];
 const WIZARD_DATA_API = ["/api/v1/wizards/"];
 
 function dashboardSurface(config: {
@@ -39,6 +40,25 @@ function dashboardSurface(config: {
     requireLiveProvenance: true,
     provenanceRequiredApiFragments: summaryApi,
     expectedApiFragments: [...AUTH_API, ...summaryApi],
+  };
+}
+
+function roleDashboardSurface(config: {
+  id: string;
+  label: string;
+  route: string;
+  persona: string;
+}): CertificationSurface {
+  return {
+    id: config.id,
+    label: config.label,
+    route: config.route,
+    kind: "dashboard",
+    personas: [config.persona],
+    tenants: CORE_TENANTS,
+    requireLiveProvenance: true,
+    provenanceRequiredApiFragments: UNIFIED_ROLE_DASHBOARD_API,
+    expectedApiFragments: [...AUTH_API, ...UNIFIED_ROLE_DASHBOARD_API],
   };
 }
 
@@ -81,6 +101,12 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-admin",
     slug: "school-administrator",
   }),
+  roleDashboardSurface({
+    id: "admin-role-dashboard",
+    label: "Admin role dashboard",
+    route: "/dash/admin",
+    persona: "sandbox-admin",
+  }),
   dashboardSurface({
     id: "teacher-dashboard",
     label: "Teacher dashboard",
@@ -88,12 +114,24 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-teacher",
     slug: "teacher",
   }),
+  roleDashboardSurface({
+    id: "teacher-role-dashboard",
+    label: "Teacher role dashboard",
+    route: "/dash/teacher",
+    persona: "sandbox-teacher",
+  }),
   dashboardSurface({
     id: "parent-dashboard",
     label: "Parent dashboard",
     route: "/parent",
     persona: "sandbox-parent",
     slug: "parent",
+  }),
+  roleDashboardSurface({
+    id: "parent-role-dashboard",
+    label: "Parent role dashboard",
+    route: "/dash/parent",
+    persona: "sandbox-parent",
   }),
   dashboardSurface({
     id: "student-dashboard",
