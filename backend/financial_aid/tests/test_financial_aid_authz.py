@@ -1,17 +1,3 @@
-# backend/financial_aid/tests/test_financial_aid_authz.py
-#
-# Layer C — Permission gate contract tests for /api/v1/financial-aid/*.
-#
-# Verifies that roles WITHOUT financial_aid.view are hard-blocked (403),
-# and that roles WITH it reach the data layer (200).
-#
-# Tenant isolation (row scope) is also proven here:
-# a user with financial_aid.view in School A cannot read School B's data.
-#
-# Suite contract:
-#   - No test relies on suite ordering.
-#   - Uses pytest-django fixtures (not APITestCase) for consistency with nav tests.
-
 import uuid
 
 import pytest
@@ -25,16 +11,8 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture(autouse=True)
 def _enable_tenant_middleware(settings):
-    """Force TENANT_HEADER_REQUIRED=True for all FA authz tests.
-    The root conftest.py disables it globally; permission gate and cross-tenant
-    tests require the middleware to set request.school correctly.
-    """
     settings.TENANT_HEADER_REQUIRED = True
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Fixtures
-# ──────────────────────────────────────────────────────────────────────────────
 
 def _school(name="FA Authz School"):
     return School.objects.create(name=f"{name}-{uuid.uuid4()}")
@@ -48,22 +26,24 @@ def _user(label="u"):
 
 
 def _assign_role(user, school, role_code):
+    if user.school_id != school.id:
+        user.school = school
+        user.save(update_fields=["school"])
     return UserRole.objects.create(user=user, school=school, role_code=role_code)
 
 
 def _grant(role_code, perm_code):
-    perm, _ = CrownPermission.objects.get_or_create(
-        code=perm_code, defaults={"description": ""}
+    permission, _ = CrownPermission.objects.get_or_create(
+        code=perm_code,
+        defaults={"description": ""},
     )
-    RolePermission.objects.get_or_create(role_code=role_code, permission=perm)
+    RolePermission.objects.get_or_create(role_code=role_code, permission=permission)
 
 
 def _seed_fa_data(school_id):
-    """Create one application + one award for a school, returns (app, award)."""
-    hh_id = uuid.uuid4()
-    app = FinancialAidApplication.objects.create(
+    application = FinancialAidApplication.objects.create(
         school_id=school_id,
-        household_id=hh_id,
+        household_id=uuid.uuid4(),
         academic_year="2026-2027",
         household_income="55000.00",
         household_size=4,
@@ -71,100 +51,80 @@ def _seed_fa_data(school_id):
     )
     award = AidAward.objects.create(
         school_id=school_id,
-        application=app,
+        application=application,
         bucket=AidBucket.NEED,
         amount="8000.00",
         rationale="Demonstrable need",
     )
-    return app, award
+    return application, award
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 403 gate: roles that must never reach financial aid data
-# ──────────────────────────────────────────────────────────────────────────────
+def _client_for(user):
+    client = Client()
+    client.force_login(user)
+    return client
+
 
 class TestFinancialAidPermissionGate:
-    """Roles without financial_aid.view must get 403 on both endpoints."""
-
-    @pytest.mark.parametrize("role_code,perm_code", [
-        ("PARENT",  "parent.view"),
-        ("STUDENT", "student.view"),
-        ("TEACHER", "teacher.view"),
-    ])
+    @pytest.mark.parametrize(
+        "role_code,perm_code",
+        [("PARENT", "parent.view"), ("STUDENT", "student.view"), ("TEACHER", "teacher.view")],
+    )
     def test_role_blocked_on_summary(self, role_code, perm_code):
         school = _school("Gate Test")
         user = _user(role_code.lower())
         _assign_role(user, school, role_code)
         _grant(role_code, perm_code)
-
-        c = Client()
-        c.force_login(user)
-        r = c.get(
+        response = _client_for(user).get(
             "/api/v1/financial-aid/summary/",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
-        assert r.status_code == 403, (
+        assert response.status_code == 403, (
             f"Role {role_code!r} should be blocked from financial-aid/summary/ "
-            f"but got {r.status_code}"
+            f"but got {response.status_code}"
         )
 
-    @pytest.mark.parametrize("role_code,perm_code", [
-        ("PARENT",  "parent.view"),
-        ("STUDENT", "student.view"),
-        ("TEACHER", "teacher.view"),
-    ])
+    @pytest.mark.parametrize(
+        "role_code,perm_code",
+        [("PARENT", "parent.view"), ("STUDENT", "student.view"), ("TEACHER", "teacher.view")],
+    )
     def test_role_blocked_on_drilldown(self, role_code, perm_code):
         school = _school("Gate Test DD")
         user = _user(f"{role_code.lower()}_dd")
         _assign_role(user, school, role_code)
         _grant(role_code, perm_code)
-
-        c = Client()
-        c.force_login(user)
-        r = c.get(
+        response = _client_for(user).get(
             "/api/v1/financial-aid/drilldown/",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
-        assert r.status_code == 403, (
+        assert response.status_code == 403, (
             f"Role {role_code!r} should be blocked from financial-aid/drilldown/ "
-            f"but got {r.status_code}"
+            f"but got {response.status_code}"
         )
 
     def test_unauthenticated_gets_403_not_data(self):
-        """Anonymous requests must not reach FA data layer."""
         school = _school("Anon Gate")
-        c = Client()
-        r = c.get(
+        response = Client().get(
             "/api/v1/financial-aid/summary/",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
-        # DRF IsAuthenticated returns 403 for anonymous by default
-        assert r.status_code in (401, 403)
+        assert response.status_code in (401, 403)
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# 200 gate: roles that must reach financial aid data
-# ──────────────────────────────────────────────────────────────────────────────
 
 class TestFinancialAidPermissionAllowed:
-    """Roles WITH financial_aid.view must reach data (200)."""
-
     @pytest.mark.parametrize("role_code", ["AID_DIRECTOR", "FINANCE_DIRECTOR"])
     def test_role_reaches_summary(self, role_code):
         school = _school("Allowed Test")
         user = _user(role_code.lower())
         _assign_role(user, school, role_code)
         _grant(role_code, "financial_aid.view")
-
-        c = Client()
-        c.force_login(user)
-        r = c.get(
+        response = _client_for(user).get(
             "/api/v1/financial-aid/summary/",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
-        assert r.status_code == 200, (
+        assert response.status_code == 200, (
             f"Role {role_code!r} should reach financial-aid/summary/ "
-            f"but got {r.status_code}"
+            f"but got {response.status_code}"
         )
 
     @pytest.mark.parametrize("role_code", ["AID_DIRECTOR", "FINANCE_DIRECTOR"])
@@ -174,161 +134,78 @@ class TestFinancialAidPermissionAllowed:
         _assign_role(user, school, role_code)
         _grant(role_code, "financial_aid.view")
         _seed_fa_data(school.id)
-
-        c = Client()
-        c.force_login(user)
-        r = c.get(
-            f"/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
+        response = _client_for(user).get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
             HTTP_X_SCHOOL_ID=str(school.id),
         )
-        assert r.status_code == 200, (
+        assert response.status_code == 200, (
             f"Role {role_code!r} should reach financial-aid/drilldown/ "
-            f"but got {r.status_code}"
+            f"but got {response.status_code}"
         )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Tenant isolation (row scope)
-# ──────────────────────────────────────────────────────────────────────────────
-
 class TestFinancialAidTenantIsolation:
-    """User in School A must not see School B's financial aid data."""
-
     def test_cross_tenant_row_isolation_on_drilldown(self):
         school_a = _school("FA Tenant A")
         school_b = _school("FA Tenant B")
-
-        # Aid director for school_a only
         user = _user("aiddir_isolation")
         _assign_role(user, school_a, "AID_DIRECTOR")
         _grant("AID_DIRECTOR", "financial_aid.view")
-
-        # Seed data in school_b only — user should not see it
         _seed_fa_data(school_b.id)
 
-        c = Client()
-        c.force_login(user)
-
-        # Request against school_b while user only has a role in school_a.
-        # Middleware will resolve school_b from the header, so request.school = school_b.
-        # user_has_permission(user, "financial_aid.view", school=school_b) → False
-        # (user has AID_DIRECTOR role in school_a, not school_b)
-        r = c.get(
+        response = _client_for(user).get(
             "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
             HTTP_X_SCHOOL_ID=str(school_b.id),
         )
-        assert r.status_code == 403, (
-            f"User with role in school_a should be blocked from school_b FA data, "
-            f"got {r.status_code}"
-        )
+        assert response.status_code == 404
+        assert response.json()["code"] == "tenant_access_denied"
 
     def test_same_tenant_drilldown_returns_own_data_only(self):
         school_a = _school("FA Own Data A")
         school_b = _school("FA Own Data B")
-
         user = _user("aiddir_own")
         _assign_role(user, school_a, "AID_DIRECTOR")
         _grant("AID_DIRECTOR", "financial_aid.view")
-
-        # Data in school_a (user's school) and school_b (foreign)
         _seed_fa_data(school_a.id)
         _seed_fa_data(school_b.id)
 
-        c = Client()
-        c.force_login(user)
-        r = c.get(
+        response = _client_for(user).get(
             "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
             HTTP_X_SCHOOL_ID=str(school_a.id),
         )
-        assert r.status_code == 200
-        data = r.json()
-        # All returned rows must belong to school_a
+        assert response.status_code == 200
+        data = response.json()
         for row in data.get("rows", []):
-            # The drilldown filters by school_id from require_school_id(request)
-            # which reads the header — so rows are always scoped to the requested school
-            assert row.get("award_id") is not None  # sanity: rows have IDs
-        # total should reflect only school_a's records (1 award seeded)
-        assert data["total"] == 1, (
-            f"Expected 1 award for school_a, got {data['total']} "
-            f"(school_b data must not leak)"
-        )
+            assert row.get("award_id") is not None
+        assert data["total"] == 1
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Layer C Phase 2 — rationale field redaction
-# ──────────────────────────────────────────────────────────────────────────────
 
 class TestRationaleFieldRedaction:
-    """
-    financial_aid.view_rationale gates the per-award rationale text.
-
-    AID_DIRECTOR holds this permission → sees the text.
-    FINANCE_DIRECTOR holds only financial_aid.view → gets null.
-    HEAD_OF_SCHOOL holds only financial_aid.view → gets null.
-    """
+    def _rows_for(self, role_code, *, rationale_permission=False):
+        school = _school(f"Rationale {role_code}")
+        user = _user(f"rationale-{role_code.lower()}")
+        _assign_role(user, school, role_code)
+        _grant(role_code, "financial_aid.view")
+        if rationale_permission:
+            _grant(role_code, "financial_aid.view_rationale")
+        _seed_fa_data(school.id)
+        response = _client_for(user).get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+        assert response.status_code == 200
+        rows = response.json().get("rows", [])
+        assert rows
+        return rows
 
     def test_aid_director_sees_rationale(self):
-        school = _school("Rationale AID")
-        user = _user("aid_see_rationale")
-        _assign_role(user, school, "AID_DIRECTOR")
-        _grant("AID_DIRECTOR", "financial_aid.view")
-        _grant("AID_DIRECTOR", "financial_aid.view_rationale")
-        _seed_fa_data(school.id)
-
-        c = Client()
-        c.force_login(user)
-        r = c.get(
-            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
-            HTTP_X_SCHOOL_ID=str(school.id),
-        )
-        assert r.status_code == 200
-        rows = r.json().get("rows", [])
-        assert rows, "Expected at least one award row"
-        for row in rows:
-            assert row["rationale"] == "Demonstrable need", (
-                f"AID_DIRECTOR should see rationale text, got {row['rationale']!r}"
-            )
+        for row in self._rows_for("AID_DIRECTOR", rationale_permission=True):
+            assert row["rationale"] == "Demonstrable need"
 
     def test_finance_director_rationale_is_null(self):
-        school = _school("Rationale FIN")
-        user = _user("fin_no_rationale")
-        _assign_role(user, school, "FINANCE_DIRECTOR")
-        _grant("FINANCE_DIRECTOR", "financial_aid.view")
-        # FINANCE_DIRECTOR intentionally NOT granted financial_aid.view_rationale
-        _seed_fa_data(school.id)
-
-        c = Client()
-        c.force_login(user)
-        r = c.get(
-            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
-            HTTP_X_SCHOOL_ID=str(school.id),
-        )
-        assert r.status_code == 200
-        rows = r.json().get("rows", [])
-        assert rows, "Expected at least one award row"
-        for row in rows:
-            assert row["rationale"] is None, (
-                f"FINANCE_DIRECTOR must not see rationale text, got {row['rationale']!r}"
-            )
+        for row in self._rows_for("FINANCE_DIRECTOR"):
+            assert row["rationale"] is None
 
     def test_head_of_school_rationale_is_null(self):
-        school = _school("Rationale HOS")
-        user = _user("hos_no_rationale")
-        _assign_role(user, school, "HEAD_OF_SCHOOL")
-        _grant("HEAD_OF_SCHOOL", "financial_aid.view")
-        # HEAD_OF_SCHOOL intentionally NOT granted financial_aid.view_rationale
-        _seed_fa_data(school.id)
-
-        c = Client()
-        c.force_login(user)
-        r = c.get(
-            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027",
-            HTTP_X_SCHOOL_ID=str(school.id),
-        )
-        assert r.status_code == 200
-        rows = r.json().get("rows", [])
-        assert rows, "Expected at least one award row"
-        for row in rows:
-            assert row["rationale"] is None, (
-                f"HEAD_OF_SCHOOL must not see rationale text, got {row['rationale']!r}"
-            )
+        for row in self._rows_for("HEAD_OF_SCHOOL"):
+            assert row["rationale"] is None
