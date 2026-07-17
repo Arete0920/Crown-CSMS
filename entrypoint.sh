@@ -3,14 +3,14 @@ set -euo pipefail
 
 cd /app/backend
 
-echo "ENTRYPOINT_SEES: RUN_MIGRATE=${RUN_MIGRATE:-<unset>}"
 echo "ENTRYPOINT_SEES: RUN_DEV_BOOTSTRAP=${RUN_DEV_BOOTSTRAP:-<unset>}"
 echo "ENTRYPOINT_SEES: RUN_GOLDEN_PATH_BOOTSTRAP=${RUN_GOLDEN_PATH_BOOTSTRAP:-<unset>}"
 echo "ENTRYPOINT_SEES: PORT=${PORT:-<unset>} WEBSITES_PORT=${WEBSITES_PORT:-<unset>}"
 
-# Always run migrations — safe, idempotent, required for schema consistency.
-echo "== entrypoint: migrate =="
-python manage.py migrate --noinput
+# Production schema mutation belongs exclusively to the controlled migration stage.
+# Startup fails closed when the deployed code expects unapplied migrations.
+echo "== entrypoint: verify schema is current =="
+python manage.py migrate --check
 
 # Ensure CI smoke user exists when credentials are configured (dev/CI only).
 if [ -n "${CI_SMOKE_USERNAME:-}" ]; then

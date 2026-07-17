@@ -6,6 +6,23 @@ on:
       - "backend/core/management/commands/migrate_with_lock.py"
       - "backend/core/tests/test_migrate_with_lock.py"
       - ".github/workflows/schema-migration-stage.yml"
+  workflow_call:
+    inputs:
+      expected_sha:
+        description: "Full 40-character application SHA to migrate"
+        required: true
+        type: string
+      confirm_environment:
+        description: "Production authorization value"
+        required: true
+        type: string
+    secrets:
+      PROD_DATABASE_URL:
+        required: false
+      DATABASE_URL:
+        required: false
+      DJANGO_SECRET_KEY:
+        required: false
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -56,7 +73,7 @@ jobs:
           python manage.py migrate --check
 
   production-migration:
-    if: github.event_name == 'workflow_dispatch'
+    if: inputs.confirm_environment == 'production'
     needs: contract-proof
     runs-on: ubuntu-latest
     timeout-minutes: 30

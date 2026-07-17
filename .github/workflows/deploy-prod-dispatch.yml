@@ -32,7 +32,52 @@ env:
   WEBAPP_NAME: crown-api-prod
 
 jobs:
+  resolve-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DEPLOY_TAG: ${{ inputs.deploy_tag || github.event.client_payload.deploy_tag }}
+    outputs:
+      deploy_sha: ${{ steps.resolve.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.resolve.outputs.deploy_sha_short }}
+    steps:
+      - name: Guard deploy tag input
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ env.DEPLOY_TAG }}"
+          if [[ -z "$TAG" || "$TAG" != prod-deploy-* ]]; then
+            echo "ERROR: deploy_tag must be present and match prod-deploy-*"
+            exit 1
+          fi
+      - name: Checkout release tag
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ env.DEPLOY_TAG }}
+          fetch-depth: 0
+      - name: Resolve immutable release SHA
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_sha="$(git rev-parse HEAD)"
+          if [[ ! "$deploy_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: resolved release ref is not a full commit SHA: $deploy_sha"
+            exit 1
+          fi
+          echo "deploy_sha=$deploy_sha" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${deploy_sha:0:7}" >> "$GITHUB_OUTPUT"
+
+  production-migration:
+    needs: resolve-release
+    uses: ./.github/workflows/schema-migration-stage.yml
+    with:
+      expected_sha: ${{ needs.resolve-release.outputs.deploy_sha }}
+      confirm_environment: production
+    secrets: inherit
+
   build-and-deploy:
+    needs: [resolve-release, production-migration]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
@@ -60,7 +105,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          ref: ${{ env.DEPLOY_TAG }}
+          ref: ${{ needs.resolve-release.outputs.deploy_sha }}
           fetch-depth: 0
 
       - name: "Guard: tag required and resolvable"
@@ -139,13 +184,21 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Determine deploy SHA
+      - name: Verify exact checked-out SHA
         id: vars
+        shell: bash
         run: |
-          echo "deploy_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-          echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-          echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+          set -euo pipefail
+          expected="${{ needs.resolve-release.outputs.deploy_sha }}"
+          actual="$(git rev-parse HEAD)"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "ERROR: checked-out SHA does not match resolved migration SHA. expected=$expected actual=$actual"
+            exit 1
+          fi
+          echo "deploy_sha=$actual" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${actual:0:7}" >> "$GITHUB_OUTPUT"
+          echo "DEPLOY_SHA=$actual" >> "$GITHUB_ENV"
+          echo "DEPLOY_SHA_SHORT=${actual:0:7}" >> "$GITHUB_ENV"
 
       - name: "Guard: deploy contract - SHA and tag must be present and valid"
         shell: bash
@@ -345,7 +398,6 @@ jobs:
             "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
             "PROD_DEPLOY_TAG" = "${{ env.DEPLOY_TAG }}"
             "APP_VERSION"     = $appVersion
-            "RUN_MIGRATIONS"  = "true"
             "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
             "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
           }
@@ -494,57 +546,6 @@ jobs:
               Start-Sleep -Seconds 15
             }
           }
-
-      - name: Build allowed appsettings JSON
-        shell: pwsh
-        run: |
-          $appVersion = (Get-Content VERSION -Raw).Trim()
-          if ([string]::IsNullOrWhiteSpace($appVersion)) {
-            throw "VERSION file is empty; cannot set APP_VERSION app setting."
-          }
-          $settings = @{
-            "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
-            "PROD_DEPLOY_TAG" = "${{ env.DEPLOY_TAG }}"
-            "APP_VERSION"     = $appVersion
-            "RUN_MIGRATIONS"  = "true"
-            "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
-            "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
-          }
-          $settings | ConvertTo-Json -Depth 5 | Out-File -Encoding utf8 appsettings.prod.json
-          Get-Content appsettings.prod.json
-
-      - name: Appsettings allowlist gate
-        shell: pwsh
-        run: |
-          ./tools/appsettings_allowlist_gate.ps1 `
-            -AppSettingsJsonPath "appsettings.prod.json" `
-            -AllowedKeysFile "tools/appsettings_allowlist.keys.json" `
-            -AllowedKeySet "prod"
-
-      - name: Apply appsettings (allowlisted only)
-        shell: pwsh
-        run: |
-          az webapp config appsettings set `
-            --resource-group ${{ env.RESOURCE_GROUP }} `
-            --name ${{ env.WEBAPP_NAME }} `
-            --settings '@appsettings.prod.json' `
-            --output none `
-            --only-show-errors
-          az webapp restart `
-            --resource-group ${{ env.RESOURCE_GROUP }} `
-            --name ${{ env.WEBAPP_NAME }} `
-            --only-show-errors
-
-      - name: "Guard: verify BUILD_SHA app setting matches deployed SHA"
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $expected = "${{ steps.vars.outputs.deploy_sha }}"
-          Write-Host "Verifying Azure App Settings BUILD_SHA matches deployed SHA..."
-          .\tools\verify_prod_build_sha.ps1 `
-            -ExpectedSha $expected `
-            -AppName "${{ env.WEBAPP_NAME }}" `
-            -ResourceGroup "${{ env.RESOURCE_GROUP }}"
 
       - name: Health check with adaptive exponential backoff
         run: |
