@@ -1,152 +1,95 @@
-# Crown2026 Documentation
+# CROWN Documentation
 
-This directory contains the canonical documentation for Crown2026.
-
-The purpose of this documentation set is to keep architecture, operations, security, evidence, and investor-facing material organized outside the repository root.
+This directory contains CROWN architecture, engineering, operations, security, evidence, and controlled diligence material.
 
 ## Documentation principles
 
 Documentation in this repository should be:
 
-- canonical
-- scoped
-- current
-- easy to navigate
-- aligned to the live codebase and live workflows
-- free of one-off root clutter
+- canonical or clearly classified;
+- scoped and current;
+- easy to navigate;
+- aligned to the live codebase and workflows;
+- free of temporary root clutter;
+- explicit about evidence boundaries and unresolved risk.
 
-Do not place ad hoc reports, proof dumps, working notes, or temporary summaries in the repository root when they belong in a documentation subtree.
+Do not place ad hoc reports, proof dumps, copied conversations, working notes, or temporary summaries in the repository root when they belong in a documentation or evidence subtree.
 
 ## Directory map
 
+### `canonical/`
+
+Repository structure, document authority, and current navigation rules.
+
 ### `architecture/`
 
-System design, application boundaries, subsystem relationships, data flow, tenancy model, and interface-level design notes.
+System design, runtime boundaries, data flow, tenancy, domain ownership, interfaces, deployment topology, and architecture decision records.
 
-Use this section for:
+### `engineering/`
 
-- platform structure
-- backend and frontend boundaries
-- module maps
-- contracts and integration notes
-- deployment topology summaries
-- architecture decision records, if adopted
+Developer setup, contribution practices, testing, local work controls, and engineering policy.
 
 ### `operations/`
 
-Canonical gateway for runbooks, deployment procedures, environment notes, release handling, incident handling, recovery procedures, and operator guidance.
-
-Start with `operations/README.md`. New operational documentation belongs in this directory.
-
-Use this section for:
-
-- deployment runbooks
-- rollback procedures
-- health-check procedures
-- CI and CD operational notes
-- rotation and maintenance procedures
-- environment readiness guidance
+Canonical gateway for deployment, rollback, restore, maintenance, incident response, secret rotation, and operator guidance. Start with `operations/README.md`.
 
 ### `ops/`
 
-Legacy supporting operational material pending file-by-file inventory and reconciliation. Do not add new documents here. Material in this directory does not override `operations/README.md` or the Canonical Document Index.
+Legacy supporting material pending file-by-file reconciliation. Do not add new material here. It does not override canonical operations documentation.
 
 ### `security/`
 
-Security posture, disclosure handling, scanning expectations, secret hygiene, dependency and supply-chain controls, and hardening notes.
-
-Use this section for:
-
-- security standards
-- hardening decisions
-- secret handling guidance
-- review and enforcement notes
-- control summaries
+Security posture, disclosure handling, secret hygiene, dependency and supply-chain controls, hardening decisions, and evidence boundaries.
 
 ### `evidence/`
 
-Proof-oriented documents that support release readiness, auditability, validation, and operational trust.
-
-Use this section for:
-
-- release evidence packets
-- validation summaries
-- proof references
-- audit support material
-- deterministic build or deploy evidence
+Proof-oriented material supporting validation, auditability, release decisions, and operational trust.
 
 ### `investor/`
 
-Condensed business-facing and diligence-facing documentation for controlled review.
-
-Use this section for:
-
-- platform overview
-- product scope
-- execution highlights
-- governance summary
-- operating discipline
-- current hardening priorities
+Controlled technical-diligence material for prospective owners, authorized investors, strategic partners, and executive reviewers. Start with `investor/README.md`.
 
 ### `archive/`
 
-Material preserved for historical reference but no longer treated as canonical.
-
-Do not rely on archived material without checking whether a newer canonical document supersedes it.
+Historical or superseded material retained for reference. Archived material is not current authority.
 
 ## Recommended reading order
 
-For a new technical reviewer:
+For a technical reviewer or successor:
 
 1. `../README.md`
-2. `architecture/README.md`
-3. `operations/README.md`
-4. `security/README.md`
-5. `evidence/README.md`
+2. `canonical/REPOSITORY_MANIFEST.md`
+3. `canonical/CANONICAL_DOCUMENT_INDEX.md`
+4. `engineering/DEV_SETUP.md`
+5. `CURRENT_RELEASE_STATUS.md`
+6. `operations/README.md`
+7. `../SECURITY.md`
 
-For an investor, diligence reviewer, or executive stakeholder:
+For a prospective owner or diligence reviewer:
 
 1. `investor/README.md`
-2. `evidence/README.md`
-3. `security/README.md`
+2. `CURRENT_RELEASE_STATUS.md`
+3. `canonical/REPOSITORY_MANIFEST.md`
+4. `engineering/DEV_SETUP.md`
+5. `operations/README.md`
+6. `../SECURITY.md`
 
-## Contribution rules for documentation
+## Contribution rules
 
 When updating documentation:
 
-- prefer updating an existing canonical document over creating a new near-duplicate
-- keep file names clear and durable
-- avoid redundant summaries when a source-of-truth document already exists
-- move stale or superseded material into `archive/`
-- keep the repository root minimal
-- place new operational documentation under `operations/`, not `ops/`
-
-## Naming guidance
-
-Preferred examples:
-
-- `architecture/platform-overview.md`
-- `operations/deployment-runbook.md`
-- `security/secret-handling.md`
-- `evidence/release-v0.4.0-rc1.md`
-- `investor/platform-overview.md`
-
-Avoid vague names such as:
-
-- `notes.md`
-- `misc.md`
-- `summary-final.md`
-- `new-readme.md`
-- `checklist2.md`
+- update an existing canonical source instead of creating a near-duplicate;
+- use durable file names and explicit status labels;
+- move stale or superseded narrative material out of active navigation;
+- preserve required history, attribution, licenses, and audit evidence;
+- keep product, architecture, implementation, security, testing, approval, and release authority human-owned;
+- do not represent generated evidence or a passing subset of checks as universal certification;
+- place new operational documentation under `operations/`, not `ops/`.
 
 ## Sensitive material
 
-Do not place live secrets, tokens, credentials, private customer data, or unredacted operational material in this directory.
+Do not place live secrets, tokens, credentials, private customer data, production database content, private certificates, or unredacted operational material in this directory. Follow `../SECURITY.md` for private vulnerability handling.
 
-Security-sensitive findings should follow the private handling process documented in `../SECURITY.md`.
+## Authority
 
-## Status
-
-This documentation set is intended to become the canonical home for materials that were previously scattered across the repository root.
-
-Where duplicates exist, the newest clearly designated canonical document should control.
+The Canonical Document Index determines which documents are current authority. When duplicates exist, the latest explicitly designated canonical source controls.

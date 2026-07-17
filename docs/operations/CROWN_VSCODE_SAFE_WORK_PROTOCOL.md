@@ -1,53 +1,79 @@
-# Crown VS Code Safe Work Protocol
+# CROWN VS Code Safe Work Protocol
 
 ## Purpose
 
-Prevent VS Code/Copilot/agent work from wandering, guessing, assuming, hallucinating, or breaking unrelated Crown functionality.
+Use VS Code for controlled local development without broad copy-and-paste changes, unstated assumptions, or unrelated edits.
 
-## Required Workflow
+## Required workflow
 
-### 1. Start guarded session
+### 1. Confirm repository state
 
-Run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\execution\122_crown_guarded_agent_session.ps1 -Mode Start -WorkItem "50 Wizard Deep Dive"
-```
-
-### 2. Give VS Code/Copilot only bounded instructions
-
-Use this prompt:
-
-You are working under Crown guarded mode.
-Task: Complete only the 50 Wizard Deep Dive assessment/fix item I specify.
-Rules:
-- Do not guess.
-- Do not infer missing code.
-- Do not change unrelated files.
-- Do not refactor.
-- Do not delete files.
-- Do not touch Azure, GitHub settings, secrets, auth, RBAC, tenant enforcement, migrations, package manifests, lock files, or workflows unless explicitly authorized.
-- Before editing, list exact files you will change.
-- After editing, run the Crown guarded close script.
-- If evidence is missing, stop and report a blocker.
-Allowed output:
-- audit artifacts
-- wizard matrix updates
-- fix queue updates
-- targeted wizard files explicitly approved
-
-### 3. Close guarded session
-
-Run:
+From the repository root in PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\execution\122_crown_guarded_agent_session.ps1 -Mode Close
+git status -sb
+git branch --show-current
+git rev-parse HEAD
 ```
 
-### 4. Do not commit unless Close passes
+Do not begin from an unexplained dirty worktree.
 
-If the close script reports forbidden changes, revert or review before continuing.
+### 2. Define the work boundary
 
-## Binary Rule
+Record:
 
-No PASS, no commit, no push, no merge unless the guard script and validation artifacts are clean.
+```text
+TASK=<one sentence>
+EXPECTED_FILES=<exact paths or directories>
+FORBIDDEN_FILES=<protected or unrelated paths>
+VALIDATION=<commands that prove the change>
+```
+
+Do not edit when the expected files or acceptance criteria are unclear.
+
+### 3. Work in an isolated branch or worktree
+
+Do not commit directly to `main`. Keep one logical change per branch and pull request.
+
+### 4. Edit deliberately
+
+- Inspect the current implementation before changing it.
+- Make the smallest change that resolves the verified issue.
+- Do not paste large replacement blocks without reviewing every affected line.
+- Do not perform unrelated refactors, formatting sweeps, dependency upgrades, or mass renames.
+- Do not change authentication, RBAC, tenant enforcement, migrations, production deployment, secrets, package manifests, lock files, or workflows unless explicitly authorized.
+
+### 5. Validate locally
+
+Run focused checks first, followed by relevant broader checks. PowerShell is appropriate for repeatable diagnostics, validation, evidence capture, and repository operations.
+
+At minimum:
+
+```powershell
+git diff --check
+git diff --name-only
+git diff --stat
+```
+
+Then run the backend, frontend, contract, security, or browser checks that match the changed behavior.
+
+### 6. Inspect the complete diff
+
+Review every changed file before staging. Confirm that no generated output, local settings, credentials, logs, caches, or unrelated files are included.
+
+### 7. Close the work
+
+The closeout must report:
+
+- branch and HEAD;
+- files changed;
+- validation commands and results;
+- known limitations;
+- rollback approach;
+- independent-review status.
+
+Do not commit, push, merge, or claim completion while validation is failing, pending, stale, or incomplete.
+
+## Binary rule
+
+No PASS, no commit, no push, and no merge unless the scoped diff and required validation are clean.

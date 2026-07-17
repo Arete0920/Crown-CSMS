@@ -1,23 +1,21 @@
-# CROWN Agent Operating Contract
+# CROWN Repository Work Contract
 
-This file applies to all AI assistants, coding agents, ChatGPT/Copilot sessions, and automated support tools working in this repository.
+This contract applies to contributors, automation, development tools, and support processes working in this repository.
 
-## Role
+## Role and authority
 
-You are support, not decider.
+Repository tools and automation may inspect files, execute explicitly scoped work, run validation, create evidence, and summarize risk. They do not own product requirements, architecture decisions, acceptance, security approval, or release authority.
 
-You may inspect, draft, implement explicitly scoped work, run tests, create evidence, and summarize risk.
+No contributor, tool, or automated process may self-approve work, declare release readiness, declare production readiness, bypass governance, broaden scope without authorization, or treat local passing tests as independent review.
 
-You may not self-approve, declare release readiness, declare production readiness, bypass governance, broaden scope, or treat local passing tests as independent review.
-
-## Current Product Name
+## Current product name
 
 Public-facing product name: CROWN  
 Descriptor: Christian School Management Solution
 
 Avoid public-facing `Crown2026` branding except where repository, branch, artifact, or historical filenames require it.
 
-## Required First Step
+## Required first step
 
 Before making changes, identify:
 
@@ -32,9 +30,9 @@ VALIDATION=<commands to prove the work>
 
 If expected files cannot be named, do not edit.
 
-## Source Of Truth
+## Source of truth
 
-Use current repository evidence over memory or chat history.
+Use current repository evidence over memory, copied notes, or stale status material.
 
 For module status, read:
 
@@ -48,55 +46,55 @@ For wizard status, read:
 
 For dashboards, read the current dashboard certification matrix and dashboard registry.
 
-## Evidence Rules
+## Evidence rules
 
 Every completion claim requires proof from at least one of:
 
-- committed file path and line/section;
+- committed file path and line or section;
 - raw command output;
 - generated audit artifact;
 - automated test result;
-- GitHub PR number and head SHA;
+- GitHub pull request number and head SHA;
 - CI check result.
 
 If proof is missing, state `NOT VERIFIED`.
 
-## Forbidden Claims Without Explicit Proof
+## Forbidden claims without explicit proof
 
 Do not write or imply these unless the specific claim is proven by current evidence:
 
-- production ready
-- release ready
-- sandbox ready
-- dashboard live-data complete
-- wizard functional-flow complete
-- all wizards complete
-- all modules complete
-- independently approved
-- fully certified
+- forbidden claim: production ready
+- forbidden claim: release ready
+- forbidden claim: sandbox ready
+- forbidden claim: dashboard live-data complete
+- forbidden claim: wizard functional-flow complete
+- forbidden claim: all wizards complete
+- forbidden claim: all modules complete
+- forbidden claim: independently approved
+- forbidden claim: fully certified
 - complete platform
 
-## Scope Rules
+## Scope rules
 
 Use isolated branches and worktrees. Do not mutate `main` directly.
 
-Use separate PRs for:
+Use separate pull requests for:
 
 1. proof implementation;
-2. canonical scorecard/matrix reconciliation;
-3. governance/process documentation;
-4. workflow/CI changes;
+2. canonical scorecard or matrix reconciliation;
+3. governance or process documentation;
+4. workflow or CI changes;
 5. release certification.
 
 Do not mix implementation and scorecard reconciliation unless explicitly authorized.
 
-## Protected Areas
+## Protected areas
 
 Do not change these without explicit scope:
 
 - authentication;
 - RBAC;
-- tenant/school isolation;
+- tenant or school isolation;
 - database migrations;
 - production deployment;
 - GitHub workflows;
@@ -105,13 +103,11 @@ Do not change these without explicit scope:
 - package manifests and lock files;
 - repository rulesets or branch protections.
 
-## Review Rule
+## Review rule
 
-The repo owner cannot approve their own work. AI assistants cannot approve their own work.
+The repository owner cannot approve their own work. A contributor or automated process cannot independently approve work it produced. Use `INDEPENDENT_REVIEW_REQUIRED` unless an appropriate independent reviewer has completed review.
 
-Use `INDEPENDENT_REVIEW_REQUIRED` unless an appropriate independent reviewer has completed review.
-
-## Required Closeout Format
+## Required closeout format
 
 Every task report must include:
 

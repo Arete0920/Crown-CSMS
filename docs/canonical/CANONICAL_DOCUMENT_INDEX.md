@@ -2,11 +2,11 @@
 
 **Status:** Canonical  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-14
+**Effective date:** 2026-07-17
 
 ## Authority rule
 
-A document is authoritative only when listed here as `CANONICAL` or when a later approved decision explicitly supersedes it. Unlisted documents may be supporting evidence, history, drafts, or generated output, but they do not override canonical authority.
+A document is authoritative only when listed here as `CANONICAL`, or when a later approved decision explicitly supersedes it. Unlisted documents may be supporting evidence, history, drafts, or generated output, but they do not override canonical authority.
 
 ## Canonical documents
 
@@ -21,6 +21,8 @@ A document is authoritative only when listed here as `CANONICAL` or when a later
 | Security reporting | `SECURITY.md` | CANONICAL |
 | Contribution rules | `CONTRIBUTING.md` | CANONICAL, review during ownership transfer |
 | Code ownership | `CODEOWNERS` | CANONICAL, successor update required |
+| Technical diligence overview | `docs/investor/README.md` | CONTROLLED SUPPORTING; release posture remains governed by `docs/CURRENT_RELEASE_STATUS.md` |
+| Repository work controls | `AGENTS.md` | CANONICAL ENGINEERING CONTROL |
 
 ## Supporting documents requiring reconciliation
 
@@ -39,15 +41,16 @@ A document is authoritative only when listed here as `CANONICAL` or when a later
 
 - `CANONICAL` — current authority.
 - `SUPPORTING` — useful detail consistent with canonical authority.
+- `CONTROLLED SUPPORTING` — approved orientation material that does not override release, security, architecture, or operational authority.
 - `HISTORICAL` — retained to preserve prior decisions or evidence.
 - `SUPERSEDED` — replaced by a named canonical document.
 - `GENERATED_EVIDENCE` — machine-produced output, not narrative authority.
-- `OBSOLETE` — no longer useful after preservation.
+- `OBSOLETE` — no longer useful after required preservation.
 
 ## Change control
 
-Changing canonical authority requires a focused pull request that names the document being replaced, explains the reason, identifies conflicts resolved, updates this index, preserves historical evidence, and receives human review.
+Changing canonical authority requires a focused pull request that names the document being replaced, explains the reason, identifies conflicts resolved, updates this index, preserves required historical evidence, and receives human review.
 
 ## Ownership-transfer note
 
-`CODEOWNERS`, repository administrator access, external service ownership, and contributor records must be updated with verified GitHub usernames and actual responsibilities during the handoff session. Names or roles must not be invented.
+`CODEOWNERS`, repository administrator access, external service ownership, contributor records, domains, certificates, cloud resources, secrets, and operating authority must be updated with verified identities and actual responsibilities during the handoff session. Names or roles must not be invented.
