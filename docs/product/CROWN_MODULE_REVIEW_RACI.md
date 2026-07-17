@@ -1,245 +1,140 @@
 # CROWN Module Review RACI
 
-Status: Planning Control Matrix
-Parent Canon: `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md`
-Release Authority: `docs/CURRENT_RELEASE_STATUS.md`
+**Status:** Planning control matrix  
+**Parent canon:** `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md`  
+**Release authority:** `docs/CURRENT_RELEASE_STATUS.md`
 
 ## Purpose
 
-This document defines review and approval responsibilities for CROWN module and dashboard completion. It exists to prevent self-approval, unclear ownership, premature certification, and unsupported release claims.
+This document defines review and approval responsibilities for CROWN module and dashboard work. It prevents self-approval, unclear ownership, premature certification, and unsupported release claims.
 
-TC may set direction, priorities, and product intent, but TC cannot independently review or approve TC's own work. ChatGPT may draft, inspect, and organize evidence, but ChatGPT cannot approve work it authored. GitHub Copilot may serve as the independent review support path when its review output is captured in VS Code/GitHub or committed evidence.
+Development tools and automated review systems may assist with inspection, implementation, testing, analysis, and evidence preparation. They do not provide independent approval, security authorization, product acceptance, or release authority.
 
-## Authority Hierarchy
+## Authority hierarchy
 
 | Document | Controls |
 |---|---|
-| `docs/CURRENT_RELEASE_STATUS.md` | Repository release posture, GO/NO-GO, release freeze, current-head evidence authority. |
-| `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md` | Module/dashboard product architecture, order, vocabulary, certification prerequisites. |
+| `docs/CURRENT_RELEASE_STATUS.md` | Repository release posture, GO/NO-GO, release freeze, and current-head evidence authority. |
+| `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md` | Module and dashboard product architecture, order, vocabulary, and certification prerequisites. |
 | `docs/product/CROWN_MODULE_COMPLETION_MATRIX.md` | Row-level module status and evidence requirements. |
 | `docs/product/CROWN_MODULE_DATA_OWNERSHIP_MATRIX.md` | Canonical data ownership and duplicate-truth prevention. |
 | `docs/product/CROWN_MODULE_PERMISSION_MATRIX.md` | Action-level permission and security requirements. |
 | `docs/product/CROWN_DASHBOARD_FIT_MATRIX.md` | Dashboard-to-module fit and certification requirements. |
-| `docs/product/CROWN_MODULE_REVIEW_RACI.md` | Review and approval routing, including Copilot review evidence requirements. |
+| `docs/product/CROWN_MODULE_REVIEW_RACI.md` | Review and approval routing. |
 
 This file does not approve production release.
 
-## RACI Definitions
+## RACI definitions
 
 | Code | Meaning |
 |---|---|
-| R | Responsible: does the work or prepares the evidence. |
-| A | Accountable: owns final decision for that stage. |
-| C | Consulted: provides subject-matter input. |
+| R | Responsible: performs the work or prepares evidence. |
+| A | Accountable: owns the decision for that stage. |
+| C | Consulted: provides relevant subject-matter input. |
 | I | Informed: receives status but does not approve. |
 
-## Role Definitions
+## Role definitions
 
 | Role | Description |
 |---|---|
-| Product Direction Owner | Defines priority, product intent, market fit, and module scope. TC may hold this role. |
-| Implementer | Writes code, docs, tests, or evidence. Cannot self-approve. |
-| ChatGPT Support | Drafts, inspects, organizes evidence, and prepares repo artifacts. Cannot approve work it authored. |
-| Copilot Reviewer | Reviews through VS Code/GitHub. Review is valid only when the output is captured as evidence. |
-| Technical Reviewer | Reviews architecture, code structure, data ownership, API shape, and integration risk. May be served by captured Copilot review if adequate. |
-| Security Reviewer | Reviews tenant isolation, permissions, sensitive data, redaction, exports, and auditability. May be served by captured Copilot review if adequate. |
-| QA / Evidence Reviewer | Reviews tests, runtime proof, screenshots, Playwright artifacts, and evidence completeness. May be served by captured Copilot review if adequate. |
-| Product Workflow Reviewer | Reviews school-operations workflow correctness and user/persona fit. TC provides product direction; approval still requires captured review evidence. |
-| Release Authority | Controls release posture through `docs/CURRENT_RELEASE_STATUS.md` and current-head evidence. |
-| Independent Reviewer | A qualified reviewer/tool path that did not author the work being approved, with review output captured as evidence. |
+| Product Direction Owner | Defines priorities, product intent, market fit, and module scope. |
+| Implementer | Writes code, documentation, tests, or evidence. Cannot independently approve the work produced. |
+| Engineering Support | Assists with inspection, implementation, evidence organization, and analysis. Cannot approve work it produced. |
+| Technical Reviewer | Reviews architecture, maintainability, code structure, data ownership, API shape, and integration risk. |
+| Security Reviewer | Reviews tenant isolation, permissions, sensitive data, redaction, exports, and auditability. |
+| QA / Evidence Reviewer | Reviews tests, runtime proof, browser artifacts, and evidence completeness. |
+| Product Workflow Reviewer | Reviews school-operations workflow correctness and user or persona fit. |
+| Release Authority | Controls release posture through the canonical release record and current-head evidence. |
+| Automated Review Support | Produces findings or suggestions that must be evaluated and dispositioned by accountable humans. It is not independent approval. |
+| Independent Reviewer | A qualified person who did not author the work being approved and whose review is captured in a durable record. |
 
-## Non-Negotiable Review Rules
+## Non-negotiable review rules
 
 1. The implementer cannot be the sole reviewer.
-2. TC cannot self-approve TC-authored work.
-3. ChatGPT cannot approve ChatGPT-authored work.
-4. Copilot review is not valid unless its output is captured as evidence.
-5. Chat assertions are not evidence.
-6. Historical PASS/GO/SHIP claims do not override current authority.
+2. The Product Direction Owner cannot independently approve their own authored work where independent review is required.
+3. Engineering support cannot approve work it produced.
+4. Automated findings are evidence inputs, not independent approval.
+5. Chat assertions and unretained conversations are not evidence.
+6. Historical PASS, GO, or SHIP claims do not override current authority.
 7. Screenshots alone do not prove module completion.
-8. Frontend registry coverage does not prove backend/runtime completion.
+8. Frontend registry coverage does not prove backend or runtime completion.
 9. Dashboard rendering does not prove module completion.
-10. Sample/template data does not prove production readiness.
-11. Every Certified promotion requires evidence and review evidence.
-12. Any material security, tenant, permission, data ownership, or dashboard certification change requires review before merge/promotion.
+10. Sample or template data does not prove production readiness.
+11. Every Certified promotion requires current evidence and captured human review.
+12. Material security, tenant, permission, data-ownership, or dashboard-certification changes require qualified review before promotion or release use.
 
-## Accepted Copilot Review Evidence
+## Accepted review evidence
 
-Copilot review evidence must be captured in at least one of these forms:
+Review evidence may be captured as:
 
-- GitHub PR review
-- GitHub PR comment
-- GitHub issue comment
-- committed VS Code/Copilot review transcript or summary
-- pasted Copilot review output committed into an evidence packet
-- CI/check artifact that includes Copilot-generated review output and disposition
+- a GitHub pull-request review;
+- a GitHub pull-request or issue comment from the accountable reviewer;
+- a signed or attributable review memorandum;
+- a committed review summary with identified reviewer and date;
+- a security, QA, or architecture report with findings and dispositions;
+- CI and automated-analysis output supporting, but not replacing, human review.
 
-Do not mark a module, dashboard, or planning package as Copilot-reviewed unless one of those evidence forms exists.
+## Review stages
 
-## Review Stages
+### Stage 1: Planning review
 
-### Stage 1: Planning Review
+Confirm module boundaries, order, dependencies, data ownership, permissions, dashboard fit, and evidence requirements before implementation.
 
-Purpose: confirm module boundaries, order, dependencies, and dashboard fit before implementation.
+### Stage 2: Implementation review
 
-| Activity | Product Direction Owner | Implementer | ChatGPT Support | Copilot Reviewer | Release Authority |
-|---|---|---|---|---|---|
-| Define module scope | A/R | C | R | C | I |
-| Define data ownership | C | R | R | A when captured | I |
-| Define permission model | C | R | R | A when captured | I |
-| Define dashboard fit | C | R | R | A when captured | I |
-| Define evidence requirements | C | R | R | A when captured | I |
-| Approve plan for planning use | C | I | R | A when captured | I |
+Verify code, schema, API, frontend, tenant enforcement, permissions, audit behavior, and wiring before evidence promotion.
 
-### Stage 2: Implementation Review
+### Stage 3: Evidence review
 
-Purpose: verify code, schema, API, frontend, and wiring before evidence promotion.
+Verify backend and frontend tests, tenant and permission tests, runtime proof, browser evidence, and evidence-packet completeness.
 
-| Activity | Product Direction Owner | Implementer | ChatGPT Support | Copilot Reviewer | Release Authority |
-|---|---|---|---|---|---|
-| Backend models/services/API | I | R | C | A when captured | I |
-| Frontend routes/workflows | I | R | C | A when captured | I |
-| Tenant enforcement | I | R | C | A when captured | I |
-| Action-level permissions | I | R | C | A when captured | I |
-| Audit events | I | R | C | A when captured | I |
-| Dashboard source service | I | R | C | A when captured | I |
-| Drilldowns/exports | I | R | C | A when captured | I |
+### Stage 4: Certification review
 
-### Stage 3: Evidence Review
+A qualified human reviewer determines whether the evidence supports module or dashboard certification. Certification does not create production GO.
 
-Purpose: verify proof before module/dashboard status promotion.
+### Stage 5: Release-authority review
 
-| Activity | Product Direction Owner | Implementer | ChatGPT Support | Copilot Reviewer | Release Authority |
-|---|---|---|---|---|---|
-| Backend test proof | I | R | C | A when captured | I |
-| Frontend test proof | I | R | C | A when captured | I |
-| Tenant/permission tests | I | R | C | A when captured | I |
-| Runtime smoke proof | I | R | C | A when captured | I |
-| Screenshot/Playwright proof | I | R | C | A when captured | I |
-| Evidence packet completeness | I | R | R | A when captured | I |
-| Matrix row update | C | R | R | A when captured | I |
+The designated release authority evaluates the current-head release packet and controls any change to release posture.
 
-### Stage 4: Certification Review
+## Module certification checklist
 
-Purpose: decide whether a module or dashboard may be marked Certified.
+A module cannot be marked Certified unless all applicable items are complete:
 
-| Activity | Product Direction Owner | Implementer | ChatGPT Support | Copilot Reviewer | Release Authority |
-|---|---|---|---|---|---|
-| Certify module architecture | I | I | C | A when captured | I |
-| Certify security posture | I | I | C | A when captured | I |
-| Certify workflow correctness | C | I | C | A when captured | I |
-| Certify evidence completeness | I | I | R | A when captured | I |
-| Update module status to Certified | I | R | R | A when captured | I |
-| Update dashboard status to Certified | I | R | R | A when captured | I |
+- [ ] module row exists in `CROWN_MODULE_COMPLETION_MATRIX.md`;
+- [ ] data-ownership row exists in `CROWN_MODULE_DATA_OWNERSHIP_MATRIX.md`;
+- [ ] permission row exists in `CROWN_MODULE_PERMISSION_MATRIX.md`;
+- [ ] dashboard-fit row exists when dashboard-visible;
+- [ ] backend app, service, and API verified;
+- [ ] models and migrations verified where applicable;
+- [ ] tenant enforcement tested;
+- [ ] action-level permissions tested;
+- [ ] sensitive-data controls tested where applicable;
+- [ ] audit events tested where applicable;
+- [ ] frontend route and workflow verified;
+- [ ] runtime proof is current;
+- [ ] evidence packet is linked;
+- [ ] qualified human review evidence is captured;
+- [ ] blocking corrections are closed.
 
-### Stage 5: Release Authority Review
+## Dashboard certification checklist
 
-Purpose: determine whether release posture changes. This is separate from module certification.
+A dashboard cannot be marked Certified unless all applicable items are complete:
 
-| Activity | Product Direction Owner | Implementer | ChatGPT Support | Copilot Reviewer | Release Authority |
-|---|---|---|---|---|---|
-| Current-head release packet | I | R | R | C | A |
-| Release-status update | I | C | C | C | A |
-| GO/NO-GO decision | I | I | I | C | A |
+- [ ] dashboard row exists in `CROWN_DASHBOARD_FIT_MATRIX.md`;
+- [ ] source-module status supports promotion;
+- [ ] live service, API, or certified snapshot source is verified;
+- [ ] sample, template, or fallback data is absent from the production-ready path;
+- [ ] provenance and freshness behavior are defined and tested;
+- [ ] role and tenant access are tested;
+- [ ] drilldown and export policies are tested where applicable;
+- [ ] browser or runtime proof is current;
+- [ ] qualified human review evidence is captured;
+- [ ] blocking corrections are closed.
 
-Module certification does not automatically create production GO.
+## Sensitive module review requirement
 
-## Module Certification Checklist
+Billing, accounting, financial aid, student care, health, safety, human resources, governance, data migration, integrations, and other sensitive modules require qualified security review before Certified status.
 
-A module cannot be marked Certified unless all are complete:
+## Rejection, resubmission, and revocation
 
-- [ ] module row exists in `CROWN_MODULE_COMPLETION_MATRIX.md`
-- [ ] data ownership row exists in `CROWN_MODULE_DATA_OWNERSHIP_MATRIX.md`
-- [ ] permission row exists in `CROWN_MODULE_PERMISSION_MATRIX.md`
-- [ ] dashboard fit row exists if dashboard-visible
-- [ ] backend app/service/API verified
-- [ ] models verified
-- [ ] migrations verified where applicable
-- [ ] tenant enforcement tested
-- [ ] action-level permissions tested
-- [ ] sensitive data redaction tested where applicable
-- [ ] small-cell suppression tested where applicable
-- [ ] audit events tested where applicable
-- [ ] frontend route/workflow verified
-- [ ] runtime proof current
-- [ ] evidence packet linked
-- [ ] Copilot review evidence captured, or another qualified independent review evidence path captured
-- [ ] corrections closed
-
-## Dashboard Certification Checklist
-
-A dashboard cannot be marked Certified unless all are complete:
-
-- [ ] dashboard row exists in `CROWN_DASHBOARD_FIT_MATRIX.md`
-- [ ] source module status supports dashboard promotion
-- [ ] live service/API or certified snapshot source verified
-- [ ] sample/template/fallback data absent from production-ready path
-- [ ] provenance shown or inspectable
-- [ ] freshness SLA defined and tested
-- [ ] stale/unavailable behavior tested
-- [ ] role access tested by dashboard key
-- [ ] tenant access tested
-- [ ] drilldown contract tested or explicitly marked aggregate-only
-- [ ] export policy tested if export exists
-- [ ] screenshot/Playwright proof current
-- [ ] Copilot review evidence captured, or another qualified independent review evidence path captured
-- [ ] corrections closed
-
-## Sensitive Module Review Requirement
-
-The following modules always require Security Reviewer/Copilot security-focused review evidence before Certified status:
-
-- billing-tuition-ledger
-- financial-aid
-- student-care-discipline
-- health-office
-- safety-security
-- hr
-- spiritual-life
-- volunteer-management
-- advancement-operations
-- board-governance
-- network-benchmarking
-- data-migration
-- integrations-automation
-- dashboard-certification-center
-
-## Rejection and Resubmission
-
-If Copilot or another reviewer rejects a module or dashboard promotion:
-
-1. The row remains at its prior status.
-2. The rejection reason is recorded in the matrix row or linked evidence packet.
-3. The implementer corrects the issue.
-4. The same evidence category is re-reviewed.
-5. Certification cannot proceed until the rejection is closed.
-
-## Revocation
-
-Certified status must be revoked or downgraded if:
-
-- source evidence becomes stale
-- current-head tests fail
-- tenant or permission regression is found
-- sample/template data re-enters a production-ready dashboard
-- dashboard source switches to fallback without approved exception
-- data ownership changes without review
-- sensitive data leak is discovered
-- release authority supersedes prior certification
-
-## Required Evidence Location
-
-Evidence should be linked from the relevant matrix row. Preferred evidence locations:
-
-```text
-audit-artifacts/module-completion/<timestamp>/
-audit-artifacts/dashboard-certification/<timestamp>/
-audit-artifacts/runtime-proof/<timestamp>/
-docs/release/evidence/<timestamp>/
-```
-
-Evidence generated locally is not authoritative until committed, attached, or otherwise linked in a reviewable form.
-
-## Final Rule
-
-No module, dashboard, or release posture may be promoted by the same person or agent that authored the work without captured review evidence. Copilot review is acceptable for this lane only when its output is captured as evidence.
+When review identifies a blocker, the item remains at its prior status until the finding is corrected and re-reviewed. Certified status must be revoked or downgraded when current evidence no longer supports it.
