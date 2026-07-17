@@ -1,5 +1,5 @@
-﻿"""
-Celery tasks for Crown2026 communications.
+"""
+Celery tasks for CROWN communications.
 
 The outbox drain task runs every 10 seconds (see settings.CELERY_BEAT_SCHEDULE)
 and sends up to 25 messages per tick using exponential backoff on failure.
@@ -12,6 +12,9 @@ import logging
 from celery import shared_task
 from django.db import transaction
 from django.utils import timezone
+
+from core.models import School
+from core.tenant_models import tenant_context
 
 from .outbox import OutboxMessage
 
@@ -29,7 +32,7 @@ def _send(msg: OutboxMessage) -> None:
     """Dispatch a single outbox message to the appropriate channel."""
     if msg.channel == "EMAIL":
         from django.conf import settings as django_settings  # noqa: PLC0415
-        from integrations.graph_client import send_mail      # noqa: PLC0415
+        from integrations.graph_client import send_mail  # noqa: PLC0415
 
         from_user = getattr(django_settings, "GRAPH_FROM_USER", "")
         if not from_user:
@@ -59,17 +62,28 @@ def _send(msg: OutboxMessage) -> None:
             message=msg.body,
         )
     elif msg.channel in ("SMS", "PUSH"):
-        # Phase B: wire additional channel handlers here
         raise NotImplementedError(f"Channel {msg.channel!r} not yet implemented")
     else:
         raise ValueError(f"Unknown channel: {msg.channel!r}")
 
 
+def _send_in_tenant(msg: OutboxMessage) -> None:
+    """Resolve and bind the message tenant for exactly one delivery attempt."""
+    school = School.objects.filter(pk=msg.school_id, is_active=True).first()
+    if school is None:
+        raise ValueError(f"OutboxMessage references unknown or inactive school: {msg.school_id}")
+
+    with tenant_context(school):
+        _send(msg)
+
+
 @shared_task(bind=True, name="comms.tasks.drain_outbox")
 def drain_outbox(self, batch_size: int = 25) -> dict:
     """
-    Drain up to `batch_size` pending outbox messages.
-    Uses SELECT FOR UPDATE SKIP LOCKED so multiple workers are safe.
+    Drain up to ``batch_size`` pending outbox messages.
+
+    Each delivery is executed inside an explicit school tenant context. The
+    context manager restores or clears task-local state after success or error.
     """
     now = timezone.now()
     sent = failed = dead = 0
@@ -87,7 +101,7 @@ def drain_outbox(self, batch_size: int = 25) -> dict:
             msg.attempts += 1
             msg.save(update_fields=["attempts"])
 
-            _send(msg)
+            _send_in_tenant(msg)
 
             msg.status = OutboxMessage.STATUS_SENT
             msg.sent_at = timezone.now()
