@@ -42,9 +42,9 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
-    screenshot: "only-on-failure",
-    trace: IS_LIVE_RUNTIME_CERTIFICATION ? "retain-on-failure" : "on-first-retry",
-    video: "off",
+    screenshot: IS_LIVE_RUNTIME_CERTIFICATION ? "on" : "only-on-failure",
+    trace: IS_LIVE_RUNTIME_CERTIFICATION ? "on" : "on-first-retry",
+    video: IS_LIVE_RUNTIME_CERTIFICATION ? "retain-on-failure" : "off",
   },
 
   projects: [
