@@ -1,0 +1,187 @@
+name: Recovery Control Drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      failed_candidate_sha:
+        description: "Simulated failed deployment candidate SHA (40 lowercase hex characters)"
+        required: true
+        type: string
+      last_known_good_sha:
+        description: "Simulated last-known-good deployment SHA (40 lowercase hex characters)"
+        required: true
+        type: string
+      runtime_health:
+        description: "Simulated live runtime health at recovery decision time"
+        required: true
+        default: unhealthy
+        type: choice
+        options:
+          - healthy
+          - unhealthy
+          - unavailable
+      immutable_image_available:
+        description: "Whether the exact last-known-good immutable image is available"
+        required: true
+        default: true
+        type: boolean
+      restore_evidence_available:
+        description: "Whether current database restore evidence is available as fallback"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recovery-control-drill-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  simulate-recovery-decision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FAILED_CANDIDATE_SHA: ${{ inputs.failed_candidate_sha }}
+      LAST_KNOWN_GOOD_SHA: ${{ inputs.last_known_good_sha }}
+      RUNTIME_HEALTH: ${{ inputs.runtime_health }}
+      IMMUTABLE_IMAGE_AVAILABLE: ${{ inputs.immutable_image_available }}
+      RESTORE_EVIDENCE_AVAILABLE: ${{ inputs.restore_evidence_available }}
+    steps:
+      - name: Validate drill inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for value in "$FAILED_CANDIDATE_SHA" "$LAST_KNOWN_GOOD_SHA"; do
+            if [[ ! "$value" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "ERROR: all SHA inputs must be full 40-character lowercase hexadecimal values."
+              exit 1
+            fi
+          done
+
+          if [[ "$FAILED_CANDIDATE_SHA" == "$LAST_KNOWN_GOOD_SHA" ]]; then
+            echo "ERROR: failed candidate and last-known-good SHA must differ."
+            exit 1
+          fi
+
+          case "$RUNTIME_HEALTH" in
+            healthy|unhealthy|unavailable) ;;
+            *)
+              echo "ERROR: unsupported runtime health value: $RUNTIME_HEALTH"
+              exit 1
+              ;;
+          esac
+
+      - name: Evaluate recovery controls
+        id: decision
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DECISION=""
+          ACTION=""
+          RESULT=""
+          MANUAL_INTERVENTION="false"
+          DATABASE_RESTORE_REQUIRED="false"
+
+          if [[ "$RUNTIME_HEALTH" == "healthy" ]]; then
+            DECISION="skip_application_rollback"
+            ACTION="preserve_current_runtime_and_investigate_deploy_automation"
+            RESULT="PASS"
+          elif [[ "$IMMUTABLE_IMAGE_AVAILABLE" == "true" ]]; then
+            DECISION="restore_immutable_last_known_good_image"
+            ACTION="set_application_image_and_build_identity_to_${LAST_KNOWN_GOOD_SHA}"
+            RESULT="PASS"
+          elif [[ "$RESTORE_EVIDENCE_AVAILABLE" == "true" ]]; then
+            DECISION="manual_application_recovery_with_restore_fallback"
+            ACTION="enter_manual_incident_control_and_use_approved_restore_procedure_if_data_recovery_is_required"
+            RESULT="PASS_WITH_MANUAL_CONTROL"
+            MANUAL_INTERVENTION="true"
+          else
+            DECISION="stop_and_escalate"
+            ACTION="do_not_claim_recovery;_immutable_rollback_and_restore_fallback_are_unproven"
+            RESULT="FAIL"
+            MANUAL_INTERVENTION="true"
+            DATABASE_RESTORE_REQUIRED="true"
+          fi
+
+          {
+            echo "decision=$DECISION"
+            echo "action=$ACTION"
+            echo "result=$RESULT"
+            echo "manual_intervention=$MANUAL_INTERVENTION"
+            echo "database_restore_required=$DATABASE_RESTORE_REQUIRED"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write timestamped recovery evidence
+        shell: bash
+        env:
+          DECISION: ${{ steps.decision.outputs.decision }}
+          ACTION: ${{ steps.decision.outputs.action }}
+          RESULT: ${{ steps.decision.outputs.result }}
+          MANUAL_INTERVENTION: ${{ steps.decision.outputs.manual_intervention }}
+          DATABASE_RESTORE_REQUIRED: ${{ steps.decision.outputs.database_restore_required }}
+        run: |
+          set -euo pipefail
+          mkdir -p recovery-control-drill-evidence
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          cat > recovery-control-drill-evidence/result.json <<JSON
+          {
+            "timestamp_utc": "$TIMESTAMP",
+            "workflow_run_id": "${GITHUB_RUN_ID}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow_sha": "${GITHUB_SHA}",
+            "failed_candidate_sha": "$FAILED_CANDIDATE_SHA",
+            "last_known_good_sha": "$LAST_KNOWN_GOOD_SHA",
+            "runtime_health": "$RUNTIME_HEALTH",
+            "immutable_image_available": $IMMUTABLE_IMAGE_AVAILABLE,
+            "restore_evidence_available": $RESTORE_EVIDENCE_AVAILABLE,
+            "decision": "$DECISION",
+            "action": "$ACTION",
+            "result": "$RESULT",
+            "manual_intervention": $MANUAL_INTERVENTION,
+            "database_restore_required": $DATABASE_RESTORE_REQUIRED,
+            "production_mutation_performed": false
+          }
+          JSON
+
+          cat > recovery-control-drill-evidence/summary.md <<MARKDOWN
+          # Recovery Control Drill Evidence
+
+          - Timestamp (UTC): $TIMESTAMP
+          - Workflow run ID: ${GITHUB_RUN_ID}
+          - Workflow SHA: ${GITHUB_SHA}
+          - Failed candidate SHA: $FAILED_CANDIDATE_SHA
+          - Last-known-good SHA: $LAST_KNOWN_GOOD_SHA
+          - Simulated runtime health: $RUNTIME_HEALTH
+          - Immutable image available: $IMMUTABLE_IMAGE_AVAILABLE
+          - Restore evidence available: $RESTORE_EVIDENCE_AVAILABLE
+          - Decision: $DECISION
+          - Action: $ACTION
+          - Result: $RESULT
+          - Manual intervention required: $MANUAL_INTERVENTION
+          - Database restore required: $DATABASE_RESTORE_REQUIRED
+          - Production mutation performed: false
+
+          This workflow proves recovery decision controls only. It does not prove an actual Azure rollback, database restore, RTO, RPO, or production readiness.
+          MARKDOWN
+
+          cat recovery-control-drill-evidence/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload recovery drill evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-control-drill-evidence-${{ github.run_id }}
+          path: recovery-control-drill-evidence/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce drill result
+        if: ${{ steps.decision.outputs.result == 'FAIL' }}
+        shell: bash
+        run: |
+          echo "Recovery controls are insufficient for the simulated scenario."
+          exit 1
