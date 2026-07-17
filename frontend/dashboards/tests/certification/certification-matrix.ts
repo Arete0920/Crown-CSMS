@@ -62,7 +62,32 @@ function roleDashboardSurface(config: {
   };
 }
 
+function visualRouteSurface(config: {
+  id: string;
+  label: string;
+  route: string;
+  persona: string;
+}): CertificationSurface {
+  return {
+    id: config.id,
+    label: config.label,
+    route: config.route,
+    kind: "route",
+    personas: [config.persona],
+    tenants: CORE_TENANTS,
+    requireLiveProvenance: false,
+    provenanceRequiredApiFragments: [],
+    expectedApiFragments: [],
+  };
+}
+
 export const certificationMatrix: CertificationSurface[] = [
+  visualRouteSurface({
+    id: "home-route",
+    label: "Home route",
+    route: "/",
+    persona: "sandbox-admin",
+  }),
   {
     id: "sandbox-landing",
     label: "Sandbox landing",
@@ -140,12 +165,31 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-student",
     slug: "student",
   }),
+  visualRouteSurface({
+    id: "board-route",
+    label: "Board route",
+    route: "/board",
+    persona: "sandbox-board",
+  }),
   dashboardSurface({
     id: "board-dashboard",
     label: "Board dashboard",
     route: "/school-board-dashboard",
     persona: "sandbox-board",
     slug: "school-board",
+  }),
+  visualRouteSurface({
+    id: "finance-route",
+    label: "Finance route",
+    route: "/finance",
+    persona: "sandbox-admin",
+  }),
+  dashboardSurface({
+    id: "admissions-dashboard",
+    label: "Admissions dashboard",
+    route: "/admissions-dashboard",
+    persona: "sandbox-admin",
+    slug: "admissions",
   }),
   {
     id: "wizard-hub",
