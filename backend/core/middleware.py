@@ -54,19 +54,26 @@ class DemoWriteBlockMiddleware:
 
 
 class TenantIsolationMiddleware(MiddlewareMixin):
-    """Compatibility adapter for the canonical tenant request contract.
+    """Compatibility adapter for authenticated Django-session principals.
 
-    Enforcement remains in TenantHeaderRequiredMiddleware. This legacy layer no
-    longer resolves ``request.user.profile.school``; it delegates to the canonical
-    resolver and only binds compatibility attributes when they are not already
-    present.
+    This middleware runs before ``JwtAuthMiddleware``. It must therefore avoid
+    binding an anonymous canonical context that would prevent the post-JWT
+    enforcing middleware from resolving the authenticated principal. Session-
+    authenticated requests may still receive compatibility attributes here;
+    JWT and anonymous requests are deferred to the canonical post-auth chain.
     """
 
     def process_request(self, request):
         context = getattr(request, CANONICAL_TENANT_ATTR, None)
-        if context is None:
-            context = build_tenant_context(request)
-            bind_tenant_context(request, context)
+        if context is not None:
+            return None
+
+        user = getattr(request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return None
+
+        context = build_tenant_context(request)
+        bind_tenant_context(request, context)
         return None
 
 
