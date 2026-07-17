@@ -8,6 +8,7 @@ It is intentionally conservative: merge discussion starts only after hygiene is 
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -35,6 +36,7 @@ GENERATED_EXTENSIONS = {".json", ".ndjson", ".csv", ".log"}
 SUMMARY_ALLOWLIST = {
     "audit-artifacts/dashboard-certification-truth/closeout_plan.md",
 }
+
 
 @dataclass
 class FileStat:
@@ -74,11 +76,18 @@ def read_event_body() -> str:
     event_path = os.environ.get("GITHUB_EVENT_PATH")
     if not event_path or not Path(event_path).exists():
         return ""
-    text = Path(event_path).read_text(encoding="utf-8", errors="replace")
-    match = re.search(r'"body"\s*:\s*"(.*?)"\s*,\s*"closed_at"', text, re.S)
-    if not match:
-        return text
-    return match.group(1).encode("utf-8").decode("unicode_escape", errors="replace")
+
+    try:
+        payload = json.loads(Path(event_path).read_text(encoding="utf-8", errors="replace"))
+    except (json.JSONDecodeError, OSError):
+        return ""
+
+    pull_request = payload.get("pull_request")
+    if not isinstance(pull_request, dict):
+        return ""
+
+    body = pull_request.get("body")
+    return body if isinstance(body, str) else ""
 
 
 def is_doc_or_audit_only(files: list[FileStat]) -> bool:
