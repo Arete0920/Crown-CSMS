@@ -3,8 +3,10 @@ set -euo pipefail
 
 cd /home/site/wwwroot/backend
 
-echo "== Crown startup: migrate =="
-python manage.py migrate --noinput
+# Schema changes run only in the controlled migration stage.
+# Startup verifies that the expected schema is already present.
+echo "== Crown startup: verify schema is current =="
+python manage.py migrate --check
 
 # Ensure CI smoke user exists when credentials are configured (idempotent)
 if [ -n "${CI_SMOKE_USERNAME:-}" ]; then

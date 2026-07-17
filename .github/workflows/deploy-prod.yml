@@ -22,7 +22,49 @@ env:
   WEBAPP_NAME: crown-api-prod
 
 jobs:
+  resolve-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      deploy_sha: ${{ steps.resolve.outputs.deploy_sha }}
+      deploy_sha_short: ${{ steps.resolve.outputs.deploy_sha_short }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Validate production tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.ref_name }}" != prod-deploy-* ]]; then
+            echo "ERROR: production deploy tag must match prod-deploy-*"
+            exit 1
+          fi
+      - name: Resolve immutable release SHA
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_sha="$(git rev-parse HEAD)"
+          if [[ ! "$deploy_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: resolved release ref is not a full commit SHA: $deploy_sha"
+            exit 1
+          fi
+          echo "deploy_sha=$deploy_sha" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${deploy_sha:0:7}" >> "$GITHUB_OUTPUT"
+
+  production-migration:
+    needs: resolve-release
+    uses: ./.github/workflows/schema-migration-stage.yml
+    with:
+      expected_sha: ${{ needs.resolve-release.outputs.deploy_sha }}
+      confirm_environment: production
+    secrets: inherit
+
   build-and-deploy:
+    needs: [resolve-release, production-migration]
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
@@ -34,7 +76,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.resolve-release.outputs.deploy_sha }}
           fetch-depth: 0
 
       - name: "Guard: tag name must match prod-deploy-*"
@@ -121,13 +163,21 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Determine deploy SHA
+      - name: Verify exact checked-out SHA
         id: vars
+        shell: bash
         run: |
-          echo "deploy_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-          echo "deploy_sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-          echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          echo "DEPLOY_SHA_SHORT=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+          set -euo pipefail
+          expected="${{ needs.resolve-release.outputs.deploy_sha }}"
+          actual="$(git rev-parse HEAD)"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "ERROR: checked-out SHA does not match resolved migration SHA. expected=$expected actual=$actual"
+            exit 1
+          fi
+          echo "deploy_sha=$actual" >> "$GITHUB_OUTPUT"
+          echo "deploy_sha_short=${actual:0:7}" >> "$GITHUB_OUTPUT"
+          echo "DEPLOY_SHA=$actual" >> "$GITHUB_ENV"
+          echo "DEPLOY_SHA_SHORT=${actual:0:7}" >> "$GITHUB_ENV"
 
       - name: "Guard: deploy contract - SHA and tag must be present and valid"
         shell: bash
@@ -328,7 +378,6 @@ jobs:
             "BUILD_SHA"       = "${{ steps.vars.outputs.deploy_sha }}"
             "PROD_DEPLOY_TAG" = "${{ github.ref_name }}"
             "APP_VERSION"     = $appVersion
-            "RUN_MIGRATIONS"  = "true"
             "DEPLOY_RUN_ID"   = "${{ github.run_id }}"
             "DEPLOY_WORKFLOW" = "${{ github.workflow }}"
           }
