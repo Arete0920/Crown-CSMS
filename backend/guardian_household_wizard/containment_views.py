@@ -1,12 +1,11 @@
-"""Fail-closed guardian-household wizard endpoints.
+"""Tenant-safe guardian-household wizard write endpoints.
 
-These endpoints contain the verified identity-write defect while architecture issue
-#1353 determines the canonical household, guardian, and student write model.
-They validate tenant-bound student references but intentionally create no identity
-records.
+The canonical operational identity target is core.Family/core.Guardian/core.Student.
+Compatibility identity tables are intentionally not written by this controller.
 """
 
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
@@ -18,7 +17,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 
-from core.models import Student
+from core.models import Family, Guardian, Student
 from households.scoping import get_request_school_id
 
 from .models import GuardianHouseholdWizardSession
@@ -27,19 +26,24 @@ _AUTH = [JWTAuthentication, SessionAuthentication]
 _PERM = [IsAuthenticated]
 
 VALID_RELATIONSHIPS = {"parent", "guardian", "grandparent", "sibling", "other"}
-IDENTITY_ARCHITECTURE_ISSUE = 1353
+GUARDIAN_RELATIONSHIP_MAP = {
+    "parent": "GUARDIAN",
+    "guardian": "GUARDIAN",
+    "grandparent": "GRANDPARENT",
+    "sibling": "OTHER",
+    "other": "OTHER",
+}
 
 
-def _get_session(session_id, school_id):
-    return get_object_or_404(
-        GuardianHouseholdWizardSession,
-        id=session_id,
-        school_id=school_id,
-    )
+def _get_session(session_id, school_id, *, for_update=False):
+    queryset = GuardianHouseholdWizardSession.objects
+    if for_update:
+        queryset = queryset.select_for_update()
+    return get_object_or_404(queryset, id=session_id, school_id=school_id)
 
 
 def _validate_student_links(link_data, school_id):
-    """Return a safe validation error without exposing another tenant's records."""
+    """Validate links without exposing another tenant's records."""
     if not isinstance(link_data, list) or not link_data:
         return "link_data must be a non-empty list"
 
@@ -81,12 +85,69 @@ def _validate_student_links(link_data, school_id):
     return None
 
 
+def _split_name(raw_name, index):
+    parts = str(raw_name or "").strip().split()
+    if len(parts) < 2:
+        raise ValueError(f"guardian_data[{index}].name must include first and last name")
+    return parts[0], " ".join(parts[1:])
+
+
+def _normalized_address(household_data):
+    address = household_data.get("address") or {}
+    if not isinstance(address, dict):
+        raise ValueError("household_data.address must be an object")
+    return {
+        "address_line1": address.get("street") or address.get("address1") or "",
+        "address_line2": address.get("address2") or "",
+        "city": address.get("city") or "",
+        "state": address.get("state") or "",
+        "zip_code": address.get("zip") or address.get("postal_code") or "",
+    }
+
+
+def _prepare_guardians(guardian_data):
+    if not isinstance(guardian_data, list) or not guardian_data:
+        raise ValueError("guardian_data must be a non-empty list")
+
+    prepared = []
+    emails = set()
+    for index, guardian in enumerate(guardian_data):
+        if not isinstance(guardian, dict):
+            raise ValueError(f"guardian_data[{index}] must be an object")
+        first_name, last_name = _split_name(guardian.get("name"), index)
+        email = str(guardian.get("email") or "").strip().lower()
+        if not email:
+            raise ValueError(f"guardian_data[{index}].email is required")
+        if email in emails:
+            raise ValueError("guardian_data contains duplicate email values")
+        emails.add(email)
+
+        custody_type = guardian.get("custody_type", "none")
+        if custody_type not in {"primary", "joint", "secondary", "none"}:
+            raise ValueError(
+                f"guardian_data[{index}].custody_type must be primary, joint, secondary, or none"
+            )
+
+        prepared.append(
+            {
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "phone": str(guardian.get("phone") or "").strip() or None,
+                "relationship": GUARDIAN_RELATIONSHIP_MAP.get(
+                    guardian.get("relationship", "guardian"), "GUARDIAN"
+                ),
+                "custody_flag": custody_type in {"primary", "joint"},
+            }
+        )
+    return prepared
+
+
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def link_students(request, session_id):
-    """Validate and stage tenant-bound student links without writing identity rows."""
     school_id = get_request_school_id(request)
     session = _get_session(session_id, school_id)
 
@@ -124,53 +185,148 @@ def link_students(request, session_id):
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def commit_session(request, session_id):
-    """Fail closed until the canonical identity write target is approved."""
     school_id = get_request_school_id(request)
-    session = _get_session(session_id, school_id)
 
-    if session.status in (
-        GuardianHouseholdWizardSession.STATUS_COMMITTED,
-        GuardianHouseholdWizardSession.STATUS_VERIFIED,
-    ):
-        return Response(
-            {
-                "session_id": str(session.id),
-                "status": session.status,
-                **(session.commit_result or {}),
-            }
-        )
+    try:
+        with transaction.atomic():
+            session = _get_session(session_id, school_id, for_update=True)
 
-    if session.status != GuardianHouseholdWizardSession.STATUS_STUDENTS_LINKED:
-        return Response(
-            {
-                "error": (
-                    "Session must be in 'students_linked' state "
-                    f"(current: {session.status})"
+            if session.status in (
+                GuardianHouseholdWizardSession.STATUS_COMMITTED,
+                GuardianHouseholdWizardSession.STATUS_VERIFIED,
+            ):
+                return Response(
+                    {
+                        "session_id": str(session.id),
+                        "status": session.status,
+                        **(session.commit_result or {}),
+                    }
                 )
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
 
-    if not request.data.get("confirm"):
+            if session.status != GuardianHouseholdWizardSession.STATUS_STUDENTS_LINKED:
+                return Response(
+                    {
+                        "error": (
+                            "Session must be in 'students_linked' state "
+                            f"(current: {session.status})"
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not request.data.get("confirm"):
+                return Response(
+                    {"error": "confirm is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            error = _validate_student_links(session.link_data, school_id)
+            if error:
+                return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+
+            student_ids = [link["student_id"] for link in session.link_data]
+            students = list(
+                Student.objects.select_for_update()
+                .select_related("family")
+                .filter(school_id=school_id, id__in=student_ids)
+            )
+            family_ids = {student.family_id for student in students}
+            if len(family_ids) != 1:
+                return Response(
+                    {
+                        "error": (
+                            "Selected students must already belong to one canonical family; "
+                            "the wizard will not silently merge or reassign families"
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            household_data = session.household_data or {}
+            family_name = str(household_data.get("name") or "").strip()
+            if not family_name:
+                return Response(
+                    {"error": "household_data.name is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            address_fields = _normalized_address(household_data)
+            prepared_guardians = _prepare_guardians(session.guardian_data)
+
+            family = Family.objects.select_for_update().get(
+                id=next(iter(family_ids)), school_id=school_id
+            )
+            if (
+                Family.objects.filter(school_id=school_id, family_name=family_name)
+                .exclude(id=family.id)
+                .exists()
+            ):
+                return Response(
+                    {"error": "A different family already uses household_data.name"},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            guardian_emails = [guardian["email"] for guardian in prepared_guardians]
+            conflicting_guardian = (
+                Guardian.objects.select_for_update()
+                .filter(school_id=school_id, email__in=guardian_emails)
+                .exclude(family_id=family.id)
+                .exists()
+            )
+            if conflicting_guardian:
+                return Response(
+                    {
+                        "error": (
+                            "One or more guardian emails already belong to another family; "
+                            "no automatic identity merge was performed"
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            family.family_name = family_name
+            for field, value in address_fields.items():
+                setattr(family, field, value)
+            family.save(
+                update_fields=[
+                    "family_name",
+                    "address_line1",
+                    "address_line2",
+                    "city",
+                    "state",
+                    "zip_code",
+                    "updated_at",
+                ]
+            )
+
+            guardian_ids = []
+            for guardian_values in prepared_guardians:
+                guardian, _created = Guardian.objects.update_or_create(
+                    school_id=school_id,
+                    email=guardian_values["email"],
+                    defaults={"family": family, **guardian_values},
+                )
+                guardian_ids.append(str(guardian.id))
+
+            result = {
+                "family_id": str(family.id),
+                "guardian_ids": guardian_ids,
+                "student_ids": [str(student.id) for student in students],
+                "guardians_created_or_updated": len(guardian_ids),
+                "students_linked": len(students),
+                "canonical_model": "core",
+            }
+            session.commit_result = result
+            session.status = GuardianHouseholdWizardSession.STATUS_COMMITTED
+            session.save(update_fields=["commit_result", "status", "updated_at"])
+
+            return Response(
+                {"session_id": str(session.id), "status": session.status, **result}
+            )
+    except ValueError as exc:
+        return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    except IntegrityError:
         return Response(
-            {"error": "confirm is required"},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "Guardian-household commit violated an identity constraint"},
+            status=status.HTTP_409_CONFLICT,
         )
-
-    error = _validate_student_links(session.link_data, school_id)
-    if error:
-        return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
-
-    return Response(
-        {
-            "error": (
-                "Guardian-household commit is temporarily unavailable until "
-                "the canonical identity write target is approved"
-            ),
-            "code": "identity_write_target_unresolved",
-            "architecture_issue": IDENTITY_ARCHITECTURE_ISSUE,
-            "session_id": str(session.id),
-            "status": session.status,
-        },
-        status=status.HTTP_409_CONFLICT,
-    )
