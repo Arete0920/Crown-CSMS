@@ -1,0 +1,150 @@
+name: Controlled Schema Migration Stage
+
+on:
+  pull_request:
+    paths:
+      - "backend/core/management/commands/migrate_with_lock.py"
+      - "backend/core/tests/test_migrate_with_lock.py"
+      - ".github/workflows/schema-migration-stage.yml"
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: "Full 40-character application SHA to migrate"
+        required: true
+        type: string
+      confirm_environment:
+        description: "Type production to authorize the production migration stage"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  contract-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install backend requirements
+        run: pip install -r backend/requirements.txt
+
+      - name: Run migration authority tests
+        env:
+          DJANGO_SECRET_KEY: schema-migration-contract-proof-only
+          DATABASE_URL: sqlite:///./schema_migration_contract.sqlite3
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+        working-directory: backend
+        run: python manage.py test core.tests.test_migrate_with_lock -v 2
+
+      - name: Prove clean and repeated local execution
+        env:
+          DJANGO_SECRET_KEY: schema-migration-contract-proof-only
+          DATABASE_URL: sqlite:///./schema_migration_contract.sqlite3
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+        working-directory: backend
+        run: |
+          python manage.py migrate_with_lock --allow-non-postgresql --lock-timeout-seconds 0
+          python manage.py migrate_with_lock --allow-non-postgresql --lock-timeout-seconds 0
+          python manage.py migrate --check
+
+  production-migration:
+    if: github.event_name == 'workflow_dispatch'
+    needs: contract-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    concurrency:
+      group: crown-production-schema-migration
+      cancel-in-progress: false
+    steps:
+      - name: Validate production authorization inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${{ inputs.confirm_environment }}" == "production" ]] || {
+            echo "ERROR: confirm_environment must equal production"
+            exit 1
+          }
+          [[ "${{ inputs.expected_sha }}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "ERROR: expected_sha must be a full lowercase 40-character SHA"
+            exit 1
+          }
+
+      - name: Checkout exact application SHA
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ inputs.expected_sha }}
+          fetch-depth: 0
+
+      - name: Verify exact checked-out SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "${{ inputs.expected_sha }}" || {
+            echo "ERROR: checked-out SHA mismatch expected=${{ inputs.expected_sha }} actual=$actual"
+            exit 1
+          }
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install backend requirements
+        run: pip install -r backend/requirements.txt
+
+      - name: Guard production database secret
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL || secrets.DATABASE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_URL" || {
+            echo "ERROR: PROD_DATABASE_URL or DATABASE_URL is not configured in the production environment"
+            exit 1
+          }
+          [[ "$DATABASE_URL" == postgres://* || "$DATABASE_URL" == postgresql://* ]] || {
+            echo "ERROR: production migration stage requires PostgreSQL"
+            exit 1
+          }
+
+      - name: Execute one locked production migration stage
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL || secrets.DATABASE_URL }}
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          BUILD_SHA: ${{ inputs.expected_sha }}
+          CROWN_ENV: production
+          DJANGO_ENV: production
+          DJANGO_DEBUG: "false"
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          test -n "$DJANGO_SECRET_KEY" || {
+            echo "ERROR: DJANGO_SECRET_KEY is not configured in the production environment"
+            exit 1
+          }
+          python manage.py migrate_with_lock --lock-timeout-seconds 300
+          python manage.py migrate --check
+          python manage.py showmigrations --plan
+
+      - name: Record migration authority summary
+        shell: bash
+        run: |
+          {
+            echo "## Controlled schema migration"
+            echo "- application SHA: ${{ inputs.expected_sha }}"
+            echo "- workflow run: ${{ github.run_id }}"
+            echo "- environment: production"
+            echo "- database lock: PostgreSQL advisory lock"
+            echo "- result: completed"
+          } >> "$GITHUB_STEP_SUMMARY"
