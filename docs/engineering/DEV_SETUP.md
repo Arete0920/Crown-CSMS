@@ -4,7 +4,7 @@
 **Owner:** CROWN Engineering  
 **Purpose:** One source of truth for local development setup.
 
-This guide is editor-neutral. PyCharm, another approved editor, or a terminal-based environment may be used. No specific editor or paid subscription is required.
+CROWN local development uses VS Code, GitHub, and PowerShell where appropriate. No paid coding-assistant subscription is required. Terminal commands remain authoritative; editor features are conveniences rather than release evidence.
 
 ## 1. Repository access
 
@@ -17,7 +17,19 @@ cd Crown2026
 
 Work from an isolated branch or worktree. Do not commit directly to `main`.
 
-## 2. Python environment
+## 2. VS Code workspace
+
+Open the repository root in VS Code so backend, frontend, scripts, tests, and documentation remain visible in one workspace.
+
+Windows PowerShell:
+
+```powershell
+code .
+```
+
+Use the checked-in workspace configuration only when it is current and understood. Review extension recommendations before installing them. Local editor state is not repository evidence.
+
+## 3. Python environment
 
 Use a repository-root `.venv`.
 
@@ -39,7 +51,7 @@ python -m pip install --upgrade pip
 pip install -r backend\requirements.txt
 ```
 
-## 3. Frontend dependencies
+## 4. Frontend dependencies
 
 ```bash
 cd frontend/dashboards
@@ -49,7 +61,7 @@ cd ../..
 
 Use the Node and npm versions required by the current package and CI configuration. Do not upgrade dependencies as part of unrelated work.
 
-## 4. Local configuration and secrets
+## 5. Local configuration and secrets
 
 Use only local placeholder or development values. Never commit passwords, API keys, tokens, production environment files, production database dumps, real school data, tenant secrets, private certificates, or confidential communications.
 
@@ -65,7 +77,7 @@ Windows PowerShell:
 Copy-Item local.secrets.example local.secrets
 ```
 
-## 5. Backend verification
+## 6. Backend verification
 
 ```bash
 python backend/manage.py check
@@ -73,9 +85,9 @@ python backend/manage.py migrate
 pytest backend -m "not integration and not slow"
 ```
 
-Do not create or apply new migrations unless the approved work explicitly includes migration changes.
+Do not create or apply new migrations unless the approved work explicitly includes migration changes. Production migration authority is controlled separately from ordinary web startup.
 
-## 6. Start the backend
+## 7. Start the backend
 
 ```bash
 python backend/manage.py runserver 127.0.0.1:8000 --noreload
@@ -87,9 +99,11 @@ Verify:
 curl -i http://127.0.0.1:8000/health/
 ```
 
+Windows PowerShell may use `Invoke-RestMethod` or `curl.exe` explicitly.
+
 Expected: HTTP 200, a JSON response, and no traceback.
 
-## 7. Start the frontend
+## 8. Start the frontend
 
 In a second terminal:
 
@@ -106,7 +120,7 @@ curl -i http://127.0.0.1:3000/
 
 Expected: HTTP 200.
 
-## 8. Frontend verification
+## 9. Frontend verification
 
 ```bash
 cd frontend/dashboards
@@ -124,7 +138,13 @@ npm run test:release:a11y
 
 Run focused tests before broad suites.
 
-## 9. Pull-request closeout
+## 10. Controlled local work
+
+Before editing, record the current branch, HEAD, exact task, expected files, excluded files, and validation commands. Avoid broad copy-and-paste changes. Inspect the resulting diff file by file and run the validation that matches the changed behavior.
+
+PowerShell is appropriate for repeatable local diagnostics, validation, evidence capture, repository inspection, and controlled operational commands. Scripts must fail clearly, avoid hidden destructive behavior, and preserve reproducibility.
+
+## 11. Pull-request closeout
 
 Every pull request must identify:
 
@@ -135,9 +155,9 @@ Every pull request must identify:
 - independent-review status;
 - rollback approach where applicable.
 
-Human owners retain implementation, approval, security, and release accountability. Repository account attribution is not a substitute for a verified contributor record.
+Human owners retain product, architecture, implementation, approval, security, and release accountability. Repository account attribution is not a substitute for a verified contributor record.
 
-## 10. Handoff verification
+## 12. Handoff verification
 
 A successor must be able to complete these steps from a clean clone without undocumented local assumptions. Before ownership transfer, independently verify setup, tests, deployment access, rollback, recovery, secrets access, and administrative control.
 

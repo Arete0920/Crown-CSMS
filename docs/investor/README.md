@@ -1,211 +1,119 @@
-# Crown2026 Investor and Diligence Overview
+# CROWN Technical Diligence Overview
 
 ## Purpose
 
-This document is the controlled starting point for investors, diligence reviewers, strategic partners, and executive stakeholders who need a concise view of what Crown2026 is, what has been built, how it is operated, and what remains in active hardening.
+This is the controlled starting point for prospective owners, technical diligence reviewers, strategic partners, and authorized executive stakeholders.
 
-This is not a marketing page. It is an operating overview of a live software effort.
+It summarizes the product, repository structure, current engineering controls, and open hardening work. It does not replace source review, clean-clone verification, security testing, operational drills, or the current release-authority record.
 
-## Executive summary
+## Product summary
 
-Crown2026 is a multi-tenant school operations platform built for Christian schools.
+CROWN is a multi-tenant Christian School Management Solution designed to coordinate institutional workflows across admissions, enrollment, academics, attendance, student records, gradebook, billing, accounting, financial aid, communications, portals, governance, transportation, athletics, safety, spiritual life, and related school operations.
 
-The platform is designed to unify critical institutional workflows across admissions, enrollment, academics, billing, communications, portals, finance, and institution-specific operational extensions through one coordinated system.
+The product is implemented as a broad modular web application rather than a single-purpose prototype.
 
-The repository demonstrates substantial implementation depth, operational rigor, and release discipline. It also reflects an active hardening phase in which governance, CI enforcement, documentation structure, and repository hygiene are being tightened.
+## Current technical shape
 
-## What has been accomplished
+- Backend: Django and Django REST Framework.
+- Frontend: React and Vite.
+- Primary production database direction: PostgreSQL.
+- Authentication and identity integrations include application authentication and Microsoft Entra-related support.
+- Deployment and infrastructure materials are oriented around Azure and GitHub Actions.
+- Browser validation uses Playwright alongside unit, contract, backend, security, dependency, and release checks.
+- Local development uses VS Code, GitHub, and PowerShell where appropriate.
 
-The current codebase and repository history show meaningful progress across several categories.
+## Repository authority
 
-### 1. Product breadth
+The authoritative repository is `tcmegahan/Crown2026`. The public-facing product name is CROWN.
 
-The platform covers a broad school-operations surface rather than a single narrow workflow.
+Start with:
 
-Implemented and represented areas include:
+1. root `README.md`;
+2. `docs/canonical/REPOSITORY_MANIFEST.md`;
+3. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`;
+4. `docs/engineering/DEV_SETUP.md`;
+5. `docs/CURRENT_RELEASE_STATUS.md`;
+6. `SECURITY.md`;
+7. `docs/operations/README.md`.
 
-- admissions and enrollment
-- academics and grade workflows
-- billing and finance
-- communications and portals
-- operational support tooling
-- multi-tenant and institution-specific structure
+Generated evidence, archived status files, copied command output, and historical reports do not override current canonical records.
 
-### 2. Engineering depth
+## Verified strengths visible in the repository
 
-This is not a lightweight prototype repository.
+### Product breadth
 
-The codebase includes:
+The codebase contains substantial backend and frontend implementation across a wide school-operations surface.
 
-- substantial backend application structure
-- frontend dashboard and role-aware UI structure
-- contracts and interface artifacts
-- workflow automation
-- release and validation artifacts
-- operational scripts and support tooling
+### Automated validation
 
-### 3. Delivery discipline
+The repository contains backend tests, frontend unit and contract tests, Playwright suites, security scanning, dependency review, route and dashboard checks, release gates, and evidence-generation workflows.
 
-The engineering process is intentionally proof-first.
+### Tenant and authorization hardening
 
-The repository uses:
+The current architecture includes a canonical request tenant context and centralized cross-school conflict enforcement. Residual tenant-context migration and same-SHA browser proof remain open work.
 
-- pull request discipline
-- raw-proof expectations
-- CI-based validation
-- release-candidate packaging
-- code ownership and review controls
-- security and scan automation
+### Frontend transport consolidation
 
-### 4. Execution during recent sprint work
+Authenticated frontend API traffic is being consolidated through one canonical client that owns API-base resolution, authentication, tenant context, correlation identifiers, timeout and cancellation behavior, credentials, and structured failures.
 
-Recent work reflects progress across:
+### Canonical identity direction
 
-- marketing support and positioning materials
-- financial and billing-related implementation surfaces
-- contract and interface consistency work
-- repository governance and hardening
-- release-readiness and proof packaging
+Operational guardian, family, and student writes have been directed to the canonical `core` identity models. Compatibility-domain reconciliation, representative data migration rehearsal, rollback proof, and legacy retirement criteria remain open.
 
-## What is already strong
+### Release and recovery controls
 
-### A-level strengths
+The repository includes exact-SHA validation, controlled schema-migration authority, immutable image rollback controls, secret-handling architecture, and release-governance documentation. Several controls still require live operational drills or external-platform evidence before production approval.
 
-The strongest current attributes are:
+## Current risks and open work
 
-#### Evidence-first engineering culture
+CROWN is in controlled sandbox release-candidate posture. Production release is not approved.
 
-Changes are expected to be backed by raw proof rather than summary assertions. This is a high-trust operating signal.
+The principal remaining technical risks are:
 
-#### Broad product scope with real implementation
+1. removing schema-migration authority from ordinary web startup and proving the controlled migration and recovery matrix;
+2. completing authenticated persona, tenant-context, network, console, and visual browser evidence on one approved release identity;
+3. executing application rollback and database restore drills with measured recovery objectives;
+4. proving external secret-store identities, audit logging, rotation, failed-rotation handling, and break-glass operation;
+5. completing residual tenant and identity-model convergence;
+6. reducing legacy documentation and historical repository noise so current authority is immediately understandable;
+7. proving that a successor can clone, configure, test, deploy, operate, recover, and administer the system without undocumented assumptions.
 
-The platform spans multiple school-operating domains and shows implementation seriousness across backend, frontend, workflows, and support tooling.
+## Diligence review sequence
 
-#### Release and control orientation
+A technical reviewer should:
 
-The repository includes release-oriented workflows, operational validation, and structured governance artifacts rather than relying on informal engineering practice.
+1. verify repository access, ownership, branch protection, required checks, and administrator control;
+2. perform a clean clone and follow the canonical developer setup without informal assistance;
+3. install dependencies from lock and requirements files and record all deviations;
+4. run backend, frontend, contract, security, dependency, and browser suites at an exact commit;
+5. inspect the architecture, module boundaries, tenant model, authentication, authorization, data model, API transport, background work, and deployment topology;
+6. trace representative critical workflows from browser route through API, authorization, tenant context, service logic, canonical models, database writes, audit events, and rendered response;
+7. review dependency licenses, vulnerability results, secret-scanning results, and software-supply-chain controls;
+8. inspect migration history, schema ownership, data-retention behavior, backup and restore procedures, and rollback design;
+9. review operational access, cloud resources, external integrations, domains, certificates, secrets, monitoring, logging, and incident procedures;
+10. assess maintainability by implementing and validating a small representative change in an isolated branch;
+11. reconcile all findings against the current release-status record and open risk register.
 
-#### Ownership and review scaffolding
+## Appropriate claims
 
-Repository ownership, pull request structure, and control surfaces indicate an effort to make delivery reviewable, auditable, and reproducible.
+Appropriate:
 
-## Current hardening priorities
+- CROWN has substantial product-surface implementation and automated validation.
+- Several foundational architecture and release controls are implemented.
+- CROWN remains in controlled sandbox release-candidate posture.
+- Production approval depends on current exact-SHA runtime and operational evidence.
 
-The highest-value current work is not feature invention. It is control enforcement and curation.
+Not appropriate without current evidence:
 
-### 1. CI reliability
+- unrestricted production readiness;
+- complete tenant-isolation proof;
+- complete recovery proof;
+- complete external secret-store proof;
+- universal live-data certification;
+- independent technical approval.
 
-Some workflows must be normalized to avoid dependence on fragile or unavailable runner configurations.
+## Ownership-transfer standard
 
-### 2. Blocking security enforcement
+A transfer is not complete until the successor has verified repository administration, cloud and external-service ownership, local setup, testing, deployment, rollback, restore, secret access, monitoring, incident response, and the authority to operate and change the platform.
 
-Security checks should be required and blocking, not advisory.
-
-### 3. Main-branch governance
-
-Branch protection, required checks, review requirements, and anti-bypass settings should be enforced at the platform level.
-
-### 4. Public-repo hygiene
-
-The repository root should be curated so an external reviewer can understand the project quickly without digging through operational debris.
-
-### 5. Canonical documentation structure
-
-Architecture, operations, security, evidence, and investor documentation should live in predictable locations under `docs/`.
-
-## Current status assessment
-
-The underlying software and engineering effort are materially stronger than the current public presentation of the repository.
-
-In practical terms:
-
-- the codebase quality and operating seriousness are strong
-- the public GitHub surface has lagged behind the actual execution quality
-- the remediation path is clear and short
-- the remaining work is largely hardening and presentation, not foundational invention
-
-## Repository operating model
-
-Crown2026 is being developed as a controlled operating repository.
-
-Key characteristics include:
-
-- scoped changes
-- review discipline
-- proof requirements
-- explicit blast-radius thinking
-- rollback awareness
-- security scanning
-- structured release handling
-
-This operating model reduces diligence risk because it creates artifacts that can be inspected and validated.
-
-## Diligence guidance
-
-A reviewer trying to assess Crown2026 should look at the platform in this order:
-
-1. root `README.md`
-2. `../evidence/README.md`
-3. `../security/README.md`
-4. key workflow definitions in `.github/workflows/`
-5. representative backend and frontend module structure
-6. release artifacts and tagged release notes
-
-## Key review questions this repository is intended to answer
-
-### Is there real product substance?
-
-Yes. The repository reflects broad domain implementation and substantial delivery effort.
-
-### Is there operational seriousness?
-
-Yes. The workflow and proof surfaces indicate a deliberate operating discipline rather than ad hoc development.
-
-### Is the platform still being hardened?
-
-Yes. Governance, security enforcement, CI reliability, and documentation curation remain active priorities.
-
-### Is the gap mostly execution risk or presentation risk?
-
-At this stage, the larger gap is presentation and enforcement consistency rather than lack of implementation.
-
-## Known limitations of this document
-
-This overview is intentionally concise.
-
-It does not replace:
-
-- technical architecture documentation
-- security policy
-- operational runbooks
-- release evidence
-- live repository settings
-
-Those materials should be reviewed in parallel for full diligence.
-
-## Confidentiality and usage
-
-This documentation is provided for controlled review.
-
-Repository visibility, if public at any point, does not imply that the codebase or documentation is open source or available for unrestricted reuse.
-
-See the root `NOTICE.md` or `LICENSE` for controlling rights.
-
-## Maintainer note
-
-This document should be updated when one of the following changes occurs:
-
-- major release milestone
-- architecture shift
-- governance and control model change
-- significant scope expansion
-- major hardening milestone completion
-
-## Recommended next files
-
-The next two documents that matter most are:
-
-- `docs/evidence/README.md`
-- `docs/operations/README.md`
-
-Those will let you centralize proof packets, release evidence, deploy notes, rollback guidance, and health-check procedures.
+The controlling release posture remains `docs/CURRENT_RELEASE_STATUS.md`.
