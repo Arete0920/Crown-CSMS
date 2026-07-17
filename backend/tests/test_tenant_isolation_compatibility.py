@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory, TestCase
 
 from core.middleware import TenantIsolationMiddleware
@@ -19,7 +20,7 @@ class TenantIsolationCompatibilityTests(TestCase):
             school=self.school,
         )
 
-    def test_legacy_layer_delegates_to_canonical_user_school_resolution(self):
+    def test_session_authenticated_user_binds_canonical_context(self):
         request = self.factory.get("/api/v1/test/")
         request.user = self.user
 
@@ -29,6 +30,18 @@ class TenantIsolationCompatibilityTests(TestCase):
         self.assertEqual(request.crown_tenant.source, "user")
         self.assertEqual(request.tenant_school_id, self.school.id)
         self.assertFalse(hasattr(request, "school"))
+
+    def test_anonymous_request_defers_binding_to_post_auth_chain(self):
+        request = self.factory.get(
+            "/api/v1/test/",
+            HTTP_X_SCHOOL_ID=str(self.school.id),
+        )
+        request.user = AnonymousUser()
+
+        TenantIsolationMiddleware(lambda req: None).process_request(request)
+
+        self.assertFalse(hasattr(request, "crown_tenant"))
+        self.assertFalse(hasattr(request, "tenant_school_id"))
 
     def test_existing_canonical_context_is_not_replaced(self):
         request = self.factory.get("/api/v1/test/")
