@@ -31,7 +31,7 @@ const SUMMARY_PATH = "/api/v1/dashboards/school-administrator/summary";
 const SESSION_PATH = "/api/v1/sandbox/session/";
 const evidenceRoot = path.resolve(
   process.cwd(),
-  "../../audit-artifacts/production-certification/current",
+  "../../audit-artifacts/tenant-context/current",
 );
 
 function requireUrl(name: string): string {
