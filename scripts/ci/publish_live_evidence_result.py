@@ -9,7 +9,7 @@ token = os.environ["GITHUB_TOKEN"]
 run_id = os.environ["GITHUB_RUN_ID"]
 sha = os.environ.get("CERTIFIED_SOURCE_SHA", os.environ.get("GITHUB_SHA", "unknown"))
 status = os.environ.get("JOB_STATUS", "unknown")
-run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
+run_url = os.environ.get("SOURCE_RUN_URL") or f"https://github.com/{repo}/actions/runs/{run_id}"
 summary_file = Path("audit-artifacts/live-runtime-certification/current/certification-summary.md")
 tenant_file = Path("audit-artifacts/tenant-context/current/tenant-context-runtime-proof.json")
 summary = summary_file.read_text(encoding="utf-8")[:6000] if summary_file.exists() else "Certification summary was not produced."
