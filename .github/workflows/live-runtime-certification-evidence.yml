@@ -37,6 +37,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: live-runtime-certification-evidence-${{ github.event_name }}-${{ github.event.workflow_run.head_sha || github.sha }}
@@ -160,3 +161,12 @@ jobs:
           path: frontend/dashboards/playwright-report/
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Publish result to controlling issues
+        if: always()
+        working-directory: .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CERTIFIED_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          JOB_STATUS: ${{ job.status }}
+        run: python scripts/ci/publish_live_evidence_result.py
