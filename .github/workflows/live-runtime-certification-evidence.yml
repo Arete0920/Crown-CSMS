@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       frontend_url:
-        description: Fully-qualified frontend URL (for example https://yellow-forest-0eecc8b0f.7.azurestaticapps.net)
+        description: Fully-qualified frontend URL
         required: true
         type: string
       api_base_url:
@@ -13,7 +13,7 @@ on:
         required: true
         type: string
       school_id:
-        description: Tenant school UUID used for the tenant-context proof
+        description: Tenant school UUID used for tenant-context proof
         required: false
         default: 19801b59-8c05-4c84-9312-5d792e4e839d
         type: string
@@ -44,6 +44,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  report-deploy-failure:
+    name: Report dashboard deployment failure
+    if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout failed deployment source
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Publish failed deployment to controlling issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CERTIFIED_SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+          JOB_STATUS: deploy-${{ github.event.workflow_run.conclusion }}
+          SOURCE_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: python scripts/ci/publish_live_evidence_result.py
+
   live-runtime-certification-evidence:
     name: Live Runtime Certification Evidence
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
@@ -52,26 +70,21 @@ jobs:
     defaults:
       run:
         working-directory: frontend/dashboards
-
     steps:
       - name: Checkout certified source
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
-
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "20"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
-
       - name: Install dependencies
         run: npm ci
-
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
-
       - name: Validate required runtime inputs and credentials
         shell: bash
         env:
@@ -84,29 +97,12 @@ jobs:
           set -euo pipefail
           for value_name in CROWN_LIVE_FRONTEND_URL CROWN_LIVE_API_BASE_URL; do
             value="${!value_name:-}"
-            if [[ -z "$value" ]]; then
-              echo "ERROR: $value_name is required for live runtime certification"
-              exit 1
-            fi
-            if [[ ! "$value" =~ ^https:// ]]; then
-              echo "ERROR: $value_name must be a deployed HTTPS URL"
-              exit 1
-            fi
+            [[ -n "$value" ]] || { echo "ERROR: $value_name is required"; exit 1; }
+            [[ "$value" =~ ^https:// ]] || { echo "ERROR: $value_name must be HTTPS"; exit 1; }
           done
-          if [[ ! "$CERTIFIED_SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
-            echo "ERROR: certified source SHA must be a full 40-character Git SHA"
-            exit 1
-          fi
-          if [[ -z "${CROWN_LIVE_LOGIN_EMAIL:-}" ]]; then
-            echo "ERROR: secret CROWN_LIVE_LOGIN_EMAIL is required for live runtime certification"
-            exit 1
-          fi
-          if [[ -z "${CROWN_LIVE_LOGIN_PASSWORD:-}" ]]; then
-            echo "ERROR: secret CROWN_LIVE_LOGIN_PASSWORD is required for live runtime certification"
-            exit 1
-          fi
-          echo "Runtime inputs validated for source SHA $CERTIFIED_SOURCE_SHA"
-
+          [[ "$CERTIFIED_SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "ERROR: invalid certified SHA"; exit 1; }
+          [[ -n "${CROWN_LIVE_LOGIN_EMAIL:-}" ]] || { echo "ERROR: CROWN_LIVE_LOGIN_EMAIL is required"; exit 1; }
+          [[ -n "${CROWN_LIVE_LOGIN_PASSWORD:-}" ]] || { echo "ERROR: CROWN_LIVE_LOGIN_PASSWORD is required"; exit 1; }
       - name: Run live tenant-context runtime proof
         run: npx playwright test tests/certification/tenant-context-runtime-proof.spec.ts --workers=1 --reporter=line
         env:
@@ -114,7 +110,6 @@ jobs:
           CROWN_LIVE_API_BASE_URL: ${{ inputs.api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
           CROWN_DEMO_SCHOOL_ID: ${{ inputs.school_id || vars.CROWN_DEMO_SCHOOL_ID || vars.CROWN_LIVE_SCHOOL_ID || '19801b59-8c05-4c84-9312-5d792e4e839d' }}
           CROWN_LIVE_SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
-
       - name: Run live runtime certification crawler
         run: npm run certify:production-crawler
         env:
@@ -127,14 +122,12 @@ jobs:
           CROWN_LIVE_LOGIN_EMAIL: ${{ secrets.CROWN_LIVE_LOGIN_EMAIL }}
           CROWN_LIVE_LOGIN_PASSWORD: ${{ secrets.CROWN_LIVE_LOGIN_PASSWORD }}
           CROWN_LIVE_SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
-
       - name: Confirm live runtime evidence exists
         if: always()
         run: |
           test -f ../../audit-artifacts/tenant-context/current/tenant-context-runtime-proof.json
           test -f ../../audit-artifacts/live-runtime-certification/current/certification-summary.md
           test -f ../../audit-artifacts/live-runtime-certification/current/live-runtime-result.json
-
       - name: Upload tenant-context runtime evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -143,7 +136,6 @@ jobs:
           path: audit-artifacts/tenant-context/current/
           if-no-files-found: warn
           retention-days: 30
-
       - name: Upload live runtime certification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -152,7 +144,6 @@ jobs:
           path: audit-artifacts/live-runtime-certification/current/
           if-no-files-found: warn
           retention-days: 30
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -161,7 +152,6 @@ jobs:
           path: frontend/dashboards/playwright-report/
           if-no-files-found: ignore
           retention-days: 14
-
       - name: Publish result to controlling issues
         if: always()
         working-directory: .
