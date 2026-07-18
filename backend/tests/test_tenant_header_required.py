@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import School, UserRole
 from core.tenant_header_middleware import TenantHeaderRequiredMiddleware
 from core.tenant_models import get_current_school
 
@@ -28,6 +28,13 @@ class TenantHeaderRequiredTests(TestCase):
     @staticmethod
     def _json(response):
         return json.loads(response.content)
+
+    def _grant_support_override(self):
+        UserRole.objects.create(
+            school=self.school,
+            user=self.user,
+            role_code="SUPPORT",
+        )
 
     @override_settings(TENANT_HEADER_REQUIRED=True)
     def test_health_exempt_no_header(self):
@@ -72,14 +79,9 @@ class TenantHeaderRequiredTests(TestCase):
 
     @override_settings(TENANT_HEADER_REQUIRED=True)
     def test_matching_header_binds_canonical_and_compatibility_attributes(self):
-        request = self.factory.get(
-            "/api/v1/test/",
-            HTTP_X_SCHOOL_ID=str(self.school.id),
-        )
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.school.id))
         request.user = self.user
-
         response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
-
         self.assertEqual(response.status_code, 200)
         data = self._json(response)
         self.assertEqual(data["school_id"], str(self.school.id))
@@ -90,7 +92,6 @@ class TenantHeaderRequiredTests(TestCase):
         self.assertFalse(data["override_requested"])
         self.assertFalse(data["override_authorized"])
         self.assertIsNone(get_current_school())
-
         with self.assertRaises(FrozenInstanceError):
             request.crown_tenant.school_id = self.other_school.id
 
@@ -98,9 +99,7 @@ class TenantHeaderRequiredTests(TestCase):
     def test_authenticated_user_school_is_fallback_when_header_absent(self):
         request = self.factory.get("/api/v1/test/")
         request.user = self.user
-
         response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
-
         self.assertEqual(response.status_code, 200)
         data = self._json(response)
         self.assertEqual(data["school_id"], str(self.school.id))
@@ -110,14 +109,9 @@ class TenantHeaderRequiredTests(TestCase):
 
     @override_settings(TENANT_HEADER_REQUIRED=True)
     def test_ordinary_user_conflicting_header_is_denied(self):
-        request = self.factory.get(
-            "/api/v1/test/",
-            HTTP_X_SCHOOL_ID=str(self.other_school.id),
-        )
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.other_school.id))
         request.user = self.user
-
         response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
-
         self.assertEqual(response.status_code, 404)
         self.assertEqual(self._json(response)["code"], "tenant_access_denied")
         self.assertIsNone(get_current_school())
@@ -130,30 +124,30 @@ class TenantHeaderRequiredTests(TestCase):
             password="test-password",
             school=None,
         )
-        request = self.factory.get(
-            "/api/v1/test/",
-            HTTP_X_SCHOOL_ID=str(self.school.id),
-        )
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.school.id))
         request.user = unassigned
-
         response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
-
         self.assertEqual(response.status_code, 404)
         self.assertEqual(self._json(response)["code"], "tenant_access_denied")
         self.assertIsNone(get_current_school())
 
     @override_settings(TENANT_HEADER_REQUIRED=True)
-    def test_staff_cross_school_override_is_bound_for_audit(self):
+    def test_ordinary_staff_cross_school_override_is_denied(self):
         self.user.is_staff = True
         self.user.save(update_fields=["is_staff"])
-        request = self.factory.get(
-            "/api/v1/test/",
-            HTTP_X_SCHOOL_ID=str(self.other_school.id),
-        )
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.other_school.id))
         request.user = self.user
-
         response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self._json(response)["code"], "tenant_access_denied")
+        self.assertIsNone(get_current_school())
 
+    @override_settings(TENANT_HEADER_REQUIRED=True)
+    def test_support_role_cross_school_override_is_bound_for_audit(self):
+        self._grant_support_override()
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.other_school.id))
+        request.user = self.user
+        response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
         self.assertEqual(response.status_code, 200)
         data = self._json(response)
         self.assertEqual(data["school_id"], str(self.other_school.id))
@@ -163,29 +157,31 @@ class TenantHeaderRequiredTests(TestCase):
         self.assertIsNone(get_current_school())
 
     @override_settings(TENANT_HEADER_REQUIRED=True)
+    def test_superuser_cross_school_override_remains_authorized(self):
+        self.user.is_superuser = True
+        self.user.save(update_fields=["is_superuser"])
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.other_school.id))
+        request.user = self.user
+        response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(self._json(response)["override_authorized"])
+        self.assertIsNone(get_current_school())
+
+    @override_settings(TENANT_HEADER_REQUIRED=True)
     def test_inactive_school_fails_closed_for_authorized_override(self):
-        self.user.is_staff = True
-        self.user.save(update_fields=["is_staff"])
+        self._grant_support_override()
         self.other_school.is_active = False
         self.other_school.save(update_fields=["is_active"])
-        request = self.factory.get(
-            "/api/v1/test/",
-            HTTP_X_SCHOOL_ID=str(self.other_school.id),
-        )
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.other_school.id))
         request.user = self.user
-
         response = TenantHeaderRequiredMiddleware(self._capture_response)(request)
-
         self.assertEqual(response.status_code, 404)
         self.assertEqual(self._json(response)["code"], "invalid_tenant")
         self.assertIsNone(get_current_school())
 
     @override_settings(TENANT_HEADER_REQUIRED=True)
     def test_context_is_cleared_when_downstream_raises(self):
-        request = self.factory.get(
-            "/api/v1/test/",
-            HTTP_X_SCHOOL_ID=str(self.school.id),
-        )
+        request = self.factory.get("/api/v1/test/", HTTP_X_SCHOOL_ID=str(self.school.id))
         request.user = self.user
 
         def raise_error(_request):
@@ -195,5 +191,4 @@ class TenantHeaderRequiredTests(TestCase):
         middleware = TenantHeaderRequiredMiddleware(raise_error)
         with self.assertRaisesRegex(RuntimeError, "downstream failure"):
             middleware(request)
-
         self.assertIsNone(get_current_school())
