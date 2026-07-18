@@ -1,15 +1,28 @@
 """Tests for Crown module tier gates and lifecycle."""
-
 from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
 from core.models import School
+from crown_api.tenant import TenantContext
 from subscriptions.gates import get_school_modules, require_module, school_has_module
 from subscriptions.models import SchoolModule
 
 User = get_user_model()
+
+
+def _canonical_context(school):
+    return TenantContext(
+        school_id=school.id,
+        school=school,
+        source="test",
+        header_present=False,
+        principal_school_id=school.id,
+        override_requested=False,
+        override_authorized=False,
+        actor_type="user",
+    )
 
 
 class TestSchoolModuleModel(TestCase):
@@ -56,10 +69,9 @@ class TestModuleGate(TestCase):
         self.factory = RequestFactory()
 
     def test_returns_false_for_nonexistent_module(self):
-        result = school_has_module(self.school.id, "financial_aid")
-        self.assertFalse(result)
+        self.assertFalse(school_has_module(self.school.id, "financial_aid"))
 
-    def test_require_module_decorator_blocks_without_school_context(self):
+    def test_require_module_decorator_blocks_without_canonical_context(self):
         request = self.factory.get("/test/")
 
         @require_module("financial_aid")
@@ -69,9 +81,10 @@ class TestModuleGate(TestCase):
         response = fake_view(request)
         self.assertEqual(response.status_code, 400)
 
-    def test_require_module_decorator_blocks_without_entitlement(self):
+    def test_require_module_blocks_without_entitlement_from_canonical_context(self):
         request = self.factory.get("/test/")
-        request.school_id = self.school.id
+        request.crown_tenant = _canonical_context(self.school)
+        self.assertFalse(hasattr(request, "school_id"))
 
         @require_module("financial_aid")
         def fake_view(_request):
@@ -80,16 +93,16 @@ class TestModuleGate(TestCase):
         response = fake_view(request)
         self.assertEqual(response.status_code, 403)
 
-    def test_require_module_passes_with_entitlement(self):
+    def test_require_module_passes_from_canonical_context_without_legacy_alias(self):
         SchoolModule.objects.create(
             school=self.school,
             module_key="financial_aid",
             status="active",
             expiry_date=timezone.now() + timezone.timedelta(days=30),
         )
-
         request = self.factory.get("/test/")
-        request.school_id = self.school.id
+        request.crown_tenant = _canonical_context(self.school)
+        self.assertFalse(hasattr(request, "school_id"))
 
         @require_module("financial_aid")
         def fake_view(_request):

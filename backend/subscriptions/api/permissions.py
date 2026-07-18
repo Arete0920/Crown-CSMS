@@ -17,6 +17,7 @@ EntitlementsService.assert_enabled() inside the view body.
 """
 from rest_framework.permissions import BasePermission
 
+from crown_api.tenant import get_tenant_school_id
 from subscriptions.services import EntitlementsService
 
 
@@ -30,13 +31,11 @@ def RequiresEntitlement(feature_key: str):
 
     class _RequiresEntitlement(BasePermission):
         def has_permission(self, request, view) -> bool:
-            school_id = getattr(request, "school_id", None)
-            if not school_id:
-                return False
             try:
+                school_id = get_tenant_school_id(request, required=True)
                 EntitlementsService.assert_enabled(school_id, feature_key)
                 return True
-            except (PermissionError, Exception):
+            except Exception:
                 return False
 
     _RequiresEntitlement.__name__ = f"RequiresEntitlement({feature_key!r})"

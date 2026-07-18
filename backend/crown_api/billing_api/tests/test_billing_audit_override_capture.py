@@ -9,7 +9,7 @@ from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from billing.models import BillingAuditEvent
-from core.models import School
+from core.models import School, UserRole
 from households.models import Household
 from ledger.models import Charge, LedgerAccount, Payment
 
@@ -34,6 +34,7 @@ def staff_finance_user():
 
     g, _ = Group.objects.get_or_create(name="Business Manager")
     u.groups.add(g)
+    UserRole.objects.create(school=primary_school, user=u, role_code="SUPPORT")
 
     return u, primary_school, override_school
 
