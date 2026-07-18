@@ -36,7 +36,19 @@ describe("canonical frontend API client contracts", () => {
     expect(source).not.toContain("../api/dashboardClient");
   });
 
-  it("removes the deprecated dashboard-specific transport", () => {
+  it("keeps the compatibility API wrapper on the canonical transport", () => {
+    const source = load("../lib/api.js");
+    expect(source).toContain("authenticatedFetch, getAccessToken, getSelectedSchoolId");
+    expect(source).toContain("return authenticatedFetch(path, opts)");
+    expect(source).toContain("return getAccessToken()");
+    expect(source).toContain("return getSelectedSchoolId()");
+    expect(source).not.toContain("globalThis.fetch");
+    expect(source).not.toContain("auth === false");
+    expect(source).not.toContain("sessionStorage.getItem");
+  });
+
+  it("removes deprecated duplicate transports", () => {
     expect(existsSync(path.resolve(__dirname, "../api/dashboardClient.js"))).toBe(false);
+    expect(existsSync(path.resolve(__dirname, "../lib/http.js"))).toBe(false);
   });
 });
