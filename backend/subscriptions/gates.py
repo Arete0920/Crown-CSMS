@@ -12,13 +12,14 @@ Usage in a view:
         ...
 
     # As a check:
-    if school_has_module(request.school_id, 'financial_aid'):
+    if school_has_module(school_id, 'financial_aid'):
         ...
 """
-
 from functools import wraps
 
 from django.http import JsonResponse
+
+from crown_api.tenant import get_tenant_school_id
 
 from .models import SchoolModule
 
@@ -43,14 +44,6 @@ def get_school_modules(school_id):
     """
     Returns a dict of all module keys -> status for a school.
     Used by the frontend to build the module visibility map.
-
-    Example return:
-    {
-        'financial_aid': 'active',
-        'chapel_tracking': 'inactive',
-        'gradebook_pro': 'trial',
-        ...
-    }
     """
     all_keys = [key for key, _ in SchoolModule.MODULE_CHOICES]
     result = {key: "inactive" for key in all_keys}
@@ -70,25 +63,21 @@ def get_school_modules(school_id):
 def require_module(module_key):
     """
     View decorator that gates access to a module entitlement.
-    Returns 403 if the school does not have the module active.
-
-    Requires request.school_id to be set (Layer 04-05 middleware handles this).
-
-    Usage:
-        @require_module('financial_aid')
-        def financial_aid_dashboard(request):
-            ...
+    Returns 400 when canonical tenant context is unavailable and 403 when the
+    resolved tenant does not have the requested module enabled.
     """
 
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            school_id = getattr(request, "school_id", None)
-            if not school_id:
+            try:
+                school_id = get_tenant_school_id(request, required=True)
+            except PermissionError:
                 return JsonResponse(
                     {"error": "School context required", "code": "NO_SCHOOL_CONTEXT"},
                     status=400,
                 )
+
             if not school_has_module(school_id, module_key):
                 return JsonResponse(
                     {

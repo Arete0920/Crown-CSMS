@@ -2,7 +2,7 @@
 API permission enforcement tests.
 
 Coverage:
-  - /me/entitlements/ requires authenticated user with valid X-School-ID
+  - /me/entitlements/ requires authenticated user with valid tenant context
   - /plans/ is accessible to authenticated users
   - /ops/<school_id>/ requires staff/admin
   - POST /ops/<school_id>/ assigns a new plan and closes the old subscription
@@ -13,6 +13,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from core.models import School
 from subscriptions.models import Plan, TenantSubscription
 
 pytestmark = pytest.mark.django_db
@@ -36,58 +37,48 @@ def _make_staff():
     )
 
 
-def _make_user():
+def _make_user(*, school=None):
     return User.objects.create_user(
         username=f"user_{uuid.uuid4().hex[:8]}",
         password=TEST_AUTH_SECRET,
+        school=school,
     )
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# /api/v1/subscriptions/me/entitlements/
-# ─────────────────────────────────────────────────────────────────────────────
 
 def test_me_entitlements_requires_auth():
     resp = APIClient().get("/api/v1/subscriptions/me/entitlements/")
     assert resp.status_code in (401, 403)
 
 
-def test_me_entitlements_requires_school_header():
+def test_me_entitlements_requires_tenant_context():
     user = _make_user()
     client = APIClient()
     client.force_authenticate(user=user)
     resp = client.get("/api/v1/subscriptions/me/entitlements/")
-    # No X-School-ID → 400
     assert resp.status_code == 400
+    assert resp.json()["error"] == "X-School-ID header is required."
 
 
-def test_me_entitlements_returns_snapshot():
+def test_me_entitlements_returns_snapshot_for_matching_canonical_tenant():
     plan = _make_plan()
-    school_id = uuid.uuid4()
-    TenantSubscription.objects.create(school_id=school_id, plan=plan)
+    school = School.objects.create(name="Entitlement Academy")
+    TenantSubscription.objects.create(school_id=school.id, plan=plan)
 
-    user = _make_user()
+    user = _make_user(school=school)
     client = APIClient()
     client.force_authenticate(user=user)
-    # Simulate TenantContextMiddleware having resolved the school_id
-    from unittest.mock import patch  # noqa: PLC0415
-    with patch("subscriptions.api.views.me_entitlements") as mock_view:
-        # Real path: patch school_id onto request in test
-        pass  # we'll test this via direct service call instead
-
-    # Direct service test: entitlement snapshot structure
-    ent_resp = client.get(
+    resp = client.get(
         "/api/v1/subscriptions/me/entitlements/",
-        HTTP_X_SCHOOL_ID=str(school_id),
+        HTTP_X_SCHOOL_ID=str(school.id),
     )
-    # Will be 200 if middleware resolves school_id, or 400 if not (middleware-dependent)
-    # The important thing is it never crashes unhandled
-    assert ent_resp.status_code in (200, 400, 404)
 
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["plan_code"] == "smart_start"
+    assert payload["plan_name"] == plan.name
+    assert payload["is_trial"] is False
+    assert isinstance(payload["entitlements"], dict)
 
-# ─────────────────────────────────────────────────────────────────────────────
-# /api/v1/subscriptions/plans/
-# ─────────────────────────────────────────────────────────────────────────────
 
 def test_plan_list_authenticated():
     _make_plan("smart_start")
@@ -104,10 +95,6 @@ def test_plan_list_requires_auth():
     resp = APIClient().get("/api/v1/subscriptions/plans/")
     assert resp.status_code in (401, 403)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# /api/v1/subscriptions/ops/<school_id>/
-# ─────────────────────────────────────────────────────────────────────────────
 
 def test_ops_requires_admin():
     plan = _make_plan()
@@ -161,7 +148,6 @@ def test_ops_post_assigns_plan():
     assert resp.status_code == 201
     assert resp.json()["plan"]["code"] == "all_access"
 
-    # Old subscription must now be closed
     old_sub = TenantSubscription.objects.get(school_id=school_id, plan=plan_old)
     assert old_sub.ended_at is not None
 
@@ -176,6 +162,3 @@ def test_ops_post_missing_plan_id():
         format="json",
     )
     assert resp.status_code == 400
-
-
-
