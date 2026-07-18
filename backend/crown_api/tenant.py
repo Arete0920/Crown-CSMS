@@ -5,17 +5,18 @@ from dataclasses import dataclass
 from typing import Optional
 from uuid import UUID
 
-TENANT_HEADER = "HTTP_X_SCHOOL_ID"  # Django stores headers as HTTP_*
-TENANT_HEADER_LEGACY = "HTTP_X_CROWN_SCHOOL_ID"  # Legacy alias
+TENANT_HEADER = "HTTP_X_SCHOOL_ID"
+TENANT_HEADER_LEGACY = "HTTP_X_CROWN_SCHOOL_ID"
 TENANT_ATTR = "tenant_school_id"
 CANONICAL_TENANT_ATTR = "crown_tenant"
+TENANT_OVERRIDE_PERMISSION = "core.override_tenant_context"
 
 
 @dataclass(frozen=True)
 class TenantResolution:
     school_id: Optional[UUID]
-    source: str  # "header" | "header_invalid" | "user" | "drf_force" | "none"
-    header_present: bool = False  # True if X-School-Id header was supplied (valid or invalid)
+    source: str
+    header_present: bool = False
 
 
 @dataclass(frozen=True)
@@ -40,7 +41,6 @@ def _parse_uuid(value: object) -> Optional[UUID]:
 
 
 def _get_tenant_header(request) -> Optional[str]:
-    """Extract the canonical tenant header, then the legacy alias."""
     return request.META.get(TENANT_HEADER) or request.META.get(TENANT_HEADER_LEGACY)
 
 
@@ -56,16 +56,35 @@ def _authenticated_principal(request):
     return None, "anonymous"
 
 
-def resolve_tenant_school_id(request) -> TenantResolution:
-    """
-    Resolve the requested tenant identifier without authorizing cross-school access.
+def principal_can_override_tenant(principal) -> bool:
+    """Require explicit cross-school authority; ordinary staff status is insufficient."""
+    if principal is None or not getattr(principal, "is_authenticated", False):
+        return False
+    if getattr(principal, "is_superuser", False):
+        return True
 
-    Priority:
-    1) X-School-Id header (canonical + legacy), including invalid-header evidence
-    2) Authenticated user / JWT-derived user school
-    3) DRF force_authenticate user school
-    4) None
-    """
+    has_perm = getattr(principal, "has_perm", None)
+    if callable(has_perm):
+        try:
+            if has_perm(TENANT_OVERRIDE_PERMISSION):
+                return True
+        except Exception:
+            pass
+
+    roles = getattr(principal, "roles", None)
+    if roles is not None:
+        try:
+            if roles.filter(role_code="SUPPORT").exists():
+                return True
+        except Exception:
+            pass
+
+    staff_profile = getattr(principal, "staff", None)
+    return bool(staff_profile and getattr(staff_profile, "role_type", None) == "SUPPORT")
+
+
+def resolve_tenant_school_id(request) -> TenantResolution:
+    """Resolve the requested tenant identifier without authorizing cross-school access."""
     raw_header = _get_tenant_header(request)
     if raw_header is not None:
         parsed = _parse_uuid(raw_header)
@@ -89,7 +108,7 @@ def resolve_tenant_school_id(request) -> TenantResolution:
 
 
 def build_tenant_context(request, *, school=None) -> TenantContext:
-    """Build the canonical tenant context while preserving resolver compatibility."""
+    """Build canonical tenant context while preserving resolver compatibility."""
     resolution = resolve_tenant_school_id(request)
     principal, actor_type = _authenticated_principal(request)
     principal_school_id = _parse_uuid(getattr(principal, "school_id", None)) if principal else None
@@ -101,8 +120,7 @@ def build_tenant_context(request, *, school=None) -> TenantContext:
         and resolution.school_id != principal_school_id
     )
     override_authorized = bool(
-        override_requested
-        and (getattr(principal, "is_staff", False) or getattr(principal, "is_superuser", False))
+        override_requested and principal_can_override_tenant(principal)
     )
 
     return TenantContext(
@@ -136,7 +154,7 @@ def bind_tenant_context(request, context: TenantContext) -> TenantContext:
 
 
 def get_tenant_school_id(request, *, required: bool = True) -> Optional[UUID]:
-    """Return the canonical tenant school ID, resolving and binding when absent."""
+    """Return canonical tenant school ID, resolving and binding when absent."""
     context = getattr(request, CANONICAL_TENANT_ATTR, None)
     if context is not None and context.school_id:
         return context.school_id
