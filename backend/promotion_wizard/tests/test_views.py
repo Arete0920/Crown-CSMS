@@ -15,13 +15,17 @@ def _school():
     return School.objects.create(name=f"S{uuid.uuid4().hex[:6]}", timezone="America/New_York", is_active=True)
 
 
-def _user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:6]}", password=TEST_AUTH_SECRET)
+def _user(school):
+    return User.objects.create_user(
+        username=f"u{uuid.uuid4().hex[:6]}",
+        password=TEST_AUTH_SECRET,
+        school=school,
+    )
 
 
-def _authed():
+def _authed(school):
     c = APIClient()
-    c.force_authenticate(user=_user())
+    c.force_authenticate(user=_user(school))
     return c
 
 
@@ -32,7 +36,7 @@ def _hdr(sid):
 class PromotionWizardSmoke(TestCase):
     def test_happy(self):
         s = _school()
-        c = _authed()
+        c = _authed(s)
         r = c.post(BASE, **_hdr(s.id))
         self.assertEqual(r.status_code, 201)
         sid = r.data["session_id"]
@@ -51,7 +55,7 @@ class PromotionWizardSmoke(TestCase):
 
     def test_invalid_grade_rejected(self):
         s = _school()
-        c = _authed()
+        c = _authed(s)
         r = c.post(BASE, **_hdr(s.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -64,7 +68,7 @@ class PromotionWizardSmoke(TestCase):
 
     def test_duplicate_from_grade_rejected(self):
         s = _school()
-        c = _authed()
+        c = _authed(s)
         r = c.post(BASE, **_hdr(s.id))
         sid = r.data["session_id"]
         rules = [

@@ -25,7 +25,7 @@ def _make_school(name="Aid School"):
 
 def _make_user(school, username=None):
     username = username or f"user_{uuid.uuid4().hex[:8]}"
-    return User.objects.create_user(username=username, password=TEST_AUTH_SECRET)
+    return User.objects.create_user(username=username, password=TEST_AUTH_SECRET, school=school)
 
 
 def _headers(school_id):

@@ -29,11 +29,15 @@ PAYMENTS_URL = "/api/v1/ledger/payments/"
 
 def _school_and_account():
     sid = uuid.uuid4()
-    School.objects.get_or_create(id=sid, defaults={"name": f"WS-{sid}"})
+    school, _ = School.objects.get_or_create(id=sid, defaults={"name": f"WS-{sid}"})
     hh = Household.objects.create(school_id=sid, name=f"HH-{uuid.uuid4()}")
     acct = LedgerAccount.objects.create(school_id=sid, household=hh)
     User = get_user_model()
-    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
+    user = User.objects.create_user(
+        username=f"u-{uuid.uuid4()}",
+        password=TEST_AUTH_SECRET,
+        school=school,
+    )
     return sid, acct, user
 
 
@@ -132,4 +136,3 @@ def test_record_payment_rejects_over_allocation():
     assert resp.status_code == 400, f"Expected 400, got {resp.status_code}: {resp.content}"
     # No payment row should have persisted due to atomic rollback
     assert Payment.objects.filter(account=acct).count() == 0
-

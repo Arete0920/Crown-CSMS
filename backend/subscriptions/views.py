@@ -1,25 +1,22 @@
 """
-Crown Admin Module Management API
------------------------------------
-Endpoints for Crown staff to activate/deactivate school modules after payment.
+CROWN Admin Module Management API.
 
-All endpoints require:
-  - IsAdminUser (Django staff/superuser)
-  - X-School-Id header (standard tenant middleware)
-
-These are internal Crown operations - NOT exposed to school users.
+These internal operations require an authenticated Django administrator and a
+canonical tenant context. They are not exposed to school users.
 """
 
-import logging
 import json
+import logging
 
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import user_passes_test
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 
-from .models import SchoolModule
+from crown_api.tenant import get_tenant_school_id
+
 from .gates import get_school_modules
+from .models import SchoolModule
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +25,31 @@ def is_crown_admin(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
 
 
+def _canonical_school_id(request):
+    try:
+        return get_tenant_school_id(request, required=True)
+    except PermissionError:
+        return None
+
+
+def _tenant_required_response():
+    return JsonResponse(
+        {
+            "error": "Canonical school context is required",
+            "code": "TENANT_REQUIRED",
+        },
+        status=400,
+    )
+
+
 @csrf_exempt
 @user_passes_test(is_crown_admin)
 @require_http_methods(["GET"])
 def list_school_modules(request):
-    """
-    GET /api/v1/admin/modules/
-    Returns all module entitlements for the school in X-School-Id header.
-    """
-    school_id = getattr(request, "school_id", None)
+    """Return module entitlements for the canonical current tenant."""
+    school_id = _canonical_school_id(request)
     if not school_id:
-        return JsonResponse({"error": "X-School-Id header required"}, status=400)
+        return _tenant_required_response()
 
     module_map = get_school_modules(school_id)
     rows = []
@@ -71,20 +82,10 @@ def list_school_modules(request):
 @user_passes_test(is_crown_admin)
 @require_http_methods(["POST"])
 def activate_module(request):
-    """
-    POST /api/v1/admin/modules/activate/
-    Body (JSON):
-    {
-        "module_key": "financial_aid",
-        "price_paid": 1500.00,
-        "billing_cycle": "annual",
-        "months": 12,
-        "notes": "Invoice #1234"
-    }
-    """
-    school_id = getattr(request, "school_id", None)
+    """Activate a module for the canonical current tenant."""
+    school_id = _canonical_school_id(request)
     if not school_id:
-        return JsonResponse({"error": "X-School-Id header required"}, status=400)
+        return _tenant_required_response()
 
     try:
         body = json.loads(request.body)
@@ -95,7 +96,7 @@ def activate_module(request):
     if not module_key:
         return JsonResponse({"error": "module_key is required"}, status=400)
 
-    valid_keys = [k for k, _ in SchoolModule.MODULE_CHOICES]
+    valid_keys = [key for key, _ in SchoolModule.MODULE_CHOICES]
     if module_key not in valid_keys:
         return JsonResponse(
             {"error": f"Invalid module_key. Valid options: {valid_keys}"},
@@ -106,7 +107,6 @@ def activate_module(request):
         school_id=school_id,
         module_key=module_key,
     )
-
     module.activate(
         activated_by_user=request.user,
         price_paid=body.get("price_paid"),
@@ -123,7 +123,6 @@ def activate_module(request):
         request.user.email,
         module.price_paid,
     )
-
     return JsonResponse(
         {
             "success": True,
@@ -140,13 +139,10 @@ def activate_module(request):
 @user_passes_test(is_crown_admin)
 @require_http_methods(["POST"])
 def deactivate_module(request):
-    """
-    POST /api/v1/admin/modules/deactivate/
-    Body (JSON): { "module_key": "financial_aid" }
-    """
-    school_id = getattr(request, "school_id", None)
+    """Deactivate a module for the canonical current tenant."""
+    school_id = _canonical_school_id(request)
     if not school_id:
-        return JsonResponse({"error": "X-School-Id header required"}, status=400)
+        return _tenant_required_response()
 
     try:
         body = json.loads(request.body)
@@ -175,14 +171,10 @@ def deactivate_module(request):
 @user_passes_test(is_crown_admin)
 @require_http_methods(["POST"])
 def start_trial(request):
-    """
-    POST /api/v1/admin/modules/trial/
-    Body (JSON): { "module_key": "financial_aid", "days": 30 }
-    Starts a free trial for a module.
-    """
-    school_id = getattr(request, "school_id", None)
+    """Start a module trial for the canonical current tenant."""
+    school_id = _canonical_school_id(request)
     if not school_id:
-        return JsonResponse({"error": "X-School-Id header required"}, status=400)
+        return _tenant_required_response()
 
     try:
         body = json.loads(request.body)
@@ -205,7 +197,6 @@ def start_trial(request):
         module_key,
         request.user.email,
     )
-
     return JsonResponse(
         {
             "success": True,

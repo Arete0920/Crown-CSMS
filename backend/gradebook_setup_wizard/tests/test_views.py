@@ -20,17 +20,21 @@ def _make_school():
     return School.objects.create(name=f"GBW {uuid.uuid4().hex[:6]}", timezone="America/Chicago", is_active=True)
 
 
-def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
+def _make_user(school):
+    return User.objects.create_user(
+        username=f"u{uuid.uuid4().hex[:8]}",
+        password=TEST_AUTH_SECRET,
+        school=school,
+    )
 
 
 def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-def _client_for():
+def _client_for(school):
     c = APIClient()
-    c.force_authenticate(user=_make_user())
+    c.force_authenticate(user=_make_user(school))
     return c
 
 
@@ -104,7 +108,7 @@ class GradebookSetupAuthTest(TestCase):
 class GradebookSetupCreateTest(TestCase):
     def test_create_returns_201(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data["status"], GradebookSetupWizardSession.STATUS_DRAFT)
@@ -118,7 +122,7 @@ class GradebookSetupConfigureTest(TestCase):
     def test_configure_ok(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -132,7 +136,7 @@ class GradebookSetupConfigureTest(TestCase):
 
     def test_configure_missing_section_id(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(f"{BASE_URL}{sid}/configure/", {}, format="json", **_headers(school.id))
@@ -142,7 +146,7 @@ class GradebookSetupConfigureTest(TestCase):
         school = _make_school()
         other = _make_school()
         section = _make_section(other.id)
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -155,7 +159,7 @@ class GradebookSetupConfigureTest(TestCase):
 
     def test_configure_bad_uuid(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -175,7 +179,7 @@ class GradebookSetupCategoriesTest(TestCase):
     def test_define_categories_weighted_ok(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_configured(c, school.id, section.id)
         r = c.post(
             f"{BASE_URL}{sid}/categories/",
@@ -191,7 +195,7 @@ class GradebookSetupCategoriesTest(TestCase):
     def test_define_categories_unweighted_ok(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_configured(c, school.id, section.id)
         r = c.post(
             f"{BASE_URL}{sid}/categories/",
@@ -205,7 +209,7 @@ class GradebookSetupCategoriesTest(TestCase):
     def test_define_categories_bad_weight_sum(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_configured(c, school.id, section.id)
         r = c.post(
             f"{BASE_URL}{sid}/categories/",
@@ -218,7 +222,7 @@ class GradebookSetupCategoriesTest(TestCase):
     def test_define_categories_empty_list(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_configured(c, school.id, section.id)
         r = c.post(
             f"{BASE_URL}{sid}/categories/",
@@ -230,7 +234,7 @@ class GradebookSetupCategoriesTest(TestCase):
 
     def test_define_categories_from_draft_rejected(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.post(
@@ -250,7 +254,7 @@ class GradebookSetupCommitTest(TestCase):
     def test_commit_creates_db_records(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_categories_defined(c, school.id, section.id)
         r = c.post(
             f"{BASE_URL}{sid}/commit/",
@@ -267,7 +271,7 @@ class GradebookSetupCommitTest(TestCase):
     def test_commit_requires_confirm(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_categories_defined(c, school.id, section.id)
         r = c.post(f"{BASE_URL}{sid}/commit/", {}, format="json", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
@@ -275,7 +279,7 @@ class GradebookSetupCommitTest(TestCase):
     def test_commit_is_idempotent(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_committed(c, school.id, section.id)
         r2 = c.post(
             f"{BASE_URL}{sid}/commit/",
@@ -297,7 +301,7 @@ class GradebookSetupVerifyTest(TestCase):
     def test_verify_ok(self):
         school = _make_school()
         section = _make_section(school.id)
-        c = _client_for()
+        c = _client_for(school)
         sid = _advance_to_committed(c, school.id, section.id)
         r = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -306,7 +310,7 @@ class GradebookSetupVerifyTest(TestCase):
 
     def test_verify_from_draft_rejected(self):
         school = _make_school()
-        c = _client_for()
+        c = _client_for(school)
         r = c.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         r2 = c.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))

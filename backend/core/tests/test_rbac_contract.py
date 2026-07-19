@@ -1,4 +1,5 @@
 import uuid
+
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
@@ -12,10 +13,20 @@ def _mk_school(name="RBAC Test Academy"):
     return School.objects.create(name=name)
 
 
-def _mk_user(label):
-    # UserAccount extends AbstractUser — username is the auth field, not email.
+def _mk_user(label, school):
+    # UserAccount extends AbstractUser; username is the auth field, not email.
+    # Bind the principal to the canonical school so a matching tenant header is
+    # treated as principal context rather than a cross-school override request.
+    # Email is unique within a school, so every fixture principal needs its own
+    # deterministic identity value rather than the model's shared blank default.
     User = get_user_model()
-    return User.objects.create_user(username=f"{label}-{uuid.uuid4()}", password="Passw0rd!")
+    token = uuid.uuid4().hex
+    return User.objects.create_user(
+        username=f"{label}-{token}",
+        email=f"{label}-{token}@example.test",
+        password="Passw0rd!",
+        school=school,
+    )
 
 
 def _assign_role(user, school, role_code):
@@ -45,13 +56,13 @@ def school():
 def users(school):
     # Valid UserRole.role_code values (from core/models.py UserRole.ROLE_CODE_CHOICES):
     # HEAD_OF_SCHOOL, AID_DIRECTOR, FINANCE_DIRECTOR, REGISTRAR, TEACHER, PARENT, STUDENT, SUPPORT
-    # ADMIN does not exist — FINANCE_DIRECTOR is the privileged finance-level role.
+    # ADMIN does not exist; FINANCE_DIRECTOR is the privileged finance-level role.
     u = {
-        "FINANCE_DIRECTOR": _mk_user("fin-dir"),
-        "HEAD_OF_SCHOOL": _mk_user("hos"),
-        "TEACHER": _mk_user("teacher"),
-        "PARENT": _mk_user("parent"),
-        "STUDENT": _mk_user("student"),
+        "FINANCE_DIRECTOR": _mk_user("fin-dir", school),
+        "HEAD_OF_SCHOOL": _mk_user("hos", school),
+        "TEACHER": _mk_user("teacher", school),
+        "PARENT": _mk_user("parent", school),
+        "STUDENT": _mk_user("student", school),
     }
     for role, user in u.items():
         _assign_role(user, school, role)
@@ -59,18 +70,19 @@ def users(school):
 
 
 def test_requires_auth_for_invariants(school):
-    # Unauthed should not be allowed even with tenant header.
+    # Unauthenticated requests are not allowed even with a tenant header.
     c = _anon_client(school_id=school.id)
     r = c.get("/api/v1/ledger/invariants/")
     assert r.status_code in (401, 403), r.content
 
 
-def test_requires_tenant_header_for_invariants(users, school):
-    # Authed without tenant header should fail fast (tenant enforcement).
+def test_principal_school_context_without_header(users):
+    # Session authentication exposes the principal to Django middleware, which
+    # resolves the canonical school without a redundant tenant header.
     c = APIClient()
-    c.force_authenticate(user=users["HEAD_OF_SCHOOL"])
+    c.force_login(users["HEAD_OF_SCHOOL"])
     r = c.get("/api/v1/ledger/invariants/")
-    assert r.status_code in (400, 403), r.content
+    assert r.status_code == 200, r.content
 
 
 @pytest.mark.parametrize(
