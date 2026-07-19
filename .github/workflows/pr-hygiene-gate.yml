@@ -18,12 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch base branch
-        run: git fetch origin "${{ github.base_ref }}" --depth=1
+      - name: Fetch immutable base commit
+        run: git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1
 
       - name: Run CROWN PR hygiene gate
         env:
-          CROWN_BASE_REF: origin/${{ github.base_ref }}
+          CROWN_BASE_REF: ${{ github.event.pull_request.base.sha }}
           CROWN_MAX_NORMAL_ADDITIONS: "1500"
           CROWN_MAX_DOC_AUDIT_ADDITIONS: "3000"
           CROWN_MAX_CHANGED_FILES: "20"
