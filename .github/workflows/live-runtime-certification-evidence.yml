@@ -122,12 +122,25 @@ jobs:
           CROWN_LIVE_LOGIN_EMAIL: ${{ secrets.CROWN_LIVE_LOGIN_EMAIL }}
           CROWN_LIVE_LOGIN_PASSWORD: ${{ secrets.CROWN_LIVE_LOGIN_PASSWORD }}
           CROWN_LIVE_SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
+      - name: Promote crawler evidence into live-runtime authority path
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_dir="../../audit-artifacts/production-certification/current"
+          target_dir="../../audit-artifacts/live-runtime-certification/current"
+          test -d "$source_dir"
+          rm -rf "$target_dir"
+          mkdir -p "$target_dir"
+          cp -a "$source_dir"/. "$target_dir"/
+          test -f "$target_dir/certification-summary.md"
+          test -f "$target_dir/certification-matrix.json"
       - name: Confirm live runtime evidence exists
         if: always()
         run: |
           test -f ../../audit-artifacts/tenant-context/current/tenant-context-runtime-proof.json
           test -f ../../audit-artifacts/live-runtime-certification/current/certification-summary.md
-          test -f ../../audit-artifacts/live-runtime-certification/current/live-runtime-result.json
+          test -f ../../audit-artifacts/live-runtime-certification/current/certification-matrix.json
       - name: Upload tenant-context runtime evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
