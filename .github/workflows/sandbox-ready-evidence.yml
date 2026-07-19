@@ -247,8 +247,18 @@ jobs:
       - name: Run full completion truth gate (advisory)
         if: steps.changes.outputs.docs_only != 'true'
         continue-on-error: true
+        timeout-minutes: 10
         shell: pwsh
-        run: ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep
+        run: |
+          ./scripts/execution/106_crown_full_completion_truth_gate.ps1 -Deep *>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/full-completion-truth.log"
+
+      - name: Upload full completion truth diagnostic log
+        if: always() && steps.changes.outputs.docs_only != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-full-completion-truth-diagnostic
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/full-completion-truth.log
 
       - name: Run dashboard module completion gate
         if: steps.changes.outputs.docs_only != 'true'
