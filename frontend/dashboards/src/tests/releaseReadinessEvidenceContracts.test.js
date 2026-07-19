@@ -25,7 +25,9 @@ function parseCanonicalMetadata(markdown) {
 }
 
 const canonical = parseCanonicalMetadata(statusSource);
-const productionApproved = !statusSource.includes('Production release decision: **NOT APPROVED**.');
+const productionApproved =
+  statusSource.includes('**CURRENT DECISION: PRODUCTION AUTHORIZED**') &&
+  !statusSource.includes('**CURRENT DECISION: PRODUCTION NOT APPROVED**');
 
 function isReadyEntry(entry) {
   const state = String(entry?.releaseState || '').trim().toLowerCase();

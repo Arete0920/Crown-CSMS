@@ -13,10 +13,11 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps canonical production decision as NOT APPROVED', () => {
+  it('keeps full production as the target and the current decision as not approved', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Repository-wide decision: **SANDBOX_RELEASE_CANDIDATE**.')).toBe(true);
-    expect(source.includes('Production release decision: **NOT APPROVED**.')).toBe(true);
+    expect(source.includes('**TARGET: FULL PRODUCTION RELEASE AUTHORIZATION**')).toBe(true);
+    expect(source.includes('**CURRENT DECISION: PRODUCTION NOT APPROVED**')).toBe(true);
+    expect(source.includes('**CURRENT DECISION: PRODUCTION AUTHORIZED**')).toBe(false);
   });
 
   it('keeps current scorecard decision as NO-GO', () => {

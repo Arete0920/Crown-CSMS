@@ -252,8 +252,18 @@ jobs:
 
       - name: Run dashboard module completion gate
         if: steps.changes.outputs.docs_only != 'true'
+        timeout-minutes: 10
         shell: pwsh
-        run: ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep
+        run: |
+          ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep *>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/dashboard-module-completion.log"
+
+      - name: Upload dashboard module diagnostic log
+        if: always() && steps.changes.outputs.docs_only != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-dashboard-module-diagnostic
+          if-no-files-found: warn
+          path: ${{ runner.temp }}/dashboard-module-completion.log
 
       - name: Emit latest gate summaries
         if: always()
@@ -318,39 +328,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sandbox-ready-evidence
+          if-no-files-found: warn
           path: |
-            audit-artifacts/
-            crown-audit-export/
+            audit-artifacts
+            crown-audit-export
             backend-runtime.log
-          retention-days: 30
-          if-no-files-found: ignore
-
-  sandbox-diagnostic-report:
-    name: Sandbox Diagnostic Report
-    needs: sandbox-ready-evidence
-    if: always() && needs.sandbox-ready-evidence.result == 'failure'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download sandbox evidence
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: sandbox-ready-evidence
-
-      - name: Report scaffold certification failures
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "=== SCAFFOLD CERTIFICATION SUMMARY ==="
-          summary=$(find . -type f -name certification-summary.md | head -n 1 || true)
-          if [ -n "$summary" ]; then
-            cat "$summary"
-          else
-            echo "certification-summary.md not found"
-          fi
-          echo "=== SCAFFOLD FAILED ROUTES ==="
-          results=$(find . -type f -name route-results.csv | head -n 1 || true)
-          if [ -n "$results" ]; then
-            awk -F',' 'NR == 1 || $7 == "FAIL"' "$results"
-          else
-            echo "route-results.csv not found"
-          fi
+            frontend/dashboards/test-results
+            frontend/dashboards/playwright-report
