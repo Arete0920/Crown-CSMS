@@ -36,11 +36,12 @@ def mk_school():
     return School.objects.create(name="Formation Test School")
 
 
-def mk_user(username="formation_user"):
+def mk_user(school, username="formation_user"):
     return UserAccount.objects.create_user(
         username=username,
         email=f"{username}@example.com",
         password="pass12345",
+        school=school,
     )
 
 
@@ -65,7 +66,7 @@ def test_formation_urls_require_auth_or_tenant(url):
 @pytest.mark.parametrize("url", FORMATION_URLS)
 def test_formation_urls_available_to_spiritual_life_viewer(url):
     school = mk_school()
-    user = mk_user(url.strip("/").replace("/", "_")[:80])
+    user = mk_user(school, url.strip("/").replace("/", "_")[:80])
     role_code = "spiritual_life_contract_tester"
     assign_role(user, school, role_code)
     grant(role_code)
@@ -78,7 +79,7 @@ def test_formation_urls_available_to_spiritual_life_viewer(url):
 
 def test_can_create_portrait_domain_for_school():
     school = mk_school()
-    user = mk_user("portrait_domain_create")
+    user = mk_user(school, "portrait_domain_create")
     role_code = "spiritual_life_contract_tester"
     assign_role(user, school, role_code)
     grant(role_code)

@@ -4,7 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import School
+from core.models import School, UserRole
 from households.models import Household
 
 TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
@@ -23,7 +23,6 @@ def test_school_override_header_ignored_for_nonstaff_user():
     client = APIClient()
     client.force_authenticate(user=u)
 
-    # Non-staff users must not be able to override tenant context.
     resp = client.get(
         f"/api/billing/households/{hh_b.id}/open-invoices/",
         HTTP_X_CROWN_SCHOOL_ID=str(school_b.id),
@@ -32,7 +31,7 @@ def test_school_override_header_ignored_for_nonstaff_user():
 
 
 @pytest.mark.django_db
-def test_school_override_header_allows_staff_user_switch():
+def test_school_override_header_denies_ordinary_staff_user_switch():
     school_a = School.objects.create(name="School A", timezone="America/New_York", is_active=True)
     school_b = School.objects.create(name="School B", timezone="America/New_York", is_active=True)
 
@@ -45,6 +44,32 @@ def test_school_override_header_allows_staff_user_switch():
         school=school_a,
         is_staff=True,
     )
+
+    client = APIClient()
+    client.force_authenticate(user=u)
+
+    resp = client.get(
+        f"/api/billing/households/{hh_b.id}/open-invoices/",
+        HTTP_X_CROWN_SCHOOL_ID=str(school_b.id),
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+def test_school_override_header_allows_support_user_switch():
+    school_a = School.objects.create(name="School A", timezone="America/New_York", is_active=True)
+    school_b = School.objects.create(name="School B", timezone="America/New_York", is_active=True)
+
+    hh_b = Household.objects.create(school_id=school_b.id, name="HH B")
+
+    user_model = get_user_model()
+    u = user_model.objects.create_user(
+        username="support1",
+        password=TEST_AUTH_SECRET,
+        school=school_a,
+        is_staff=True,
+    )
+    UserRole.objects.create(user=u, school=school_a, role_code="SUPPORT")
 
     client = APIClient()
     client.force_authenticate(user=u)

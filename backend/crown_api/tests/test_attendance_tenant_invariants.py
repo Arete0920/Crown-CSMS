@@ -119,15 +119,15 @@ class AttendanceTenantInvariantTests(TestCase):
     # Invariant 1: missing tenant header → 400
     # ------------------------------------------------------------------
 
-    def test_missing_school_header_returns_400(self):
-        """Omitting X-School-Id must return 400 now that required=True is enforced."""
+    def test_missing_school_header_uses_single_role_school(self):
+        """A teacher with one school role may use authenticated tenant fallback."""
         resp = self.client.post(
             self._url(self.section_a),
             self._payload(self.student_a),
             format="json",
-            # No HTTP_X_SCHOOL_ID header
         )
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json().get("ok"))
 
     # ------------------------------------------------------------------
     # Invariant 2: cross-tenant section → 404

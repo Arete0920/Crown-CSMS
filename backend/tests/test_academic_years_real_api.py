@@ -201,15 +201,11 @@ class TestAcademicYearsTenantIsolation:
         ids_a = {item["year_id"] for item in resp_a.json()["results"]}
         assert str(self.year_b.id) not in ids_a
 
-    def test_header_priority_scopes_to_requested_school(self):
-        """X-School-Id header takes priority and scopes the response to the requested school."""
+    def test_ordinary_staff_cross_school_header_returns_404(self):
+        """Ordinary is_staff status is not cross-school authority."""
         self.client.force_authenticate(user=self.staff_b)
         response = self.client.get(
             YEARS_URL,
             HTTP_X_SCHOOL_ID=str(self.school_a.id),
         )
-        assert response.status_code == 200
-        ids = [item["year_id"] for item in response.json().get("results", [])]
-        assert str(self.year_a.id) in ids, (
-            "Expected X-School-Id header to scope to school A records"
-        )
+        assert response.status_code == 404

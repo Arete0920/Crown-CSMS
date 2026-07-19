@@ -29,14 +29,23 @@ def _mk_school(name="Crown Academy"):
 
 
 def _mk_staff(school, username=None):
+    resolved = username or f"staff-{uuid.uuid4()}"
     return User.objects.create_user(
-        username or f"staff-{uuid.uuid4()}", None, TEST_AUTH_SECRET, is_staff=True, school=school
+        username=resolved,
+        email=f"{resolved}@outreach.test",
+        password=TEST_AUTH_SECRET,
+        is_staff=True,
+        school=school,
     )
 
 
 def _mk_user(school, username=None):
+    resolved = username or f"user-{uuid.uuid4()}"
     return User.objects.create_user(
-        username or f"user-{uuid.uuid4()}", None, TEST_AUTH_SECRET, school=school
+        username=resolved,
+        email=f"{resolved}@outreach.test",
+        password=TEST_AUTH_SECRET,
+        school=school,
     )
 
 

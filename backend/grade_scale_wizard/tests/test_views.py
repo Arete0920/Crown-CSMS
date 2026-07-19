@@ -160,11 +160,13 @@ class GradeScaleAuthTest(TestCase):
 # ---------------------------------------------------------------------------
 
 class GradeScaleTenantTest(TestCase):
-    def test_missing_school_header_returns_error(self):
+    def test_missing_school_header_uses_authenticated_school(self):
+        """A user with one direct school may use authenticated tenant fallback."""
         school = _make_school()
         client = _authed_client(school)
         r = client.post(BASE_URL)
-        self.assertIn(r.status_code, [400, 403])
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data["status"], GradeScaleWizardSession.STATUS_DRAFT)
 
     def test_school_mismatch_returns_404(self):
         school_a = _make_school("a")
