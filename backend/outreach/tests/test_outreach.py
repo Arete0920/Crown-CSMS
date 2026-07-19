@@ -30,13 +30,13 @@ def _mk_school(name="Crown Academy"):
 
 def _mk_staff(school, username=None):
     return User.objects.create_user(
-        username or f"staff-{uuid.uuid4()}", None, TEST_AUTH_SECRET, is_staff=True
+        username or f"staff-{uuid.uuid4()}", None, TEST_AUTH_SECRET, is_staff=True, school=school
     )
 
 
 def _mk_user(school, username=None):
     return User.objects.create_user(
-        username or f"user-{uuid.uuid4()}", None, TEST_AUTH_SECRET
+        username or f"user-{uuid.uuid4()}", None, TEST_AUTH_SECRET, school=school
     )
 
 
@@ -485,9 +485,5 @@ class TestSerializerValidation:
             format="json",
         )
         assert r.status_code == 400
-
-
-
-
 
 

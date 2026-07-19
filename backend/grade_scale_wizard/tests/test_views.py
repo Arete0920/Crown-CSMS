@@ -46,17 +46,21 @@ def _make_school(suffix=""):
     return School.objects.create(name=name, timezone="America/Chicago", is_active=True)
 
 
-def _make_user():
-    return User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
+def _make_user(school):
+    return User.objects.create_user(
+        username=f"u{uuid.uuid4().hex[:8]}",
+        password=TEST_AUTH_SECRET,
+        school=school,
+    )
 
 
 def _headers(school_id):
     return {"HTTP_X_SCHOOL_ID": str(school_id)}
 
 
-def _authed_client():
+def _authed_client(school):
     c = APIClient()
-    user = _make_user()
+    user = _make_user(school)
     c.force_authenticate(user=user)
     return c
 
@@ -140,7 +144,7 @@ class GradeScaleAuthTest(TestCase):
 
     def test_configure_requires_auth(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
         r = APIClient().post(
             f"{BASE_URL}{sid}/configure/",
@@ -157,14 +161,15 @@ class GradeScaleAuthTest(TestCase):
 
 class GradeScaleTenantTest(TestCase):
     def test_missing_school_header_returns_error(self):
-        client = _authed_client()
+        school = _make_school()
+        client = _authed_client(school)
         r = client.post(BASE_URL)
         self.assertIn(r.status_code, [400, 403])
 
     def test_school_mismatch_returns_404(self):
         school_a = _make_school("a")
         school_b = _make_school("b")
-        client = _authed_client()
+        client = _authed_client(school_a)
         sid = client.post(BASE_URL, **_headers(school_a.id)).data["session_id"]
         r = client.post(
             f"{BASE_URL}{sid}/configure/",
@@ -182,14 +187,14 @@ class GradeScaleTenantTest(TestCase):
 class GradeScaleCreateTest(TestCase):
     def test_create_returns_201_and_draft(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         r = client.post(BASE_URL, **_headers(school.id))
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.data["status"], GradeScaleWizardSession.STATUS_DRAFT)
 
     def test_created_session_persists(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         r = client.post(BASE_URL, **_headers(school.id))
         sid = r.data["session_id"]
         self.assertTrue(GradeScaleWizardSession.objects.filter(pk=sid).exists())
@@ -203,7 +208,7 @@ class GradeScaleConfigureTest(TestCase):
     def test_configure_happy_path(self):
         school = _make_school()
         ay = _make_academic_year(school)
-        client = _authed_client()
+        client = _authed_client(school)
         sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
         r = client.post(
             f"{BASE_URL}{sid}/configure/",
@@ -220,7 +225,7 @@ class GradeScaleConfigureTest(TestCase):
     def test_configure_missing_name(self):
         school = _make_school()
         ay = _make_academic_year(school)
-        client = _authed_client()
+        client = _authed_client(school)
         sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
         r = client.post(
             f"{BASE_URL}{sid}/configure/",
@@ -232,7 +237,7 @@ class GradeScaleConfigureTest(TestCase):
 
     def test_configure_missing_academic_year_id(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
         r = client.post(
             f"{BASE_URL}{sid}/configure/",
@@ -245,7 +250,7 @@ class GradeScaleConfigureTest(TestCase):
     def test_configure_bad_scale_type(self):
         school = _make_school()
         ay = _make_academic_year(school)
-        client = _authed_client()
+        client = _authed_client(school)
         sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
         r = client.post(
             f"{BASE_URL}{sid}/configure/",
@@ -260,7 +265,7 @@ class GradeScaleConfigureTest(TestCase):
         school_a = _make_school("a")
         school_b = _make_school("b")
         ay_b = _make_academic_year(school_b)
-        client = _authed_client()
+        client = _authed_client(school_a)
         sid = client.post(BASE_URL, **_headers(school_a.id)).data["session_id"]
         r = client.post(
             f"{BASE_URL}{sid}/configure/",
@@ -279,7 +284,7 @@ class GradeScaleConfigureTest(TestCase):
 class GradeScaleBandsTest(TestCase):
     def test_bands_draft_guard_returns_400(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
         r = client.post(
             f"{BASE_URL}{sid}/bands/",
@@ -292,7 +297,7 @@ class GradeScaleBandsTest(TestCase):
 
     def test_bands_happy_path(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         r = client.post(
             f"{BASE_URL}{sid}/bands/",
@@ -306,7 +311,7 @@ class GradeScaleBandsTest(TestCase):
 
     def test_bands_missing_label(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         r = client.post(
             f"{BASE_URL}{sid}/bands/",
@@ -318,7 +323,7 @@ class GradeScaleBandsTest(TestCase):
 
     def test_bands_min_gte_max(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         r = client.post(
             f"{BASE_URL}{sid}/bands/",
@@ -330,7 +335,7 @@ class GradeScaleBandsTest(TestCase):
 
     def test_bands_overlap_detected(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         # A(85-100), B(70-89): overlap at 85-89
         r = client.post(
@@ -348,7 +353,7 @@ class GradeScaleBandsTest(TestCase):
 
     def test_bands_gap_detected(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         # F(0-79), A(90-100): gap 80-89
         r = client.post(
@@ -365,7 +370,7 @@ class GradeScaleBandsTest(TestCase):
 
     def test_bands_first_not_zero(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         r = client.post(
             f"{BASE_URL}{sid}/bands/",
@@ -380,7 +385,7 @@ class GradeScaleBandsTest(TestCase):
 
     def test_bands_last_not_100(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         r = client.post(
             f"{BASE_URL}{sid}/bands/",
@@ -401,7 +406,7 @@ class GradeScaleBandsTest(TestCase):
 class GradeScaleWeightsTest(TestCase):
     def test_weights_happy_path(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_bands_set(client, school.id)
         r = client.post(
             f"{BASE_URL}{sid}/weights/",
@@ -416,7 +421,7 @@ class GradeScaleWeightsTest(TestCase):
     def test_weights_requires_bands_set_state(self):
         """Cannot set_weights from configured state."""
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         r = client.post(
             f"{BASE_URL}{sid}/weights/",
@@ -428,7 +433,7 @@ class GradeScaleWeightsTest(TestCase):
 
     def test_weights_wrong_sum(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_bands_set(client, school.id)
         bad_weights = [
             {"term_code": "Q1", "weight_bp": 3000},
@@ -445,7 +450,7 @@ class GradeScaleWeightsTest(TestCase):
 
     def test_weights_duplicate_term_code(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_bands_set(client, school.id)
         dup_weights = [
             {"term_code": "Q1", "weight_bp": 5000},
@@ -468,7 +473,7 @@ class GradeScaleWeightsTest(TestCase):
 class GradeScaleCommitTest(TestCase):
     def test_commit_creates_scale_and_bands(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         _, ay = _advance_to_committed(client, school.id)
         self.assertTrue(GradeScale.objects.filter(school=school, academic_year=ay).exists())
         scale = GradeScale.objects.get(school=school, academic_year=ay)
@@ -476,14 +481,14 @@ class GradeScaleCommitTest(TestCase):
 
     def test_commit_creates_weights_when_provided(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         _, ay = _advance_to_committed(client, school.id, weights=GOOD_WEIGHTS)
         scale = GradeScale.objects.get(school=school, academic_year=ay)
         self.assertEqual(TermWeight.objects.filter(scale=scale).count(), len(GOOD_WEIGHTS))
 
     def test_commit_returns_scale_id(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, ay = _advance_to_bands_set(client, school.id)
         r = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -491,7 +496,7 @@ class GradeScaleCommitTest(TestCase):
 
     def test_commit_draft_guard(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid = client.post(BASE_URL, **_headers(school.id)).data["session_id"]
         r = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
@@ -499,7 +504,7 @@ class GradeScaleCommitTest(TestCase):
     def test_commit_configured_only_guard(self):
         """Configured (no bands) → commit should fail."""
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_configured(client, school.id)
         r = client.post(f"{BASE_URL}{sid}/commit/", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
@@ -507,7 +512,7 @@ class GradeScaleCommitTest(TestCase):
     def test_commit_is_idempotent(self):
         """Re-committing produces same scale row, not a duplicate."""
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, ay = _advance_to_committed(client, school.id)
 
         # Reset session so we can re-commit
@@ -528,7 +533,7 @@ class GradeScaleCommitTest(TestCase):
 class GradeScaleVerifyTest(TestCase):
     def test_verify_confirms_scale_and_bands(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, ay = _advance_to_committed(client, school.id)
         r = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 200)
@@ -538,7 +543,7 @@ class GradeScaleVerifyTest(TestCase):
 
     def test_verify_before_commit_returns_400(self):
         school = _make_school()
-        client = _authed_client()
+        client = _authed_client(school)
         sid, _ = _advance_to_bands_set(client, school.id)
         r = client.get(f"{BASE_URL}{sid}/verify/", **_headers(school.id))
         self.assertEqual(r.status_code, 400)
@@ -553,7 +558,7 @@ class GradeScaleSingleActiveTest(TestCase):
         """Committing a second scale for the same year deactivates the first."""
         school = _make_school()
         ay = _make_academic_year(school)
-        client = _authed_client()
+        client = _authed_client(school)
 
         # First scale
         _advance_to_committed(client, school.id, ay=ay)
@@ -580,10 +585,11 @@ class GradeScaleSingleActiveTest(TestCase):
         school_b = _make_school("beta")
         ay_a = _make_academic_year(school_a, name="2026-2027")
         ay_b = _make_academic_year(school_b, name="2026-2027")
-        client = _authed_client()
+        client_a = _authed_client(school_a)
+        client_b = _authed_client(school_b)
 
-        _advance_to_committed(client, school_a.id, ay=ay_a)
-        _advance_to_committed(client, school_b.id, ay=ay_b)
+        _advance_to_committed(client_a, school_a.id, ay=ay_a)
+        _advance_to_committed(client_b, school_b.id, ay=ay_b)
 
         # school_a scale still exists and active
         self.assertTrue(

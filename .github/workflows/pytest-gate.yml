@@ -2,11 +2,10 @@ name: pytest-gate
 permissions:
   contents: read
 
-
 on:
   pull_request:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths:
       - "backend/**"
       - "tools/verify_pytest_gate.py"
@@ -15,16 +14,20 @@ on:
 concurrency:
   group: pytest-gate-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
+
 jobs:
-  pytest-gate:
-    name: pytest-gate
+  pytest-gate-internal:
+    name: pytest-gate-internal
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      gate_outcome: ${{ steps.gate.outcome }}
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Use Python 3.11
-        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
         with:
           python-version: "3.11"
           cache: "pip"
@@ -39,6 +42,8 @@ jobs:
           if [ -f backend/requirements-dev.txt ]; then pip install -r backend/requirements-dev.txt; fi
 
       - name: Run Pytest Gate
+        id: gate
+        continue-on-error: true
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
           SECRET_KEY: ci-not-secret
@@ -46,5 +51,36 @@ jobs:
           ALLOWED_HOSTS: localhost,127.0.0.1
           DATABASE_URL: sqlite:///./ci.sqlite3
         run: |
-          python tools/verify_pytest_gate.py
+          set -o pipefail
+          python tools/verify_pytest_gate.py 2>&1 | tee pytest-gate.log
 
+      - name: Upload complete pytest gate log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pytest-gate-log
+          path: pytest-gate.log
+          if-no-files-found: error
+          retention-days: 14
+
+  pytest-gate:
+    name: pytest-gate
+    needs: pytest-gate-internal
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download complete pytest gate log
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: pytest-gate-log
+
+      - name: Report decisive pytest diagnostics
+        env:
+          GATE_OUTCOME: ${{ needs.pytest-gate-internal.outputs.gate_outcome }}
+        run: |
+          echo "=== pytest-gate decisive diagnostics ==="
+          tail -n 200 pytest-gate.log
+          echo "=== pytest-gate outcome: ${GATE_OUTCOME} ==="
+          if [ "${GATE_OUTCOME}" != "success" ]; then
+            exit 1
+          fi

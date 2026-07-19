@@ -25,7 +25,11 @@ def _school():
 
 
 def _client(school):
-    u = User.objects.create_user(username=f"u{uuid.uuid4().hex[:8]}", password=TEST_AUTH_SECRET)
+    u = User.objects.create_user(
+        username=f"u{uuid.uuid4().hex[:8]}",
+        password=TEST_AUTH_SECRET,
+        school=school,
+    )
     c = APIClient()
     c.force_authenticate(user=u)
     return c

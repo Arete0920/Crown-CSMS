@@ -14,9 +14,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pytest:
+  pytest-internal:
+    name: pytest-internal
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      pytest_outcome: ${{ steps.pytest.outcome }}
     defaults:
       run:
         working-directory: backend
@@ -76,6 +79,7 @@ jobs:
 
       - name: Run tests
         id: pytest
+        continue-on-error: true
         shell: bash
         env:
           DJANGO_SETTINGS_MODULE: crown_api.settings
@@ -86,15 +90,7 @@ jobs:
           set -o pipefail
           python -m pytest -q 2>&1 | tee pytest.log
 
-      - name: Emit pytest failure summary
-        if: failure() && steps.pytest.outcome == 'failure'
-        shell: bash
-        run: |
-          echo "::group::Pytest failure summary"
-          grep -E '^FAILED |^ERROR |^E   |^=+ .* (failed|error).*=+' pytest.log | tail -n 240 || true
-          echo "::endgroup::"
-
-      - name: Upload pytest log
+      - name: Upload complete pytest log
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -102,3 +98,28 @@ jobs:
           path: backend/pytest.log
           if-no-files-found: error
           retention-days: 7
+
+  pytest:
+    name: pytest
+    needs: pytest-internal
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download complete pytest log
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: tests-pytest-log
+
+      - name: Report decisive pytest diagnostics
+        env:
+          PYTEST_OUTCOME: ${{ needs.pytest-internal.outputs.pytest_outcome }}
+        shell: bash
+        run: |
+          echo "=== pytest decisive diagnostics ==="
+          grep -E '^FAILED |^ERROR |^E   |^=+ .* (failed|error).*=+' pytest.log | tail -n 240 || true
+          echo "=== final pytest log tail ==="
+          tail -n 240 pytest.log
+          echo "=== pytest outcome: ${PYTEST_OUTCOME} ==="
+          if [ "${PYTEST_OUTCOME}" != "success" ]; then
+            exit 1
+          fi

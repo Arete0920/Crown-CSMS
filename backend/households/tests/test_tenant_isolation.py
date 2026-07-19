@@ -46,7 +46,7 @@ class TenantIsolationTestCase(TestCase):
             school_id=self.school_b.id
         )
 
-        # Staff user (can override)
+        # Ordinary staff user; staff status alone is not cross-school authority.
         self.staff_user = User.objects.create_user(
             username="staff",
             email="staff@test.com",
@@ -147,21 +147,15 @@ class TenantIsolationTestCase(TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["id"], str(self.student_a.id))
 
-    def test_staff_can_override_tenant(self):
-        """
-        CANON Rule 2: Staff may use X-School-Id header to override
-        """
+    def test_staff_status_alone_cannot_override_tenant(self):
+        """Ordinary staff status is not cross-school override authority."""
         self.api_client.force_authenticate(user=self.staff_user)
 
-        # Access School B data via header override
         response = self.api_client.get(
             "/api/households/",
             HTTP_X_SCHOOL_ID=str(self.school_b.id)
         )
-        self.assertEqual(response.status_code, 200)
-        results = response.data if isinstance(response.data, list) else response.data.get("results", [])
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[0]["id"], str(self.household_b.id))
+        self.assertEqual(response.status_code, 404)
 
     def test_invalid_tenant_header_returns_400(self):
         """
