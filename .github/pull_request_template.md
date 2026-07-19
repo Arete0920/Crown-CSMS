@@ -1,13 +1,23 @@
 # CROWN PR — Active Lane Required
 
-## Ownership and Authority
+## Ownership and authority
 
-- Product Owner: John T. C. Megahan
+- Product Owner: TC Megahan
 - Repository Owner: @tcmegahan
-- Technical direction and acceptance authority: John T. C. Megahan
+- Technical direction and acceptance authority: TC Megahan
 - Production authorization granted by this PR: no
 
-## Active Lane
+## Human ownership and AI assistance
+
+- Human owner:
+- Evidence-backed contributors:
+- AI assistance: none / limited / material — describe scope
+- Human verification:
+- Unverified attribution:
+
+AI tools are implementation aids, not owners, authors, independent reviewers, approvers, or release authorities. Contributor credit must be supported by durable evidence.
+
+## Active lane
 
 - PR:
 - Branch:
@@ -19,29 +29,45 @@
 - Completion claim allowed: no
 - Independent review required: yes
 
-## Purpose (1 sentence)
+## Purpose
 
-<!-- What does this PR do? -->
+<!-- One sentence: what does this PR do? -->
 
-## Scope / Blast Radius (must be explicit)
+## Scope and blast radius
 
-**Allowed changed files / directories (exact list):**
+**Allowed changed files or directories:**
+
 -
 
-**Forbidden files / directories:**
+**Forbidden files or directories:**
+
 - Everything else
 
-## Lane Guard
+## AI-pattern remediation record
+
+Complete this section when the PR addresses issue #1432 or an AI-pattern finding.
+
+- Finding IDs:
+- Baseline behavior:
+- Behavior intentionally changed:
+- Reference analysis:
+- Replacement or deletion analysis:
+- Remaining findings:
+
+An AI-pattern finding is a maintainability, verification, or provenance indicator. It is not proof of authorship.
+
+## Lane guard
 
 - [ ] Active lane packet exists
-- [ ] `scripts/guards/assert_active_lane.ps1 -Lane <path>` ran and passed
+- [ ] `scripts/guards/assert_active_lane.ps1 -Lane <path>` ran and passed, if applicable
 - [ ] Worktree was clean before validation
 - [ ] Final `git status --short` captured
 - [ ] Changed files match allowed scope
 
-## Proof Policy Gate
+## Proof policy gate
 
-**If this PR touches any of these, Proof — Gradebook must run + pass:**
+**If this PR touches any of these, Proof — Gradebook must run and pass:**
+
 - `.github/workflows/proof-gradebook.yml`
 - `frontend/dashboards/tests/**`
 - `frontend/dashboards/src/**`
@@ -50,18 +76,18 @@
 - `backend/core/management/commands/**`
 - `backend/crown_api/**`
 
-- [ ] Proof — Gradebook (UI + API) ran and passed, if required
+- [ ] Proof — Gradebook ran and passed, if required
   - Proof run link:
 
-## Dashboard Certification Safety
+## Dashboard certification safety
 
 - [ ] This PR does not claim dashboard certification unless the matrix row is independently reviewed and promoted to CERTIFIED.
 - [ ] This PR does not use sample data as production proof.
 - [ ] This PR does not ask the Product Owner to self-review or self-approve an independent-review requirement.
 
-## Proof (required)
+## Proof
 
-Paste raw outputs or artifact paths.
+Paste raw outputs, exact-head CI links, or artifact paths. Do not list commands that were not run as proof.
 
 ### Local
 
@@ -71,25 +97,21 @@ git diff --stat
 python backend/manage.py check
 ```
 
-### CI / Validation
+### CI and validation
 
 - pytest:
 - frontend unit tests:
 - frontend build:
-- Spine Audit (Canon Guard):
+- Spine Audit:
 - Proof Ceremony:
 - Secret Scan:
-- CI - Tests and Checks:
-
-### Deploy Determinism (if deploy-related)
-
-- /health/ returns {"build_sha":"<sha>"} (not local-dev)
-- Workflow log contains: OK build_sha:
+- CI — Tests and Checks:
+- Exact verified head SHA:
 
 ## Remaining NOT DONE / NOT VERIFIED
 
 -
 
-## Rollback plan (1 line)
+## Rollback plan
 
-<!-- example: revert commit / revert PR -->
+<!-- One line: revert commit, revert PR, or another exact rollback action. -->
