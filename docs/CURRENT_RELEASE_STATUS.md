@@ -1,141 +1,92 @@
 # CROWN Current Release Status
 
-Date: 2026-07-17
-Purpose: Canonical repository-level release posture for CROWN.
+**Date:** 2026-07-19  
+**Observed main SHA:** `85afd3a2a0e52298ca93bf468c026ad99244e3c9`
 
-## Canonical Authority
+## Canonical decision
 
-1. This file records the repository-level release posture at the observed main SHA below.
-2. Live GitHub state, exact-SHA workflow results, deployed runtime evidence, and external infrastructure evidence control when they differ from this snapshot.
-3. Historical GO, SHIP, PASS, RELEASE_READY, PARTIAL, candidate-SHA, local transcript, and superseded evidence documents are non-authoritative unless explicitly incorporated here.
-4. Product-surface completion, scaffold certification, source intent, or a passing subset of checks does not authorize production.
-5. Current controlling posture is **CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED**.
+CROWN is a **CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED**.
 
-## Current Repository Snapshot
+Live GitHub state, exact-SHA workflow results, deployed-runtime evidence and external-platform evidence control when they differ from this snapshot. Product-surface completion, source intent, scaffold evidence or a passing subset of checks does not authorize production.
 
-- Repository: `tcmegahan/Crown2026`
-- Default branch: `main`
-- Main SHA after PR #1389: `44bc5718cd66be871ad201e810b9a2707563e8c8`
-- PR #1389 merged on 2026-07-17 after exact-head CI, crawler, dashboard completion, Playwright, migration-contract, tenant-isolation, security, release, and broad test gates completed successfully.
-- Open pull-request state must be checked live. This snapshot was prepared after #1389 merged and #1390 was closed unmerged.
-- Production deployment identity is not asserted by this document.
-- Branch-protection and external platform configuration must be verified from live administration state.
+## Current repository position
 
-## Current Decision
+- PR #1423 merged and reconciled current tenant-convergence authority.
+- PR #1424 is an open draft documentation-only PR preparing CI ownership and recovery-drill packets. It does not prove runtime, recovery or production readiness.
+- Issue #1387 is complete and closed after controlled migration and recovery evidence.
+- No authenticated deployed-runtime campaign has yet been accepted for the current release candidate.
 
-- Repository-wide decision: **SANDBOX_RELEASE_CANDIDATE**.
-- Production release decision: **NOT APPROVED**.
-- No payment processor is approved or active for production implementation while the Product Owner payment-processing hold remains in force.
+## Substantially implemented
 
-## Implemented Architecture and Controls
+- broad product/module, dashboard and wizard coverage evidence;
+- canonical authenticated frontend transport;
+- canonical request tenant context and cross-school conflict enforcement;
+- explicit tenant-override authorization;
+- exact-SHA controlled schema migration outside ordinary web startup;
+- immutable-image rollback architecture;
+- live-runtime crawler for identity, authentication, tenant context, routes, screenshots, network, console, accessibility and provenance;
+- repository architecture for external secret storage, rotation, audit and break-glass control.
 
-### Mainline and CI stabilization
+These controls still require the open runtime and operational evidence identified below.
 
-- PR #1373 restored the complete dashboard client, corrected board-dashboard routing, repaired sandbox crawler behavior, and corrected tenant-bound test fixtures.
-- Release, route, contract, dashboard, tenant, dependency, security, and broad test workflows are operating on the current architecture.
+## Active release blockers
 
-### Frontend API transport
+1. **#1274, #1287, #1276 and residual #1351:** exact deployed identity and authenticated administrator, teacher and parent browser/network/tenant/visual evidence.
+2. **#1270:** controlled application rollback and isolated database restore with reconciliation and measured RTO/RPO.
+3. **#1294 and #1296:** external secret-store identity, audit, rotation, failed-rotation, revocation and break-glass exercises.
+4. **#1352:** complete tenant audit evidence, background-task binding, exemption reconciliation and residual consumer convergence.
+5. **#1353:** canonical household, guardian and student consumer mapping, reconciliation rehearsal, rollback proof and safe legacy retirement criteria.
+6. **#1425:** student-data privacy and school compliance evidence, including FERPA/COPPA/PPRA positions, CIPA claim boundary, state-law review, data inventory, notices, DPA, incident exercise and legal review.
+7. **#1394:** CI proof hierarchy and duplicate-workflow rationalization.
+8. **#1277:** final release notes, changelog and runbook reconciliation.
+9. **#1275 and #1374:** final same-SHA authority reconciliation and Founder/Product Owner decision.
 
-- PR #1375 established the canonical authenticated frontend transport for API-base resolution, credentials, bearer authentication, tenant headers, correlation identifiers, timeouts, cancellation, and structured failures.
-- The duplicate dashboard-specific transport was removed.
-- Issue #1351 remains open until final same-SHA authenticated browser/network evidence and residual direct-client inventory are complete.
+## Payment-processing hold
 
-### Tenant boundary
+No payment processor has been selected.
 
-- PR #1364 introduced the immutable canonical request tenant context and centralized cross-school conflict enforcement.
-- Issue #1352 remains open for explicit override permission, complete audit events, background-task tenant propagation, exemption reconciliation, and safe redundant-middleware retirement.
+Issue #1298 was closed as deferred for the current release scope, not as completed or approved. External payment-provider implementation remains on hold. Payment functionality must remain disabled. No provider may be represented as selected, supported, active, certified or production-ready.
 
-### Canonical identity direction
+Provider-neutral accounting, billing, ledger, invoice, balance, payment-record and payment-plan work may continue only when it does not initiate or process an external payment.
 
-- PR #1386 declared `core.Family`, `core.Guardian`, and `core.Student` canonical for guardian-household operational writes and added transaction-safe, tenant-bound, idempotent behavior.
-- Issue #1353 remains open for complete consumer inventory, compatibility mapping, representative data reconciliation, migration rehearsal, rollback proof, and legacy retirement criteria.
+## Buyer and transfer boundary
 
-### Dashboard data truth
+No buyer, successor or new owner has been selected or approved. Buyer analysis, transaction support, successor clean-room execution and ownership-transfer work are not active final-sprint lanes.
 
-- Issue #1289 is complete: snapshot, sample, scaffold, fallback, hybrid, unknown, or unrelated API evidence cannot be represented as live dashboard proof.
-- Issue #1272 is complete: the `/board` Microsoft asset blocker was resolved.
-- Authenticated persona and tenant-context evidence remain open under #1274, #1287, and #1276.
+The repository should remain reproducible and documented, but no current material may claim that a handoff is scheduled, accepted or complete.
 
-### Controlled schema migration
+## Compliance claim boundary
 
-- PR #1389 established an explicit exact-SHA migration workflow and the `migrate_with_lock` command.
-- Production execution requires PostgreSQL, production-environment approval, exact-SHA checkout, fail-closed secret validation, and a database advisory lock.
-- Issue #1387 remains open until migration authority is removed from ordinary web startup and the full interruption, contention, failure, recovery, and web-non-mutation matrix is proven.
-
-### Application rollback
-
-- PR #1378 established immutable prior-known-good image rollback with ACR tag validation, `BUILD_SHA` alignment, restart, and exact runtime health and identity verification.
-- Issue #1270 remains open until a controlled rollback drill, isolated database restore drill or approved equivalent, and measured RTO/RPO evidence are recorded.
-
-### Production secrets
-
-- PR #1369 added external Vault/Azure Key Vault architecture, read-only policy templates, rotation procedures, audit requirements, and break-glass controls.
-- Issues #1294 and #1296 remain open until external configuration, workload/deployment identity, sanitized audit evidence, rotation exercises, and break-glass exercise evidence exist.
-
-### Payments
-
-- Issue #1298 remains open but payment-provider implementation is **HOLD / BACKLOG** by Product Owner instruction.
-- No Stripe, Metro, CompuWerx/CompuWorks, Square, or other provider may be represented as selected, supported, active, certified, or production-ready without a signed agreement and explicit written implementation authorization.
-- Provider-neutral accounting, billing, ledger, invoice, balance, and payment-plan work may continue only when it does not initiate or process an external payment.
-
-## Active Release-Critical Work
-
-Ordered by dependency and release risk:
-
-1. #1387 — complete schema cutover: remove web-start migration authority and prove interruption, contention, failure blocking, repeated execution, recovery, and web non-mutation.
-2. #1274, #1287, #1276 — run one consolidated authenticated Playwright/browser evidence campaign for school administrator, teacher, parent, tenant context, console, network, and visual QA.
-3. #1270 — execute controlled immutable rollback and database restore drills; record RTO/RPO.
-4. #1294 and #1296 — prove external secret-store identities, audit logging, rotation, failed rotation, and break-glass operation.
-5. #1352 and #1353 — complete residual tenant and identity convergence evidence.
-6. #1275 — reconcile final release authority only after all preceding blockers close.
-7. #1374 — close the final sprint only after every required same-SHA, runtime, recovery, secret, and authority artifact is linked.
-
-## Product Completion Evidence
-
-Historical module, dashboard, wizard, widget, and component completion evidence remains useful for product-surface coverage. It does not independently authorize production.
-
-- Modules: historical product-scope coverage recorded.
-- Dashboards: internal surface and completion-gate coverage recorded; authenticated live-data proof remains required.
-- Wizards: 50-wizard deep-dive, parity, and completion assertions passed on the #1389 exact head.
-- Controlled sandbox: candidate posture only.
-- Production: **NOT APPROVED**.
-
-## Required Production Entry Gates
-
-Production authorization requires all of the following on one approved release identity:
-
-1. Required GitHub checks settle with no pending, failed, or cancelled required gate.
-2. Frontend and backend deployed identities are proven and reconciled to the approved release.
-3. Authenticated school-administrator, teacher, and parent browser flows pass with screenshots, console, network, role, tenant, and provenance evidence.
-4. Tenant context is proven across login, navigation, API traffic, and data access without weakened enforcement.
-5. Web startup no longer mutates schema; the controlled migration stage and recovery matrix are proven.
-6. Immutable application rollback and database restore are drilled with accepted RTO/RPO.
-7. External secret-store configuration, least-privilege identities, audit logging, rotation, and break-glass operation are proven.
-8. Payment functionality remains disabled unless separately authorized and certified.
-9. Release-visible visual QA has no unexplained console, network, asset, authorization, or provenance failure.
-10. Release notes, changelog, deployment and recovery runbooks, current main SHA, and final authority record are reconciled.
-11. Explicit Founder/Product Owner production authorization is recorded only after all preceding gates pass.
-
-## Allowed Language
+CROWN has a documented student-data privacy and compliance framework with substantial repository-level controls. Final deployed-runtime, operational, contractual, jurisdiction-specific and legal validation remains open under #1425.
 
 Allowed:
 
-- "CROWN is in controlled sandbox release-candidate posture."
-- "CROWN has substantial product-surface and exact-head CI evidence."
-- "Production release is not approved."
-- "Several foundational architecture controls are implemented; operational and live-runtime evidence remains open."
+- "CROWN is designed to support schools in meeting applicable student-data privacy and security obligations."
+- "Final compliance validation remains in progress."
 
 Not allowed:
 
-- forbidden claim: "CROWN is unrestricted production ready."
-- "CROWN is production GO."
-- "All dashboards are live" without authenticated same-SHA network evidence.
-- "Recovery is proven" without timestamped rollback and restore drills.
-- forbidden claim: "External secrets are production ready" from repository templates alone.
-- "Payment processing is supported" while the Product Owner hold remains active.
-- "Independent review is complete" without independent evidence.
-- "An open or unmerged PR is shipped authority."
+- "FERPA certified";
+- "COPPA certified";
+- "compliance guaranteed";
+- "approved by a regulator";
+- any universal compliance claim unsupported by current evidence and review.
 
-## Current Final Status
+## Production entry requirements
 
-**CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED**.
+Production authorization requires, on one approved release identity:
+
+- all required repository checks terminal and green;
+- exact frontend/backend deployed identity;
+- authenticated role, tenant, network, console, screenshot, accessibility and provenance evidence;
+- complete tenant and privileged-access audit evidence;
+- application rollback and database restore drills with accepted RTO/RPO;
+- external secret-store operational exercises;
+- compliance evidence and legal/contractual readiness for the approved scope;
+- payment functionality disabled unless separately selected and certified;
+- final release documentation reconciliation;
+- explicit Founder/Product Owner authorization.
+
+## Current final status
+
+**CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED**
