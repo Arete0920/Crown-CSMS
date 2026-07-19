@@ -171,11 +171,12 @@ class AdmissionsEndpointsTests(APITestCase):
             },
         }
 
-    def test_summary_requires_school_header(self):
-        """Missing X-School-Id should return 400."""
+    def test_summary_uses_single_role_school_fallback(self):
+        """The authenticated user's sole school role supplies tenant context."""
         r = self.client.get("/api/v1/admissions/summary/")
-        self.assertEqual(r.status_code, 400)
-        self.assertIn("X-School-Id", r.json()["detail"])
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["academic_year"], "2026-2027")
+        self.assertIn("pipeline", r.data)
 
     def test_summary_happy_path(self):
         """Summary returns 200 with correct structure."""
@@ -254,10 +255,12 @@ class AdmissionsEndpointsTests(APITestCase):
         for count in r.data["pipeline"]["by_stage"].values():
             self.assertEqual(count, 0)
 
-    def test_drilldown_requires_school_header(self):
-        """Missing X-School-Id should return 400."""
+    def test_drilldown_uses_single_role_school_fallback(self):
+        """The authenticated user's sole school role supplies tenant context."""
         r = self.client.get("/api/v1/admissions/drilldown/?stage=inquiry")
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["academic_year"], "2026-2027")
+        self.assertIn("rows", r.data)
 
     def test_drilldown_happy_path(self):
         """Drilldown returns 200 with correct structure."""

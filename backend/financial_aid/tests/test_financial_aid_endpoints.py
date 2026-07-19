@@ -42,9 +42,12 @@ class FinancialAidEndpointsTests(APITestCase):
             rationale="Need-based award",
         )
 
-    def test_summary_requires_school_header(self):
-        r = self.client.get("/api/v1/financial-aid/summary/")
-        self.assertEqual(r.status_code, 400)
+    def test_summary_uses_single_role_school_fallback(self):
+        """One authorized school role supplies tenant context without a header."""
+        r = self.client.get("/api/v1/financial-aid/summary/?academic_year=2026-2027")
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.data["academic_year"], "2026-2027")
+        self.assertEqual(r.data["applications"]["total"], 1)
 
     def test_summary_happy_path(self):
         r = self.client.get(
@@ -220,7 +223,11 @@ class FinancialAidEndpointsTests(APITestCase):
         self.assertIsNotNone(r.data["academic_year"])
         self.assertEqual(r.data["bucket"], "hardship")
 
-    def test_drilldown_requires_school_header(self):
-        """Verify X-School-Id header is required."""
-        r = self.client.get("/api/v1/financial-aid/drilldown/?bucket=need")
-        self.assertEqual(r.status_code, 400)
+    def test_drilldown_uses_single_role_school_fallback(self):
+        """The authenticated user's sole school role supplies tenant context."""
+        r = self.client.get(
+            "/api/v1/financial-aid/drilldown/?academic_year=2026-2027&bucket=need"
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertGreaterEqual(r.data["total"], 1)
+        self.assertIn("rows", r.data)

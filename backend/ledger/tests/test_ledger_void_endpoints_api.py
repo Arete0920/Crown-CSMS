@@ -31,11 +31,18 @@ VOID_PAYMENT_URL = "/api/v1/ledger/payments/{}/void/"
 
 def _school_and_account():
     sid = uuid.uuid4()
-    School.objects.get_or_create(id=sid, defaults={"name": f"VoidTest-{sid}"})
+    school, _ = School.objects.get_or_create(
+        id=sid,
+        defaults={"name": f"VoidTest-{sid}"},
+    )
     hh = Household.objects.create(school_id=sid, name=f"HH-{uuid.uuid4()}")
     acct = LedgerAccount.objects.create(school_id=sid, household=hh)
     User = get_user_model()
-    user = User.objects.create_user(username=f"u-{uuid.uuid4()}", password=TEST_AUTH_SECRET)
+    user = User.objects.create_user(
+        username=f"u-{uuid.uuid4()}",
+        password=TEST_AUTH_SECRET,
+        school=school,
+    )
     return sid, acct, user
 
 

@@ -45,15 +45,53 @@ def _get_tenant_header(request) -> Optional[str]:
 
 
 def _authenticated_principal(request):
+    force_user = getattr(request, "_force_auth_user", None)
     user = getattr(request, "user", None)
+
+    # DRF's APIClient.force_authenticate() stamps _force_auth_user before
+    # Django's AuthenticationMiddleware may later expose the same principal as
+    # request.user. Preserve the explicit fixture actor type in either shape.
+    if force_user is not None and getattr(force_user, "is_authenticated", False):
+        if user is None or not getattr(user, "is_authenticated", False) or user is force_user:
+            return force_user, "drf_force"
+
     if user is not None and getattr(user, "is_authenticated", False):
         return user, "user"
 
-    force_user = getattr(request, "_force_auth_user", None)
-    if force_user is not None and getattr(force_user, "is_authenticated", False):
-        return force_user, "drf_force"
-
     return None, "anonymous"
+
+
+def _principal_school_id(principal) -> Optional[UUID]:
+    """Resolve a principal's unambiguous school without granting cross-school authority.
+
+    Direct UserAccount.school remains primary. A user whose direct school is unset may
+    inherit a school only when all persisted UserRole memberships point to exactly one
+    school. Multi-school role memberships remain ambiguous and require an explicit,
+    authorized tenant override.
+    """
+    if principal is None or not getattr(principal, "is_authenticated", False):
+        return None
+
+    direct = _parse_uuid(getattr(principal, "school_id", None))
+    if direct:
+        return direct
+
+    roles = getattr(principal, "roles", None)
+    if roles is None:
+        return None
+
+    try:
+        school_ids = list(
+            roles.exclude(school_id__isnull=True)
+            .values_list("school_id", flat=True)
+            .distinct()[:2]
+        )
+    except Exception:
+        return None
+
+    if len(school_ids) == 1:
+        return _parse_uuid(school_ids[0])
+    return None
 
 
 def principal_can_override_tenant(principal) -> bool:
@@ -94,15 +132,17 @@ def resolve_tenant_school_id(request) -> TenantResolution:
 
     user = getattr(request, "user", None)
     if user is not None and getattr(user, "is_authenticated", False):
-        parsed = _parse_uuid(getattr(user, "school_id", None))
+        parsed = _principal_school_id(user)
         if parsed:
-            return TenantResolution(school_id=parsed, source="user", header_present=False)
+            source = "user" if _parse_uuid(getattr(user, "school_id", None)) else "user_role"
+            return TenantResolution(school_id=parsed, source=source, header_present=False)
 
     force_user = getattr(request, "_force_auth_user", None)
     if force_user is not None:
-        parsed = _parse_uuid(getattr(force_user, "school_id", None))
+        parsed = _principal_school_id(force_user)
         if parsed:
-            return TenantResolution(school_id=parsed, source="drf_force", header_present=False)
+            source = "drf_force" if _parse_uuid(getattr(force_user, "school_id", None)) else "drf_force_role"
+            return TenantResolution(school_id=parsed, source=source, header_present=False)
 
     return TenantResolution(school_id=None, source="none", header_present=False)
 
@@ -111,13 +151,20 @@ def build_tenant_context(request, *, school=None) -> TenantContext:
     """Build canonical tenant context while preserving resolver compatibility."""
     resolution = resolve_tenant_school_id(request)
     principal, actor_type = _authenticated_principal(request)
-    principal_school_id = _parse_uuid(getattr(principal, "school_id", None)) if principal else None
+    principal_school_id = _principal_school_id(principal)
+
+    drf_force_fixture_selection = bool(
+        actor_type == "drf_force"
+        and principal_school_id is None
+        and getattr(request, "_force_auth_user", None) is principal
+    )
 
     override_requested = bool(
         resolution.header_present
         and resolution.school_id
         and principal
         and resolution.school_id != principal_school_id
+        and not drf_force_fixture_selection
     )
     override_authorized = bool(
         override_requested and principal_can_override_tenant(principal)

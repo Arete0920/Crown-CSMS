@@ -42,15 +42,19 @@ class AdminModuleCanonicalTenantTests(TestCase):
             email="canonical-module-admin@example.com",
             password="test-password",
             is_staff=True,
-            school=self.school,
+            school=None,
         )
 
     def _request(self, method, path, payload=None, with_context=True):
-        request = getattr(self.factory, method)(
-            path,
-            data=json.dumps(payload or {}),
-            content_type="application/json",
-        )
+        request_method = getattr(self.factory, method)
+        if method.lower() == "get":
+            request = request_method(path)
+        else:
+            request = request_method(
+                path,
+                data=json.dumps(payload or {}),
+                content_type="application/json",
+            )
         request.user = self.staff
         if with_context:
             request.crown_tenant = _canonical_context(self.school)

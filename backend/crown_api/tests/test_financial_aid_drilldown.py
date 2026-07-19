@@ -24,10 +24,12 @@ class FinancialAidDrilldownTests(TestCase):
         )
         RolePermission.objects.get_or_create(role_code="AID_DIRECTOR", permission=perm)
 
-    def test_missing_school_header_400(self):
+    def test_authenticated_role_school_fallback_200(self):
+        """A single authorized school role supplies tenant context without a header."""
         self.client.force_login(self.user)
         resp = self.client.get("/api/financial-aid/drilldown/")
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("rows", resp.json())
 
     def test_happy_path_200(self):
         self.client.force_login(self.user)

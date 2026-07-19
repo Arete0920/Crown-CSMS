@@ -240,23 +240,13 @@ class TestGradebookGradesTenantIsolation:
         assert response.status_code == 200
 
     def test_cross_tenant_header_override_denied(self):
-        """Cross-tenant X-School-Id probing must not leak school A data."""
+        """A conflicting ordinary-staff header returns non-disclosing 404."""
         self.client.force_authenticate(user=self.staff_b)
         response = self.client.get(
             GRADES_URL,
             HTTP_X_SCHOOL_ID=str(self.school_a.id),
         )
-        # Must either reject (400/403) or return an empty/scoped list
-        if response.status_code == 200:
-            data = response.json()
-            results = data if isinstance(data, list) else data.get("results", [])
-            # No school A grades should leak (empty DB so this passes by default,
-            # but the assertion documents the contract)
-            assert isinstance(results, list), (
-                "Unexpected response structure on cross-tenant probe"
-            )
-        else:
-            assert response.status_code in (400, 403)
+        assert response.status_code == 404
 
 
 class TestGradeSubmissionAuthorization:

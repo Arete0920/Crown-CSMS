@@ -52,13 +52,13 @@ def _make_student(school, family, *, first_name="Jane", last_name="Doe", number=
     )
 
 
-def _make_staff_user(suffix=""):
-    """Staff user with school=None; bypasses cross-tenant check."""
+def _make_staff_user(school, suffix=""):
     return UserAccount.objects.create_user(
         username=f"staff{suffix}",
         password="pass",
         email=f"staff{suffix}@test.example.com",
         is_staff=True,
+        school=school,
     )
 
 
@@ -129,7 +129,7 @@ class TestAdminAidOverview(TestCase):
         self.ay = _make_ay(self.school)
         self.family = _make_family(self.school)
         self.student = _make_student(self.school, self.family)
-        self.user = _make_staff_user("ov")
+        self.user = _make_staff_user(self.school, "ov")
         _make_application(self.school, self.ay, self.family)
         _make_award(self.school, self.ay, self.student)
         _make_budget(self.school, self.ay)
@@ -162,9 +162,14 @@ class TestAdminAidOverview(TestCase):
         self.assertEqual(len(data["awards"]), 1)
         self.assertEqual(len(data["budgets"]), 1)
 
-    def test_missing_school_header_returns_400(self):
+    def test_missing_school_header_uses_authenticated_school(self):
+        """A user with one direct school may use authenticated tenant fallback."""
         r = self.client.get(self.url, {"academic_year_id": str(self.ay.id)})
-        self.assertIn(r.status_code, (400, 403))
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(len(data["applications"]), 1)
+        self.assertEqual(len(data["awards"]), 1)
+        self.assertEqual(len(data["budgets"]), 1)
 
     def test_missing_academic_year_id_returns_400(self):
         r = self.client.get(self.url, HTTP_X_SCHOOL_ID=str(self.school.id))
@@ -208,7 +213,7 @@ class TestAdminRecommendAward(TestCase):
         self.ay = _make_ay(self.school)
         self.family = _make_family(self.school)
         self.student = _make_student(self.school, self.family)
-        self.user = _make_staff_user("rec")
+        self.user = _make_staff_user(self.school, "rec")
         self.app = _make_application(self.school, self.ay, self.family)
         self.app.income_annual_cents = 40_000_00
         self.app.save()
@@ -292,7 +297,7 @@ class TestAdminApproveAward(TestCase):
         self.ay = _make_ay(self.school)
         self.family = _make_family(self.school)
         self.student = _make_student(self.school, self.family)
-        self.user = _make_staff_user("app")
+        self.user = _make_staff_user(self.school, "app")
         self.award = _make_award(self.school, self.ay, self.student, awarded_cents=50_000)
         self.budget = _make_budget(self.school, self.ay, allocated=5_000_000, awarded=0)
         _make_chart_account(self.school)
@@ -352,7 +357,7 @@ class TestFamilyAidStatus(TestCase):
         self.ay = _make_ay(self.school)
         self.family = _make_family(self.school)
         self.student = _make_student(self.school, self.family)
-        self.user = _make_staff_user("fam")
+        self.user = _make_staff_user(self.school, "fam")
         self.app = _make_application(self.school, self.ay, self.family)
         self.award = _make_award(self.school, self.ay, self.student)
         self.url = "/api/aid/family/status/"

@@ -228,24 +228,14 @@ class TestSchoolProfileTenantIsolation:
             f"Expected 404 for non-staff cross-tenant access, got {response.status_code}"
         )
 
-    def test_staff_header_override_accesses_requested_school(self):
-        """Staff (is_staff=True) may use X-School-Id to view another school's profile.
-
-        Design decision: staff-level users (is_staff=True) are permitted cross-tenant
-        access via the X-School-Id header. This is the established tenant-scoping
-        contract enforced in households/scoping.py (get_request_school_id) and
-        mirrored in AcademicYear/GradeLevel API tests. Non-staff users are blocked
-        (see test_regular_user_b_cannot_access_school_a_via_header above).
-        """
+    def test_ordinary_staff_cross_school_header_returns_404(self):
+        """Ordinary is_staff status is not cross-school override authority."""
         self.client.force_authenticate(user=self.staff_a)
         response = self.client.get(
             SCHOOL_URL,
             HTTP_X_SCHOOL_ID=_school_id_str(self.school_b),
         )
-        assert response.status_code == 200
-        assert response.json()["school_id"] == _school_id_str(self.school_b), (
-            "Expected X-School-Id header to scope to school B"
-        )
+        assert response.status_code == 404
 
 
 # ---------------------------------------------------------------------------
