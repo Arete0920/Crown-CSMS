@@ -1,121 +1,62 @@
 # Production Recovery Path
 
-Status: ACTIVE CONTROL / PRODUCTION RECOVERY NOT YET PROVEN
+**Status:** Active control; current production recovery is not yet proven.  
+**Controlling issue:** #1270
 
-Controlling issue: #1270
+## Verified control state
 
-## Current control state
+The earlier rollback defect ran recovery after any upstream failure, including failures before Azure mutation. The current immutable rollback workflow supersedes that behavior. It rechecks live health, skips rollback when production remains healthy, resolves a prior successful full deployment SHA, verifies that exact image in Azure Container Registry, restores it, aligns `BUILD_SHA`, and verifies runtime identity and database health.
 
-The earlier rollback failure pattern was caused by a deploy-workflow step that ran after any prior failure, including failures before Azure mutation, and then exited unsuccessfully without restoring a prior image or configuration.
+The dispatchable recovery-control drill tests decision logic without Azure access or production mutation. It is useful control evidence, but it is not an application rollback or database restore.
 
-That implementation has been superseded:
+Historical February 23, 2026 tag-driven rollback evidence proves that an earlier deployment path could restore a prior image. It is not current-release proof and does not satisfy #1270 by itself.
 
-- PR #1378 added an immutable application rollback workflow that rechecks live health, skips rollback when the runtime remains healthy, resolves a prior successful 40-character deployment SHA, verifies the exact image exists in Azure Container Registry, restores that image, aligns `BUILD_SHA`, and verifies HTTP health, database health, and exact live release identity.
-- PR #1401 added a dispatchable, non-destructive recovery-control drill that exercises the decision logic and emits timestamped JSON and Markdown evidence without accessing Azure or mutating production.
+## Decision tree
 
-These controls materially improve the recovery path, but they do not by themselves prove an actual Azure rollback or database restore. Issue #1270 remains open.
+### Failure before production mutation
 
-## Recovery decision tree
+Stop the workflow, preserve the failed step and logs, recheck production health and identity, and do not roll back a healthy runtime. Correct the automation failure before another deployment attempt.
 
-### 1. Failure before deployment mutation
+### Failure after application image or settings mutation
 
-Examples: input validation, freeze-window guard, authentication, build, dependency installation, security scan, preflight checks, or tests.
+Freeze deployments, capture the failed and live SHAs, verify the prior successful immutable image, execute the approved rollback workflow, and prove exact image, `BUILD_SHA`, HTTP health, database health, and tenant integrity.
 
-Required action:
+### Database-impacting failure
 
-1. Stop the failed deployment workflow.
-2. Record the original failed step, run ID, candidate SHA, and logs.
-3. Recheck production health and release identity.
-4. When production is healthy and identity is verified, do not roll back.
-5. Classify the event as a deployment-control failure and correct it before another attempt.
+Enter manual incident control when a migration is partially applied, corruption or tenant contamination is suspected, application rollback cannot restore safe operation, or database health remains failed. Restore first to an isolated database. Validate backup age, archive readability, schema, required tables, migration history, tenant isolation, critical record counts, and application compatibility. Record measured recovery time and data-loss exposure. Production cutover requires explicit authorization.
 
-### 2. Failure after application image or app settings changed
+## Current restore verifier
 
-Examples: health failure, tenant-integrity failure, `BUILD_SHA` mismatch, or release-identity mismatch after deployment mutation.
+`python manage.py verify_backup_restore` is the repository control for isolated PostgreSQL restore validation. It must:
 
-Required action:
+- refuse missing PostgreSQL client tools;
+- refuse missing or stale backups outside `CROWN_RPO_HOURS`;
+- preflight the archive with `pg_restore --list`;
+- restore to a unique isolated database with fail-fast behavior;
+- validate public tables, required table identifiers, and Django migration history;
+- redact PostgreSQL credentials from command failures;
+- emit timestamped JSON evidence including backup digest, age, elapsed time, and cleanup result;
+- never mutate the production database.
 
-1. Freeze further deployments.
-2. Capture the failed SHA, current Azure image reference, app settings, health payload, integrity payload, and prior successful deployment evidence.
-3. Invoke the approved immutable rollback path.
-4. Restore only a verified prior 40-character SHA-tagged image.
-5. Verify Azure image identity, `BUILD_SHA`, `/api/health/`, database health, live `build_sha`, and tenant-aware integrity.
-6. Record timing, source run, selected SHA, restored image, and final disposition.
+Additional tenant and application checks remain required during the actual controlled drill.
 
-Rollback is successful only when the expected immutable identity and all required health and integrity checks agree.
+## Planning targets
 
-### 3. Database-impacting failure
+- application rollback RTO: 30 minutes;
+- isolated database restore validation RTO: 4 hours;
+- database RPO: 1 hour, aligned with `CROWN_RPO_HOURS`.
 
-Evaluate database restore only when one or more of these conditions exist:
-
-- a migration partially applied or cannot be safely reversed;
-- integrity evidence indicates corruption or cross-tenant contamination;
-- application rollback does not restore safe operation;
-- database health remains failed;
-- the application is incompatible with the current database state;
-- the Founder/Product Owner or incident authority explicitly authorizes restore evaluation.
-
-Required action:
-
-1. Stop application writes where operationally possible.
-2. Preserve logs and identify the proposed recovery point.
-3. Verify the backup identity and timestamp.
-4. Restore to an isolated validation target first when supported.
-5. Validate schema, tenant isolation, critical record counts, release compatibility, and application health.
-6. Record actual data-loss exposure and elapsed recovery time.
-7. Obtain explicit authorization before any production restore or cutover.
-
-### 4. Manual intervention triggers
-
-Stop automation and enter manual incident control when:
-
-- no prior successful immutable image exists;
-- the selected SHA image is absent from the registry;
-- Azure configuration or identity cannot be verified;
-- rollback credentials or permissions fail;
-- health, database, release identity, or tenant integrity remains failed;
-- database restore may be required;
-- recovery exceeds the pilot planning target;
-- evidence is incomplete or contradictory.
-
-## Required evidence
-
-Every drill or real recovery must retain:
-
-- UTC start and end timestamps;
-- triggering workflow and run ID;
-- failure stage and whether production mutation occurred;
-- failed candidate SHA;
-- pre-recovery live SHA and image reference;
-- selected immutable recovery SHA and source deployment run;
-- registry existence proof;
-- Azure configured-image and `BUILD_SHA` proof;
-- health, database, integrity, and tenant-probe results;
-- rollback and restore duration where applicable;
-- backup identifier and recovery point where applicable;
-- operator and approving authority;
-- final classification: `RECOVERED`, `NOT RECOVERED`, or `MANUAL CONTROL REQUIRED`.
-
-## Pilot RTO/RPO planning targets
-
-The following are planning targets for the controlled pilot drill, not approved or achieved service commitments:
-
-- application rollback RTO target: 30 minutes from confirmed unhealthy runtime to verified restored identity and health;
-- database restore validation RTO target: 4 hours from restore authorization to isolated validation completion;
-- database RPO target: 24 hours maximum data-loss exposure for pilot planning, subject to verification of actual backup cadence and retention.
-
-The drill must record measured results. Release authority must explicitly accept or revise these targets before they can be represented as approved controls.
+These are planning targets until a current drill records measured results and the Founder/Product Owner accepts them.
 
 ## Closure conditions
 
-Issue #1270 may close only when all of the following are evidence-complete:
+Issue #1270 remains open until all are complete:
 
-- rollback failure root cause documented;
-- immutable rollback implementation merged and validated;
-- recovery-control drill executed with retained evidence;
-- controlled Azure rollback or approved equivalent evidence recorded;
-- current isolated database restore evidence or explicitly approved substitute recorded;
-- measured RTO/RPO results documented;
-- final evidence linked into the release-authority record.
+- rollback root cause and current implementation are documented;
+- decision-control simulation has retained evidence;
+- current Azure rollback or explicitly approved equivalent evidence exists;
+- current isolated restore evidence exists, including tenant/application validation or an explicitly approved substitute;
+- measured RTO/RPO results are recorded;
+- final evidence is linked into release authority.
 
-Release posture remains: `CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED`.
+Release posture: `CONTROLLED SANDBOX CANDIDATE / PRODUCTION NOT APPROVED`.
