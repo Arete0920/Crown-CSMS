@@ -20,7 +20,7 @@ The product is implemented as a broad modular web application rather than a sing
 - Authentication and identity integrations include application authentication and Microsoft Entra-related support.
 - Deployment and infrastructure materials are oriented around Azure and GitHub Actions.
 - Browser validation uses Playwright alongside unit, contract, backend, security, dependency, and release checks.
-- Local development uses VS Code, GitHub, and PowerShell where appropriate.
+- Local development currently uses VS Code together with the repository's documented command-line, Python, Node.js, GitHub, and PowerShell tooling where appropriate. GitHub Copilot is not part of the active VS Code workflow. Editor choice and development-assistance tooling are not part of the product architecture, authorship record, acceptance authority, or release authority.
 
 ## Repository authority
 
