@@ -1,16 +1,22 @@
 # CROWN Development Provenance
 
 **Status:** Controlled supporting record  
-**Owner:** CROWN Engineering  
+**Owner:** TC Megahan, Founder/Product Owner  
 **Purpose:** Preserve truthful development lineage without making tool-specific history part of the active product or architecture narrative.
 
 ## Product accountability
 
-CROWN is founder-directed, collaboratively developed, human-reviewed, and human-accepted software. Human owners retain responsibility for product requirements, architecture decisions, security judgment, validation interpretation, acceptance, and release authority.
+CROWN is founder-directed and human-accepted software developed with documented human collaboration and automated assistance. TC Megahan retains responsibility for product requirements, technical direction, architecture decisions, security judgment, validation interpretation, acceptance, and release authority.
+
+Where the sole repository owner cannot obtain independent review, human verification is performed under the documented `SOLO_DEVELOPER_APPROVED_WORKAROUND`: bounded scope, exact-head evidence, applicable checks settled with `pending=0` and `failed=0`, no unresolved actionable review thread or known in-scope defect, a head-SHA-locked merge, and post-merge verification where required. This compensating control is not self-approval, independent technical approval, or production authorization.
+
+Specific collaborator, implementation, review, testing, design, or documentation credit remains evidence-based under the Human Ownership and AI-Assistance Policy and Contribution Evidence Ledger.
 
 ## Development assistance
 
-Commercially available software-development assistance tools were used at various times for bounded implementation support, debugging, testing, analysis, documentation, and repository operations. These tools were not product owners, architecture authorities, independent approvers, or release authorities.
+Commercially available software-development assistance tools were used at various times for bounded implementation support, debugging, testing, analysis, documentation, and repository operations. These tools were not product owners, architecture authorities, independent approvers, human contributors, acceptance authorities, or release authorities.
+
+The current maintainer workflow uses VS Code without GitHub Copilot. Historical records may identify other editors or assistance tools used at earlier stages. Those records remain part of the development lineage but do not define current workflow, product architecture, human authorship, acceptance authority, or release authority.
 
 The production application does not require an AI service to operate. Its runtime architecture is based on conventional application, database, messaging, cloud, identity, and automation technologies documented in the canonical architecture records.
 
@@ -22,6 +28,10 @@ Historical commits, pull requests, branches, comments, artifacts, and retained e
 
 Specific human contribution credit must be based on repository history, documentation, external evidence, or another retained record. Repository submission metadata alone may not represent every person who conceived, directed, reviewed, tested, or accepted the work.
 
+Anthony Rizzo, Ayush Agarwal, and Jed Hansen are founding/early collaborators. Specific work may be attributed to them only when durable evidence supports the claim. Johnny Megahan and Evan Lesage are new collaborators and must not be assigned historical contribution or prior work without future evidence.
+
+These named collaborators must not be presented collectively as the formally named development team unless and until the Founder/Product Owner authorizes that presentation. Future team composition remains subject to confirmation.
+
 ## Buyer and diligence presentation
 
 Buyer-facing and diligence-facing materials should:
@@ -29,9 +39,11 @@ Buyer-facing and diligence-facing materials should:
 - lead with the product, architecture, controls, maintainability, security, and operational evidence;
 - describe development assistance in vendor-neutral terms unless a reviewer asks for tool-specific history;
 - preserve material provenance without repeating tool names throughout active documentation;
-- distinguish automated findings from independent human review;
+- distinguish automated findings, founder verification and acceptance, and independent human review;
+- identify unsupported contributor attribution as `NOT VERIFIED`;
+- avoid presenting an unapproved formal development-team roster;
 - never state or imply that development assistance was not used.
 
 ## Authority boundary
 
-This record is supporting provenance. It does not override the canonical architecture, security, operational, contribution, or release-authority documents.
+This record is supporting provenance. It does not override the canonical architecture, security, operational, contribution, human-ownership, or release-authority documents. Production remains not approved until the controlling release gates pass and the Founder/Product Owner records an explicit authorization decision.
