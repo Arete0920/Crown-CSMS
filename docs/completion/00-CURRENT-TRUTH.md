@@ -1,15 +1,33 @@
-﻿# Crown2026 — Current Truth Snapshot
+# CROWN — Historical Current Truth Snapshot (2026-03-15)
+
+> **Status: HISTORICAL / SUPERSEDED**
+>
+> This file records repository truth observed on March 15, 2026 at commit
+> `550d84b23dbfb85cdbc5a75705110d691ac8eca9`. It is retained for chronology
+> only and must not be used as current branch, pull-request, CI, deployment,
+> release, investor-readiness, or production-authority evidence.
+>
+> Current decisions must use `docs/CURRENT_RELEASE_STATUS.md`, the current
+> release scorecard, current-head GitHub evidence, and the latest controlled
+> provenance records.
+>
+> **Preparation provenance:** the original snapshot was drafted with GitHub
+> Copilot assistance under TC Megahan's direction. That automated assistance
+> was not human authorship, independent review, approval, acceptance authority,
+> or release authority.
 
 ## Snapshot Metadata
 
 - Date: 2026-03-15
-- Prepared by: GitHub Copilot (GPT-5.4)
+- Accountable owner: TC Megahan, Founder/Product Owner
+- Automated drafting assistance originally recorded: GitHub Copilot (GPT-5.4)
 - Repository: tcmegahan/Crown2026
-- Purpose: Establish exact current truth for Crown2026 at this moment.
+- Purpose: Preserve exact repository truth observed at that historical moment.
+- Current authority: This snapshot is superseded and non-controlling.
 
 ---
 
-## A. Repository Truth
+## A. Repository Truth at the Snapshot Date
 
 - Current branch: main
 - Current HEAD SHA: 550d84b23dbfb85cdbc5a75705110d691ac8eca9
@@ -21,7 +39,8 @@
 - Active RC tag(s): phase6-rc-gate-2026-02-21; phase6-rc-live-probes-2026-02-21; phase6-rc-promotion-gate-2026-02-21; phase6-rc-runbook-2026-02-21; phase6-rc-runbook-gate-2026-02-21; v0.4.0-rc1
 - Active RC artifact path(s): frontend/dashboards/dist/release-candidate.json (missing)
 
-### Recent commit history
+### Recent commit history at the snapshot date
+
 - HEAD: 550d84b2 feat(frontend): stabilize tracks 24-33 with proof, token, route, and security fixes
 - HEAD~1: f8fa1169 fix: sanitize API error and html output paths
 - HEAD~2: 5d55832f fix: resolve CodeQL security findings in APIs
@@ -30,18 +49,20 @@
 
 ---
 
-## B. PR / Branch Truth
+## B. PR / Branch Truth at the Snapshot Date
 
 ### PR 577
+
 - PR state: MERGED
 - Head branch: fix/track11-12-write-and-lifecycle-proof
 - Merge commit SHA: 550d84b23dbfb85cdbc5a75705110d691ac8eca9
 - Base branch: main
 - Merged at: 2026-03-15T20:59:18Z
 - Draft or ready: ready (merged from ready state)
-- Summary: Required merge gates named in the release slice were green, the PR merged, and main now points at the merge commit.
+- Summary: Required merge gates named in the release slice were green, the PR merged, and main then pointed at the merge commit.
 
-### Other open PRs relevant to release
+### Other open PRs recorded at the snapshot date
+
 | PR | Title | Branch | Status | Release-relevant | Notes |
 |---|---|---|---|---|---|
 | 578 | fix: repair broken signals tests and deprecated CheckConstraint.check usage | copilot/fix-issues-in-active-work | OPEN | Potentially | Adjacent fixes against main |
@@ -51,7 +72,7 @@
 
 ---
 
-## C. CI Truth
+## C. CI Truth at the Snapshot Date
 
 | Check Name | Status | Last Run ID / URL | Failure Summary | Required for Merge | Notes |
 |---|---|---|---|---|---|
@@ -69,7 +90,7 @@
 
 ---
 
-## D. Artifact Truth
+## D. Artifact Truth at the Snapshot Date
 
 - RC artifact path: frontend/dashboards/dist/release-candidate.json
 - RC `build_sha`: UNPROVEN (artifact missing)
@@ -81,9 +102,10 @@
 
 ---
 
-## E. Deployment Truth
+## E. Deployment Truth at the Snapshot Date
 
 ### Frontend deployment
+
 - App name: UNPROVEN
 - URL: UNPROVEN
 - Deployed SHA: UNPROVEN
@@ -92,6 +114,7 @@
 - Verified by: No live frontend deploy probe in this snapshot
 
 ### Backend deployment
+
 - App name: UNPROVEN
 - URL: UNPROVEN
 - Deployed SHA: UNPROVEN
@@ -100,6 +123,7 @@
 - Verified by: No production backend deploy probe in this snapshot
 
 ### Health / runtime truth
+
 - Frontend health result: UNPROVEN
 - Backend health result: UNPROVEN for production
 - Auth flow verified: PASS for local Playwright proof set (11 passed)
@@ -108,9 +132,10 @@
 
 ---
 
-## F. Verified Status Summary
+## F. Verified Status Summary at the Snapshot Date
 
 ### VERIFIED PASS
+
 - PR 577 merged to main
 - gradebook-proof is green
 - CodeQL plus Analyze (javascript/python) are green
@@ -118,27 +143,30 @@
 - phase1-contract, rc-promotion-gate, demo-proof-static, demo-surface-static-gate, and Audit: Secret scan are green
 
 ### VERIFIED FAIL
+
 - RC artifact file missing locally
 
 ### UNPROVEN
+
 - Production frontend deployed SHA/build tag truth
 - Production backend deployed SHA/build tag truth
 - Certified RC build identity mapping to current HEAD
 
 ---
 
-## G. Immediate Release Blockers
+## G. Immediate Release Blockers Recorded at the Snapshot Date
 
-| Blocker ID | Title | Bucket | Severity | Current Status | Exact Evidence |
+| Blocker ID | Title | Bucket | Severity | Snapshot Status | Exact Evidence |
 |---|---|---|---|---|---|
 | BLOCKER-008 | RC artifact SHA drift risk (artifact missing) | Release blocker / Production blocker | High | Open | frontend/dashboards/dist/release-candidate.json -> RC_MISSING |
 | BLOCKER-010 | Production deploy truth unproven | Production blocker | Critical | Open | No deployed frontend/backend SHA verification linked on merged main |
 
 ---
 
-## H. Notes
+## H. Historical Notes
 
 - Snapshot updated from merged main at 550d84b23dbfb85cdbc5a75705110d691ac8eca9.
 - PR truth source: https://github.com/tcmegahan/Crown2026/pull/577.
-- Original workspace still contains local, uncommitted gradebook proof spec edits, so authoritative main truth was refreshed from a clean follow-up worktree.
-- Branch merge state for PR 577 is now MERGED.
+- The original workspace contained local, uncommitted gradebook proof spec edits, so authoritative snapshot truth was refreshed from a clean follow-up worktree.
+- Branch merge state for PR 577 was MERGED at the snapshot date.
+- No statement in this historical snapshot overrides current-head evidence or current release authority.
