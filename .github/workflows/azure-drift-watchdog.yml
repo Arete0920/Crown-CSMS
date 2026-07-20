@@ -73,11 +73,11 @@ jobs:
         run: |
           ADMIN=$(az acr show -n $ACR_NAME --query "adminUserEnabled" -o tsv)
           if [ "$ADMIN" != "false" ]; then
-            echo "DRIFT: ACR admin is enabled (adminUserEnabled=$ADMIN)"
-            echo "Expected: false"
+            echo "❌ DRIFT: ACR admin is ENABLED (adminUserEnabled=$ADMIN)"
+            echo "   Expected: false — run: az acr update -n $ACR_NAME --admin-enabled false"
             exit 1
           fi
-          echo "ACR admin disabled: $ADMIN"
+          echo "✅ ACR admin disabled: $ADMIN"
 
       - name: "Assert: No DOCKER_REGISTRY_SERVER_PASSWORD in prod"
         run: |
@@ -86,10 +86,11 @@ jobs:
             --query "[?name=='DOCKER_REGISTRY_SERVER_PASSWORD'].name | [0]" \
             -o tsv 2>/dev/null || true)
           if [ -n "$SETTING" ]; then
-            echo "DRIFT: registry password setting is present in $PROD_APP"
+            echo "❌ DRIFT: DOCKER_REGISTRY_SERVER_PASSWORD is present in $PROD_APP app settings"
+            echo "   Remove it: az webapp config appsettings delete -g $RESOURCE_GROUP -n $PROD_APP --setting-names DOCKER_REGISTRY_SERVER_PASSWORD DOCKER_REGISTRY_SERVER_USERNAME"
             exit 1
           fi
-          echo "No registry password setting in $PROD_APP"
+          echo "✅ No DOCKER_REGISTRY_SERVER_PASSWORD in $PROD_APP"
 
       - name: "Assert: No DOCKER_REGISTRY_SERVER_PASSWORD in dev"
         run: |
@@ -98,10 +99,10 @@ jobs:
             --query "[?name=='DOCKER_REGISTRY_SERVER_PASSWORD'].name | [0]" \
             -o tsv 2>/dev/null || true)
           if [ -n "$SETTING" ]; then
-            echo "DRIFT: registry password setting is present in $DEV_APP"
+            echo "❌ DRIFT: DOCKER_REGISTRY_SERVER_PASSWORD is present in $DEV_APP app settings"
             exit 1
           fi
-          echo "No registry password setting in $DEV_APP"
+          echo "✅ No DOCKER_REGISTRY_SERVER_PASSWORD in $DEV_APP"
 
       - name: "Assert: Prod alwaysOn = true"
         run: |
@@ -109,10 +110,11 @@ jobs:
             -g $RESOURCE_GROUP -n $PROD_APP \
             --query "alwaysOn" -o tsv)
           if [ "$ALWAYS_ON" != "true" ]; then
-            echo "DRIFT: Prod alwaysOn=$ALWAYS_ON (expected true)"
+            echo "❌ DRIFT: Prod alwaysOn=$ALWAYS_ON (expected true)"
+            echo "   Fix: az webapp config set -g $RESOURCE_GROUP -n $PROD_APP --always-on true"
             exit 1
           fi
-          echo "Prod alwaysOn: $ALWAYS_ON"
+          echo "✅ Prod alwaysOn: $ALWAYS_ON"
 
       - name: "Assert: Prod managed identity assigned"
         run: |
@@ -120,10 +122,10 @@ jobs:
             -g $RESOURCE_GROUP -n $PROD_APP \
             --query "type" -o tsv 2>/dev/null || echo "none")
           if [[ "$IDENTITY" != *"SystemAssigned"* ]]; then
-            echo "DRIFT: Prod app has no SystemAssigned managed identity"
+            echo "❌ DRIFT: Prod app has no SystemAssigned managed identity (got: $IDENTITY)"
             exit 1
           fi
-          echo "Prod managed identity assigned"
+          echo "✅ Prod managed identity: $IDENTITY"
 
       - name: "Assert: Dev managed identity assigned"
         run: |
@@ -131,10 +133,10 @@ jobs:
             -g $RESOURCE_GROUP -n $DEV_APP \
             --query "type" -o tsv 2>/dev/null || echo "none")
           if [[ "$IDENTITY" != *"SystemAssigned"* ]]; then
-            echo "DRIFT: Dev app has no SystemAssigned managed identity"
+            echo "❌ DRIFT: Dev app has no SystemAssigned managed identity (got: $IDENTITY)"
             exit 1
           fi
-          echo "Dev managed identity assigned"
+          echo "✅ Dev managed identity: $IDENTITY"
 
       - name: "Assert: Prod SECRET_KEY is a KV reference"
         run: |
@@ -142,10 +144,10 @@ jobs:
             -g $RESOURCE_GROUP -n $PROD_APP \
             --query "[?name=='SECRET_KEY'].value | [0]" -o tsv)
           if [[ "$VAL" != "@Microsoft.KeyVault"* ]]; then
-            echo "DRIFT: Prod SECRET_KEY is not a Key Vault reference; value suppressed"
+            echo "❌ DRIFT: Prod SECRET_KEY is NOT a Key Vault reference; value suppressed"
             exit 1
           fi
-          echo "Prod SECRET_KEY is a Key Vault reference"
+          echo "✅ Prod SECRET_KEY is KV reference"
 
       - name: "Assert: Prod DB_PASSWORD is a KV reference"
         run: |
@@ -153,10 +155,10 @@ jobs:
             -g $RESOURCE_GROUP -n $PROD_APP \
             --query "[?name=='DB_PASSWORD'].value | [0]" -o tsv)
           if [[ "$VAL" != "@Microsoft.KeyVault"* ]]; then
-            echo "DRIFT: Prod DB_PASSWORD is not a Key Vault reference; value suppressed"
+            echo "❌ DRIFT: Prod DB_PASSWORD is NOT a Key Vault reference; value suppressed"
             exit 1
           fi
-          echo "Prod DB_PASSWORD is a Key Vault reference"
+          echo "✅ Prod DB_PASSWORD is KV reference"
 
       - name: "Assert: Dev ACR uses managed identity (not admin creds)"
         run: |
@@ -164,10 +166,12 @@ jobs:
             -g $RESOURCE_GROUP -n $DEV_APP \
             --query "acrUseManagedIdentityCreds" -o tsv)
           if [ "$ACR_MI" != "true" ]; then
-            echo "DRIFT: Dev app does not use managed identity for ACR"
+            echo "❌ DRIFT: Dev app acrUseManagedIdentityCreds=$ACR_MI (expected true)"
+            echo "   ACR admin is disabled — dev will 503 until this is fixed."
+            echo "   Fix via REST API PATCH on web config: acrUseManagedIdentityCreds=true"
             exit 1
           fi
-          echo "Dev ACR uses managed identity"
+          echo "✅ Dev ACR uses managed identity: $ACR_MI"
 
       - name: "Assert: Dev DATABASE_URL is a KV reference"
         run: |
@@ -175,10 +179,10 @@ jobs:
             -g $RESOURCE_GROUP -n $DEV_APP \
             --query "[?name=='DATABASE_URL'].value | [0]" -o tsv 2>/dev/null || true)
           if [[ "$VAL" != "@Microsoft.KeyVault"* ]]; then
-            echo "DRIFT: Dev DATABASE_URL is not a Key Vault reference; value suppressed"
+            echo "❌ DRIFT: Dev DATABASE_URL is NOT a Key Vault reference; value suppressed"
             exit 1
           fi
-          echo "Dev DATABASE_URL is a Key Vault reference"
+          echo "✅ Dev DATABASE_URL is KV reference"
 
       - name: "Assert: Prod /api/health/ ok:true and build_sha present"
         run: |
@@ -189,27 +193,30 @@ jobs:
               SHA="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('build_sha',''))" 2>/dev/null || true)"
               DB="$(echo "$BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('db',''))" 2>/dev/null || true)"
               if [ "$OK" = "True" ] && [ -n "$SHA" ] && [ "$SHA" != "local-dev" ]; then
-                echo "Prod health verified: ok=$OK db=$DB build_sha=${SHA:0:8}"
+                echo "✅ Prod health: ok=$OK db=$DB build_sha=${SHA:0:8}"
                 exit 0
               fi
-              echo "Attempt $i did not meet health requirements; waiting 10s"
+              echo "Attempt $i: ok=$OK db=$DB sha=${SHA:0:8} — waiting 10s"
             else
-              echo "Attempt $i returned no response; waiting 10s"
+              echo "Attempt $i: empty response — waiting 10s"
             fi
             sleep 10
           done
-          echo "DRIFT: Prod health did not return ok:true with a valid build_sha"
+          echo "❌ DRIFT: Prod /api/health/ did not return ok:true with a valid build_sha"
           exit 1
 
       - name: "Summary: all invariants passed"
         if: success()
         run: |
-          echo "All Azure infrastructure invariants satisfied"
-          echo "ACR admin: disabled"
-          echo "Registry password settings: absent from prod and dev"
-          echo "alwaysOn: true"
-          echo "Identities: SystemAssigned for prod and dev"
-          echo "Key Vault references: verified"
-          echo "Dev ACR: managed identity"
-          echo "Health: ok:true with build_sha"
-          echo "Run at: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          echo ""
+          echo "╔══════════════════════════════════════════════════════╗"
+          echo "║  All Azure infrastructure invariants satisfied ✅    ║"
+          echo "╚══════════════════════════════════════════════════════╝"
+          echo "  ACR admin:    disabled"
+          echo "  DOCKER creds: absent from prod + dev"
+          echo "  alwaysOn:     true"
+          echo "  Identities:   SystemAssigned (prod + dev)"
+          echo "  KV refs:      SECRET_KEY + DB_PASSWORD (prod), DATABASE_URL (dev)"
+          echo "  Dev ACR:      acrUseManagedIdentityCreds=true"
+          echo "  Health:       ok:true, build_sha present"
+          echo "  Run at: $(date -u '+%Y-%m-%d %H:%M UTC')"
