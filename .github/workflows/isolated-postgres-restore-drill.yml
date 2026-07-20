@@ -1,0 +1,187 @@
+name: Isolated PostgreSQL Restore Drill
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - "backend/crown_api/management/commands/verify_backup_restore.py"
+      - "backend/tests/test_verify_backup_restore_command.py"
+      - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - "backend/crown_api/management/commands/verify_backup_restore.py"
+      - "backend/tests/test_verify_backup_restore_command.py"
+      - "docs/operations/ISOLATED_POSTGRES_RESTORE_DRILL.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: isolated-postgres-restore-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crown_drill
+          POSTGRES_PASSWORD: crown-drill-password
+          POSTGRES_DB: crown_source
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U crown_drill -d crown_source"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: crown_drill
+      PGPASSWORD: crown-drill-password
+      PGDATABASE: postgres
+      SOURCE_DATABASE: crown_source
+      DJANGO_SETTINGS_MODULE: crown_api.settings
+      DJANGO_SECRET_KEY: ci-restore-drill-not-secret
+      BUILD_SHA: ${{ github.sha }}
+      PYTHONPATH: ${{ github.workspace }}
+      EVIDENCE_DIR: recovery-restore-evidence
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
+        with:
+          python-version: "3.12"
+
+      - name: Install PostgreSQL client and backend dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client jq
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Prepare isolated source database
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${SOURCE_DATABASE}"
+          cd backend
+          python manage.py migrate --noinput
+          python manage.py check
+
+      - name: Create custom-format backup
+        id: backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p restore-input "${EVIDENCE_DIR}"
+          backup_path="restore-input/latest.dump"
+          pg_dump --format=custom --file "${backup_path}" "${SOURCE_DATABASE}"
+          sha256sum "${backup_path}" > "${EVIDENCE_DIR}/backup.sha256"
+          stat -c '%s' "${backup_path}" > "${EVIDENCE_DIR}/backup-size-bytes.txt"
+          date -u +%Y-%m-%dT%H:%M:%SZ > "${EVIDENCE_DIR}/backup-created-at-utc.txt"
+          printf '%s\n' "${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:${GITHUB_SHA}" > "${EVIDENCE_DIR}/backup-immutable-identifier.txt"
+          echo "backup_path=${backup_path}" >> "${GITHUB_OUTPUT}"
+
+      - name: Execute isolated restore and structural validation
+        shell: bash
+        env:
+          BACKUP_PATH: ${{ steps.backup.outputs.backup_path }}
+        run: |
+          set -euo pipefail
+          export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${SOURCE_DATABASE}"
+          cd backend
+          python manage.py verify_backup_restore \
+            --backup-path "../${BACKUP_PATH}" \
+            --max-backup-age-hours 1 \
+            --minimum-public-table-count 3 \
+            --required-table django_migrations \
+            --required-table core_school \
+            --required-table core_useraccount \
+            --evidence-path "../${EVIDENCE_DIR}/restore-evidence.json"
+
+      - name: Assemble evidence packet
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${EVIDENCE_DIR}"
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path(os.environ["EVIDENCE_DIR"])
+          restore_path = root / "restore-evidence.json"
+          restore = json.loads(restore_path.read_text()) if restore_path.exists() else None
+          passed = bool(
+              restore
+              and restore.get("result") == "PASS"
+              and restore.get("archive_preflight_passed") is True
+              and restore.get("temporary_database_created") is True
+              and restore.get("temporary_database_dropped") is True
+              and restore.get("production_database_mutated") is False
+          )
+          packet = {
+              "schema_version": 1,
+              "result": "PASS" if passed else "FAIL",
+              "assembled_at_utc": datetime.now(timezone.utc).isoformat(),
+              "repository": os.environ.get("GITHUB_REPOSITORY"),
+              "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
+              "workflow_sha": os.environ.get("GITHUB_SHA"),
+              "source": "generated PostgreSQL fixture",
+              "restore": restore,
+              "production_mutation_performed": False,
+              "scope_boundary": "Proves real PostgreSQL dump and isolated restore mechanics only; not a current operational backup, Azure rollback, accepted RTO/RPO, production cutover, or production authorization.",
+          }
+          (root / "retained-recovery-evidence.json").write_text(
+              json.dumps(packet, indent=2, sort_keys=True) + "\n"
+          )
+          lines = [
+              "# Isolated PostgreSQL Restore Drill",
+              "",
+              f"- Result: {packet['result']}",
+              f"- Workflow SHA: {packet['workflow_sha']}",
+              "- Source: generated PostgreSQL fixture",
+              "- Production mutation performed: false",
+          ]
+          if restore:
+              lines += [
+                  f"- Restore elapsed time: {restore.get('elapsed_seconds')} seconds",
+                  f"- Public table count: {restore.get('public_table_count')}",
+                  f"- Django migration count: {restore.get('django_migration_count')}",
+                  f"- Temporary database dropped: {restore.get('temporary_database_dropped')}",
+              ]
+          lines += ["", packet["scope_boundary"], ""]
+          (root / "SUMMARY.md").write_text("\n".join(lines))
+          PY
+
+      - name: Upload isolated restore evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: isolated-postgres-restore-evidence-${{ github.run_id }}
+          path: recovery-restore-evidence/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce evidence result
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e '.result == "PASS"' "${EVIDENCE_DIR}/retained-recovery-evidence.json" >/dev/null
