@@ -14,9 +14,11 @@ Specific collaborator, implementation, review, testing, design, or documentation
 
 ## Development assistance
 
-Commercially available software-development assistance tools were used at various times for bounded implementation support, debugging, testing, analysis, documentation, and repository operations. These tools were not product owners, architecture authorities, independent approvers, human contributors, acceptance authorities, or release authorities.
+AI-assisted and other commercially available software-development tools were used at various times to improve efficiency and to support bounded implementation, debugging, analysis, verification, testing, documentation, and repository operations.
 
-The current maintainer workflow uses VS Code without GitHub Copilot. Historical records may identify other editors or assistance tools used at earlier stages. Those records remain part of the development lineage but do not define current workflow, product architecture, human authorship, acceptance authority, or release authority.
+Those tools were not product owners, architecture authorities, human authors, independent reviewers, security approvers, acceptance authorities, or release authorities. Human accountability, evidence inspection, exact-head testing, and Founder/Product Owner acceptance remain controlling.
+
+Active and external-facing materials must describe this assistance in vendor-neutral terms. Tool-specific names may remain in immutable historical commits, archived artifacts, or retained operational lineage where removing them would falsify history, but they are not part of the current product, authorship, ownership, approval, or buyer narrative.
 
 The production application does not require an AI service to operate. Its runtime architecture is based on conventional application, database, messaging, cloud, identity, and automation technologies documented in the canonical architecture records.
 
@@ -34,10 +36,12 @@ These named collaborators must not be presented collectively as the formally nam
 
 ## Buyer and diligence presentation
 
-Buyer-facing and diligence-facing materials should:
+Buyer-facing and diligence-facing materials must:
 
 - lead with the product, architecture, controls, maintainability, security, and operational evidence;
-- describe development assistance in vendor-neutral terms unless a reviewer asks for tool-specific history;
+- state only that potential buyers or strategic partners exist, without naming prospects unless explicitly authorized later;
+- describe development assistance in vendor-neutral terms;
+- accurately state that AI-assisted tools were used at times to improve efficiency and support verification and testing;
 - preserve material provenance without repeating tool names throughout active documentation;
 - distinguish automated findings, founder verification and acceptance, and independent human review;
 - identify unsupported contributor attribution as `NOT VERIFIED`;
@@ -46,4 +50,4 @@ Buyer-facing and diligence-facing materials should:
 
 ## Authority boundary
 
-This record is supporting provenance. It does not override the canonical architecture, security, operational, contribution, human-ownership, or release-authority documents. Production remains not approved until the controlling release gates pass and the Founder/Product Owner records an explicit authorization decision.
+This record is supporting provenance. It does not override the canonical architecture, security, operational, contribution, human-ownership, confidentiality, or release-authority documents. Production remains not approved until the controlling release gates pass and the Founder/Product Owner records an explicit authorization decision.
