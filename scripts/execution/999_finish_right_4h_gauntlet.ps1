@@ -12,6 +12,9 @@ if ([string]::IsNullOrWhiteSpace($repoRoot)) {
 }
 Set-Location $repoRoot
 
+$repositoryDiagnosticsModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_repository_diagnostics.psm1"
+Import-Module $repositoryDiagnosticsModule -Force
+
 $base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
 
@@ -147,14 +150,11 @@ $npmExe = Resolve-NpmCommand
 $psExe = Resolve-PowerShellCommand
 
 Invoke-InfoStep -Name "01_repo_truth" -Block {
-    git branch --show-current
-    git rev-parse HEAD
-    git status --short --branch
-    git log --oneline -n 20
+    Invoke-GauntletRepositoryTruth
 }
 
 Invoke-InfoStep -Name "02_blocker_signal_scan" -Block {
-    git grep -n -E "NO-GO|NOT VERIFIED|NOT DONE|BLOCKER|REVIEW REQUIRED|placeholder|sample data|not implemented|coming soon|TODO|FIXME" -- docs scripts backend frontend .github
+    Invoke-GauntletBlockerSignalScan
 }
 
 Invoke-Step -Name "03_backend_django_check" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("manage.py", "check")
