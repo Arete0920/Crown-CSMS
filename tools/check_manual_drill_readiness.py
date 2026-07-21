@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -16,6 +17,23 @@ REQUIRED_TOKENS = (
 )
 
 
+def top_level_mapping_children(text: str, key: str) -> list[str]:
+    lines = text.splitlines()
+    in_mapping = False
+    children: list[str] = []
+    for line in lines:
+        if re.match(rf"^{re.escape(key)}:\s*(?:#.*)?$", line):
+            in_mapping = True
+            continue
+        if in_mapping and line and not line.startswith(" "):
+            break
+        if in_mapping:
+            match = re.match(r"^  ([A-Za-z0-9_-]+):\s*(?:#.*)?$", line)
+            if match:
+                children.append(match.group(1))
+    return sorted(set(children))
+
+
 def check_workflow(name: str, path: Path) -> dict:
     failures = []
     if not path.exists():
@@ -25,12 +43,14 @@ def check_workflow(name: str, path: Path) -> dict:
     for token in REQUIRED_TOKENS:
         if token not in text:
             failures.append(f"missing required token: {token}")
-    if "pull_request:" in text or "push:" in text:
-        failures.append("drill must remain manual-only")
+    triggers = top_level_mapping_children(text, "on")
+    if triggers != ["workflow_dispatch"]:
+        failures.append(f"drill must remain manual-only; observed triggers: {triggers}")
     return {
         "name": name,
         "path": path.relative_to(REPO_ROOT).as_posix(),
         "ready": not failures,
+        "triggers": triggers,
         "failures": failures,
     }
 
@@ -39,7 +59,7 @@ def build_report() -> dict:
     records = [check_workflow(name, path) for name, path in sorted(WORKFLOWS.items())]
     failures = [f"{record['name']}: {failure}" for record in records for failure in record["failures"]]
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "mode": "manual_drill_static_readiness",
         "execution_performed": False,
         "production_mutation_performed": False,
