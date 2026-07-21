@@ -1,7 +1,7 @@
 # CROWN Current Release Status
 
-**Date:** 2026-07-19  
-**Observed main SHA:** `d77fce96aef662eb1d4d13c19e81dfabc138e8a3`
+**Date:** 2026-07-21  
+**Observed main SHA:** `d5bd1d88c01edb74cd1720a152904a3d38a3b70f`
 
 ## Canonical decision
 
