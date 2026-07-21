@@ -11,6 +11,7 @@ permissions:
 concurrency:
   group: dependency-audit-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
+
 jobs:
   backend-pip-audit:
     name: backend-pip-audit
@@ -40,8 +41,8 @@ jobs:
             exit 1
           fi
 
-  frontend-npm-audit:
-    name: frontend-npm-audit
+  frontend-npm-audit-capture:
+    name: frontend-npm-audit-capture
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -56,5 +57,49 @@ jobs:
           cache-dependency-path: frontend/dashboards/package-lock.json
       - name: Install frontend dependencies
         run: npm ci
-      - name: Audit frontend dependencies
-        run: npm audit --audit-level=high
+      - name: Capture frontend dependency audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --audit-level=high --json > npm-audit-results.json
+          status=$?
+          printf '%s\n' "$status" > npm-audit-exit-code.txt
+          exit 0
+      - name: Upload frontend dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontend-npm-audit-results
+          path: |
+            frontend/dashboards/npm-audit-results.json
+            frontend/dashboards/npm-audit-exit-code.txt
+          if-no-files-found: error
+
+  frontend-npm-audit:
+    name: frontend-npm-audit
+    needs: frontend-npm-audit-capture
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download frontend dependency audit evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frontend-npm-audit-results
+      - name: Report and enforce frontend dependency audit
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('npm-audit-results.json', 'utf8'));
+          const auditExitCode = Number(fs.readFileSync('npm-audit-exit-code.txt', 'utf8').trim());
+          const vulnerabilities = report.vulnerabilities || {};
+          for (const [name, value] of Object.entries(vulnerabilities)) {
+            if (!['high', 'critical'].includes(value.severity)) continue;
+            const via = (value.via || []).map((entry) => typeof entry === 'string' ? entry : `${entry.source}:${entry.title}`).join(' | ');
+            const fix = value.fixAvailable === true ? 'available' : value.fixAvailable === false ? 'none' : JSON.stringify(value.fixAvailable);
+            console.log(`NPM_AUDIT_BLOCKER package=${name} severity=${value.severity} direct=${Boolean(value.isDirect)} range=${value.range} fix=${fix} via=${via}`);
+          }
+          console.log(`NPM_AUDIT_COUNTS high=${report.metadata?.vulnerabilities?.high || 0} critical=${report.metadata?.vulnerabilities?.critical || 0} total=${report.metadata?.vulnerabilities?.total || 0}`);
+          process.exit(Number.isInteger(auditExitCode) ? auditExitCode : 1);
+          NODE
