@@ -1,5 +1,7 @@
 # backend/crown_api/tests/test_audit_proof.py
 import uuid
+from types import SimpleNamespace
+
 import pytest
 from django.test import Client, RequestFactory
 from django.utils import timezone
@@ -76,3 +78,36 @@ def test_audit_log_creates_event_and_recent_returns_it(monkeypatch):
     assert results[0]["action"] == "seed.two"
     assert results[1]["action"] == "seed.one"
     assert results[1]["id"] == str(e1.id)
+
+
+def test_audit_log_prefers_authorized_canonical_tenant_over_raw_header():
+    rf = RequestFactory()
+    authorized_school_id = uuid.uuid4()
+    conflicting_header_id = uuid.uuid4()
+    req = rf.get("/x", HTTP_X_SCHOOL_ID=str(conflicting_header_id))
+    req.crown_tenant = SimpleNamespace(school_id=authorized_school_id)
+
+    event = audit_log(request=req, action="tenant.authorized")
+
+    assert event.school_id == authorized_school_id
+
+
+def test_audit_log_supports_compatibility_tenant_school_id_without_header():
+    rf = RequestFactory()
+    school_id = uuid.uuid4()
+    req = rf.get("/x")
+    req.tenant_school_id = school_id
+
+    event = audit_log(request=req, action="tenant.compatibility")
+
+    assert event.school_id == school_id
+
+
+def test_audit_log_falls_back_to_header_for_unbound_legacy_request():
+    rf = RequestFactory()
+    school_id = uuid.uuid4()
+    req = rf.get("/x", HTTP_X_SCHOOL_ID=str(school_id))
+
+    event = audit_log(request=req, action="tenant.legacy")
+
+    assert event.school_id == school_id

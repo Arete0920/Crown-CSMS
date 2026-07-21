@@ -8,7 +8,23 @@ from crown_api.audit_models import AuditEvent
 from crown_api.permissions import _get_user_role
 
 
+def _coerce_uuid(value) -> Optional[uuid.UUID]:
+    try:
+        return uuid.UUID(str(value).strip()) if value else None
+    except Exception:
+        return None
+
+
 def _get_school_id_from_request(request) -> Optional[uuid.UUID]:
+    """Prefer authorized canonical tenant context; fall back for unbound requests."""
+    context = getattr(request, "crown_tenant", None)
+    if context is not None:
+        return _coerce_uuid(getattr(context, "school_id", None))
+
+    tenant_school_id = _coerce_uuid(getattr(request, "tenant_school_id", None))
+    if tenant_school_id:
+        return tenant_school_id
+
     hdr = None
     try:
         hdr = request.headers.get("X-School-Id")
@@ -16,12 +32,7 @@ def _get_school_id_from_request(request) -> Optional[uuid.UUID]:
         hdr = None
     if not hdr:
         hdr = request.META.get("HTTP_X_SCHOOL_ID")
-    if not hdr:
-        return None
-    try:
-        return uuid.UUID(str(hdr).strip())
-    except Exception:
-        return None
+    return _coerce_uuid(hdr)
 
 
 def audit_log(
@@ -36,11 +47,7 @@ def audit_log(
     Minimal audit helper. Safe defaults. No secrets in meta.
     """
     user = getattr(request, "user", None)
-    actor_id = getattr(user, "id", None)
-    try:
-        actor_id = uuid.UUID(str(actor_id)) if actor_id else None
-    except Exception:
-        actor_id = None
+    actor_id = _coerce_uuid(getattr(user, "id", None))
 
     evt = AuditEvent.objects.create(
         ts=timezone.now(),
