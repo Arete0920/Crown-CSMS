@@ -7,6 +7,10 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+SOLO_MAINTAINER_IDENTITY = "founder-product-owner"
+GOVERNANCE_BOUNDARY = (
+    "solo-maintainer administrative authorization; not independent approval or witnessing"
+)
 
 
 def build_manifest(failed_candidate_sha: str, last_known_good_sha: str) -> dict:
@@ -20,6 +24,14 @@ def build_manifest(failed_candidate_sha: str, last_known_good_sha: str) -> dict:
     if failed_candidate_sha == last_known_good_sha:
         failures.append("failed candidate and last-known-good SHA must differ")
 
+    secrets_identity_inputs = {
+        "actor_identity": SOLO_MAINTAINER_IDENTITY,
+        "approver_identity": SOLO_MAINTAINER_IDENTITY,
+        "audit_event_available": True,
+        "old_access_revoked": True,
+        "validation_passed": True,
+        "prior_secret_suspected_compromised": False,
+    }
     executions = [
         {
             "name": "recovery_decision_unhealthy_runtime",
@@ -42,12 +54,7 @@ def build_manifest(failed_candidate_sha: str, last_known_good_sha: str) -> dict:
             "inputs": {
                 "scenario": "routine_rotation",
                 "environment_name": "staging",
-                "actor_identity": "founder-product-owner",
-                "approver_identity": "solo-maintainer-governance-witness",
-                "audit_event_available": True,
-                "old_access_revoked": True,
-                "validation_passed": True,
-                "prior_secret_suspected_compromised": False,
+                **secrets_identity_inputs,
             },
             "expected_result": "PASS",
             "production_mutation_performed": False,
@@ -59,12 +66,7 @@ def build_manifest(failed_candidate_sha: str, last_known_good_sha: str) -> dict:
             "inputs": {
                 "scenario": "failed_rotation",
                 "environment_name": "staging",
-                "actor_identity": "founder-product-owner",
-                "approver_identity": "solo-maintainer-governance-witness",
-                "audit_event_available": True,
-                "old_access_revoked": True,
-                "validation_passed": True,
-                "prior_secret_suspected_compromised": False,
+                **secrets_identity_inputs,
             },
             "expected_result": "PASS",
             "production_mutation_performed": False,
@@ -76,12 +78,7 @@ def build_manifest(failed_candidate_sha: str, last_known_good_sha: str) -> dict:
             "inputs": {
                 "scenario": "break_glass",
                 "environment_name": "staging",
-                "actor_identity": "founder-product-owner",
-                "approver_identity": "solo-maintainer-governance-witness",
-                "audit_event_available": True,
-                "old_access_revoked": True,
-                "validation_passed": True,
-                "prior_secret_suspected_compromised": False,
+                **secrets_identity_inputs,
             },
             "expected_result": "PASS",
             "production_mutation_performed": False,
@@ -93,6 +90,8 @@ def build_manifest(failed_candidate_sha: str, last_known_good_sha: str) -> dict:
         "mode": "manual_nonproduction_drill_execution_manifest",
         "execution_performed": False,
         "production_mutation_performed": False,
+        "independent_approval_present": False,
+        "governance_boundary": GOVERNANCE_BOUNDARY,
         "workflow_ref": "main",
         "failures": sorted(failures),
         "execution_count": len(executions),
