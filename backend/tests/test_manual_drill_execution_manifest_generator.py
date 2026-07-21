@@ -26,6 +26,10 @@ def test_manifest_is_deterministic_nonproduction_and_complete():
     assert first["mode"] == "manual_nonproduction_drill_execution_manifest"
     assert first["execution_performed"] is False
     assert first["production_mutation_performed"] is False
+    assert first["independent_approval_present"] is False
+    assert first["governance_boundary"] == (
+        "solo-maintainer administrative authorization; not independent approval or witnessing"
+    )
     assert first["failures"] == []
     assert first["execution_count"] == 4
     assert [item["name"] for item in first["executions"]] == [
@@ -36,6 +40,10 @@ def test_manifest_is_deterministic_nonproduction_and_complete():
     ]
     assert all(item["production_mutation_performed"] is False for item in first["executions"])
     assert all(item["environment"] != "production" for item in first["executions"])
+
+    secrets_executions = [item for item in first["executions"] if item["workflow"] == "secrets-control-drill.yml"]
+    assert all(item["inputs"]["actor_identity"] == "founder-product-owner" for item in secrets_executions)
+    assert all(item["inputs"]["approver_identity"] == "founder-product-owner" for item in secrets_executions)
 
 
 def test_manifest_fails_closed_on_invalid_or_equal_shas():
@@ -57,5 +65,6 @@ def test_generator_cannot_dispatch_or_call_networks():
         "os.system",
         "gh workflow run",
         "workflow_dispatch(",
+        "governance-witness",
     ):
         assert token not in source
