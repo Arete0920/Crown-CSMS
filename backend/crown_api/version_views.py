@@ -8,11 +8,13 @@ from pathlib import Path
 from django.http import JsonResponse
 from django.utils import timezone
 
-# Import build artifacts if available
+# Runtime deployment identity is authoritative. Older images may contain a
+# shortened baked fallback, while Azure app settings carry the full immutable
+# 40-character release SHA.
 try:
-    from crown_api.build_info import BUILD_SHA
+    from crown_api.build_info import BUILD_SHA as BAKED_BUILD_SHA
 except ImportError:
-    BUILD_SHA = "unknown"
+    BAKED_BUILD_SHA = "unknown"
 
 try:
     from crown_api.build_info import BUILD_TIME
@@ -36,22 +38,23 @@ def _resolve_app_version() -> str:
     return "crown-unknown"
 
 
+def _resolve_build_sha() -> str:
+    """Return the immutable runtime release identity when available."""
+    configured = (os.getenv("BUILD_SHA") or os.getenv("GITHUB_SHA") or "").strip()
+    if configured:
+        return configured
+
+    baked = str(BAKED_BUILD_SHA or "").strip()
+    return baked or "unknown"
+
+
 def version(request):
-    """
-    GET /version/
-    Returns version info without DB checks.
-    
-    Response:
-    {
-        "version": "1.0.0",
-        "build_sha": "94830992...",
-        "build_time": "2026-02-01T12:00:00Z",
-        "server_time": "2026-02-01T12:05:30Z"
-    }
-    """
-    return JsonResponse({
-        "version": _resolve_app_version(),
-        "build_sha": BUILD_SHA,
-        "build_time": BUILD_TIME,
-        "server_time": timezone.now().isoformat(),
-    })
+    """Return public deployment identity without a database check."""
+    return JsonResponse(
+        {
+            "version": _resolve_app_version(),
+            "build_sha": _resolve_build_sha(),
+            "build_time": BUILD_TIME,
+            "server_time": timezone.now().isoformat(),
+        }
+    )
