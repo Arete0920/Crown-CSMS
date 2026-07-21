@@ -25,6 +25,11 @@ permissions:
 #                    CROWN SWA default host is:
 #                    https://yellow-forest-0eecc8b0f.7.azurestaticapps.net
 #
+# Repository variables required:
+#   CROWN_EXPECTED_API_SHA  full 40-character SHA of the approved backend
+#                           deployment currently serving CROWN_LIVE_API_BASE_URL.
+#                           The workflow fails before deployment when absent.
+#
 # 2026-06-23 endpoint correction:
 #   https://crown-sandbox.azurestaticapps.net is not a Static Web App in the
 #   CROWN Christian School Management Azure subscription. Do not use it.
@@ -88,6 +93,19 @@ jobs:
           echo "DEPLOY_SHA=$SHA" >> "$GITHUB_ENV"
           echo "DEPLOY_TAG=$DEPLOY_LABEL" >> "$GITHUB_ENV"
           echo "Deploy contract: REF_TYPE=$REF_TYPE REF=$REF_NAME LABEL=$DEPLOY_LABEL SHA=${SHA:0:7}"
+
+      - name: Validate exact backend identity before deploy
+        shell: bash
+        env:
+          EXPECTED_API_SHA: ${{ vars.CROWN_EXPECTED_API_SHA || '' }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$EXPECTED_API_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "ERROR: repository variable CROWN_EXPECTED_API_SHA must contain the full 40-character SHA of the approved deployed backend."
+            echo "Refusing to deploy a new frontend without an independently controlled backend identity for exact-SHA certification."
+            exit 1
+          fi
+          echo "Approved backend identity contract validated: ${EXPECTED_API_SHA:0:7}"
 
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -204,5 +222,5 @@ jobs:
       live_frontend_url: ${{ vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
       live_api_base_url: ${{ vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
       expected_frontend_sha: ${{ github.sha }}
-      expected_api_sha: ""
+      expected_api_sha: ${{ vars.CROWN_EXPECTED_API_SHA }}
     secrets: inherit
