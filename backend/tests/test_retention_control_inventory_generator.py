@@ -6,7 +6,9 @@ GENERATOR = REPO_ROOT / "tools" / "generate_retention_control_inventory.py"
 
 
 def load_generator():
-    spec = importlib.util.spec_from_file_location("retention_control_inventory", GENERATOR)
+    spec = importlib.util.spec_from_file_location(
+        "retention_control_inventory", GENERATOR
+    )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -28,27 +30,41 @@ def test_inventory_is_deterministic_and_non_mutating():
     assert first["failures"] == []
     source = GENERATOR.read_text(encoding="utf-8").lower()
     for token in (
-        ".delete(", ".save(", ".update(", ".create(", "subprocess",
-        "requests.", "os.system", "write_text(", "unlink(",
+        ".delete(",
+        ".save(",
+        ".update(",
+        ".create(",
+        "subprocess",
+        "requests.",
+        "os.system",
+        "write_text(",
+        "unlink(",
     ):
         assert token not in source
 
 
-def test_inventory_surfaces_document_and_implementation_conflicts():
+def test_inventory_conflicts_are_resolved_without_claiming_legal_approval():
     generator = load_generator()
     inventory = generator.build_inventory(REPO_ROOT)
-    assert inventory["observations"]["enforcement_claim_present"] is True
-    assert inventory["observations"]["policy_pending_marker_present"] is True
-    assert inventory["observations"]["soft_delete_policy_claim_present"] is True
-    assert inventory["observations"]["direct_queryset_delete_present"] is True
-    assert inventory["observations"]["legal_hold_field_present"] is True
-    assert inventory["observations"]["purge_audit_model_present"] is True
-    assert "retention documentation simultaneously claims enforcement and marks policy pending" in inventory["contradictions"]
-    assert "policy claims soft-delete first while service performs direct queryset deletion" in inventory["contradictions"]
+    observations = inventory["observations"]
+
+    assert observations["policy_pending_marker_present"] is False
+    assert observations["soft_delete_policy_claim_present"] is False
+    assert observations["direct_queryset_delete_present"] is False
+    assert observations["legal_hold_field_present"] is True
+    assert observations["purge_audit_model_present"] is True
+    assert inventory["contradictions"] == []
+    assert inventory["legal_determination"] is False
+    assert inventory["runtime_configuration_verified"] is False
 
 
-def test_inventory_reports_missing_safeguards_without_authorizing_changes():
+def test_inventory_evidences_required_safeguards():
     generator = load_generator()
     inventory = generator.build_inventory(REPO_ROOT)
-    assert inventory["missing_safeguards"]
-    assert all(isinstance(item, str) and item for item in inventory["missing_safeguards"])
+    observations = inventory["observations"]
+
+    assert observations["dry_run_control_present"] is True
+    assert observations["approval_gate_present"] is True
+    assert observations["tenant_scope_guard_present"] is True
+    assert observations["batch_limit_present"] is True
+    assert inventory["missing_safeguards"] == []

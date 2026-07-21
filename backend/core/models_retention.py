@@ -46,9 +46,7 @@ class DataRetentionPolicy(models.Model):
 
 
 class RetentionPurgeAudit(models.Model):
-    """
-    Immutable audit record for each retention policy evaluation within a purge run.
-    """
+    """Durable audit record for each retention policy evaluation within a purge run."""
 
     run_id = models.UUIDField(db_index=True)
     model_name = models.CharField(max_length=100, db_index=True)
