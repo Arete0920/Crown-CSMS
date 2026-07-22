@@ -28,24 +28,33 @@ jobs:
           key_name="DJANGO""_SEC""RET""_KEY"
           key_value="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-release-verify"
           printf '%s=%s\n' "$key_name" "$key_value" >> "$GITHUB_ENV"
-      - name: Detect docs-only change set
+      - name: Classify pull request change set
         id: changes
         shell: bash
         run: |
           set -euo pipefail
           docs_only=false
+          frontend_required=true
+
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             base_sha="${{ github.event.pull_request.base.sha }}"
             git fetch --no-tags --depth=1 origin "$base_sha"
             git diff --name-only --diff-filter=ACMRT "$base_sha" HEAD > "$RUNNER_TEMP/release-verify-files.txt"
+
             if [ -s "$RUNNER_TEMP/release-verify-files.txt" ]; then
               if ! grep -Ev '^(docs/|audit-artifacts/|README|README\.md|CHANGELOG|CHANGELOG\.md|\.github/workflows/(secret-scan|release-verify|sandbox-ready-evidence)\.yml$|\.gitleaks\.toml$)' "$RUNNER_TEMP/release-verify-files.txt"; then
                 docs_only=true
+                frontend_required=false
+              elif ! grep -Eq '^(frontend/|scripts/release/verify-frontend-rc\.mjs$|\.github/workflows/(release-verify|full-surface-verification|frontend-quality-gates|frontend-bundle-budget|frontend-shell-certification|ui-proof-gate|dashboards-build-gate|routes-gate)\.yml$)' "$RUNNER_TEMP/release-verify-files.txt"; then
+                frontend_required=false
               fi
             fi
           fi
+
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
+          echo "frontend_required=$frontend_required" >> "$GITHUB_OUTPUT"
           echo "docs_only=$docs_only"
+          echo "frontend_required=$frontend_required"
       - uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
         with:
           python-version: "3.12"
@@ -82,17 +91,17 @@ jobs:
           test -f frontend/dashboards/package.json
           test -f frontend/dashboards/package-lock.json
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        if: steps.changes.outputs.docs_only != 'true'
+        if: steps.changes.outputs.frontend_required == 'true'
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/dashboards/package-lock.json
       - name: Install frontend dependencies
-        if: steps.changes.outputs.docs_only != 'true'
+        if: steps.changes.outputs.frontend_required == 'true'
         working-directory: frontend/dashboards
         run: npm ci
       - name: Frontend unit tests
-        if: steps.changes.outputs.docs_only != 'true'
+        if: steps.changes.outputs.frontend_required == 'true'
         timeout-minutes: 10
         working-directory: frontend/dashboards
         shell: bash
@@ -101,12 +110,8 @@ jobs:
         run: |
           set -o pipefail
           npm run test --if-present 2>&1 | tee "$RUNNER_TEMP/release-verify-frontend-tests.log"
-      - name: Install Playwright browser runtime
-        if: steps.changes.outputs.docs_only != 'true'
-        working-directory: frontend/dashboards
-        run: npx playwright install --with-deps chromium
       - name: Upload frontend diagnostic log
-        if: always() && steps.changes.outputs.docs_only != 'true'
+        if: always() && steps.changes.outputs.frontend_required == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-verify-frontend-diagnostic
