@@ -17,11 +17,6 @@ on:
         required: false
         default: 19801b59-8c05-4c84-9312-5d792e4e839d
         type: string
-      role_label:
-        description: Login role label from the live login page
-        required: false
-        default: School Admin
-        type: string
       school_label:
         description: Optional school label from the live login page
         required: false
@@ -67,6 +62,8 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      CERTIFIED_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     defaults:
       run:
         working-directory: frontend/dashboards
@@ -74,7 +71,7 @@ jobs:
       - name: Checkout certified source
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ env.CERTIFIED_SOURCE_SHA }}
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -85,14 +82,22 @@ jobs:
         run: npm ci
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
-      - name: Validate required runtime inputs and credentials
+      - name: Validate exact runtime inputs and five distinct role credentials
         shell: bash
         env:
           CROWN_LIVE_FRONTEND_URL: ${{ inputs.frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
           CROWN_LIVE_API_BASE_URL: ${{ inputs.api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
-          CROWN_LIVE_LOGIN_EMAIL: ${{ secrets.CROWN_LIVE_LOGIN_EMAIL }}
-          CROWN_LIVE_LOGIN_PASSWORD: ${{ secrets.CROWN_LIVE_LOGIN_PASSWORD }}
-          CERTIFIED_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          CROWN_LIVE_SCHOOL_ID: ${{ inputs.school_id || vars.CROWN_LIVE_SCHOOL_ID || '' }}
+          CROWN_LIVE_ADMIN_EMAIL: ${{ secrets.CROWN_LIVE_ADMIN_EMAIL }}
+          CROWN_LIVE_ADMIN_PASSWORD: ${{ secrets.CROWN_LIVE_ADMIN_PASSWORD }}
+          CROWN_LIVE_TEACHER_EMAIL: ${{ secrets.CROWN_LIVE_TEACHER_EMAIL }}
+          CROWN_LIVE_TEACHER_PASSWORD: ${{ secrets.CROWN_LIVE_TEACHER_PASSWORD }}
+          CROWN_LIVE_PARENT_EMAIL: ${{ secrets.CROWN_LIVE_PARENT_EMAIL }}
+          CROWN_LIVE_PARENT_PASSWORD: ${{ secrets.CROWN_LIVE_PARENT_PASSWORD }}
+          CROWN_LIVE_STUDENT_EMAIL: ${{ secrets.CROWN_LIVE_STUDENT_EMAIL }}
+          CROWN_LIVE_STUDENT_PASSWORD: ${{ secrets.CROWN_LIVE_STUDENT_PASSWORD }}
+          CROWN_LIVE_BOARD_EMAIL: ${{ secrets.CROWN_LIVE_BOARD_EMAIL }}
+          CROWN_LIVE_BOARD_PASSWORD: ${{ secrets.CROWN_LIVE_BOARD_PASSWORD }}
         run: |
           set -euo pipefail
           for value_name in CROWN_LIVE_FRONTEND_URL CROWN_LIVE_API_BASE_URL; do
@@ -100,28 +105,70 @@ jobs:
             [[ -n "$value" ]] || { echo "ERROR: $value_name is required"; exit 1; }
             [[ "$value" =~ ^https:// ]] || { echo "ERROR: $value_name must be HTTPS"; exit 1; }
           done
-          [[ "$CERTIFIED_SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "ERROR: invalid certified SHA"; exit 1; }
-          [[ -n "${CROWN_LIVE_LOGIN_EMAIL:-}" ]] || { echo "ERROR: CROWN_LIVE_LOGIN_EMAIL is required"; exit 1; }
-          [[ -n "${CROWN_LIVE_LOGIN_PASSWORD:-}" ]] || { echo "ERROR: CROWN_LIVE_LOGIN_PASSWORD is required"; exit 1; }
-      - name: Run live tenant-context runtime proof
+          [[ "$CERTIFIED_SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || { echo "ERROR: certified source SHA must be a full 40-character Git SHA"; exit 1; }
+          [[ "$CROWN_LIVE_SCHOOL_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] || { echo "ERROR: CROWN_LIVE_SCHOOL_ID must be a canonical UUID"; exit 1; }
+          for credential_name in \
+            CROWN_LIVE_ADMIN_EMAIL CROWN_LIVE_ADMIN_PASSWORD \
+            CROWN_LIVE_TEACHER_EMAIL CROWN_LIVE_TEACHER_PASSWORD \
+            CROWN_LIVE_PARENT_EMAIL CROWN_LIVE_PARENT_PASSWORD \
+            CROWN_LIVE_STUDENT_EMAIL CROWN_LIVE_STUDENT_PASSWORD \
+            CROWN_LIVE_BOARD_EMAIL CROWN_LIVE_BOARD_PASSWORD; do
+            [[ -n "${!credential_name:-}" ]] || { echo "ERROR: $credential_name is required for five-role live certification"; exit 1; }
+          done
+          python3 - <<'PY'
+          import os
+
+          names = [
+              "CROWN_LIVE_ADMIN_EMAIL",
+              "CROWN_LIVE_TEACHER_EMAIL",
+              "CROWN_LIVE_PARENT_EMAIL",
+              "CROWN_LIVE_STUDENT_EMAIL",
+              "CROWN_LIVE_BOARD_EMAIL",
+          ]
+          normalized = [os.environ[name].strip().lower() for name in names]
+          if len(set(normalized)) != len(normalized):
+              raise SystemExit("ERROR: five-role certification requires five distinct account identifiers")
+          print("Five distinct live account identifiers validated without exposing values")
+          PY
+      - name: Run five-role identity and tenant-context runtime proof
         run: npx playwright test tests/certification/tenant-context-runtime-proof.spec.ts --workers=1 --reporter=line
         env:
           CI: "1"
           CROWN_LIVE_API_BASE_URL: ${{ inputs.api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
-          CROWN_DEMO_SCHOOL_ID: ${{ inputs.school_id || vars.CROWN_DEMO_SCHOOL_ID || vars.CROWN_LIVE_SCHOOL_ID || '19801b59-8c05-4c84-9312-5d792e4e839d' }}
-          CROWN_LIVE_SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
-      - name: Run live runtime certification crawler
+          CROWN_LIVE_SCHOOL_ID: ${{ inputs.school_id || vars.CROWN_LIVE_SCHOOL_ID || '' }}
+          CROWN_EXPECTED_API_SHA: ${{ env.CERTIFIED_SOURCE_SHA }}
+          CROWN_LIVE_ADMIN_EMAIL: ${{ secrets.CROWN_LIVE_ADMIN_EMAIL }}
+          CROWN_LIVE_ADMIN_PASSWORD: ${{ secrets.CROWN_LIVE_ADMIN_PASSWORD }}
+          CROWN_LIVE_TEACHER_EMAIL: ${{ secrets.CROWN_LIVE_TEACHER_EMAIL }}
+          CROWN_LIVE_TEACHER_PASSWORD: ${{ secrets.CROWN_LIVE_TEACHER_PASSWORD }}
+          CROWN_LIVE_PARENT_EMAIL: ${{ secrets.CROWN_LIVE_PARENT_EMAIL }}
+          CROWN_LIVE_PARENT_PASSWORD: ${{ secrets.CROWN_LIVE_PARENT_PASSWORD }}
+          CROWN_LIVE_STUDENT_EMAIL: ${{ secrets.CROWN_LIVE_STUDENT_EMAIL }}
+          CROWN_LIVE_STUDENT_PASSWORD: ${{ secrets.CROWN_LIVE_STUDENT_PASSWORD }}
+          CROWN_LIVE_BOARD_EMAIL: ${{ secrets.CROWN_LIVE_BOARD_EMAIL }}
+          CROWN_LIVE_BOARD_PASSWORD: ${{ secrets.CROWN_LIVE_BOARD_PASSWORD }}
+      - name: Run five-role live runtime certification crawler
         run: npm run certify:production-crawler
         env:
           CI: "1"
+          CROWN_CERTIFICATION_TENANT_MODE: "live"
+          CROWN_LIVE_USE_SANDBOX_CREDENTIALS: "0"
           CROWN_LIVE_FRONTEND_URL: ${{ inputs.frontend_url || vars.CROWN_LIVE_FRONTEND_URL || 'https://yellow-forest-0eecc8b0f.7.azurestaticapps.net' }}
           CROWN_LIVE_API_BASE_URL: ${{ inputs.api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
-          CROWN_LIVE_ROLE_LABEL: ${{ inputs.role_label || vars.CROWN_LIVE_ROLE_LABEL || 'School Admin' }}
+          CROWN_LIVE_SCHOOL_ID: ${{ inputs.school_id || vars.CROWN_LIVE_SCHOOL_ID || '' }}
           CROWN_LIVE_SCHOOL_LABEL: ${{ inputs.school_label || vars.CROWN_LIVE_SCHOOL_LABEL || 'Heritage Christian Academy' }}
-          CROWN_DEMO_SCHOOL_ID: ${{ inputs.school_id || vars.CROWN_DEMO_SCHOOL_ID || vars.CROWN_LIVE_SCHOOL_ID || '19801b59-8c05-4c84-9312-5d792e4e839d' }}
-          CROWN_LIVE_LOGIN_EMAIL: ${{ secrets.CROWN_LIVE_LOGIN_EMAIL }}
-          CROWN_LIVE_LOGIN_PASSWORD: ${{ secrets.CROWN_LIVE_LOGIN_PASSWORD }}
-          CROWN_LIVE_SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
+          CROWN_EXPECTED_FRONTEND_SHA: ${{ env.CERTIFIED_SOURCE_SHA }}
+          CROWN_EXPECTED_API_SHA: ${{ env.CERTIFIED_SOURCE_SHA }}
+          CROWN_LIVE_ADMIN_EMAIL: ${{ secrets.CROWN_LIVE_ADMIN_EMAIL }}
+          CROWN_LIVE_ADMIN_PASSWORD: ${{ secrets.CROWN_LIVE_ADMIN_PASSWORD }}
+          CROWN_LIVE_TEACHER_EMAIL: ${{ secrets.CROWN_LIVE_TEACHER_EMAIL }}
+          CROWN_LIVE_TEACHER_PASSWORD: ${{ secrets.CROWN_LIVE_TEACHER_PASSWORD }}
+          CROWN_LIVE_PARENT_EMAIL: ${{ secrets.CROWN_LIVE_PARENT_EMAIL }}
+          CROWN_LIVE_PARENT_PASSWORD: ${{ secrets.CROWN_LIVE_PARENT_PASSWORD }}
+          CROWN_LIVE_STUDENT_EMAIL: ${{ secrets.CROWN_LIVE_STUDENT_EMAIL }}
+          CROWN_LIVE_STUDENT_PASSWORD: ${{ secrets.CROWN_LIVE_STUDENT_PASSWORD }}
+          CROWN_LIVE_BOARD_EMAIL: ${{ secrets.CROWN_LIVE_BOARD_EMAIL }}
+          CROWN_LIVE_BOARD_PASSWORD: ${{ secrets.CROWN_LIVE_BOARD_PASSWORD }}
       - name: Promote crawler evidence into live-runtime authority path
         if: always()
         shell: bash
@@ -170,6 +217,6 @@ jobs:
         working-directory: .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CERTIFIED_SOURCE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          CERTIFIED_SOURCE_SHA: ${{ env.CERTIFIED_SOURCE_SHA }}
           JOB_STATUS: ${{ job.status }}
         run: python scripts/ci/publish_live_evidence_result.py
