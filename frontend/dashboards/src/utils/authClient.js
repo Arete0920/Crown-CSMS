@@ -40,6 +40,52 @@ function isSameBrowserOrigin(value) {
   }
 }
 
+function isConfiguredApiUrl(value) {
+  const apiBase = getApiBaseUrl();
+  if (!apiBase || !isAbsoluteHttpUrl(value)) return false;
+  try {
+    const requestUrl = new URL(value);
+    const configuredUrl = new URL(apiBase);
+    const configuredPath = configuredUrl.pathname.replace(/\/+$/, "");
+    const pathMatches = configuredPath === ""
+      || requestUrl.pathname === configuredPath
+      || requestUrl.pathname.startsWith(`${configuredPath}/`);
+    return requestUrl.origin === configuredUrl.origin && pathMatches;
+  } catch {
+    return false;
+  }
+}
+
+function headersToObject(headers) {
+  const values = {};
+  headers?.forEach?.((value, key) => {
+    values[key] = value;
+  });
+  return values;
+}
+
+function parseResponseBody(text, contentType = "") {
+  if (!text) return null;
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+  return text;
+}
+
+function tokenFromStoredAuth(raw) {
+  if (!raw) return "";
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed?.access_token || parsed?.access || parsed?.token || "";
+  } catch {
+    return "";
+  }
+}
+
 export function resolveApiUrl(input) {
   if (typeof input !== "string" || isAbsoluteHttpUrl(input)) return input;
   const apiBase = getApiBaseUrl();
@@ -89,7 +135,15 @@ export function clearSelectedSchoolId() {
 
 export function getAccessToken() {
   try {
-    return sessionStorage.getItem(TOKEN_KEY) || "";
+    return sessionStorage.getItem(TOKEN_KEY)
+      || localStorage.getItem(TOKEN_KEY)
+      || sessionStorage.getItem("crown_auth_token")
+      || localStorage.getItem("crown_auth_token")
+      || sessionStorage.getItem("access_token")
+      || localStorage.getItem("access_token")
+      || tokenFromStoredAuth(sessionStorage.getItem("crown_auth"))
+      || tokenFromStoredAuth(localStorage.getItem("crown_auth"))
+      || "";
   } catch {
     return "";
   }
@@ -114,13 +168,16 @@ export async function authenticatedFetch(input, init = {}) {
     signal,
     query,
     correlationId = createCorrelationId(),
+    validateStatus = (status) => status >= 200 && status < 300,
     ...requestInit
   } = init;
 
   const relativeApiInput = typeof input === "string" && !isAbsoluteHttpUrl(input);
   const resolvedInput = typeof input === "string" ? buildApiUrl(input, query) : input;
   const trustedApiRequest = relativeApiInput
-    || (typeof resolvedInput === "string" && isSameBrowserOrigin(resolvedInput));
+    || (typeof resolvedInput === "string" && (
+      isSameBrowserOrigin(resolvedInput) || isConfiguredApiUrl(resolvedInput)
+    ));
   const headers = new Headers(requestInit.headers || {});
 
   if (trustedApiRequest) {
@@ -151,13 +208,21 @@ export async function authenticatedFetch(input, init = {}) {
       credentials: trustedApiRequest ? (requestInit.credentials ?? "include") : requestInit.credentials,
       signal: controller.signal,
     });
-    if (!response.ok) {
+    if (!validateStatus(response.status)) {
       const text = await response.text().catch(() => "");
+      const contentType = response.headers?.get?.("content-type") || "";
+      const data = parseResponseBody(text, contentType);
       const error = new Error(`HTTP ${response.status} ${response.statusText}`);
       error.status = response.status;
       error.url = typeof resolvedInput === "string" ? resolvedInput : (resolvedInput?.url || "");
       error.body = text.slice(0, 2000);
       error.correlationId = response.headers?.get?.("x-correlation-id") || correlationId;
+      error.response = {
+        status: response.status,
+        statusText: response.statusText,
+        data,
+        headers: headersToObject(response.headers),
+      };
       throw error;
     }
     return response;
