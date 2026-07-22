@@ -57,6 +57,12 @@ def _is_dev_env() -> bool:
     return env in ("dev", "development")
 
 
+def _ops_request_is_authorized(request) -> bool:
+    secret = _get_ops_secret()
+    header = request.headers.get("X-Ops-Secret", "")
+    return bool(secret) and header == secret
+
+
 @csrf_exempt
 def demo_reset_view(request):
     """
@@ -170,9 +176,8 @@ def diagnose_db_tables_view(request):
     if not _is_dev_env():
         return JsonResponse({"error": "Only available in DEV"}, status=403)
 
-    ops_secret = _get_ops_secret()
-    if ops_secret and request.headers.get("X-Ops-Secret") != ops_secret:
-        return JsonResponse({"error": "Invalid or missing X-Ops-Secret"}, status=401)
+    if not _ops_request_is_authorized(request):
+        return JsonResponse({"error": "Forbidden"}, status=403)
 
     try:
         with connection.cursor() as cursor:
@@ -257,12 +262,14 @@ def fix_schema_drift_view(request):
     DEV-only. Requires OPS secret in header.
     Executes: DELETE FROM django_migrations WHERE app = 'financial_aid', then re-migrate.
     """
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
     if not _is_dev_env():
         return JsonResponse({"error": "Only available in DEV"}, status=403)
 
-    ops_secret = _get_ops_secret()
-    if ops_secret and request.headers.get("X-Ops-Secret") != ops_secret:
-        return JsonResponse({"error": "Invalid or missing X-Ops-Secret"}, status=401)
+    if not _ops_request_is_authorized(request):
+        return JsonResponse({"error": "Forbidden"}, status=403)
 
     try:
         out = io.StringIO()
