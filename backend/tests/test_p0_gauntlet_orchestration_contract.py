@@ -5,6 +5,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 WRAPPER = REPO_ROOT / "scripts" / "execution" / "999_finish_right_4h_gauntlet.ps1"
 DIAGNOSTICS_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_repository_diagnostics.psm1"
 BACKEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_backend_validation.psm1"
+FRONTEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_frontend_validation.psm1"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "p0-go-readiness.yml"
 
 
@@ -56,6 +57,33 @@ def test_backend_validation_is_extracted_with_equivalent_required_steps():
         assert command in module
 
     assert module.count('Required = "YES"') == 4
+
+
+def test_frontend_validation_is_extracted_with_equivalent_required_steps():
+    wrapper = WRAPPER.read_text(encoding="utf-8")
+    module = FRONTEND_MODULE.read_text(encoding="utf-8")
+
+    assert "Import-Module $frontendValidationModule -Force" in wrapper
+    assert "Get-GauntletFrontendValidationSteps" in wrapper
+    assert "foreach ($step in $frontendValidationSteps)" in wrapper
+
+    expected = {
+        "07_frontend_npm_ci": '("ci")',
+        "08_frontend_lint": '("run", "lint")',
+        "09_frontend_contracts": '("run", "test:contracts")',
+        "10_frontend_shell_certification": '("run", "check:shell-certification")',
+        "11_frontend_shell_backend_contract_parity": '("run", "check:shell-backend-contract-parity")',
+        "12_frontend_dashboard_completeness": '("run", "verify:dashboard-completeness")',
+        "13_frontend_build": '("run", "build")',
+    }
+    for name, args in expected.items():
+        assert name in module
+        assert args in module
+        assert name not in wrapper
+
+    assert module.count('Required = "YES"') == 7
+    assert "WorkingDirectory = $FrontendRoot" in module
+    assert "Exe = $NpmExe" in module
 
 
 def test_gauntlet_remains_fail_closed_and_preserves_evidence_schema():

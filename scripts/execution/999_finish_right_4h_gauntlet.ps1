@@ -14,8 +14,10 @@ Set-Location $repoRoot
 
 $repositoryDiagnosticsModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_repository_diagnostics.psm1"
 $backendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_backend_validation.psm1"
+$frontendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_frontend_validation.psm1"
 Import-Module $repositoryDiagnosticsModule -Force
 Import-Module $backendValidationModule -Force
+Import-Module $frontendValidationModule -Force
 
 $base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
@@ -165,13 +167,10 @@ foreach ($step in $backendValidationSteps) {
 }
 
 $frontendRoot = Join-Path $repoRoot "frontend/dashboards"
-Invoke-Step -Name "07_frontend_npm_ci" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("ci")
-Invoke-Step -Name "08_frontend_lint" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "lint")
-Invoke-Step -Name "09_frontend_contracts" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "test:contracts")
-Invoke-Step -Name "10_frontend_shell_certification" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "check:shell-certification")
-Invoke-Step -Name "11_frontend_shell_backend_contract_parity" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "check:shell-backend-contract-parity")
-Invoke-Step -Name "12_frontend_dashboard_completeness" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "verify:dashboard-completeness")
-Invoke-Step -Name "13_frontend_build" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("run", "build")
+$frontendValidationSteps = Get-GauntletFrontendValidationSteps -FrontendRoot $frontendRoot -NpmExe $npmExe
+foreach ($step in $frontendValidationSteps) {
+    Invoke-Step -Name $step.Name -WorkingDirectory $step.WorkingDirectory -Exe $step.Exe -Args $step.Args -Required $step.Required
+}
 
 Invoke-Step -Name "14_release_api_contracts" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts/release/verify-api-contracts.mjs")
 Invoke-Step -Name "15_release_navigation_surface" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts/release/verify-navigation-surface.mjs")
