@@ -7,6 +7,7 @@ DIAGNOSTICS_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet
 BACKEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_backend_validation.psm1"
 FRONTEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_frontend_validation.psm1"
 RELEASE_CONTRACT_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_release_contract_validation.psm1"
+DEEP_ORCHESTRATION_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_deep_orchestration.psm1"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "p0-go-readiness.yml"
 
 
@@ -107,6 +108,30 @@ def test_release_contract_validation_is_extracted_with_equivalent_required_steps
     assert module.count('Required = "YES"') == 2
     assert "WorkingDirectory = $RepoRoot" in module
     assert 'Exe = "node"' in module
+
+
+def test_deep_orchestration_is_extracted_with_equivalent_required_steps():
+    wrapper = WRAPPER.read_text(encoding="utf-8")
+    module = DEEP_ORCHESTRATION_MODULE.read_text(encoding="utf-8")
+
+    assert "Import-Module $deepOrchestrationModule -Force" in wrapper
+    assert "Get-GauntletDeepOrchestrationSteps" in wrapper
+    assert "foreach ($step in $deepOrchestrationSteps)" in wrapper
+
+    expected = {
+        "16_dashboard_completion_gate_deep": "./scripts/execution/105_dashboard_module_completion_gate.ps1",
+        "17_full_completion_truth_gate_deep": "./scripts/execution/106_crown_full_completion_truth_gate.ps1",
+    }
+    for name, script in expected.items():
+        assert name in module
+        assert script in module
+        assert name not in wrapper
+
+    assert module.count('Required = "YES"') == 2
+    assert module.count('"-Deep"') == 2
+    assert module.count('"-ExecutionPolicy", "Bypass", "-File"') == 2
+    assert "WorkingDirectory = $RepoRoot" in module
+    assert "Exe = $PowerShellExe" in module
 
 
 def test_gauntlet_remains_fail_closed_and_preserves_evidence_schema():
