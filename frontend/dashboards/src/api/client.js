@@ -1,73 +1,96 @@
-import axios from 'axios';
+import { authenticatedFetch, buildApiUrl } from '../utils/authClient';
 import { normalizeApiError } from '../utils/normalizeApiError';
 
-function readToken() {
+function headersToObject(headers) {
+  const values = {};
+  headers?.forEach?.((value, key) => {
+    values[key] = value;
+  });
+  return values;
+}
+
+async function parseBody(response) {
+  const contentType = response.headers?.get?.('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json().catch(() => null);
+  }
+  const text = await response.text().catch(() => '');
+  return text || null;
+}
+
+function buildRequestBody(data, headers) {
+  if (data == null) return undefined;
+  if (
+    typeof data === 'string'
+    || data instanceof FormData
+    || data instanceof URLSearchParams
+    || data instanceof Blob
+    || data instanceof ArrayBuffer
+  ) {
+    return data;
+  }
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  return JSON.stringify(data);
+}
+
+async function request(config = {}) {
+  const {
+    url,
+    method = 'GET',
+    data,
+    params,
+    headers: inputHeaders,
+    timeout,
+    signal,
+    validateStatus,
+    withCredentials = true,
+  } = config;
+
+  const headers = new Headers(inputHeaders || {});
+  const resolvedUrl = buildApiUrl(url, params);
+
   try {
-    const localRaw = window.localStorage.getItem('crown_auth');
-    const sessionRaw = window.sessionStorage.getItem('crown_auth');
-
-    const localParsed = localRaw ? JSON.parse(localRaw) : null;
-    const sessionParsed = sessionRaw ? JSON.parse(sessionRaw) : null;
-
-    const fallbackToken =
-      window.sessionStorage.getItem('crown.jwt.access') ||
-      window.localStorage.getItem('crown.jwt.access');
-
-    return (
-      localParsed?.access_token ||
-      localParsed?.token ||
-      sessionParsed?.access_token ||
-      sessionParsed?.token ||
-      fallbackToken ||
-      null
-    );
-  } catch {
-    return null;
+    const response = await authenticatedFetch(resolvedUrl, {
+      method,
+      headers,
+      body: buildRequestBody(data, headers),
+      timeoutMs: timeout,
+      signal,
+      credentials: withCredentials ? 'include' : 'same-origin',
+      validateStatus: validateStatus || ((status) => status >= 200 && status < 300),
+    });
+    const responseData = await parseBody(response);
+    return {
+      data: responseData,
+      status: response.status,
+      statusText: response.statusText,
+      headers: headersToObject(response.headers),
+      config: { ...config, url: resolvedUrl },
+      request: null,
+    };
+  } catch (error) {
+    const normalized = normalizeApiError(error);
+    normalized.config = { ...config, url: resolvedUrl };
+    normalized.response = error?.response;
+    throw normalized;
   }
 }
 
-function readSchoolId() {
-  try {
-    return (
-      window.sessionStorage.getItem('crown.school.id') ||
-      window.localStorage.getItem('schoolId') ||
-      window.localStorage.getItem('crown.school.id') ||
-      ''
-    );
-  } catch {
-    return '';
-  }
-}
-
-export const crownApiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 20000,
-  withCredentials: true,
-});
-
-crownApiClient.interceptors.request.use((config) => {
-  const token = readToken();
-  const schoolId = readSchoolId();
-
-  const nextConfig = {
-    ...config,
-    headers: {
-      ...(config.headers || {}),
-    },
-  };
-
-  if (token) {
-    nextConfig.headers.Authorization = `Bearer ${token}`;
-  }
-
-  if (schoolId && !nextConfig.headers['X-School-Id']) {
-    nextConfig.headers['X-School-Id'] = schoolId;
-  }
-
-  return nextConfig;
-});
-
-crownApiClient.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(normalizeApiError(error)),
-);
+export const crownApiClient = {
+  request,
+  get(url, config = {}) {
+    return request({ ...config, method: 'GET', url });
+  },
+  delete(url, config = {}) {
+    return request({ ...config, method: 'DELETE', url });
+  },
+  post(url, data = {}, config = {}) {
+    return request({ ...config, method: 'POST', url, data });
+  },
+  put(url, data = {}, config = {}) {
+    return request({ ...config, method: 'PUT', url, data });
+  },
+  patch(url, data = {}, config = {}) {
+    return request({ ...config, method: 'PATCH', url, data });
+  },
+};
