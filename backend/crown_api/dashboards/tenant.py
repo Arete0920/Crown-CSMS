@@ -2,21 +2,32 @@ from __future__ import annotations
 
 import uuid
 
-from rest_framework.exceptions import ValidationError
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 
-from households.scoping import CANONICAL_SCHOOL_HEADER, LEGACY_SCHOOL_HEADER
+from crown_api.tenant import CANONICAL_TENANT_ATTR, bind_tenant_context, build_tenant_context
+from households.scoping import CANONICAL_SCHOOL_HEADER
+
+
+def _canonical_context(request):
+    context = getattr(request, CANONICAL_TENANT_ATTR, None)
+    if context is None:
+        context = bind_tenant_context(request, build_tenant_context(request))
+    return context
 
 
 def get_dashboard_school_id(request, *, required: bool = True) -> uuid.UUID | None:
-    """Dashboards require an explicit tenant header (no fallback to user.school_id).
+    """Resolve dashboard scope through the canonical tenant contract.
 
-    - Missing tenant header -> 400
-    - Invalid UUID -> 400
+    Dashboards intentionally require an explicit tenant header even when the
+    authenticated principal has a school fallback. Authorization still comes
+    from ``request.crown_tenant`` rather than raw-header or staff heuristics.
     """
+    context = _canonical_context(request)
 
-    raw = request.headers.get(CANONICAL_SCHOOL_HEADER) or request.headers.get(LEGACY_SCHOOL_HEADER)
-    if not raw:
+    if context.source == "header_invalid":
+        raise ValidationError({"school_id": ["Invalid school_id UUID."]})
+
+    if not context.header_present:
         if required:
             raise ValidationError(
                 {
@@ -27,35 +38,23 @@ def get_dashboard_school_id(request, *, required: bool = True) -> uuid.UUID | No
             )
         return None
 
-    try:
-        sid = uuid.UUID(str(raw))
-    except (TypeError, ValueError):
-        raise ValidationError({"school_id": ["Invalid school_id UUID."]})
+    school_id = context.school_id
+    if not school_id:
+        if required:
+            raise ValidationError({"school_id": ["Missing school tenant context."]})
+        return None
 
-    user = getattr(request, "user", None)
-    if user and getattr(user, "is_authenticated", False):
-        is_staffish = bool(getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
-        if not is_staffish:
-            user_sid = getattr(user, "school_id", None)
-            if not user_sid:
-                school = getattr(user, "school", None)
-                user_sid = getattr(school, "id", None) if school else None
-
-            if not user_sid:
-                raise ValidationError({"school_id": ["Authenticated user is missing school context."]})
-
-            if str(user_sid) != str(sid):
-                raise NotFound({"detail": "Not found"})
+    if context.override_requested and not context.override_authorized:
+        raise NotFound({"detail": "Not found"})
 
     try:
         from core.models import School
 
-        if not School.objects.filter(pk=sid).exists():
+        if not School.objects.filter(pk=school_id, is_active=True).exists():
             raise NotFound({"detail": "School not found"})
     except NotFound:
         raise
-    except Exception:
-        # Fail closed if School model isn't available for some reason.
-        raise NotFound({"detail": "School not found"})
+    except Exception as exc:
+        raise NotFound({"detail": "School not found"}) from exc
 
-    return sid
+    return school_id

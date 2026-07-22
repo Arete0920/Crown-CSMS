@@ -1,4 +1,3 @@
-# backend/crown_api/audit.py
 import uuid
 from typing import Optional
 
@@ -35,6 +34,42 @@ def _get_school_id_from_request(request) -> Optional[uuid.UUID]:
     return _coerce_uuid(hdr)
 
 
+def _get_correlation_id(request) -> str:
+    existing = getattr(request, "crown_correlation_id", None)
+    if existing:
+        return str(existing)
+
+    headers = getattr(request, "headers", {})
+    correlation_id = (
+        headers.get("X-Correlation-Id")
+        or headers.get("X-Request-Id")
+        or request.META.get("HTTP_X_CORRELATION_ID")
+        or request.META.get("HTTP_X_REQUEST_ID")
+        or str(uuid.uuid4())
+    )
+    setattr(request, "crown_correlation_id", str(correlation_id))
+    return str(correlation_id)
+
+
+def tenant_decision_meta(request, *, outcome: str, reason: Optional[str] = None) -> dict:
+    """Return normalized, non-secret tenant-decision evidence for audit persistence."""
+    context = getattr(request, "crown_tenant", None)
+    return {
+        "actor_type": getattr(context, "actor_type", "unknown"),
+        "principal_school_id": str(getattr(context, "principal_school_id", "") or ""),
+        "selected_school_id": str(getattr(context, "school_id", "") or ""),
+        "source": getattr(context, "source", "unbound"),
+        "header_present": bool(getattr(context, "header_present", False)),
+        "override_requested": bool(getattr(context, "override_requested", False)),
+        "override_authorized": bool(getattr(context, "override_authorized", False)),
+        "outcome": str(outcome).strip(),
+        "reason": str(reason).strip() if reason else None,
+        "route": str(getattr(request, "path", "") or ""),
+        "method": str(getattr(request, "method", "") or ""),
+        "correlation_id": _get_correlation_id(request),
+    }
+
+
 def audit_log(
     *,
     request,
@@ -60,3 +95,14 @@ def audit_log(
         meta=meta or {},
     )
     return evt
+
+
+def audit_tenant_decision(request, *, outcome: str, reason: Optional[str] = None) -> AuditEvent:
+    """Persist a structured tenant authorization decision."""
+    return audit_log(
+        request=request,
+        action="tenant.context.decision",
+        object_type="tenant_context",
+        object_id=_get_school_id_from_request(request),
+        meta=tenant_decision_meta(request, outcome=outcome, reason=reason),
+    )
