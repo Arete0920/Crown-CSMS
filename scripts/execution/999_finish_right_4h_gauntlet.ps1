@@ -16,10 +16,12 @@ $repositoryDiagnosticsModule = Join-Path $repoRoot "scripts/execution/modules/ga
 $backendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_backend_validation.psm1"
 $frontendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_frontend_validation.psm1"
 $releaseContractValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_release_contract_validation.psm1"
+$deepOrchestrationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_deep_orchestration.psm1"
 Import-Module $repositoryDiagnosticsModule -Force
 Import-Module $backendValidationModule -Force
 Import-Module $frontendValidationModule -Force
 Import-Module $releaseContractValidationModule -Force
+Import-Module $deepOrchestrationModule -Force
 
 $base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
@@ -179,8 +181,10 @@ foreach ($step in $releaseContractValidationSteps) {
     Invoke-Step -Name $step.Name -WorkingDirectory $step.WorkingDirectory -Exe $step.Exe -Args $step.Args -Required $step.Required
 }
 
-Invoke-Step -Name "16_dashboard_completion_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", "./scripts/execution/105_dashboard_module_completion_gate.ps1", "-Deep")
-Invoke-Step -Name "17_full_completion_truth_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", "./scripts/execution/106_crown_full_completion_truth_gate.ps1", "-Deep")
+$deepOrchestrationSteps = Get-GauntletDeepOrchestrationSteps -RepoRoot $repoRoot -PowerShellExe $psExe
+foreach ($step in $deepOrchestrationSteps) {
+    Invoke-Step -Name $step.Name -WorkingDirectory $step.WorkingDirectory -Exe $step.Exe -Args $step.Args -Required $step.Required
+}
 
 Invoke-StaticAssertion -Name "18_sandbox_nav_flag_static_assertions" -Path "frontend/dashboards/src/components/navigation/dashboardNavConfig.js" -Patterns @(
     "VITE_SANDBOX_READY_ONLY",
