@@ -6,6 +6,7 @@ WRAPPER = REPO_ROOT / "scripts" / "execution" / "999_finish_right_4h_gauntlet.ps
 DIAGNOSTICS_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_repository_diagnostics.psm1"
 BACKEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_backend_validation.psm1"
 FRONTEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_frontend_validation.psm1"
+RELEASE_CONTRACT_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_release_contract_validation.psm1"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "p0-go-readiness.yml"
 
 
@@ -84,6 +85,28 @@ def test_frontend_validation_is_extracted_with_equivalent_required_steps():
     assert module.count('Required = "YES"') == 7
     assert "WorkingDirectory = $FrontendRoot" in module
     assert "Exe = $NpmExe" in module
+
+
+def test_release_contract_validation_is_extracted_with_equivalent_required_steps():
+    wrapper = WRAPPER.read_text(encoding="utf-8")
+    module = RELEASE_CONTRACT_MODULE.read_text(encoding="utf-8")
+
+    assert "Import-Module $releaseContractValidationModule -Force" in wrapper
+    assert "Get-GauntletReleaseContractValidationSteps" in wrapper
+    assert "foreach ($step in $releaseContractValidationSteps)" in wrapper
+
+    expected = {
+        "14_release_api_contracts": "scripts/release/verify-api-contracts.mjs",
+        "15_release_navigation_surface": "scripts/release/verify-navigation-surface.mjs",
+    }
+    for name, script in expected.items():
+        assert name in module
+        assert script in module
+        assert name not in wrapper
+
+    assert module.count('Required = "YES"') == 2
+    assert "WorkingDirectory = $RepoRoot" in module
+    assert 'Exe = "node"' in module
 
 
 def test_gauntlet_remains_fail_closed_and_preserves_evidence_schema():

@@ -15,9 +15,11 @@ Set-Location $repoRoot
 $repositoryDiagnosticsModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_repository_diagnostics.psm1"
 $backendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_backend_validation.psm1"
 $frontendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_frontend_validation.psm1"
+$releaseContractValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_release_contract_validation.psm1"
 Import-Module $repositoryDiagnosticsModule -Force
 Import-Module $backendValidationModule -Force
 Import-Module $frontendValidationModule -Force
+Import-Module $releaseContractValidationModule -Force
 
 $base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
@@ -172,8 +174,10 @@ foreach ($step in $frontendValidationSteps) {
     Invoke-Step -Name $step.Name -WorkingDirectory $step.WorkingDirectory -Exe $step.Exe -Args $step.Args -Required $step.Required
 }
 
-Invoke-Step -Name "14_release_api_contracts" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts/release/verify-api-contracts.mjs")
-Invoke-Step -Name "15_release_navigation_surface" -WorkingDirectory $repoRoot -Exe "node" -Args @("scripts/release/verify-navigation-surface.mjs")
+$releaseContractValidationSteps = Get-GauntletReleaseContractValidationSteps -RepoRoot $repoRoot
+foreach ($step in $releaseContractValidationSteps) {
+    Invoke-Step -Name $step.Name -WorkingDirectory $step.WorkingDirectory -Exe $step.Exe -Args $step.Args -Required $step.Required
+}
 
 Invoke-Step -Name "16_dashboard_completion_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", "./scripts/execution/105_dashboard_module_completion_gate.ps1", "-Deep")
 Invoke-Step -Name "17_full_completion_truth_gate_deep" -WorkingDirectory $repoRoot -Exe $psExe -Args @("-ExecutionPolicy", "Bypass", "-File", "./scripts/execution/106_crown_full_completion_truth_gate.ps1", "-Deep")
