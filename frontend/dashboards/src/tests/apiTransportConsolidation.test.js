@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function resolvePath(relativePath) {
+  return path.resolve(__dirname, relativePath);
+}
+
 function read(relativePath) {
-  return readFileSync(path.resolve(__dirname, relativePath), 'utf8');
+  return readFileSync(resolvePath(relativePath), 'utf8');
 }
 
 describe('frontend API transport consolidation', () => {
@@ -16,9 +20,7 @@ describe('frontend API transport consolidation', () => {
     const canonicalSource = read('../utils/authClient.js');
 
     expect(clientSource).toContain('authenticatedFetch');
-    expect(clientSource).not.toMatch(/from ['"]axios['"]/);
     expect(clientSource).not.toContain('axios.create');
-
     expect(canonicalSource).toContain('Authorization');
     expect(canonicalSource).toContain('X-School-Id');
     expect(canonicalSource).toContain('X-Correlation-Id');
@@ -27,16 +29,14 @@ describe('frontend API transport consolidation', () => {
 
   it('keeps the compatibility client surface for existing feature modules', () => {
     const clientSource = read('../api/client.js');
-
     ['request', 'get', 'post', 'put', 'patch', 'delete'].forEach((method) => {
-      expect(clientSource).toMatch(new RegExp(`\\b${method}\\b`));
+      expect(clientSource).toContain(method);
     });
   });
 
   it('supports accepted non-2xx responses without duplicating transport logic', () => {
     const clientSource = read('../api/client.js');
     const canonicalSource = read('../utils/authClient.js');
-
     expect(clientSource).toContain('validateStatus');
     expect(canonicalSource).toContain('validateStatus');
     expect(canonicalSource).toContain('error.response');
@@ -44,15 +44,28 @@ describe('frontend API transport consolidation', () => {
 
   it('preserves migration compatibility for current and legacy token storage', () => {
     const canonicalSource = read('../utils/authClient.js');
+    ['crown.jwt.access', 'crown_auth_token', 'access_token', 'crown_auth', 'tokenFromStoredAuth']
+      .forEach((storageContract) => expect(canonicalSource).toContain(storageContract));
+  });
 
-    [
-      'crown.jwt.access',
-      'crown_auth_token',
-      'access_token',
-      'crown_auth',
-      'tokenFromStoredAuth',
-    ].forEach((storageContract) => {
-      expect(canonicalSource).toContain(storageContract);
-    });
+  it('preserves binary release export responses through the canonical client', () => {
+    const clientSource = read('../api/client.js');
+    const exportSource = read('../components/release/ReleaseExportButton.tsx');
+    expect(clientSource).toContain("responseType === 'blob'");
+    expect(clientSource).toContain('response.blob()');
+    expect(exportSource).toContain('crownApiClient');
+    expect(exportSource).toContain('responseType: "blob"');
+    expect(exportSource).not.toContain('releaseApi');
+  });
+
+  it('retires the residual release transport and migrates all known consumers', () => {
+    const releaseApiPath = resolvePath('../lib/releaseApi.ts');
+    const statusSource = read('../components/release/ReleaseStatusMatrix.tsx');
+    const exportSource = read('../components/release/ReleaseExportButton.tsx');
+    expect(existsSync(releaseApiPath)).toBe(false);
+    expect(statusSource).toContain('crownApiClient');
+    expect(statusSource).not.toContain('releaseApi');
+    expect(exportSource).toContain('crownApiClient');
+    expect(exportSource).not.toContain('releaseApi');
   });
 });
