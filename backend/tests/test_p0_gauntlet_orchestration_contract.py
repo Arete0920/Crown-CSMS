@@ -191,6 +191,8 @@ def test_evidence_summary_is_extracted_without_weakening_fail_closed_behavior():
     assert "RequiredFailures = $requiredFailures" in module
     assert "PASS" in module
     assert "FAIL" in module
+    assert module.count("[void]$lines.Add(") >= 10
+    assert '$lines.Add("# Finish Right 4H Gauntlet Summary")' not in module.replace('[void]$lines.Add("# Finish Right 4H Gauntlet Summary")', '')
 
     assert '$results | Export-Csv' not in wrapper
     assert '$_.Required -eq "YES" -and -not $_.Passed' not in wrapper
