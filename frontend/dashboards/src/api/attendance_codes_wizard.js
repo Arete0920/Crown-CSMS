@@ -1,19 +1,13 @@
 /**
  * api/attendance_codes_wizard.js
- *
- * Follows the section_assign_wizard.js pattern exactly.
  */
-import { getToken, getSchoolId } from "../lib/api";
+import { authenticatedFetch } from "../utils/authClient";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 const PREFIX = `${API_BASE}/api/v1/attendance-codes-wizard/sessions`;
 
-function headers(extra = {}) {
-  return {
-    Authorization: `Bearer ${getToken()}`,
-    "X-School-Id": getSchoolId(),
-    ...extra,
-  };
+function wizardFetch(url, init = {}) {
+  return authenticatedFetch(url, { ...init, validateStatus: () => true });
 }
 
 async function checkResponse(res, url) {
@@ -31,58 +25,48 @@ async function checkResponse(res, url) {
   return res.json();
 }
 
-/** Step 1: create session */
 export async function createAttendanceCodesSession() {
   const url = `${PREFIX}/`;
-  const res = await globalThis.fetch(url, {
+  const res = await wizardFetch(url, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}),
   });
   return checkResponse(res, url);
 }
 
-/** Step 2: configure policy
- * @param {object} policy_config - {school_year, applies_to_grades: []}
- */
 export async function configureAttendanceCodesSession(sessionId, policy_config) {
   const url = `${PREFIX}/${sessionId}/configure/`;
-  const res = await globalThis.fetch(url, {
+  const res = await wizardFetch(url, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ policy_config }),
   });
   return checkResponse(res, url);
 }
 
-/** Step 3: stage codes
- * @param {Array} codes_staged - [{code, label, excused, counts_as_tardy, counts_as_absent, notify_guardian}]
- */
 export async function stageCodes(sessionId, codes_staged) {
   const url = `${PREFIX}/${sessionId}/stage_codes/`;
-  const res = await globalThis.fetch(url, {
+  const res = await wizardFetch(url, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ codes_staged }),
   });
   return checkResponse(res, url);
 }
 
-/** Step 4: commit */
 export async function commitAttendanceCodesSession(sessionId) {
   const url = `${PREFIX}/${sessionId}/commit/`;
-  const res = await globalThis.fetch(url, {
+  const res = await wizardFetch(url, {
     method: "POST",
-    headers: headers({ "Content-Type": "application/json" }),
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ confirm: true }),
   });
   return checkResponse(res, url);
 }
 
-/** Step 5: verify */
 export async function verifyAttendanceCodesSession(sessionId) {
   const url = `${PREFIX}/${sessionId}/verify/`;
-  const res = await globalThis.fetch(url, { method: "GET", headers: headers() });
+  const res = await wizardFetch(url, { method: "GET" });
   return checkResponse(res, url);
 }
-
