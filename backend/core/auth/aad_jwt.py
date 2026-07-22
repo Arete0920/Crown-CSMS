@@ -21,16 +21,21 @@ User = get_user_model()
 _JWKS_CACHE: dict = {"ts": 0, "jwks": None}
 
 
-def _get_jwks() -> dict:
+def _get_jwks(tenant: str | None = None) -> dict:
     now = int(time.time())
     if _JWKS_CACHE["jwks"] and now - _JWKS_CACHE["ts"] < 3600:
         return _JWKS_CACHE["jwks"]
 
-    tenant = getattr(settings, "AAD_TENANT_ID", "")
-    if not tenant:
+    normalized_tenant = str(
+        tenant if tenant is not None else getattr(settings, "AAD_TENANT_ID", "")
+    ).strip()
+    if not normalized_tenant:
         raise ValueError("AAD_TENANT_ID is not configured")
 
-    url = f"https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys"
+    url = (
+        "https://login.microsoftonline.com/"
+        f"{normalized_tenant}/discovery/v2.0/keys"
+    )
     resp = requests.get(url, timeout=10)
     resp.raise_for_status()
     jwks = resp.json()
@@ -39,47 +44,47 @@ def _get_jwks() -> dict:
 
 
 def decode_and_validate_bearer(token: str) -> dict:
-    """
-    Validate a Microsoft-issued JWT against the tenant's JWKS.
-    Returns the decoded claims dict on success, raises jwt.InvalidTokenError on failure.
-    """
+    """Validate a Microsoft-issued JWT and require the configured API audience."""
     try:
         import jwt
         from jwt.algorithms import RSAAlgorithm
     except ImportError as exc:
         raise ImportError("PyJWT and cryptography must be installed: pip install pyjwt cryptography") from exc
 
-    jwks = _get_jwks()
+    audience = str(getattr(settings, "AAD_API_AUDIENCE", "") or "").strip()
+    if not audience:
+        raise ValueError("AAD_API_AUDIENCE is not configured")
+
+    tenant = str(getattr(settings, "AAD_TENANT_ID", "") or "").strip()
+    if not tenant:
+        raise ValueError("AAD_TENANT_ID is not configured")
+
+    jwks = _get_jwks(tenant)
     unverified_header = jwt.get_unverified_header(token)
 
     key = None
-    for k in jwks.get("keys", []):
-        if k.get("kid") == unverified_header.get("kid"):
-            key = RSAAlgorithm.from_jwk(json.dumps(k))
+    for candidate in jwks.get("keys", []):
+        if candidate.get("kid") == unverified_header.get("kid"):
+            key = RSAAlgorithm.from_jwk(json.dumps(candidate))
             break
 
     if not key:
         raise jwt.InvalidTokenError("No matching JWKS key for kid")
 
-    audience = getattr(settings, "AAD_API_AUDIENCE", "")
-    tenant   = getattr(settings, "AAD_TENANT_ID", "")
-    issuer   = f"https://login.microsoftonline.com/{tenant}/v2.0"
+    issuer = f"https://login.microsoftonline.com/{tenant}/v2.0"
 
     return jwt.decode(
         token,
         key=key,
         algorithms=["RS256"],
-        audience=audience if audience else None,
+        audience=audience,
         issuer=issuer,
-        options={"verify_exp": True, "verify_aud": bool(audience)},
+        options={"verify_exp": True, "verify_aud": True},
     )
 
 
 def get_or_create_user_from_claims(claims: dict):
-    """
-    Map Entra claims → Django UserAccount.
-    Role is taken from the first app role claim, defaulting to 'staff'.
-    """
+    """Map Entra claims to a Django user account."""
     email = (
         claims.get("preferred_username")
         or claims.get("upn")
