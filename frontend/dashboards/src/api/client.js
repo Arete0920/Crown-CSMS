@@ -9,7 +9,20 @@ function headersToObject(headers) {
   return values;
 }
 
-async function parseBody(response) {
+async function parseBody(response, responseType) {
+  if (responseType === 'blob') {
+    return response.blob();
+  }
+  if (responseType === 'arraybuffer') {
+    return response.arrayBuffer();
+  }
+  if (responseType === 'text') {
+    return response.text().catch(() => '');
+  }
+  if (responseType === 'json') {
+    return response.json().catch(() => null);
+  }
+
   const contentType = response.headers?.get?.('content-type') || '';
   if (contentType.includes('application/json')) {
     return response.json().catch(() => null);
@@ -44,6 +57,7 @@ async function request(config = {}) {
     signal,
     validateStatus,
     withCredentials = true,
+    responseType,
   } = config;
 
   const headers = new Headers(inputHeaders || {});
@@ -59,7 +73,7 @@ async function request(config = {}) {
       credentials: withCredentials ? 'include' : 'same-origin',
       validateStatus: validateStatus || ((status) => status >= 200 && status < 300),
     });
-    const responseData = await parseBody(response);
+    const responseData = await parseBody(response, responseType);
     return {
       data: responseData,
       status: response.status,

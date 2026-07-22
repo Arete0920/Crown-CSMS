@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, Chip, Grid, Typography } from "@mui/material";
-import releaseApi from "../../lib/releaseApi";
+import { crownApiClient } from "../../api/client";
 
 type StatusPayload = {
   discipline_escalation: boolean;
@@ -37,8 +37,8 @@ export default function ReleaseStatusMatrix() {
   const [payload, setPayload] = useState<StatusPayload | null>(null);
 
   useEffect(() => {
-    releaseApi.get("/api/v1/release-closeout/status/")
-      .then((res) => setPayload(res.data))
+    crownApiClient.get("/api/v1/release-closeout/status/")
+      .then((res) => setPayload(res.data as StatusPayload))
       .catch((err) => {
         console.error("ReleaseStatusMatrix failed to load release status", err);
         setPayload(null);

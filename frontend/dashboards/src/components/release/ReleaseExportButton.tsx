@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button, CircularProgress } from "@mui/material";
-import releaseApi from "../../lib/releaseApi";
+import { crownApiClient } from "../../api/client";
 
 const DownloadIcon = () => <span aria-hidden="true">DL</span>;
 
@@ -43,10 +43,12 @@ export default function ReleaseExportButton({
   const handleClick = async () => {
     setLoading(true);
     try {
-      const response = await releaseApi.get(buildUrl(report, studentRef), {
+      const response = await crownApiClient.get(buildUrl(report, studentRef), {
         responseType: "blob",
       });
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = response.data instanceof Blob
+        ? response.data
+        : new Blob([response.data], { type: "application/pdf" });
       const link = Object.assign(document.createElement("a"), {
         href: URL.createObjectURL(blob),
         download: `${report}.pdf`,
