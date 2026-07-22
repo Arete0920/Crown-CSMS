@@ -8,6 +8,7 @@ BACKEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_bac
 FRONTEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_frontend_validation.psm1"
 RELEASE_CONTRACT_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_release_contract_validation.psm1"
 DEEP_ORCHESTRATION_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_deep_orchestration.psm1"
+STATIC_ASSERTIONS_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_static_assertions.psm1"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "p0-go-readiness.yml"
 
 
@@ -132,6 +133,45 @@ def test_deep_orchestration_is_extracted_with_equivalent_required_steps():
     assert module.count('"-ExecutionPolicy", "Bypass", "-File"') == 2
     assert "WorkingDirectory = $RepoRoot" in module
     assert "Exe = $PowerShellExe" in module
+
+
+def test_static_assertions_are_extracted_with_equivalent_required_definitions():
+    wrapper = WRAPPER.read_text(encoding="utf-8")
+    module = STATIC_ASSERTIONS_MODULE.read_text(encoding="utf-8")
+
+    assert "Import-Module $staticAssertionsModule -Force" in wrapper
+    assert "Get-GauntletStaticAssertions" in wrapper
+    assert "foreach ($assertion in $staticAssertions)" in wrapper
+    assert "Invoke-StaticAssertion -Name $assertion.Name -Path $assertion.Path -Patterns $assertion.Patterns" in wrapper
+
+    expected = {
+        "18_sandbox_nav_flag_static_assertions": (
+            "frontend/dashboards/src/components/navigation/dashboardNavConfig.js",
+            (
+                "VITE_SANDBOX_READY_ONLY",
+                "VITE_HIDE_UNREADY_NAV",
+                "VITE_SANDBOX_MODE",
+                "isProductionReady",
+                "visibleStaticSections = readyOnly",
+            ),
+        ),
+        "19_backend_dashboard_sample_fail_closed_assertions": (
+            "backend/crown_api/dashboards/views.py",
+            (
+                "CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS",
+                "dashboard_live_data_required",
+                "No live or snapshot payload is available",
+                "sample_payload_allowed",
+            ),
+        ),
+    }
+    for name, (path, patterns) in expected.items():
+        assert name in module
+        assert path in module
+        assert name not in wrapper
+        for pattern in patterns:
+            assert pattern in module
+            assert pattern not in wrapper
 
 
 def test_gauntlet_remains_fail_closed_and_preserves_evidence_schema():

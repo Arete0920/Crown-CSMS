@@ -17,11 +17,13 @@ $backendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntl
 $frontendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_frontend_validation.psm1"
 $releaseContractValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_release_contract_validation.psm1"
 $deepOrchestrationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_deep_orchestration.psm1"
+$staticAssertionsModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_static_assertions.psm1"
 Import-Module $repositoryDiagnosticsModule -Force
 Import-Module $backendValidationModule -Force
 Import-Module $frontendValidationModule -Force
 Import-Module $releaseContractValidationModule -Force
 Import-Module $deepOrchestrationModule -Force
+Import-Module $staticAssertionsModule -Force
 
 $base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
@@ -186,20 +188,10 @@ foreach ($step in $deepOrchestrationSteps) {
     Invoke-Step -Name $step.Name -WorkingDirectory $step.WorkingDirectory -Exe $step.Exe -Args $step.Args -Required $step.Required
 }
 
-Invoke-StaticAssertion -Name "18_sandbox_nav_flag_static_assertions" -Path "frontend/dashboards/src/components/navigation/dashboardNavConfig.js" -Patterns @(
-    "VITE_SANDBOX_READY_ONLY",
-    "VITE_HIDE_UNREADY_NAV",
-    "VITE_SANDBOX_MODE",
-    "isProductionReady",
-    "visibleStaticSections = readyOnly"
-)
-
-Invoke-StaticAssertion -Name "19_backend_dashboard_sample_fail_closed_assertions" -Path "backend/crown_api/dashboards/views.py" -Patterns @(
-    "CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS",
-    "dashboard_live_data_required",
-    "No live or snapshot payload is available",
-    "sample_payload_allowed"
-)
+$staticAssertions = Get-GauntletStaticAssertions
+foreach ($assertion in $staticAssertions) {
+    Invoke-StaticAssertion -Name $assertion.Name -Path $assertion.Path -Patterns $assertion.Patterns
+}
 
 Invoke-InfoStep -Name "20_final_git_diff" -Block {
     git status --short --branch
