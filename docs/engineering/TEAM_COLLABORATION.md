@@ -10,11 +10,11 @@ GitHub is the system of record for repository work. Meetings, email, text, and p
 
 ### Founder and Product Owner
 
-John T. C. Megahan is the Founder, Product Owner, repository owner, technical direction authority, acceptance authority, and final release authority.
+John T. C. Megahan is the creator of CROWN, Founder, Product Owner, principal product designer, architecture and workflow authority, repository owner, technical direction authority, acceptance authority, and final release authority.
 
-### Founding and early collaborators
+### Collaborators
 
-Anthony Rizzo, Ayush Agarwal, and Jed Hansen are recognized as founding or early collaborators. Specific contribution credit must remain evidence-based.
+Early, interim, and later collaborators may support bounded work under the Founder/Product Owner's direction. Active documentation does not enumerate individuals unless identification is operationally, legally, or evidentially necessary. Specific contribution credit must remain evidence-based.
 
 ### New collaborators and reviewers
 

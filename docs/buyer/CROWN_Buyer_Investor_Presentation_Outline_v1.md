@@ -138,5 +138,4 @@ Proposed next-stage process:
 - Do not treat modeled economics as actual performance.
 - Do not represent production authorization as complete.
 - Do not assign historical contribution credit without repository or documentary support.
-- Recognize Anthony Rizzo, Ayush Agarwal, and Jed Hansen as founding or early collaborators only where evidence supports specific attribution.
-- Do not assign historical contributions to Johnny Megahan or Evan Lesage.
+- Do not enumerate early or interim collaborators unless identification is legally necessary, authorized by the Founder/Product Owner, and evidence-supported.

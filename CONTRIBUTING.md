@@ -19,10 +19,11 @@ This is not a free-form public contribution repository. Unsolicited pull request
 3. No secrets, credentials, or copied production data.
 4. No public disclosure of vulnerabilities or sensitive findings.
 5. No retroactive or inferred contributor attribution without durable evidence.
-6. No AI-generated summary, test, or review may be represented as independent human review.
+6. No automated summary, test, or review may be represented as independent human review.
 7. No AI-pattern finding may be represented as proof of AI authorship.
+8. No collaborator may be represented as a founder or co-founder without explicit Founder/Product Owner authorization and durable evidence.
 
-## Human ownership, contributor evidence, and AI assistance
+## Human ownership, contributor evidence, and development assistance
 
 Follow:
 
@@ -30,20 +31,18 @@ Follow:
 - `docs/engineering/CONTRIBUTION_EVIDENCE_LEDGER.md`;
 - `docs/engineering/AI_PATTERN_REFACTORING_STANDARD.md`.
 
-TC Megahan remains Founder/Product Owner and the authority for requirements, technical direction, acceptance, and release authorization.
+TC Megahan is the creator of CROWN, Founder/Product Owner, principal product designer, architecture and workflow authority, and the authority for requirements, technical direction, acceptance, and release authorization. This does not imply that TC personally authored every line of code.
 
-Anthony Rizzo, Ayush Agarwal, and Jed Hansen are founding/early collaborators. Credit specific work only when repository history or another retained record supports the attribution.
+Early and interim collaborators supported portions of the work at different stages. Active documentation does not enumerate them. Specific contribution credit may be recorded only when required and supported by durable evidence.
 
-Johnny Megahan and Evan Lesage are new collaborators. Do not assign them historical contributions or prior work.
-
-AI tools may assist with implementation, analysis, testing, documentation, and repository operations. The human owner remains accountable for scope, review, verification, security, and acceptance.
+Numerous interim coding assistants and development tools supported implementation, analysis, testing, documentation, and repository operations. They need not be individually named in active product materials. The human owner remains accountable for scope, review, verification, security, and acceptance.
 
 Each non-trivial pull request must disclose:
 
 ```text
 Human owner: <name>
 Evidence-backed contributors: <names or none>
-AI assistance: <none | limited | material; describe scope>
+Development assistance: <none | limited | material; describe scope>
 Human verification: <review and validation actually performed>
 Unverified attribution: <items or none>
 ```
@@ -63,7 +62,7 @@ Each PR should include:
 - raw local proof when local execution is available;
 - raw CI proof at the exact PR head SHA;
 - rollback plan;
-- human ownership and AI-assistance disclosure;
+- human ownership and development-assistance disclosure;
 - remaining `NOT VERIFIED` items.
 
 Proof must match the change scope. Documentation-only PRs must not be represented as runtime certification and should not invoke runtime proof ceremonies.
