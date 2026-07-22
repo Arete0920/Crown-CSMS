@@ -4,32 +4,30 @@
 
 - **Name:** John T. C. Megahan
 - **GitHub account:** `@tcmegahan`
-- **Role:** Founder, Product Owner, repository owner, technical direction authority, acceptance authority, and final release authority
+- **Role:** Creator, Founder, Product Owner, principal product designer, architecture and workflow authority, repository owner, technical direction authority, acceptance authority, and final release authority
 
 ## Attribution Standard
 
-CROWN work is owner-directed. Repository changes may be implemented with software-development tools, automation, contractors, or assistants operating under the repository owner's direction.
+CROWN was created and designed by John T. C. Megahan. Repository changes may be implemented with software-development tools, automation, contractors, collaborators, or assistants operating under the repository owner's direction.
 
 The repository owner retains responsibility for:
 
 - product requirements and priorities
+- product design and architecture
+- operating and application workflow design
 - architectural and governance decisions
 - scope approval
 - acceptance criteria
 - release posture and production authorization
 - approval of material changes
 
-Commit and pull-request attribution must remain factually accurate. Tool-assisted implementation does not transfer product ownership or release authority away from John T. C. Megahan.
+Commit and pull-request attribution must remain factually accurate. Tool-assisted or collaborator-assisted implementation does not transfer product ownership, architecture authority, or release authority away from John T. C. Megahan.
 
-## Contributor Record
+## Collaborator Record
 
-The following collaborators have been involved with CROWN from its early development:
+Early, interim, and later collaborators supported portions of CROWN at different stages. Active repository documentation does not enumerate those individuals unless identification is necessary for present operations, legal diligence, security, access control, or a specifically authorized evidence record.
 
-- **Anthony Rizzo** — founding/early collaborator
-- **Ayush Agarwal** — founding/early collaborator
-- **Jed Hansen** — founding/early collaborator
-
-Specific designs, code, documentation, reviews, or other accomplishments will be attributed to Anthony Rizzo, Ayush Agarwal, or Jed Hansen only when repository history, project records, correspondence, working documents, or other reliable evidence supports that attribution. Early involvement alone is not used to invent specific authorship claims.
+Specific designs, code, documentation, reviews, or other accomplishments will be attributed only when repository history, project records, correspondence, working documents, or other reliable evidence supports that attribution. Involvement alone is not used to invent specific authorship claims.
 
 The following are prospective collaborators and designated future human reviewers:
 
@@ -55,7 +53,7 @@ Material pull requests should identify:
 - Repository Owner: `@tcmegahan`
 - Technical direction and acceptance authority: John T. C. Megahan
 
-Contributors or co-authors should be credited when they have made an identifiable substantive contribution. Automated tools should not be represented as product owners, release authorities, or independent reviewers.
+Contributors or co-authors should be credited when they have made an identifiable substantive contribution and identification is authorized. Automated tools should not be represented as product owners, release authorities, or independent reviewers.
 
 ## Human Review
 

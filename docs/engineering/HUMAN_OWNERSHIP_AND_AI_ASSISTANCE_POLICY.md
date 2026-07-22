@@ -6,7 +6,7 @@
 
 ## Purpose
 
-This policy separates human product ownership, evidence-backed contributor credit, automated assistance, technical verification, acceptance, and release authority in the CROWN repository.
+This policy separates human product ownership, creator and architecture authority, evidence-backed contributor credit, automated assistance, technical verification, acceptance, and release authority in the CROWN repository.
 
 An AI-pattern finding is a maintainability, verification, or provenance concern. It is not proof that an AI system authored a file, and it is not proof that a human contributor did not contribute.
 
@@ -14,36 +14,33 @@ An AI-pattern finding is a maintainability, verification, or provenance concern.
 
 ### TC Megahan
 
-TC Megahan is the Founder/Product Owner, repository owner, requirements authority, technical-direction authority, acceptance authority, and release authority for CROWN.
+TC Megahan is the creator of CROWN, Founder/Product Owner, principal product designer, architecture authority, workflow designer, repository owner, requirements authority, technical-direction authority, acceptance authority, and release authority.
 
-Those roles do not automatically establish that TC personally implemented every line of code. Specific implementation, review, testing, design, or documentation claims must still be supported by repository history or another retained record.
+TC designed the platform architecture and created the operating and application workflow that directed implementation. TC also performed implementation work and remains accountable for the resulting product. These authority and creation statements do not assert that TC personally authored every line of code. Specific line-level implementation, review, testing, or documentation claims should be supported by repository history or another retained record where such precision is required.
 
-### Founding and early collaborators
+### Collaborators
 
-Anthony Rizzo, Ayush Agarwal, and Jed Hansen are founding/early collaborators.
+Early, interim, and later collaborators supported portions of CROWN at different stages. Active repository documentation does not enumerate those individuals unless a present operational, legal, security, access-control, or evidence requirement makes identification necessary.
 
 Specific credit for modules, files, architecture, implementation, testing, review, documentation, or operations must be supported by commits, pull requests, issue records, review records, project documents, signed records, or other durable evidence. Unsupported specific claims remain `NOT VERIFIED`.
 
-### New collaborators
+## Development assistance
 
-Johnny Megahan and Evan Lesage are new collaborators. No historical contribution or prior work may be assigned to them. Future contributions may be recorded when durable evidence exists.
+CROWN used numerous development tools and interim coding assistants at different stages. Those tools and assistants may have supported bounded implementation, debugging, testing, analysis, documentation, code review, and repository operations. Active and external-facing materials should describe that assistance accurately and in vendor-neutral terms rather than attempting to name every interim tool or assistant.
 
-## AI-assisted tooling
-
-AI tools and development assistants may support bounded implementation, debugging, testing, analysis, documentation, code review, and repository operations.
-
-They are not:
+Development assistants are not:
 
 - product owners;
 - requirements authorities;
 - architecture owners;
+- founders or co-founders;
 - human authors or contributors;
 - independent reviewers;
 - security approvers;
 - acceptance authorities;
 - release authorities.
 
-Material AI assistance must be disclosed in the applicable pull request. Disclosure does not reduce the human owner's accountability for scope, correctness, verification, security, and acceptance.
+Material automated assistance must be disclosed in the applicable pull request. Disclosure does not reduce the human owner's accountability for scope, correctness, verification, security, and acceptance.
 
 ## Required pull-request disclosure
 
@@ -52,12 +49,12 @@ Every non-trivial pull request must identify:
 ```text
 Human owner:
 Evidence-backed contributors:
-AI assistance:
+Development assistance:
 Human verification:
 Unverified attribution:
 ```
 
-`AI assistance` should state `none`, `limited`, or `material` and briefly identify the assistance performed.
+`Development assistance` should state `none`, `limited`, or `material` and briefly identify the assistance performed. Vendor or product names are not required unless needed for security, licensing, audit, or historical evidence.
 
 `Human verification` must describe the actual review and validation performed. A list of commands that were not executed is not verification.
 
@@ -67,10 +64,11 @@ The repository must not:
 
 1. rewrite commit history to manufacture individual authorship;
 2. infer authorship from coding style, comments, file naming, or apparent AI patterns;
-3. add contributor names solely to improve diligence presentation;
-4. describe an automated review as independent human review;
-5. conceal material use of development assistance;
-6. convert `NOT VERIFIED` claims into definitive client-, buyer-, or future-owner-facing statements.
+3. identify a collaborator as a founder or co-founder without explicit Founder/Product Owner authorization and durable evidence;
+4. add contributor names solely to improve diligence presentation;
+5. describe an automated review as independent human review;
+6. conceal material use of development assistance;
+7. convert `NOT VERIFIED` claims into definitive client-, buyer-, or future-owner-facing statements.
 
 Submission metadata may identify the account, editor, connector, assistant, or automation that recorded work. It does not by itself prove who conceived, directed, implemented, reviewed, tested, or accepted that work.
 
@@ -108,9 +106,9 @@ It must never override a failed technical, security, tenant, recovery, complianc
 
 Client-, buyer-, diligence-, and future-owner-facing materials must distinguish:
 
-- product ownership;
-- evidence-backed human contributions;
-- automated assistance;
+- TC Megahan's creator, design, architecture, workflow, product ownership, acceptance, and release authority;
+- evidence-backed human contributions where identification is necessary and authorized;
+- development assistance;
 - automated verification;
 - human acceptance and release authority;
 - unresolved or `NOT VERIFIED` attribution.

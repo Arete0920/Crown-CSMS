@@ -104,9 +104,9 @@ Diligence should include:
 - Open-source obligations
 - AI-assisted development disclosure and review controls
 - Domain, brand, design, documentation, database, and deployment-asset ownership
-- Evidence supporting any specific contributor attribution
+- Evidence supporting any specific contributor attribution that must be disclosed
 
-Anthony Rizzo, Ayush Agarwal, and Jed Hansen may be identified as founding or early collaborators. Specific work should be credited only where repository history or other evidence supports it. Johnny Megahan and Evan Lesage should not be assigned historical contributions.
+Active buyer and diligence materials should not enumerate early or interim collaborators unless identification is legally necessary, authorized by the Founder/Product Owner, and supported by durable evidence.
 
 ## 7. Arete Advisory Group Retained Rights
 

@@ -13,6 +13,14 @@ This is the sole active and authoritative CROWN repository.
 
 The former `tcmegahan/Crown-Christian` repository has been permanently deleted and is not an authority source.
 
+## Creation and accountability
+
+CROWN was created by TC Megahan. TC is the Founder/Product Owner, principal product designer, architecture and workflow authority, repository owner, requirements authority, technical-direction authority, acceptance authority, and release authority.
+
+TC designed the platform architecture, created the operating and application workflow, directed implementation, and performed implementation work. This does not assert that TC personally authored every line of code.
+
+Early and interim collaborators, coding assistants, and development tools supported portions of implementation and engineering. Active documentation does not enumerate those individuals or tools unless identification is operationally, legally, or evidentially necessary. They are not product owners, architecture authorities, founders, acceptance authorities, or release authorities.
+
 ## Start here
 
 1. [Repository Manifest](docs/canonical/REPOSITORY_MANIFEST.md)
@@ -37,9 +45,9 @@ Sandbox data must be synthetic and clearly labeled.
 
 ## Development accountability
 
-CROWN is a founder-directed, collaboratively developed, human-reviewed, and human-accepted product. Repository history is not, by itself, a complete record of product authorship, design responsibility, collaboration, review, or acceptance.
+CROWN is founder-directed, collaboratively implemented, human-reviewed, and human-accepted. Repository history is not, by itself, a complete record of product authorship, design responsibility, collaboration, review, or acceptance.
 
-Verified contributor names, GitHub usernames, roles, and responsibility areas will be recorded during the ownership-transfer review. No person will be credited for work without confirmation.
+Named contribution records are maintained only when identification is necessary, authorized, and supported by evidence. No person will be credited for specific work without confirmation.
 
 ## Handoff standard
 
