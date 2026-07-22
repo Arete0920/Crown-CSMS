@@ -13,7 +13,9 @@ if ([string]::IsNullOrWhiteSpace($repoRoot)) {
 Set-Location $repoRoot
 
 $repositoryDiagnosticsModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_repository_diagnostics.psm1"
+$backendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_backend_validation.psm1"
 Import-Module $repositoryDiagnosticsModule -Force
+Import-Module $backendValidationModule -Force
 
 $base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
@@ -157,26 +159,10 @@ Invoke-InfoStep -Name "02_blocker_signal_scan" -Block {
     Invoke-GauntletBlockerSignalScan
 }
 
-Invoke-Step -Name "03_backend_django_check" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("manage.py", "check")
-Invoke-Step -Name "04_backend_migration_dry_run" -WorkingDirectory $repoRoot -Exe $pythonExe -Args @("manage.py", "makemigrations", "--check", "--dry-run")
-
-$backendSmokeArgs = @(
-    "-m", "pytest",
-    "backend/core/tests/test_permission_engine.py",
-    "backend/tests/test_tenant_isolation.py",
-    "backend/crown_api/tests/test_health.py",
-    "backend/crown_api/tests/test_dashboard_snapshot_summary_api.py",
-    "-q", "--nomigrations"
-)
-Invoke-Step -Name "05_backend_core_smoke" -WorkingDirectory $repoRoot -Exe $pythonExe -Args $backendSmokeArgs
-
-$backendSecurityArgs = @(
-    "-m", "pytest",
-    "backend/tests/test_release_security_permission_contracts.py",
-    "backend/tests/test_release_security_readiness_contracts.py",
-    "-q", "--nomigrations"
-)
-Invoke-Step -Name "06_backend_security_contracts" -WorkingDirectory $repoRoot -Exe $pythonExe -Args $backendSecurityArgs
+$backendValidationSteps = Get-GauntletBackendValidationSteps -RepoRoot $repoRoot -PythonExe $pythonExe
+foreach ($step in $backendValidationSteps) {
+    Invoke-Step -Name $step.Name -WorkingDirectory $step.WorkingDirectory -Exe $step.Exe -Args $step.Args -Required $step.Required
+}
 
 $frontendRoot = Join-Path $repoRoot "frontend/dashboards"
 Invoke-Step -Name "07_frontend_npm_ci" -WorkingDirectory $frontendRoot -Exe $npmExe -Args @("ci")
