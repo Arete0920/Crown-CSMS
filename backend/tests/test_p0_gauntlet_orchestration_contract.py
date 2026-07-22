@@ -9,6 +9,7 @@ FRONTEND_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_fr
 RELEASE_CONTRACT_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_release_contract_validation.psm1"
 DEEP_ORCHESTRATION_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_deep_orchestration.psm1"
 STATIC_ASSERTIONS_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_static_assertions.psm1"
+EVIDENCE_SUMMARY_MODULE = REPO_ROOT / "scripts" / "execution" / "modules" / "gauntlet_evidence_summary.psm1"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "p0-go-readiness.yml"
 
 
@@ -174,14 +175,37 @@ def test_static_assertions_are_extracted_with_equivalent_required_definitions():
             assert pattern not in wrapper
 
 
+def test_evidence_summary_is_extracted_without_weakening_fail_closed_behavior():
+    wrapper = WRAPPER.read_text(encoding="utf-8")
+    module = EVIDENCE_SUMMARY_MODULE.read_text(encoding="utf-8")
+
+    assert "Import-Module $evidenceSummaryModule -Force" in wrapper
+    assert "Write-GauntletEvidenceSummary -Results $results -EvidenceRoot $base -RepoRoot $repoRoot" in wrapper
+    assert "$resultsPath = $evidenceSummary.ResultsPath" in wrapper
+    assert "$summaryPath = $evidenceSummary.SummaryPath" in wrapper
+    assert "$requiredFailures = @($evidenceSummary.RequiredFailures)" in wrapper
+
+    assert 'Join-Path $EvidenceRoot "00_results.csv"' in module
+    assert 'Join-Path $EvidenceRoot "00_SUMMARY.md"' in module
+    assert '$_.Required -eq "YES" -and -not $_.Passed' in module
+    assert "RequiredFailures = $requiredFailures" in module
+    assert "PASS" in module
+    assert "FAIL" in module
+
+    assert '$results | Export-Csv' not in wrapper
+    assert '$_.Required -eq "YES" -and -not $_.Passed' not in wrapper
+    assert "if ($requiredFailures.Count -gt 0)" in wrapper
+    assert "exit 1" in wrapper
+
+
 def test_gauntlet_remains_fail_closed_and_preserves_evidence_schema():
     wrapper = WRAPPER.read_text(encoding="utf-8")
 
     for field in ("Step", "ExitCode", "Log", "Required", "Passed"):
         assert field in wrapper
-    assert '$resultsPath = Join-Path $base "00_results.csv"' in wrapper
-    assert '$summaryPath = Join-Path $base "00_SUMMARY.md"' in wrapper
-    assert '$_.Required -eq "YES" -and -not $_.Passed' in wrapper
+    assert 'Write-Host "FINISH_RIGHT_4H_EVIDENCE=$base"' in wrapper
+    assert 'Write-Host "SUMMARY=$summaryPath"' in wrapper
+    assert 'Write-Host "RESULTS=$resultsPath"' in wrapper
     assert "if ($requiredFailures.Count -gt 0)" in wrapper
     assert "exit 1" in wrapper
 

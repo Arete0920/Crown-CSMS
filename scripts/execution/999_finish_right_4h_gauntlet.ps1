@@ -18,12 +18,14 @@ $frontendValidationModule = Join-Path $repoRoot "scripts/execution/modules/gaunt
 $releaseContractValidationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_release_contract_validation.psm1"
 $deepOrchestrationModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_deep_orchestration.psm1"
 $staticAssertionsModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_static_assertions.psm1"
+$evidenceSummaryModule = Join-Path $repoRoot "scripts/execution/modules/gauntlet_evidence_summary.psm1"
 Import-Module $repositoryDiagnosticsModule -Force
 Import-Module $backendValidationModule -Force
 Import-Module $frontendValidationModule -Force
 Import-Module $releaseContractValidationModule -Force
 Import-Module $deepOrchestrationModule -Force
 Import-Module $staticAssertionsModule -Force
+Import-Module $evidenceSummaryModule -Force
 
 $base = Join-Path $repoRoot "audit-artifacts/finish-right-4h-$stamp"
 New-Item -ItemType Directory -Force -Path $base | Out-Null
@@ -199,35 +201,10 @@ Invoke-InfoStep -Name "20_final_git_diff" -Block {
     git diff --name-only
 }
 
-$resultsPath = Join-Path $base "00_results.csv"
-$results | Export-Csv -Path $resultsPath -NoTypeInformation -Encoding UTF8
-
-$requiredFailures = @($results | Where-Object { $_.Required -eq "YES" -and -not $_.Passed })
-$summaryPath = Join-Path $base "00_SUMMARY.md"
-$lines = New-Object System.Collections.Generic.List[string]
-$lines.Add("# Finish Right 4H Gauntlet Summary")
-$lines.Add("")
-$lines.Add("- Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')")
-$lines.Add("- Repo root: $repoRoot")
-$lines.Add("- Evidence root: $base")
-$lines.Add("- Required failures: $($requiredFailures.Count)")
-$lines.Add("")
-if ($requiredFailures.Count -eq 0) {
-    $lines.Add("## Verdict")
-    $lines.Add("")
-    $lines.Add("PASS")
-} else {
-    $lines.Add("## Verdict")
-    $lines.Add("")
-    $lines.Add("FAIL")
-    $lines.Add("")
-    $lines.Add("## Required failures")
-    $lines.Add("")
-    foreach ($f in $requiredFailures) {
-        $lines.Add("- $($f.Step) exit=$($f.ExitCode) log=$($f.Log)")
-    }
-}
-$lines | Set-Content -Path $summaryPath -Encoding UTF8
+$evidenceSummary = Write-GauntletEvidenceSummary -Results $results -EvidenceRoot $base -RepoRoot $repoRoot
+$resultsPath = $evidenceSummary.ResultsPath
+$summaryPath = $evidenceSummary.SummaryPath
+$requiredFailures = @($evidenceSummary.RequiredFailures)
 
 Write-Host "FINISH_RIGHT_4H_EVIDENCE=$base"
 Write-Host "SUMMARY=$summaryPath"
