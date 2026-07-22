@@ -1,57 +1,35 @@
-import os
 from functools import wraps
+
 from django.http import JsonResponse
 
 
+def _normalize_role(value):
+    if value is None:
+        return None
+    normalized = str(value).strip().lower()
+    return normalized or None
+
+
 def _get_user_role(request):
+    """Return the authenticated principal's normalized runtime role.
+
+    Authorization must derive only from an authenticated principal. Request
+    headers and environment flags are intentionally ignored so deployed
+    configuration cannot create an anonymous role-elevation path.
     """
-    Crown demo-friendly role resolution.
-    Priority:
-      1) request.user.role (if your User model has it)
-      2) HTTP header X-Demo-Role (only if ALLOW_DEMO_ROLE_HEADER=1)
-      3) None
-
-    SECURITY: X-Demo-Role header only works when ALLOW_DEMO_ROLE_HEADER=1
-    to prevent privilege escalation in production.
-
-    HARDENING: role values are normalized to lowercase for consistent comparisons.
-    """
-    def _norm(val):
-        if val is None:
-            return None
-        s = str(val).strip()
-        return s.lower() if s else None
-
-    # 1) user.role
     user = getattr(request, "user", None)
-    role = _norm(getattr(user, "role", None))
-    if role:
-        return role
-
-    # 2) demo header fallback (only if explicitly enabled)
-    if os.getenv("ALLOW_DEMO_ROLE_HEADER") == "1":
-        hdr = None
-        try:
-            hdr = request.headers.get("X-Demo-Role")
-        except Exception:
-            hdr = None
-
-        if not hdr:
-            hdr = request.META.get("HTTP_X_DEMO_ROLE")
-
-        hdr = _norm(hdr)
-        if hdr:
-            return hdr
-
-    return None
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+    return _normalize_role(getattr(user, "role", None))
 
 
 def require_roles(allowed_roles):
-    """
-    Decorator enforcing that request has one of allowed roles.
-    Returns JSON 403 with required_roles and actual_role.
-    """
-    allowed = set(str(r) for r in allowed_roles)
+    """Require an authenticated principal with one of the allowed roles."""
+    allowed = {
+        normalized
+        for role in allowed_roles
+        if (normalized := _normalize_role(role)) is not None
+    }
 
     def decorator(view_func):
         @wraps(view_func)
@@ -62,7 +40,7 @@ def require_roles(allowed_roles):
                     {
                         "ok": False,
                         "error": "Forbidden",
-                        "required_roles": sorted(list(allowed)),
+                        "required_roles": sorted(allowed),
                         "actual_role": actual,
                     },
                     status=403,
