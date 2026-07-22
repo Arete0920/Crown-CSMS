@@ -1,21 +1,17 @@
 # backend/crown_api/audit_views.py
-from uuid import UUID
-
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 
 from crown_api.audit_models import AuditEvent
 from crown_api.permissions import require_roles
 from crown_api.request_parsing import parse_bounded_int
+from crown_api.tenant import CANONICAL_TENANT_ATTR, build_tenant_context
 
 
 @require_GET
 @require_roles(["admin", "finance"])
 def recent_audit_events(request):
-    """
-    Proof endpoint: returns the most recent audit events.
-    Demo-safe; does not create new events.
-    """
+    """Return recent audit events for the caller's authorized tenant only."""
     limit = parse_bounded_int(
         request.GET.get("limit", "25"),
         default=25,
@@ -23,33 +19,37 @@ def recent_audit_events(request):
         max_value=100,
     )
 
-    qs = AuditEvent.objects.order_by("-ts")
+    context = getattr(request, CANONICAL_TENANT_ATTR, None)
+    if context is None:
+        context = build_tenant_context(request)
 
-    # Tenant filter: scope to school when X-School-Id header is provided.
-    # This prevents cross-tenant audit event leakage for school-scoped callers.
-    raw_sid = request.META.get("HTTP_X_SCHOOL_ID") or request.headers.get("X-School-Id")
-    if raw_sid:
-        try:
-            school_uuid = UUID(str(raw_sid))
-        except Exception:
-            return JsonResponse({"ok": False, "error": "invalid X-School-Id header"}, status=400)
-        qs = qs.filter(school_id=school_uuid)
+    if not context.school_id:
+        return JsonResponse(
+            {"ok": False, "error": "Tenant context required"},
+            status=403,
+        )
 
-    qs = qs[:limit]
+    if context.override_requested and not context.override_authorized:
+        return JsonResponse(
+            {"ok": False, "error": "Not found"},
+            status=404,
+        )
+
+    queryset = AuditEvent.objects.filter(school_id=context.school_id).order_by("-ts")[:limit]
 
     rows = []
-    for e in qs:
+    for event in queryset:
         rows.append(
             {
-                "id": str(e.id),
-                "ts": e.ts.isoformat(),
-                "school_id": str(e.school_id) if e.school_id else None,
-                "actor_id": str(e.actor_id) if e.actor_id else None,
-                "actor_role": e.actor_role,
-                "action": e.action,
-                "object_type": e.object_type,
-                "object_id": str(e.object_id) if e.object_id else None,
-                "meta": e.meta or {},
+                "id": str(event.id),
+                "ts": event.ts.isoformat(),
+                "school_id": str(event.school_id) if event.school_id else None,
+                "actor_id": str(event.actor_id) if event.actor_id else None,
+                "actor_role": event.actor_role,
+                "action": event.action,
+                "object_type": event.object_type,
+                "object_id": str(event.object_id) if event.object_id else None,
+                "meta": event.meta or {},
             }
         )
 
