@@ -107,14 +107,10 @@ class LedgerEntry(models.Model):
         ordering = ["created_at"]
 
     def save(self, *args, **kwargs):
-        if self.pk:
-            raise ValidationError(
-                "Ledger entries are immutable."
-            )
+        if not self._state.adding:
+            raise ValidationError("Ledger entries are immutable.")
 
-        super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        raise ValidationError(
-            "Ledger entries cannot be deleted."
-        )
+        raise ValidationError("Ledger entries cannot be deleted.")
