@@ -262,20 +262,24 @@ def commit_session(request, session_id):
         terms_created = 0
         terms_updated = 0
         for idx, tc in enumerate(session.terms_config):
-            code     = (tc.get("code") or "").strip()
-            defaults = {
-                "school_id":  school_id,
-                "name":       (tc.get("name") or "").strip(),
+            code = (tc.get("code") or "").strip()
+            update_defaults = {
+                "name": (tc.get("name") or "").strip(),
                 "school_year": (tc.get("school_year") or "").strip(),
                 "start_date": tc.get("start_date") or None,
-                "end_date":   tc.get("end_date")   or None,
-                "ordering":   int(tc.get("ordering", idx)),
-                "active":     True,
+                "end_date": tc.get("end_date") or None,
+                "ordering": int(tc.get("ordering", idx)),
+                "active": True,
+            }
+            create_defaults = {
+                "school_id": school_id,
+                **update_defaults,
             }
             _, term_created = Term.objects.update_or_create(
                 academic_year=academic_year,
                 code=code,
-                defaults=defaults,
+                defaults=update_defaults,
+                create_defaults=create_defaults,
             )
             if term_created:
                 terms_created += 1
