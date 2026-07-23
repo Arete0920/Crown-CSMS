@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from academics.models import Enrollment, Section
+from households.models import Student
 from households.scoping import get_request_school_id
 
 from .models import SectionAssignWizardSession
@@ -24,10 +25,6 @@ VALID_ACTIONS = {"add", "remove"}
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
 def _get_session(session_id, school_id):
     return get_object_or_404(SectionAssignWizardSession, id=session_id, school__id=school_id)
 
@@ -38,10 +35,6 @@ def _parse_uuid(value, field_name):
     except (ValueError, AttributeError):
         return None, f"{field_name} must be a valid UUID"
 
-
-# ---------------------------------------------------------------------------
-# Step 1: Create session
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -57,10 +50,6 @@ def create_session(request):
     )
     return Response({"session_id": str(session.id)}, status=status.HTTP_201_CREATED)
 
-
-# ---------------------------------------------------------------------------
-# Step 2: Configure (section + term)
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -83,11 +72,10 @@ def configure_session(request, session_id):
     if err:
         return Response({"error": err}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Verify section belongs to this school
     section = get_object_or_404(Section, id=section_uuid, school_id=school_id)
 
     if not term:
-        term = section.term  # inherit from section if not provided
+        term = section.term
 
     session.section_id = section_uuid
     session.term = term
@@ -101,10 +89,6 @@ def configure_session(request, session_id):
         "term": term,
     })
 
-
-# ---------------------------------------------------------------------------
-# Step 3: Load student pool
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
@@ -124,7 +108,6 @@ def load_students(request, session_id):
     if not isinstance(student_ids_raw, list) or len(student_ids_raw) == 0:
         return Response({"error": "student_ids must be a non-empty list"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Validate and deduplicate
     seen = set()
     valid_ids = []
     errors = []
@@ -150,10 +133,6 @@ def load_students(request, session_id):
     })
 
 
-# ---------------------------------------------------------------------------
-# Step 4: Stage roster changes
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
@@ -172,7 +151,7 @@ def stage_roster(request, session_id):
     if not isinstance(changes_raw, list) or len(changes_raw) == 0:
         return Response({"error": "changes must be a non-empty list"}, status=status.HTTP_400_BAD_REQUEST)
 
-    seen = {}  # student_id → last action (dedup by keeping last)
+    seen = {}
     errors = []
     for i, change in enumerate(changes_raw):
         sid_raw = change.get("student_id")
@@ -204,10 +183,6 @@ def stage_roster(request, session_id):
     })
 
 
-# ---------------------------------------------------------------------------
-# Step 5: Commit
-# ---------------------------------------------------------------------------
-
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @authentication_classes(_AUTH)
@@ -238,10 +213,11 @@ def commit_session(request, session_id):
             student_id = _uuid.UUID(change["student_id"])
             action = change["action"]
             if action == "add":
+                student = get_object_or_404(Student, id=student_id, school_id=school_id)
                 try:
                     _, created = Enrollment.objects.get_or_create(
                         section=section,
-                        student_id=student_id,
+                        student=student,
                         defaults={"school_id": school_id},
                     )
                     if created:
@@ -255,7 +231,7 @@ def commit_session(request, session_id):
                     )
             elif action == "remove":
                 deleted, _ = Enrollment.objects.filter(
-                    section=section, student_id=student_id
+                    section=section, student_id=student_id, school_id=school_id
                 ).delete()
                 if deleted:
                     removed += 1
@@ -267,10 +243,6 @@ def commit_session(request, session_id):
 
     return Response({"session_id": str(session.id), "status": session.status, **result})
 
-
-# ---------------------------------------------------------------------------
-# Step 6: Verify
-# ---------------------------------------------------------------------------
 
 @extend_schema(responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
@@ -289,7 +261,6 @@ def verify_session(request, session_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Count current enrollments for the section
     enrollment_count = Enrollment.objects.filter(
         section_id=session.section_id, school_id=school_id
     ).count()
