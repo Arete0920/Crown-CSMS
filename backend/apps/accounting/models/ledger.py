@@ -1,7 +1,32 @@
 import uuid
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
+
+
+def _normalized_uuid(value):
+    if isinstance(value, uuid.UUID):
+        return value
+    try:
+        return uuid.UUID(str(value))
+    except (TypeError, ValueError, AttributeError):
+        return value
+
+
+def _require_same_tenant(instance, relation_name: str) -> None:
+    relation_id = getattr(instance, f"{relation_name}_id", None)
+    if relation_id is None:
+        return
+    try:
+        related = getattr(instance, relation_name)
+    except ObjectDoesNotExist as exc:
+        raise ValidationError(
+            {relation_name: "Related record does not exist."}
+        ) from exc
+    if _normalized_uuid(instance.tenant_id) != _normalized_uuid(related.tenant_id):
+        raise ValidationError(
+            {relation_name: "Related record must belong to the same tenant."}
+        )
 
 
 class LedgerAccount(models.Model):
@@ -106,10 +131,15 @@ class LedgerEntry(models.Model):
     class Meta:
         ordering = ["created_at"]
 
+    def clean(self):
+        super().clean()
+        _require_same_tenant(self, "journal_entry")
+        _require_same_tenant(self, "account")
+
     def save(self, *args, **kwargs):
         if not self._state.adding:
             raise ValidationError("Ledger entries are immutable.")
-
+        self.clean()
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
