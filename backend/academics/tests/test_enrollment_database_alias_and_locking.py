@@ -28,12 +28,13 @@ def _alias_graph():
         school_id=school.id,
         name="Alias Household",
     )
-    student = Student.objects.using(ALIAS).create(
+    student = Student(
         school_id=school.id,
-        household_id=household.id,
+        household=household,
         first_name="Alias",
         last_name="Student",
     )
+    student.save(using=ALIAS)
     return school, section, student
 
 
