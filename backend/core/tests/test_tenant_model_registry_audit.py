@@ -18,11 +18,12 @@ def _relationship_index(rows):
     }
 
 
-def test_registry_inventory_discovers_known_unregistered_relationships():
+def test_registry_inventory_discovers_known_relationships_and_registration_state():
     relationships = _relationship_index(discover_tenant_models())
 
-    assert ("academics.Grade", "submission", "submission__school_id") in relationships
-    assert relationships[("academics.Grade", "submission", "submission__school_id")]["registered"] is False
+    grade_submission = ("academics.Grade", "submission", "submission__school_id")
+    assert grade_submission in relationships
+    assert relationships[grade_submission]["registered"] is True
     assert ("academics.MasteryRecord", "student", "student__school_id") in relationships
     assert ("academics.TranscriptEntry", "course", "course__school_id") in relationships
     assert ("home_academy.OfferingEnrollment", "offering", "offering__school_id") in relationships

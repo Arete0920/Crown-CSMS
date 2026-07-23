@@ -4,11 +4,28 @@ from io import StringIO
 
 import pytest
 from django.core.management import CommandError, call_command
-from django.db import connection
+from django.db import connection, models
 
 from core.management.commands import audit_tenant_relationship_integrity as audit_command
 from core.models import School
 from households.models import Guardian, Household
+
+
+def _save_without_model_guard(instance):
+    """Persist an intentionally invalid audit fixture without invoking model save guards."""
+    models.Model.save(instance, force_insert=True)
+    return instance
+
+
+def _cross_tenant_guardian(school_id, household):
+    return _save_without_model_guard(
+        Guardian(
+            school_id=school_id,
+            household=household,
+            first_name="Pat",
+            last_name="Guardian",
+        )
+    )
 
 
 @pytest.mark.django_db
@@ -16,12 +33,7 @@ def test_audit_reports_cross_tenant_household_relationship():
     school_a = School.objects.create(name="School A")
     school_b = School.objects.create(name="School B")
     household = Household.objects.create(school_id=school_a.id, name="Family")
-    Guardian.objects.create(
-        school_id=school_b.id,
-        household=household,
-        first_name="Pat",
-        last_name="Guardian",
-    )
+    _cross_tenant_guardian(school_b.id, household)
 
     stdout = StringIO()
     call_command("audit_tenant_relationship_integrity", stdout=stdout)
@@ -95,9 +107,9 @@ def test_audit_classifies_dangling_parent_as_anomaly(monkeypatch):
                 "is_primary, created_at, updated_at) "
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                 [
-                    str(guardian_id),
-                    str(school.id),
-                    str(missing_household_id),
+                    guardian_id.hex,
+                    school.id.hex,
+                    missing_household_id.hex,
                     "Dangling",
                     "Guardian",
                     "",
@@ -141,12 +153,7 @@ def test_audit_fail_on_anomaly_is_nonzero_and_non_destructive():
     school_a = School.objects.create(name="School A")
     school_b = School.objects.create(name="School B")
     household = Household.objects.create(school_id=school_a.id, name="Family")
-    guardian = Guardian.objects.create(
-        school_id=school_b.id,
-        household=household,
-        first_name="Pat",
-        last_name="Guardian",
-    )
+    guardian = _cross_tenant_guardian(school_b.id, household)
 
     with pytest.raises(CommandError, match="unique anomaly row"):
         call_command(
@@ -219,13 +226,15 @@ def test_accounting_tenant_relationships_are_reconciled_and_explicitly_unverifie
         name="Cash",
         account_type="ASSET",
     )
-    LedgerEntry.objects.create(
-        tenant_id=tenant_id,
-        journal_entry=journal,
-        account=account,
-        entry_type="DEBIT",
-        amount="10.00",
-        currency="USD",
+    _save_without_model_guard(
+        LedgerEntry(
+            tenant_id=tenant_id,
+            journal_entry=journal,
+            account=account,
+            entry_type="DEBIT",
+            amount="10.00",
+            currency="USD",
+        )
     )
     monkeypatch.setattr(
         audit_command,
@@ -251,11 +260,9 @@ def test_accounting_tenant_relationships_are_reconciled_and_explicitly_unverifie
 def test_overall_anomaly_rows_are_deduplicated_across_relationships(monkeypatch):
     school = School.objects.create(name="School A")
     household = Household.objects.create(school_id=school.id, name="Family")
-    Guardian.objects.create(
-        school_id="00000000-0000-0000-0000-000000000099",
-        household=household,
-        first_name="Pat",
-        last_name="Guardian",
+    _cross_tenant_guardian(
+        uuid.UUID("00000000-0000-0000-0000-000000000099"),
+        household,
     )
     monkeypatch.setattr(
         audit_command,
