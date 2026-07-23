@@ -39,7 +39,7 @@ def test_same_tenant_multi_record_add_succeeds():
     assert packet.snapshots.count() == 2
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_cross_tenant_implicit_m2m_add_is_rejected():
     packet = BoardPacket.objects.create(school_id=uuid.uuid4(), title="Packet")
     snapshot = BoardReportSnapshot.objects.create(
@@ -54,7 +54,7 @@ def test_cross_tenant_implicit_m2m_add_is_rejected():
     assert not packet.snapshots.exists()
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_reverse_cross_tenant_implicit_m2m_add_is_rejected():
     packet = BoardPacket.objects.create(school_id=uuid.uuid4(), title="Packet")
     snapshot = BoardReportSnapshot.objects.create(
@@ -69,7 +69,7 @@ def test_reverse_cross_tenant_implicit_m2m_add_is_rejected():
     assert not packet.snapshots.exists()
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_mixed_batch_is_atomic_and_rejected():
     school_id = uuid.uuid4()
     packet = BoardPacket.objects.create(school_id=school_id, title="Packet")
@@ -230,6 +230,51 @@ def test_raw_partial_direct_save_endpoint_update_is_rejected():
 
     with pytest.raises(ValidationError, match="include both endpoints"):
         row.save_base(raw=True, update_fields=["boardpacket"])
+
+    row.refresh_from_db()
+    assert row.boardpacket_id == packet_one.pk
+    assert row.boardreportsnapshot_id == snapshot_one.pk
+
+
+@pytest.mark.django_db
+def test_raw_direct_save_base_rejects_cross_tenant_insert():
+    packet = BoardPacket.objects.create(school_id=uuid.uuid4(), title="Packet")
+    snapshot = BoardReportSnapshot.objects.create(
+        school_id=uuid.uuid4(),
+        as_of_date="2026-07-22",
+        period_label="Invalid",
+    )
+    through = BoardPacket.snapshots.through
+    row = through(boardpacket=packet, boardreportsnapshot=snapshot)
+
+    with pytest.raises(ValidationError, match="same tenant"):
+        row.save_base(raw=True, force_insert=True)
+
+    assert through.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_raw_full_endpoint_repoint_rejects_cross_tenant_update():
+    school_one = uuid.uuid4()
+    school_two = uuid.uuid4()
+    packet_one = BoardPacket.objects.create(school_id=school_one, title="Packet 1")
+    packet_two = BoardPacket.objects.create(school_id=school_two, title="Packet 2")
+    snapshot_one = BoardReportSnapshot.objects.create(
+        school_id=school_one,
+        as_of_date="2026-07-22",
+        period_label="One",
+    )
+    packet_one.snapshots.add(snapshot_one)
+    through = BoardPacket.snapshots.through
+    row = through.objects.get()
+
+    row.boardpacket = packet_two
+    row.boardreportsnapshot = snapshot_one
+    with pytest.raises(ValidationError, match="same tenant"):
+        row.save_base(
+            raw=True,
+            update_fields=["boardpacket", "boardreportsnapshot"],
+        )
 
     row.refresh_from_db()
     assert row.boardpacket_id == packet_one.pk

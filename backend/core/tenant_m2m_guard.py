@@ -3,8 +3,8 @@ from __future__ import annotations
 from functools import wraps
 
 from django.core.exceptions import FieldDoesNotExist, ValidationError
-from django.db import models
-from django.db.models.signals import m2m_changed, pre_save
+from django.db import DEFAULT_DB_ALIAS, models
+from django.db.models.signals import m2m_changed
 
 
 SUPPORTED_TENANT_FIELDS = ("school_id", "school", "tenant_id", "tenant")
@@ -184,17 +184,37 @@ def reject_cross_tenant_m2m(
         )
 
 
-def validate_direct_implicit_through_save(
-    sender,
-    instance,
-    raw,
-    using,
-    update_fields,
-    **kwargs,
-):
-    through_fields = _through_fields(sender)
-    _require_complete_endpoint_update(through_fields, update_fields)
-    _validate_through_objects(sender, [instance], using)
+def _install_model_save_base_guard() -> None:
+    if getattr(models.Model.save_base, "_crown_tenant_guard", False):
+        return
+
+    original_save_base = models.Model.save_base
+
+    @wraps(original_save_base)
+    def guarded_save_base(
+        self,
+        raw=False,
+        force_insert=False,
+        force_update=False,
+        using=None,
+        update_fields=None,
+    ):
+        through_fields = _through_fields(type(self))
+        if through_fields is not None:
+            _require_complete_endpoint_update(through_fields, update_fields)
+            database = using or self._state.db or DEFAULT_DB_ALIAS
+            _validate_through_objects(type(self), [self], database)
+        return original_save_base(
+            self,
+            raw=raw,
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+        )
+
+    guarded_save_base._crown_tenant_guard = True
+    models.Model.save_base = guarded_save_base
 
 
 def _install_queryset_guards() -> None:
@@ -243,9 +263,5 @@ def install_tenant_m2m_guards() -> None:
         dispatch_uid="core.reject_cross_tenant_implicit_m2m",
         weak=False,
     )
-    pre_save.connect(
-        validate_direct_implicit_through_save,
-        dispatch_uid="core.validate_direct_implicit_through_save",
-        weak=False,
-    )
+    _install_model_save_base_guard()
     _install_queryset_guards()
