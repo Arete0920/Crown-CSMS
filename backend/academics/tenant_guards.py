@@ -1,12 +1,14 @@
 import uuid
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import router, transaction
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
 from core.models import AcademicYear
 
-from .models import Term
+from .models import Course, Section, Term
 
 
 def _normalized_uuid(value):
@@ -20,8 +22,19 @@ def _normalized_uuid(value):
         return value
 
 
+def _field_selected(fields, *names):
+    return bool(fields.intersection(names))
+
+
+def _manager_for_alias(manager, using, *, lock=False):
+    queryset = manager.using(using) if using else manager
+    return queryset.select_for_update() if lock else queryset
+
+
 @receiver(pre_save, sender=Term, dispatch_uid="academics.term.tenant_consistency")
-def enforce_term_academic_year_tenant(sender, instance, raw=False, update_fields=None, **kwargs):
+def enforce_term_academic_year_tenant(
+    sender, instance, raw=False, update_fields=None, using=None, **kwargs
+):
     if raw:
         return
 
@@ -29,9 +42,9 @@ def enforce_term_academic_year_tenant(sender, instance, raw=False, update_fields
         raise ValidationError({"academic_year": "Term requires an academic year."})
 
     try:
-        academic_year = AcademicYear._base_manager.only("school_id").get(
-            pk=instance.academic_year_id
-        )
+        academic_year = _manager_for_alias(
+            AcademicYear._base_manager, using
+        ).only("school_id").get(pk=instance.academic_year_id)
     except AcademicYear.DoesNotExist as exc:
         raise ValidationError({"academic_year": "Academic year does not exist."}) from exc
 
@@ -52,3 +65,137 @@ def enforce_term_academic_year_tenant(sender, instance, raw=False, update_fields
             raise ValidationError(
                 "Term school and academic year must be updated together."
             )
+
+
+def _projected_section_authority(instance, update_fields, using=None):
+    current = {
+        "school_id": instance.school_id,
+        "course_id": instance.course_id,
+        "term_ref_id": instance.term_ref_id,
+        "teacher_id": instance.teacher_id,
+    }
+    if not instance.pk or update_fields is None:
+        return current
+
+    try:
+        persisted = _manager_for_alias(
+            Section._base_manager, using
+        ).only("school_id", "course_id", "term_ref_id", "teacher_id").get(
+            pk=instance.pk
+        )
+    except Section.DoesNotExist:
+        return current
+
+    fields = {str(field) for field in update_fields}
+    return {
+        "school_id": (
+            instance.school_id if "school_id" in fields else persisted.school_id
+        ),
+        "course_id": (
+            instance.course_id
+            if _field_selected(fields, "course", "course_id")
+            else persisted.course_id
+        ),
+        "term_ref_id": (
+            instance.term_ref_id
+            if _field_selected(fields, "term_ref", "term_ref_id")
+            else persisted.term_ref_id
+        ),
+        "teacher_id": (
+            instance.teacher_id
+            if _field_selected(fields, "teacher", "teacher_id")
+            else persisted.teacher_id
+        ),
+    }
+
+
+@receiver(pre_save, sender=Section, dispatch_uid="academics.section.tenant_consistency")
+def enforce_section_tenant_consistency(
+    sender, instance, raw=False, update_fields=None, using=None, **kwargs
+):
+    if raw:
+        return
+
+    authority = _projected_section_authority(instance, update_fields, using=using)
+    school_id = _normalized_uuid(authority["school_id"])
+    course_id = authority["course_id"]
+    term_ref_id = authority["term_ref_id"]
+    teacher_id = authority["teacher_id"]
+
+    if not course_id:
+        raise ValidationError({"course": "Section requires a course."})
+
+    try:
+        course = _manager_for_alias(
+            Course._base_manager, using, lock=True
+        ).only("school_id").get(pk=course_id)
+    except Course.DoesNotExist as exc:
+        raise ValidationError({"course": "Course does not exist."}) from exc
+
+    if school_id != _normalized_uuid(course.school_id):
+        raise ValidationError(
+            {"course": "Section and course must belong to the same school."}
+        )
+
+    if term_ref_id:
+        try:
+            term = _manager_for_alias(
+                Term._base_manager, using, lock=True
+            ).only("school_id").get(pk=term_ref_id)
+        except Term.DoesNotExist as exc:
+            raise ValidationError({"term_ref": "Term does not exist."}) from exc
+        if school_id != _normalized_uuid(term.school_id):
+            raise ValidationError(
+                {"term_ref": "Section and term must belong to the same school."}
+            )
+
+    if teacher_id:
+        User = get_user_model()
+        try:
+            teacher = _manager_for_alias(
+                User._base_manager, using, lock=True
+            ).only("school_id").get(pk=teacher_id)
+        except User.DoesNotExist as exc:
+            raise ValidationError({"teacher": "Teacher does not exist."}) from exc
+        if not teacher.school_id:
+            raise ValidationError(
+                {"teacher": "Section teacher must belong to a school."}
+            )
+        if school_id != _normalized_uuid(teacher.school_id):
+            raise ValidationError(
+                {"teacher": "Section and teacher must belong to the same school."}
+            )
+
+
+_original_section_save = Section.save
+
+
+def _serialized_section_save(instance, *args, **kwargs):
+    """Serialize Section validation, authority reads, and persistence atomically."""
+    positional_using = args[2] if len(args) >= 3 else None
+    using = kwargs.get("using") or positional_using or instance._state.db or router.db_for_write(
+        Section, instance=instance
+    )
+    if len(args) >= 3 and positional_using is None:
+        normalized_args = list(args)
+        normalized_args[2] = using
+        args = tuple(normalized_args)
+    elif len(args) < 3:
+        kwargs["using"] = using
+
+    with transaction.atomic(using=using):
+        if not instance._state.adding:
+            try:
+                Section._base_manager.using(using).select_for_update().only("pk").get(
+                    pk=instance.pk
+                )
+            except Section.DoesNotExist:
+                # Preserve Django's normal update-then-insert behavior when an existing
+                # instance is intentionally copied to a database alias without that row.
+                pass
+        return _original_section_save(instance, *args, **kwargs)
+
+
+if not getattr(Section.save, "_tenant_serialized", False):
+    _serialized_section_save._tenant_serialized = True
+    Section.save = _serialized_section_save

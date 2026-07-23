@@ -47,16 +47,26 @@ TEST_AUTH_SECRET = "TestAuthSecret-LocalOnly"
 class TestScopingStudentsTeacher(TestCase):
     def setUp(self):
         self.school_id = uuid.uuid4()
+        self.school = School.objects.create(
+            id=self.school_id,
+            name="Teacher Scoping Test School",
+        )
 
         # Teacher with a section and one enrolled student.
         self.teacher = UserAccount.objects.create_user(
-            username="teacher_scope_test", password=TEST_AUTH_SECRET
+            username="teacher_scope_test",
+            email="teacher_scope_test@example.com",
+            password=TEST_AUTH_SECRET,
+            school=self.school,
         )
         self.teacher.role = "TEACHER"  # fallback for resolve_role (no UserRole record)
 
         # Second teacher with no sections — must see nothing.
         self.unassigned_teacher = UserAccount.objects.create_user(
-            username="unassigned_teacher_scope_test", password=TEST_AUTH_SECRET
+            username="unassigned_teacher_scope_test",
+            email="unassigned_teacher_scope_test@example.com",
+            password=TEST_AUTH_SECRET,
+            school=self.school,
         )
         self.unassigned_teacher.role = "TEACHER"
 
