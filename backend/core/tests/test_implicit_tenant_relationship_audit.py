@@ -3,6 +3,7 @@ import uuid
 
 import pytest
 from django.core.management import CommandError, call_command
+from django.db import connection
 
 from board_oversight.models import BoardPacket, BoardReportSnapshot
 from core.management.commands.audit_implicit_tenant_relationships import (
@@ -17,6 +18,31 @@ def _relationship(report, owner_model, field):
         for row in report["relationships"]
         if row["owner_model"] == owner_model and row["field"] == field
     )
+
+
+def _insert_corrupt_packet_snapshot_link(packet, snapshot):
+    """Insert an intentionally invalid row below the guarded ORM boundary.
+
+    These tests verify that the independent audit command detects historical or
+    externally introduced corruption. The normal ORM must remain fail-closed,
+    so the anomaly fixture uses direct SQL and derives its table/columns from
+    Django metadata rather than weakening or monkeypatching the runtime guard.
+    """
+
+    through = BoardPacket.snapshots.through
+    packet_field = through._meta.get_field("boardpacket")
+    snapshot_field = through._meta.get_field("boardreportsnapshot")
+    quote = connection.ops.quote_name
+    packet_id = packet_field.target_field.get_db_prep_value(packet.pk, connection)
+    snapshot_id = snapshot_field.target_field.get_db_prep_value(snapshot.pk, connection)
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f"INSERT INTO {quote(through._meta.db_table)} "
+            f"({quote(packet_field.column)}, {quote(snapshot_field.column)}) "
+            "VALUES (%s, %s)",
+            [packet_id, snapshot_id],
+        )
 
 
 def test_metadata_discovery_includes_known_tenant_scoped_implicit_relations():
@@ -65,8 +91,7 @@ def test_cross_school_through_row_is_partitioned_as_mismatch():
         as_of_date="2026-07-22",
         period_label="July",
     )
-    through = BoardPacket.snapshots.through
-    through.objects.create(boardpacket=packet, boardreportsnapshot=snapshot)
+    _insert_corrupt_packet_snapshot_link(packet, snapshot)
 
     report = build_report(include_ids=True)
     partition = _relationship(
@@ -92,10 +117,7 @@ def test_fail_on_anomaly_rejects_cross_school_through_row(capsys):
         as_of_date="2026-07-22",
         period_label="July",
     )
-    BoardPacket.snapshots.through.objects.create(
-        boardpacket=packet,
-        boardreportsnapshot=snapshot,
-    )
+    _insert_corrupt_packet_snapshot_link(packet, snapshot)
 
     with pytest.raises(CommandError, match="implicit tenant anomaly"):
         call_command("audit_implicit_tenant_relationships", "--fail-on-anomaly")

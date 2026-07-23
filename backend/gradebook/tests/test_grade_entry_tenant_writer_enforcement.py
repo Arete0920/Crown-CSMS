@@ -78,6 +78,7 @@ def test_same_school_grade_entry_accepts_string_school_id():
         points_possible=100,
     )
 
+    grade.refresh_from_db()
     assert grade.pk is not None
     assert grade.school_id == school.id
 
@@ -95,6 +96,7 @@ def test_same_school_grade_entry_accepts_string_foreign_key_ids():
         points_possible=100,
     )
 
+    grade.refresh_from_db()
     assert grade.pk is not None
     assert grade.section_id == section.id
     assert grade.assignment_id == assignment.id
