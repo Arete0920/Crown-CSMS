@@ -7,8 +7,9 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
 from core.models import AcademicYear
+from households.models import Student
 
-from .models import Course, Section, Term
+from .models import Course, Enrollment, Section, Term
 
 
 def _normalized_uuid(value):
@@ -167,14 +168,89 @@ def enforce_section_tenant_consistency(
             )
 
 
-_original_section_save = Section.save
+def _projected_enrollment_authority(instance, update_fields, using=None):
+    current = {
+        "school_id": instance.school_id,
+        "section_id": instance.section_id,
+        "student_id": instance.student_id,
+    }
+    if not instance.pk or update_fields is None:
+        return current
+
+    try:
+        persisted = _manager_for_alias(
+            Enrollment._base_manager, using
+        ).only("school_id", "section_id", "student_id").get(pk=instance.pk)
+    except Enrollment.DoesNotExist:
+        return current
+
+    fields = {str(field) for field in update_fields}
+    return {
+        "school_id": (
+            instance.school_id if "school_id" in fields else persisted.school_id
+        ),
+        "section_id": (
+            instance.section_id
+            if _field_selected(fields, "section", "section_id")
+            else persisted.section_id
+        ),
+        "student_id": (
+            instance.student_id
+            if _field_selected(fields, "student", "student_id")
+            else persisted.student_id
+        ),
+    }
 
 
-def _serialized_section_save(instance, *args, **kwargs):
-    """Serialize Section validation, authority reads, and persistence atomically."""
+@receiver(
+    pre_save,
+    sender=Enrollment,
+    dispatch_uid="academics.enrollment.tenant_consistency",
+)
+def enforce_enrollment_tenant_consistency(
+    sender, instance, raw=False, update_fields=None, using=None, **kwargs
+):
+    if raw:
+        return
+
+    authority = _projected_enrollment_authority(instance, update_fields, using=using)
+    school_id = _normalized_uuid(authority["school_id"])
+    section_id = authority["section_id"]
+    student_id = authority["student_id"]
+
+    if not section_id:
+        raise ValidationError({"section": "Enrollment requires a section."})
+    if not student_id:
+        raise ValidationError({"student": "Enrollment requires a student."})
+
+    try:
+        section = _manager_for_alias(
+            Section._base_manager, using, lock=True
+        ).only("school_id").get(pk=section_id)
+    except Section.DoesNotExist as exc:
+        raise ValidationError({"section": "Section does not exist."}) from exc
+
+    try:
+        student = _manager_for_alias(
+            Student._base_manager, using, lock=True
+        ).only("school_id").get(pk=student_id)
+    except Student.DoesNotExist as exc:
+        raise ValidationError({"student": "Student does not exist."}) from exc
+
+    if school_id != _normalized_uuid(section.school_id):
+        raise ValidationError(
+            {"section": "Enrollment and section must belong to the same school."}
+        )
+    if school_id != _normalized_uuid(student.school_id):
+        raise ValidationError(
+            {"student": "Enrollment and student must belong to the same school."}
+        )
+
+
+def _serialized_save(model, original_save, instance, *args, **kwargs):
     positional_using = args[2] if len(args) >= 3 else None
     using = kwargs.get("using") or positional_using or instance._state.db or router.db_for_write(
-        Section, instance=instance
+        model, instance=instance
     )
     if len(args) >= 3 and positional_using is None:
         normalized_args = list(args)
@@ -186,16 +262,37 @@ def _serialized_section_save(instance, *args, **kwargs):
     with transaction.atomic(using=using):
         if not instance._state.adding:
             try:
-                Section._base_manager.using(using).select_for_update().only("pk").get(
+                model._base_manager.using(using).select_for_update().only("pk").get(
                     pk=instance.pk
                 )
-            except Section.DoesNotExist:
-                # Preserve Django's normal update-then-insert behavior when an existing
-                # instance is intentionally copied to a database alias without that row.
+            except model.DoesNotExist:
                 pass
-        return _original_section_save(instance, *args, **kwargs)
+        return original_save(instance, *args, **kwargs)
+
+
+_original_section_save = Section.save
+
+
+def _serialized_section_save(instance, *args, **kwargs):
+    """Serialize Section validation, authority reads, and persistence atomically."""
+    return _serialized_save(Section, _original_section_save, instance, *args, **kwargs)
 
 
 if not getattr(Section.save, "_tenant_serialized", False):
     _serialized_section_save._tenant_serialized = True
     Section.save = _serialized_section_save
+
+
+_original_enrollment_save = Enrollment.save
+
+
+def _serialized_enrollment_save(instance, *args, **kwargs):
+    """Serialize Enrollment validation, authority reads, and persistence atomically."""
+    return _serialized_save(
+        Enrollment, _original_enrollment_save, instance, *args, **kwargs
+    )
+
+
+if not getattr(Enrollment.save, "_tenant_serialized", False):
+    _serialized_enrollment_save._tenant_serialized = True
+    Enrollment.save = _serialized_enrollment_save
