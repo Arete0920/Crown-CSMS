@@ -1,4 +1,4 @@
-import { Link, useInRouterContext } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router';
 import CrownCard from './CrownCard.jsx';
 
 export default function CrownActionCard({ title, description, actionLabel, eyebrow = 'Quick Action', href, fallbackHref = '/dashboard' }) {

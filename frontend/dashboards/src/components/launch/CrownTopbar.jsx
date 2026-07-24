@@ -1,4 +1,4 @@
-import { Link, useInRouterContext } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router';
 
 export default function CrownTopbar({
   schoolName = 'Heritage Christian Academy',
