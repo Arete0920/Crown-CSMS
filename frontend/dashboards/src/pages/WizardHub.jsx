@@ -8,7 +8,7 @@
  * Route: /wizards
  */
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { fetchWizards } from "../api/wizards";
 import { WIZARD_MANIFEST } from "../routes/wizard-manifest.js";

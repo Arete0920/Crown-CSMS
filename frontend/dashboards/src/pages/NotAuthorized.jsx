@@ -1,5 +1,5 @@
 import { Card, CardContent, Stack, Typography, Button } from '@mui/material';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router';
 import { getCurrentUserRoles } from '../auth/roleAdapter';
 import { getDefaultDashboardPath } from '../config/dashboardRegistry';
 

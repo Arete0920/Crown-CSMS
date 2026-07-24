@@ -28,7 +28,7 @@ vi.mock('../components/crown-dashboard/CrownDashboardTemplate.jsx', () => ({
   default: () => null,
 }));
 
-vi.mock('react-router-dom', () => ({
+vi.mock('react-router', () => ({
   Link: ({ children, to, ...rest }) => <a href={to} {...rest}>{children}</a>,
   useInRouterContext: () => false,
 }));

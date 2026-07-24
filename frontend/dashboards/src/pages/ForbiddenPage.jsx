@@ -1,5 +1,5 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { PATHS } from '../routes/paths';
 
 export default function ForbiddenPage() {
