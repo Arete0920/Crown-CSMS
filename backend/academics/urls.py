@@ -25,7 +25,6 @@ from .views import (
     TermViewSet,
     parent_students,
     section_assessments,
-    section_roster,
     student_sections,
     CurriculumSourceViewSet,
     UnitViewSet,
@@ -105,11 +104,6 @@ urlpatterns = [
         "academics/sections/<uuid:section_id>/attendance/",
         section_attendance_submit,
         name="academics-section-attendance-submit",
-    ),
-    path(
-        "academics/sections/<uuid:section_id>/roster/",
-        section_roster,
-        name="academics-section-roster",
     ),
     path(
         "academics/students/<uuid:student_id>/transcript/",
