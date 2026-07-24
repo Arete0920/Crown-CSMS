@@ -19,7 +19,7 @@ jobs:
   sandbox-ready-evidence:
     name: Sandbox Ready Evidence # Scope Boundary
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       CROWN_ENV: production
       CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS: "0"
@@ -262,10 +262,24 @@ jobs:
 
       - name: Run dashboard module completion gate
         if: steps.changes.outputs.docs_only != 'true'
-        timeout-minutes: 10
+        timeout-minutes: 20
         shell: pwsh
+        env:
+          CROWN_105_RUN_HEAVY_FRONTEND: "1"
+          CROWN_105_RUN_BACKEND_PYTEST: "1"
         run: |
-          ./scripts/execution/105_dashboard_module_completion_gate.ps1 -Deep *>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/dashboard-module-completion.log"
+          ./scripts/execution/105_dashboard_module_completion_gate.ps1 *>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/dashboard-module-completion.log"
+
+      - name: Run dashboard role matrix proof packs
+        if: steps.changes.outputs.docs_only != 'true'
+        timeout-minutes: 20
+        working-directory: frontend/dashboards
+        env:
+          CI: "1"
+        run: |
+          npm run ui:proof:matrix
+          npm run ui:proof:matrix-pack-2
+          npm run ui:proof:matrix-pack-3
 
       - name: Upload dashboard module diagnostic log
         if: always() && steps.changes.outputs.docs_only != 'true'
