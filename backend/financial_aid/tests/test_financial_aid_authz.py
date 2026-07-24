@@ -209,3 +209,115 @@ class TestRationaleFieldRedaction:
     def test_head_of_school_rationale_is_null(self):
         for row in self._rows_for("HEAD_OF_SCHOOL"):
             assert row["rationale"] is None
+
+
+class TestFinancialAidApiRoutePermissions:
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/api/v1/financial-aid/applications/",
+            "/api/v1/financial-aid/awards/",
+        ],
+    )
+    def test_non_financial_role_cannot_read_sensitive_financial_aid_rows(self, path):
+        school = _school("FA API Read Denied")
+        user = _user("teacher-fa-api")
+        _assign_role(user, school, "TEACHER")
+        _grant("TEACHER", "teacher.view")
+        _seed_fa_data(school.id)
+
+        response = _client_for(user).get(path, HTTP_X_SCHOOL_ID=str(school.id))
+
+        assert response.status_code == 403
+        assert response.json()["ok"] is False
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/api/v1/financial-aid/applications/",
+            "/api/v1/financial-aid/awards/",
+        ],
+    )
+    def test_financial_aid_view_permission_allows_sensitive_reads(self, path):
+        school = _school("FA API Read Allowed")
+        user = _user("aid-read-api")
+        _assign_role(user, school, "AID_DIRECTOR")
+        _grant("AID_DIRECTOR", "financial_aid.view")
+        _seed_fa_data(school.id)
+
+        response = _client_for(user).get(path, HTTP_X_SCHOOL_ID=str(school.id))
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["ok"] is True
+        assert len(payload["data"]) == 1
+
+    def test_view_only_role_cannot_disburse_to_billing_run(self, monkeypatch):
+        school = _school("FA Disburse Denied")
+        user = _user("finance-view-only")
+        _assign_role(user, school, "FINANCE_DIRECTOR")
+        _grant("FINANCE_DIRECTOR", "financial_aid.view")
+        called = False
+
+        def _unexpected_service_call(**kwargs):
+            nonlocal called
+            called = True
+            return {"unexpected": True}
+
+        monkeypatch.setattr(
+            "financial_aid.api.apply_financial_aid_to_billing_run",
+            _unexpected_service_call,
+        )
+
+        response = _client_for(user).post(
+            f"/api/v1/financial-aid/billing-runs/{uuid.uuid4()}/disburse/",
+            data={},
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+
+        assert response.status_code == 403
+        assert called is False
+
+    def test_edit_permission_allows_disbursement_service_call(self, monkeypatch):
+        school = _school("FA Disburse Allowed")
+        user = _user("aid-edit")
+        _assign_role(user, school, "AID_DIRECTOR")
+        _grant("AID_DIRECTOR", "financial_aid.edit")
+        billing_run_id = uuid.uuid4()
+        calls = []
+
+        def _service_call(**kwargs):
+            calls.append(kwargs)
+            return {"billing_run_id": str(kwargs["billing_run_id"]), "applied": 1}
+
+        monkeypatch.setattr(
+            "financial_aid.api.apply_financial_aid_to_billing_run",
+            _service_call,
+        )
+
+        response = _client_for(user).post(
+            f"/api/v1/financial-aid/billing-runs/{billing_run_id}/disburse/",
+            data={},
+            content_type="application/json",
+            HTTP_X_SCHOOL_ID=str(school.id),
+        )
+
+        assert response.status_code == 200
+        assert calls == [{"school_id": school.id, "billing_run_id": billing_run_id}]
+
+    def test_cross_tenant_financial_aid_api_request_is_denied_before_rows_return(self):
+        school_a = _school("FA API Tenant A")
+        school_b = _school("FA API Tenant B")
+        user = _user("aid-cross-tenant")
+        _assign_role(user, school_a, "AID_DIRECTOR")
+        _grant("AID_DIRECTOR", "financial_aid.view")
+        _seed_fa_data(school_b.id)
+
+        response = _client_for(user).get(
+            "/api/v1/financial-aid/applications/",
+            HTTP_X_SCHOOL_ID=str(school_b.id),
+        )
+
+        assert response.status_code == 404
+        assert response.json()["code"] == "tenant_access_denied"
