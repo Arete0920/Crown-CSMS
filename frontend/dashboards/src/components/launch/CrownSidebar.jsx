@@ -1,4 +1,4 @@
-import { Link, useInRouterContext } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router';
 import { getCurrentUserRoles } from '../../auth/roleAdapter';
 import { hasAnyRole } from '../../auth/roleAccess';
 import CrownLogo from '../brand/CrownLogo';

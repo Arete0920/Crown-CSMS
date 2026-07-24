@@ -8,6 +8,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        'react-router-dom': 'react-router',
+      },
+    },
     define: {
       // Injected at build time so the frontend can report its own deployment SHA.
       __BUILD_SHA__: JSON.stringify(process.env.VITE_BUILD_SHA || env.VITE_BUILD_SHA || 'local-dev'),
@@ -38,7 +43,7 @@ export default defineConfig(({ mode }) => {
               },
               {
                 name: 'vendor-router',
-                test: /node_modules[\\/](react-router|react-router-dom)[\\/]/,
+                test: /node_modules[\\/]react-router[\\/]/,
                 priority: 45,
               },
               {

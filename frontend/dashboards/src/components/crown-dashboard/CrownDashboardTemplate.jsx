@@ -15,7 +15,7 @@ import CrownFaithCommunityStrip from './CrownFaithCommunityStrip.jsx';
 import CrownDashboardCommunicationsStrip from './CrownDashboardCommunicationsStrip.jsx';
 import CrownDashboardDataTruthStatus from './CrownDashboardDataTruthStatus.jsx';
 import CrownDashboardDecisionPanel from './CrownDashboardDecisionPanel.jsx';
-import { Link, useInRouterContext } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router';
 import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { BASE_COMMUNICATIONS, BASE_FAITH_COMMUNITY, BASE_NOTE } from '../../config/dashboardTemplates/_baseData.js';

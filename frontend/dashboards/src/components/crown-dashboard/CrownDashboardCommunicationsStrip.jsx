@@ -1,5 +1,5 @@
 import CrownCard from '../launch/CrownCard.jsx';
-import { Link, useInRouterContext } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router';
 
 function ActionControl({ href, className, children }) {
   const hasRouterContext = useInRouterContext();

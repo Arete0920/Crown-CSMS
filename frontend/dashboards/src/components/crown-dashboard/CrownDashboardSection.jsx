@@ -1,5 +1,5 @@
 import CrownCard from '../launch/CrownCard.jsx';
-import { Link, useInRouterContext } from 'react-router-dom';
+import { Link, useInRouterContext } from 'react-router';
 
 export default function CrownDashboardSection({ kicker = 'Overview', title, body, actions = [] }) {
   const hasRouterContext = useInRouterContext();
