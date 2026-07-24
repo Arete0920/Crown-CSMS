@@ -1,4 +1,11 @@
-﻿# CROWN Release Authority Integrity Hold
+> SUPERSEDED — HISTORICAL RECORD ONLY
+>
+> Archived: 2026-07-24
+> Former path: `docs/release/INTEGRITY_HOLD_RELEASE_AUTHORITY_20260506.md`
+> Current governing authority: `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`
+> Do not use for current release, deployment, production, completion, or buyer-readiness decisions.
+
+# CROWN Release Authority Integrity Hold
 
 > Superseded Authority Notice (2026-05-30)
 >

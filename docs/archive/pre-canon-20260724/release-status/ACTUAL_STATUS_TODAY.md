@@ -1,4 +1,11 @@
-﻿# ACTUAL_STATUS_TODAY.md
+> SUPERSEDED — HISTORICAL RECORD ONLY
+>
+> Archived: 2026-07-24
+> Former path: `docs/ACTUAL_STATUS_TODAY.md`
+> Current governing authority: `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`
+> Do not use for current release, production, completion, or buyer-readiness decisions.
+
+# ACTUAL_STATUS_TODAY.md
 
 > Superseded Authority Notice (2026-05-29)
 >

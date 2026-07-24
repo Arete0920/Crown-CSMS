@@ -1,3 +1,10 @@
+> SUPERSEDED — HISTORICAL RECORD ONLY
+>
+> Archived: 2026-07-24
+> Former path: `docs/release/FINAL_15_PHASE_VERIFICATION.md`
+> Current governing authority: `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`
+> Do not use for current release, deployment, production, completion, or buyer-readiness decisions.
+
 # FINAL 15 PHASE VERIFICATION
 
 > Superseded Authority Notice (2026-05-29)

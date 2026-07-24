@@ -1,3 +1,10 @@
+> SUPERSEDED — HISTORICAL RECORD ONLY
+>
+> Archived: 2026-07-24
+> Former path: `docs/repo-cleanup/PHASE3_RECOMMENDATIONS.md`
+> Current governing authority: `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`
+> Do not use as a current workflow, branch-protection, pull-request, release, or completion plan.
+
 # Phase 3 Recommendations
 
 Generated: Phase 2 cleanup pass output

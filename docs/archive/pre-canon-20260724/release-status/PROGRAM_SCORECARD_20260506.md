@@ -1,4 +1,11 @@
-﻿# CROWN Program Scorecard
+> SUPERSEDED — HISTORICAL RECORD ONLY
+>
+> Archived: 2026-07-24
+> Former path: `docs/release/PROGRAM_SCORECARD_20260506.md`
+> Current governing authority: `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`
+> Do not use for current release, deployment, production, completion, scoring, or buyer-readiness decisions.
+
+# CROWN Program Scorecard
 
 > Superseded Authority Notice (2026-05-30)
 >
