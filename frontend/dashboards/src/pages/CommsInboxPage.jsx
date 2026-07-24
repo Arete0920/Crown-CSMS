@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { apiFetch } from "../lib/api.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 

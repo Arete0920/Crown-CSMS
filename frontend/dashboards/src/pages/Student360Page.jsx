@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import { authenticatedFetch } from "../utils/authClient.js";
 import { fetchGraduationAudit } from "../api/academics.js";
 import GraduationBreakdownDrawer from "../components/student360/GraduationBreakdownDrawer.jsx";

@@ -2,7 +2,7 @@ import CrownLayout from '../components/crown/CrownLayout.jsx';
 import CrownCard from '../components/crown/CrownCard.jsx';
 import CrownMetricCard from '../components/crown/CrownMetricCard.jsx';
 import { CrownGrid, Col } from '../components/crown/CrownGrid.jsx';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export function HomeDashboard() {
   const navLinks = [

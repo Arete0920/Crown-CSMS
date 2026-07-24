@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 
 import { HomeDashboard } from './HomeDashboard.jsx';
 import { getAccessToken } from '../utils/authClient.js';

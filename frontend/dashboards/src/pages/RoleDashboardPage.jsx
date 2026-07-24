@@ -7,7 +7,7 @@
  * renders widgets via WidgetDispatcher, and shows a DrilldownDrawer on expand.
  */
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import WidgetDispatcher from "../components/dashboard/WidgetDispatcher.jsx";
 import DrilldownDrawer from "../components/dashboard/DrilldownDrawer.jsx";

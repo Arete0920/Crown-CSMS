@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 
 const STORAGE_KEYS = [
   "crown.jwt.access",

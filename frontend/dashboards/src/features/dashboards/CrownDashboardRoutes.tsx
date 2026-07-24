@@ -1,4 +1,4 @@
-import { Route } from "react-router-dom";
+import { Route } from "react-router";
 import { DashboardIndex } from "./DashboardIndex";
 import { RoleDashboard } from "./RoleDashboard";
 import { roleDashboardProfiles } from "./roleDashboardMatrix";
