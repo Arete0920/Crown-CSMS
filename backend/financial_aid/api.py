@@ -16,7 +16,8 @@ from crown_api.request_parsing import parse_json_object
 
 log = logging.getLogger(__name__)
 
-from core.permissions import require_permission
+from core.models import School
+from core.permissions import require_permission, user_has_permission
 from households.scoping import get_request_school_id
 from .models import FinancialAidApplication, AidAward
 from .services import apply_financial_aid_to_billing_run
@@ -29,8 +30,18 @@ def _json_error(message: str, status: int = 400) -> JsonResponse:
 def _envelope(data, status: int = 200) -> JsonResponse:
     return JsonResponse({"ok": True, "data": data}, status=status, safe=False)
 
+
 def _parse_json(request: HttpRequest):
     return parse_json_object(request)
+
+
+def _permission_error(request: HttpRequest, school_id, permission_code: str):
+    school = School.objects.filter(pk=school_id).first()
+    if school is None:
+        return _json_error("school not found", status=404)
+    if not user_has_permission(request.user, permission_code, school=school):
+        return _json_error("Permission denied.", status=403)
+    return None
 
 
 def _app_to_dict(a: FinancialAidApplication) -> dict:
@@ -66,6 +77,9 @@ def aid_applications(request):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
+    permission_error = _permission_error(request, sid, "financial_aid.view")
+    if permission_error is not None:
+        return permission_error
 
     qs = FinancialAidApplication.objects.filter(school_id=sid).order_by("-submitted_at")
     return _envelope([_app_to_dict(a) for a in qs], status=200)
@@ -77,6 +91,9 @@ def aid_awards(request):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
+    permission_error = _permission_error(request, sid, "financial_aid.view")
+    if permission_error is not None:
+        return permission_error
 
     qs = AidAward.objects.filter(school_id=sid).select_related("application").order_by("-created_at")
     return _envelope([_award_to_dict(w) for w in qs], status=200)
@@ -88,6 +105,9 @@ def disburse_to_billing_run(request, billing_run_id: str):
     sid = get_request_school_id(request)
     if not sid:
         return _json_error("school_id could not be derived for request", status=403)
+    permission_error = _permission_error(request, sid, "financial_aid.edit")
+    if permission_error is not None:
+        return permission_error
 
     try:
         result = apply_financial_aid_to_billing_run(
@@ -116,15 +136,15 @@ def financial_aid_metrics(request: HttpRequest):
         overdue_cutoff = timezone.now() - datetime.timedelta(days=7)
 
         apps = FinancialAidApplication.objects.filter(school_id=sid)
-        submitted_count  = apps.filter(status="submitted").count()
-        in_review_count  = apps.filter(status="in_review").count()
-        decided_count    = apps.filter(status="decided").count()
-        overdue_count    = apps.filter(status="in_review", submitted_at__lt=overdue_cutoff).count()
+        submitted_count = apps.filter(status="submitted").count()
+        in_review_count = apps.filter(status="in_review").count()
+        decided_count = apps.filter(status="decided").count()
+        overdue_count = apps.filter(status="in_review", submitted_at__lt=overdue_cutoff).count()
 
         awards = AidAward.objects.filter(school_id=sid)
         budget_awarded = awards.aggregate(total=Sum("amount"))["total"] or Decimal("0")
-        avg_award_raw  = awards.aggregate(avg=Avg("amount"))["avg"] or Decimal("0")
-        avg_award      = int(avg_award_raw.quantize(Decimal("1")))
+        avg_award_raw = awards.aggregate(avg=Avg("amount"))["avg"] or Decimal("0")
+        avg_award = int(avg_award_raw.quantize(Decimal("1")))
 
         bucket_rows = (
             awards.values("bucket")
@@ -138,29 +158,38 @@ def financial_aid_metrics(request: HttpRequest):
 
         alerts: list[dict] = []
         if overdue_count > 0:
-            alerts.append({
-                "label": f"{overdue_count} application(s) in review >7 days without decision",
-                "severity": "red",
-            })
+            alerts.append(
+                {
+                    "label": f"{overdue_count} application(s) in review >7 days without decision",
+                    "severity": "red",
+                }
+            )
         pending = submitted_count + in_review_count
         if pending > 0:
-            alerts.append({
-                "label": f"{pending} application(s) pending action",
-                "severity": "yellow",
-            })
+            alerts.append(
+                {
+                    "label": f"{pending} application(s) pending action",
+                    "severity": "yellow",
+                }
+            )
 
-        return JsonResponse({
-            "applications_submitted": submitted_count,
-            "applications_in_review": in_review_count,
-            "applications_decided":   decided_count,
-            "decisions_overdue":      overdue_count,
-            "budget_awarded":         str(budget_awarded),
-            "avg_award":              avg_award,
-            "needs_buckets":          needs_buckets,
-            "alerts":                 alerts,
-            "snapshot_date":          timezone.now().date().isoformat(),
-        })
+        return JsonResponse(
+            {
+                "applications_submitted": submitted_count,
+                "applications_in_review": in_review_count,
+                "applications_decided": decided_count,
+                "decisions_overdue": overdue_count,
+                "budget_awarded": str(budget_awarded),
+                "avg_award": avg_award,
+                "needs_buckets": needs_buckets,
+                "alerts": alerts,
+                "snapshot_date": timezone.now().date().isoformat(),
+            }
+        )
 
     except Exception:
-        log.exception("financial_aid_metrics: unexpected error computing metrics for school %s", sid)
+        log.exception(
+            "financial_aid_metrics: unexpected error computing metrics for school %s",
+            sid,
+        )
         return JsonResponse({"error": "metrics temporarily unavailable"}, status=503)
