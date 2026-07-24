@@ -1,4 +1,11 @@
-﻿# Crown2026 — Active Branch Map
+> SUPERSEDED — HISTORICAL RECORD ONLY
+>
+> Archived: 2026-07-24
+> Former path: `docs/completion/08-ACTIVE-BRANCH-MAP.md`
+> Current governing authority: `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md`
+> Do not use for current branch, pull-request, release, completion, or buyer-readiness decisions.
+
+# Crown2026 — Active Branch Map
 
 ## Purpose
 

@@ -1,34 +1,26 @@
-﻿# CROWN Public Repository Status
+# CROWN Public Repository Status
 
-Superseded: This file is a historical snapshot from 2026-05-06.
-Current authority: docs/CURRENT_RELEASE_STATUS.md
-Do not use this file alone for current go/no-go decisions.
+**Status:** ACTIVE AUTHORITY POINTER  
+**Updated:** 2026-07-24
 
-Date: 2026-05-06
-Public posture: Integrity hold
+This path is retained because `.github/workflows/public-repo-quality-gate.yml` requires a non-empty public repository status document here.
 
-## Historical state (2026-05-06 snapshot)
+The former status content was superseded and is preserved as a historical record at:
 
-- CROWN is not GA.
-- CROWN is not yet pilot-approved.
-- CROWN is in pilot-candidate preparation.
-- P0 and governance evidence lanes are closed/evidence-backed.
-- Release authority remains on integrity hold.
+`docs/archive/pre-canon-20260724/release-status/PUBLIC_REPO_STATUS.md`
 
-## Open blocker lanes
+Current decisions must be taken from the following authorities:
 
-- Compliance/customer readiness: OPEN
-- Pilot proof: OPEN
-- Founder acceptance: NOT SIGNED
+1. `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md` — buyer-ready completion definitions, evidence rules and authority hierarchy.
+2. `docs/CURRENT_RELEASE_STATUS.md` — current release posture and production authorization decision.
+3. `docs/product/CROWN_MODULES_AND_DASHBOARDS_CANON.md` — current module and dashboard architecture and certification prerequisites.
 
-## Allowed public language
+## Current public-status boundary
 
-Use:
+- CROWN has substantial repository implementation breadth.
+- Completion, production authorization, compliance, buyer readiness and transfer completion are separate evidence states.
+- The current release decision remains **PRODUCTION NOT APPROVED** until the controlling production gates pass on one unchanged approved release identity.
+- Historical PASS, GO, SHIP, readiness percentage or completion statements do not override current authority.
+- External payment processing remains excluded and must remain disabled and fail closed until separately selected, contracted, implemented and certified.
 
-> CROWN remains on release-authority integrity hold pending compliance, pilot-entry proof, and final acceptance.
-
-Do not use:
-
-- CROWN is GA.
-- CROWN is pilot-approved.
-- CROWN is ready for unrestricted production rollout.
+This document is a routing and claims-boundary control. It is not independent release approval.
