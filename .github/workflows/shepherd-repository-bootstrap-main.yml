@@ -1,0 +1,184 @@
+name: Shepherd Repository Bootstrap Main
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/shepherd-repository-bootstrap-main.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  create-and-seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_ADMIN_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+      GH_PAT: ${{ secrets.GH_PAT }}
+      GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+      REPO_ADMIN_TOKEN: ${{ secrets.REPO_ADMIN_TOKEN }}
+      CROWN_GITHUB_TOKEN: ${{ secrets.CROWN_GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Select masked repository administration token
+        id: token
+        shell: bash
+        run: |
+          set -euo pipefail
+          selected=""
+          selected_name=""
+          for name in GH_ADMIN_TOKEN GH_PAT GITHUB_PAT REPO_ADMIN_TOKEN CROWN_GITHUB_TOKEN; do
+            value="${!name:-}"
+            if [ -n "$value" ]; then
+              selected="$value"
+              selected_name="$name"
+              break
+            fi
+          done
+          if [ -z "$selected" ]; then
+            echo "ERROR: no repository-administration token is configured under the approved candidate names" >&2
+            exit 1
+          fi
+          echo "::add-mask::$selected"
+          echo "token=$selected" >> "$GITHUB_OUTPUT"
+          echo "credential_name=$selected_name" >> "$GITHUB_OUTPUT"
+
+      - name: Create private Shepherd repository
+        id: repo
+        shell: bash
+        env:
+          ADMIN_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -euo pipefail
+          owner="tcmegahan"
+          repo="shepherd-crm"
+          headers=(-H "Authorization: Bearer $ADMIN_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          status="$(curl -sS -o /tmp/repo.json -w '%{http_code}' "${headers[@]}" "https://api.github.com/repos/$owner/$repo")"
+          if [ "$status" = "404" ]; then
+            payload='{"name":"shepherd-crm","description":"Shepherd CRM and CROWN CONNECT customer relationship, sales, support, implementation, and customer-success platform.","private":true,"has_issues":true,"has_projects":true,"has_wiki":false,"auto_init":true}'
+            status="$(curl -sS -o /tmp/create.json -w '%{http_code}' -X POST "${headers[@]}" https://api.github.com/user/repos -d "$payload")"
+            [ "$status" = "201" ] || { echo "ERROR: repository creation failed (HTTP $status)"; cat /tmp/create.json; exit 1; }
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          elif [ "$status" = "200" ]; then
+            visibility="$(python -c 'import json; print(json.load(open("/tmp/repo.json")).get("visibility", ""))')"
+            [ "$visibility" = "private" ] || { echo "ERROR: existing repository is not private"; exit 1; }
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ERROR: repository lookup failed (HTTP $status)"
+            cat /tmp/repo.json
+            exit 1
+          fi
+
+      - name: Seed repository authority package
+        shell: bash
+        env:
+          ADMIN_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -euo pipefail
+          owner="tcmegahan"
+          repo="shepherd-crm"
+          source_sha="$(git rev-parse HEAD)"
+          headers=(-H "Authorization: Bearer $ADMIN_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          put_file() {
+            path="$1"; message="$2"; file="$3"
+            current_status="$(curl -sS -o /tmp/current.json -w '%{http_code}' "${headers[@]}" "https://api.github.com/repos/$owner/$repo/contents/$path")"
+            sha=""
+            if [ "$current_status" = "200" ]; then sha="$(python -c 'import json; print(json.load(open("/tmp/current.json"))["sha"])')"; elif [ "$current_status" != "404" ]; then echo "ERROR: cannot inspect $path"; exit 1; fi
+            encoded="$(base64 -w 0 "$file")"
+            payload="$(python - "$message" "$encoded" "$sha" <<'PY'
+import json, sys
+p={"message":sys.argv[1],"content":sys.argv[2]}
+if sys.argv[3]: p["sha"]=sys.argv[3]
+print(json.dumps(p))
+PY
+)"
+            put_status="$(curl -sS -o /tmp/put.json -w '%{http_code}' -X PUT "${headers[@]}" "https://api.github.com/repos/$owner/$repo/contents/$path" -d "$payload")"
+            [ "$put_status" = "200" ] || [ "$put_status" = "201" ] || { echo "ERROR: failed to write $path (HTTP $put_status)"; cat /tmp/put.json; exit 1; }
+          }
+
+          mkdir -p /tmp/docs/architecture /tmp/docs/migration /tmp/docs/product /tmp/packages/crown-contracts
+          cat > /tmp/README.md <<EOF
+# Shepherd CRM
+
+Shepherd CRM is the standalone customer relationship, sales, contract, support, implementation, and customer-success platform associated with CROWN.
+
+## Current status
+
+Extraction and architecture lane only. This repository is not production certified. Shepherd remains deferred from the CROWN Foundation Release until independent contracts, security controls, tests, and exact-SHA release evidence are complete.
+
+## Ownership boundary
+
+Shepherd owns prospect and customer relationship workflows. CROWN remains authoritative for tenant identity, users and roles, school/student/household/enrollment truth, audit authority, and finance ledger truth.
+
+## Source authority
+
+- Source: \`tcmegahan/Crown2026@$source_sha\`
+- Governing issue: \`tcmegahan/Crown2026#1610\`
+EOF
+          cat > /tmp/docs/architecture/BOUNDARIES.md <<'EOF'
+# Shepherd Product and Data Boundaries
+
+## Shepherd-owned domains
+- prospects, leads, organizations, and contacts before conversion
+- sales pipeline, opportunities, stages, activities, and tasks
+- marketing campaigns and CROWN CONNECT engagement automation
+- contracts and e-signature workflow metadata
+- support tickets, service-level tracking, and knowledge workflows
+- implementation plans, onboarding, adoption, and customer-success health
+- customer communications history and consent preferences within Shepherd
+
+## CROWN-owned authoritative domains
+- tenant and school identity
+- authenticated users, roles, permissions, and access claims
+- students, guardians, households, staff, enrollment, and academic records
+- canonical audit authority
+- fees, invoices, payments, waivers, and ledger events
+
+Shepherd must use versioned contracts and must not create shadow authoritative records.
+EOF
+          cat > /tmp/docs/migration/MIGRATION_LEDGER.md <<EOF
+# Shepherd Extraction Migration Ledger
+
+Frozen source: \`tcmegahan/Crown2026@$source_sha\`
+
+| Source path | Destination | Status | Notes |
+|---|---|---|---|
+| \`tests/e2e/crm_marketing.spec.ts\` | \`tests/e2e/crm_marketing.spec.ts\` | Candidate | Platform-oriented smoke test; standalone rewrite required. |
+| \`frontend/dashboards/src/pages/MarketingDashboard.jsx\` | \`frontend/src/pages/MarketingDashboard.jsx\` | Candidate | Depends on CROWN shared dashboard shell. |
+| \`frontend/dashboards/src/config/dashboardTemplates/marketingDashboard.js\` | \`frontend/src/config/marketingDashboard.js\` | Candidate | Contains lead, campaign, source, engagement, and pipeline concepts. |
+| implementation-success assets | TBD | Inventory required | Include only evidence-backed Shepherd ownership. |
+| revenue-operations assets | TBD | Inventory required | Separate finance truth from CRM revenue operations. |
+| integrations/automation assets | TBD | Inventory required | Keep CROWN contracts versioned and explicit. |
+
+No source file may be deleted from CROWN until standalone verification passes.
+EOF
+          cat > /tmp/docs/product/MATURITY.md <<'EOF'
+# Product Maturity
+Existing marketing dashboard configuration and CRM smoke tests do not prove a complete standalone CRM. Required gates include independent boot, tenant isolation, RBAC, audit logging, prospect-to-applicant handoff, contract, support, implementation and customer-success workflows, CI, security scanning, and exact-SHA release evidence.
+EOF
+          cat > /tmp/packages/crown-contracts/README.md <<'EOF'
+# CROWN Contracts
+Versioned schemas and clients will cover tenant and user claims, prospect-to-applicant handoff, post-conversion record references, finance account references without ledger duplication, audit events, notifications, documents, and Microsoft 365 integration boundaries.
+EOF
+          cat > /tmp/SECURITY.md <<'EOF'
+# Security
+Do not commit credentials, tenant data, student data, customer data, access tokens, private keys, or production configuration. Production use is prohibited until tenant isolation, authorization, audit, dependency, secret-scanning, and release gates are verified.
+EOF
+          cat > /tmp/CONTRIBUTING.md <<'EOF'
+# Contributing
+All changes require a bounded issue, explicit ownership boundary, focused tests, tenant and authorization proof where applicable, and a pull request. Do not introduce duplicate CROWN system-of-record models.
+EOF
+
+          put_file README.md "docs: establish Shepherd repository authority" /tmp/README.md
+          put_file docs/architecture/BOUNDARIES.md "docs: define Shepherd ownership boundaries" /tmp/docs/architecture/BOUNDARIES.md
+          put_file docs/migration/MIGRATION_LEDGER.md "docs: add extraction migration ledger" /tmp/docs/migration/MIGRATION_LEDGER.md
+          put_file docs/product/MATURITY.md "docs: document Shepherd maturity limits" /tmp/docs/product/MATURITY.md
+          put_file packages/crown-contracts/README.md "docs: define CROWN contract package" /tmp/packages/crown-contracts/README.md
+          put_file SECURITY.md "docs: add Shepherd security policy" /tmp/SECURITY.md
+          put_file CONTRIBUTING.md "docs: add Shepherd contribution controls" /tmp/CONTRIBUTING.md
+          echo "Created or verified private repository $owner/$repo and seeded authority documents from $source_sha." >> "$GITHUB_STEP_SUMMARY"
