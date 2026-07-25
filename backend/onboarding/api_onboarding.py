@@ -38,6 +38,19 @@ def _query_param_true(value) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _can_administer_tenant(request) -> bool:
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        return True
+    school = getattr(request, "school", None)
+    return bool(
+        school is not None
+        and user_has_permission(user, "admin.view", school=school)
+    )
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def onboarding_progress(request, school_id):
@@ -83,6 +96,8 @@ def mark_task_complete(request, school_id, task_id):
     """Mark a single onboarding task as complete."""
     caller_school_id = get_request_school_id(request)
     if str(caller_school_id) != str(school_id):
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+    if not _can_administer_tenant(request):
         return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
 
     try:

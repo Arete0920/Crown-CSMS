@@ -15,11 +15,25 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-from households.scoping import get_request_school_id
 from analytics.services_health import upsert_customer_health
+from core.permissions import user_has_permission
 from core.services.export_service import export_school_data
+from households.scoping import get_request_school_id
 
 logger = logging.getLogger("crown.analytics")
+
+
+def _can_administer_tenant(request) -> bool:
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        return True
+    school = getattr(request, "school", None)
+    return bool(
+        school is not None
+        and user_has_permission(user, "admin.view", school=school)
+    )
 
 
 @api_view(["GET"])
@@ -46,6 +60,9 @@ def export_school(request):
     This is a synchronous endpoint for small schools. Wire to Celery for large datasets.
     """
     school_id = get_request_school_id(request)
+    if not _can_administer_tenant(request):
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         buffer = export_school_data(school_id)
     except Exception as exc:
