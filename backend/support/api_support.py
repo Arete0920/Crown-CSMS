@@ -14,9 +14,34 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
+from core.permissions import user_has_permission
 from households.scoping import get_request_school_id
 from support.models import SupportTicket
 from support.services_escalation import escalate_overdue_tickets
+
+
+def _can_administer_tenant(request) -> bool:
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        return True
+    school = getattr(request, "school", None)
+    return bool(
+        school is not None
+        and user_has_permission(user, "admin.view", school=school)
+    )
+
+
+def _is_platform_operator(user) -> bool:
+    return bool(
+        user
+        and getattr(user, "is_authenticated", False)
+        and (
+            getattr(user, "is_staff", False)
+            or getattr(user, "is_superuser", False)
+        )
+    )
 
 
 @api_view(["GET", "POST"])
@@ -66,6 +91,9 @@ def tickets(request):
 @permission_classes([IsAuthenticated])
 def resolve_ticket(request, ticket_id):
     school_id = get_request_school_id(request)
+    if not _can_administer_tenant(request):
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         ticket = SupportTicket.objects.get(pk=ticket_id, school_id=school_id)
     except SupportTicket.DoesNotExist:
@@ -81,5 +109,8 @@ def resolve_ticket(request, ticket_id):
 @permission_classes([IsAuthenticated])
 def run_escalation(request):
     """Platform-ops endpoint: trigger SLA breach check immediately."""
+    if not _is_platform_operator(request.user):
+        return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
+
     result = escalate_overdue_tickets()
     return Response(result)
