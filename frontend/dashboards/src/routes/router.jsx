@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router";
 
 // No-op touch to ensure required route/dashboard gate contexts run on this PR.
 

@@ -200,10 +200,10 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Set up Node.js 18
+      - name: Set up Node.js 24
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "18"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend/dashboards/package-lock.json
 
@@ -269,10 +269,10 @@ jobs:
           fi
           exit 0  # warn only; change to `exit $EXIT` to hard-fail
 
-      - name: Set up Node.js 18
+      - name: Set up Node.js 24
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: "18"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend/dashboards/package-lock.json
 
