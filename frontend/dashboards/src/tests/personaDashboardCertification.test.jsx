@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 
 import CrownDashboardTemplate from '../components/crown-dashboard/CrownDashboardTemplate.jsx';
 import { DASHBOARD_TEMPLATE_MAP } from '../config/dashboardTemplates/index.js';

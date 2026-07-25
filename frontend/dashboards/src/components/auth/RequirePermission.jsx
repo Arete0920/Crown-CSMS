@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PATHS } from '../../routes/paths';
 
