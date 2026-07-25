@@ -28,6 +28,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
+from households.models import Student
 from households.scoping import get_request_school_id
 from core.models import School
 
@@ -159,6 +160,41 @@ def _build_classes(school_id, sections) -> tuple[str, str]:
     return "classes.csv", _csv_string(header, rows)
 
 
+def _build_users(school_id, students) -> tuple[str, str]:
+    """Build the student user rows referenced by enrollments.csv."""
+    header = [
+        "sourcedId", "status", "dateLastModified",
+        "enabledUser", "orgSourcedIds", "role",
+        "username", "userIds", "givenName", "familyName",
+        "middleName", "identifier", "email", "sms", "phone",
+        "agents", "grades", "password",
+    ]
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rows = []
+    for student in students:
+        rows.append([
+            _safe(student.id),
+            "active" if student.is_active else "tobedeleted",
+            now,
+            "true" if student.is_active else "false",
+            _safe(school_id),
+            "student",
+            "",                                             # username
+            "",                                             # userIds
+            _safe(student.first_name),
+            _safe(student.last_name),
+            "",                                             # middleName
+            _safe(student.id),                              # identifier
+            "",                                             # email
+            "",                                             # sms
+            "",                                             # phone
+            "",                                             # agents
+            _safe(student.grade_level),
+            "",                                             # password
+        ])
+    return "users.csv", _csv_string(header, rows)
+
+
 def _build_enrollments(school_id, enrollments) -> tuple[str, str]:
     header = [
         "sourcedId", "status", "dateLastModified",
@@ -217,6 +253,14 @@ def oneroster_export_bundle(request):
         .select_related("course")
         .order_by("course__code", "term")
     )
+    students = (
+        Student.objects.filter(
+            school_id=school_id,
+            enrollments__school_id=school_id,
+        )
+        .distinct()
+        .order_by("last_name", "first_name", "id")
+    )
     enrollments = (
         Enrollment.objects.filter(school_id=school_id)
         .select_related("section", "student")
@@ -229,6 +273,7 @@ def oneroster_export_bundle(request):
         _build_academic_sessions(school_id, terms),
         _build_courses(school_id, courses),
         _build_classes(school_id, sections),
+        _build_users(school_id, students),
         _build_enrollments(school_id, enrollments),
     ]
 
