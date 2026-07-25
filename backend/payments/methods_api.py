@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from households.scoping import get_request_school_id
 from payments.access import user_can_access_household_finance
+from payments.hold import payment_hold_response
 from payments.models import SavedPaymentMethod
 
 
@@ -46,13 +47,7 @@ def create_payment_method_setup(request, household_id):
     if not user_can_access_household_finance(request.user, household_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
-    return Response(
-        {
-            "ok": False,
-            "error": "External payment provider deferred pending vendor coordination.",
-        },
-        status=status.HTTP_503_SERVICE_UNAVAILABLE,
-    )
+    return payment_hold_response()
 
 
 @api_view(["POST"])
@@ -89,26 +84,9 @@ def set_default_payment_method(request, household_id, method_id: int):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def detach_payment_method(request, household_id, method_id: int):
-    school_id = get_request_school_id(request, required=True)
+    get_request_school_id(request, required=True)
 
     if not user_can_access_household_finance(request.user, household_id):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
-    method = SavedPaymentMethod.objects.filter(
-        id=method_id,
-        school_id=school_id,
-        household_id=household_id,
-    ).first()
-
-    if not method:
-        return Response(
-            {"detail": "Payment method not found."}, status=status.HTTP_404_NOT_FOUND
-        )
-
-    return Response(
-        {
-            "ok": False,
-            "error": "External payment provider deferred pending vendor coordination.",
-        },
-        status=status.HTTP_503_SERVICE_UNAVAILABLE,
-    )
+    return payment_hold_response()
