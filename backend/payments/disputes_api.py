@@ -5,6 +5,7 @@ from rest_framework.response import Response
 
 from crown_api.billing_api.permissions import has_finance_runtime_role
 from households.scoping import get_request_school_id
+from payments.hold import payment_hold_response
 from payments.models import ProviderDispute
 
 
@@ -57,21 +58,9 @@ def dispute_detail(request, dispute_id: int):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def dispute_action_create(request, dispute_id: int):
-    school_id = get_request_school_id(request, required=True)
+    get_request_school_id(request, required=True)
 
     if not _finance_only(request.user):
         return Response({"detail": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
-    dispute = ProviderDispute.objects.filter(school_id=school_id, id=dispute_id).first()
-    if not dispute:
-        return Response(
-            {"detail": "Dispute not found."}, status=status.HTTP_404_NOT_FOUND
-        )
-
-    return Response(
-        {
-            "ok": False,
-            "error": "External payment provider deferred pending vendor coordination.",
-        },
-        status=status.HTTP_503_SERVICE_UNAVAILABLE,
-    )
+    return payment_hold_response()
