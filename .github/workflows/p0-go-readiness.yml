@@ -43,6 +43,7 @@ jobs:
       AZURE_CREDENTIALS_FOR_LOGIN: ${{ secrets.AZURE_CREDENTIALS }}
     steps:
       - name: Checkout repository
+        id: checkout
         uses: actions/checkout@v4
 
       - name: Determine expected SHA
@@ -64,6 +65,7 @@ jobs:
           echo "EXPECTED_SHA=$EXPECTED_SHA" >> "$GITHUB_ENV"
 
       - name: Setup Python
+        id: setup_python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -73,11 +75,13 @@ jobs:
             backend/requirements.txt
 
       - name: Install backend dependencies
+        id: backend_dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Setup Node.js
+        id: setup_node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -85,16 +89,19 @@ jobs:
           cache-dependency-path: frontend/dashboards/package-lock.json
 
       - name: Install frontend dependencies
+        id: frontend_dependencies
         working-directory: frontend/dashboards
         run: npm ci
 
       - name: Azure Login using service principal JSON
+        id: azure_login_sp
         if: ${{ github.event.inputs.run_azure_probe != 'false' && env.AZURE_CREDENTIALS_FOR_LOGIN != '' }}
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Azure Login using OIDC
+        id: azure_login_oidc
         if: ${{ github.event.inputs.run_azure_probe != 'false' && env.AZURE_CREDENTIALS_FOR_LOGIN == '' }}
         uses: azure/login@v2
         with:
@@ -103,17 +110,20 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Run Azure P0 current parity probe
+        id: azure_parity
         if: ${{ github.event.inputs.run_azure_probe != 'false' }}
         shell: pwsh
         run: |
           ./scripts/execution/997_azure_p0_current_parity_probe.ps1 -ExpectedSha "${{ steps.expected.outputs.expected_sha }}"
 
       - name: Run finish-right gauntlet
+        id: finish_right
         shell: pwsh
         run: |
           ./scripts/execution/999_finish_right_4h_gauntlet.ps1
 
       - name: Upload P0 GO evidence artifacts
+        id: upload_evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -136,6 +146,20 @@ jobs:
             const expectedSha = '${{ steps.expected.outputs.expected_sha || github.sha }}';
             const conclusion = '${{ job.status }}'.toUpperCase();
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const outcomes = [
+              ['checkout', '${{ steps.checkout.outcome }}'],
+              ['expected_sha', '${{ steps.expected.outcome }}'],
+              ['setup_python', '${{ steps.setup_python.outcome }}'],
+              ['backend_dependencies', '${{ steps.backend_dependencies.outcome }}'],
+              ['setup_node', '${{ steps.setup_node.outcome }}'],
+              ['frontend_dependencies', '${{ steps.frontend_dependencies.outcome }}'],
+              ['azure_login_sp', '${{ steps.azure_login_sp.outcome }}'],
+              ['azure_login_oidc', '${{ steps.azure_login_oidc.outcome }}'],
+              ['azure_parity', '${{ steps.azure_parity.outcome }}'],
+              ['finish_right', '${{ steps.finish_right.outcome }}'],
+              ['upload_evidence', '${{ steps.upload_evidence.outcome }}']
+            ];
+            const outcomeLines = outcomes.map(([name, outcome]) => `- ${name}: **${(outcome || 'not_run').toUpperCase()}**`);
             const body = [
               '## Automated P0 readiness result',
               '',
@@ -144,9 +168,12 @@ jobs:
               `- Trigger: \`${context.eventName}\``,
               `- Run: ${runUrl}`,
               '',
+              '### Step outcomes',
+              ...outcomeLines,
+              '',
               conclusion === 'SUCCESS'
                 ? 'This run may be used as Lane 6 evidence after its uploaded artifacts and runtime SHA-parity output are reviewed.'
-                : 'Production remains **NO-GO / HOLD**. Inspect the linked run and artifacts before any rerun or repair.'
+                : 'Production remains **NO-GO / HOLD**. Inspect the first failed step and the linked artifacts before any rerun or repair.'
             ].join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
