@@ -18,6 +18,14 @@ SPEC.loader.exec_module(BASE)
 DASHBOARD_CALL_RE = re.compile(r"(?<!function )\bcreateDashboard\(\s*\{")
 STEP_FILE_RE = re.compile(r"^Step\d+[A-Za-z0-9_-]*$", re.I)
 TASK_DECORATORS = {"shared_task", "task", "celery.task", "app.task"}
+WORKFLOW_NAME_RE = re.compile(
+    r'''^name:\s*(?:"([^"\r\n]+)"|'([^'\r\n]+)'|([^#\r\n]+?))\s*(?:#.*)?$''',
+    re.M,
+)
+HIGH_RISK_COMMAND_RE = re.compile(
+    r"(?:purge|delete|reset|fix|repair|migrate|seed|bootstrap|enforce|rotate|sync|import|export|reconcile)",
+    re.I,
+)
 
 
 def dashboards(root: Path, paths: dict[str, str]):
@@ -142,12 +150,104 @@ def tasks(root: Path):
     return rows
 
 
+def management_commands(root: Path):
+    rows = []
+    for path in sorted((root / "backend").rglob("management/commands/*.py")):
+        if path.name == "__init__.py" or any(part in {"tests", "test", "migrations"} for part in path.parts):
+            continue
+        relative = path.relative_to(root).as_posix()
+        command = path.stem
+        owner = path.parts[path.parts.index("backend") + 1] if "backend" in path.parts else path.parent.parent.parent.name
+        rows.append(
+            BASE.Surface(
+                f"command:{BASE.slug(command)}:{BASE.slug(relative)}",
+                "command",
+                f"{owner}.{command}",
+                command,
+                relative,
+                1,
+            )
+        )
+    return rows
+
+
+def workflow_name(source: str, fallback: str) -> tuple[str, re.Match[str] | None]:
+    match = WORKFLOW_NAME_RE.search(source)
+    if not match:
+        return fallback, None
+    name = next((value for value in match.groups() if value is not None), fallback).strip()
+    return name or fallback, match
+
+
+def workflows(root: Path):
+    rows = []
+    workflow_root = root / ".github/workflows"
+    for path in sorted(list(workflow_root.glob("*.yml")) + list(workflow_root.glob("*.yaml"))):
+        source = BASE.text(path)
+        name, match = workflow_name(source, path.stem)
+        relative = path.relative_to(root).as_posix()
+        rows.append(
+            BASE.Surface(
+                f"workflow:{BASE.slug(path.stem)}",
+                "workflow",
+                name,
+                relative,
+                relative,
+                BASE.line(source, match.start()) if match else 1,
+            )
+        )
+    return rows
+
+
+ORIGINAL_CLASSIFY = BASE.classify
+ORIGINAL_BUILD = BASE.build
+
+
+def classify(row):
+    if row.domain == "command":
+        if HIGH_RISK_COMMAND_RE.search(row.name):
+            return BASE.mapped(
+                row,
+                "OPERATIONAL_DRILL",
+                "management-command-operational-proof",
+                "Mutating or environment-sensitive management commands require an operational drill.",
+            )
+        return BASE.mapped(
+            row,
+            "BACKEND_TEST",
+            "management-command-test",
+            "Deterministic management commands require focused backend tests.",
+        )
+    if row.domain == "workflow":
+        return BASE.mapped(
+            row,
+            "MANUAL_REVIEW",
+            "workflow-authority-review",
+            "Workflow triggers, permissions, jobs, artifacts, and authority require controlled review.",
+        )
+    return ORIGINAL_CLASSIFY(row)
+
+
+def build(root: Path):
+    rows = ORIGINAL_BUILD(root)
+    rows += [classify(row) for row in management_commands(root)]
+    rows += [classify(row) for row in workflows(root)]
+    return rows
+
+
 BASE.dashboards = dashboards
 BASE.parse_dashboards = dashboards
 BASE.wizard_steps = wizard_steps
 BASE.parse_wizard_steps = wizard_steps
 BASE.tasks = tasks
 BASE.parse_tasks = tasks
+BASE.management_commands = management_commands
+BASE.parse_management_commands = management_commands
+BASE.workflows = workflows
+BASE.parse_workflows = workflows
+BASE.classify = classify
+BASE.build = build
+BASE.REQUIRED.update({"command", "workflow"})
 
 if __name__ == "__main__":
     raise SystemExit(BASE.main())
