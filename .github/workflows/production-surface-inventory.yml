@@ -15,9 +15,11 @@ on:
       - "backend/**/apps.py"
       - "backend/**/tasks.py"
       - "backend/**/urls.py"
+      - "backend/**/management/commands/*.py"
       - "backend/crown_api/wizard_registry.py"
       - "docs/engineering/PRODUCTION_SURFACE_INVENTORY.md"
-      - ".github/workflows/production-surface-inventory.yml"
+      - ".github/workflows/*.yml"
+      - ".github/workflows/*.yaml"
   push:
     branches: [main]
     paths:
@@ -32,9 +34,11 @@ on:
       - "backend/**/apps.py"
       - "backend/**/tasks.py"
       - "backend/**/urls.py"
+      - "backend/**/management/commands/*.py"
       - "backend/crown_api/wizard_registry.py"
       - "docs/engineering/PRODUCTION_SURFACE_INVENTORY.md"
-      - ".github/workflows/production-surface-inventory.yml"
+      - ".github/workflows/*.yml"
+      - ".github/workflows/*.yaml"
   workflow_dispatch: {}
 
 permissions:
@@ -118,6 +122,7 @@ jobs:
           required_domains = {
               "frontend_route", "dashboard", "module", "wizard",
               "wizard_step", "api", "task", "integration",
+              "command", "workflow",
           }
           assert packet["repository_sha"] == os.environ["INVENTORY_REPOSITORY_SHA"]
           assert packet["validation_errors"] == []
