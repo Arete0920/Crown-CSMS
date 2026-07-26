@@ -138,7 +138,7 @@ jobs:
             frontend/dashboards/playwright-report/**
             frontend/dashboards/artifacts/**
 
-      - name: Report P0 result to Lane 6
+      - name: Report P0 result to dedicated ledger and Lane 6
         if: always()
         uses: actions/github-script@v7
         with:
@@ -160,7 +160,7 @@ jobs:
               ['upload_evidence', '${{ steps.upload_evidence.outcome }}']
             ];
             const outcomeLines = outcomes.map(([name, outcome]) => `- ${name}: **${(outcome || 'not_run').toUpperCase()}**`);
-            const body = [
+            const ledgerBody = [
               '## Automated P0 readiness result',
               '',
               `- Exact SHA: \`${expectedSha}\``,
@@ -175,9 +175,27 @@ jobs:
                 ? 'This run may be used as Lane 6 evidence after its uploaded artifacts and runtime SHA-parity output are reviewed.'
                 : 'Production remains **NO-GO / HOLD**. Inspect the first failed step and the linked artifacts before any rerun or repair.'
             ].join('\n');
+            const ledgerComment = await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1640,
+              body: ledgerBody
+            });
+            const laneBody = [
+              '## Automated P0 ledger update',
+              '',
+              `- Exact SHA: \`${expectedSha}\``,
+              `- Workflow conclusion: **${conclusion}**`,
+              `- Evidence: ${ledgerComment.data.html_url}`,
+              `- Run: ${runUrl}`,
+              '',
+              conclusion === 'SUCCESS'
+                ? 'Review the ledger entry and artifacts before changing Lane 6 status.'
+                : 'Production remains **NO-GO / HOLD**.'
+            ].join('\n');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: 1630,
-              body
+              body: laneBody
             });
