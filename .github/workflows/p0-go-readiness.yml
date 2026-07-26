@@ -119,7 +119,7 @@ jobs:
 
       - name: Run finish-right gauntlet
         id: finish_right
-        if: ${{ always() && steps.checkout.outcome == 'success' && steps.expected.outcome == 'success' && steps.backend_dependencies.outcome == 'success' && steps.frontend_dependencies.outcome == 'success' }}
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.expected.outcome == 'success' && steps.setup_python.outcome == 'success' && steps.backend_dependencies.outcome == 'success' && steps.setup_node.outcome == 'success' && steps.frontend_dependencies.outcome == 'success' }}
         continue-on-error: true
         shell: pwsh
         run: |
@@ -139,17 +139,21 @@ jobs:
             foreach ($check in @($summary.checks | Where-Object { -not $_.pass })) {
               $lines.Add("- FAIL - $($check.name): $($check.detail)")
             }
+            "azure_summary_found=true" | Add-Content $env:GITHUB_OUTPUT
           } else {
             $lines.Add("### Azure parity evidence")
             $lines.Add("- summary artifact: **NOT GENERATED**")
+            "azure_summary_found=false" | Add-Content $env:GITHUB_OUTPUT
           }
           $finish = Get-ChildItem -Path audit-artifacts -Filter "*SUMMARY*.json" -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'finish-right-4h' } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
           $lines.Add("")
           $lines.Add("### Finish-right evidence")
           if ($finish) {
             $lines.Add("- summary: $($finish.FullName)")
+            "finish_summary_found=true" | Add-Content $env:GITHUB_OUTPUT
           } else {
             $lines.Add("- summary artifact: **NOT GENERATED**")
+            "finish_summary_found=false" | Add-Content $env:GITHUB_OUTPUT
           }
           $delimiter = "P0SUMMARY_$([guid]::NewGuid().ToString('N'))"
           "details<<$delimiter" | Add-Content $env:GITHUB_OUTPUT
@@ -172,6 +176,69 @@ jobs:
             frontend/dashboards/playwright-report/**
             frontend/dashboards/artifacts/**
 
+      - name: Evaluate complete P0 evidence
+        id: evaluate_p0
+        if: always()
+        shell: pwsh
+        run: |
+          $problems = New-Object System.Collections.Generic.List[string]
+          $requiredSetup = [ordered]@{
+            checkout = "${{ steps.checkout.outcome }}"
+            expected_sha = "${{ steps.expected.outcome }}"
+            setup_python = "${{ steps.setup_python.outcome }}"
+            backend_dependencies = "${{ steps.backend_dependencies.outcome }}"
+            setup_node = "${{ steps.setup_node.outcome }}"
+            frontend_dependencies = "${{ steps.frontend_dependencies.outcome }}"
+          }
+          foreach ($entry in $requiredSetup.GetEnumerator()) {
+            if ($entry.Value -ne "success") {
+              $problems.Add("- $($entry.Key) outcome was $($entry.Value), expected success")
+            }
+          }
+
+          $azureRequired = "${{ github.event.inputs.run_azure_probe != 'false' }}" -eq "true"
+          $azureSp = "${{ steps.azure_login_sp.outcome }}"
+          $azureOidc = "${{ steps.azure_login_oidc.outcome }}"
+          $azureParity = "${{ steps.azure_parity.outcome }}"
+          if ($azureRequired) {
+            if (($azureSp -ne "success") -and ($azureOidc -ne "success")) {
+              $problems.Add("- no Azure login path completed successfully (SP=$azureSp, OIDC=$azureOidc)")
+            }
+            if (($azureSp -eq "failure") -or ($azureOidc -eq "failure")) {
+              $problems.Add("- an Azure login path failed (SP=$azureSp, OIDC=$azureOidc)")
+            }
+            if ($azureParity -ne "success") {
+              $problems.Add("- azure_parity outcome was $azureParity, expected success")
+            }
+            if ("${{ steps.evidence_summary.outputs.azure_summary_found }}" -ne "true") {
+              $problems.Add("- required Azure parity summary was not generated")
+            }
+          }
+
+          if ("${{ steps.finish_right.outcome }}" -ne "success") {
+            $problems.Add("- finish_right outcome was ${{ steps.finish_right.outcome }}, expected success")
+          }
+          if ("${{ steps.evidence_summary.outputs.finish_summary_found }}" -ne "true") {
+            $problems.Add("- required finish-right summary was not generated")
+          }
+          if ("${{ steps.evidence_summary.outcome }}" -ne "success") {
+            $problems.Add("- evidence_summary outcome was ${{ steps.evidence_summary.outcome }}, expected success")
+          }
+          if ("${{ steps.upload_evidence.outcome }}" -ne "success") {
+            $problems.Add("- upload_evidence outcome was ${{ steps.upload_evidence.outcome }}, expected success")
+          }
+
+          $conclusion = if ($problems.Count -eq 0) { "SUCCESS" } else { "FAILURE" }
+          "conclusion=$conclusion" | Add-Content $env:GITHUB_OUTPUT
+          $delimiter = "P0PROBLEMS_$([guid]::NewGuid().ToString('N'))"
+          "problems<<$delimiter" | Add-Content $env:GITHUB_OUTPUT
+          if ($problems.Count -eq 0) {
+            "- none" | Add-Content $env:GITHUB_OUTPUT
+          } else {
+            $problems | Add-Content $env:GITHUB_OUTPUT
+          }
+          $delimiter | Add-Content $env:GITHUB_OUTPUT
+
       - name: Report P0 result to dedicated ledger and Lane 6
         id: report_result
         if: always()
@@ -179,10 +246,7 @@ jobs:
         with:
           script: |
             const expectedSha = '${{ steps.expected.outputs.expected_sha || github.sha }}';
-            const azureFailed = '${{ steps.azure_parity.outcome }}' === 'failure';
-            const finishFailed = '${{ steps.finish_right.outcome }}' === 'failure';
-            const setupFailed = ['${{ steps.checkout.outcome }}','${{ steps.expected.outcome }}','${{ steps.setup_python.outcome }}','${{ steps.backend_dependencies.outcome }}','${{ steps.setup_node.outcome }}','${{ steps.frontend_dependencies.outcome }}'].includes('failure');
-            const conclusion = (azureFailed || finishFailed || setupFailed) ? 'FAILURE' : 'SUCCESS';
+            const conclusion = '${{ steps.evaluate_p0.outputs.conclusion || 'FAILURE' }}';
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const outcomes = [
               ['checkout', '${{ steps.checkout.outcome }}'],
@@ -196,10 +260,12 @@ jobs:
               ['azure_parity', '${{ steps.azure_parity.outcome }}'],
               ['finish_right', '${{ steps.finish_right.outcome }}'],
               ['evidence_summary', '${{ steps.evidence_summary.outcome }}'],
-              ['upload_evidence', '${{ steps.upload_evidence.outcome }}']
+              ['upload_evidence', '${{ steps.upload_evidence.outcome }}'],
+              ['evaluate_p0', '${{ steps.evaluate_p0.outcome }}']
             ];
             const outcomeLines = outcomes.map(([name, outcome]) => `- ${name}: **${(outcome || 'not_run').toUpperCase()}**`);
             const details = `${{ steps.evidence_summary.outputs.details }}`;
+            const problems = `${{ steps.evaluate_p0.outputs.problems }}`;
             const ledgerBody = [
               '## Automated P0 readiness result',
               '',
@@ -212,6 +278,9 @@ jobs:
               ...outcomeLines,
               '',
               details,
+              '',
+              '### Verdict evaluation',
+              problems,
               '',
               conclusion === 'SUCCESS'
                 ? 'This run may be used as Lane 6 evidence after its uploaded artifacts and runtime SHA-parity output are reviewed.'
@@ -246,7 +315,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if [ "${{ steps.azure_parity.outcome }}" = "failure" ] || [ "${{ steps.finish_right.outcome }}" = "failure" ]; then
-            echo "P0 evidence contains one or more failed lanes." >&2
+          if [ "${{ steps.evaluate_p0.outputs.conclusion }}" != "SUCCESS" ] || [ "${{ steps.report_result.outcome }}" != "success" ]; then
+            echo "P0 evidence or reporting integrity failed." >&2
             exit 1
           fi
