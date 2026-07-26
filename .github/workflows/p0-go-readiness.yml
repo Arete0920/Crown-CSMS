@@ -14,10 +14,6 @@ on:
         type: boolean
   push:
     branches: [main]
-    paths:
-      - "scripts/execution/997_azure_p0_current_parity_probe.ps1"
-      - "scripts/execution/999_finish_right_4h_gauntlet.ps1"
-      - ".github/workflows/p0-go-readiness.yml"
 
 permissions:
   contents: read
