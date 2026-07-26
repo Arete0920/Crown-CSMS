@@ -27,13 +27,16 @@ jobs:
           if [ -z "${PRODUCTION_URL:-}" ]; then
             echo "status=misconfigured" >> "$GITHUB_OUTPUT"
             echo "http_code=000" >> "$GITHUB_OUTPUT"
-            exit 1
+            exit 0
           fi
 
-          RESPONSE=$(curl -sS --max-time 10 \
+          RESPONSE="000"
+          if curl -sS --max-time 10 \
             -o /tmp/health_response.json \
             -w "%{http_code}" \
-            "${PRODUCTION_URL}/api/health/" || echo "000")
+            "${PRODUCTION_URL}/api/health/" > /tmp/health_http_code.txt; then
+            RESPONSE=$(cat /tmp/health_http_code.txt)
+          fi
 
           if [ "$RESPONSE" != "200" ]; then
             echo "status=unhealthy" >> "$GITHUB_OUTPUT"
@@ -50,12 +53,12 @@ jobs:
           PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
 
       - name: Report unhealthy status
-        if: steps.health.outputs.status != 'healthy'
+        if: always() && steps.health.outputs.status != 'healthy'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         with:
           script: |
-            const status = '${{ steps.health.outputs.status }}';
-            const httpCode = '${{ steps.health.outputs.http_code }}';
+            const status = '${{ steps.health.outputs.status }}' || 'unknown';
+            const httpCode = '${{ steps.health.outputs.http_code }}' || '000';
             const now = new Date().toISOString();
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const titlePrefix = '[ALERT] Production health check failed';
@@ -145,3 +148,9 @@ jobs:
                 state: 'closed',
               });
             }
+
+      - name: Fail closed when health proof is not healthy
+        if: always() && steps.health.outputs.status != 'healthy'
+        run: |
+          echo "Production health proof failed: status=${{ steps.health.outputs.status }} http=${{ steps.health.outputs.http_code }}"
+          exit 1
