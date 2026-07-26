@@ -112,15 +112,49 @@ jobs:
       - name: Run Azure P0 current parity probe
         id: azure_parity
         if: ${{ github.event.inputs.run_azure_probe != 'false' }}
+        continue-on-error: true
         shell: pwsh
         run: |
           ./scripts/execution/997_azure_p0_current_parity_probe.ps1 -ExpectedSha "${{ steps.expected.outputs.expected_sha }}"
 
       - name: Run finish-right gauntlet
         id: finish_right
+        if: ${{ always() && steps.checkout.outcome == 'success' && steps.expected.outcome == 'success' && steps.backend_dependencies.outcome == 'success' && steps.frontend_dependencies.outcome == 'success' }}
+        continue-on-error: true
         shell: pwsh
         run: |
           ./scripts/execution/999_finish_right_4h_gauntlet.ps1
+
+      - name: Extract generated P0 summaries
+        id: evidence_summary
+        if: always()
+        shell: pwsh
+        run: |
+          $lines = New-Object System.Collections.Generic.List[string]
+          $azure = Get-ChildItem -Path audit-artifacts -Filter 00_AZURE_P0_SUMMARY.json -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if ($azure) {
+            $summary = Get-Content $azure.FullName -Raw | ConvertFrom-Json
+            $lines.Add("### Azure parity evidence")
+            $lines.Add("- verdict: **$($summary.verdict)**")
+            foreach ($check in @($summary.checks | Where-Object { -not $_.pass })) {
+              $lines.Add("- FAIL - $($check.name): $($check.detail)")
+            }
+          } else {
+            $lines.Add("### Azure parity evidence")
+            $lines.Add("- summary artifact: **NOT GENERATED**")
+          }
+          $finish = Get-ChildItem -Path audit-artifacts -Filter "*SUMMARY*.json" -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match 'finish-right-4h' } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          $lines.Add("")
+          $lines.Add("### Finish-right evidence")
+          if ($finish) {
+            $lines.Add("- summary: $($finish.FullName)")
+          } else {
+            $lines.Add("- summary artifact: **NOT GENERATED**")
+          }
+          $delimiter = "P0SUMMARY_$([guid]::NewGuid().ToString('N'))"
+          "details<<$delimiter" | Add-Content $env:GITHUB_OUTPUT
+          $lines | Add-Content $env:GITHUB_OUTPUT
+          $delimiter | Add-Content $env:GITHUB_OUTPUT
 
       - name: Upload P0 GO evidence artifacts
         id: upload_evidence
@@ -139,12 +173,16 @@ jobs:
             frontend/dashboards/artifacts/**
 
       - name: Report P0 result to dedicated ledger and Lane 6
+        id: report_result
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
             const expectedSha = '${{ steps.expected.outputs.expected_sha || github.sha }}';
-            const conclusion = '${{ job.status }}'.toUpperCase();
+            const azureFailed = '${{ steps.azure_parity.outcome }}' === 'failure';
+            const finishFailed = '${{ steps.finish_right.outcome }}' === 'failure';
+            const setupFailed = ['${{ steps.checkout.outcome }}','${{ steps.expected.outcome }}','${{ steps.setup_python.outcome }}','${{ steps.backend_dependencies.outcome }}','${{ steps.setup_node.outcome }}','${{ steps.frontend_dependencies.outcome }}'].includes('failure');
+            const conclusion = (azureFailed || finishFailed || setupFailed) ? 'FAILURE' : 'SUCCESS';
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const outcomes = [
               ['checkout', '${{ steps.checkout.outcome }}'],
@@ -157,9 +195,11 @@ jobs:
               ['azure_login_oidc', '${{ steps.azure_login_oidc.outcome }}'],
               ['azure_parity', '${{ steps.azure_parity.outcome }}'],
               ['finish_right', '${{ steps.finish_right.outcome }}'],
+              ['evidence_summary', '${{ steps.evidence_summary.outcome }}'],
               ['upload_evidence', '${{ steps.upload_evidence.outcome }}']
             ];
             const outcomeLines = outcomes.map(([name, outcome]) => `- ${name}: **${(outcome || 'not_run').toUpperCase()}**`);
+            const details = `${{ steps.evidence_summary.outputs.details }}`;
             const ledgerBody = [
               '## Automated P0 readiness result',
               '',
@@ -171,9 +211,11 @@ jobs:
               '### Step outcomes',
               ...outcomeLines,
               '',
+              details,
+              '',
               conclusion === 'SUCCESS'
                 ? 'This run may be used as Lane 6 evidence after its uploaded artifacts and runtime SHA-parity output are reviewed.'
-                : 'Production remains **NO-GO / HOLD**. Inspect the first failed step and the linked artifacts before any rerun or repair.'
+                : 'Production remains **NO-GO / HOLD**. Inspect the failed checks and linked artifacts before any rerun or repair.'
             ].join('\n');
             const ledgerComment = await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -199,3 +241,12 @@ jobs:
               issue_number: 1630,
               body: laneBody
             });
+
+      - name: Enforce P0 result
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.azure_parity.outcome }}" = "failure" ] || [ "${{ steps.finish_right.outcome }}" = "failure" ]; then
+            echo "P0 evidence contains one or more failed lanes." >&2
+            exit 1
+          fi
