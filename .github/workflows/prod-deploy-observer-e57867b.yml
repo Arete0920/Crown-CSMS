@@ -1,0 +1,148 @@
+name: Observe Production Deploy e57867b
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/prod-deploy-observer-e57867b.yml"
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: prod-deploy-observer-e57867b
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: e57867b198bbfd1676122d30213d3617559f869e
+      DEPLOY_TAG: prod-deploy-20260726-e57867b
+      HEALTH_URL: https://crown-api-prod.azurewebsites.net/api/health/
+      INTEGRITY_URL: https://crown-api-prod.azurewebsites.net/api/integrity/
+    steps:
+      - name: Wait for exact production deployment run
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id=""
+          status=""
+          conclusion=""
+          html_url=""
+          for attempt in $(seq 1 120); do
+            run_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-prod.yml/runs?branch=${DEPLOY_TAG}&per_page=20")"
+            run_id="$(jq -r --arg sha "$TARGET_SHA" --arg branch "$DEPLOY_TAG" '.workflow_runs | map(select(.head_sha == $sha and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0].id // empty' <<<"$run_json")"
+            if [[ -n "$run_id" ]]; then
+              run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}")"
+              status="$(jq -r '.status' <<<"$run")"
+              conclusion="$(jq -r '.conclusion // ""' <<<"$run")"
+              html_url="$(jq -r '.html_url' <<<"$run")"
+              echo "Found run $run_id status=$status conclusion=${conclusion:-pending}"
+              if [[ "$status" == "completed" ]]; then
+                break
+              fi
+            else
+              echo "Exact production deploy run not found yet."
+            fi
+            if [[ "$attempt" -eq 120 ]]; then
+              echo "ERROR: deployment run did not complete within observer window" >&2
+              exit 1
+            fi
+            sleep 30
+          done
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+          echo "html_url=$html_url" >> "$GITHUB_OUTPUT"
+
+      - name: Capture job conclusions
+        id: jobs
+        if: always() && steps.deploy.outputs.run_id != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          jobs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${{ steps.deploy.outputs.run_id }}/jobs?per_page=100")"
+          lines="$(jq -r '.jobs[] | "- " + .name + ": **" + ((.conclusion // .status // "unknown") | ascii_upcase) + "**"' <<<"$jobs")"
+          delim="JOBS_$(date +%s%N)"
+          {
+            echo "lines<<$delim"
+            echo "$lines"
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Probe live production identity
+        id: runtime
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          health_body="$(curl --max-time 30 -fsS "$HEALTH_URL" 2>/tmp/health.err)"
+          health_rc=$?
+          integrity_body="$(curl --max-time 30 -fsS "$INTEGRITY_URL" 2>/tmp/integrity.err)"
+          integrity_rc=$?
+          set -e
+          health_sha=""
+          health_ok="false"
+          integrity_ok="false"
+          if [[ $health_rc -eq 0 ]]; then
+            health_sha="$(jq -r '.build_sha // ""' <<<"$health_body" 2>/dev/null || true)"
+            health_ok="$(jq -r '(.ok == true) or (.status == "healthy")' <<<"$health_body" 2>/dev/null || echo false)"
+          fi
+          if [[ $integrity_rc -eq 0 ]]; then
+            integrity_ok="$(jq -r '(.ok == true) or (.status == "ok")' <<<"$integrity_body" 2>/dev/null || echo false)"
+          fi
+          runtime_match=false
+          if [[ "$health_sha" == "$TARGET_SHA" && "$health_ok" == "true" && "$integrity_ok" == "true" ]]; then
+            runtime_match=true
+          fi
+          echo "health_rc=$health_rc" >> "$GITHUB_OUTPUT"
+          echo "integrity_rc=$integrity_rc" >> "$GITHUB_OUTPUT"
+          echo "health_sha=$health_sha" >> "$GITHUB_OUTPUT"
+          echo "health_ok=$health_ok" >> "$GITHUB_OUTPUT"
+          echo "integrity_ok=$integrity_ok" >> "$GITHUB_OUTPUT"
+          echo "runtime_match=$runtime_match" >> "$GITHUB_OUTPUT"
+
+      - name: Report deployment evidence to Lane 6
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_conclusion="${{ steps.deploy.outputs.conclusion }}"
+          runtime_match="${{ steps.runtime.outputs.runtime_match }}"
+          verdict="FAILURE"
+          if [[ "$deploy_conclusion" == "success" && "$runtime_match" == "true" ]]; then
+            verdict="SUCCESS"
+          fi
+          cat > /tmp/report.md <<EOF
+          ## Exact production deployment observer
+
+          - target SHA: \`$TARGET_SHA\`
+          - deployment tag: \`$DEPLOY_TAG\`
+          - deployment run: ${{ steps.deploy.outputs.html_url }}
+          - deployment conclusion: **${deploy_conclusion^^}**
+          - observer verdict: **$verdict**
+
+          ### Deployment jobs
+          ${{ steps.jobs.outputs.lines }}
+
+          ### Live runtime probe
+          - health request rc: \`${{ steps.runtime.outputs.health_rc }}\`
+          - integrity request rc: \`${{ steps.runtime.outputs.integrity_rc }}\`
+          - health SHA: \`${{ steps.runtime.outputs.health_sha }}\`
+          - health contract ok: **${{ steps.runtime.outputs.health_ok }}**
+          - integrity contract ok: **${{ steps.runtime.outputs.integrity_ok }}**
+          - exact runtime match: **${runtime_match^^}**
+
+          $([[ "$verdict" == "SUCCESS" ]] && echo "Deployment convergence is proven for the immutable target SHA. Fresh P0 certification is now required." || echo "Production remains **NO-GO / HOLD**. Inspect the failed deployment job or runtime mismatch before rerun.")
+          EOF
+          gh issue comment 1630 --repo "$GITHUB_REPOSITORY" --body-file /tmp/report.md
+          if [[ "$verdict" != "SUCCESS" ]]; then
+            exit 1
+          fi
