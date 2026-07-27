@@ -139,6 +139,36 @@ jobs:
             const failedStep = failedJob
               ? failedJob.steps.find((step) => step.conclusion === 'failure')
               : null;
+            let logExcerpt = 'No failed-job log excerpt required.';
+            if (failedJob) {
+              const response = await github.request(
+                'GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs',
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  job_id: failedJob.id
+                }
+              );
+              let text;
+              if (typeof response.data === 'string') {
+                text = response.data;
+              } else if (Buffer.isBuffer(response.data)) {
+                text = response.data.toString('utf8');
+              } else if (response.data instanceof ArrayBuffer) {
+                text = Buffer.from(response.data).toString('utf8');
+              } else {
+                text = JSON.stringify(response.data);
+              }
+              const lines = text.split(/\r?\n/);
+              const pattern = /##\[error\]|ERROR:|AuthorizationFailed|Forbidden|ResourceNotFound|ReadOnlyDisabledSubscription|appsettings list/i;
+              const index = lines.findIndex((line) => pattern.test(line));
+              const anchor = index >= 0 ? index : Math.max(0, lines.length - 20);
+              const start = Math.max(0, anchor - 8);
+              logExcerpt = lines
+                .slice(start, start + 30)
+                .join('\n')
+                .slice(0, 5000);
+            }
             const jobLines = jobs.map(
               (job) => `- ${job.name}: \`${job.status}/${job.conclusion || 'pending'}\``
             );
@@ -159,6 +189,11 @@ jobs:
               '',
               'Jobs:',
               ...jobLines,
+              '',
+              'Bounded failed-job log evidence:',
+              '```text',
+              logExcerpt,
+              '```',
               '',
               '- production remains **NO-GO / HOLD** until exact-SHA runtime and P0 evidence pass.'
             ].join('\n');
