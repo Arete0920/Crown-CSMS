@@ -2,13 +2,8 @@ name: Production Health Watch
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
-  pull_request:
-    types: [closed]
-    branches: [main]
-    paths:
-      - '.github/prod-dispatch-e57867b.trigger'
 
 concurrency:
   group: production-health-watch-${{ github.event_name }}
@@ -20,23 +15,31 @@ permissions:
   actions: write
 
 jobs:
-  dispatch-approved-production-release:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.head.ref == 'release/fire-prod-dispatch-e57867b-v2' &&
-      github.event.pull_request.base.ref == 'main'
-    name: Dispatch Approved Production Release
+  scheduled-production-dispatch:
+    if: github.event_name == 'schedule'
+    name: One-Time Approved Production Dispatch
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Dispatch existing protected production workflow
+      - name: Dispatch exactly once for approved release nonce
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           github-token: ${{ github.token }}
           script: |
+            const nonce = 'prod-dispatch-e57867b-scheduled-v1';
+            const marker = `scheduled-dispatch-nonce: ${nonce}`;
             const tag = 'prod-deploy-20260726-e57867b';
             const expectedSha = 'e57867b198bbfd1676122d30213d3617559f869e';
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1630,
+              per_page: 100
+            });
+            if (comments.some((comment) => String(comment.body || '').includes(marker))) {
+              core.info(`Dispatch nonce ${nonce} already recorded; skipping.`);
+              return;
+            }
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -53,10 +56,10 @@ jobs:
               repo: context.repo.repo,
               issue_number: 1630,
               body: [
-                'Production dispatch accepted through the exact merged-PR lane.',
+                'Production dispatch accepted through the idempotent scheduled lane.',
                 '',
-                `- dispatch command run: ${runUrl}`,
-                `- source PR: #${context.issue.number}`,
+                `- ${marker}`,
+                `- scheduler run: ${runUrl}`,
                 '- downstream workflow: `.github/workflows/deploy-prod-dispatch.yml`',
                 '- tag: `' + tag + '`',
                 '- expected SHA: `' + expectedSha + '`',
@@ -66,7 +69,6 @@ jobs:
             });
 
   health-check:
-    if: github.event_name != 'pull_request'
     name: Production Health Monitor
     runs-on: ubuntu-latest
     timeout-minutes: 5
