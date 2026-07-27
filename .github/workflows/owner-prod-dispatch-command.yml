@@ -168,3 +168,11 @@ jobs:
               issue_number: 1630,
               body
             });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1648,
+              title: `Production deploy ${run.id} inspection evidence`,
+              body,
+              state: 'closed'
+            });
