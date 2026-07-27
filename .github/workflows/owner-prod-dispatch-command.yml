@@ -5,20 +5,26 @@ on:
     types: [created]
 
 permissions:
-  contents: write
+  contents: read
   issues: write
+  actions: write
+
+concurrency:
+  group: owner-prod-dispatch-e57867b
+  cancel-in-progress: false
 
 env:
   AUTHORIZED_ACTOR: tcmegahan
   AUTHORIZED_ISSUE: "1630"
   AUTHORIZED_COMMAND: "/deploy-prod prod-deploy-20260726-e57867b force=true"
   DEPLOY_TAG: prod-deploy-20260726-e57867b
+  EXPECTED_SHA: e57867b198bbfd1676122d30213d3617559f869e
 
 jobs:
   dispatch-production:
     if: >-
       github.event.issue.number == 1630 &&
-      github.actor == 'tcmegahan' &&
+      github.event.comment.user.login == 'tcmegahan' &&
       github.event.comment.body == '/deploy-prod prod-deploy-20260726-e57867b force=true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -26,46 +32,38 @@ jobs:
       - name: Validate immutable owner command
         shell: bash
         env:
-          ACTOR: ${{ github.actor }}
+          COMMENT_ACTOR: ${{ github.event.comment.user.login }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           COMMAND_BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
-          test "$ACTOR" = "$AUTHORIZED_ACTOR"
+          test "$COMMENT_ACTOR" = "$AUTHORIZED_ACTOR"
           test "$ISSUE_NUMBER" = "$AUTHORIZED_ISSUE"
           test "$COMMAND_BODY" = "$AUTHORIZED_COMMAND"
 
       - name: Dispatch existing protected production workflow
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          payload=$(jq -n \
-            --arg event_type "prod_deploy" \
-            --arg deploy_tag "$DEPLOY_TAG" \
-            '{event_type: $event_type, client_payload: {deploy_tag: $deploy_tag, force_deploy: true}}')
-
-          status=$(curl --silent --show-error --output /tmp/dispatch-response.json --write-out "%{http_code}" \
-            --request POST \
-            --header "Accept: application/vnd.github+json" \
-            --header "Authorization: Bearer $GH_TOKEN" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
-            --data "$payload")
-
-          if [ "$status" != "204" ]; then
-            echo "ERROR: repository dispatch failed with HTTP $status" >&2
-            cat /tmp/dispatch-response.json >&2 || true
-            exit 1
-          fi
-
-          echo "Dispatched existing production workflow for immutable tag $DEPLOY_TAG"
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-prod-dispatch.yml',
+              ref: 'main',
+              inputs: {
+                deploy_tag: process.env.DEPLOY_TAG,
+                force_deploy: 'true'
+              }
+            });
+            core.info(`Dispatched deploy-prod-dispatch.yml for ${process.env.DEPLOY_TAG} -> ${process.env.EXPECTED_SHA}`);
 
       - name: Record command acknowledgement
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
+          github-token: ${{ github.token }}
           script: |
+            const commandRun = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -73,9 +71,11 @@ jobs:
               body: [
                 'Production dispatch accepted.',
                 '',
+                `- command run: ${commandRun}`,
                 '- workflow: `.github/workflows/deploy-prod-dispatch.yml`',
-                '- tag: `prod-deploy-20260726-e57867b`',
+                `- tag: `${process.env.DEPLOY_TAG}``,
+                `- expected SHA: `${process.env.EXPECTED_SHA}``,
                 '- override: `force_deploy=true`',
                 '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
               ].join('\n')
-            })
+            });
