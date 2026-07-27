@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
+  workflow_run:
+    workflows: ['Production Deploy (Dispatch v2)']
+    types: [requested, completed]
 
 concurrency:
   group: production-health-watch-${{ github.event_name }}
@@ -68,7 +71,38 @@ jobs:
               ].join('\n')
             });
 
+  observe-production-deployment:
+    if: github.event_name == 'workflow_run'
+    name: Observe Production Deployment Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Record deployment run identity and conclusion
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const run = context.payload.workflow_run;
+            const conclusion = run.conclusion || 'pending';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1630,
+              body: [
+                'Production deployment workflow observed.',
+                '',
+                `- run id: \`${run.id}\``,
+                `- run URL: ${run.html_url}`,
+                `- event: \`${run.event}\``,
+                `- status: \`${run.status}\``,
+                `- conclusion: \`${conclusion}\``,
+                `- head SHA: \`${run.head_sha}\``,
+                '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
+              ].join('\n')
+            });
+
   health-check:
+    if: github.event_name != 'workflow_run'
     name: Production Health Monitor
     runs-on: ubuntu-latest
     timeout-minutes: 5
