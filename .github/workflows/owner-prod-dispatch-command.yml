@@ -21,6 +21,7 @@ env:
   AUTHORIZED_ACTOR: tcmegahan
   AUTHORIZED_ISSUE: "1630"
   AUTHORIZED_COMMAND: "/deploy-prod prod-deploy-20260726-e57867b force=true"
+  INSPECT_COMMAND: "/inspect-prod prod-deploy-20260726-e57867b"
   DEPLOY_TAG: prod-deploy-20260726-e57867b
   EXPECTED_SHA: e57867b198bbfd1676122d30213d3617559f869e
 
@@ -69,14 +70,19 @@ jobs:
                 force_deploy: 'true'
               }
             });
-            core.info(`Dispatched deploy-prod-dispatch.yml for ${process.env.DEPLOY_TAG} -> ${process.env.EXPECTED_SHA}`);
+            core.info(
+              `Dispatched deploy-prod-dispatch.yml for ` +
+              `${process.env.DEPLOY_TAG} -> ${process.env.EXPECTED_SHA}`
+            );
 
       - name: Record command acknowledgement
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           github-token: ${{ github.token }}
           script: |
-            const commandRun = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const commandRun =
+              `https://github.com/${context.repo.owner}/` +
+              `${context.repo.repo}/actions/runs/${context.runId}`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -92,4 +98,73 @@ jobs:
                 '- override: `force_deploy=true`',
                 '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
               ].join('\n')
+            });
+
+  inspect-production:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.number == 1630 &&
+      github.event.comment.user.login == 'tcmegahan' &&
+      github.event.comment.body == '/inspect-prod prod-deploy-20260726-e57867b'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect latest protected production workflow run
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-prod-dispatch.yml',
+              event: 'workflow_dispatch',
+              per_page: 10
+            });
+            const run = data.workflow_runs[0];
+            if (!run) {
+              core.setFailed('No production workflow-dispatch run exists.');
+              return;
+            }
+            const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+              per_page: 100
+            });
+            const jobs = jobsResponse.data.jobs;
+            const failedJob = jobs.find(
+              (job) => job.conclusion === 'failure'
+            );
+            const failedStep = failedJob
+              ? failedJob.steps.find((step) => step.conclusion === 'failure')
+              : null;
+            const jobLines = jobs.map(
+              (job) => `- ${job.name}: \`${job.status}/${job.conclusion || 'pending'}\``
+            );
+            const inspectRun =
+              `https://github.com/${context.repo.owner}/` +
+              `${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              'Latest production deployment inspected read-only.',
+              '',
+              `- inspection run: ${inspectRun}`,
+              `- deployment run id: \`${run.id}\``,
+              `- deployment run URL: ${run.html_url}`,
+              `- status: \`${run.status}\``,
+              `- conclusion: \`${run.conclusion || 'pending'}\``,
+              `- head SHA: \`${run.head_sha}\``,
+              `- first failed job: \`${failedJob ? failedJob.name : 'none'}\``,
+              `- first failed step: \`${failedStep ? failedStep.name : 'none'}\``,
+              '',
+              'Jobs:',
+              ...jobLines,
+              '',
+              '- production remains **NO-GO / HOLD** until exact-SHA runtime and P0 evidence pass.'
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1630,
+              body
             });
