@@ -1,0 +1,65 @@
+name: Recovery Trigger Canary Observer
+
+on:
+  workflow_run:
+    workflows:
+      - "Recovery Trigger Canary Source"
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: recovery-trigger-canary-observer-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  prove-workflow-run-trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+      SOURCE_RUN_NAME: ${{ github.event.workflow_run.name }}
+      SOURCE_RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      SOURCE_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+      SOURCE_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Validate trusted workflow_run context
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE_RUN_NAME" = "Recovery Trigger Canary Source"
+          test "$SOURCE_RUN_CONCLUSION" = "success"
+          test "$SOURCE_REPOSITORY" = "$GITHUB_REPOSITORY"
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$SOURCE_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Write non-production trigger evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovery-trigger-canary-evidence
+          cat > recovery-trigger-canary-evidence/result.json <<JSON
+          {
+            "observer_run_id": "${GITHUB_RUN_ID}",
+            "observer_workflow_sha": "${GITHUB_SHA}",
+            "source_run_id": "${SOURCE_RUN_ID}",
+            "source_run_name": "${SOURCE_RUN_NAME}",
+            "source_run_conclusion": "${SOURCE_RUN_CONCLUSION}",
+            "source_repository": "${SOURCE_REPOSITORY}",
+            "source_head_sha": "${SOURCE_HEAD_SHA}",
+            "workflow_run_trigger_received": true,
+            "azure_access_performed": false,
+            "production_mutation_performed": false
+          }
+          JSON
+          cat recovery-trigger-canary-evidence/result.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload trigger evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-trigger-canary-evidence-${{ github.run_id }}
+          path: recovery-trigger-canary-evidence/
+          if-no-files-found: error
+          retention-days: 30
