@@ -547,13 +547,46 @@ jobs:
             }
           }
 
-      - name: Health check with adaptive exponential backoff
+      - name: Prove production health-gate contract
+        shell: bash
         run: |
           set -euo pipefail
-          BASE_URL="https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+          normalize_http_code() {
+            local code="$1"
+            [[ "$code" =~ ^[0-9]{3}$ ]] || return 1
+            printf '%s' "$code"
+          }
+          test "$(normalize_http_code 200)" = "200"
+          test "$(normalize_http_code 503)" = "503"
+          test "$(normalize_http_code 000)" = "000"
+          if normalize_http_code 00 >/dev/null 2>&1; then
+            echo "ERROR: two-digit HTTP status was incorrectly accepted"
+            exit 1
+          fi
+          max_attempts=8
+          max_curl_seconds=30
+          total_sleep_seconds=0
+          for attempt in $(seq 2 "$max_attempts"); do
+            backoff=$((20 * (attempt - 1)))
+            if [ "$backoff" -gt 90 ]; then backoff=90; fi
+            total_sleep_seconds=$((total_sleep_seconds + backoff))
+          done
+          worst_case_seconds=$((total_sleep_seconds + max_attempts * max_curl_seconds))
+          test "$worst_case_seconds" -le 900 || {
+            echo "ERROR: health retry budget exceeds 15 minutes: ${worst_case_seconds}s"
+            exit 1
+          }
+          echo "Health-gate contract passed: statuses=200/503/000, rejects=00, worst_case=${worst_case_seconds}s"
+
+      - name: Health check with adaptive exponential backoff
+        env:
+          PROD_BASE_URL: ${{ secrets.PROD_BASE_URL }}
+        run: |
+          set -euo pipefail
+          BASE_URL="${PROD_BASE_URL:-https://${{ env.WEBAPP_NAME }}.azurewebsites.net}"
           HEALTH_ENDPOINT="$BASE_URL/api/health/"
           EXPECTED_SHA="${{ steps.vars.outputs.deploy_sha }}"
-          MAX_ATTEMPTS=20
+          MAX_ATTEMPTS=8
           ATTEMPT=1
           BACKOFF_BASE=20
           TOTAL_ELAPSED=0
@@ -593,8 +626,17 @@ jobs:
 
             echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] Checking health endpoint..."
             rm -f /tmp/health_response.json
-            RESPONSE=$(curl --max-time 30 -s -w "%{http_code}" -o /tmp/health_response.json "$HEALTH_ENDPOINT" 2>/dev/null || echo "000")
-            HTTP_CODE=$(echo "$RESPONSE" | tail -c 3)
+            set +e
+            HTTP_CODE=$(curl --max-time 30 -sS -w "%{http_code}" -o /tmp/health_response.json "$HEALTH_ENDPOINT")
+            CURL_EXIT=$?
+            set -e
+            if [ "$CURL_EXIT" -ne 0 ]; then
+              HTTP_CODE="000"
+            fi
+            if [[ ! "$HTTP_CODE" =~ ^[0-9]{3}$ ]]; then
+              echo "[Attempt $ATTEMPT/$MAX_ATTEMPTS] ERROR: invalid HTTP status capture '$HTTP_CODE'"
+              exit 1
+            fi
 
             if [ "$HTTP_CODE" == "200" ]; then
               BUILD_SHA=$(extract_json_field "/tmp/health_response.json" "build_sha")
@@ -620,7 +662,7 @@ jobs:
             ATTEMPT=$((ATTEMPT + 1))
           done
 
-          echo "❌ ERROR: Health check failed after $MAX_ATTEMPTS exponential backoff attempts (~15 minutes)"
+          echo "ERROR: Health check failed after $MAX_ATTEMPTS bounded backoff attempts (maximum 15-minute contract)"
           exit 1
 
       - name: Verify release identity end-to-end
@@ -706,12 +748,11 @@ jobs:
           echo "OK: Deployment successful"
           echo "App URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
 
-      - name: Rollback on failure
+      - name: Record deployment failure for recovery control
         if: failure()
         run: |
-          echo "ERROR: Deployment failed - rolling back"
-          # Azure will handle automatic rollback based on health check
-          exit 1
+          echo "ERROR: Deployment failed; no inline rollback is claimed by this job."
+          echo "The separately governed recovery control must run and produce verified evidence."
 
   notification:
     timeout-minutes: 10
