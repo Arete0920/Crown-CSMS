@@ -1,0 +1,81 @@
+name: Owner Production Dispatch Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+env:
+  AUTHORIZED_ACTOR: tcmegahan
+  AUTHORIZED_ISSUE: "1630"
+  AUTHORIZED_COMMAND: "/deploy-prod prod-deploy-20260726-e57867b force=true"
+  DEPLOY_TAG: prod-deploy-20260726-e57867b
+
+jobs:
+  dispatch-production:
+    if: >-
+      github.event.issue.number == 1630 &&
+      github.actor == 'tcmegahan' &&
+      github.event.comment.body == '/deploy-prod prod-deploy-20260726-e57867b force=true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate immutable owner command
+        shell: bash
+        env:
+          ACTOR: ${{ github.actor }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMAND_BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          test "$ACTOR" = "$AUTHORIZED_ACTOR"
+          test "$ISSUE_NUMBER" = "$AUTHORIZED_ISSUE"
+          test "$COMMAND_BODY" = "$AUTHORIZED_COMMAND"
+
+      - name: Dispatch existing protected production workflow
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -n \
+            --arg event_type "prod_deploy" \
+            --arg deploy_tag "$DEPLOY_TAG" \
+            '{event_type: $event_type, client_payload: {deploy_tag: $deploy_tag, force_deploy: true}}')
+
+          status=$(curl --silent --show-error --output /tmp/dispatch-response.json --write-out "%{http_code}" \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/dispatches" \
+            --data "$payload")
+
+          if [ "$status" != "204" ]; then
+            echo "ERROR: repository dispatch failed with HTTP $status" >&2
+            cat /tmp/dispatch-response.json >&2 || true
+            exit 1
+          fi
+
+          echo "Dispatched existing production workflow for immutable tag $DEPLOY_TAG"
+
+      - name: Record command acknowledgement
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                'Production dispatch accepted.',
+                '',
+                '- workflow: `.github/workflows/deploy-prod-dispatch.yml`',
+                '- tag: `prod-deploy-20260726-e57867b`',
+                '- override: `force_deploy=true`',
+                '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
+              ].join('\n')
+            })
