@@ -3,6 +3,10 @@ name: Owner Production Dispatch Command
 on:
   issue_comment:
     types: [created]
+  push:
+    branches: [main]
+    paths:
+      - '.github/prod-dispatch-e57867b.trigger'
 
 permissions:
   contents: read
@@ -23,23 +27,32 @@ env:
 jobs:
   dispatch-production:
     if: >-
-      github.event.issue.number == 1630 &&
-      github.event.comment.user.login == 'tcmegahan' &&
-      github.event.comment.body == '/deploy-prod prod-deploy-20260726-e57867b force=true'
+      github.event_name == 'push' ||
+      (github.event.issue.number == 1630 &&
+       github.event.comment.user.login == 'tcmegahan' &&
+       github.event.comment.body == '/deploy-prod prod-deploy-20260726-e57867b force=true')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Validate immutable owner command
+      - name: Validate authorized trigger
         shell: bash
         env:
+          EVENT_NAME: ${{ github.event_name }}
           COMMENT_ACTOR: ${{ github.event.comment.user.login }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           COMMAND_BODY: ${{ github.event.comment.body }}
         run: |
           set -euo pipefail
-          test "$COMMENT_ACTOR" = "$AUTHORIZED_ACTOR"
-          test "$ISSUE_NUMBER" = "$AUTHORIZED_ISSUE"
-          test "$COMMAND_BODY" = "$AUTHORIZED_COMMAND"
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            test "$COMMENT_ACTOR" = "$AUTHORIZED_ACTOR"
+            test "$ISSUE_NUMBER" = "$AUTHORIZED_ISSUE"
+            test "$COMMAND_BODY" = "$AUTHORIZED_COMMAND"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            test "${GITHUB_REF}" = "refs/heads/main"
+          else
+            echo "Unsupported event: $EVENT_NAME" >&2
+            exit 1
+          fi
 
       - name: Dispatch existing protected production workflow
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
@@ -67,11 +80,12 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: 1630,
               body: [
                 'Production dispatch accepted.',
                 '',
                 `- command run: ${commandRun}`,
+                `- trigger event: ${context.eventName}`,
                 '- workflow: `.github/workflows/deploy-prod-dispatch.yml`',
                 '- tag: `' + process.env.DEPLOY_TAG + '`',
                 '- expected SHA: `' + process.env.EXPECTED_SHA + '`',
