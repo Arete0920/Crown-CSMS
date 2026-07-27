@@ -1,0 +1,99 @@
+name: Diagnose Production Deploy e57867b
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/diagnose-prod-deploy-e57867b.yml"
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: e57867b198bbfd1676122d30213d3617559f869e
+      DEPLOY_TAG: prod-deploy-20260726-e57867b
+      DIAG_ISSUE: "1649"
+    steps:
+      - name: Resolve failed deployment and first failed job
+        id: diag
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-prod.yml/runs?branch=${DEPLOY_TAG}&per_page=20")"
+          run="$(jq -c --arg sha "$TARGET_SHA" --arg branch "$DEPLOY_TAG" '.workflow_runs | map(select(.head_sha == $sha and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0] // empty' <<<"$runs")"
+          [[ -n "$run" ]] || { echo "Exact deployment run not found" >&2; exit 1; }
+
+          run_id="$(jq -r '.id' <<<"$run")"
+          run_url="$(jq -r '.html_url' <<<"$run")"
+          run_status="$(jq -r '.status' <<<"$run")"
+          run_conclusion="$(jq -r '.conclusion // ""' <<<"$run")"
+
+          jobs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100")"
+          failed_job="$(jq -c '.jobs | map(select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out" or .conclusion == "action_required")) | .[0] // empty' <<<"$jobs")"
+          [[ -n "$failed_job" ]] || { echo "No failed deployment job found" >&2; exit 1; }
+
+          job_id="$(jq -r '.id' <<<"$failed_job")"
+          job_name="$(jq -r '.name' <<<"$failed_job")"
+          job_url="$(jq -r '.html_url' <<<"$failed_job")"
+          job_conclusion="$(jq -r '.conclusion' <<<"$failed_job")"
+          failed_step="$(jq -r '.steps | map(select(.conclusion == "failure" or .conclusion == "cancelled" or .conclusion == "timed_out" or .conclusion == "action_required")) | .[0].name // "not identified"' <<<"$failed_job")"
+
+          set +e
+          gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/${job_id}/logs" > /tmp/job.log 2>/tmp/log.err
+          log_rc=$?
+          set -e
+          if [[ $log_rc -eq 0 ]]; then
+            grep -Ei '(^|[^a-z])(error|failed|failure|fatal|denied|forbidden|unauthorized|timeout|mismatch)([^a-z]|$)' /tmp/job.log | tail -n 80 > /tmp/excerpt.txt || true
+            [[ -s /tmp/excerpt.txt ]] || tail -n 80 /tmp/job.log > /tmp/excerpt.txt
+          else
+            printf 'Job log retrieval failed (rc=%s):\n' "$log_rc" > /tmp/excerpt.txt
+            cat /tmp/log.err >> /tmp/excerpt.txt
+          fi
+
+          all_jobs="$(jq -r '.jobs[] | "- " + .name + ": **" + ((.conclusion // .status // "unknown") | ascii_upcase) + "**"' <<<"$jobs")"
+          excerpt="$(sed -E 's/`/\x27/g' /tmp/excerpt.txt | tail -n 80)"
+
+          cat > /tmp/body.md <<EOF
+          Exact production deployment diagnosis for immutable release \`$TARGET_SHA\`.
+
+          ## Verified deployment result
+
+          - tag: \`$DEPLOY_TAG\`
+          - run: $run_url
+          - run ID: \`$run_id\`
+          - status: **${run_status^^}**
+          - conclusion: **${run_conclusion^^}**
+
+          ## First failed job and step
+
+          - job: [$job_name]($job_url)
+          - job ID: \`$job_id\`
+          - conclusion: **${job_conclusion^^}**
+          - first failed step: **$failed_step**
+
+          ## All deployment jobs
+
+          $all_jobs
+
+          ## Bounded failure excerpt
+
+          \`\`\`text
+          $excerpt
+          \`\`\`
+
+          Parent: #1630. P0 ledger: #1640.
+          EOF
+
+          gh issue edit "$DIAG_ISSUE" --repo "$GITHUB_REPOSITORY" --body-file /tmp/body.md
+          gh issue comment 1630 --repo "$GITHUB_REPOSITORY" --body "Deployment failure diagnosis captured in #$DIAG_ISSUE: first failed job **$job_name**, first failed step **$failed_step**, run conclusion **${run_conclusion^^}**."
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "job_id=$job_id" >> "$GITHUB_OUTPUT"
+          echo "failed_step=$failed_step" >> "$GITHUB_OUTPUT"
