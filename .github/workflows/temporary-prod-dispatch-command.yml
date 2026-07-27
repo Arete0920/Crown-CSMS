@@ -1,0 +1,49 @@
+name: Temporary Production Dispatch Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: temporary-prod-dispatch-command-e57867b
+  cancel-in-progress: false
+
+jobs:
+  dispatch-approved-release:
+    if: >-
+      github.event.issue.number == 1630 &&
+      github.event.comment.user.login == 'tcmegahan' &&
+      github.event.comment.body == '/crown-deploy prod-deploy-20260726-e57867b force=true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch existing protected production workflow
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = 'prod-deploy-20260726-e57867b';
+
+            if (owner !== 'tcmegahan' || repo !== 'Crown2026') {
+              core.setFailed('Repository identity mismatch.');
+              return;
+            }
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'deploy-prod-dispatch.yml',
+              ref: 'main',
+              inputs: {
+                deploy_tag: tag,
+                force_deploy: 'true'
+              }
+            });
+
+            core.info(`Dispatched deploy-prod-dispatch.yml for immutable tag ${tag}.`);
