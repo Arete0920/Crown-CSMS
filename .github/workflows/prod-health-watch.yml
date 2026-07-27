@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths:
+      - '.github/prod-dispatch-e57867b.trigger'
   workflow_run:
     workflows: ['Production Deploy (Dispatch v2)']
     types: [requested, completed]
@@ -18,6 +23,74 @@ permissions:
   actions: write
 
 jobs:
+  merged-pr-production-dispatch:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'release/fire-prod-dispatch-e57867b-v3' &&
+      github.event.pull_request.base.ref == 'main'
+    name: Dispatch And Discover Production Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch protected workflow and record downstream run
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const tag = 'prod-deploy-20260726-e57867b';
+            const expectedSha = 'e57867b198bbfd1676122d30213d3617559f869e';
+            const dispatchedAfter = Date.now() - 5000;
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-prod-dispatch.yml',
+              ref: 'main',
+              inputs: {
+                deploy_tag: tag,
+                force_deploy: 'true'
+              }
+            });
+
+            let downstream = null;
+            for (let attempt = 1; attempt <= 30; attempt += 1) {
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'deploy-prod-dispatch.yml',
+                event: 'workflow_dispatch',
+                per_page: 20
+              });
+              downstream = data.workflow_runs.find((run) => new Date(run.created_at).getTime() >= dispatchedAfter) || null;
+              if (downstream) break;
+              core.info(`Downstream run not visible yet (attempt ${attempt}/30).`);
+            }
+            if (!downstream) {
+              core.setFailed('Dispatch was accepted but downstream production run was not discoverable within 60 seconds.');
+              return;
+            }
+
+            const commandRun = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1630,
+              body: [
+                'Production deployment dispatched and discovered.',
+                '',
+                `- command run: ${commandRun}`,
+                `- downstream run id: \`${downstream.id}\``,
+                `- downstream run URL: ${downstream.html_url}`,
+                `- downstream status: \`${downstream.status}\``,
+                `- downstream conclusion: \`${downstream.conclusion || 'pending'}\``,
+                `- tag: \`${tag}\``,
+                `- expected SHA: \`${expectedSha}\``,
+                '- override: `force_deploy=true`',
+                '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
+              ].join('\n')
+            });
+
   scheduled-production-dispatch:
     if: github.event_name == 'schedule'
     name: One-Time Approved Production Dispatch
@@ -102,7 +175,7 @@ jobs:
             });
 
   health-check:
-    if: github.event_name != 'workflow_run'
+    if: github.event_name != 'workflow_run' && github.event_name != 'pull_request'
     name: Production Health Monitor
     runs-on: ubuntu-latest
     timeout-minutes: 5
