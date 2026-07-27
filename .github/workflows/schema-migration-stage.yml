@@ -238,14 +238,14 @@ jobs:
             --output json \
             --only-show-errors > "$settings_file"
 
-          DATABASE_URL="$(
+          raw_database_url="$(
             jq -r '
               .[]
               | select(.name == "DATABASE_URL")
               | .value
             ' "$settings_file" | head -n 1
           )"
-          DJANGO_SECRET_KEY="$(
+          raw_django_secret_key="$(
             jq -r '
               [
                 .[]
@@ -259,17 +259,71 @@ jobs:
           )"
           rm -f "$settings_file"
 
-          test -n "$DATABASE_URL" || {
+          resolve_setting() {
+            local raw="$1"
+            local secret_uri=""
+            local vault_name=""
+            local secret_name=""
+            if [[ "$raw" == @Microsoft.KeyVault\(* ]]; then
+              echo "::add-mask::$raw" >&2
+              secret_uri="$(
+                printf '%s' "$raw" |
+                  sed -n 's/^@Microsoft.KeyVault(SecretUri=\([^)]*\))$/\1/p'
+              )"
+              if [ -n "$secret_uri" ]; then
+                az keyvault secret show \
+                  --id "$secret_uri" \
+                  --query value \
+                  --output tsv \
+                  --only-show-errors
+                return
+              fi
+              vault_name="$(
+                printf '%s' "$raw" |
+                  sed -n 's/^@Microsoft.KeyVault(VaultName=\([^;]*\);SecretName=[^)]*)$/\1/p'
+              )"
+              secret_name="$(
+                printf '%s' "$raw" |
+                  sed -n 's/^@Microsoft.KeyVault(VaultName=[^;]*;SecretName=\([^)]*\))$/\1/p'
+              )"
+              test -n "$vault_name" && test -n "$secret_name" || {
+                echo "ERROR: unsupported Azure Key Vault reference format" >&2
+                return 1
+              }
+              az keyvault secret show \
+                --vault-name "$vault_name" \
+                --name "$secret_name" \
+                --query value \
+                --output tsv \
+                --only-show-errors
+              return
+            fi
+            printf '%s' "$raw"
+          }
+
+          test -n "$raw_database_url" || {
             echo "ERROR: Azure App Service DATABASE_URL is not configured"
             exit 1
           }
-          test -n "$DJANGO_SECRET_KEY" || {
+          test -n "$raw_django_secret_key" || {
             echo "ERROR: Azure App Service secret key is not configured"
+            exit 1
+          }
+
+          DATABASE_URL="$(resolve_setting "$raw_database_url")"
+          DJANGO_SECRET_KEY="$(resolve_setting "$raw_django_secret_key")"
+
+          test -n "$DATABASE_URL" || {
+            echo "ERROR: resolved production DATABASE_URL is empty"
+            exit 1
+          }
+          test -n "$DJANGO_SECRET_KEY" || {
+            echo "ERROR: resolved production Django secret is empty"
             exit 1
           }
           [[ "$DATABASE_URL" == postgres://* || \
              "$DATABASE_URL" == postgresql://* ]] || {
-            echo "ERROR: Azure App Service DATABASE_URL is not PostgreSQL"
+            echo "ERROR: resolved Azure DATABASE_URL is not PostgreSQL"
             exit 1
           }
           echo "::add-mask::$DATABASE_URL"
