@@ -1,0 +1,75 @@
+name: Diagnose Production Deploy e57867b
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/prod-deploy-diagnose-e57867b.yml"
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_SHA: e57867b198bbfd1676122d30213d3617559f869e
+      DEPLOY_TAG: prod-deploy-20260726-e57867b
+    steps:
+      - name: Extract exact failed run and first failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-prod.yml/runs?branch=${DEPLOY_TAG}&per_page=20")"
+          run_id="$(jq -r --arg sha "$TARGET_SHA" --arg branch "$DEPLOY_TAG" '.workflow_runs | map(select(.head_sha == $sha and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0].id // empty' <<<"$runs")"
+          if [[ -z "$run_id" ]]; then
+            gh issue edit 1646 --repo "$GITHUB_REPOSITORY" --body "No exact production deploy run found for tag \`$DEPLOY_TAG\` and SHA \`$TARGET_SHA\`. Production remains **NO-GO / HOLD**."
+            exit 1
+          fi
+
+          run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}")"
+          run_url="$(jq -r '.html_url' <<<"$run")"
+          conclusion="$(jq -r '.conclusion // "unknown"' <<<"$run")"
+          jobs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100")"
+          failed_job_id="$(jq -r '.jobs | map(select(.conclusion == "failure")) | .[0].id // empty' <<<"$jobs")"
+          failed_job_name="$(jq -r '.jobs | map(select(.conclusion == "failure")) | .[0].name // "none"' <<<"$jobs")"
+          failed_step="$(jq -r '.jobs | map(select(.conclusion == "failure")) | .[0].steps | map(select(.conclusion == "failure")) | .[0].name // "none"' <<<"$jobs")"
+          job_lines="$(jq -r '.jobs[] | "- " + .name + ": **" + ((.conclusion // .status // "unknown") | ascii_upcase) + "**"' <<<"$jobs")"
+
+          log_excerpt="No failed job log available."
+          if [[ -n "$failed_job_id" ]]; then
+            set +e
+            gh api -H "Accept: application/vnd.github+json" "repos/${GITHUB_REPOSITORY}/actions/jobs/${failed_job_id}/logs" > /tmp/job.log 2>/tmp/job.err
+            rc=$?
+            set -e
+            if [[ $rc -eq 0 ]]; then
+              log_excerpt="$(grep -Ei -C 4 'error|failed|failure|exception|denied|unauthorized|forbidden|mismatch|timeout' /tmp/job.log | tail -n 120 || tail -n 120 /tmp/job.log)"
+            fi
+          fi
+
+          cat > /tmp/body.md <<EOF
+          Exact deployment diagnosis for \`$DEPLOY_TAG\` at \`$TARGET_SHA\`.
+
+          - workflow run: $run_url
+          - conclusion: **${conclusion^^}**
+          - first failed job: **$failed_job_name**
+          - first failed step: **$failed_step**
+
+          ## Job conclusions
+          $job_lines
+
+          ## Bounded failure excerpt
+          \`\`\`text
+          $log_excerpt
+          \`\`\`
+
+          Production remains **NO-GO / HOLD** until the failed step is repaired and exact-SHA runtime parity is proven.
+          EOF
+          gh issue edit 1646 --repo "$GITHUB_REPOSITORY" --body-file /tmp/body.md
+          gh issue comment 1630 --repo "$GITHUB_REPOSITORY" --body "Deployment failure diagnosis is recorded in #1646. First failed job: **$failed_job_name**. First failed step: **$failed_step**. Run: $run_url"
+
+          [[ "$conclusion" == "success" ]]
