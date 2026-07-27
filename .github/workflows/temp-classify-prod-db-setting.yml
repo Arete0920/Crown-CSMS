@@ -1,0 +1,112 @@
+name: Temporary Production Database Setting Classifier
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  classify:
+    if: >-
+      github.event.issue.number == 1630 &&
+      github.event.comment.user.login == 'tcmegahan' &&
+      github.event.comment.body == '/classify-prod-db-setting'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      - name: Select Azure authentication mode
+        id: auth
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "$AZURE_CREDENTIALS" ]; then
+            echo "mode=sp" >> "$GITHUB_OUTPUT"
+          else
+            test -n "$AZURE_CLIENT_ID"
+            test -n "$AZURE_TENANT_ID"
+            test -n "$AZURE_SUBSCRIPTION_ID"
+            echo "mode=oidc" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Azure Login (Service Principal JSON)
+        if: steps.auth.outputs.mode == 'sp'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: steps.auth.outputs.mode == 'oidc'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Classify database setting without exposing it
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+          settings_file="/tmp/crown-prod-appsettings.json"
+          az webapp config appsettings list \
+            --resource-group crown-rg \
+            --name crown-api-prod \
+            --output json \
+            --only-show-errors > "$settings_file"
+          value="$(jq -r '.[] | select(.name == "DATABASE_URL") | .value' "$settings_file" | head -n 1)"
+          rm -f "$settings_file"
+          test -n "$value"
+          echo "::add-mask::$value"
+          kind="other"
+          if [[ "$value" == @Microsoft.KeyVault\(* ]]; then
+            kind="azure-key-vault-reference"
+          elif [[ "$value" == postgres://* ]]; then
+            kind="postgres-url"
+          elif [[ "$value" == postgresql://* ]]; then
+            kind="postgresql-url"
+          elif [[ "$value" == jdbc:postgresql://* ]]; then
+            kind="jdbc-postgresql-url"
+          elif [[ "$value" == *"Host="* || "$value" == *"Server="* ]]; then
+            kind="key-value-connection-string"
+          fi
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+          echo "length=${#value}" >> "$GITHUB_OUTPUT"
+
+      - name: Record safe classification
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          KIND: ${{ steps.classify.outputs.kind }}
+          LENGTH: ${{ steps.classify.outputs.length }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const body = [
+              'Production DATABASE_URL safe classification.',
+              '',
+              `- kind: \`${process.env.KIND}\``,
+              `- value length: \`${process.env.LENGTH}\``,
+              '- value was masked and was not written to logs or issue text.',
+              '- production remains **NO-GO / HOLD**.'
+            ].join('\n');
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1648,
+              title: 'Production DATABASE_URL safe classification evidence',
+              body,
+              state: 'closed'
+            });
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true
