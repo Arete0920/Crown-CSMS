@@ -85,6 +85,29 @@ jobs:
             --lock-timeout-seconds 0
           python manage.py migrate --check
 
+      - name: Prove Azure Key Vault reference parsing
+        shell: bash
+        run: |
+          set -euo pipefail
+          extract_reference_field() {
+            local raw="$1"
+            local field="$2"
+            local body="${raw#@Microsoft.KeyVault(}"
+            body="${body%)}"
+            printf '%s' "$body" |
+              tr ';' '\n' |
+              sed -n "s/^[[:space:]]*${field}=//p" |
+              head -n 1
+          }
+          expected_uri="https://example.vault.azure.net/secrets/example/version"
+          standard="@Microsoft.KeyVault(SecretUri=${expected_uri})"
+          extended="@Microsoft.KeyVault(Identity=SystemAssigned;SecretUri=${expected_uri};SlotSetting=false)"
+          named="@Microsoft.KeyVault(Identity=SystemAssigned;SecretName=example;VaultName=example-vault)"
+          test "$(extract_reference_field "$standard" SecretUri)" = "$expected_uri"
+          test "$(extract_reference_field "$extended" SecretUri)" = "$expected_uri"
+          test "$(extract_reference_field "$named" VaultName)" = "example-vault"
+          test "$(extract_reference_field "$named" SecretName)" = "example"
+
   production-migration:
     if: inputs.confirm_environment == 'production'
     needs: contract-proof
@@ -259,6 +282,17 @@ jobs:
           )"
           rm -f "$settings_file"
 
+          extract_reference_field() {
+            local raw="$1"
+            local field="$2"
+            local body="${raw#@Microsoft.KeyVault(}"
+            body="${body%)}"
+            printf '%s' "$body" |
+              tr ';' '\n' |
+              sed -n "s/^[[:space:]]*${field}=//p" |
+              head -n 1
+          }
+
           resolve_setting() {
             local raw="$1"
             local secret_uri=""
@@ -266,10 +300,7 @@ jobs:
             local secret_name=""
             if [[ "$raw" == @Microsoft.KeyVault\(* ]]; then
               echo "::add-mask::$raw" >&2
-              secret_uri="$(
-                printf '%s' "$raw" |
-                  sed -n 's/^@Microsoft.KeyVault(SecretUri=\([^)]*\))$/\1/p'
-              )"
+              secret_uri="$(extract_reference_field "$raw" SecretUri)"
               if [ -n "$secret_uri" ]; then
                 az keyvault secret show \
                   --id "$secret_uri" \
@@ -278,14 +309,8 @@ jobs:
                   --only-show-errors
                 return
               fi
-              vault_name="$(
-                printf '%s' "$raw" |
-                  sed -n 's/^@Microsoft.KeyVault(VaultName=\([^;]*\);SecretName=[^)]*)$/\1/p'
-              )"
-              secret_name="$(
-                printf '%s' "$raw" |
-                  sed -n 's/^@Microsoft.KeyVault(VaultName=[^;]*;SecretName=\([^)]*\))$/\1/p'
-              )"
+              vault_name="$(extract_reference_field "$raw" VaultName)"
+              secret_name="$(extract_reference_field "$raw" SecretName)"
               test -n "$vault_name" && test -n "$secret_name" || {
                 echo "ERROR: unsupported Azure Key Vault reference format" >&2
                 return 1
