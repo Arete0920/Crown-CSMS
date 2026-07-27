@@ -160,12 +160,26 @@ jobs:
                 text = JSON.stringify(response.data);
               }
               const lines = text.split(/\r?\n/);
-              const pattern = /##\[error\]|ERROR:|AuthorizationFailed|Forbidden|ResourceNotFound|ReadOnlyDisabledSubscription|appsettings list/i;
-              const index = lines.findIndex((line) => pattern.test(line));
+              let index = -1;
+              for (let i = lines.length - 1; i >= 0; i -= 1) {
+                if (/##\[error\]/i.test(lines[i])) {
+                  index = i;
+                  break;
+                }
+              }
+              if (index < 0) {
+                const pattern = /ERROR:|AuthorizationFailed|Forbidden|ResourceNotFound|ReadOnlyDisabledSubscription|appsettings list/i;
+                for (let i = lines.length - 1; i >= 0; i -= 1) {
+                  if (pattern.test(lines[i])) {
+                    index = i;
+                    break;
+                  }
+                }
+              }
               const anchor = index >= 0 ? index : Math.max(0, lines.length - 20);
-              const start = Math.max(0, anchor - 8);
+              const start = Math.max(0, anchor - 10);
               logExcerpt = lines
-                .slice(start, start + 30)
+                .slice(start, start + 35)
                 .join('\n')
                 .slice(0, 5000);
             }
