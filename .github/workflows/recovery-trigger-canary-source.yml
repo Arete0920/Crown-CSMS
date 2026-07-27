@@ -1,0 +1,27 @@
+name: Recovery Trigger Canary Source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/recovery-trigger-canary-source.yml'
+      - '.github/workflows/recovery-trigger-canary-observer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  complete-successfully:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Emit bounded canary evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Recovery trigger canary source completed successfully."
+          echo "repository=${GITHUB_REPOSITORY}"
+          echo "run_id=${GITHUB_RUN_ID}"
+          echo "sha=${GITHUB_SHA}"
+          echo "production_mutation_performed=false"
