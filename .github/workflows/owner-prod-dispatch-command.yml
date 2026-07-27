@@ -73,8 +73,8 @@ jobs:
                 '',
                 `- command run: ${commandRun}`,
                 '- workflow: `.github/workflows/deploy-prod-dispatch.yml`',
-                `- tag: `${process.env.DEPLOY_TAG}``,
-                `- expected SHA: `${process.env.EXPECTED_SHA}``,
+                '- tag: `' + process.env.DEPLOY_TAG + '`',
+                '- expected SHA: `' + process.env.EXPECTED_SHA + '`',
                 '- override: `force_deploy=true`',
                 '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
               ].join('\n')
