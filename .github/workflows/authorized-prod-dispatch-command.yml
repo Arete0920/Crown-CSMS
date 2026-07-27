@@ -1,0 +1,48 @@
+name: Authorized Production Dispatch Command
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: read
+  actions: write
+
+concurrency:
+  group: authorized-prod-dispatch-command
+  cancel-in-progress: false
+
+jobs:
+  dispatch-approved-release:
+    if: >-
+      github.event.issue.number == 1630 &&
+      github.event.comment.user.login == 'tcmegahan' &&
+      github.event.comment.body == '/deploy-prod-e57867b'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch existing protected production workflow
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const tag = 'prod-deploy-20260726-e57867b';
+            const expectedSha = 'e57867b198bbfd1676122d30213d3617559f869e';
+
+            if (context.repo.owner !== 'tcmegahan' || context.repo.repo !== 'Crown2026') {
+              core.setFailed('Repository identity mismatch.');
+              return;
+            }
+
+            core.info(`Dispatching protected production workflow for ${tag} -> ${expectedSha}`);
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-prod-dispatch.yml',
+              ref: 'main',
+              inputs: {
+                deploy_tag: tag,
+                force_deploy: 'true'
+              }
+            });
