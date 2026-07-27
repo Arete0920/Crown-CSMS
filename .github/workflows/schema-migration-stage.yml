@@ -23,6 +23,14 @@ on:
         required: false
       DJANGO_SECRET_KEY:
         required: false
+      AZURE_CREDENTIALS:
+        required: false
+      AZURE_CLIENT_ID:
+        required: false
+      AZURE_TENANT_ID:
+        required: false
+      AZURE_SUBSCRIPTION_ID:
+        required: false
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -36,6 +44,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   contract-proof:
@@ -68,8 +77,12 @@ jobs:
           DJANGO_SETTINGS_MODULE: crown_api.settings
         working-directory: backend
         run: |
-          python manage.py migrate_with_lock --allow-non-postgresql --lock-timeout-seconds 0
-          python manage.py migrate_with_lock --allow-non-postgresql --lock-timeout-seconds 0
+          python manage.py migrate_with_lock \
+            --allow-non-postgresql \
+            --lock-timeout-seconds 0
+          python manage.py migrate_with_lock \
+            --allow-non-postgresql \
+            --lock-timeout-seconds 0
           python manage.py migrate --check
 
   production-migration:
@@ -81,6 +94,9 @@ jobs:
     concurrency:
       group: crown-production-schema-migration
       cancel-in-progress: false
+    env:
+      RESOURCE_GROUP: crown-rg
+      WEBAPP_NAME: crown-api-prod
     steps:
       - name: Validate production authorization inputs
         shell: bash
@@ -107,7 +123,9 @@ jobs:
           set -euo pipefail
           actual="$(git rev-parse HEAD)"
           test "$actual" = "${{ inputs.expected_sha }}" || {
-            echo "ERROR: checked-out SHA mismatch expected=${{ inputs.expected_sha }} actual=$actual"
+            echo "ERROR: checked-out SHA mismatch"
+            echo "expected=${{ inputs.expected_sha }}"
+            echo "actual=$actual"
             exit 1
           }
 
@@ -119,25 +137,167 @@ jobs:
       - name: Install backend requirements
         run: pip install -r backend/requirements.txt
 
-      - name: Guard production database secret
+      - name: Resolve production secret source
+        id: secret_source
+        shell: bash
         env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL || secrets.DATABASE_URL }}
+          GITHUB_DATABASE_URL: >-
+            ${{ secrets.PROD_DATABASE_URL || secrets.DATABASE_URL }}
+          GITHUB_DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "$GITHUB_DATABASE_URL" ] && \
+             [ -n "$GITHUB_DJANGO_SECRET_KEY" ]; then
+            [[ "$GITHUB_DATABASE_URL" == postgres://* || \
+               "$GITHUB_DATABASE_URL" == postgresql://* ]] || {
+              echo "ERROR: production migration stage requires PostgreSQL"
+              exit 1
+            }
+            echo "::add-mask::$GITHUB_DATABASE_URL"
+            echo "::add-mask::$GITHUB_DJANGO_SECRET_KEY"
+            echo "DATABASE_URL=$GITHUB_DATABASE_URL" >> "$GITHUB_ENV"
+            echo "DJANGO_SECRET_KEY=$GITHUB_DJANGO_SECRET_KEY" \
+              >> "$GITHUB_ENV"
+            echo "needs_azure=false" >> "$GITHUB_OUTPUT"
+            echo "source=github-production-secrets" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_azure=true" >> "$GITHUB_OUTPUT"
+            echo "source=azure-app-settings" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Guard Azure fallback credentials
+        if: steps.secret_source.outputs.needs_azure == 'true'
+        id: azure_auth
+        shell: bash
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          if [ -n "$AZURE_CREDENTIALS" ]; then
+            credentials_file="/tmp/azure-credentials.json"
+            printf '%s' "$AZURE_CREDENTIALS" > "$credentials_file"
+            jq -e '
+              type == "object"
+              and ((.clientId // "") | length > 0)
+              and ((.clientSecret // "") | length > 0)
+              and ((.tenantId // "") | length > 0)
+              and ((.subscriptionId // "") | length > 0)
+            ' "$credentials_file" > /dev/null || {
+              rm -f "$credentials_file"
+              echo "ERROR: AZURE_CREDENTIALS is incomplete"
+              exit 1
+            }
+            rm -f "$credentials_file"
+            echo "mode=sp" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          test -n "$AZURE_CLIENT_ID" || {
+            echo "ERROR: AZURE_CLIENT_ID is required for Azure fallback"
+            exit 1
+          }
+          test -n "$AZURE_TENANT_ID" || {
+            echo "ERROR: AZURE_TENANT_ID is required for Azure fallback"
+            exit 1
+          }
+          test -n "$AZURE_SUBSCRIPTION_ID" || {
+            echo "ERROR: AZURE_SUBSCRIPTION_ID is required for Azure fallback"
+            exit 1
+          }
+          echo "mode=oidc" >> "$GITHUB_OUTPUT"
+
+      - name: Azure Login (Service Principal JSON)
+        if: >-
+          steps.secret_source.outputs.needs_azure == 'true' &&
+          steps.azure_auth.outputs.mode == 'sp'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Azure Login (OIDC)
+        if: >-
+          steps.secret_source.outputs.needs_azure == 'true' &&
+          steps.azure_auth.outputs.mode == 'oidc'
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve masked migration settings from Azure App Service
+        if: steps.secret_source.outputs.needs_azure == 'true'
         shell: bash
         run: |
           set -euo pipefail
+          settings_file="/tmp/crown-prod-appsettings.json"
+          az webapp config appsettings list \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$WEBAPP_NAME" \
+            --output json \
+            --only-show-errors > "$settings_file"
+
+          DATABASE_URL="$(
+            jq -r '
+              .[]
+              | select(.name == "DATABASE_URL")
+              | .value
+            ' "$settings_file" | head -n 1
+          )"
+          DJANGO_SECRET_KEY="$(
+            jq -r '
+              [
+                .[]
+                | select(
+                    .name == "DJANGO_SECRET_KEY"
+                    or .name == "SECRET_KEY"
+                  )
+                | .value
+              ][0] // empty
+            ' "$settings_file"
+          )"
+          rm -f "$settings_file"
+
           test -n "$DATABASE_URL" || {
-            echo "ERROR: PROD_DATABASE_URL or DATABASE_URL is not configured in the production environment"
+            echo "ERROR: Azure App Service DATABASE_URL is not configured"
             exit 1
           }
-          [[ "$DATABASE_URL" == postgres://* || "$DATABASE_URL" == postgresql://* ]] || {
+          test -n "$DJANGO_SECRET_KEY" || {
+            echo "ERROR: Azure App Service secret key is not configured"
+            exit 1
+          }
+          [[ "$DATABASE_URL" == postgres://* || \
+             "$DATABASE_URL" == postgresql://* ]] || {
+            echo "ERROR: Azure App Service DATABASE_URL is not PostgreSQL"
+            exit 1
+          }
+          echo "::add-mask::$DATABASE_URL"
+          echo "::add-mask::$DJANGO_SECRET_KEY"
+          echo "DATABASE_URL=$DATABASE_URL" >> "$GITHUB_ENV"
+          echo "DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY" >> "$GITHUB_ENV"
+
+      - name: Guard resolved production migration settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || {
+            echo "ERROR: production DATABASE_URL could not be resolved"
+            exit 1
+          }
+          test -n "${DJANGO_SECRET_KEY:-}" || {
+            echo "ERROR: production DJANGO_SECRET_KEY could not be resolved"
+            exit 1
+          }
+          [[ "$DATABASE_URL" == postgres://* || \
+             "$DATABASE_URL" == postgresql://* ]] || {
             echo "ERROR: production migration stage requires PostgreSQL"
             exit 1
           }
+          echo "Production migration secret source: ${{ steps.secret_source.outputs.source }}"
 
       - name: Execute one locked production migration stage
         env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL || secrets.DATABASE_URL }}
-          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           DJANGO_SETTINGS_MODULE: crown_api.settings
           BUILD_SHA: ${{ inputs.expected_sha }}
           CROWN_ENV: production
@@ -146,13 +306,16 @@ jobs:
         working-directory: backend
         run: |
           set -euo pipefail
-          test -n "$DJANGO_SECRET_KEY" || {
-            echo "ERROR: DJANGO_SECRET_KEY is not configured in the production environment"
-            exit 1
-          }
           python manage.py migrate_with_lock --lock-timeout-seconds 300
           python manage.py migrate --check
           python manage.py showmigrations --plan
+
+      - name: Azure logout
+        if: >-
+          always() &&
+          steps.secret_source.outputs.needs_azure == 'true'
+        shell: bash
+        run: az logout || true
 
       - name: Record migration authority summary
         shell: bash
@@ -162,6 +325,7 @@ jobs:
             echo "- application SHA: ${{ inputs.expected_sha }}"
             echo "- workflow run: ${{ github.run_id }}"
             echo "- environment: production"
+            echo "- secret source: ${{ steps.secret_source.outputs.source }}"
             echo "- database lock: PostgreSQL advisory lock"
             echo "- result: completed"
           } >> "$GITHUB_STEP_SUMMARY"
