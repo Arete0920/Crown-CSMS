@@ -14,7 +14,7 @@ jobs:
     if: >-
       github.event.issue.number == 1630 &&
       github.event.comment.user.login == 'tcmegahan' &&
-      github.event.comment.body == '/tail-prod-log 89990379530'
+      github.event.comment.body == '/tail-prod-log 89993370002'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -28,7 +28,7 @@ jobs:
               {
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                job_id: 89990379530
+                job_id: 89993370002
               }
             );
             let text;
@@ -42,14 +42,14 @@ jobs:
               text = JSON.stringify(response.data);
             }
             const lines = text.split(/\r?\n/);
-            const tail = lines.slice(-80).join('\n').slice(0, 10000);
+            const tail = lines.slice(-100).join('\n').slice(0, 12000);
             const body = [
-              'Production deploy 30269891411 terminal log evidence.',
+              'Production deploy 30270878374 terminal log evidence.',
               '',
-              '- failed job id: `89990379530`',
+              '- failed job id: `89993370002`',
               '- failed step: `Resolve masked migration settings from Azure App Service`',
               '',
-              'Final 80 log lines:',
+              'Final 100 log lines:',
               '```text',
               tail,
               '```',
@@ -60,7 +60,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: 1648,
-              title: 'Production deploy 30269891411 terminal failure evidence',
+              title: 'Production deploy 30270878374 terminal failure evidence',
               body,
               state: 'closed'
             });
