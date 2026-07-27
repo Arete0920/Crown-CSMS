@@ -71,6 +71,10 @@ jobs:
               return;
             }
 
+            core.info(`DOWNSTREAM_RUN_ID=${downstream.id}`);
+            core.info(`DOWNSTREAM_RUN_URL=${downstream.html_url}`);
+            core.info(`DOWNSTREAM_STATUS=${downstream.status}`);
+            core.info(`DOWNSTREAM_CONCLUSION=${downstream.conclusion || 'pending'}`);
             const commandRun = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             await github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -87,6 +91,54 @@ jobs:
                 `- tag: \`${tag}\``,
                 `- expected SHA: \`${expectedSha}\``,
                 '- override: `force_deploy=true`',
+                '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
+              ].join('\n')
+            });
+
+  discover-latest-production-run:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'release/discover-prod-run-e57867b' &&
+      github.event.pull_request.base.ref == 'main'
+    name: Discover Latest Production Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Query latest production workflow run
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-prod-dispatch.yml',
+              event: 'workflow_dispatch',
+              per_page: 20
+            });
+            const run = data.workflow_runs[0];
+            if (!run) {
+              core.setFailed('No workflow_dispatch production run exists.');
+              return;
+            }
+            core.info(`LATEST_PROD_RUN_ID=${run.id}`);
+            core.info(`LATEST_PROD_RUN_URL=${run.html_url}`);
+            core.info(`LATEST_PROD_RUN_STATUS=${run.status}`);
+            core.info(`LATEST_PROD_RUN_CONCLUSION=${run.conclusion || 'pending'}`);
+            core.info(`LATEST_PROD_RUN_HEAD_SHA=${run.head_sha}`);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1630,
+              body: [
+                'Latest production deployment run discovered read-only.',
+                '',
+                `- run id: \`${run.id}\``,
+                `- run URL: ${run.html_url}`,
+                `- status: \`${run.status}\``,
+                `- conclusion: \`${run.conclusion || 'pending'}\``,
+                `- head SHA: \`${run.head_sha}\``,
                 '- production remains **NO-GO / HOLD** pending exact-SHA runtime and P0 evidence.'
               ].join('\n')
             });
@@ -157,6 +209,9 @@ jobs:
           script: |
             const run = context.payload.workflow_run;
             const conclusion = run.conclusion || 'pending';
+            core.info(`OBSERVED_RUN_ID=${run.id}`);
+            core.info(`OBSERVED_RUN_STATUS=${run.status}`);
+            core.info(`OBSERVED_RUN_CONCLUSION=${conclusion}`);
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
