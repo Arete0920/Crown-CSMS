@@ -4,14 +4,15 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
-  push:
+  pull_request:
+    types: [closed]
     branches: [main]
     paths:
       - '.github/prod-dispatch-e57867b.trigger'
 
 concurrency:
-  group: production-health-watch
-  cancel-in-progress: true
+  group: production-health-watch-${{ github.event_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -20,7 +21,11 @@ permissions:
 
 jobs:
   dispatch-approved-production-release:
-    if: github.event_name == 'push'
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'release/fire-prod-dispatch-e57867b-v2' &&
+      github.event.pull_request.base.ref == 'main'
     name: Dispatch Approved Production Release
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -48,9 +53,10 @@ jobs:
               repo: context.repo.repo,
               issue_number: 1630,
               body: [
-                'Production dispatch accepted through the registered health-workflow lane.',
+                'Production dispatch accepted through the exact merged-PR lane.',
                 '',
                 `- dispatch command run: ${runUrl}`,
+                `- source PR: #${context.issue.number}`,
                 '- downstream workflow: `.github/workflows/deploy-prod-dispatch.yml`',
                 '- tag: `' + tag + '`',
                 '- expected SHA: `' + expectedSha + '`',
@@ -60,11 +66,10 @@ jobs:
             });
 
   health-check:
-    if: github.event_name != 'push'
+    if: github.event_name != 'pull_request'
     name: Production Health Monitor
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
       - name: Check production health endpoint
         id: health
@@ -75,24 +80,16 @@ jobs:
             echo "http_code=000" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
           RESPONSE="000"
-          if curl -sS --max-time 10 \
-            -o /tmp/health_response.json \
-            -w "%{http_code}" \
-            "${PRODUCTION_URL}/api/health/" > /tmp/health_http_code.txt; then
+          if curl -sS --max-time 10 -o /tmp/health_response.json -w "%{http_code}" "${PRODUCTION_URL}/api/health/" > /tmp/health_http_code.txt; then
             RESPONSE=$(cat /tmp/health_http_code.txt)
           fi
-
           if [ "$RESPONSE" != "200" ]; then
             echo "status=unhealthy" >> "$GITHUB_OUTPUT"
             echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          STATUS=$(
-            python3 -c "import json; d=json.load(open('/tmp/health_response.json','r',encoding='utf-8')); print('healthy' if (d.get('status') == 'healthy' or d.get('ok') is True) else d.get('status','unhealthy'))" 2>/dev/null || echo "unhealthy"
-          )
+          STATUS=$(python3 -c "import json; d=json.load(open('/tmp/health_response.json','r',encoding='utf-8')); print('healthy' if (d.get('status') == 'healthy' or d.get('ok') is True) else d.get('status','unhealthy'))" 2>/dev/null || echo "unhealthy")
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "http_code=$RESPONSE" >> "$GITHUB_OUTPUT"
         env:
@@ -108,57 +105,13 @@ jobs:
             const now = new Date().toISOString();
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const titlePrefix = '[ALERT] Production health check failed';
-
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'production-alert',
-              per_page: 100,
-            });
-
+            const { data: openIssues } = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'production-alert', per_page: 100});
             const existing = openIssues.find((candidate) => candidate.title.startsWith(titlePrefix));
-
             if (existing) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: existing.number,
-                body: [
-                  'Production health alert repeated.',
-                  `Detected: ${now}`,
-                  `HTTP Status: ${httpCode}`,
-                  `Health status: ${status}`,
-                  `Workflow run: ${runUrl}`,
-                ].join('\n'),
-              });
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, body: ['Production health alert repeated.', `Detected: ${now}`, `HTTP Status: ${httpCode}`, `Health status: ${status}`, `Workflow run: ${runUrl}`].join('\n')});
               return;
             }
-
-            const issueBody = [
-              '## Production Health Alert',
-              '',
-              '**Detected:** ' + now,
-              '**HTTP Status:** ' + httpCode,
-              '**Health status:** ' + status,
-              '**Workflow run:** ' + runUrl,
-              '',
-              '### Required actions',
-              '1. Check Sentry for recent errors.',
-              '2. Verify Azure app service is running.',
-              '3. Confirm database connectivity via `/api/health/` response body.',
-              '4. Escalate to TC if not resolved within 15 minutes.',
-              '',
-              '_This issue was opened automatically by the production health monitor._',
-            ].join('\n');
-
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '[ALERT] Production health check failed - ' + now,
-              body: issueBody,
-              labels: ['production-alert', 'priority-high'],
-            });
+            await github.rest.issues.create({owner: context.repo.owner, repo: context.repo.repo, title: '[ALERT] Production health check failed - ' + now, body: ['## Production Health Alert', '', '**Detected:** ' + now, '**HTTP Status:** ' + httpCode, '**Health status:** ' + status, '**Workflow run:** ' + runUrl, '', '### Required actions', '1. Check Sentry for recent errors.', '2. Verify Azure app service is running.', '3. Confirm database connectivity via `/api/health/` response body.', '4. Escalate to TC if not resolved within 15 minutes.', '', '_This issue was opened automatically by the production health monitor._'].join('\n'), labels: ['production-alert', 'priority-high']});
 
       - name: Log healthy status
         if: steps.health.outputs.status == 'healthy'
@@ -170,29 +123,10 @@ jobs:
         with:
           script: |
             const titlePrefix = '[ALERT] Production health check failed';
-
-            const { data: openIssues } = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'open',
-              labels: 'production-alert',
-              per_page: 100,
-            });
-
+            const { data: openIssues } = await github.rest.issues.listForRepo({owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'production-alert', per_page: 100});
             for (const issue of openIssues.filter((candidate) => candidate.title.startsWith(titlePrefix))) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: 'Production health recovered. Closing alert automatically.',
-              });
-
-              await github.rest.issues.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                state: 'closed',
-              });
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, body: 'Production health recovered. Closing alert automatically.'});
+              await github.rest.issues.update({owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number, state: 'closed'});
             }
 
       - name: Fail closed when health proof is not healthy
