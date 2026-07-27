@@ -1,0 +1,138 @@
+name: Temporary OIDC Production Key Vault RBAC Repair
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+jobs:
+  grant:
+    if: >-
+      github.event.issue.number == 1630 &&
+      github.event.comment.user.login == 'tcmegahan' &&
+      github.event.comment.body == '/grant-prod-kv-secrets-user-oidc'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - name: Guard OIDC credentials
+        id: guard
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$AZURE_CLIENT_ID"
+          test -n "$AZURE_TENANT_ID"
+          test -n "$AZURE_SUBSCRIPTION_ID"
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Establish least-privilege vault assignment
+        id: grant
+        shell: bash
+        run: |
+          set -uo pipefail
+          target_object_id="cc57b92f-f96a-4ab3-b55c-806ff6fc8ec5"
+          caller_object_id="$(az ad signed-in-user show --query id -o tsv 2>/dev/null || true)"
+          if [ -z "$caller_object_id" ]; then
+            caller_object_id="$(az account show --query user.name -o tsv 2>/dev/null || true)"
+          fi
+          echo "caller=$caller_object_id" >> "$GITHUB_OUTPUT"
+          vault_id="$(az keyvault show \
+            --resource-group crown-rg \
+            --name crown-kv-prod \
+            --query id \
+            --output tsv \
+            --only-show-errors 2>/tmp/vault_error.txt)"
+          if [ -z "$vault_id" ]; then
+            echo "result=vault-lookup-failed" >> "$GITHUB_OUTPUT"
+            echo "detail=$(tr '\n' ' ' < /tmp/vault_error.txt | cut -c1-600)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          existing="$(az role assignment list \
+            --assignee "$target_object_id" \
+            --scope "$vault_id" \
+            --role "Key Vault Secrets User" \
+            --query '[0].id' \
+            --output tsv \
+            --only-show-errors 2>/tmp/list_error.txt || true)"
+          if [ -n "$existing" ]; then
+            echo "result=already-present" >> "$GITHUB_OUTPUT"
+            echo "detail=assignment already exists" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          set +e
+          az role assignment create \
+            --assignee-object-id "$target_object_id" \
+            --assignee-principal-type ServicePrincipal \
+            --role "Key Vault Secrets User" \
+            --scope "$vault_id" \
+            --only-show-errors \
+            --output none 2>/tmp/create_error.txt
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "result=created" >> "$GITHUB_OUTPUT"
+            echo "detail=least-privilege vault-scoped assignment created through OIDC identity" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=failed" >> "$GITHUB_OUTPUT"
+            echo "detail=$(tr '\n' ' ' < /tmp/create_error.txt | cut -c1-900)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Record OIDC RBAC repair evidence
+        if: always()
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          RESULT: ${{ steps.grant.outputs.result }}
+          DETAIL: ${{ steps.grant.outputs.detail }}
+          CALLER: ${{ steps.grant.outputs.caller }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const body = [
+              'Production Key Vault OIDC RBAC repair result.',
+              '',
+              '- vault: `crown-kv-prod`',
+              '- scope: vault only',
+              '- role: `Key Vault Secrets User`',
+              '- target principal object id: `cc57b92f-f96a-4ab3-b55c-806ff6fc8ec5`',
+              `- OIDC caller: \`${process.env.CALLER || 'not-resolved'}\``,
+              `- result: \`${process.env.RESULT || 'not-run'}\``,
+              `- detail: ${process.env.DETAIL || 'none'}`,
+              '- no secret values were read or written by this repair step.',
+              '- production remains **NO-GO / HOLD** pending rerun evidence.'
+            ].join('\n');
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1648,
+              title: 'Production Key Vault OIDC RBAC repair evidence',
+              body,
+              state: 'closed'
+            });
+
+      - name: Fail closed when assignment was not established
+        if: >-
+          always() &&
+          steps.grant.outputs.result != 'created' &&
+          steps.grant.outputs.result != 'already-present'
+        shell: bash
+        run: |
+          echo "OIDC Key Vault RBAC repair did not establish the assignment."
+          exit 1
+
+      - name: Azure logout
+        if: always()
+        run: az logout || true
