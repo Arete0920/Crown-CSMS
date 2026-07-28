@@ -30,6 +30,15 @@ A document is authoritative only when listed here as `CANONICAL`, or when a late
 | Technical diligence overview | `docs/investor/README.md` | CONTROLLED SUPPORTING; release posture remains governed by `docs/CURRENT_RELEASE_STATUS.md` |
 | Development provenance | `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md` | CONTROLLED SUPPORTING; truthful lineage, not architecture or release authority |
 | Repository noise inventory | `docs/repo-cleanup/REPOSITORY_NOISE_INVENTORY_20260728.md` | CONTROLLED HISTORICAL CLEANUP RECORD |
+| Buyer-truth reconciliation | `docs/repo-cleanup/BUYER_TRUTH_RECONCILIATION_20260728.md` | CONTROLLED HISTORICAL CORRECTION RECORD |
+
+## Explicitly superseded records
+
+| Document | Current disposition | Superseding authority |
+|---|---|---|
+| `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md` | SUPERSEDED / HISTORICAL; former highest-authority claim withdrawn | This index and `docs/CURRENT_RELEASE_STATUS.md` |
+| `docs/status/PROJECT_COMPLETE.md` | HISTORICAL feature snapshot; former production-ready and completion claims withdrawn from current use | `docs/CURRENT_RELEASE_STATUS.md` |
+| `docs/release/FINAL_PRODUCTION_READINESS_DECISION_PACKET_20260622.md` | HISTORICAL June 22 NO-GO packet; product-scope assertions not current evidence | `docs/CURRENT_RELEASE_STATUS.md` |
 
 ## Supporting and historical areas requiring reconciliation
 

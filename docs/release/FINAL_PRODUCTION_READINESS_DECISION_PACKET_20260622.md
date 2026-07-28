@@ -1,61 +1,19 @@
-# Final Production Readiness Decision Packet
+# Final Production Readiness Decision Packet — Historical Record
 
-Date: 2026-06-22
-Branch: cleanup/live-authority-rebaseline-20260622
-Evidence mode: GitHub connector review plus current repository evidence
+**Original date:** 2026-06-22  
+**Original branch:** `cleanup/live-authority-rebaseline-20260622`  
+**Current status:** **HISTORICAL / SUPERSEDED — NOT CURRENT RELEASE AUTHORITY**  
+**Current release authority:** `docs/CURRENT_RELEASE_STATUS.md`  
+**Canonical document index:** `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`
 
-## Decision
+## Disposition
 
-Current decision: NO-GO until this certification/documentation branch is merged and same-SHA required release checks settle cleanly.
+This packet recorded a June 22, 2026 NO-GO decision and limited product-scope completion assertions based on evidence available at that time. It does not represent the current repository, current executable evidence, current deployment identity, production authorization, buyer readiness, or transfer readiness.
 
-This is a release-authority decision, not a product-completion failure.
+The former packet described modules, dashboards, wizards, components, and widgets as proven or certified within specified internal evidence scopes. Those historical assertions have not been revalidated against a current immutable release candidate and must not be promoted into current claims.
 
-## Current product completion evidence
+## Current controlling posture
 
-| Area | Current status | Evidence authority |
-| --- | --- | --- |
-| Modules | 51 / 51 PROVEN | `audit-artifacts/module-completion/current/05_completion_scorecard.md` |
-| Dashboards | 40 / 40 certified for internal dashboard scope | `audit-artifacts/dashboard-completion/state/dashboard-certification-state.json` |
-| Wizards | CERTIFIED | `audit-artifacts/wizard-certification/current/FINAL_WIZARD_CERTIFICATION_20260622.md` plus GitHub Actions Sandbox Ready Evidence run 428 |
-| Components | CERTIFIED BY PARENT SURFACE COVERAGE | `audit-artifacts/component-widget-certification/current/COMPONENT_CERTIFICATION_MATRIX_20260622.csv` |
-| Widgets | CERTIFIED BY PARENT SURFACE COVERAGE | `audit-artifacts/component-widget-certification/current/WIDGET_CERTIFICATION_MATRIX_20260622.csv` |
-| Live evidence authority | CREATED | `docs/LIVE_EVIDENCE_AUTHORITY_20260622.md` |
+CROWN remains under an owner-directed repository freeze. Production is **NOT APPROVED / NO-GO / HOLD**, buyer operational turnover is not approved, external payment processing remains disabled and required to fail closed, and history remediation is not verified complete.
 
-## What is complete
-
-- Product completion evidence for modules is complete.
-- Dashboard certification evidence is complete for internal dashboard scope.
-- Wizard certification evidence is documented.
-- Component/widget certification coverage is documented through parent certified surfaces.
-- Live authority cleanup has been created to prevent stale evidence from controlling current claims.
-
-## What remains before Production Ready Release GO
-
-1. Open and merge the cleanup/certification documentation branch into `main`.
-2. Allow current required GitHub checks to run on the merge candidate/current head.
-3. Confirm same-SHA check settlement:
-   - pending = 0;
-   - failed = 0;
-   - cancelled = 0 for required release gates.
-4. Confirm governance path:
-   - solo-developer workaround documented where applicable;
-   - no false independent-review claim.
-5. Update `docs/CURRENT_RELEASE_STATUS.md` only after the same-SHA evidence supports promotion.
-
-## Release blocker classification
-
-No current evidence reviewed in this packet identifies a missing module, dashboard, wizard, component, or widget as the production blocker.
-
-The remaining blocker is release-authority process closure:
-
-- merge current certification documentation;
-- verify current checks;
-- update final release authority.
-
-## Final recommendation
-
-Proceed to merge/review workflow for `cleanup/live-authority-rebaseline-20260622`, then perform a same-SHA gate settlement check. If checks are clean and governance language is satisfied, update the canonical release status from NO-GO to the appropriate production-ready decision.
-
-## Non-claims
-
-This packet does not itself change repository release status to GO. The controlling release decision remains `docs/CURRENT_RELEASE_STATUS.md` until updated after same-SHA evidence review.
+The former full packet remains available in repository history at blob `242e7f9ef2fdb040c5e6b284c2d74705518b36a2` for provenance and evidence review.
