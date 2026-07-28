@@ -39,5 +39,8 @@ stripe>=10.0.0
 twilio>=9.0.0
 # Board Packet PDF generation (Stage 4)
 reportlab>=4.2.0
+# Analytics runtime dependencies
 numpy>=1.26.4
+pandas>=2.2.3
+scikit-learn>=1.5.2
 tzlocal==5.3.1
