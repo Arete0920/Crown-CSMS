@@ -1,6 +1,6 @@
 name: Apply Ed25519 History Rewrite
 
-# One-shot trigger revision: 2026-07-28
+# One-shot evidence revision: 2026-07-28T17:30Z
 on:
   push:
     branches: [main]
@@ -65,9 +65,24 @@ jobs:
           tools/verify_remediated_git_bundle.sh \
             --repo authoritative.git \
             --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
+          mkdir -p pre-mutation-evidence
           git -C authoritative.git show-ref > post-rewrite-refs.txt
           git -C authoritative.git rev-parse refs/heads/main > post-rewrite-main.txt
           test -s post-rewrite-main.txt
+          cp pre-rewrite-refs.txt pre-rewrite-main.txt post-rewrite-refs.txt post-rewrite-main.txt pre-mutation-evidence/
+          printf '%s\n' 'PASS: rewritten mirror verified before remote mutation' > pre-mutation-evidence/VERDICT.txt
+          echo '=== VERIFIED PRE-MUTATION REWRITE IDENTITY ==='
+          printf 'pre_main=' && cat pre-rewrite-main.txt
+          printf 'post_main=' && cat post-rewrite-main.txt
+          cat pre-mutation-evidence/VERDICT.txt
+
+      - name: Upload pre-mutation rewrite evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pre-mutation-ed25519-rewrite-${{ github.run_id }}
+          path: pre-mutation-evidence/
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Force-update authoritative branches and tags
         env:
