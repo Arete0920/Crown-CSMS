@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "release_sha": "1111111111111111111111111111111111111111",
+  "environment": "staging",
+  "rollback_drill": {
+    "drill_id": "RECOVERY-EXAMPLE-ROLLBACK",
+    "started_at_utc": "2026-07-28T01:00:00Z",
+    "completed_at_utc": "2026-07-28T01:12:00Z",
+    "from_sha": "2222222222222222222222222222222222222222",
+    "to_sha": "1111111111111111111111111111111111111111",
+    "trigger": "controlled failed-deploy simulation",
+    "result": "pass",
+    "health_validation": true,
+    "tenant_validation": true,
+    "evidence_reference": "example-only-not-operational-proof"
+  },
+  "restore_drill": {
+    "drill_id": "RECOVERY-EXAMPLE-RESTORE",
+    "started_at_utc": "2026-07-28T01:15:00Z",
+    "completed_at_utc": "2026-07-28T01:35:00Z",
+    "backup_reference_redacted": "backup-reference-redacted",
+    "restore_target_redacted": "isolated-target-redacted",
+    "isolated_environment": true,
+    "result": "pass",
+    "evidence_reference": "example-only-not-operational-proof"
+  },
+  "integrity_validation": {
+    "tenant_count_checked": 2,
+    "record_count_checked": 100,
+    "cross_tenant_anomalies": 0,
+    "missing_records": 0,
+    "unexpected_records": 0,
+    "result": "pass"
+  },
+  "rto_rpo": {
+    "measured_rto_minutes": 12,
+    "accepted_rto_minutes": 30,
+    "measured_rpo_minutes": 0,
+    "accepted_rpo_minutes": 15,
+    "accepted_by": "example-only"
+  },
+  "operators": [
+    {
+      "name": "Example Operator",
+      "role": "platform-operator"
+    }
+  ],
+  "approvals": [
+    {
+      "name": "Example Approver",
+      "role": "product-owner",
+      "approved_at_utc": "2026-07-28T01:40:00Z",
+      "decision": "approved"
+    }
+  ]
+}
