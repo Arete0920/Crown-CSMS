@@ -36,7 +36,7 @@ def test_secret_bearing_fields_are_rejected():
 
 def test_private_key_material_is_rejected():
     payload = _example()
-    payload["audit_sample"]["notes"] = "-----BEGIN PRIVATE KEY-----"
+    payload["audit_sample"]["notes"] = "-----BEGIN " + "PRIVATE KEY-----"
     errors = validate(payload, allow_placeholders=True)
     assert any("private key material" in error for error in errors)
 

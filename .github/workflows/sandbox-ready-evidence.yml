@@ -33,12 +33,15 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Set sandbox CI value
+      - name: Set sandbox CI values
         shell: bash
         run: |
+          set -euo pipefail
           env_name="CROWN_DEMO_TOK""EN"
           env_value="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-sandbox"
+          secret_value="$(openssl rand -hex 48)"
           printf '%s=%s\n' "$env_name" "$env_value" >> "$GITHUB_ENV"
+          printf 'DJANGO_SECRET_KEY=%s\n' "$secret_value" >> "$GITHUB_ENV"
 
       - name: Detect docs-only change set
         id: changes

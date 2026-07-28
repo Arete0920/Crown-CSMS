@@ -41,7 +41,7 @@ def test_deploy_check_rejects_weak_secret(monkeypatch):
 
 def test_hardened_context_accepts_strong_secret(monkeypatch):
     monkeypatch.setenv("CROWN_ENV", "production")
-    monkeypatch.setenv("DJANGO_SECRET_KEY", "aB3!" * 20)
+    monkeypatch.setenv("DJANGO_SECRET_KEY", "aB3!xY7@" * 10)
 
     enforce_production_secret([])
 
