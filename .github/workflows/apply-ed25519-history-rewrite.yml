@@ -1,0 +1,120 @@
+name: Apply Ed25519 History Rewrite
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/apply-ed25519-history-rewrite.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-ed25519-history-rewrite
+  cancel-in-progress: false
+
+jobs:
+  rewrite-authoritative-refs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout verifier
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 1
+
+      - name: Verify invocation identity
+        run: |
+          set -euo pipefail
+          test "${{ github.repository }}" = "tcmegahan/Crown2026"
+          test "${{ github.ref }}" = "refs/heads/main"
+          test "${{ github.event_name }}" = "push"
+
+      - name: Install pinned git-filter-repo
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check git-filter-repo==2.47.0
+          git filter-repo --version
+
+      - name: Clone authoritative mirror and verify source HEAD
+        env:
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git clone --mirror "https://x-access-token:${TOKEN}@github.com/${REPO}.git" authoritative.git
+          pre_main="$(git -C authoritative.git rev-parse refs/heads/main)"
+          test "$pre_main" = "${{ github.sha }}"
+          git -C authoritative.git show-ref > pre-rewrite-refs.txt
+          printf '%s\n' "$pre_main" > pre-rewrite-main.txt
+
+      - name: Rewrite all advertised refs
+        run: |
+          set -euo pipefail
+          git -C authoritative.git filter-repo \
+            --path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem' \
+            --invert-paths \
+            --force
+
+      - name: Verify rewritten mirror before remote mutation
+        run: |
+          set -euo pipefail
+          chmod +x tools/verify_remediated_git_bundle.sh
+          tools/verify_remediated_git_bundle.sh \
+            --repo authoritative.git \
+            --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
+          git -C authoritative.git show-ref > post-rewrite-refs.txt
+          git -C authoritative.git rev-parse refs/heads/main > post-rewrite-main.txt
+          test -s post-rewrite-main.txt
+
+      - name: Force-update authoritative branches and tags
+        env:
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git -C authoritative.git remote add origin "https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          git -C authoritative.git push --force --prune origin \
+            'refs/heads/*:refs/heads/*' \
+            'refs/tags/*:refs/tags/*'
+
+      - name: Verify remote after ref replacement
+        env:
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git clone --mirror "https://x-access-token:${TOKEN}@github.com/${REPO}.git" remote-verified.git
+          tools/verify_remediated_git_bundle.sh \
+            --repo remote-verified.git \
+            --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
+          expected="$(cat post-rewrite-main.txt)"
+          actual="$(git -C remote-verified.git rev-parse refs/heads/main)"
+          test "$actual" = "$expected"
+          printf '%s\n' "$actual" > remote-verified-main.txt
+
+      - name: Create evidence bundle and manifest
+        run: |
+          set -euo pipefail
+          mkdir -p remediation-evidence
+          cp pre-rewrite-refs.txt post-rewrite-refs.txt remediation-evidence/
+          cp pre-rewrite-main.txt post-rewrite-main.txt remote-verified-main.txt remediation-evidence/
+          git -C remote-verified.git rev-list --all --count > remediation-evidence/commit-count.txt
+          git -C remote-verified.git for-each-ref --format='%(refname)' refs/heads | wc -l > remediation-evidence/branch-count.txt
+          git -C remote-verified.git for-each-ref --format='%(refname)' refs/tags | wc -l > remediation-evidence/tag-count.txt
+          git -C remote-verified.git bundle create ../Crown2026-authoritative-remediated.bundle --all
+          tools/verify_remediated_git_bundle.sh \
+            --bundle Crown2026-authoritative-remediated.bundle \
+            --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
+          sha256sum Crown2026-authoritative-remediated.bundle > remediation-evidence/Crown2026-authoritative-remediated.bundle.sha256
+          cp Crown2026-authoritative-remediated.bundle remediation-evidence/
+          printf '%s\n' 'PASS: authoritative branches and tags rewritten; forbidden path unreachable from advertised refs' > remediation-evidence/VERDICT.txt
+
+      - name: Upload authoritative remediation evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: authoritative-ed25519-history-remediation-${{ github.run_id }}
+          path: remediation-evidence/
+          retention-days: 30
+          if-no-files-found: error
