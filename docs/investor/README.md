@@ -2,118 +2,71 @@
 
 ## Purpose
 
-This is the controlled starting point for prospective owners, technical diligence reviewers, strategic partners, and authorized executive stakeholders.
+This is the controlled starting point for an authorized technical review of the CROWN repository. It is limited to product architecture, source organization, engineering controls, security boundaries, operational requirements, known risks, and ownership-transfer verification.
 
-It summarizes the product, repository structure, current engineering controls, and open hardening work. It does not replace source review, clean-clone verification, security testing, operational drills, or the current release-authority record.
+Commercial outreach, buyer targeting, valuation, negotiation strategy, investor presentations, market-capture plans, and transaction structuring are intentionally excluded from this repository review path.
 
-## Product summary
-
-CROWN is a multi-tenant Christian School Management Solution designed to coordinate institutional workflows across admissions, enrollment, academics, attendance, student records, gradebook, billing, accounting, financial aid, communications, portals, governance, transportation, athletics, safety, spiritual life, and related school operations.
-
-The product is implemented as a broad modular web application rather than a single-purpose prototype.
-
-## Current technical shape
-
-- Backend: Django and Django REST Framework.
-- Frontend: React and Vite.
-- Primary production database direction: PostgreSQL.
-- Authentication and identity integrations include application authentication and Microsoft Entra-related support.
-- Deployment and infrastructure materials are oriented around Azure and GitHub Actions.
-- Browser validation uses Playwright alongside unit, contract, backend, security, dependency, and release checks.
-- Local development currently uses VS Code together with the repository's documented command-line, Python, Node.js, GitHub, and PowerShell tooling where appropriate. GitHub Copilot is not part of the active VS Code workflow. Editor choice and development-assistance tooling are not part of the product architecture, authorship record, acceptance authority, or release authority.
-
-## Repository authority
+## Current authority
 
 The authoritative repository is `tcmegahan/Crown2026`. The public-facing product name is CROWN.
 
-Start with:
+Review these records first:
 
-1. root `README.md`;
-2. `docs/canonical/REPOSITORY_MANIFEST.md`;
-3. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`;
-4. `docs/engineering/DEV_SETUP.md`;
-5. `docs/CURRENT_RELEASE_STATUS.md`;
-6. `SECURITY.md`;
-7. `docs/operations/README.md`.
+1. `README.md`
+2. `docs/CURRENT_RELEASE_STATUS.md`
+3. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`
+4. `docs/canonical/REPOSITORY_MANIFEST.md`
+5. `docs/engineering/DEV_SETUP.md`
+6. `SECURITY.md`
+7. `docs/operations/README.md`
 
-Generated evidence, archived status files, copied command output, and historical reports do not override current canonical records.
+Historical reports, generated evidence, archived status documents, issue checklists, and prior marketing or investor materials do not override current canonical records.
 
-## Verified strengths visible in the repository
+## Product and technical scope
 
-### Product breadth
+CROWN is a multi-tenant Christian School Management Solution with backend and frontend implementation across admissions, enrollment, academics, attendance, student records, gradebook, billing, accounting, financial aid, communications, portals, governance, transportation, athletics, safety, spiritual life, and related school operations.
 
-The codebase contains substantial backend and frontend implementation across a wide school-operations surface.
+The current technical stack includes:
 
-### Automated validation
+- Django and Django REST Framework;
+- React and Vite;
+- PostgreSQL-oriented production data architecture;
+- application authentication and Microsoft Entra-related integration support;
+- Azure-oriented deployment materials and GitHub Actions automation;
+- backend, frontend, contract, browser, security, dependency, and release checks.
 
-The repository contains backend tests, frontend unit and contract tests, Playwright suites, security scanning, dependency review, route and dashboard checks, release gates, and evidence-generation workflows.
+The existence of source code, tests, workflows, or prior deployment records does not establish current production authorization.
 
-### Tenant and authorization hardening
+## Current posture
 
-The current architecture includes a canonical request tenant context and centralized cross-school conflict enforcement. Residual tenant-context migration and same-SHA browser proof remain open work.
+CROWN is under an owner-directed repository freeze.
 
-### Frontend transport consolidation
+- Production: **NOT APPROVED / NO-GO / HOLD**
+- Buyer operational turnover: **NOT APPROVED**
+- External payment processing: **DISABLED / FAIL CLOSED**
+- Historical-key retirement and all-ref history remediation: **NOT VERIFIED COMPLETE**
 
-Authenticated frontend API traffic is being consolidated through one canonical client that owns API-base resolution, authentication, tenant context, correlation identifiers, timeout and cancellation behavior, credentials, and structured failures.
+The controlling release posture is `docs/CURRENT_RELEASE_STATUS.md`.
 
-### Canonical identity direction
+## Technical diligence sequence
 
-Operational guardian, family, and student writes have been directed to the canonical `core` identity models. Compatibility-domain reconciliation, representative data migration rehearsal, rollback proof, and legacy retirement criteria remain open.
+An authorized reviewer should:
 
-### Release and recovery controls
-
-The repository includes exact-SHA validation, controlled schema-migration authority, immutable image rollback controls, secret-handling architecture, and release-governance documentation. Several controls still require live operational drills or external-platform evidence before production approval.
-
-## Current risks and open work
-
-CROWN is in controlled sandbox release-candidate posture. Production release is not approved.
-
-The principal remaining technical risks are:
-
-1. removing schema-migration authority from ordinary web startup and proving the controlled migration and recovery matrix;
-2. completing authenticated persona, tenant-context, network, console, and visual browser evidence on one approved release identity;
-3. executing application rollback and database restore drills with measured recovery objectives;
-4. proving external secret-store identities, audit logging, rotation, failed-rotation handling, and break-glass operation;
-5. completing residual tenant and identity-model convergence;
-6. reducing legacy documentation and historical repository noise so current authority is immediately understandable;
-7. proving that a successor can clone, configure, test, deploy, operate, recover, and administer the system without undocumented assumptions.
-
-## Diligence review sequence
-
-A technical reviewer should:
-
-1. verify repository access, ownership, branch protection, required checks, and administrator control;
-2. perform a clean clone and follow the canonical developer setup without informal assistance;
-3. install dependencies from lock and requirements files and record all deviations;
-4. run backend, frontend, contract, security, dependency, and browser suites at an exact commit;
-5. inspect the architecture, module boundaries, tenant model, authentication, authorization, data model, API transport, background work, and deployment topology;
-6. trace representative critical workflows from browser route through API, authorization, tenant context, service logic, canonical models, database writes, audit events, and rendered response;
+1. verify repository ownership, access, branch controls, required checks, and administrator authority;
+2. perform a clean clone and follow the canonical developer setup;
+3. install dependencies from controlled requirement and lock files;
+4. run backend, frontend, contract, browser, dependency, and security checks at one exact commit;
+5. inspect architecture, authentication, authorization, tenant isolation, data models, API transport, background work, deployment topology, and operational controls;
+6. trace representative critical workflows from browser route through API, authorization, tenant context, domain logic, database writes, audit events, and rendered response;
 7. review dependency licenses, vulnerability results, secret-scanning results, and software-supply-chain controls;
-8. inspect migration history, schema ownership, data-retention behavior, backup and restore procedures, and rollback design;
-9. review operational access, cloud resources, external integrations, domains, certificates, secrets, monitoring, logging, and incident procedures;
-10. assess maintainability by implementing and validating a small representative change in an isolated branch;
-11. reconcile all findings against the current release-status record and open risk register.
+8. inspect migration history, schema ownership, retention behavior, backup, restore, and rollback procedures;
+9. verify cloud resources, domains, certificates, secrets, monitoring, logging, incident response, and external integrations;
+10. confirm that a successor can clone, configure, test, deploy, operate, recover, and administer the platform without undocumented assumptions.
 
-## Appropriate claims
+## Claim boundary
 
-Appropriate:
+Appropriate statements are limited to facts supported by current source and evidence. CROWN must not be described as production authorized, buyer ready, fully tenant-certified, fully recovery-certified, universally compliant, or independently approved without current evidence supporting those claims.
 
-- CROWN has substantial product-surface implementation and automated validation.
-- Several foundational architecture and release controls are implemented.
-- CROWN remains in controlled sandbox release-candidate posture.
-- Production approval depends on current exact-SHA runtime and operational evidence.
+## Repository boundary
 
-Not appropriate without current evidence:
-
-- unrestricted production readiness;
-- complete tenant-isolation proof;
-- complete recovery proof;
-- complete external secret-store proof;
-- universal live-data certification;
-- independent technical approval.
-
-## Ownership-transfer standard
-
-A transfer is not complete until the successor has verified repository administration, cloud and external-service ownership, local setup, testing, deployment, rollback, restore, secret access, monitoring, incident response, and the authority to operate and change the platform.
-
-The controlling release posture remains `docs/CURRENT_RELEASE_STATUS.md`.
+This repository is an engineering and technical-diligence asset. Internal commercial strategy, prospect targeting, outreach scripts, valuation work, investor pitch material, negotiation positions, and transaction structures must be maintained outside the normal repository tree in a separately controlled transaction workspace.
