@@ -13,14 +13,15 @@ paths = [
   '''(^|/)coverage($|/)''',
   '''(^|/)AUDIT_PACK_[^/]+($|/)''',
   '''(^|/)audit-artifacts($|/)''',
-  '''(^|/)solomon_governance_c1/governance/c1/runtime/audit_pack($|/)''',
   '''(^|/)\.pytest_cache($|/)''',
   '''(^|/)htmlcov($|/)''',
   '''(^|/)docs/audit/scans($|/)''',
   '''(^|/)docs/crown-master-binder/inventory($|/)''',
   '''(^|/)docs/CURRENT_RELEASE_STATUS\.md$''',
   '''(^|/)audit-artifacts/module-completion/current/05_completion_scorecard\.md$''',
-  # Governance cryptographic attestation - Ed25519 keys are audit proofs, not secrets
+  # Public attestation metadata may be retained, but the surrounding runtime
+  # audit-pack directory is deliberately not allowlisted. Private-key material
+  # in that tree must be detected.
   '''(^|/)solomon_governance_c1/governance/c1/runtime/audit_pack/.*/CRYPTOGRAPHIC_ATTESTATION\.json$''',
   '''(^|/)solomon_governance_c1/governance/c1/runtime/audit_pack/SUPERSESSION_INDEX\.json$'''
 ]

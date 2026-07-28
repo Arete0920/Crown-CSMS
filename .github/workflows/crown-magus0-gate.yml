@@ -153,6 +153,7 @@ jobs:
             ':!scripts/README.md'
             ':!backend/tests/**'
             ':!tools/validate_secret_store_evidence.py'
+            ':!tools/verify_no_tracked_private_keys.py'
           )
 
           for p in "${PATTERNS[@]}"; do
