@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   complete-successfully:
@@ -25,3 +26,21 @@ jobs:
           echo "run_id=${GITHUB_RUN_ID}"
           echo "sha=${GITHUB_SHA}"
           echo "production_mutation_performed=false"
+
+      - name: Record source evidence
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1630,
+              body: [
+                '## Recovery trigger canary source — PASS',
+                `- Source run ID: ${context.runId}`,
+                `- Source workflow SHA: ${context.sha}`,
+                `- Repository: ${context.repo.owner}/${context.repo.repo}`,
+                '- Production mutation performed: false',
+                '- Awaiting automatic `workflow_run` observer evidence.'
+              ].join('\n')
+            });

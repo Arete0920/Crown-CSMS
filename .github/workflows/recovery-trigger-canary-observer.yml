@@ -9,6 +9,7 @@ on:
 permissions:
   actions: read
   contents: read
+  issues: write
 
 concurrency:
   group: recovery-trigger-canary-observer-${{ github.event.workflow_run.id }}
@@ -63,3 +64,26 @@ jobs:
           path: recovery-trigger-canary-evidence/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Record observer evidence
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: 1630,
+              body: [
+                '## Recovery trigger canary observer — PASS',
+                `- Observer run ID: ${context.runId}`,
+                `- Observer workflow SHA: ${context.sha}`,
+                `- Source run ID: ${process.env.SOURCE_RUN_ID}`,
+                `- Source workflow: ${process.env.SOURCE_RUN_NAME}`,
+                `- Source conclusion: ${process.env.SOURCE_RUN_CONCLUSION}`,
+                `- Source repository: ${process.env.SOURCE_REPOSITORY}`,
+                `- Source head SHA: ${process.env.SOURCE_HEAD_SHA}`,
+                '- workflow_run trigger received: true',
+                '- Azure access performed: false',
+                '- Production mutation performed: false'
+              ].join('\n')
+            });
