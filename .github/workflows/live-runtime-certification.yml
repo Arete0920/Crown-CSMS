@@ -1,0 +1,25 @@
+name: Frozen Runtime Certification Notice
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen:
+    name: Runtime certification retired during freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Report frozen status
+        shell: bash
+        run: |
+          cat <<'EOF'
+          CROWN runtime certification is not active.
+
+          The repository is frozen and production is NOT APPROVED / NO-GO / HOLD.
+          This manual-only notice performs no deployment-triggered execution,
+          credential access, Playwright run, crawler run, artifact upload, or
+          comment posting to closed issues.
+          EOF
