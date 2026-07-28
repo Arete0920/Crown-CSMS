@@ -1,106 +1,93 @@
 # CROWN Current Release Status
 
-**Date:** 2026-07-21  
-**Observed main SHA:** `d5bd1d88c01edb74cd1720a152904a3d38a3b70f`
+**Date:** 2026-07-28  
+**Repository:** `tcmegahan/Crown2026`  
+**Last functional containment SHA:** `73739d958dd13a5f240782950a6ae19142396d2b`  
+**Current documentation commit:** updated after containment to record the owner-directed freeze
 
 ## Canonical decision
 
-CROWN's final release target is **FULL PRODUCTION RELEASE AUTHORIZATION**.
+CROWN is under an **owner-directed repository freeze**.
 
-The current evidence decision remains **PRODUCTION NOT APPROVED** until every required production gate passes on one unchanged approved release identity.
+- Production: **NOT APPROVED / NO-GO / HOLD**
+- Buyer operational turnover: **NOT APPROVED**
+- External payment processing: **DEFERRED, DISABLED, AND REQUIRED TO FAIL CLOSED**
+- Controlled diligence and explicitly authorized demonstrations: permitted only with accurate disclosures
 
-A controlled sandbox release is not the target and is not an acceptable substitute for production readiness. Sandbox and demo fixtures may be used only as bounded test data or test identities where they do not weaken production-mode authentication, authorization, tenant isolation, provenance or operational controls.
+The production-readiness program and its eight execution lanes were closed as `not planned` because execution was terminated. Their closure does not establish PASS, completion, certification, production readiness, or buyer readiness.
 
-Live GitHub state, exact-SHA workflow results, deployed-runtime evidence and external-platform evidence control when they differ from this snapshot. Product-surface completion, source intent, scaffold evidence or a passing subset of checks does not authorize production.
+## Verified closure posture
 
-## Approved scope and explicit exclusions
+The following evidence programs were not completed before the freeze:
 
-All authorized CROWN product and operational functionality is in production-readiness scope except:
+1. authenticated deployed-runtime and complete production-surface certification;
+2. role, RBAC, tenant-isolation, canonical-identity, and audit certification;
+3. application rollback and isolated database restore drills with measured RTO/RPO;
+4. operational secret retrieval, rotation, failed-rotation recovery, revocation, and break-glass exercises;
+5. student-data privacy, contractual, jurisdiction-specific, incident-response, and qualified legal readiness;
+6. deterministic same-SHA CI, deployment, infrastructure, observability, and monitoring proof;
+7. final release documentation, evidence index, and buyer-handoff reconciliation;
+8. final Founder/Product Owner production authorization.
 
-1. **External payment processing:** deferred until a processor is selected, contracted, authorized, implemented and separately certified. Payment entry points must remain disabled and fail closed.
-2. **Buyer/successor handoff execution:** deferred until a buyer or successor scope is explicitly authorized.
+No closed issue or automated workflow result may be interpreted as satisfying these requirements.
 
-Provider-neutral accounting, billing, ledger, invoice, balance, payment-record and payment-plan functionality remains in scope and must operate correctly without initiating or confirming an external payment.
+## Security containment boundary
 
-## Substantially implemented
+The last functional containment commit is:
 
-- broad product/module, dashboard and wizard coverage evidence;
-- canonical authenticated frontend transport;
-- canonical request tenant context and cross-school conflict enforcement;
-- explicit tenant-override authorization;
-- exact-SHA controlled schema migration outside ordinary web startup;
-- immutable-image rollback architecture;
-- live-runtime crawler for identity, authentication, tenant context, routes, screenshots, network, console, accessibility and provenance;
-- repository architecture for external secret storage, rotation, audit and break-glass control.
+`73739d958dd13a5f240782950a6ae19142396d2b`
 
-These controls still require the open runtime and operational evidence identified below.
+The historical Ed25519 private-key path remains a material unresolved history boundary:
 
-## Active production-readiness blockers
+`solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem`
 
-1. **#1274, #1287, #1276 and residual #1351:** one exact deployed identity and authenticated administrator, teacher, parent, student and board browser/network/tenant/visual evidence across the complete authorized surface inventory.
-2. **#1270:** controlled application rollback and isolated database restore with reconciliation and measured RTO/RPO.
-3. **#1294 and #1296:** external secret-store identity, audit, rotation, failed-rotation, revocation and break-glass exercises.
-4. **#1352:** complete tenant audit evidence, background-task binding, exemption reconciliation and residual consumer convergence.
-5. **#1353:** canonical household, guardian and student consumer mapping, reconciliation rehearsal, rollback proof and safe legacy retirement criteria.
-6. **#1425:** student-data privacy and school compliance evidence, including FERPA/COPPA/PPRA positions, CIPA claim boundary, state-law review, data inventory, notices, DPA, incident exercise and legal review.
-7. **#1394:** CI proof hierarchy and duplicate-workflow rationalization.
-8. **#1277:** final release notes, changelog and runbook reconciliation.
-9. **#1275 and #1374:** final same-SHA authority reconciliation and Founder/Product Owner decision.
+The following must not be claimed as complete without separate evidence:
 
-## Production crawler and Playwright requirement
+- exposed-key retirement or revocation;
+- replacement-key registration;
+- protected-ref history rewrite;
+- removal from all retained branches, tags, forks, mirrors, caches, artifacts, releases, or bundles;
+- creation and verification of a clean distributable diligence bundle.
 
-The crawler, Playwright suites, API-contract tests and backend tests must be reconciled against a complete inventory of active routes, dashboards, modules, wizards, APIs, background tasks and enabled integrations.
+Pre-remediation evidence must remain restricted and must not be represented as a clean distribution artifact.
 
-Every active surface must be mapped to an authoritative proof mechanism or explicitly classified as payment-processing excluded, handoff excluded or not applicable with rationale. The production campaign must run against deployed non-local frontend and backend identities and must record roles, tenant context, redirects, screenshots, network activity, console results, accessibility, provenance and final disposition.
+## Scope and exclusions
 
-The controlling execution matrix is `docs/engineering/PRODUCTION_READINESS_EXECUTION_MATRIX_20260719.md`.
+### Payment processing
 
-## Payment-processing hold
+No payment processor is approved for production operation. Card, ACH, autopay, processor webhook, refund, and external payment-confirmation paths must remain disabled unless a future owner-authorized program implements and certifies them.
 
-No payment processor has been selected.
+Provider-neutral accounting, billing, ledger, invoice, balance, payment-record, and payment-plan source material may be retained for diligence. Its presence does not establish production fitness.
 
-Issue #1298 was closed as deferred for the current release scope, not as completed or approved. External payment-provider implementation remains on hold. Payment functionality must remain disabled. No provider may be represented as selected, supported, active, certified or production-ready.
+### Buyer and successor handoff
 
-## Buyer and transfer boundary
+No buyer, successor, or new owner has been approved. Repository preservation and diligence preparation do not constitute operational transfer, acceptance, or readiness.
 
-No buyer, successor or new owner has been selected or approved. Buyer analysis, transaction support, successor clean-room execution and ownership-transfer work are outside the current production-release scope.
+### Compliance claims
 
-The repository must remain reproducible and documented, but no current material may claim that a handoff is scheduled, accepted or complete.
+CROWN may be described only as designed to support schools in meeting applicable student-data privacy and security obligations. It must not be described as FERPA certified, COPPA certified, universally compliant, regulator approved, or compliance guaranteed.
 
-## Compliance claim boundary
+## Repository operation during freeze
 
-CROWN has a documented student-data privacy and compliance framework with substantial repository-level controls. Final deployed-runtime, operational, contractual, jurisdiction-specific and legal validation remains open under #1425.
+Permitted changes are limited to:
 
-Allowed:
+- security containment and factual correction;
+- removal or disabling of stale automation;
+- cleanup of obsolete, duplicate, generated, or misleading material;
+- preservation work that does not imply release approval;
+- owner-authorized diligence preparation.
 
-- "CROWN is designed to support schools in meeting applicable student-data privacy and security obligations."
-- "Final compliance validation remains in progress."
+A future restart requires:
 
-Not allowed:
-
-- "FERPA certified";
-- "COPPA certified";
-- "compliance guaranteed";
-- "approved by a regulator";
-- any universal compliance claim unsupported by current evidence and review.
-
-## Production entry requirements
-
-Production authorization requires, on one approved release identity:
-
-- all required repository checks terminal and green;
-- exact frontend/backend deployed identity;
-- complete surface inventory mapped to crawler, Playwright, API, backend, operational or manual proof;
-- authenticated role, tenant, network, console, screenshot, accessibility and provenance evidence;
-- complete tenant and privileged-access audit evidence;
-- application rollback and database restore drills with accepted RTO/RPO;
-- external secret-store operational exercises;
-- compliance evidence and legal/contractual readiness for the approved scope;
-- payment functionality disabled and fail closed;
-- final release documentation reconciliation;
-- explicit Founder/Product Owner authorization.
+1. explicit Founder/Product Owner authorization;
+2. a newly selected immutable release candidate;
+3. fresh same-SHA repository, deployment, runtime, operational, privacy/legal, and recovery evidence;
+4. a new explicit GO/NO-GO decision.
 
 ## Current final status
 
-**TARGET: FULL PRODUCTION RELEASE AUTHORIZATION**  
-**CURRENT DECISION: PRODUCTION NOT APPROVED**
+**REPOSITORY STATE: FROZEN**  
+**PRODUCTION DECISION: NOT APPROVED / NO-GO / HOLD**  
+**BUYER TURNOVER: NOT APPROVED**  
+**PAYMENT PROCESSING: DISABLED / FAIL CLOSED**  
+**HISTORY REMEDIATION: NOT VERIFIED COMPLETE**
