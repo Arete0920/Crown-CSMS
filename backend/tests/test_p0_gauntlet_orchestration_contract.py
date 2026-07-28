@@ -189,8 +189,8 @@ def test_evidence_summary_is_extracted_without_weakening_fail_closed_behavior():
     assert 'Join-Path $EvidenceRoot "00_SUMMARY.md"' in module
     assert '$_.Required -eq "YES" -and -not $_.Passed' in module
     assert "RequiredFailures = $requiredFailures" in module
-    assert "PASS" in module
-    assert "FAIL" in module
+    assert "SATISFIED" in module
+    assert "UNSATISFIED" in module
     assert module.count("[void]$lines.Add(") >= 10
     assert '$lines.Add("# Finish Right 4H Gauntlet Summary")' not in module.replace('[void]$lines.Add("# Finish Right 4H Gauntlet Summary")', '')
 
