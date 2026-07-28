@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           key_name="DJANGO""_SEC""RET""_KEY"
-          key_value="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-release-verify"
+          key_value="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-release-verify-nonproduction-runtime-key-material"
           printf '%s=%s\n' "$key_name" "$key_value" >> "$GITHUB_ENV"
       - name: Classify pull request change set
         id: changes

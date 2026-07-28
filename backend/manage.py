@@ -7,6 +7,11 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crown_api.settings')
+
+    from crown_api.production_secret_guard import enforce_production_secret
+
+    enforce_production_secret(sys.argv)
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
