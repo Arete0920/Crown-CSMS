@@ -30,11 +30,53 @@ jobs:
         uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c
         with:
           python-version: "3.12"
-      - name: Install test dependency
-        run: python -m pip install pytest
       - name: Validate sanitized example contract
         run: python tools/validate_recovery_evidence.py docs/recovery/recovery-evidence.example.json
-      - name: Run isolated validator regression tests
+      - name: Run deterministic validator assertions
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: python -m pytest -q -c /dev/null --confcutdir=backend/tests backend/tests/test_recovery_evidence_validator.py
+        run: |
+          python - <<'PY'
+          import copy
+          import json
+          from pathlib import Path
+
+          from tools.validate_recovery_evidence import validate
+
+          example = json.loads(
+              Path("docs/recovery/recovery-evidence.example.json").read_text(encoding="utf-8")
+          )
+
+          assert validate(example) == []
+
+          missing = copy.deepcopy(example)
+          del missing["restore_drill"]
+          assert any("restore_drill" in item for item in validate(missing))
+
+          failed = copy.deepcopy(example)
+          failed["rollback_drill"]["result"] = "fail"
+          failed["restore_drill"]["isolated_environment"] = False
+          failed_errors = validate(failed)
+          assert "rollback_drill.result must be pass" in failed_errors
+          assert "restore_drill.isolated_environment must be true" in failed_errors
+
+          integrity = copy.deepcopy(example)
+          integrity["integrity_validation"]["cross_tenant_anomalies"] = 1
+          integrity["integrity_validation"]["missing_records"] = 2
+          integrity_errors = validate(integrity)
+          assert "integrity_validation.cross_tenant_anomalies must equal 0" in integrity_errors
+          assert "integrity_validation.missing_records must equal 0" in integrity_errors
+
+          objectives = copy.deepcopy(example)
+          objectives["rto_rpo"]["measured_rto_minutes"] = 45
+          objectives["rto_rpo"]["accepted_rto_minutes"] = 30
+          assert "measured RTO exceeds accepted RTO" in validate(objectives)
+
+          credential = copy.deepcopy(example)
+          credential["restore_drill"]["database_url"] = "not-allowed"
+          assert any("forbidden credential-bearing field" in item for item in validate(credential))
+
+          rejected = copy.deepcopy(example)
+          rejected["approvals"][0]["decision"] = "rejected"
+          assert "approvals[0].decision must be approved" in validate(rejected)
+          PY
