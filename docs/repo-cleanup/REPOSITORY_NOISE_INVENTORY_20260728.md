@@ -62,6 +62,19 @@ This inventory records verified repository-noise dispositions after the producti
 
 These ignore rules prevent new local noise but do not prove that previously committed material is absent from history or retained refs.
 
+The following root-level generated files named by `.gitignore` were checked directly and were not present on `main`:
+
+- `workflow-inventory-report.json`
+- `release-scorecard.json`
+- `workflow-permissions-audit.json`
+
+Repository code search also returned no references to the removed workflow filenames:
+
+- `p0-go-readiness.yml`
+- `live-runtime-certification.yml`
+
+Because private-repository code and branch searches returned incomplete or empty results and the local authenticated `gh` environment failed before inventory could run, those negative results are recorded as limited verification, not proof of repository-wide absence.
+
 ## Items not deleted without further proof
 
 1. Branches and tags: complete ref inventory and unique-commit comparison were not available through the current connector.
@@ -70,6 +83,7 @@ These ignore rules prevent new local noise but do not prove that previously comm
 4. Broad documentation directories: directory-level deletion would risk removing unique provenance, security, contractual, or diligence records.
 5. Gauntlet support modules under `scripts/execution/modules/`: require file-level dependency and reuse inspection before deletion.
 6. Historical Ed25519 material: must remain restricted until key retirement and all-ref history remediation are separately verified.
+7. Full tracked-file, duplicate-content, dead-code, dependency, large-object, and broken-link census: requires a successful authenticated full clone or equivalent complete tree API.
 
 ## Current noise-control rule
 
@@ -88,6 +102,9 @@ No file, process, branch, tag, artifact, or document may be deleted solely becau
 - Automatic P0/runtime certification workflows: removed
 - Automated closed-issue evidence publisher: removed
 - Unreferenced P0 release orchestrators: removed
+- Known ignored root reports checked: absent
+- Removed workflow-name references checked through repository search: none returned
 - Canonical freeze authority: current
 - Production authorization: not granted
 - History remediation: not verified complete
+- Full authenticated hygiene census: not yet technically available in this environment
