@@ -1,6 +1,7 @@
 name: Apply Ed25519 History Rewrite
 
-# One-shot evidence revision: changed-ref-only batched replacement
+# Fail-closed safety interlock. The authoritative rewrite is blocked until an
+# owner-approved protected-ref maintenance or bypass procedure is available.
 on:
   push:
     branches: [main]
@@ -8,189 +9,23 @@ on:
       - ".github/workflows/apply-ed25519-history-rewrite.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: apply-ed25519-history-rewrite
   cancel-in-progress: false
 
 jobs:
-  rewrite-authoritative-refs:
+  protected-ref-interlock:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
     steps:
-      - name: Checkout verifier
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
-        with:
-          fetch-depth: 1
-
-      - name: Verify invocation identity
+      - name: Refuse unsafe partial history mutation
         run: |
           set -euo pipefail
-          test "${{ github.repository }}" = "tcmegahan/Crown2026"
-          test "${{ github.ref }}" = "refs/heads/main"
-          test "${{ github.event_name }}" = "push"
-
-      - name: Install pinned git-filter-repo
-        run: |
-          set -euo pipefail
-          python -m pip install --disable-pip-version-check git-filter-repo==2.47.0
-          git filter-repo --version
-
-      - name: Clone authoritative mirror and verify source HEAD
-        env:
-          REPO: ${{ github.repository }}
-          TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          git clone --mirror "https://x-access-token:${TOKEN}@github.com/${REPO}.git" authoritative.git
-          pre_main="$(git -C authoritative.git rev-parse refs/heads/main)"
-          test "$pre_main" = "${{ github.sha }}"
-          git -C authoritative.git show-ref | sort -k2 > pre-rewrite-refs.txt
-          printf '%s\n' "$pre_main" > pre-rewrite-main.txt
-
-      - name: Rewrite all advertised refs
-        run: |
-          set -euo pipefail
-          git -C authoritative.git filter-repo \
-            --path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem' \
-            --invert-paths \
-            --force
-
-      - name: Verify rewritten mirror and calculate changed refs
-        run: |
-          set -euo pipefail
-          chmod +x tools/verify_remediated_git_bundle.sh
-          tools/verify_remediated_git_bundle.sh \
-            --repo authoritative.git \
-            --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
-
-          git -C authoritative.git show-ref | sort -k2 > post-rewrite-refs.txt
-          git -C authoritative.git rev-parse refs/heads/main > post-rewrite-main.txt
-          test -s post-rewrite-main.txt
-
-          awk '
-            NR==FNR { before[$2]=$1; next }
-            !($2 in before) || before[$2] != $1 { print $2 }
-          ' pre-rewrite-refs.txt post-rewrite-refs.txt | sort -u > changed-refs.txt
-
-          grep '^refs/tags/' changed-refs.txt > changed-tag-refs.txt || true
-          grep '^refs/heads/' changed-refs.txt | grep -v '^refs/heads/main$' > changed-branch-refs.txt || true
-
-          pre_main="$(cat pre-rewrite-main.txt)"
-          post_main="$(cat post-rewrite-main.txt)"
-          if [ "$pre_main" != "$post_main" ]; then
-            printf '%s\n' 'refs/heads/main' > changed-main-ref.txt
-          else
-            : > changed-main-ref.txt
-          fi
-
-          changed_total="$(wc -l < changed-refs.txt | tr -d ' ')"
-          changed_tags="$(wc -l < changed-tag-refs.txt | tr -d ' ')"
-          changed_branches="$(wc -l < changed-branch-refs.txt | tr -d ' ')"
-          changed_main="$(wc -l < changed-main-ref.txt | tr -d ' ')"
-          printf 'changed_total=%s\nchanged_tags=%s\nchanged_non_main_branches=%s\nchanged_main=%s\n' \
-            "$changed_total" "$changed_tags" "$changed_branches" "$changed_main" > changed-ref-counts.txt
-
-          mkdir -p pre-mutation-evidence
-          cp pre-rewrite-refs.txt pre-rewrite-main.txt post-rewrite-refs.txt post-rewrite-main.txt \
-            changed-refs.txt changed-tag-refs.txt changed-branch-refs.txt changed-main-ref.txt \
-            changed-ref-counts.txt pre-mutation-evidence/
-          printf '%s\n' 'PASS: rewritten mirror verified; only changed refs are eligible for remote mutation' > pre-mutation-evidence/VERDICT.txt
-          echo '=== VERIFIED PRE-MUTATION REWRITE IDENTITY ==='
-          printf 'pre_main=' && cat pre-rewrite-main.txt
-          printf 'post_main=' && cat post-rewrite-main.txt
-          cat changed-ref-counts.txt
-          cat pre-mutation-evidence/VERDICT.txt
-
-      - name: Upload pre-mutation rewrite evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: pre-mutation-ed25519-rewrite-${{ github.run_id }}
-          path: pre-mutation-evidence/
-          retention-days: 30
-          if-no-files-found: error
-
-      - name: Force-update changed authoritative refs in rule-compliant batches
-        env:
-          REPO: ${{ github.repository }}
-          TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          git -C authoritative.git remote add origin "https://x-access-token:${TOKEN}@github.com/${REPO}.git"
-
-          mapfile -t tag_refs < changed-tag-refs.txt
-          mapfile -t branch_refs < changed-branch-refs.txt
-
-          push_batches() {
-            local label="$1"
-            shift
-            local -a refs=("$@")
-            local total="${#refs[@]}"
-            local index=0
-            if (( total == 0 )); then
-              echo "No changed ${label} refs to push"
-              return 0
-            fi
-            while (( index < total )); do
-              local -a specs=()
-              local end=$((index + 5))
-              if (( end > total )); then end="$total"; fi
-              for ((i=index; i<end; i++)); do
-                specs+=("+${refs[$i]}:${refs[$i]}")
-              done
-              echo "Pushing changed ${label} refs $((index + 1))-${end} of ${total}"
-              git -C authoritative.git push --force origin "${specs[@]}"
-              index="$end"
-            done
-          }
-
-          push_batches tags "${tag_refs[@]}"
-          push_batches branches "${branch_refs[@]}"
-          if [ -s changed-main-ref.txt ]; then
-            git -C authoritative.git push --force origin '+refs/heads/main:refs/heads/main'
-          else
-            echo 'Main history unchanged; no main ref update required'
-          fi
-
-      - name: Verify remote after ref replacement
-        env:
-          REPO: ${{ github.repository }}
-          TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          git clone --mirror "https://x-access-token:${TOKEN}@github.com/${REPO}.git" remote-verified.git
-          tools/verify_remediated_git_bundle.sh \
-            --repo remote-verified.git \
-            --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
-          expected="$(cat post-rewrite-main.txt)"
-          actual="$(git -C remote-verified.git rev-parse refs/heads/main)"
-          test "$actual" = "$expected"
-          printf '%s\n' "$actual" > remote-verified-main.txt
-
-      - name: Create evidence bundle and manifest
-        run: |
-          set -euo pipefail
-          mkdir -p remediation-evidence
-          cp pre-rewrite-refs.txt post-rewrite-refs.txt remediation-evidence/
-          cp pre-rewrite-main.txt post-rewrite-main.txt remote-verified-main.txt remediation-evidence/
-          cp changed-refs.txt changed-tag-refs.txt changed-branch-refs.txt changed-main-ref.txt changed-ref-counts.txt remediation-evidence/
-          git -C remote-verified.git rev-list --all --count > remediation-evidence/commit-count.txt
-          git -C remote-verified.git for-each-ref --format='%(refname)' refs/heads | wc -l > remediation-evidence/branch-count.txt
-          git -C remote-verified.git for-each-ref --format='%(refname)' refs/tags | wc -l > remediation-evidence/tag-count.txt
-          git -C remote-verified.git bundle create ../Crown2026-authoritative-remediated.bundle --all
-          tools/verify_remediated_git_bundle.sh \
-            --bundle Crown2026-authoritative-remediated.bundle \
-            --forbidden-path 'solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem'
-          sha256sum Crown2026-authoritative-remediated.bundle > remediation-evidence/Crown2026-authoritative-remediated.bundle.sha256
-          cp Crown2026-authoritative-remediated.bundle remediation-evidence/
-          printf '%s\n' 'PASS: changed authoritative refs rewritten; forbidden path unreachable from advertised refs' > remediation-evidence/VERDICT.txt
-
-      - name: Upload authoritative remediation evidence
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: authoritative-ed25519-history-remediation-${{ github.run_id }}
-          path: remediation-evidence/
-          retention-days: 30
-          if-no-files-found: error
+          echo 'BLOCKED: authoritative history rewrite requires updates to protected tags.'
+          echo 'Verified protected changed refs include:'
+          echo '  refs/tags/freeze-2026-02-03-proof-green-baseline'
+          echo '  refs/tags/freeze-2026-02-03-proof-green-ci-canon'
+          echo 'Do not mutate any additional refs until an owner-approved ruleset maintenance or bypass procedure can update every changed protected ref atomically enough for fresh remote verification.'
+          exit 1
