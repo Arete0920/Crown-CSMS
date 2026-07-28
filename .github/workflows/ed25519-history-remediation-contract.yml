@@ -1,0 +1,75 @@
+name: Ed25519 History Remediation Contract
+
+on:
+  pull_request:
+    paths:
+      - "docs/security/ed25519-history-remediation-runbook.md"
+      - "tools/verify_remediated_git_bundle.sh"
+      - ".github/workflows/ed25519-history-remediation-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/security/ed25519-history-remediation-runbook.md"
+      - "tools/verify_remediated_git_bundle.sh"
+      - ".github/workflows/ed25519-history-remediation-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remediation-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact repository identity
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - name: Validate shell syntax
+        run: bash -n tools/verify_remediated_git_bundle.sh
+      - name: Prove forbidden history is rejected and clean history is accepted
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x tools/verify_remediated_git_bundle.sh
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          git init "$tmp/source" >/dev/null
+          git -C "$tmp/source" config user.email "ci@example.invalid"
+          git -C "$tmp/source" config user.name "CI Contract"
+          mkdir -p "$tmp/source/secret"
+          printf '%s\n' 'private material fixture' > "$tmp/source/secret/key.pem"
+          git -C "$tmp/source" add secret/key.pem
+          git -C "$tmp/source" commit -m "fixture: add forbidden path" >/dev/null
+          git -C "$tmp/source" branch -M main
+
+          git clone --mirror "$tmp/source" "$tmp/dirty.git" >/dev/null 2>&1
+          if tools/verify_remediated_git_bundle.sh --repo "$tmp/dirty.git" --forbidden-path secret/key.pem; then
+            echo "Dirty history unexpectedly passed" >&2
+            exit 1
+          fi
+
+          git -C "$tmp/source" rm secret/key.pem >/dev/null
+          git -C "$tmp/source" commit -m "fixture: remove current-tree file" >/dev/null
+          git clone --mirror "$tmp/source" "$tmp/still-dirty.git" >/dev/null 2>&1
+          if tools/verify_remediated_git_bundle.sh --repo "$tmp/still-dirty.git" --forbidden-path secret/key.pem; then
+            echo "Current-tree deletion unexpectedly erased historical exposure" >&2
+            exit 1
+          fi
+
+          git init "$tmp/clean" >/dev/null
+          git -C "$tmp/clean" config user.email "ci@example.invalid"
+          git -C "$tmp/clean" config user.name "CI Contract"
+          printf '%s\n' 'clean fixture' > "$tmp/clean/README.md"
+          git -C "$tmp/clean" add README.md
+          git -C "$tmp/clean" commit -m "fixture: clean repository" >/dev/null
+          git -C "$tmp/clean" branch -M main
+          git clone --mirror "$tmp/clean" "$tmp/clean.git" >/dev/null 2>&1
+          tools/verify_remediated_git_bundle.sh --repo "$tmp/clean.git" --forbidden-path secret/key.pem
+
+          git -C "$tmp/clean" bundle create "$tmp/clean.bundle" --all
+          tools/verify_remediated_git_bundle.sh --bundle "$tmp/clean.bundle" --forbidden-path secret/key.pem
+      - name: Enforce non-authority boundary
+        run: |
+          grep -Fq 'does not revoke, rotate, generate, register, or distribute' docs/security/ed25519-history-remediation-runbook.md
+          grep -Fq 'must not close based only on this runbook' docs/security/ed25519-history-remediation-runbook.md
