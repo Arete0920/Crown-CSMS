@@ -1,5 +1,6 @@
 name: Apply Ed25519 History Rewrite
 
+# One-shot trigger revision: 2026-07-28
 on:
   push:
     branches: [main]
