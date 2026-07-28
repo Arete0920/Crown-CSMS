@@ -1,6 +1,6 @@
 name: Apply Ed25519 History Rewrite
 
-# One-shot evidence revision: 2026-07-28T17:30Z
+# One-shot evidence revision: batched ref replacement
 on:
   push:
     branches: [main]
@@ -18,7 +18,7 @@ jobs:
   rewrite-authoritative-refs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout verifier
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
@@ -84,16 +84,39 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
-      - name: Force-update authoritative branches and tags
+      - name: Force-update authoritative refs in rule-compliant batches
         env:
           REPO: ${{ github.repository }}
           TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           git -C authoritative.git remote add origin "https://x-access-token:${TOKEN}@github.com/${REPO}.git"
-          git -C authoritative.git push --force --prune origin \
-            'refs/heads/*:refs/heads/*' \
-            'refs/tags/*:refs/tags/*'
+
+          mapfile -t tag_refs < <(git -C authoritative.git for-each-ref --format='%(refname)' refs/tags | sort)
+          mapfile -t branch_refs < <(git -C authoritative.git for-each-ref --format='%(refname)' refs/heads | grep -v '^refs/heads/main$' | sort)
+
+          push_batches() {
+            local label="$1"
+            shift
+            local -a refs=("$@")
+            local total="${#refs[@]}"
+            local index=0
+            while (( index < total )); do
+              local -a specs=()
+              local end=$((index + 5))
+              if (( end > total )); then end="$total"; fi
+              for ((i=index; i<end; i++)); do
+                specs+=("+${refs[$i]}:${refs[$i]}")
+              done
+              echo "Pushing ${label} refs $((index + 1))-${end} of ${total}"
+              git -C authoritative.git push --force origin "${specs[@]}"
+              index="$end"
+            done
+          }
+
+          push_batches tags "${tag_refs[@]}"
+          push_batches branches "${branch_refs[@]}"
+          git -C authoritative.git push --force origin '+refs/heads/main:refs/heads/main'
 
       - name: Verify remote after ref replacement
         env:
