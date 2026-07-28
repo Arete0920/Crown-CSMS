@@ -1,9 +1,6 @@
 [run]
-source = 
-    backend/core
-    backend/crown_api
-    backend/apps
-    tenant/security/runtime
+source =
+    backend
 omit =
     */migrations/*
     */tests/*
