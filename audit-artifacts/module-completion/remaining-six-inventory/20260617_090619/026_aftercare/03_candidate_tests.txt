@@ -1,6 +1,0 @@
-﻿backend\aftercare\tests\test_aftercare_late_fee.py
-backend\aftercare\tests\test_aftercare_services.py
-backend\aftercare\tests\test_aftercare_tenant_scoping.py
-backend\little_lambs\tests\test_little_lambs_route_alias.py
-backend\tests\test_51x51_evidence_026_aftercare.py
-frontend\dashboards\tests\ui\role-dashboard-matrix-pack-3.spec.ts

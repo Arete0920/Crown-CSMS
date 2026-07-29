@@ -1,9 +1,0 @@
-﻿{
-    "docs/release/INTEGRITY_HOLD_RELEASE_AUTHORITY_20260506.md":  "present",
-    "docs/testing/crown-test-inventory.json":  "present",
-    "docs/release/README.md":  "present",
-    "scripts/testing/check-crown-discovered-surface-coverage.mjs":  "present",
-    "scripts/testing/check-crown-test-inventory.mjs":  "present",
-    "docs/KNOWN_LIMITATIONS.md":  "present",
-    "scripts/testing/crown-surface-discovery.mjs":  "present"
-}

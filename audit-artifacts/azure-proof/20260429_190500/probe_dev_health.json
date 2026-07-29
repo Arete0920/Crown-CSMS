@@ -1,1 +1,0 @@
-{"ok": true, "status": "ok", "demo_mode": false, "build_sha": "dev-pass4fix-20260329150550-bg", "prod_deploy_tag": "", "env": "production", "build_time_utc": "2026-04-29T23:17:49.439322+00:00", "version": "crown-0.3.0", "db": "ok", "deploy_run_id": "dev-pass4fix-20260329150550-bg", "deploy_workflow": "live-rollback-drill"}

@@ -1,4 +1,0 @@
-﻿audit-artifacts/module-completion/module-026-aftercare/20260617_090619/00_prechange_packet.txt
-audit-artifacts/module-completion/module-026-aftercare/20260617_090619/01_module026_todo.md
-audit-artifacts/module-completion/module-026-aftercare/20260617_090619/02_git_status_start.txt
-backend/tests/test_51x51_evidence_026_aftercare.py

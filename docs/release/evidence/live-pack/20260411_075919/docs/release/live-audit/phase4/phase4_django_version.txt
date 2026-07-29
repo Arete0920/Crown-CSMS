@@ -1,5 +1,0 @@
-﻿COMMAND: C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Scripts\python.exe -c import django; print(django.get_version())
-WORKDIR: C:/Users/JMega/OneDrive/Desktop/Crown2026_deploypr
-EXIT_CODE: 0
-5.2.12
-

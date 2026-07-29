@@ -1,4 +1,0 @@
-﻿C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\audit-artifacts\runtime-release-closure\20260418_070051\.venv\Lib\site-packages\authlib\_joserfc_helpers.py:8: AuthlibDeprecationWarning: authlib.jose module is deprecated, please use joserfc instead.
-It will be compatible before version 2.0.0.
-  from authlib.jose import ECKey
-

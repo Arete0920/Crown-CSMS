@@ -1,8 +1,0 @@
-﻿"doc_path","exists","last_commit_iso","commit_count","status_tokens","open_pr_claim_count","open_issue_claim_count","referenced_pr_count","line_count"
-"docs/release/FINAL_RELEASE_GATE.md","True","2026-04-03T17:38:43Z","1","PASS, PARTIAL","0","0","2","39"
-"docs/release/FINAL_SIGNOFF_CHECKLIST.md","True","2026-04-03T17:38:43Z","1","PASS, DEFERRED","0","0","0","87"
-"docs/release/KNOWN_GAPS_AND_DEFERRED_ITEMS.md","True","2026-04-03T17:38:43Z","1","DEFERRED, PASS, READY","1","0","0","67"
-"docs/release/MODULE_INVENTORY.md","True","2026-04-03T17:38:43Z","1","READY, DEFERRED, PARTIAL","0","0","0","68"
-"docs/release/WORKFLOW_CONSOLIDATION_PLAN.md","True","2026-04-03T17:38:43Z","1","","0","0","0","58"
-"docs/release/BRANCH_PROTECTION_EVIDENCE.md","True","2026-04-03T17:38:43Z","1","PARTIAL","0","0","0","63"
-"docs/release/SECURITY_GATES_EVIDENCE.md","True","2026-04-03T17:38:43Z","1","PARTIAL","0","0","0","69"

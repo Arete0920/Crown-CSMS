@@ -1,4 +1,0 @@
-﻿=== STEP 05: FRONTEND BUILD ===
-vite v7.3.2 - 2141 modules transformed - built in 7.68s
-Chunk size warning (informational only)
-STATUS: PASS

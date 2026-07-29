@@ -1,6 +1,0 @@
-﻿=== STEP 04: BACKEND TESTS ===
-17 passed in 49.56s
-test_aftercare_late_fee.py: 7 PASS
-test_aftercare_services.py: 7 PASS
-test_aftercare_tenant_scoping.py: 3 PASS
-STATUS: PASS

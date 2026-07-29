@@ -1,6 +1,0 @@
-run	exit_code	started_utc	finished_utc	log_file
-1	1	2026-05-14T07:56:07Z	2026-05-14T07:56:09Z	audit-artifacts/solomon-start/s001-ci-baseline/run_1.log
-2	1	2026-05-14T07:56:09Z	2026-05-14T07:56:10Z	audit-artifacts/solomon-start/s001-ci-baseline/run_2.log
-3	1	2026-05-14T07:56:10Z	2026-05-14T07:56:11Z	audit-artifacts/solomon-start/s001-ci-baseline/run_3.log
-4	1	2026-05-14T07:56:11Z	2026-05-14T07:56:12Z	audit-artifacts/solomon-start/s001-ci-baseline/run_4.log
-5	1	2026-05-14T07:56:12Z	2026-05-14T07:56:13Z	audit-artifacts/solomon-start/s001-ci-baseline/run_5.log

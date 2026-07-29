@@ -1,3 +1,0 @@
-START_HERE.md  Exists=True  Size=550
-00_LEADERSHIP_SUMMARY.md  Exists=True  Size=1710
-01_SPRINT_COMMAND_BOARD.md  Exists=True  Size=3123

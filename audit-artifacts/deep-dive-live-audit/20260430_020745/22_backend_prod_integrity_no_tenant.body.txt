@@ -1,1 +1,0 @@
-{"detail": "Missing required header: X-School-Id.", "code": "missing_tenant"}

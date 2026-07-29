@@ -1,6 +1,0 @@
-audit-pack-generate-2.err.txt
-audit-pack-generate-2.out.txt
-audit-pack-generate-3.err.txt
-audit-pack-generate-3.out.txt
-audit-pack-generate.err.txt
-audit-pack-generate.out.txt

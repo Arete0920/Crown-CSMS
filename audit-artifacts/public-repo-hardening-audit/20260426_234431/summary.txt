@@ -1,5 +1,0 @@
-=== PUBLIC REPO HARDENING AUDIT ===
-Generated: 20260426_234431
-Total: 16
-Passed: 15
-Failed: 

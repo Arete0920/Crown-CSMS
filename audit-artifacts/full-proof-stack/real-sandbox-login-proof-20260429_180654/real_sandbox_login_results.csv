@@ -1,4 +1,0 @@
-Role,Email,ExpectedPath,FinalUrl,RoleSelected,EmailSelector,PasswordSelector,SubmitSelector,ConsoleErrors,PageErrors,FailedRequests,Result,Error
-"admin","admin@heritage.example.org","/admin","http://localhost:3000/admin","head_of_school","input[type=""email""]","input[type=""password""]","button[type=""submit""]","0","0","0","PASS",""
-"teacher","teacher.lower@heritage.example.org","/teacher","http://localhost:3000/teacher","teacher","input[type=""email""]","input[type=""password""]","button[type=""submit""]","0","0","0","PASS",""
-"parent","parent.reed@heritage.example.org","/parent","http://localhost:3000/parent","parent","input[type=""email""]","input[type=""password""]","button[type=""submit""]","0","0","0","PASS",""
