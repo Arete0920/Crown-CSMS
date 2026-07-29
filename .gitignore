@@ -51,13 +51,20 @@ local.secrets.sh
 *prod-secret*
 *production-secret*
 
-# OS and editor noise
+# OS, IDE, and editor noise
 .DS_Store
 Thumbs.db
 desktop.ini
 .vscode/
 .vscode/*.log
 .vscode/*.tmp
+.idea/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
 
 # Python
 .venv/
@@ -83,6 +90,9 @@ frontend/dashboards/node_modules/
 frontend/dashboards/dist/
 frontend/dashboards/test-results/
 frontend/dashboards/playwright-report/
+playwright-report/
+test-results/
+blob-report/
 
 # Local databases and runtime files
 db.sqlite3
@@ -92,6 +102,9 @@ backend/db.sqlite3
 backend/ci.sqlite3
 backend/ci_audit.sqlite3
 *.sqlite3
+*.db
+*.dump
+*.sql.gz
 *.pid
 *.seed
 media/
@@ -131,6 +144,12 @@ runs.json
 pr_threads.json
 audit-pr-*.diff
 gitleaks-sarif/
+*.sarif
+*.sarif.json
+junit*.xml
+test-results*.xml
+coverage*.json
+coverage*.lcov
 _*.txt
 test_student360_auth.ps1
 tools/_step1a.py
@@ -174,6 +193,14 @@ _azure_evidence.zip
 release_proof/
 release_proof.zip
 *.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.bundle
+*.patch
+*.diff
 WING.worktrees/
 .worktrees/
 
