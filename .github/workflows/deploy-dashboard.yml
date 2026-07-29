@@ -7,7 +7,6 @@ permissions:
 # This workflow deploys the pre-built dashboard bundle to Azure Static Web Apps.
 # It supports:
 #   - prod-deploy-* tags for normal release deployment
-#   - main pushes for emergency sandbox/frontend access repairs
 #   - manual workflow_dispatch runs when an operator needs to redeploy current main
 #
 # What this workflow proves:
@@ -42,8 +41,6 @@ on:
         required: false
         default: "manual-swa-redeploy"
   push:
-    branches:
-      - main
     tags:
       - "prod-deploy-*"
 

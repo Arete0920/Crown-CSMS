@@ -10,6 +10,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 
 USES_RE = re.compile(r"^\s*uses:\s*([^\s#]+)", re.MULTILINE)
 JOB_RE = re.compile(r"^\s{2}([A-Za-z0-9_-]+):\s*$", re.MULTILINE)
+RUNS_ON_RE = re.compile(r"^\s{4}runs-on:\s*.+$", re.MULTILINE)
 TIMEOUT_RE = re.compile(r"^\s{4}timeout-minutes:\s*\d+\s*$", re.MULTILINE)
 CONT_ERR_RE = re.compile(r"^\s*continue-on-error:\s*true\s*$", re.MULTILINE | re.IGNORECASE)
 MOJIBAKE_RE = re.compile(r"[âΓœ†œ©]")
@@ -151,11 +152,24 @@ def check_file(path: pathlib.Path) -> tuple[list[str], str | None, str | None]:
     jobs_match = re.search(r"(?ms)^jobs:\s*$([\s\S]+)$", text)
     if jobs_match:
         jobs_block = jobs_match.group(1)
-        jobs = JOB_RE.findall(jobs_block)
-        timeouts = TIMEOUT_RE.findall(jobs_block)
-        if jobs and len(timeouts) < len(jobs):
+        job_matches = list(JOB_RE.finditer(jobs_block))
+        runner_jobs = 0
+        runner_timeouts = 0
+        for index, job_match in enumerate(job_matches):
+            next_start = (
+                job_matches[index + 1].start()
+                if index + 1 < len(job_matches)
+                else len(jobs_block)
+            )
+            job_block = jobs_block[job_match.end() : next_start]
+            if RUNS_ON_RE.search(job_block):
+                runner_jobs += 1
+                if TIMEOUT_RE.search(job_block):
+                    runner_timeouts += 1
+        if runner_jobs and runner_timeouts < runner_jobs:
             errors.append(
-                f"{rel}: missing timeout-minutes on one or more jobs ({len(timeouts)}/{len(jobs)})"
+                f"{rel}: missing timeout-minutes on one or more runner jobs "
+                f"({runner_timeouts}/{runner_jobs})"
             )
 
     if CONT_ERR_RE.search(text):
