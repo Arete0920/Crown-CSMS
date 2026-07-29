@@ -2,7 +2,6 @@ name: Spine Audit (Canon Guard)
 permissions:
   contents: read
 
-
 on:
   pull_request:
   push:
@@ -11,10 +10,10 @@ on:
 concurrency:
   group: spine-audit-canon-guard-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
+
 jobs:
   spine-audit:
     runs-on: ubuntu-latest
-
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -24,9 +23,18 @@ jobs:
         run: |
           set -e
           REQUIRED_FILES=(
-            "docs/spine/DAILY_EXECUTION_CHECKLIST.md"
-            "docs/spine/AUTH_RUNBOOK.md"
-            "docs/spine/TENANT_PRIVACY_CANON.md"
+            "README.md"
+            "docs/canonical/REPOSITORY_MANIFEST.md"
+            "docs/canonical/CANONICAL_DOCUMENT_INDEX.md"
+            "docs/engineering/DEV_SETUP.md"
+            "docs/architecture/README.md"
+            "docs/operations/README.md"
+            "docs/ownership/OWNER_HANDOFF.md"
+            "docs/CURRENT_RELEASE_STATUS.md"
+            "SECURITY.md"
+            "CONTRIBUTING.md"
+            "CODEOWNERS"
+            "AGENTS.md"
           )
 
           for f in "${REQUIRED_FILES[@]}"; do
@@ -42,21 +50,24 @@ jobs:
           set -e
 
           CANON_FILES=(
-            "docs/spine/DAILY_EXECUTION_CHECKLIST.md"
-            "docs/spine/TENANT_PRIVACY_CANON.md"
+            "README.md"
+            "docs/canonical/REPOSITORY_MANIFEST.md"
+            "docs/canonical/CANONICAL_DOCUMENT_INDEX.md"
+            "docs/ownership/OWNER_HANDOFF.md"
+            "docs/CURRENT_RELEASE_STATUS.md"
+            "SECURITY.md"
           )
 
-          # High-signal secret patterns (NOT generic header names)
           FORBIDDEN_REGEX=(
-            "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"   # JWT-like
-            "-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----"                      # Private keys
-            "(?i)client_secret\\s*[:=]"                                         # client_secret=
-            "(?i)secret_key\\s*[:=]"                                            # secret_key=
-            "(?i)api_key\\s*[:=]"                                               # api_key=
-            "(?i)password\\s*[:=]"                                              # password=
-            "(?i)CrownCiSmoke!"                                                 # known prior example
-            "(?i)DevOpsSecret_"                                                 # known prior example
-            "(?i)AZURE_CLIENT_SECRET"                                           # common env var
+            "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"
+            "-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----"
+            "(?i)client_secret\\s*[:=]"
+            "(?i)secret_key\\s*[:=]"
+            "(?i)api_key\\s*[:=]"
+            "(?i)password\\s*[:=]"
+            "(?i)CrownCiSmoke!"
+            "(?i)DevOpsSecret_"
+            "(?i)AZURE_CLIENT_SECRET"
           )
 
           for file in "${CANON_FILES[@]}"; do
@@ -73,4 +84,3 @@ jobs:
 
       - name: UI Shell Gate (CrownLayout enforcement)
         run: python scripts/check_ui_shell.py
-
