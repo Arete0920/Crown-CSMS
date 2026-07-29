@@ -1,5 +1,0 @@
-﻿=== REPO ===
-## release/spiritual-life-formation-migration-closure-chatgpt-20260529...origin/release/spiritual-life-formation-migration-closure-chatgpt-20260529
-?? docs/proof/spiritual-life-formation-closure/
-release/spiritual-life-formation-migration-closure-chatgpt-20260529
-3e414fb31f0e7edfa86783c8c164f527b4b4f596

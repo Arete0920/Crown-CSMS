@@ -1,9 +1,0 @@
-> crown-dashboards@0.0.0 test
-> vitest run src/pages/ComplianceAuditDashboard.test.jsx
-
-RUN v4.1.8 <redacted-workspace>/frontend/dashboards
-
-Test Files 1 passed (1)
-Tests 1 passed (1)
-Start at 11:39:51
-Duration 4.49s (transform 953ms, setup 0ms, import 2.26s, tests 246ms, environment 1.65s)
