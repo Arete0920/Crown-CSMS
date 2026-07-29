@@ -6,7 +6,7 @@
 
 ## Authority rule
 
-A document is authoritative only when listed here as `CANONICAL`, or when a later approved decision explicitly supersedes it. Unlisted documents may be supporting evidence, history, drafts, or generated output, but they do not override canonical authority.
+A document is authoritative only when listed here as `CANONICAL`, or when a later approved decision explicitly supersedes it. Unlisted documents do not override canonical authority.
 
 ## Canonical documents
 
@@ -14,63 +14,52 @@ A document is authoritative only when listed here as `CANONICAL`, or when a late
 |---|---|---|
 | Repository orientation | `README.md` | CANONICAL |
 | Repository structure | `docs/canonical/REPOSITORY_MANIFEST.md` | CANONICAL |
-| Developer setup | `docs/engineering/DEV_SETUP.md` | CANONICAL |
 | Documentation navigation | `docs/README.md` | CANONICAL |
-| Operations navigation | `docs/operations/README.md` | CANONICAL OPERATIONS GATEWAY |
+| Developer setup | `docs/engineering/DEV_SETUP.md` | CANONICAL |
+| Architecture | `docs/architecture/` | CANONICAL TECHNICAL AREA |
+| Operations | `docs/operations/README.md` | CANONICAL OPERATIONS GATEWAY |
+| Owner transfer | `docs/ownership/OWNER_HANDOFF.md` | CANONICAL TRANSFER GUIDE |
 | Current release posture | `docs/CURRENT_RELEASE_STATUS.md` | CANONICAL RELEASE/FREEZE AUTHORITY |
 | Security reporting | `SECURITY.md` | CANONICAL |
-| Contribution rules | `CONTRIBUTING.md` | CANONICAL, review during ownership transfer |
-| Code ownership | `CODEOWNERS` | CANONICAL, successor update required |
+| Contribution rules | `CONTRIBUTING.md` | CANONICAL |
+| Code ownership | `CODEOWNERS` | CANONICAL; update during authorized transfer |
 | Repository work controls | `AGENTS.md` | CANONICAL ENGINEERING CONTROL |
 
 ## Controlled supporting records
 
 | Subject | Document | Status |
 |---|---|---|
-| Technical diligence overview | `docs/investor/README.md` | CONTROLLED SUPPORTING; release posture remains governed by `docs/CURRENT_RELEASE_STATUS.md` |
-| Development provenance | `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md` | CONTROLLED SUPPORTING; truthful lineage, not architecture or release authority |
-| Repository noise inventory | `docs/repo-cleanup/REPOSITORY_NOISE_INVENTORY_20260728.md` | CONTROLLED HISTORICAL CLEANUP RECORD |
-| Buyer-truth reconciliation | `docs/repo-cleanup/BUYER_TRUTH_RECONCILIATION_20260728.md` | CONTROLLED HISTORICAL CORRECTION RECORD |
+| Development provenance | `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md` | CONTROLLED SUPPORTING; lineage only |
 
-## Explicitly superseded records
+## Active repository boundary
 
-| Document | Current disposition | Superseding authority |
-|---|---|---|
-| `docs/governance/CROWN_BUYER_READY_COMPLETION_CANON.md` | SUPERSEDED / HISTORICAL; former highest-authority claim withdrawn | This index and `docs/CURRENT_RELEASE_STATUS.md` |
-| `docs/status/PROJECT_COMPLETE.md` | HISTORICAL feature snapshot; former production-ready and completion claims withdrawn from current use | `docs/CURRENT_RELEASE_STATUS.md` |
-| `docs/release/FINAL_PRODUCTION_READINESS_DECISION_PACKET_20260622.md` | HISTORICAL June 22 NO-GO packet; product-scope assertions not current evidence | `docs/CURRENT_RELEASE_STATUS.md` |
+The owner-facing repository should contain only:
 
-## Supporting and historical areas requiring reconciliation
+- application source and migrations;
+- active tests and build configuration;
+- current CI and deployment definitions;
+- architecture, engineering, security, operations, and ownership-transfer documentation;
+- dependency, license, provenance, and governance files required to understand or operate the software;
+- the current release/freeze authority.
 
-| Subject | Document or area | Status |
-|---|---|---|
-| System context | `docs/architecture/` | CONSOLIDATION REQUIRED |
-| Current operations material | `docs/operations/` | CONTROLLED BY `docs/operations/README.md` |
-| Legacy operations material | `docs/ops/` | LEGACY SUPPORTING; INVENTORY REQUIRED |
-| Historical development records | historical commits, pull requests, branches, comments, and retained tool-specific records | HISTORICAL PROVENANCE; excluded from onboarding and active authority |
-| Release evidence | `docs/release/evidence/` | GENERATED OR SUPPORTING EVIDENCE |
-| Completion snapshots | `docs/completion/` | MIXED AGE; NOT CURRENT AUTHORITY |
-| Audit output | `audit-artifacts/` | GENERATED EVIDENCE |
-| Cleanup reports | `docs/repo-cleanup/` | HISTORICAL; NOT RELEASE AUTHORITY |
+Generated audit output, test-result dumps, copied evidence packs, marketing material, transaction strategy, old demonstrations, obsolete completion systems, superseded release boards, cleanup working notes, and retired scripts are excluded from the active tree.
 
 ## Onboarding boundary
 
-The normal onboarding and diligence path must not direct readers to obsolete editor-specific, assistant-specific, prompt-specific, agent-session, retired certification, or superseded release-control files. Such records may be retained only where needed for provenance, security, audit, or historical lineage and must not be represented as current engineering requirements.
+Normal onboarding must not direct readers to editor-specific, assistant-specific, prompt-specific, agent-session, retired certification, superseded release-control, or historical proof material. Historical commits and pull requests remain provenance but are not active operating instructions.
 
 ## Classification labels
 
 - `CANONICAL` — current authority.
-- `SUPPORTING` — useful detail consistent with canonical authority.
-- `CONTROLLED SUPPORTING` — approved orientation or provenance material that does not override release, security, architecture, or operational authority.
-- `HISTORICAL` — retained to preserve prior decisions, lineage, or evidence.
-- `SUPERSEDED` — replaced by a named canonical document.
-- `GENERATED_EVIDENCE` — machine-produced output, not narrative authority.
-- `OBSOLETE` — no longer useful after required preservation.
+- `CANONICAL TECHNICAL AREA` — current technical documentation governed by this index.
+- `CONTROLLED SUPPORTING` — useful information that does not override release, security, architecture, or operational authority.
+- `HISTORICAL` — repository history only; not active navigation.
+- `OBSOLETE` — removed from the current tree.
 
 ## Change control
 
-Changing canonical authority requires a focused, evidence-backed change that names the document being replaced, explains the reason, identifies conflicts resolved, updates this index, and preserves required historical evidence.
+Changes to canonical authority require a focused review that names the document being replaced, explains the reason, identifies conflicts resolved, and updates this index.
 
 ## Ownership-transfer note
 
-`CODEOWNERS`, repository administrator access, external service ownership, contributor records, domains, certificates, cloud resources, secrets, and operating authority must be updated with verified identities and actual responsibilities during an authorized handoff. Names or roles must not be invented.
+Repository administration, `CODEOWNERS`, external services, domains, certificates, cloud resources, secrets, operating authority, and notification destinations must be updated with verified successor identities during an authorized handoff. Secret values must never be committed.
