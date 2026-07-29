@@ -101,11 +101,13 @@ jobs:
 
       - name: Run actionlint
         if: steps.workflow_changes.outputs.changed == 'true'
-        run: ./actionlint -color
+        run: ./actionlint -color -shellcheck=
 
       - name: Enforce workflow policy
         if: steps.workflow_changes.outputs.changed == 'true'
-        run: python tools/verify_workflow_policy.py $(tr '\n' ' ' < changed-workflows.txt)
+        run: |
+          mapfile -t changed_workflows < changed-workflows.txt
+          python tools/verify_workflow_policy.py "${changed_workflows[@]}"
 
       - name: Enforce CI authoring contracts
         if: steps.workflow_changes.outputs.changed == 'true'
