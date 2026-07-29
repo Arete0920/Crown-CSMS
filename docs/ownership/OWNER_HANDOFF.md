@@ -1,7 +1,7 @@
 # CROWN Owner Handoff
 
 **Status:** Canonical transfer guide  
-**Scope:** Repository, application, operations, security, and external-service ownership
+**Scope:** Repository, application, operations, security, diligence, and external-service ownership
 
 ## Current operating posture
 
@@ -14,11 +14,12 @@ This guide describes the ownership-transfer process. It does not authorize deplo
 1. `README.md`
 2. `docs/canonical/REPOSITORY_MANIFEST.md`
 3. `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`
-4. `docs/engineering/DEV_SETUP.md`
-5. `docs/architecture/`
-6. `docs/security/`
-7. `docs/operations/README.md`
-8. `docs/CURRENT_RELEASE_STATUS.md`
+4. `docs/CURRENT_RELEASE_STATUS.md`
+5. `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md`
+6. `docs/engineering/DEV_SETUP.md`
+7. `docs/architecture/`
+8. `docs/security/`
+9. `docs/operations/README.md`
 
 ## What transfers with the repository
 
@@ -28,6 +29,7 @@ This guide describes the ownership-transfer process. It does not authorize deplo
 - architecture and engineering documentation;
 - security policy and security-control definitions;
 - operational, rollback, restore, maintenance, and incident-response documentation;
+- canonical diligence navigation and recorded evidence boundaries;
 - dependency and lock files;
 - repository history, issues, pull requests, and release lineage.
 
@@ -55,6 +57,22 @@ The repository must not contain secret values. The authorized transfer process m
 8. Perform a clean clone and complete setup without undocumented assistance.
 9. Run the required backend, frontend, migration, security, dependency, and build checks on one exact commit.
 10. Complete rollback and restore exercises before production authorization.
+11. Reconcile every unresolved item in `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` with current exact-SHA evidence.
+12. Record explicit acceptance or rejection of residual risks by the authorized successor and current owner.
+
+## Diligence review boundary
+
+The repository includes source, documentation, issues, pull requests, workflows, and historical lineage. These materials support diligence but do not independently prove:
+
+- current deployed-runtime identity;
+- operational secret ownership or successful rotation;
+- rollback or database-restore capability;
+- privacy or legal readiness;
+- production monitoring effectiveness;
+- payment-processor readiness;
+- buyer operational acceptance.
+
+The canonical diligence map is `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md`. Any readiness conclusion must reconcile that index with current evidence from the exact transferred source SHA and, where applicable, the same deployed runtime and external services.
 
 ## Release restart
 
