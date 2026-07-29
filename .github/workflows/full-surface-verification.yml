@@ -72,6 +72,22 @@ jobs:
       - name: Install Playwright browsers (Chromium)
         run: npx playwright install --with-deps chromium
 
+      - name: Start frontend
+        run: nohup npm run dev -- --host 127.0.0.1 --port 3000 > /tmp/frontend-full-surface.log 2>&1 &
+
+      - name: Wait for frontend health
+        run: |
+          for i in {1..30}; do
+            if curl --max-time 10 -fsS http://127.0.0.1:3000/ >/dev/null 2>&1; then
+              echo "Frontend is healthy"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend failed to start"
+          cat /tmp/frontend-full-surface.log || true
+          exit 1
+
       - name: Run full surface verification
         run: npm run verify:full
 
