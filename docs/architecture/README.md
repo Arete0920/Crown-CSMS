@@ -1,47 +1,58 @@
 # CROWN Architecture Documentation
 
-**Status:** Canonical architecture gateway  
+**Status:** CANONICAL ARCHITECTURE GATEWAY  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-14
+**Effective date:** 2026-07-28
 
 ## Authority
 
-This file is the required entrypoint for CROWN architecture documentation. Material elsewhere in `docs/architecture/` is supporting unless the canonical document index explicitly assigns it authority.
+Architecture documentation describes system structure, trust boundaries, canonical data ownership, integration boundaries, and accepted technical decisions. It does not certify production readiness or override `docs/CURRENT_RELEASE_STATUS.md`.
 
-Architecture documents describe system structure and constraints. They do not independently certify release readiness, production deployment, operational recovery, or module completion.
+## Required reading order
 
-## System reading order
-
-1. `../../README.md` — repository authority and release posture.
-2. `../canonical/REPOSITORY_MANIFEST.md` — repository boundaries and document classification.
-3. This file — architecture navigation and authority rules.
-4. `../engineering/DEV_SETUP.md` — supported development setup.
-5. `../operations/README.md` — deployment, recovery, and operator navigation.
-6. `../CURRENT_RELEASE_STATUS.md` — current release authority.
+1. `ARCHITECTURE_MAP.md` — canonical owner-facing architecture map.
+2. `SYSTEM_OVERVIEW.md` — repository-visible implementation and convergence status.
+3. `DECISION_INDEX.md` — authoritative list of accepted ADRs and decisions still required.
+4. `decisions/ADR-0001-tenant-resolution-and-enforcement.md` — canonical tenant contract.
+5. `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` — canonical operational identity-write authority.
+6. `CANONICAL_IDENTITY_CONSUMER_INVENTORY.md` — identity compatibility and convergence inventory.
+7. `../engineering/DEV_SETUP.md` — supported development setup.
+8. `../operations/README.md` — deployment, recovery, and operator navigation.
+9. `../CURRENT_RELEASE_STATUS.md` — current release authority.
 
 ## Architecture domains
 
-Use this directory for durable descriptions of:
+This directory governs durable descriptions of:
 
 - platform and subsystem boundaries;
 - frontend, backend, API, and persistence responsibilities;
 - multi-tenant isolation and trusted school context;
 - authentication, authorization, and role boundaries;
-- domain modules and shared service contracts;
+- domain ownership and shared service contracts;
 - external integrations and payment-provider boundaries;
+- asynchronous work and tenant propagation;
 - deployment topology and runtime dependencies;
-- architecture decisions, constraints, and supersession records.
+- architecture decisions, constraints, migrations, and supersession.
 
 ## Classification rules
 
-- New architecture documents must identify their status as `CANONICAL`, `SUPPORTING`, `HISTORICAL`, or `SUPERSEDED`.
-- A document is not canonical merely because its filename contains `final`, `complete`, `master`, or a recent date.
-- Completion matrices and certification evidence report verification state; they do not define architecture.
-- Generated diagrams, audits, and proof artifacts are supporting evidence unless explicitly promoted through the canonical index.
-- Conflicting documents must be reconciled through a focused pull request that names the controlling source and preserves prior history.
+- `ARCHITECTURE_MAP.md`, this gateway, and `DECISION_INDEX.md` are canonical architecture navigation.
+- An ADR is authoritative only when accepted and listed in `DECISION_INDEX.md`.
+- `SYSTEM_OVERVIEW.md` describes verified source behavior and implementation debt; it is not an ADR.
+- Inventories describe observed consumers and compatibility obligations; they do not create authority by themselves.
+- Completion matrices, test results, generated diagrams, and audit output are not architecture authority.
+- New target architecture must be labeled as target or proposed until implemented and verified.
 
-## Current limitations
+## Change control
 
-The directory still requires a file-by-file inventory. Until that inventory is complete, this gateway controls navigation and classification, but it does not assert that every architecture document is current or correctly placed.
+A focused ADR is required when changing:
 
-Do not delete or relocate historical architecture material without confirming references, preserving Git history, and identifying the controlling replacement.
+- tenant-resolution precedence or enforcement ownership;
+- canonical identity or durable data-write authority;
+- public API compatibility or transport contracts;
+- cross-domain ownership or integration boundaries;
+- asynchronous execution and idempotency contracts;
+- deployment identity, rollback, restore, or secret authority;
+- payment-provider activation and settlement boundaries.
+
+Runtime implementation and documentation-only authority changes should normally use separate pull requests.
