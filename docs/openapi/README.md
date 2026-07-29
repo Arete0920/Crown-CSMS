@@ -1,46 +1,45 @@
 # OpenAPI Documentation
 
-This folder contains the exported OpenAPI schema for Crown.
+This folder contains generation and validation instructions for the CROWN OpenAPI schema.
 
-## Canonical Schema File
+## Source of truth
 
-- `docs/openapi/crown-openapi.yaml`
+The backend source and `backend/crown_api/settings.py` define the API schema. Generated schema exports are review artifacts and must not be treated as current unless regenerated from the exact source commit.
 
-Status:
-- File exists in-repo.
-- Currency against latest backend code is `MANUAL_VERIFICATION_REQUIRED` until regenerated and diff-checked.
-
-## Live Documentation Routes
+## Live documentation routes
 
 Configured in `backend/crown_api/urls.py`:
 
-- `/api/schema/` (raw OpenAPI schema)
-- `/api/docs/` (Swagger UI)
-- `/api/redoc/` (ReDoc)
+- `/api/schema/` — raw OpenAPI schema
+- `/api/docs/` — Swagger UI
+- `/api/redoc/` — ReDoc
 
-## How to Regenerate Schema
+## Generate a schema
 
 From repository root:
 
 ```bash
-.venv/bin/python backend/manage.py spectacular --file docs/openapi/crown-openapi.yaml
+.venv/bin/python backend/manage.py spectacular --file /tmp/crown-openapi.yaml
 ```
 
-If using Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
-& ".venv\Scripts\python.exe" "backend\manage.py" spectacular --file "docs/openapi/crown-openapi.yaml"
+& ".venv\Scripts\python.exe" "backend\manage.py" spectacular --file "$env:TEMP\crown-openapi.yaml"
 ```
 
-If repo-root venv is not available, activate your current Python environment and run:
+Or from an activated Python environment:
 
 ```bash
-python backend/manage.py spectacular --file docs/openapi/crown-openapi.yaml
+python backend/manage.py spectacular --file /tmp/crown-openapi.yaml
 ```
 
-## Validation Checklist
+## Validation
 
-1. Regenerate schema.
-2. Confirm no unexpected diff in `docs/openapi/crown-openapi.yaml`.
-3. Verify `/api/docs/` and `/api/redoc/` load correctly in target environment.
-4. Record evidence path in `docs/release/FINAL_INVESTOR_EVIDENCE_INDEX.md`.
+1. Generate the schema from the exact source commit under review.
+2. Confirm generation completes without warnings or exceptions.
+3. Review the generated artifact for intended API changes.
+4. Verify `/api/docs/` and `/api/redoc/` in the target environment.
+5. Retain release evidence outside the active source tree or in the approved workflow artifact store.
+
+Do not commit generated schemas solely as static evidence. Current source and the exact-commit generation result remain authoritative.
