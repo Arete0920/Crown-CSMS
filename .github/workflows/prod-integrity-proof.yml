@@ -1,29 +1,29 @@
 name: prod-integrity-proof
+
 permissions:
   contents: read
 
-
 on:
-  schedule:
-    - cron: "15 6 * * *"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag label (optional; overrides JSON if provided)"
-        required: false
+        description: "Immutable production deployment tag"
+        required: true
         type: string
       expected_sha:
-        description: "Expected deployed BUILD SHA (optional; overrides JSON if provided)"
-        required: false
+        description: "Expected deployed full 40-character commit SHA"
+        required: true
         type: string
       health_url:
-        description: "Health endpoint URL (optional; overrides JSON if provided)"
-        required: false
+        description: "Production health endpoint URL"
+        required: true
+        default: "https://crown-api-prod.azurewebsites.net/api/health/"
         type: string
 
 concurrency:
-  group: prod-integrity-proof-${{ github.workflow }}-${{ github.ref }}
+  group: prod-integrity-proof-${{ inputs.expected_sha }}
   cancel-in-progress: false
+
 jobs:
   prove:
     runs-on: ubuntu-latest
@@ -32,119 +32,174 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-      - name: Load defaults from tracked target file (unless manually overridden)
+      - name: Validate explicit proof inputs
         id: target
         shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_EXPECTED_SHA: ${{ inputs.expected_sha }}
+          INPUT_HEALTH_URL: ${{ inputs.health_url }}
         run: |
           set -euo pipefail
-          FILE=".github/prod-integrity-target.json"
 
-          if [[ ! -f "$FILE" ]]; then
-            echo "Missing $FILE" >&2
+          if [[ -z "$INPUT_TAG" || "$INPUT_TAG" != prod-deploy-* ]]; then
+            echo "ERROR: tag must be present and match prod-deploy-*"
             exit 1
           fi
 
-          # Pull defaults from JSON
-          default_tag="$(jq -r '.tag' "$FILE")"
-          default_expected_sha="$(jq -r '.expected_sha' "$FILE")"
-          default_health_url="$(jq -r '.health_url' "$FILE")"
+          if [[ ! "$INPUT_EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "ERROR: expected_sha must be a lowercase full 40-character commit SHA"
+            exit 1
+          fi
 
-          # Manual inputs (may be empty)
-          in_tag="${{ github.event.inputs.tag }}"
-          in_expected_sha="${{ github.event.inputs.expected_sha }}"
-          in_health_url="${{ github.event.inputs.health_url }}"
+          if [[ ! "$INPUT_HEALTH_URL" =~ ^https:// ]]; then
+            echo "ERROR: health_url must use https://"
+            exit 1
+          fi
 
-          # Resolve final values (manual overrides only if non-empty)
-          tag="$default_tag"
-          expected_sha="$default_expected_sha"
-          health_url="$default_health_url"
+          {
+            echo "tag=$INPUT_TAG"
+            echo "expected_sha=$INPUT_EXPECTED_SHA"
+            echo "health_url=$INPUT_HEALTH_URL"
+          } >> "$GITHUB_OUTPUT"
 
-          if [[ -n "${in_tag:-}" ]]; then tag="$in_tag"; fi
-          if [[ -n "${in_expected_sha:-}" ]]; then expected_sha="$in_expected_sha"; fi
-          if [[ -n "${in_health_url:-}" ]]; then health_url="$in_health_url"; fi
+      - name: Checkout expected source identity
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ steps.target.outputs.expected_sha }}
+          fetch-depth: 0
 
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "expected_sha=$expected_sha" >> "$GITHUB_OUTPUT"
-          echo "health_url=$health_url" >> "$GITHUB_OUTPUT"
-
-      - name: Fetch health JSON
-        id: health
+      - name: Verify tag resolves to expected SHA
         shell: bash
+        env:
+          TAG: ${{ steps.target.outputs.tag }}
+          EXPECTED_SHA: ${{ steps.target.outputs.expected_sha }}
         run: |
           set -euo pipefail
-          url="${{ steps.target.outputs.health_url }}"
-          echo "Hitting: $url"
-          body="$(curl --max-time 30 -f -sSfL "$url")"
-          echo "$body" | jq . >/dev/null
-          echo "body=$body" >> "$GITHUB_OUTPUT"
+          git fetch --force --tags origin
+          tag_sha="$(git rev-list -n 1 "$TAG")"
+          checked_out_sha="$(git rev-parse HEAD)"
 
-      - name: Assert deployed SHA matches expected
+          if [[ "$tag_sha" != "$EXPECTED_SHA" ]]; then
+            echo "ERROR: deployment tag does not resolve to expected SHA"
+            echo "tag=$TAG tag_sha=$tag_sha expected_sha=$EXPECTED_SHA"
+            exit 1
+          fi
+
+          if [[ "$checked_out_sha" != "$EXPECTED_SHA" ]]; then
+            echo "ERROR: checked-out SHA does not match expected SHA"
+            echo "checked_out_sha=$checked_out_sha expected_sha=$EXPECTED_SHA"
+            exit 1
+          fi
+
+      - name: Fetch production health payload
         shell: bash
+        env:
+          HEALTH_URL: ${{ steps.target.outputs.health_url }}
         run: |
           set -euo pipefail
-          expected="${{ steps.target.outputs.expected_sha }}"
-          tag="${{ steps.target.outputs.tag }}"
-          body='${{ steps.health.outputs.body }}'
+          curl --max-time 30 --fail --silent --show-error --location \
+            --output "$RUNNER_TEMP/production-health.json" \
+            "$HEALTH_URL"
+          jq -e . "$RUNNER_TEMP/production-health.json" >/dev/null
 
-          python - <<'PY'
-          import json, os, sys
+      - name: Assert healthy status and deployed SHA parity
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.target.outputs.expected_sha }}
+          TAG: ${{ steps.target.outputs.tag }}
+          HEALTH_PAYLOAD_PATH: ${{ runner.temp }}/production-health.json
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          from pathlib import Path
 
-          expected = os.environ["EXPECTED"]
+          expected = os.environ["EXPECTED_SHA"]
           tag = os.environ["TAG"]
-          body = os.environ["BODY"]
+          payload_path = Path(os.environ["HEALTH_PAYLOAD_PATH"])
+          data = json.loads(payload_path.read_text(encoding="utf-8"))
 
-          data = json.loads(body)
+          healthy = data.get("status") == "healthy" or data.get("ok") is True
+          if not healthy:
+              print(f"FAIL: production health contract is not healthy for {tag}")
+              print(json.dumps(data, indent=2, sort_keys=True))
+              sys.exit(2)
 
-          # Try common top-level keys first.
-          candidates = [
-            "build_sha", "BUILD_SHA", "sha", "git_sha", "commit", "commit_sha",
-            "build", "revision", "version", "release_sha"
-          ]
+          candidates = (
+              "build_sha",
+              "BUILD_SHA",
+              "sha",
+              "git_sha",
+              "commit",
+              "commit_sha",
+              "build",
+              "revision",
+              "version",
+              "release_sha",
+          )
+
           found = None
-          for k in candidates:
-            if k in data and isinstance(data[k], str) and data[k].strip():
-              found = data[k].strip()
-              break
+          for key in candidates:
+              value = data.get(key)
+              if isinstance(value, str) and value.strip():
+                  found = value.strip()
+                  break
 
-          # Fallback: recursively scan nested objects for sha-like fields.
           def walk(node):
-            if isinstance(node, dict):
-              for key, value in node.items():
-                key_l = str(key).lower()
-                if isinstance(value, str) and value.strip() and ("sha" in key_l or key_l in {"commit", "revision", "version"}):
-                  return value.strip()
-                child = walk(value)
-                if child:
-                  return child
-            elif isinstance(node, list):
-              for item in node:
-                child = walk(item)
-                if child:
-                  return child
-            return None
+              if isinstance(node, dict):
+                  for key, value in node.items():
+                      key_l = str(key).lower()
+                      if isinstance(value, str) and value.strip() and (
+                          "sha" in key_l or key_l in {"commit", "revision", "version"}
+                      ):
+                          return value.strip()
+                      child = walk(value)
+                      if child:
+                          return child
+              elif isinstance(node, list):
+                  for item in node:
+                      child = walk(item)
+                      if child:
+                          return child
+              return None
 
           if not found:
-            found = walk(data)
+              found = walk(data)
 
           if not found:
-            print("ERROR: Health JSON did not include a recognized SHA field.")
-            print("Expected one of:", candidates)
-            print("Health payload:", json.dumps(data, indent=2))
-            sys.exit(2)
+              print("ERROR: health payload did not contain a recognized deployed identity")
+              print(json.dumps(data, indent=2, sort_keys=True))
+              sys.exit(3)
+
+          if not re.fullmatch(r"[0-9a-f]{40}", found):
+              print(f"FAIL: deployed identity is not a full lowercase SHA: {found}")
+              sys.exit(4)
 
           if found != expected:
-            print(f"FAIL: deployed SHA mismatch for {tag}")
-            print(f"Expected: {expected}")
-            print(f"Found:    {found}")
-            sys.exit(3)
+              print(f"FAIL: deployed SHA mismatch for {tag}")
+              print(f"Expected: {expected}")
+              print(f"Found:    {found}")
+              sys.exit(5)
 
-          print(f"PASS: deployed SHA matches expected for {tag}: {found}")
+          print(f"PASS: production is healthy and deployed SHA matches {tag}: {found}")
           PY
-        env:
-          EXPECTED: ${{ steps.target.outputs.expected_sha }}
-          TAG: ${{ steps.target.outputs.tag }}
-          BODY: ${{ steps.health.outputs.body }}
 
+      - name: Publish proof summary
+        if: always()
+        shell: bash
+        env:
+          TAG: ${{ steps.target.outputs.tag }}
+          EXPECTED_SHA: ${{ steps.target.outputs.expected_sha }}
+          HEALTH_URL: ${{ steps.target.outputs.health_url }}
+        run: |
+          {
+            echo "## Production integrity proof"
+            echo "- Tag: \`$TAG\`"
+            echo "- Expected SHA: \`$EXPECTED_SHA\`"
+            echo "- Health URL: \`$HEALTH_URL\`"
+            echo "- Workflow conclusion: \`${{ job.status }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
