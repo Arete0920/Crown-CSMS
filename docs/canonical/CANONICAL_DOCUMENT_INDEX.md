@@ -2,7 +2,7 @@
 
 **Status:** Canonical  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-28
+**Effective date:** 2026-07-29
 
 ## Authority rule
 
@@ -15,6 +15,7 @@ A document is authoritative only when listed here as `CANONICAL`, or when a late
 | Repository orientation | `README.md` | CANONICAL |
 | Repository structure | `docs/canonical/REPOSITORY_MANIFEST.md` | CANONICAL |
 | Documentation navigation | `docs/README.md` | CANONICAL |
+| Diligence and evidence navigation | `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md` | CANONICAL DILIGENCE AUTHORITY |
 | Developer setup | `docs/engineering/DEV_SETUP.md` | CANONICAL |
 | Architecture gateway | `docs/architecture/README.md` | CANONICAL |
 | Architecture map | `docs/architecture/ARCHITECTURE_MAP.md` | CANONICAL ARCHITECTURE AUTHORITY |
@@ -61,8 +62,9 @@ Normal onboarding must not direct readers to editor-specific, assistant-specific
 - `CANONICAL` — current authority.
 - `CANONICAL ARCHITECTURE AUTHORITY` — current system boundary and principle authority.
 - `CANONICAL DECISION AUTHORITY` — accepted ADR status and supersession authority.
+- `CANONICAL DILIGENCE AUTHORITY` — current diligence navigation, evidence-status, and claim-boundary authority.
 - `CANONICAL SUPPORTING OVERVIEW` — source-grounded implementation overview consistent with accepted decisions.
-- `CONTROLLED SUPPORTING` — useful information that does not override release, security, architecture, or operational authority.
+- `CONTROLLED SUPPORTING` — useful information that does not override release, security, architecture, operational, or diligence authority.
 - `HISTORICAL` — repository history only; not active navigation.
 - `OBSOLETE` — removed from the current tree.
 
