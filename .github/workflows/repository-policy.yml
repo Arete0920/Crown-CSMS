@@ -97,7 +97,9 @@ jobs:
       - name: Install actionlint
         if: steps.workflow_changes.outputs.changed == 'true'
         run: |
-          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash -s -- 1.7.1
+          curl --fail --silent --show-error --location --connect-timeout 15 --max-time 60 \
+            https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
+            | bash -s -- 1.7.1
 
       - name: Run actionlint
         if: steps.workflow_changes.outputs.changed == 'true'

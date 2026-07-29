@@ -13,26 +13,26 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps full production as the target and the current decision as not approved', () => {
+  it('keeps the canonical production decision at not approved / no-go / hold', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('**TARGET: FULL PRODUCTION RELEASE AUTHORIZATION**')).toBe(true);
-    expect(source.includes('**CURRENT DECISION: PRODUCTION NOT APPROVED**')).toBe(true);
+    expect(source.includes('Production: **NOT APPROVED / NO-GO / HOLD**')).toBe(true);
+    expect(source.includes('**PRODUCTION DECISION: NOT APPROVED / NO-GO / HOLD**')).toBe(true);
     expect(source.includes('**CURRENT DECISION: PRODUCTION AUTHORIZED**')).toBe(false);
   });
 
-  it('keeps current scorecard decision as NO-GO', () => {
-    const source = readRepoFile('docs/release/CURRENT_RELEASE_SCORECARD_20260528.md');
-    expect(source.includes('Current decision: NO-GO')).toBe(true);
+  it('keeps buyer turnover and payment processing unapproved', () => {
+    const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
+    expect(source.includes('Buyer operational turnover: **NOT APPROVED**')).toBe(true);
+    expect(source.includes('**PAYMENT PROCESSING: DISABLED / FAIL CLOSED**')).toBe(true);
   });
 
-  it('keeps P0 board canonical baseline aligned to NO-GO', () => {
-    const source = readRepoFile('docs/release/P0_EXECUTION_BOARD_20260528.md');
-    expect(source.includes('Repository-wide decision is NO-GO')).toBe(true);
+  it('keeps the canonical index pointed at the current release authority', () => {
+    const source = readRepoFile('docs/canonical/CANONICAL_DOCUMENT_INDEX.md');
+    expect(source.includes('`docs/CURRENT_RELEASE_STATUS.md` | CANONICAL RELEASE/FREEZE AUTHORITY')).toBe(true);
   });
 
-  it('blocks known contradictory unrestricted-go approved-slice wording in P0 board', () => {
-    const source = readRepoFile('docs/release/P0_EXECUTION_BOARD_20260528.md');
-    expect(source.includes('approved slice remains `UNRESTRICTED GO`')).toBe(false);
-    expect(source.includes('canonical approved-slice release authority remains unchanged (`UNRESTRICTED GO`)')).toBe(false);
+  it('does not restore the obsolete P0 execution board as active authority', () => {
+    const source = readRepoFile('docs/canonical/CANONICAL_DOCUMENT_INDEX.md');
+    expect(source.includes('P0_EXECUTION_BOARD_20260528.md')).toBe(false);
   });
 });
