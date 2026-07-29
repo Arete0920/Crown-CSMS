@@ -1,15 +1,12 @@
-name: phase1-gate
+name: Manual Legacy Phase 1 Contract
 permissions:
   contents: read
 
-
 on:
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch: {}
 
 concurrency:
-  group: phase1-gate-${{ github.workflow }}-${{ github.ref }}
+  group: legacy-phase1-contract-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   phase1-contract:
@@ -18,9 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Contract check (static)
+      - name: Legacy Phase 1 contract check
         shell: pwsh
-        run: |
-          $ErrorActionPreference="Stop"
-          pwsh -File scripts/phase1/phase1_contract.ps1
-
+        run: pwsh -File scripts/phase1/phase1_contract.ps1

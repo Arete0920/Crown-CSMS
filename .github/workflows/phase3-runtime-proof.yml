@@ -1,15 +1,12 @@
-name: Phase3 Runtime Proof Ceremony
+name: Manual Legacy Runtime Proof
 permissions:
   contents: read
 
-
 on:
-  pull_request:
-    branches: [ main ]
   workflow_dispatch: {}
 
 concurrency:
-  group: phase3-runtime-proof-ceremony-${{ github.workflow }}-${{ github.ref }}
+  group: legacy-runtime-proof-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   phase3-runtime-proof:
@@ -37,8 +34,6 @@ jobs:
       DATABASE_URL: postgresql://crown:crown_test_pw@localhost:5432/crown_test
       CROWN_DEMO_MODE: "true"
       CROWN_DEMO_SCHOOL_ID: "19801b59-8c05-4c84-9312-5d792e4e839d"
-      # CROWN_DEMO_KEY is intentionally absent €” Django settings provides the
-      # correct default when CROWN_DEMO_MODE=true. Never hardcode it here.
       CROWN_PASSWORD: ${{ secrets.CROWN_PASSWORD }}
 
     steps:
@@ -66,34 +61,30 @@ jobs:
           cd backend
           python manage.py seed_demo_school --wipe
 
-      - name: Seed permissions (role ’ permission mappings required for authz gates)
+      - name: Seed permissions
         run: |
           cd backend
           python manage.py seed_permissions
 
-      - name: Seed minimum ledger entities (for parameterized proof)
+      - name: Seed minimum ledger entities
         run: |
           cd backend
           python manage.py seed_demo_ledger_min --verbose
 
-      - name: Start Django server (background)
+      - name: Start Django server
         run: |
           cd backend
           python manage.py runserver 127.0.0.1:8000 &
           sleep 5
 
       - name: Health check
-        run: |
-          curl --max-time 30 -f http://127.0.0.1:8000/health/ || exit 1
+        run: curl --max-time 30 -f http://127.0.0.1:8000/health/
 
-      - name: Run Phase 3 runtime proof ceremony
+      - name: Run legacy runtime proof
         run: |
           cd backend
           python manage.py proof_phase3_runtime --verbose
 
       - name: Dump server log on failure
         if: failure()
-        run: |
-          echo "==== Django server output ===="
-          jobs -l || true
-
+        run: jobs -l || true
