@@ -1,0 +1,119 @@
+name: Repository Policy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "tools/verify_workflow_policy.py"
+      - "tools/ci/**"
+      - "scripts/ci/pr_hygiene_gate.py"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: repository-policy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+        with:
+          python-version: "3.12"
+
+      - name: Install policy dependencies
+        run: python -m pip install --upgrade pip pyyaml
+
+      - name: Run pull-request hygiene
+        if: github.event_name == 'pull_request'
+        env:
+          CROWN_BASE_REF: ${{ github.event.pull_request.base.sha }}
+          CROWN_MAX_NORMAL_ADDITIONS: "1500"
+          CROWN_MAX_DOC_AUDIT_ADDITIONS: "3000"
+          CROWN_MAX_CHANGED_FILES: "20"
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.sha }}" --depth=1
+          python scripts/ci/pr_hygiene_gate.py
+
+      - name: Resolve workflow changes
+        id: workflow_changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- '.github/workflows/*.yml' '.github/workflows/*.yaml' > changed-workflows.txt || true
+          if [ -s changed-workflows.txt ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Parse workflow YAML
+        if: steps.workflow_changes.outputs.changed == 'true'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import sys
+          import yaml
+
+          failures = []
+          files = sorted(
+              path for path in Path('.github/workflows').iterdir()
+              if path.is_file() and path.suffix.lower() in {'.yml', '.yaml'}
+          )
+          for path in files:
+              try:
+                  with path.open('r', encoding='utf-8') as handle:
+                      yaml.safe_load(handle)
+              except Exception as exc:
+                  failures.append(f'{path}: {exc}')
+          if failures:
+              print('FAIL: workflow YAML parsing errors detected')
+              for failure in failures:
+                  print(f'- {failure}')
+              sys.exit(1)
+          print(f'PASS: parsed {len(files)} workflow YAML files')
+          PY
+
+      - name: Install actionlint
+        if: steps.workflow_changes.outputs.changed == 'true'
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash -s -- 1.7.1
+
+      - name: Run actionlint
+        if: steps.workflow_changes.outputs.changed == 'true'
+        run: ./actionlint -color
+
+      - name: Enforce workflow policy
+        if: steps.workflow_changes.outputs.changed == 'true'
+        run: python tools/verify_workflow_policy.py $(tr '\n' ' ' < changed-workflows.txt)
+
+      - name: Enforce CI authoring contracts
+        if: steps.workflow_changes.outputs.changed == 'true'
+        run: |
+          python tools/ci/check_no_pr_job_if.py
+          python tools/ci/check_workflow_step_names.py
+          python tools/ci/check_dependency_audit_loadtest.py
+
+      - name: Report no workflow changes
+        if: steps.workflow_changes.outputs.changed != 'true'
+        run: echo "No workflow files changed; workflow-specific policy checks were skipped."
