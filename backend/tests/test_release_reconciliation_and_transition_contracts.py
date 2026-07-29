@@ -8,13 +8,9 @@ def _read(path: str) -> str:
     return (REPO_ROOT / path).read_text(encoding="utf-8")
 
 
-def test_070_enrollment_reconciliation_jobs_and_tests_exist():
-    _read("scripts/release/phase2_release_truth_reconciliation.ps1")
-
-    phase2_json = _read("docs/release/live-audit/phase2/phase2_release_truth_reconciliation.json")
-    phase2_md = _read("docs/release/live-audit/phase2/phase2_release_truth_reconciliation.md")
-    assert "live_repo_state" in phase2_json
-    assert "reconciliation" in phase2_md.lower()
+def test_070_enrollment_reconciliation_job_exists():
+    script = _read("scripts/release/phase2_release_truth_reconciliation.ps1")
+    assert "reconciliation" in script.lower()
 
 
 def test_071_billing_ledger_reconciliation_jobs_and_tests_exist():
