@@ -1,7 +1,0 @@
-﻿UTC=2026-05-12T10:53:16.0683810Z
-BRANCH=release/final-gate-closure-20260509
-HEAD=be2bfb36e45560ca32d3ec48e2ccd389a6097a95
-========================================
-PYTEST_CMD=C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\.venv\Scripts\python.exe -m pytest -q --tb=short
-RAW_LOG=C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\crown-master-binder\06_release_readiness\backend_pytest_full_gate_raw_20260512_065316.txt
-ERR_LOG=C:\Users\JMega\OneDrive\Desktop\Crown2026_deploypr\crown-master-binder\06_release_readiness\backend_pytest_full_gate_err_20260512_065316.txt
