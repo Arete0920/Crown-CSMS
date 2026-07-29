@@ -2,7 +2,7 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-28
+**Effective date:** 2026-07-29
 
 ## Purpose
 
@@ -12,7 +12,7 @@ This index is the authoritative list of accepted architecture decisions. Documen
 
 | ID | Decision | Status | Implementation state |
 |---|---|---|---|
-| ADR-0001 | `decisions/ADR-0001-tenant-resolution-and-enforcement.md` | ACCEPTED | Canonical contract accepted; middleware, queryset, permission, task, and compatibility convergence remains incomplete. |
+| ADR-0001 | `decisions/ADR-0001-tenant-resolution-and-enforcement.md` | ACCEPTED | Canonical context, protected-route enforcement, explicit override authorization, compatibility binding, structured tenant-decision audit, cleanup, and focused negative tests are present in source. Complete consumer migration, task proof, middleware retirement, universal authorization coverage, and deployed-runtime certification remain incomplete. See `TENANT_ENFORCEMENT_IMPLEMENTATION_STATUS.md`. |
 | ADR-001 | `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` | ACCEPTED FOR OPERATIONAL WRITES | `core.Family`, `core.Guardian`, and `core.Student` own canonical operational writes; compatibility-domain reconciliation remains incomplete. |
 
 ## Decisions still required
