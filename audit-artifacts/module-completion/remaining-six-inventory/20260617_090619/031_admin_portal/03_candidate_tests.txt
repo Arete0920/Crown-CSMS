@@ -1,7 +1,0 @@
-﻿backend\board_oversight\tests\test_board_urls.py
-backend\core\tests\test_module002_auth_authorization.py
-backend\core\tests\test_nav_endpoint.py
-backend\crown_api\tests\test_api_v1_route_order_contract.py
-backend\crown_api\tests\test_metrics_permissions_contract.py
-frontend\dashboards\tests\magus-verification-smoke.spec.ts
-frontend\dashboards\tests\ui\executive-dashboard-v1.spec.ts

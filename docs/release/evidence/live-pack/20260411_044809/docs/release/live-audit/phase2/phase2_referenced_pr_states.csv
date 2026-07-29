@@ -1,3 +1,0 @@
-﻿"number","item_type","state","merged_at","title","currently_open"
-"600","pull_request","closed",,"chore(ci): harden production deploy trigger and environment protections","False"
-"611","pull_request","closed",,"ci: guard CodeQL and dependency review when security features are unavailable","False"

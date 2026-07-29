@@ -1,9 +1,0 @@
-
-         id name             status    conclusion started_at           complete
-                                                                       d_at    
-         -- ----             ------    ---------- ----------           --------
-73685334579 build-and-deploy completed failure    2026-04-30T00:15:01Z 2026-...
-73689242062 notification     completed success    2026-04-30T00:15:33Z 2026-...
-
-
-

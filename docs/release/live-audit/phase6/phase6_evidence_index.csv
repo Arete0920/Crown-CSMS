@@ -1,6 +1,0 @@
-"area","artifact","path","status","detail"
-"repo_baseline","phase1_live_repo_baseline.json","docs/release/live-audit/phase1/phase1_live_repo_baseline.json","READY","Repo baseline generated"
-"release_truth","phase2_release_truth_mismatches.csv","docs/release/live-audit/phase2/phase2_release_truth_mismatches.csv","READY","Mismatch count: 0"
-"backend_verification","phase4_backend_verification_and_django_proof.json","docs/release/live-audit/phase4/phase4_backend_verification_and_django_proof.json","READY","manage_check_ok=True; showmigrations_ok=True"
-"module_proof","phase5_module_proof_matrix.csv","docs/release/live-audit/phase5/phase5_module_proof_matrix.csv","READY","Module proof rows: 9"
-"branch_cleanup","phase3_branch_cleanup_candidates.csv","docs/release/live-audit/phase3/phase3_branch_cleanup_candidates.csv","READY","Delete candidate count: 0"

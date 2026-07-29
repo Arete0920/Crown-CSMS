@@ -1,3 +1,0 @@
-remote_ref=origin/audit/pr-overlap-reconcile
-checkpoint_present=True
-deploy_fix_present=True

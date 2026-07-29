@@ -1,8 +1,0 @@
- M audit-artifacts/full-proof-stack/runtime-start-20260429_023348/backend_8000.log
- M frontend/dashboards/src/components/crown/CrownLayout.jsx
- M frontend/dashboards/src/components/launch/CrownSidebar.jsx
- M frontend/dashboards/src/pages/LoginPage.jsx
- M frontend/dashboards/src/routes/router.jsx
- M frontend/dashboards/tests/e2e/sandbox-admin-dashboard-cert.spec.ts
- M frontend/dashboards/tests/e2e/sandbox-role-route-regression.spec.ts
- M frontend/dashboards/tests/ui/nav-permissions.spec.ts

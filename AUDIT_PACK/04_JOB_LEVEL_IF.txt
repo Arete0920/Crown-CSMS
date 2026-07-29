@@ -1,6 +1,0 @@
-.github/workflows/crown-magus0-gate.yml:239 job=dep-audit if=github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-.github/workflows/deploy-prod-dispatch.yml:671 job=notification if=always()
-.github/workflows/deploy-prod.yml:631 job=notification if=always()
-.github/workflows/lockdown-golden-path-gate.yml:62 job=lockdown-gate if=github.event_name != 'pull_request' || needs.changes.outputs.runtime_changed == 'true'
-.github/workflows/prod-rollback-on-failure.yml:22 job=rollback if=${{ github.event.workflow_run.conclusion == 'failure' }}
-.github/workflows/proof-ceremony-after-prod.yml:31 job=proof if=${{ github.event.workflow_run.conclusion == 'success' || (github.event.workflow_run.conclusion == 'failure' && contains(github.event.workflow_run.name, 'Production Deploy')) }}

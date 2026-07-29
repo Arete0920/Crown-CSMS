@@ -1,6 +1,0 @@
-=== MARKERS ===
-STAGE2_SLICE8_LOCAL_SCOPE_PASS
-STAGE2_SLICE8_LOCAL_SCAFFOLD_CREATED
-No commit performed.
-No push performed.
-=== CHANGED FILES ===

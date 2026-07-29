@@ -1,1 +1,0 @@
-{"detail": "Unknown X-School-Id.", "code": "invalid_tenant"}

@@ -1,2 +1,0 @@
-=== MIGRATION CHECK ===
-No changes detected

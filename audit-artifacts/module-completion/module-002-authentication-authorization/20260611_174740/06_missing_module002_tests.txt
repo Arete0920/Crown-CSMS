@@ -1,5 +1,0 @@
-﻿backend/tests/test_module002_auth_authorization.py
-backend/tests/test_rbac_contract.py
-backend/tests/test_rbac_matrix_readonly.py
-backend/tests/test_rbac_matrix_writes.py
-backend/tests/test_rbac_proof.py

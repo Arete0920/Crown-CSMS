@@ -1,1 +1,0 @@
-﻿{"total_count":2,"branch_policies":[{"id":45230033,"node_id":"MDE2OkdhdGVCcmFuY2hQb2xpY3k0NTIzMDAzMw==","name":"main","type":"branch"},{"id":46893019,"node_id":"MDE2OkdhdGVCcmFuY2hQb2xpY3k0Njg5MzAxOQ==","name":"prod-deploy-*","type":"tag"}]}

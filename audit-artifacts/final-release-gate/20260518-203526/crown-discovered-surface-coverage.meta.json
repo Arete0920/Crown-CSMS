@@ -1,9 +1,0 @@
-﻿{
-    "name":  "crown discovered surface coverage",
-    "command":  "node scripts/testing/check-crown-discovered-surface-coverage.mjs",
-    "executable":  "C:\\Program Files\\nodejs\\node.exe",
-    "exit_code":  0,
-    "timeout_seconds":  300,
-    "stdout":  "audit-artifacts\\final-release-gate\\20260518-203526\\crown-discovered-surface-coverage.stdout.txt",
-    "stderr":  "audit-artifacts\\final-release-gate\\20260518-203526\\crown-discovered-surface-coverage.stderr.txt"
-}

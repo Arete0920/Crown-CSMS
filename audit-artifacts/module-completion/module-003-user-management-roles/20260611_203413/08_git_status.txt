@@ -1,6 +1,0 @@
-﻿=== git status --short ===
-?? audit-artifacts/module-completion/module-003-user-management-roles/
-?? audit-artifacts/module-completion/module-003-user-role-binding.csv
-?? backend/docs/
-?? backend/tests/pytest-output/
-?? backend/tests/test_user_management.py

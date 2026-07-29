@@ -1,9 +1,0 @@
-backend/reenrollment/tests/test_views.py::TestAuth::test_unauthenticated_create_denied
-backend/reenrollment/tests/test_views.py::TestAuth::test_missing_school_header_denied
-backend/reenrollment/tests/test_views.py::TestTenantIsolation::test_configure_wrong_school_404
-backend/reenrollment/tests/test_views.py::TestTenantIsolation::test_candidates_wrong_school_404
-backend/reenrollment/tests/test_views.py::TestTenantIsolation::test_select_wrong_school_404
-backend/reenrollment/tests/test_views.py::TestTenantIsolation::test_commit_wrong_school_404
-backend/reenrollment/tests/test_views.py::TestTenantIsolation::test_verify_wrong_school_404
-
-7/28 tests collected (21 deselected) in 0.18s

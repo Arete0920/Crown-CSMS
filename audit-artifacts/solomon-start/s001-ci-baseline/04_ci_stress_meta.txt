@@ -1,6 +1,0 @@
-Harness: scripts/ci-stress-test.sh
-Proof command: pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/validate-workflows.ps1
-Runs: 5
-Started UTC: 2026-05-14T07:56:54Z
-Finished UTC: 2026-05-14T07:57:00Z
-Pass count: 5/5

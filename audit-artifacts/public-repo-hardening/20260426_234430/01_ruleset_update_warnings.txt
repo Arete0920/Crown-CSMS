@@ -1,2 +1,0 @@
-Could not parse or update ruleset_main.json : A parameter cannot be found that matches parameter name 'Depth'.
-Could not parse or update ruleset_release.json : A parameter cannot be found that matches parameter name 'Depth'.

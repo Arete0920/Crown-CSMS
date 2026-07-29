@@ -1,3 +1,0 @@
-=== BACKEND FILE CHECK ===
-True
-System check identified no issues (0 silenced).

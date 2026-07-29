@@ -1,2 +1,0 @@
-On branch readiness/sandbox-operator-freeze-20260427_222113
-nothing to commit, working tree clean
