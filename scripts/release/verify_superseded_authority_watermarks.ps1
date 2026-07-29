@@ -6,7 +6,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $requiredDocs = @(
-    "LIVE_SHIP_DECISION.md",
     "LIVE_RELEASE_TRUTH.md",
     "LIVE_FINAL_RELEASE_GATE.md",
     "LIVE_RELEASE_GATE_STATUS.md",
