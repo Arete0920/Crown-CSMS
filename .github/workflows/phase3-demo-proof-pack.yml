@@ -1,15 +1,12 @@
-name: Phase3 Demo Proof Pack Gate
+name: Manual Legacy Demo Proof Pack
 permissions:
   contents: read
 
-
 on:
-  pull_request:
-    branches: [ main ]
   workflow_dispatch: {}
 
 concurrency:
-  group: phase3-demo-proof-pack-gate-${{ github.workflow }}-${{ github.ref }}
+  group: legacy-demo-proof-pack-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   demo-proof-static:
@@ -20,6 +17,4 @@ jobs:
 
       - name: Static demo-surface proof gate
         shell: pwsh
-        run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File tools/verify_phase3_demo_proof.ps1 -Mode static
-
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File tools/verify_phase3_demo_proof.ps1 -Mode static

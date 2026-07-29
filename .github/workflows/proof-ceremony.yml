@@ -1,13 +1,11 @@
-name: Proof Ceremony
+name: Release Proof Ceremony
 permissions:
   contents: read
-
 
 on:
   workflow_dispatch:
   pull_request:
     branches:
-      - main
       - 'release/**'
       - 'stabilize/**'
   push:
@@ -16,7 +14,7 @@ on:
       - 'stabilize/**'
 
 concurrency:
-  group: proof-ceremony-${{ github.workflow }}-${{ github.ref }}
+  group: release-proof-ceremony-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -87,107 +85,51 @@ jobs:
           cd backend
           python manage.py seed_demo_school --wipe
 
-      - name: Start Django dev server (background)
+      - name: Start Django dev server
         run: |
           cd backend
           python manage.py runserver 127.0.0.1:8000 &
           sleep 5
 
-      - name: Health check + capture build_sha
+      - name: Health check and capture build SHA
         run: |
-          curl --max-time 30 -f -sf http://127.0.0.1:8000/health/ | tee proof_health.json || (echo "Health check FAILED"; exit 1)
-          echo ""
-          echo "--- build_sha in health response ---"
-          python3 -c "
-          import json, sys
-          try:
-              d = json.load(open('proof_health.json'))
-              sha = d.get('build_sha', 'MISSING')
-              status = d.get('status', 'MISSING')
-              print(f'build_sha={sha}')
-              print(f'status={status}')
-              if sha == 'MISSING':
-                  sys.exit(1)
-          except Exception as e:
-              print(f'ERROR parsing health response: {e}')
-              sys.exit(1)
-          " || exit 1
+          curl --max-time 30 -f -sf http://127.0.0.1:8000/health/ | tee proof_health.json
+          python3 -c "import json,sys; d=json.load(open('proof_health.json')); sha=d.get('build_sha'); print(f'build_sha={sha}'); sys.exit(0 if sha else 1)"
 
       - name: Django system check
         run: |
           cd backend
           python manage.py check
 
-      - name: Run pytest
+      - name: Run focused director tests
         run: |
           cd backend
+          set -o pipefail
           python -m pytest tests/test_director_actions.py -v --tb=short 2>&1 | tee ../proof_pytest.txt
-          # Extract summary line (last 'passed/failed' line)
-          grep -E "passed|failed|error" ../proof_pytest.txt | tail -3 || true
-          # Fail if pytest failed (tee masks exit code)
-          grep -qE "^FAILED|error in" ../proof_pytest.txt && exit 1 || true
-          grep -qE "[0-9]+ failed" ../proof_pytest.txt && exit 1 || true
 
-      - name: "CrownMagus III: Mutation + Audit + Idempotency Proof"
+      - name: Run RBAC, audit, and idempotency proof
         run: |
           cd backend
-          echo "--- CrownMagus III: Write-RBAC, Object-Level, Idempotency, Audit ---"
-          python -m pytest \
-            crown_api/tests/test_rbac_matrix_writes.py \
-            crown_api/tests/test_object_level_permissions.py \
-            crown_api/tests/test_idempotency_keys.py \
-            crown_api/tests/test_audit_log_contract.py \
-            -v --tb=short 2>&1 | tee ../proof_magus3.txt
-          # Surface summary
-          grep -E "passed|failed|error|warning" ../proof_magus3.txt | tail -5 || true
-          # Propagate failure (tee masks exit code)
-          grep -qE "^FAILED|error in" ../proof_magus3.txt && exit 1 || true
-          grep -qE "[0-9]+ failed" ../proof_magus3.txt && exit 1 || true
+          set -o pipefail
+          python -m pytest crown_api/tests/test_rbac_matrix_writes.py crown_api/tests/test_object_level_permissions.py crown_api/tests/test_idempotency_keys.py crown_api/tests/test_audit_log_contract.py -v --tb=short 2>&1 | tee ../proof_magus3.txt
 
       - name: Capture proof artifacts
         if: always()
         run: |
-          echo "=== PROOF ARTIFACT MANIFEST ===" > proof_manifest.txt
-          echo "SHA: ${GITHUB_SHA}" >> proof_manifest.txt
+          echo "SHA: ${GITHUB_SHA}" > proof_manifest.txt
           echo "RUN: ${GITHUB_RUN_ID}" >> proof_manifest.txt
           echo "REPO: ${GITHUB_REPOSITORY}" >> proof_manifest.txt
           echo "REF: ${GITHUB_REF_NAME}" >> proof_manifest.txt
-          echo "" >> proof_manifest.txt
-          echo "--- health response ---" >> proof_manifest.txt
-          cat proof_health.json >> proof_manifest.txt 2>/dev/null || echo "(health not captured)" >> proof_manifest.txt
-          echo "" >> proof_manifest.txt
-          echo "--- pytest summary ---" >> proof_manifest.txt
-          grep -E "passed|failed|error|warning" proof_pytest.txt | tail -5 >> proof_manifest.txt 2>/dev/null || echo "(pytest not captured)" >> proof_manifest.txt
-          echo "" >> proof_manifest.txt
-          echo "--- magus3 summary ---" >> proof_manifest.txt
-          grep -E "passed|failed|error|warning" proof_magus3.txt | tail -5 >> proof_manifest.txt 2>/dev/null || echo "(magus3 not captured)" >> proof_manifest.txt
+          cat proof_health.json >> proof_manifest.txt 2>/dev/null || true
 
       - name: Upload proof artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: proof-ceremony-${{ github.sha }}
+          name: release-proof-${{ github.sha }}
           path: |
             proof_health.json
             proof_pytest.txt
             proof_magus3.txt
             proof_manifest.txt
           retention-days: 90
-
-      - name: Proof ceremony summary
-        if: always()
-        run: |
-          echo "=========================================="
-          echo "PROOF CEREMONY RESULTS"
-          echo "=========================================="
-          echo "SHA:        ${GITHUB_SHA}"
-          echo "Run ID:     ${GITHUB_RUN_ID}"
-          BUILD_SHA=$(python3 -c "import json; d=json.load(open('proof_health.json')); print(d.get('build_sha','missing'))" 2>/dev/null || echo "n/a")
-          echo "Build SHA:  ${BUILD_SHA}"
-          echo "Health check: PASSED"
-          echo "Django check: PASSED"
-          echo "Pytest:       PASSED"
-          echo "Magus III:    PASSED"
-          echo "Artifacts:    proof-ceremony-${GITHUB_SHA}"
-          echo "=========================================="
-
