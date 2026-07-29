@@ -2,7 +2,7 @@
 
 **Status:** CANONICAL ARCHITECTURE GATEWAY  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-28
+**Effective date:** 2026-07-29
 
 ## Authority
 
@@ -14,11 +14,12 @@ Architecture documentation describes system structure, trust boundaries, canonic
 2. `SYSTEM_OVERVIEW.md` — repository-visible implementation and convergence status.
 3. `DECISION_INDEX.md` — authoritative list of accepted ADRs and decisions still required.
 4. `decisions/ADR-0001-tenant-resolution-and-enforcement.md` — canonical tenant contract.
-5. `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` — canonical operational identity-write authority.
-6. `CANONICAL_IDENTITY_CONSUMER_INVENTORY.md` — identity compatibility and convergence inventory.
-7. `../engineering/DEV_SETUP.md` — supported development setup.
-8. `../operations/README.md` — deployment, recovery, and operator navigation.
-9. `../CURRENT_RELEASE_STATUS.md` — current release authority.
+5. `TENANT_ENFORCEMENT_IMPLEMENTATION_STATUS.md` — source-grounded tenant implementation status and remaining Lane 2 evidence boundary.
+6. `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` — canonical operational identity-write authority.
+7. `CANONICAL_IDENTITY_CONSUMER_INVENTORY.md` — identity compatibility and convergence inventory.
+8. `../engineering/DEV_SETUP.md` — supported development setup.
+9. `../operations/README.md` — deployment, recovery, and operator navigation.
+10. `../CURRENT_RELEASE_STATUS.md` — current release authority.
 
 ## Architecture domains
 
@@ -39,6 +40,7 @@ This directory governs durable descriptions of:
 - `ARCHITECTURE_MAP.md`, this gateway, and `DECISION_INDEX.md` are canonical architecture navigation.
 - An ADR is authoritative only when accepted and listed in `DECISION_INDEX.md`.
 - `SYSTEM_OVERVIEW.md` describes verified source behavior and implementation debt; it is not an ADR.
+- `TENANT_ENFORCEMENT_IMPLEMENTATION_STATUS.md` is a controlled source-grounded implementation record; it does not certify runtime safety.
 - Inventories describe observed consumers and compatibility obligations; they do not create authority by themselves.
 - Completion matrices, test results, generated diagrams, and audit output are not architecture authority.
 - New target architecture must be labeled as target or proposed until implemented and verified.

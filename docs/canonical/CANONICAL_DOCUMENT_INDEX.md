@@ -39,6 +39,7 @@ Accepted ADRs are authoritative only when listed in `docs/architecture/DECISION_
 |---|---|---|
 | Development provenance | `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md` | CONTROLLED SUPPORTING; lineage only |
 | Identity compatibility inventory | `docs/architecture/CANONICAL_IDENTITY_CONSUMER_INVENTORY.md` | CONTROLLED ARCHITECTURE SUPPORTING RECORD |
+| Tenant enforcement implementation status | `docs/architecture/TENANT_ENFORCEMENT_IMPLEMENTATION_STATUS.md` | CONTROLLED ARCHITECTURE SUPPORTING RECORD; source status only, not runtime certification |
 
 ## Active repository boundary
 
@@ -65,6 +66,7 @@ Normal onboarding must not direct readers to editor-specific, assistant-specific
 - `CANONICAL DILIGENCE AUTHORITY` — current diligence navigation, evidence-status, and claim-boundary authority.
 - `CANONICAL SUPPORTING OVERVIEW` — source-grounded implementation overview consistent with accepted decisions.
 - `CONTROLLED SUPPORTING` — useful information that does not override release, security, architecture, operational, or diligence authority.
+- `CONTROLLED ARCHITECTURE SUPPORTING RECORD` — source-grounded inventory or implementation status that does not create architecture authority or certify runtime behavior.
 - `HISTORICAL` — repository history only; not active navigation.
 - `OBSOLETE` — removed from the current tree.
 
