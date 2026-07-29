@@ -25,6 +25,7 @@ Evidence anchors:
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -249,13 +250,13 @@ class PaymentOwnershipBoundaryTests(_ObjPermBase):
 
 
 # ---------------------------------------------------------------------------
-# 3. Non-gated shared resources — any same-school user has read access
+# 3. Role-gated shared resources — authorized same-school users share access
 # ---------------------------------------------------------------------------
 
 class SharedSchoolResourceAccessTests(_ObjPermBase):
     """
-    Billing installment plans created by user_plain are also accessible to user_staff
-    and vice versa — there is no per-creator restriction.
+    Billing installment plans created by one finance-authorized user are also
+    accessible to another finance-authorized user in the same school.
 
     This asserts the current authorization boundary explicitly:
     school-scoped resources are shared within the school.
@@ -269,12 +270,17 @@ class SharedSchoolResourceAccessTests(_ObjPermBase):
         "cadence_days": 30,
     }
 
-    def test_shared_installment_plan_list_accessible_to_all_school_members(self):
+    def test_shared_installment_plan_list_accessible_to_authorized_school_members(self):
         """
-        User_plain creates a plan. User_staff can see it (GET list).
-        Demonstrates school-level sharing (not creator-only visibility).
+        One finance-authorized user creates a plan. Another finance-authorized
+        user in the same school can see it, proving sharing is tenant- and
+        role-scoped rather than creator-scoped.
         """
-        # Create as plain user
+        finance_group, _ = Group.objects.get_or_create(name="finance_admin")
+        self.user_plain.groups.add(finance_group)
+        self.user_staff.groups.add(finance_group)
+
+        # Create as the first finance-authorized user
         self.client.force_authenticate(user=self.user_plain)
         create_resp = self.client.post(
             INSTALLMENT_PLANS_URL,
@@ -282,13 +288,13 @@ class SharedSchoolResourceAccessTests(_ObjPermBase):
             format="json",
             HTTP_X_SCHOOL_ID=str(self.school.id),
         )
-        if create_resp.status_code not in (200, 201):
-            self.skipTest(
-                f"Plan creation returned {create_resp.status_code} — "
-                f"skipping shared access test."
-            )
+        self.assertIn(
+            create_resp.status_code,
+            (200, 201),
+            msg=f"Authorized plan creation returned {create_resp.status_code}.",
+        )
 
-        # Read as staff user in same school
+        # Read as a different finance-authorized user in the same school
         self.client.force_authenticate(user=self.user_staff)
         list_resp = self.client.get(
             INSTALLMENT_PLANS_URL,
