@@ -41,7 +41,7 @@ Accepted ADRs are authoritative only when listed in `docs/architecture/DECISION_
 | Identity compatibility inventory | `docs/architecture/CANONICAL_IDENTITY_CONSUMER_INVENTORY.md` | CONTROLLED ARCHITECTURE SUPPORTING RECORD |
 | Tenant enforcement implementation status | `docs/architecture/TENANT_ENFORCEMENT_IMPLEMENTATION_STATUS.md` | CONTROLLED ARCHITECTURE SUPPORTING RECORD; source status only, not runtime certification |
 | Privacy and compliance evidence status | `docs/compliance/PRIVACY_COMPLIANCE_EVIDENCE_STATUS.md` | CONTROLLED COMPLIANCE SUPPORTING RECORD; evidence status only, not legal certification |
-| Regulated and sensitive data inventory | `docs/compliance/REGULATED_DATA_INVENTORY.md` | CONTROLLED COMPLIANCE SUPPORTING RECORD; partial source inventory pending #1759 completion |
+| Regulated and sensitive data inventory | `docs/compliance/REGULATED_DATA_INVENTORY.md` | CONTROLLED COMPLIANCE SUPPORTING RECORD; repository-bounded inventory completed under #1759, without runtime or legal certification |
 
 ## Active repository boundary
 
