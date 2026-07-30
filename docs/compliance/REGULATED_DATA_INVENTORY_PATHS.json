@@ -1,0 +1,179 @@
+{
+  "schema_version": "1.0",
+  "status": "controlled-compliance-supporting-record",
+  "scope": "comprehensive-repository-bounded",
+  "observed_source_identity": "ea79bec207f9d82b617235f86ab3173d8f52bc0e",
+  "generated_date": "2026-07-29",
+  "controlling_issues": [1764, 1759, 1629, 1619],
+  "boundaries": {
+    "production_runtime_certified": false,
+    "legal_compliance_certified": false,
+    "active_vendors_inferred": false,
+    "payment_processing_authorized": false
+  },
+  "data_subjects": [
+    "student",
+    "applicant",
+    "guardian_parent_family_household",
+    "employee_staff_teacher_administrator",
+    "donor_volunteer_coach_reviewer_approver",
+    "customer_administrator_support_user",
+    "authentication_or_service_identity",
+    "sandbox_demo_persona"
+  ],
+  "model_domain_paths": {
+    "tenant_school_identity": [
+      "backend/tenants/models.py",
+      "backend/core/tenant_models.py",
+      "backend/core/models.py"
+    ],
+    "family_household_guardian": [
+      "backend/households/models.py",
+      "backend/core/models.py",
+      "backend/applications/models.py"
+    ],
+    "student_records_academics": [
+      "backend/core/models.py",
+      "backend/student_records/models.py",
+      "backend/academics/models.py",
+      "backend/academics_ro/models.py",
+      "backend/classroom/models.py",
+      "backend/gradebook/models.py",
+      "backend/curriculum/models.py",
+      "backend/curricula/models.py"
+    ],
+    "identity_authorization": [
+      "backend/crown_api/auth_models.py",
+      "backend/identity/models.py",
+      "backend/core/models.py"
+    ],
+    "admissions_enrollment": [
+      "backend/admissions/models.py",
+      "backend/applications/models.py",
+      "backend/reenrollment/models.py",
+      "backend/onboarding/models.py"
+    ],
+    "attendance_aftercare": [
+      "backend/attendance/models.py",
+      "backend/aftercare/models.py",
+      "backend/home_academy/models.py"
+    ],
+    "discipline_safety": [
+      "backend/discipline/models.py",
+      "backend/safety/models.py"
+    ],
+    "spiritual_pastoral": [
+      "backend/spiritual_life/models.py",
+      "backend/solomon/models.py"
+    ],
+    "financial_aid": [
+      "backend/financial_aid/models.py",
+      "backend/aid/models.py"
+    ],
+    "billing_finance_accounting": [
+      "backend/billing/models.py",
+      "backend/billing_wizard/models.py",
+      "backend/ledger/models.py",
+      "backend/finance/models.py",
+      "backend/journal/models.py",
+      "backend/accounting/models.py",
+      "backend/payments/models.py"
+    ],
+    "communications_audit_signals": [
+      "backend/comms/models.py",
+      "backend/audit/models.py",
+      "backend/signals/models.py"
+    ],
+    "hr_professional_development": [
+      "backend/hr/models.py",
+      "backend/pdhub/models.py"
+    ],
+    "advancement_outreach_service": [
+      "backend/advancement/models.py",
+      "backend/outreach/models.py",
+      "backend/servicehours/models.py"
+    ],
+    "athletics_transport_facilities": [
+      "backend/athletics/models.py",
+      "backend/transportation/models.py",
+      "backend/facops/models.py"
+    ],
+    "analytics_platform_support": [
+      "backend/analytics/models.py",
+      "backend/platform_ops/models.py",
+      "backend/support/models.py",
+      "backend/subscriptions/models.py"
+    ],
+    "integrations_sandbox": [
+      "backend/integrations/models.py",
+      "backend/sandbox_demo/models.py"
+    ]
+  },
+  "processing_paths": {
+    "exports_reports": [
+      "backend/crown_api/exports/model_resolver.py",
+      "backend/core/models_export.py",
+      "frontend/dashboards/src/components/exports/ExportButton.tsx",
+      "frontend/dashboards/src/components/exports/BulkExportMenu.tsx"
+    ],
+    "browser_storage_and_client_state": [
+      "frontend/dashboards/src/lib/authGuard.js",
+      "frontend/dashboards/src/auth/msalConfig.js",
+      "frontend/dashboards/src/utils/authClient.js",
+      "frontend/dashboards/src/hooks/useWizardDraft.js",
+      "frontend/dashboards/src/hooks/usePersistentTableState.js",
+      "frontend/dashboards/src/lib/admissionsStartIntake.js",
+      "frontend/dashboards/src/lib/admissionsLifecycleState.js",
+      "frontend/dashboards/src/sandbox/sandboxTelemetry.js"
+    ],
+    "retention_deletion_backup": [
+      "backend/core/models_retention.py",
+      "backend/core/services/retention_service.py",
+      "backend/core/tasks.py",
+      "backend/apps/compliance/management/commands/compliance_retention_review.py",
+      "tools/generate_retention_control_inventory.py",
+      "docs/compliance/RETENTION_POLICY.md",
+      "docs/compliance/DATA_RETENTION_POLICY.md",
+      "docs/compliance/BACKUP_RESTORE_POLICY.md"
+    ],
+    "audit_logging_derived_data": [
+      "backend/audit/models.py",
+      "backend/signals/models.py",
+      "backend/signals/engine.py",
+      "backend/analytics/models.py",
+      "backend/analytics/tasks.py",
+      "backend/platform_ops/models.py"
+    ],
+    "external_integration_surfaces": [
+      "backend/integrations/models.py",
+      "backend/comms/models.py",
+      "backend/payments/models.py",
+      "frontend/dashboards/src/auth/msalConfig.js"
+    ]
+  },
+  "high_risk_categories": [
+    "identity_and_authentication",
+    "custody_and_family_relationships",
+    "education_records",
+    "discipline_and_safety",
+    "health_adjacent_and_accommodation",
+    "counseling_pastoral_and_spiritual_life",
+    "financial_aid_and_household_finance",
+    "free_text_and_json",
+    "derived_analytics_and_signals",
+    "exports_uploads_and_documents"
+  ],
+  "explicit_unknowns": [
+    "active_production_vendors_and_subprocessors",
+    "processing_regions",
+    "production_storage_and_log_destinations",
+    "runtime_tenant_and_role_enforcement",
+    "actual_browser_cookie_and_storage_values",
+    "retention_and_purge_enforcement",
+    "backup_expiration_and_deletion_propagation",
+    "legal_hold_execution",
+    "executed_contracts_and_dpas",
+    "jurisdiction_specific_legal_applicability",
+    "complete_deployed_system_data_flow"
+  ]
+}
