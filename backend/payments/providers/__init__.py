@@ -1,6 +1,3 @@
-from .stripe_connect import StripeConnect
-
-
 class DeferredPaymentGateway:
     def _deferred(self):
         return {
@@ -38,4 +35,4 @@ def get_gateway(provider_code: str):
     return DeferredPaymentGateway()
 
 
-__all__ = ["DeferredPaymentGateway", "StripeConnect", "get_gateway"]
+__all__ = ["DeferredPaymentGateway", "get_gateway"]
