@@ -14,24 +14,29 @@ It does not certify production readiness, buyer readiness, legal compliance, sec
 
 ## Current controlling posture
 
-The controlling release and freeze authority is:
+The sole controlling production-readiness and buyer-handoff program is:
 
-- `docs/CURRENT_RELEASE_STATUS.md`
+- GitHub issue `#1619` and its eight open lane issues `#1620` through `#1632`.
+
+The current repository status summary is:
+
+- `docs/CURRENT_RELEASE_STATUS.md`.
 
 Current repository posture:
 
-- repository state: frozen;
+- repository state: bounded remediation before a future immutable release-candidate freeze;
 - production: not approved / no-go / hold;
 - buyer operational turnover: not approved;
 - external payment processing: deferred, disabled, and required to fail closed;
 - protected-history remediation: not verified complete.
 
-No historical issue closure, pull request, workflow result, dated release record, generated report, or source-file existence overrides the current release authority.
+No historical issue closure, pull request, workflow result, dated release record, generated report, or source-file existence overrides #1619, current exact-SHA evidence, deployed-runtime evidence, or explicit Founder/Product Owner authority.
 
 ## Canonical navigation
 
 | Area | Canonical source | What it establishes |
 |---|---|---|
+| Controlling readiness program | GitHub issue `#1619` | Eight-lane production-readiness and buyer-handoff authority |
 | Repository orientation | `README.md` | Entry point, scope, and repository posture |
 | Repository structure | `docs/canonical/REPOSITORY_MANIFEST.md` | Active source and documentation boundaries |
 | Documentation authority | `docs/canonical/CANONICAL_DOCUMENT_INDEX.md` | Which documents are authoritative |
@@ -45,7 +50,7 @@ No historical issue closure, pull request, workflow result, dated release record
 | Security reporting | `SECURITY.md` | Vulnerability reporting and sensitive-information handling |
 | Ownership transfer | `docs/ownership/OWNER_HANDOFF.md` | Repository and external-service transfer requirements |
 | Development provenance | `docs/provenance/CROWN_DEVELOPMENT_PROVENANCE.md` | Controlled lineage and contributor attribution |
-| Current release posture | `docs/CURRENT_RELEASE_STATUS.md` | Canonical no-go, freeze, payment, and history-remediation authority |
+| Current release posture | `docs/CURRENT_RELEASE_STATUS.md` | Current no-go, bounded-remediation, payment, and history-remediation summary |
 | Known limitations | `docs/KNOWN_LIMITATIONS.md` | Current limitations and unverified boundaries |
 
 ## Eight-lane evidence status
@@ -60,7 +65,7 @@ The controlling program is GitHub issue `#1619`. The lane issues remain evidence
 | Secrets and privileged access | `#1628` | Secret-scanning and redacted adjudication records exist | **UNPROVEN** — protected-history rewrite, key retirement, rotation, revocation, failed-rotation recovery, and break-glass exercises not verified complete |
 | Privacy, records, contracts, and legal readiness | `#1629` | Security and product controls exist | **UNPROVEN** — complete data map, retention/deletion, incident, contract, and qualified legal reconciliation not completed |
 | CI/CD, infrastructure, observability, exact-SHA deployment | `#1630` | CI and deployment definitions exist | **UNPROVEN** — terminal same-SHA CI, deployed identity, monitoring, and infrastructure evidence are not complete for a current immutable release candidate |
-| Documentation, diligence, and owner handoff | `#1631` | Canonical documentation and this index exist | **DOCUMENTATION RECONCILED; EXTERNAL EVIDENCE DEPENDENCIES REMAIN** |
+| Documentation, diligence, and owner handoff | `#1631` | Canonical documentation and this index exist | **DOCUMENTATION RECONCILIATION ACTIVE; EXTERNAL EVIDENCE DEPENDENCIES REMAIN** |
 | Final production and buyer authorization | `#1632` | Decision criteria are documented | **NOT AUTHORIZED** — prerequisite lanes have not passed on one immutable release identity |
 
 ## Security and history-remediation boundary
@@ -98,31 +103,32 @@ Those conclusions require current product behavior, operating procedures, contra
 
 A diligence reviewer or authorized successor should proceed in this order:
 
-1. Read `docs/CURRENT_RELEASE_STATUS.md`.
-2. Read `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`.
-3. Read this index.
-4. Review `README.md` and `docs/canonical/REPOSITORY_MANIFEST.md`.
-5. Review architecture through `docs/architecture/README.md`.
-6. Review setup and reproducibility through `docs/engineering/DEV_SETUP.md`.
-7. Review operational controls through `docs/operations/README.md`.
-8. Review security handling through `SECURITY.md`.
-9. Review ownership-transfer requirements through `docs/ownership/OWNER_HANDOFF.md`.
-10. Review open issues `#1619` and `#1620` through `#1632` for live evidence status.
+1. Review GitHub issue `#1619` and the eight lane issues for live controlling status.
+2. Read `docs/CURRENT_RELEASE_STATUS.md`.
+3. Read `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`.
+4. Read this index.
+5. Review `README.md` and `docs/canonical/REPOSITORY_MANIFEST.md`.
+6. Review architecture through `docs/architecture/README.md`.
+7. Review setup and reproducibility through `docs/engineering/DEV_SETUP.md`.
+8. Review operational controls through `docs/operations/README.md`.
+9. Review security handling through `SECURITY.md`.
+10. Review ownership-transfer requirements through `docs/ownership/OWNER_HANDOFF.md`.
 11. Independently verify exact-SHA CI, deployment, runtime, recovery, secret, privacy/legal, and authorization evidence before relying on any readiness claim.
 
 ## Historical and non-authoritative material
 
 The repository retains dated release, review, planning, certification, and proof-related files for history or source context. Unless listed in `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`, those files are not current authority and must not override:
 
+- GitHub issue `#1619` and its eight lanes;
 - `docs/CURRENT_RELEASE_STATUS.md`;
 - `docs/canonical/CANONICAL_DOCUMENT_INDEX.md`;
 - accepted decisions listed in `docs/architecture/DECISION_INDEX.md`;
-- the live state and evidence in controlling GitHub issues.
+- current exact-SHA and deployed-runtime evidence.
 
 Historical documents should be treated as provenance only. Unsupported `SHIP`, `RELEASE_READY`, `100% complete`, certification, compliance, recovery, production, or buyer-readiness language is not current authority.
 
 ## Lane 7 completion boundary
 
-This index completes the repository-navigation portion of Lane 7 by providing one canonical, navigable diligence map and explicit claim boundaries.
+This index provides a canonical, navigable diligence map and explicit claim boundaries. It does not by itself complete Lane 7.
 
 Lane 7 must not be represented as full buyer-handoff completion until repository documentation is reconciled with current runtime, deployment, recovery, secret, privacy/legal, external-service ownership, and successor-identity evidence. Those dependencies require evidence outside documentation and, in several cases, outside the GitHub connector.
