@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 
 from advancement.models_stage3_4 import EventSponsorPlacement, Receipt, SponsorAsset
 from advancement.receipt_render import make_receipt_pdf_bytes
-from advancement.stripe_helpers import cents_to_decimal, compute_totals_from_line_items
+from advancement.payment_line_items import cents_to_decimal, compute_totals_from_line_items
 
 
 def _school_and_user():
@@ -43,7 +43,7 @@ def _authed_client(user):
     return client
 
 
-class StripeHelpersTest(TestCase):
+class PaymentLineItemsTest(TestCase):
     def test_cents_to_decimal(self):
         self.assertEqual(cents_to_decimal(2500), Decimal("25.00"))
         self.assertEqual(cents_to_decimal(0), Decimal("0.00"))

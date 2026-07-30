@@ -1,10 +1,10 @@
 """
-Stage 3.2 – Stripe Checkout seat ordering services.
+Stage 3.2 – provider-neutral seat ordering services.
 
 Flow:
 1. Buyer picks seats → Stage 3.1 hold_seats_strict() puts a SeatHold
-2. Buyer clicks "Pay" → create_seat_checkout_session() creates PendingSeatOrder + Stripe session
-3. Stripe webhooks fire → stripe_webhook view calls:
+2. Buyer clicks "Pay" → create_seat_checkout_session() creates PendingSeatOrder + deferred checkout session
+3. An authorized provider callback may eventually call:
      already_processed_event() / mark_event_processed() (idempotency)
      fulfill_paid_order() → tickets + TicketSeat + EmailOutbox entry
 4. Buyer polls /orders/<id>/status/ until status == "fulfilled"
@@ -61,7 +61,7 @@ def create_seat_checkout_session(
     cancel_url: str | None = None,
 ) -> PendingSeatOrder:
     """
-    Create a PendingSeatOrder and initiate a Stripe Checkout session.
+    Create a PendingSeatOrder and initiate a provider-neutral checkout session.
 
     Returns the PendingSeatOrder instance (caller redirects buyer to .checkout_url).
     """
@@ -102,7 +102,7 @@ def create_seat_checkout_session(
             "school_id": str(school_id),
             "event_id": str(event_id),
             "customer_email": purchaser_email,
-            # Stage 3.4: optional donation presets (stripped by StripeProvider before sending to Stripe)
+            # Stage 3.4: optional donation presets for a future authorized provider
             "donation_presets_cents": _donation_presets_cents(),
         },
     )
