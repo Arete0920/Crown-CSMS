@@ -4,6 +4,7 @@ source =
 omit =
     */migrations/*
     */tests/*
+    */tests.py
     */quarantine_old_tests/*
     */venv/*
     */node_modules/*
