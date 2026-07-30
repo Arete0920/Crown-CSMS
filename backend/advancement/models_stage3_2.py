@@ -1,7 +1,7 @@
 """
-Stage 3.2 Models – Stripe Checkout seat ordering pipeline.
+Stage 3.2 Models – provider-neutral seat ordering pipeline.
 
-PendingSeatOrder tracks a buyer's intent to purchase specific seats via Stripe.
+PendingSeatOrder tracks a buyer's intent to purchase specific seats through a deferred provider-neutral checkout flow.
 ProcessedWebhookEvent ensures idempotent webhook processing.
 """
 from __future__ import annotations
@@ -14,7 +14,7 @@ from django.utils import timezone
 
 class PendingSeatOrder(models.Model):
     """
-    Created when a buyer initiates Stripe Checkout for a set of seats.
+    Created when a buyer initiates a provider-neutral checkout for a set of seats.
     Transitions: pending → fulfilled | expired | failed
     """
 
@@ -45,7 +45,7 @@ class PendingSeatOrder(models.Model):
     provider_session_id = models.CharField(max_length=255, blank=True, default="")
     provider_payment_intent_id = models.CharField(max_length=255, blank=True, default="")
 
-    # Checkout redirect URL (Stripe hosted page or success_url for fake)
+    # Checkout redirect URL (provider-hosted page or local success URL for the in-process test double)
     checkout_url = models.URLField(max_length=1024, blank=True, default="")
 
     # Order lifecycle
@@ -79,7 +79,7 @@ class ProcessedWebhookEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school_id = models.UUIDField(null=True, blank=True, db_index=True)
     provider = models.CharField(max_length=40, db_index=True)
-    # The provider's event ID (e.g. Stripe evt_…)
+    # The provider's event ID
     event_id = models.CharField(max_length=255, unique=True)
     processed_at = models.DateTimeField(default=timezone.now)
 

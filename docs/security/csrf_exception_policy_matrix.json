@@ -1,8 +1,7 @@
 {
-  "version": "2026-05-26",
+  "version": "2026-07-30",
   "purpose": "Policy authority for backend csrf_exempt usage. New csrf_exempt usage must be explicitly reviewed and documented here.",
   "entries": [
-    {"type":"csrf_exempt","path":"backend/advancement/api.py","symbol":"stripe_webhook","status":"approved","owner":"Advancement Payments","rationale":"External payment provider webhook cannot send CSRF token.","controls":["Signature verification required","Dedicated webhook secret","Event replay/idempotency controls"]},
     {"type":"csrf_exempt","path":"backend/crown_api/auth_views.py","symbol":"login","status":"approved","owner":"Identity Platform","rationale":"Token-based API login endpoint.","controls":["Credential validation","Rate-limit and lockout controls","No cookie-session auth dependency"]},
     {"type":"csrf_exempt","path":"backend/crown_api/auth_views.py","symbol":"refresh","status":"approved","owner":"Identity Platform","rationale":"Token refresh API endpoint.","controls":["Refresh token validation","Expiry enforcement","Audit-friendly auth logs"]},
     {"type":"csrf_exempt","path":"backend/crown_api/dev_token_views.py","symbol":"dev_token","status":"temporary","owner":"Platform Engineering","rationale":"Development helper for local proof runs.","controls":["Non-production use only","Controlled environment","Sunset candidate for hardening"]},

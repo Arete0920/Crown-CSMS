@@ -597,15 +597,11 @@ if _cors_origins_raw:
     CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
 
 # ---------------------------------------------------------------------------
-# Advancement payment provider
-# Supported values: "fake" (default, dev/test), future: "stripe"
+# Advancement checkout defaults
+# No external payment provider is selected or authorized.
 # ---------------------------------------------------------------------------
-ADVANCEMENT_PAYMENT_PROVIDER = os.getenv("ADVANCEMENT_PAYMENT_PROVIDER", "fake")
 ADVANCEMENT_CURRENCY = os.getenv("ADVANCEMENT_CURRENCY", "usd")
-# Stage 3.2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ Stripe Checkout integration
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-# Public-facing URLs used in Stripe success/cancel redirects
+# Public-facing URLs retained for provider-neutral success/cancel flows.
 PUBLIC_APP_BASE_URL = os.getenv("PUBLIC_APP_BASE_URL", "http://localhost:5173")
 PUBLIC_API_BASE_URL = os.getenv("PUBLIC_API_BASE_URL", "http://localhost:8000")
 

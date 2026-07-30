@@ -5,7 +5,6 @@ Machine authority: docs/security/csrf_exception_policy_matrix.json
 
 | Path | Symbol | Status | Owner |
 |---|---|---|---|
-| backend/advancement/api.py | stripe_webhook | approved | Advancement Payments |
 | backend/crown_api/auth_views.py | login | approved | Identity Platform |
 | backend/crown_api/auth_views.py | refresh | approved | Identity Platform |
 | backend/crown_api/dev_token_views.py | dev_token | temporary | Platform Engineering |
