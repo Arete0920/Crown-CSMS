@@ -11,7 +11,9 @@ def test_module_style_test_files_are_excluded_from_source_coverage() -> None:
     parser = ConfigParser()
     loaded_files = parser.read(coverage_config, encoding="utf-8")
 
-    assert loaded_files == [str(coverage_config)]
+    assert [Path(filename).resolve() for filename in loaded_files] == [
+        coverage_config.resolve()
+    ]
 
     omitted_patterns = {
         pattern.strip()
