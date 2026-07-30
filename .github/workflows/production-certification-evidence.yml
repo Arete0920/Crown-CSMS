@@ -63,19 +63,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/dashboards/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
-
       - name: Validate exact release SHA inputs
         shell: bash
         env:
@@ -179,6 +166,71 @@ jobs:
           else:
               raise SystemExit("Azure deployment did not become ready: " + "; ".join(last))
           PY
+
+      - name: Validate live sandbox invite
+        shell: bash
+        env:
+          API_URL: ${{ inputs.live_api_base_url || vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
+          SANDBOX_INVITE_ID: ${{ vars.CROWN_LIVE_SANDBOX_INVITE_ID || secrets.CROWN_LIVE_SANDBOX_INVITE_ID || '' }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          api_url = os.environ["API_URL"].rstrip("/")
+          invite_id = os.environ["SANDBOX_INVITE_ID"].strip()
+          if not invite_id:
+              raise SystemExit(
+                  "CROWN_LIVE_SANDBOX_INVITE_ID is required for production certification."
+              )
+
+          invite_url = (
+              f"{api_url}/api/v1/sandbox/invites/"
+              f"{urllib.parse.quote(invite_id, safe='')}/"
+          )
+          request = urllib.request.Request(
+              invite_url,
+              headers={"Accept": "application/json"},
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  status = response.status
+                  payload = json.loads(response.read().decode("utf-8", "replace"))
+          except urllib.error.HTTPError as exc:
+              raise SystemExit(
+                  f"Sandbox invite resolution failed with HTTP {exc.code}."
+              ) from exc
+          except (OSError, ValueError) as exc:
+              raise SystemExit(f"Sandbox invite resolution failed: {exc}") from exc
+
+          if status != 200:
+              raise SystemExit(
+                  f"Sandbox invite resolution returned unexpected HTTP {status}."
+              )
+          if payload.get("usable") is not True:
+              raise SystemExit(
+                  "CROWN_LIVE_SANDBOX_INVITE_ID is expired or revoked; "
+                  "rotate it before running production certification."
+              )
+          print("Live sandbox invite is present and usable.")
+          PY
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
 
       - name: Run production certification crawler against deployed runtime
         run: npm run certify:production

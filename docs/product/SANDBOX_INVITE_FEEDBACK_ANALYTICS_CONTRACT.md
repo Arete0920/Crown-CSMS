@@ -14,7 +14,12 @@ This document defines the minimum backend and frontend contract required to supp
 
 ```http
 POST /api/v1/sandbox/invites/
+X-Crown-Ops-Secret: <authorized production ops secret>
 ```
+
+An authenticated staff or superuser session may be used instead of the
+`X-Crown-Ops-Secret` header. Never place either credential in the request body
+or repository content.
 
 Request:
 
@@ -23,7 +28,7 @@ Request:
   "organization_label": "Example Christian Academy",
   "track": "school",
   "allowed_roles": ["school_admin", "admissions_director", "finance_director", "teacher", "parent"],
-  "allowed_seed_packs": ["heritage_core"],
+  "allowed_seed_packs": ["heritage-core"],
   "default_guidance": "guided",
   "expires_at": "2026-06-30T23:59:59Z"
 }
@@ -53,7 +58,7 @@ Response:
   "organization_label": "Example Christian Academy",
   "track": "school",
   "allowed_roles": ["school_admin", "admissions_director"],
-  "allowed_seed_packs": ["heritage_core"],
+  "allowed_seed_packs": ["heritage-core"],
   "default_guidance": "guided",
   "expires_at": "2026-06-30T23:59:59Z",
   "revoked_at": null
@@ -64,6 +69,7 @@ Response:
 
 ```http
 POST /api/v1/sandbox/invites/{invite_id}/revoke/
+X-Crown-Ops-Secret: <authorized production ops secret>
 ```
 
 Response:
