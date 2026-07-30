@@ -1,8 +1,8 @@
 # CROWN Current Release Status
 
-**Date:** 2026-07-29  
+**Date:** 2026-07-30  
 **Repository:** `tcmegahan/Crown2026`  
-**Current observed main SHA:** `ea79bec207f9d82b617235f86ab3173d8f52bc0e`  
+**Current observed main SHA:** `85072d077476bc40cd52ac1cebe6c53faffa580d`  
 **Last functional containment SHA:** `73739d958dd13a5f240782950a6ae19142396d2b`
 
 ## Canonical decision
@@ -35,7 +35,7 @@ No issue state, pull request, automated workflow result, documentation update, o
 
 Current observed `main` at this update:
 
-`ea79bec207f9d82b617235f86ab3173d8f52bc0e`
+`85072d077476bc40cd52ac1cebe6c53faffa580d`
 
 This SHA includes bounded repository cleanup, CI-authority repairs, compliance evidence work, and a Lane 2 authorization-test repair. It is not an approved production release candidate and has not been certified across deployment, runtime, recovery, secrets operations, privacy/legal readiness, or final authorization.
 
