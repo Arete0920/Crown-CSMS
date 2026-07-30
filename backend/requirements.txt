@@ -33,8 +33,6 @@ sentry-sdk>=2.0.0
 # Celery task queue (outbox drain, background jobs)
 celery>=5.4.0
 redis>=5.0.0
-# Payment orchestration — Stripe Connect (optional; only needed if payment_provider=stripe)
-stripe>=10.0.0
 # SMS provider client (used by comms/sms_service.py when SMS is enabled)
 twilio>=9.0.0
 # Board Packet PDF generation (Stage 4)
