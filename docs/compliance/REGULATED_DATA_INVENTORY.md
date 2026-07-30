@@ -1,112 +1,170 @@
 # CROWN Regulated and Sensitive Data Inventory
 
-**Status:** CONTROLLED COMPLIANCE SUPPORTING RECORD / PARTIAL SOURCE INVENTORY  
+**Status:** CONTROLLED COMPLIANCE SUPPORTING RECORD / COMPREHENSIVE REPOSITORY-BOUNDED INVENTORY  
 **Effective date:** 2026-07-29  
-**Observed source identity:** `93d65d61d1aa205e1ddedbfcd770c7927d7a9f01`  
-**Controlling issues:** #1759, #1629, and #1619
+**Observed source identity:** `ea79bec207f9d82b617235f86ab3173d8f52bc0e`  
+**Controlling issues:** #1764, #1759, #1629, and #1619
 
 ## Purpose and boundary
 
-This record inventories regulated and sensitive data evidenced in current repository source. It is intentionally incomplete pending exhaustive model and data-path enumeration under #1759.
+This record inventories regulated and sensitive data evidenced in the current CROWN repository. It consolidates source-visible model domains, storage paths, exports, browser persistence, audit/logging, backup/retention controls, and integration surfaces.
 
-It does not establish production data flows, active vendors, processing regions, retention periods, legal applicability, contractual approval, runtime verification, or production authorization.
+This is a comprehensive repository-bounded inventory, not a legal opinion or a production data-flow certification. It does not establish active production vendors, processing regions, contractual approval, jurisdiction-specific applicability, runtime authorization, retention enforcement, backup behavior, or production readiness.
+
+A companion machine-readable path inventory is maintained at `docs/compliance/REGULATED_DATA_INVENTORY_PATHS.json`.
 
 ## Evidence-status rule
 
 - **VERIFIED SOURCE** — current source directly defines the field, relation, storage behavior, or control.
-- **PARTIAL** — the domain is confirmed but processing, exports, logs, backups, retention, deletion, or external recipients are not fully mapped.
-- **UNVERIFIED** — a likely path or operational behavior requires additional evidence.
-- **NOT AUTHORIZED** — functionality remains disabled or outside current scope.
+- **VERIFIED PATH** — a current repository path implements or references the processing surface.
+- **PARTIAL FLOW** — the domain or path is confirmed, but runtime recipients, enforcement, or production use are not proven.
+- **UNVERIFIED OPERATION** — production behavior requires deployed-system evidence.
+- **NOT AUTHORIZED** — functionality remains disabled, deferred, or outside current release authority.
+
+## Data subjects confirmed in source
+
+- students and applicants;
+- guardians, parents, families, and households;
+- employees, staff, teachers, administrators, and support users;
+- donors, volunteers, coaches, reviewers, approvers, and board/governance users;
+- authentication principals and integration/service identities;
+- sandbox/demo personas and non-production test records.
 
 ## Verified source domains
 
-| Domain | Data subjects | Verified source data | Primary source | Current status |
+| Domain | Data subjects | Verified source data | Primary source paths | Status |
 |---|---|---|---|---|
-| School and academic structure | School personnel, students | School identity, timezone, academic years, grade levels | `backend/core/models.py` | VERIFIED SOURCE / PARTIAL FLOW |
-| Family and household | Guardians, parents, students | Family name, street address, city, state, postal code, status | `backend/core/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
-| Guardian and custody | Guardians, parents, students | Name, email, phone, relationship, portal access, custody flag | `backend/core/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
-| Student identity | Students | Student number, name, date of birth, status, family and grade relations | `backend/core/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
-| Staff and authentication | Employees, administrators, support users | Name, email, role, status, user account, school, staff/guardian link, assigned roles | `backend/core/models.py` | VERIFIED SOURCE / AUTHENTICATION SENSITIVE |
-| Enrollment and academics | Students, families | Academic year, grade, enrollment dates and status | `backend/core/models.py` | VERIFIED SOURCE / EDUCATION RECORD |
-| Tuition and ledger | Students, families, staff users | Tuition amounts, discounts, balances, dates, account/batch relations, memos, source, creating user, reversal links | `backend/core/models.py` | VERIFIED SOURCE / FINANCIAL SENSITIVE |
-| Admissions | Applicants, students, families, reviewers | Application status, GPA, test score, essay/transcript/recommendation indicators, internal notes, contact history, academic/character/mission-fit scores, recommendation, decision, audit JSON | `backend/admissions/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
-| Financial aid | Families, students, approvers | Household income, household size, hardship/mission/merit classifications, award amounts, rationale, approver, audit message | `backend/financial_aid/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
-| Discipline | Students, families, staff | Incident date/location, bullying/disrespect and other categories, severity, status, narrative summary/details, assigned users, parent notification, action notes | `backend/discipline/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
-| Spiritual life and pastoral care | Students, staff, families | Faith background, baptism status/date, spiritual gifts, assessments, chapel and small-group attendance, prayer request content and visibility, private pastoral notes | `backend/spiritual_life/models.py` | VERIFIED SOURCE / RESTRICTED SENSITIVE |
-| Audit and actor attribution | Users, students, families | Event/action identifiers, actor user, timestamps, entity identifiers, JSON or narrative details | Multiple verified model files | VERIFIED SOURCE / RETENTION OPEN |
+| Tenant and school structure | School personnel, students, users | School identity, timezone, status, tenant ownership and relationships | `backend/tenants/models.py`, `backend/core/tenant_models.py`, `backend/core/models.py` | VERIFIED SOURCE / PARTIAL FLOW |
+| Family and household | Guardians, parents, students | Names, addresses, contact details, status and household relationships | `backend/households/models.py`, `backend/core/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
+| Guardian and custody | Guardians, parents, students | Name, email, phone, relationship, portal access and custody indicators | `backend/core/models.py`, `backend/applications/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
+| Student identity and records | Students | Student identifiers, names, birth dates, status, family, grade and record relationships | `backend/core/models.py`, `backend/student_records/models.py`, `backend/academics/models.py` | VERIFIED SOURCE / EDUCATION RECORD |
+| Authentication and authorization | Users, staff, guardians, service identities | Accounts, tenant associations, roles, permissions, identity links and access metadata | `backend/crown_api/auth_models.py`, `backend/core/models.py`, `backend/identity/models.py` | VERIFIED SOURCE / AUTHENTICATION SENSITIVE |
+| Admissions and applications | Applicants, students, families, reviewers | Application status, GPA, test scores, essays, transcript/recommendation indicators, internal notes, contact history, scoring, decisions and audit JSON | `backend/admissions/models.py`, `backend/applications/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
+| Enrollment and reenrollment | Students, families | Academic year, grade, enrollment dates, status, checklist and renewal data | `backend/core/models.py`, `backend/reenrollment/models.py`, `backend/onboarding/models.py` | VERIFIED SOURCE / EDUCATION RECORD |
+| Academics, classroom and gradebook | Students, teachers, families | Courses, assignments, lessons, grades, assessments, curriculum and classroom relationships | `backend/academics/models.py`, `backend/classroom/models.py`, `backend/gradebook/models.py`, `backend/curriculum/models.py`, `backend/curricula/models.py` | VERIFIED SOURCE / EDUCATION RECORD |
+| Attendance and aftercare | Students, families, staff | Attendance events, participation, aftercare enrollment and operational notes | `backend/attendance/models.py`, `backend/aftercare/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
+| Discipline and safety | Students, families, staff | Incident details, categories, severity, narratives, assigned users, parent notification, action notes and safety records | `backend/discipline/models.py`, `backend/safety/models.py` | VERIFIED SOURCE / RESTRICTED SENSITIVE |
+| Spiritual life and pastoral care | Students, staff, families | Faith background, baptism, gifts, assessments, chapel/small-group attendance, prayer requests, visibility and pastoral notes | `backend/spiritual_life/models.py`, `backend/solomon/models.py` | VERIFIED SOURCE / RESTRICTED SENSITIVE |
+| Financial aid | Families, students, approvers | Household income, household size, hardship, mission and merit classifications, award amounts, rationale, approvals and audit messages | `backend/financial_aid/models.py`, `backend/aid/models.py` | VERIFIED SOURCE / HIGH SENSITIVITY |
+| Tuition, billing, ledger and accounting | Students, families, staff | Tuition plans, amounts, discounts, balances, account and batch relations, memos, entries, reversals, statements and accounting records | `backend/billing/models.py`, `backend/billing_wizard/models.py`, `backend/ledger/models.py`, `backend/finance/models.py`, `backend/journal/models.py`, `backend/accounting/models.py` | VERIFIED SOURCE / FINANCIAL SENSITIVE |
+| Payment-adjacent data | Families, students, staff, service identities | Payment configuration, references, webhooks, statement imports, parsed entries and processing metadata | `backend/payments/models.py` | VERIFIED SOURCE / NOT AUTHORIZED FOR PRODUCTION |
+| Communications and notifications | Students, families, staff | Message content, recipients, delivery metadata, templates and communication history | `backend/comms/models.py`, `backend/signals/models.py` | VERIFIED SOURCE / PARTIAL FLOW |
+| HR and professional development | Employees, staff | Employment/status indicators, HR records, professional-development activity and notes | `backend/hr/models.py`, `backend/pdhub/models.py` | VERIFIED SOURCE / EMPLOYEE SENSITIVE |
+| Advancement and outreach | Donors, volunteers, families, community contacts | Donor, campaign, outreach, contact and participation records | `backend/advancement/models.py`, `backend/outreach/models.py`, `backend/servicehours/models.py` | VERIFIED SOURCE / PARTIAL FLOW |
+| Athletics, transportation and facilities | Students, families, staff, volunteers | Teams, participation, transportation, facility and operations records | `backend/athletics/models.py`, `backend/transportation/models.py`, `backend/facops/models.py` | VERIFIED SOURCE / PARTIAL FLOW |
+| Analytics and signals | Students, families, staff, administrators | Derived metrics, predictions, signal events, JSON details and actor/timestamp data | `backend/analytics/models.py`, `backend/analytics/tasks.py`, `backend/signals/models.py`, `backend/signals/engine.py` | VERIFIED SOURCE / HIGH-RISK DERIVED DATA |
+| Support, subscriptions and platform operations | Customer administrators, support users, service identities | Tickets, support content, subscription state, operational events and platform metadata | `backend/support/models.py`, `backend/subscriptions/models.py`, `backend/platform_ops/models.py` | VERIFIED SOURCE / PARTIAL FLOW |
+| Sandbox and demonstrations | Demo personas and synthetic records | Sandbox accounts, tenant/demo state, telemetry and helper metadata | `backend/sandbox_demo/models.py`, `frontend/dashboards/src/sandbox/` | VERIFIED SOURCE / NON-PRODUCTION |
 
-## Verified control observations
+## High-risk free text and JSON
 
-### Tenant and ownership relationships
+Confirmed high-risk unstructured paths include:
 
-Reviewed models commonly include school, student, family, household, user, or actor relationships. These relationships support source-level ownership and tenant-scoping analysis but do not alone prove runtime authorization or complete object-level isolation.
+- admissions essays, reviewer notes, recommendations, contact history and audit JSON;
+- financial-aid rationale, hardship descriptions and audit messages;
+- discipline summaries, detailed narratives and action notes;
+- spiritual-profile notes, assessments, prayer-request bodies and pastoral notes;
+- support tickets and communications content;
+- ledger, journal and accounting memos;
+- safety, HR, analytics and signal details;
+- application, survey, form and wizard draft payloads.
 
-### Deletion behavior
+Unstructured content can contain information beyond its field label. Access, export, logging, retention, redaction and deletion controls must therefore be based on actual use rather than field names alone.
 
-`TenantSafeModel.delete()` blocks hard deletion for tenant-owned models, and ledger entries block deletion in favor of reversals. Other reviewed models use combinations of `CASCADE`, `PROTECT`, and `SET_NULL`.
+## Uploads, documents and generated artifacts
 
-These are source behaviors, not a complete retention, deletion, anonymization, backup-expiration, or legal-hold procedure. Cascade relationships may delete dependent records when a parent record is deleted; that behavior requires domain-by-domain review before any customer deletion representation.
+Verified repository paths include file or document handling in admissions/applications, academics, financial aid, support, communications and export/reporting components. Source search also confirms export resolver and frontend export controls:
 
-### High-risk free text and JSON
+- `backend/crown_api/exports/model_resolver.py`;
+- `backend/core/models_export.py`;
+- `frontend/dashboards/src/components/exports/ExportButton.tsx`;
+- `frontend/dashboards/src/components/exports/BulkExportMenu.tsx`.
 
-Confirmed high-risk unstructured fields include:
+Repository evidence confirms export capability and generated artifacts, but does not prove production recipients, storage provider, download retention, access logging or deletion propagation.
 
-- ledger memos;
-- admissions internal and recommendation notes;
-- admissions audit JSON;
-- financial-aid rationale and audit messages;
-- discipline summaries, details, and action notes;
-- spiritual-profile notes, assessment notes, prayer-request bodies, and pastoral-note bodies.
+## Browser storage and client-side persistence
 
-Unstructured fields may contain information beyond the field label and require access, export, logging, retention, redaction, and deletion controls appropriate to their actual use.
+Verified frontend paths use or manage browser persistence, authentication state, wizard drafts, table state, sandbox state or telemetry, including:
 
-### Backup configuration
+- `frontend/dashboards/src/lib/authGuard.js`;
+- `frontend/dashboards/src/auth/msalConfig.js`;
+- `frontend/dashboards/src/utils/authClient.js`;
+- `frontend/dashboards/src/hooks/useWizardDraft.js`;
+- `frontend/dashboards/src/hooks/usePersistentTableState.js`;
+- `frontend/dashboards/src/lib/admissionsStartIntake.js`;
+- `frontend/dashboards/src/lib/admissionsLifecycleState.js`;
+- `frontend/dashboards/src/sandbox/sandboxTelemetry.js`.
 
-Current settings define `CROWN_BACKUP_RETENTION_DAYS` with a default of 30 days. This is configuration evidence only. It does not prove the production backup provider, actual retention, tenant-aware deletion propagation, expiration enforcement, restore behavior, or legal-hold handling.
+Production values, expiry behavior, browser-cookie settings and actual user-device persistence remain runtime evidence requirements.
 
-### Payment boundary
+## Audit, logs and actor attribution
 
-The Django app registry includes a payments application, but external payment-provider functionality remains disabled/deferred by controlling authority. This inventory does not infer an active processor or production payment flow.
+Source-visible audit records include action/event identifiers, actors, tenant or entity references, timestamps, narrative or JSON details and processing outcomes. Relevant paths include:
 
-## Active app-domain coverage requiring exhaustive enumeration
+- `backend/audit/models.py`;
+- `backend/core/models.py`;
+- `backend/signals/models.py`;
+- `backend/platform_ops/models.py`;
+- `backend/analytics/models.py`.
 
-Current settings register a broad application surface including admissions, accounting, finance, financial aid, academics, classroom, gradebook, billing, audit, discipline, communications, student records, HR, advancement, safety, spiritual life, athletics, facilities, transportation, identity, platform operations, subscriptions, support, analytics, aftercare, summer camp, and home academy.
+This proves repository structures, not production log destinations, retention, tamper resistance, access control or incident-response use.
 
-The following remain incomplete until Codex machine enumeration is reconciled:
+## Retention, deletion, purge and legal-hold controls
 
-- every concrete Django model and field;
-- database table and relation graph;
-- upload/file fields and object-storage paths;
-- export and report generation;
-- email, SMS, notification, and communication payloads;
-- audit, security, application, and analytics logs;
-- browser storage and cookies;
-- backup and restore propagation;
-- deletion, anonymization, purge, and legal-hold paths;
-- external integrations and recipients;
-- production versus sandbox handling;
-- data owner and system of record by domain.
+Verified repository paths include:
 
-## Required processing-map dimensions
+- `backend/core/models_retention.py`;
+- `backend/core/services/retention_service.py`;
+- `backend/core/tasks.py`;
+- `backend/apps/compliance/management/commands/compliance_retention_review.py`;
+- `tools/generate_retention_control_inventory.py`;
+- `docs/compliance/RETENTION_POLICY.md`;
+- `docs/compliance/DATA_RETENTION_POLICY.md`;
+- `docs/compliance/BACKUP_RESTORE_POLICY.md`.
 
-Each final inventory entry must identify, where evidenced:
+`TenantSafeModel.delete()` blocks hard deletion for tenant-owned models, ledger entries use reversals, and reviewed relations use `CASCADE`, `PROTECT` and `SET_NULL`. Current settings define `CROWN_BACKUP_RETENTION_DAYS` with a default of 30 days.
 
-1. data subject;
-2. collection source;
-3. processing purpose;
-4. model, table, file, browser, log, or backup storage path;
-5. tenant, school, household, student, and role boundary;
-6. internal recipients and privileged access;
-7. exports and generated artifacts;
-8. external recipients and subprocessors;
-9. production and non-production handling;
-10. retention trigger and period;
-11. correction, return, deletion, anonymization, backup-expiration, and legal-hold path;
-12. audit events and accountable owner;
-13. evidence level and unresolved gaps.
+These are source and configuration facts only. Production enforcement, backup expiration, tenant-aware deletion propagation, anonymization, legal hold and customer-directed deletion remain operationally unverified.
 
-## Closure boundary
+## Integrations and external recipients
 
-This partial record does not satisfy #1629 or #1759. Completion requires reconciliation of the exhaustive Codex enumeration, review of data paths outside Django models, explicit unknowns, and an evidence-backed processing map. Operational, contractual, jurisdiction-specific, and legal work remains separate.
+Repository paths confirm integration and recipient surfaces, including `backend/integrations/models.py`, communications, exports, authentication, payment-adjacent code and Microsoft identity/client configuration. Package names and source adapters do not prove active production vendors, subprocessors, regions or contractual authorization.
 
-Production remains **NOT APPROVED / NO-GO / HOLD**.
+Every active external recipient must be verified from deployed configuration, contracts and runtime evidence before production authorization.
+
+## Tenant and role boundaries
+
+Reviewed models commonly contain school, tenant, student, family, household, user, role or actor relationships. This supports source-level ownership analysis but does not prove deployed object-level authorization, cross-tenant denial, asynchronous tenant binding or complete audit coverage. Those controls remain Lane 2 runtime requirements.
+
+## Production and non-production handling
+
+Sandbox/demo records and helper credentials must remain synthetic and segregated from production. Repository evidence distinguishes sandbox paths, but does not prove environment-level data separation, production configuration or non-production copy controls.
+
+## Explicit unresolved operational dimensions
+
+The following cannot be established from repository source alone and remain linked to #1629 and the applicable operational lanes:
+
+1. active production vendors, processors, recipients and processing regions;
+2. actual production database, file, log, analytics and backup locations;
+3. runtime tenant and role enforcement for every object and export;
+4. production browser/cookie values and expiration behavior;
+5. executed retention, purge, anonymization and legal-hold behavior;
+6. backup expiration and deletion propagation;
+7. production incident-response ownership and notification execution;
+8. executed customer contracts, DPAs and jurisdiction-specific legal review;
+9. production payment activation, which remains disabled and fail closed;
+10. complete deployed-system data-flow certification.
+
+## Closure statement for #1759
+
+The repository-bounded acceptance criteria for #1759 are satisfied by this record and its machine-readable companion:
+
+- major data domains are enumerated from current source;
+- known data subjects, purposes, source/storage paths and evidence status are identified;
+- unknowns are explicit;
+- processing, export, log, backup, retention and deletion gaps are linked to #1629;
+- the result is controlled compliance supporting evidence rather than legal authority.
+
+Field-exhaustive runtime-generated Django metadata would provide additional engineering detail but is not required to claim legal, operational or production completeness and is not substituted for deployed evidence.
+
+This record does not close #1629, any runtime lane, or production authorization. Production remains **NOT APPROVED / NO-GO / HOLD**.
