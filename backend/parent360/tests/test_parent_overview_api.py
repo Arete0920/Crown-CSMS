@@ -38,19 +38,22 @@ def _make_parent_client(*, school: School, email: str = "parent@example.com"):
 def _make_household_bundle(
     school: School,
     *,
+    account=None,
     email: str = "parent@example.com",
     household_name: str = "Demo Family",
     first_name: str = "Ava",
     last_name: str = "Student",
+    active: bool = True,
 ):
     household = Household.objects.create(
         school_id=school.id,
         name=household_name,
-        is_active=True,
+        is_active=active,
     )
     Guardian.objects.create(
         school_id=school.id,
         household=household,
+        account=account,
         first_name="Pat",
         last_name="Parent",
         email=email,
@@ -141,8 +144,8 @@ def _make_assignment_for_unenrolled_section(school: School, *, due_date: date, n
 
 def test_parent_self_overview_v1_route_returns_200_and_household_shape():
     school = School.objects.create(name="Heritage Parent Academy")
-    client, _ = _make_parent_client(school=school)
-    household, child = _make_household_bundle(school)
+    client, user = _make_parent_client(school=school)
+    household, child = _make_household_bundle(school, account=user)
 
     response = client.get(PARENT360_V1_URL)
 
@@ -152,6 +155,36 @@ def test_parent_self_overview_v1_route_returns_200_and_household_shape():
     assert payload["household"]["name"] == household.name
     assert payload["children_count"] == 1
     assert payload["children"][0]["id"] == str(child.id)
+
+
+def test_parent_self_overview_legacy_alias_uses_same_canonical_link():
+    school = School.objects.create(name="Parent Alias School")
+    client, user = _make_parent_client(school=school, email="alias-parent@example.com")
+    household, _ = _make_household_bundle(
+        school,
+        account=user,
+        email="alias-parent@example.com",
+        household_name="Alias Family",
+    )
+
+    response = client.get(PARENT360_URL)
+
+    assert response.status_code == 200, response.content
+    assert response.json()["household"]["id"] == str(household.id)
+
+
+def test_parent_self_overview_does_not_authorize_matching_email_without_link():
+    school = School.objects.create(name="No Email Fallback School")
+    email = "matching-email@example.com"
+    client, _ = _make_parent_client(school=school, email=email)
+    _make_household_bundle(school, email=email, household_name="Unlinked Household")
+
+    response = client.get(PARENT360_URL)
+
+    assert response.status_code == 404, response.content
+    assert response.json() == {
+        "detail": "No active household access is configured for the current account."
+    }
 
 
 def test_parent_self_overview_rejects_foreign_school_guardian_email_match():
@@ -167,12 +200,29 @@ def test_parent_self_overview_rejects_foreign_school_guardian_email_match():
     assert response.status_code == 404, response.content
 
 
+def test_parent_self_overview_rejects_inactive_household_link():
+    school = School.objects.create(name="Inactive Household Endpoint School")
+    client, user = _make_parent_client(school=school, email="inactive-household@example.com")
+    _make_household_bundle(
+        school,
+        account=user,
+        email="inactive-household@example.com",
+        household_name="Inactive Family",
+        active=False,
+    )
+
+    response = client.get(PARENT360_URL)
+
+    assert response.status_code == 404, response.content
+
+
 def test_parent_self_overview_service_hours_do_not_bridge_across_schools():
     school = School.objects.create(name="Home Service School")
     other_school = School.objects.create(name="Foreign Service School")
-    client, _ = _make_parent_client(school=school, email="service-parent@example.com")
+    client, user = _make_parent_client(school=school, email="service-parent@example.com")
     _, child = _make_household_bundle(
         school,
+        account=user,
         email="service-parent@example.com",
         household_name="Service Family",
         first_name="Jordan",
@@ -194,9 +244,10 @@ def test_parent_self_overview_service_hours_do_not_bridge_across_schools():
 
 def test_parent_self_overview_ignores_assignments_for_unenrolled_sections():
     school = School.objects.create(name="Unenrolled Assignment School")
-    client, _ = _make_parent_client(school=school, email="assignments-parent@example.com")
+    client, user = _make_parent_client(school=school, email="assignments-parent@example.com")
     _make_household_bundle(
         school,
+        account=user,
         email="assignments-parent@example.com",
         household_name="Assignment Family",
     )
@@ -223,9 +274,10 @@ def test_parent_self_overview_ignores_assignments_for_unenrolled_sections():
 
 def test_parent_self_overview_admissions_continuity_shape_and_zero_counters_without_apps():
     school = School.objects.create(name="Admissions Continuity Shape School")
-    client, _ = _make_parent_client(school=school, email="admissions-shape-parent@example.com")
+    client, user = _make_parent_client(school=school, email="admissions-shape-parent@example.com")
     _make_household_bundle(
         school,
+        account=user,
         email="admissions-shape-parent@example.com",
         household_name="Admissions Shape Family",
     )
