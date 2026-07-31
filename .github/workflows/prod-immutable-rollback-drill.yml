@@ -1,0 +1,190 @@
+name: Production Immutable Rollback Drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_live_sha:
+        description: "Full 40-character SHA currently expected in production"
+        required: true
+        type: string
+      rollback_sha:
+        description: "Full 40-character immutable SHA to restore"
+        required: true
+        type: string
+      confirm_environment:
+        description: "Type production"
+        required: true
+        type: string
+      confirm_action:
+        description: "Type ROLLBACK"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: crown-api-prod-recovery
+  cancel-in-progress: false
+
+env:
+  RESOURCE_GROUP: crown-rg
+  WEBAPP_NAME: crown-api-prod
+  REGISTRY: crownregistry.azurecr.io
+  REGISTRY_NAME: crownregistry
+  IMAGE_NAME: crown2026
+
+jobs:
+  rollback-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      - name: Guard explicit production authorization inputs
+        shell: bash
+        env:
+          EXPECTED_LIVE_SHA: ${{ inputs.expected_live_sha }}
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+          CONFIRM_ENVIRONMENT: ${{ inputs.confirm_environment }}
+          CONFIRM_ACTION: ${{ inputs.confirm_action }}
+        run: |
+          set -euo pipefail
+          sha_re='^[0-9a-f]{40}$'
+          [[ "$CONFIRM_ENVIRONMENT" == "production" ]] || { echo "ERROR: confirm_environment must equal production"; exit 1; }
+          [[ "$CONFIRM_ACTION" == "ROLLBACK" ]] || { echo "ERROR: confirm_action must equal ROLLBACK"; exit 1; }
+          [[ "$EXPECTED_LIVE_SHA" =~ $sha_re ]] || { echo "ERROR: expected_live_sha must be a lowercase 40-character SHA"; exit 1; }
+          [[ "$ROLLBACK_SHA" =~ $sha_re ]] || { echo "ERROR: rollback_sha must be a lowercase 40-character SHA"; exit 1; }
+          [[ "$EXPECTED_LIVE_SHA" != "$ROLLBACK_SHA" ]] || { echo "ERROR: rollback_sha must differ from expected_live_sha"; exit 1; }
+          printf '%s\n' "expected_live_sha=$EXPECTED_LIVE_SHA" "rollback_sha=$ROLLBACK_SHA"
+
+      - name: Azure Login
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create evidence directory and start timer
+        id: timer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p rollback-evidence
+          started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          started_epoch="$(date -u +%s)"
+          echo "started_at=$started_at" >> "$GITHUB_OUTPUT"
+          echo "started_epoch=$started_epoch" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$started_at" > rollback-evidence/started-at.txt
+
+      - name: Verify expected live runtime before mutation
+        shell: bash
+        env:
+          EXPECTED_LIVE_SHA: ${{ inputs.expected_live_sha }}
+        run: |
+          set -euo pipefail
+          health_url="https://${WEBAPP_NAME}.azurewebsites.net/api/health/"
+          http_code=$(curl --max-time 20 -sS -o rollback-evidence/pre-rollback-health.json -w "%{http_code}" "$health_url" || true)
+          db_status=$(jq -r '.db // ""' rollback-evidence/pre-rollback-health.json 2>/dev/null || true)
+          live_sha=$(jq -r '.build_sha // ""' rollback-evidence/pre-rollback-health.json 2>/dev/null || true)
+          printf 'http=%s\ndb=%s\nbuild_sha=%s\n' "$http_code" "$db_status" "$live_sha" | tee rollback-evidence/pre-rollback-summary.txt
+          [[ "$http_code" == "200" ]] || { echo "ERROR: pre-rollback health did not return HTTP 200"; exit 1; }
+          [[ "$db_status" == "ok" ]] || { echo "ERROR: pre-rollback database status is not ok"; exit 1; }
+          [[ "$live_sha" == "$EXPECTED_LIVE_SHA" ]] || { echo "ERROR: live SHA does not match expected_live_sha"; exit 1; }
+
+      - name: Verify immutable rollback image exists
+        shell: bash
+        env:
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+        run: |
+          set -euo pipefail
+          found=$(az acr repository show-tags \
+            --name "$REGISTRY_NAME" \
+            --repository "$IMAGE_NAME" \
+            --query "[?@=='$ROLLBACK_SHA'] | [0]" \
+            -o tsv \
+            --only-show-errors)
+          [[ "$found" == "$ROLLBACK_SHA" ]] || { echo "ERROR: immutable rollback image is unavailable"; exit 1; }
+          printf '%s\n' "$REGISTRY/$IMAGE_NAME:$ROLLBACK_SHA" > rollback-evidence/rollback-image.txt
+
+      - name: Restore immutable rollback image
+        shell: bash
+        env:
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+        run: |
+          set -euo pipefail
+          image_ref="$REGISTRY/$IMAGE_NAME:$ROLLBACK_SHA"
+          az webapp config container set \
+            --name "$WEBAPP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --docker-registry-server-url "https://$REGISTRY" \
+            --docker-custom-image-name "$image_ref" \
+            --output none \
+            --only-show-errors
+          az webapp config appsettings set \
+            --name "$WEBAPP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --settings BUILD_SHA="$ROLLBACK_SHA" \
+            --output none \
+            --only-show-errors
+          az webapp restart \
+            --name "$WEBAPP_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --only-show-errors
+
+      - name: Verify restored runtime identity and health
+        shell: bash
+        env:
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+        run: |
+          set -euo pipefail
+          health_url="https://${WEBAPP_NAME}.azurewebsites.net/api/health/"
+          for attempt in $(seq 1 30); do
+            http_code=$(curl --max-time 20 -sS -o rollback-evidence/post-rollback-health.json -w "%{http_code}" "$health_url" || true)
+            db_status=$(jq -r '.db // ""' rollback-evidence/post-rollback-health.json 2>/dev/null || true)
+            live_sha=$(jq -r '.build_sha // ""' rollback-evidence/post-rollback-health.json 2>/dev/null || true)
+            printf 'attempt=%s http=%s db=%s build_sha=%s expected=%s\n' "$attempt" "$http_code" "$db_status" "$live_sha" "$ROLLBACK_SHA" | tee -a rollback-evidence/verification-attempts.txt
+            if [[ "$http_code" == "200" && "$db_status" == "ok" && "$live_sha" == "$ROLLBACK_SHA" ]]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "ERROR: rollback did not restore the expected healthy runtime identity"
+          exit 1
+
+      - name: Record measured rollback duration
+        if: always()
+        shell: bash
+        env:
+          STARTED_AT: ${{ steps.timer.outputs.started_at }}
+          STARTED_EPOCH: ${{ steps.timer.outputs.started_epoch }}
+          EXPECTED_LIVE_SHA: ${{ inputs.expected_live_sha }}
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+        run: |
+          set -euo pipefail
+          ended_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          ended_epoch="$(date -u +%s)"
+          elapsed_seconds=$((ended_epoch - STARTED_EPOCH))
+          cat > rollback-evidence/rollback-summary.json <<EOF
+          {
+            "environment": "production",
+            "workflow_run_id": "${GITHUB_RUN_ID}",
+            "operator": "${GITHUB_ACTOR}",
+            "expected_live_sha": "${EXPECTED_LIVE_SHA}",
+            "rollback_sha": "${ROLLBACK_SHA}",
+            "started_at": "${STARTED_AT}",
+            "ended_at": "${ended_at}",
+            "elapsed_seconds": ${elapsed_seconds}
+          }
+          EOF
+          cat rollback-evidence/rollback-summary.json
+
+      - name: Upload rollback drill evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-rollback-drill-${{ github.run_id }}
+          path: rollback-evidence/
+          if-no-files-found: error
+          retention-days: 30
