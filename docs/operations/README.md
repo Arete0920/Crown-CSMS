@@ -4,7 +4,7 @@
 **Owner:** CROWN Engineering  
 **Effective date:** 2026-07-31  
 **Last reviewed:** 2026-07-31  
-**Repository baseline reviewed:** `d725386a6cfbb48f9967e65e15cd92db27cdfde2`
+**Repository baseline reviewed:** `bdc29e9a4f3defe22dee3d57400c18234003775b`
 
 ## Authority
 
@@ -73,7 +73,7 @@ The table below is the required navigation surface. A procedure marked `MISSING 
 |---|---|---|---|---|---|---|
 | Deployment | No canonical executable runbook linked yet | Authorized release operator | Exact source, artifact, migration, frontend, and backend identity | Identity mismatch, failed migration, failed health or tenant checks | Deployment log, artifact provenance, runtime SHA proof | **MISSING OR UNVERIFIED** |
 | Application rollback | No canonical executable runbook linked yet | Authorized release operator | Prior version restored and health/tenant checks pass | Data incompatibility, failed health checks, uncertain source identity | Timed rollback record and validation results | **MISSING OR UNVERIFIED** |
-| Database restore | No canonical executable runbook linked yet | Authorized database/recovery operator | Isolated restore integrity and application validation | Backup integrity failure, environment ambiguity, destructive-target risk | Timed restore record, RTO/RPO, integrity proof | **MISSING OR UNVERIFIED** |
+| Database restore | [`ISOLATED_POSTGRES_RESTORE_DRILL.md`](./ISOLATED_POSTGRES_RESTORE_DRILL.md) | Authorized database/recovery operator | Archive preflight, isolated restore integrity, schema/migration checks, cleanup, and later operational-backup application validation | Backup integrity failure, environment ambiguity, destructive-target risk, failed reconciliation, or uncertain source/backup identity | Restore evidence JSON, retained artifact, timed operational restore record, measured RTO/RPO, and integrity proof | **RUNNABLE MECHANICS / OPERATIONAL EVIDENCE OUTSTANDING** |
 | Incident response | No canonical executable runbook linked yet | Incident commander or designated responder | Severity, containment, notification, evidence preservation, closure | Missing authority, unsafe containment step, evidence-loss risk | Incident timeline and decision record | **MISSING OR UNVERIFIED** |
 | Secret rotation and revocation | No canonical executable runbook linked yet | Authorized security/cloud administrator | Replacement works, prior credential revoked, audit trail retained | Replacement failure, inability to revoke, service-impact uncertainty | Rotation and revocation evidence | **MISSING OR UNVERIFIED** |
 | Failed-rotation recovery | No canonical executable runbook linked yet | Authorized security/cloud administrator | Service restored without reactivating compromised material | Unknown active credential, audit gap, uncontrolled rollback | Recovery record and final credential inventory | **MISSING OR UNVERIFIED** |
