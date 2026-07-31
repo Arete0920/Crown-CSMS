@@ -1,20 +1,20 @@
 # CROWN Current Release Status
 
-**Date:** 2026-07-30  
+**Date:** 2026-07-31  
 **Repository:** `tcmegahan/Crown2026`  
-**Current observed main SHA:** `85072d077476bc40cd52ac1cebe6c53faffa580d`  
-**Last functional containment SHA:** `73739d958dd13a5f240782950a6ae19142396d2b`
+**Last observed main before this documentation change:** `d725386a6cfbb48f9967e65e15cd92db27cdfde2`  
+**Status basis:** live repository state and controlling issue `#1619`
 
 ## Canonical decision
 
-CROWN remains under an **owner-directed repository freeze with bounded remediation permitted**.
+CROWN remains under **bounded remediation before selection of a future immutable release candidate**.
 
 - Production: **NOT APPROVED / NO-GO / HOLD**
 - Buyer operational turnover: **NOT APPROVED**
 - External payment processing: **DEFERRED, DISABLED, AND REQUIRED TO FAIL CLOSED**
 - Controlled diligence and explicitly authorized demonstrations: permitted only with accurate disclosures
 
-The eight-lane production-readiness and buyer-handoff program is open under issue #1619. Reopening the program does not establish PASS, completion, certification, production readiness, or buyer readiness.
+GitHub issue `#1619` and its eight lane issues are the sole controlling production-readiness and buyer-handoff framework. Repository checks, issue closure, pull-request completion, documentation updates, or partial evidence do not establish production or buyer readiness.
 
 ## Current program posture
 
@@ -26,22 +26,18 @@ The following evidence programs remain incomplete:
 4. operational secret retrieval, rotation, failed-rotation recovery, revocation, and break-glass exercises;
 5. student-data privacy, contractual, jurisdiction-specific, incident-response, and qualified legal readiness;
 6. deterministic same-SHA CI, deployment, infrastructure, observability, and monitoring proof;
-7. final release documentation, evidence index, and buyer-handoff reconciliation;
+7. final release documentation, evidence index, runbook, and buyer-handoff reconciliation;
 8. final Founder/Product Owner production authorization.
 
-No issue state, pull request, automated workflow result, documentation update, or repository-only check may be interpreted as satisfying these requirements without the lane's complete linked evidence.
+## Repository identity and evidence boundary
 
-## Current repository identity and evidence boundary
+The last observed `main` before this documentation change was:
 
-Current observed `main` at this update:
+`d725386a6cfbb48f9967e65e15cd92db27cdfde2`
 
-`85072d077476bc40cd52ac1cebe6c53faffa580d`
+That SHA includes the merged provider-neutral payment containment work from PR `#1796` and the tests-only tenant-safe export coverage tranche from PR `#1799`. It is not an approved production release candidate and has not been certified across deployment, runtime, recovery, secrets operations, privacy/legal readiness, or final authorization. Its authoritative exact coverage percentage remains subject to a dedicated coverage run against that unchanged SHA.
 
-This SHA includes bounded repository cleanup, CI-authority repairs, compliance evidence work, and a Lane 2 authorization-test repair. It is not an approved production release candidate and has not been certified across deployment, runtime, recovery, secrets operations, privacy/legal readiness, or final authorization.
-
-The last functional containment commit remains:
-
-`73739d958dd13a5f240782950a6ae19142396d2b`
+Merging this or any later change necessarily creates a different `main` identity. Therefore, the live current `main` SHA must always be resolved directly from the repository and may not be inferred from this document. No documentation or source change may be represented as covered by evidence collected for `d725386a6cfbb48f9967e65e15cd92db27cdfde2` without fresh exact-SHA verification.
 
 ## Security containment boundary
 
@@ -49,7 +45,7 @@ The historical Ed25519 private-key path remains a material unresolved history bo
 
 `solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem`
 
-The following must not be claimed as complete without separate evidence:
+The following must not be claimed complete without separate evidence:
 
 - exposed-key retirement or revocation;
 - replacement-key registration;
@@ -59,23 +55,21 @@ The following must not be claimed as complete without separate evidence:
 
 Pre-remediation evidence must remain restricted and must not be represented as a clean distribution artifact.
 
-## Scope and exclusions
+## Payment-processing boundary
 
-### Payment processing
-
-No payment processor is approved for production operation. Card, ACH, autopay, processor webhook, refund, and external payment-confirmation paths must remain disabled unless a future owner-authorized program implements and certifies them.
+No payment processor is approved for production operation. Card, ACH, autopay, processor webhook, refund, settlement, dispute, and external payment-confirmation paths must remain disabled unless a future owner-authorized program implements and certifies them.
 
 Provider-neutral accounting, billing, ledger, invoice, balance, payment-record, and payment-plan source material may be retained for diligence. Its presence does not establish production fitness.
 
-### Buyer and successor handoff
+## Buyer and successor handoff
 
-No buyer, successor, or new owner has been approved. Repository preservation and diligence preparation do not constitute operational transfer, acceptance, or readiness.
+No buyer, successor, or new owner has been approved for operational turnover. Repository preservation and diligence preparation do not constitute operational transfer, acceptance, or readiness.
 
-### Compliance claims
+## Compliance claim boundary
 
 CROWN may be described only as designed to support schools in meeting applicable student-data privacy and security obligations. It must not be described as FERPA certified, COPPA certified, universally compliant, regulator approved, or compliance guaranteed.
 
-## Repository operation during freeze
+## Repository operation during bounded remediation
 
 Permitted changes are limited to:
 
@@ -88,14 +82,15 @@ Permitted changes are limited to:
 
 A production restart requires:
 
-1. explicit Founder/Product Owner authorization;
-2. a newly selected immutable release candidate;
-3. fresh same-SHA repository, deployment, runtime, operational, privacy/legal, and recovery evidence;
-4. a new explicit GO/NO-GO decision.
+1. completion of all authorized repository-changing work;
+2. explicit re-establishment of repository freeze;
+3. selection of one immutable release candidate;
+4. fresh same-SHA repository, deployment, runtime, operational, privacy/legal, and recovery evidence;
+5. explicit Founder/Product Owner authorization and a new GO/NO-GO decision.
 
 ## Current final status
 
-**REPOSITORY STATE: FROZEN WITH BOUNDED REMEDIATION**  
+**REPOSITORY STATE: BOUNDED REMEDIATION; NO IMMUTABLE RC SELECTED**  
 **PRODUCTION DECISION: NOT APPROVED / NO-GO / HOLD**  
 **BUYER TURNOVER: NOT APPROVED**  
 **PAYMENT PROCESSING: DISABLED / FAIL CLOSED**  
