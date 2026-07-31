@@ -34,9 +34,8 @@ class TenantProfile(models.Model):
     ]
 
     PAYMENT_PROVIDER_CHOICES = [
-        ("stripe", "Stripe Connect"),
         ("manual", "Manual / Invoice"),
-        ("none", "None"),
+        ("none", "None / Disabled"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -60,12 +59,13 @@ class TenantProfile(models.Model):
     # IANA timezone string (e.g. "America/Chicago")
     timezone = models.CharField(max_length=64, default="America/New_York")
 
-    # Payment orchestration backend
+    # Payment orchestration mode. External processors remain disabled.
     payment_provider = models.CharField(
         max_length=32, choices=PAYMENT_PROVIDER_CHOICES, default="none"
     )
 
-    # Stripe Connect account ID (null until onboarded)
+    # Legacy provider account reference retained for read compatibility only.
+    # No current runtime selects or contacts that provider.
     stripe_account_id = models.CharField(max_length=128, blank=True, default="")
 
     # Lifecycle state

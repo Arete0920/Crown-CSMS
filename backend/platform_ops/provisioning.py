@@ -26,6 +26,20 @@ from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
+SUPPORTED_PAYMENT_PROVIDERS = frozenset({"manual", "none"})
+PAYMENT_PROCESSING_DISABLED_MESSAGE = (
+    "External payment processing is disabled; use 'none' or 'manual'."
+)
+
+
+def normalize_payment_provider(value: str | None) -> str:
+    """Return a permitted fail-closed payment mode or reject it."""
+
+    provider = (value or "none").strip().lower()
+    if provider not in SUPPORTED_PAYMENT_PROVIDERS:
+        raise ValueError(PAYMENT_PROCESSING_DISABLED_MESSAGE)
+    return provider
+
 
 def audit(
     action: str,
@@ -113,6 +127,8 @@ def create_school_and_queue_provisioning(
         )
         return existing
 
+    payment_provider = normalize_payment_provider(payment_provider)
+
     # ── Create core.School ──────────────────────────────────────────────────
     from core.models import School  # noqa: PLC0415
 
@@ -148,7 +164,12 @@ def create_school_and_queue_provisioning(
         actor_user_id=actor_user_id,
         resource_kind="School",
         resource_id=school.id,
-        payload={"name": name, "slug": slug, "plan_code": plan_code},
+        payload={
+            "name": name,
+            "slug": slug,
+            "plan_code": plan_code,
+            "payment_provider": payment_provider,
+        },
         request=request,
     )
 
