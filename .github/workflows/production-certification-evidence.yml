@@ -202,8 +202,8 @@ jobs:
           except OSError as exc:
               raise SystemExit(f"Passwordless Heritage demo session failed: {exc}") from exc
 
-          if status != 200:
-              raise SystemExit(f"Passwordless Heritage demo session returned HTTP {status}.")
+          if status != 201:
+              raise SystemExit(f"Passwordless Heritage demo session returned HTTP {status}; expected 201 Created.")
           result = json.loads(body)
           if not (result.get("access") or result.get("token")):
               raise SystemExit("Passwordless Heritage demo session returned no access token.")
