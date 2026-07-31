@@ -1,12 +1,15 @@
 # LIVE RELEASE GATE STATUS
 
-> Superseded Authority Notice (2026-05-28)
+> Historical / Superseded Authority Notice (verified 2026-07-31)
 >
-> This document is historical and not a controlling repository-level release authority source.
+> This document is retained only as dated historical provenance. Its `RELEASE_READY`, score, gate, and blocker statements do not describe the current repository, deployment, runtime, production, or buyer-handoff status and must not be cited as current authority.
 >
 > Current controlling sources:
-> - docs/CURRENT_RELEASE_STATUS.md
-> - docs/release/CURRENT_RELEASE_SCORECARD_20260528.md
+> - GitHub issue `#1619` and its eight open lane issues
+> - `docs/CURRENT_RELEASE_STATUS.md`
+> - `docs/canonical/DILIGENCE_EVIDENCE_INDEX.md`
+>
+> Current disposition: **NOT APPROVED / NO-GO / HOLD**. External payment processing remains disabled and required to fail closed.
 
 Generated UTC: 2026-04-11T12:14:43.6350756Z
 
