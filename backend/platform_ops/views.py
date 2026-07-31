@@ -11,12 +11,9 @@ Routes (registered in platform_ops/urls.py):
 """
 from __future__ import annotations
 
-import uuid
 import logging
+import uuid
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
@@ -42,10 +39,10 @@ def platform_create_school(request: Request) -> Response:
       idempotency_key str — caller-generated idempotency key (UUID recommended)
 
     Optional body fields:
-      domain          str  — custom domain (default "")
-      plan_code       str  — starter | growth | enterprise (default "starter")
-      timezone        str  — IANA timezone string (default "America/New_York")
-      payment_provider str — stripe | manual | none (default "none")
+      domain           str — custom domain (default "")
+      plan_code        str — starter | growth | enterprise (default "starter")
+      timezone         str — IANA timezone string (default "America/New_York")
+      payment_provider str — manual | none (default "none")
 
     Returns:
       201 on first creation, 200 on idempotent repeat.
@@ -57,7 +54,7 @@ def platform_create_school(request: Request) -> Response:
     slug = (data.get("slug") or "").strip()
     idempotency_key = (data.get("idempotency_key") or "").strip()
 
-    # ── Validate required fields ─────────────────────────────────────────────
+    # ── Validate required fields and payment mode before any DB write ─────────
     errors: dict[str, str] = {}
     if not name:
         errors["name"] = "This field is required."
@@ -65,6 +62,13 @@ def platform_create_school(request: Request) -> Response:
         errors["slug"] = "This field is required."
     if not idempotency_key:
         errors["idempotency_key"] = "This field is required."
+
+    from platform_ops.provisioning import normalize_payment_provider  # noqa: PLC0415
+
+    try:
+        payment_provider = normalize_payment_provider(data.get("payment_provider", "none"))
+    except ValueError as exc:
+        errors["payment_provider"] = str(exc)
 
     if errors:
         return Response({"errors": errors}, status=400)
@@ -91,7 +95,7 @@ def platform_create_school(request: Request) -> Response:
                 domain=data.get("domain", ""),
                 plan_code=data.get("plan_code", "starter"),
                 timezone_str=data.get("timezone", "America/New_York"),
-                payment_provider=data.get("payment_provider", "none"),
+                payment_provider=payment_provider,
                 idempotency_key=idempotency_key,
                 actor_user_id=actor_uuid,
                 request=request._request,
