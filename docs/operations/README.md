@@ -4,7 +4,7 @@
 **Owner:** CROWN Engineering  
 **Effective date:** 2026-07-31  
 **Last reviewed:** 2026-07-31  
-**Repository baseline reviewed:** `bdc29e9a4f3defe22dee3d57400c18234003775b`
+**Repository baseline reviewed:** `85a2816b35e4d41c0decf8d8fc3c9c3cd10df22c`
 
 ## Authority
 
@@ -72,7 +72,7 @@ The table below is the required navigation surface. A procedure marked `MISSING 
 | Procedure | Canonical runbook | Operator | Required validation | Abort criteria | Evidence output | Status |
 |---|---|---|---|---|---|---|
 | Deployment | No canonical executable runbook linked yet | Authorized release operator | Exact source, artifact, migration, frontend, and backend identity | Identity mismatch, failed migration, failed health or tenant checks | Deployment log, artifact provenance, runtime SHA proof | **MISSING OR UNVERIFIED** |
-| Application rollback | No canonical executable runbook linked yet | Authorized release operator | Prior version restored and health/tenant checks pass | Data incompatibility, failed health checks, uncertain source identity | Timed rollback record and validation results | **MISSING OR UNVERIFIED** |
+| Application rollback | [`PRODUCTION_IMMUTABLE_ROLLBACK_DRILL.md`](./PRODUCTION_IMMUTABLE_ROLLBACK_DRILL.md) | Authorized release or incident operator with protected production approval | Pre-rollback exact live SHA, immutable ACR image existence, post-rollback HTTP 200, `db=ok`, and exact live `build_sha` | Identity mismatch, missing immutable image, schema/data incompatibility, failed Azure mutation, failed health, or incomplete evidence | GitHub run, retained rollback artifact, operator identity, exact SHAs, timestamps, and measured elapsed seconds | **RUNNABLE MECHANICS / OPERATIONAL EVIDENCE OUTSTANDING** |
 | Database restore | [`ISOLATED_POSTGRES_RESTORE_DRILL.md`](./ISOLATED_POSTGRES_RESTORE_DRILL.md) | Authorized database/recovery operator | Archive preflight, isolated restore integrity, schema/migration checks, cleanup, and later operational-backup application validation | Backup integrity failure, environment ambiguity, destructive-target risk, failed reconciliation, or uncertain source/backup identity | Restore evidence JSON, retained artifact, timed operational restore record, measured RTO/RPO, and integrity proof | **RUNNABLE MECHANICS / OPERATIONAL EVIDENCE OUTSTANDING** |
 | Incident response | No canonical executable runbook linked yet | Incident commander or designated responder | Severity, containment, notification, evidence preservation, closure | Missing authority, unsafe containment step, evidence-loss risk | Incident timeline and decision record | **MISSING OR UNVERIFIED** |
 | Secret rotation and revocation | No canonical executable runbook linked yet | Authorized security/cloud administrator | Replacement works, prior credential revoked, audit trail retained | Replacement failure, inability to revoke, service-impact uncertainty | Rotation and revocation evidence | **MISSING OR UNVERIFIED** |
