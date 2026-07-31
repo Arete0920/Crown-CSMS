@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 
@@ -65,6 +66,14 @@ class Guardian(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name="guardians",
     )
+    account = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="households_guardian",
+        null=True,
+        blank=True,
+        help_text="Canonical authenticated account for Parent360 access. Email is not authorization.",
+    )
     first_name = models.CharField(max_length=80)
     last_name = models.CharField(max_length=80)
     email = models.EmailField(blank=True, default="")
@@ -81,6 +90,7 @@ class Guardian(TimeStampedModel):
     def clean(self):
         super().clean()
         _require_same_school(self, "household")
+        _require_same_school(self, "account")
 
     def __str__(self) -> str:
         return f"{self.last_name}, {self.first_name}"
