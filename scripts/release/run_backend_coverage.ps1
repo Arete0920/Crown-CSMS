@@ -96,8 +96,8 @@ try {
         throw "Coverage JSON was not generated."
     }
 
-    $coverageData = Get-Content -Raw $coverageJson | ConvertFrom-Json
-    $totals = $coverageData.totals
+    $coverageData = Get-Content -Raw $coverageJson | ConvertFrom-Json -AsHashtable
+    $totals = $coverageData["totals"]
     $completedAt = (Get-Date).ToUniversalTime().ToString("o")
 
     $pytestSummary = $null
