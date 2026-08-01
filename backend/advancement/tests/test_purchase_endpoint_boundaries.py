@@ -1,9 +1,21 @@
+"""Unit coverage for dormant Advancement purchase handlers.
+
+The live ticket and store purchase URLs intentionally resolve to the authenticated
+payment-hold stub while no external payment provider is configured. The tests
+below call ``advancement.api.purchase_ticket`` and ``purchase_store_item``
+directly to exercise their tenant scoping and error handling; they are not the
+current route-level client contract. The routing guard at the end of this module
+must be updated if those handlers are ever re-enabled.
+"""
+
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from django.urls import resolve, reverse
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from advancement import api
+from advancement.payment_hold_views import authenticated_post_payment_on_hold
 
 
 def _request(path, payload):
@@ -208,3 +220,11 @@ def test_purchase_store_item_serializes_success(monkeypatch):
     assert response.status_code == 201
     assert response.data == {"id": "txn-a", "quantity": 2}
     output_serializer.assert_called_once_with(transaction)
+
+
+def test_live_purchase_routes_remain_on_payment_hold():
+    for route_name in (
+        "advancement-purchase-ticket",
+        "advancement-purchase-store",
+    ):
+        assert resolve(reverse(route_name)).func is authenticated_post_payment_on_hold
