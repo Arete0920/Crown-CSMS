@@ -76,7 +76,7 @@ try {
     }
 
     Invoke-NativeCommand -Description "Coverage erase" -Command {
-        python -m coverage --rcfile=.coveragerc erase
+        python -m coverage erase
     }
 
     & python -m coverage --rcfile=.coveragerc run -m pytest -q backend --junitxml=$pytestJunit *>&1 |
