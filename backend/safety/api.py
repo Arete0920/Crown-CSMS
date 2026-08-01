@@ -1,4 +1,4 @@
-﻿from rest_framework import viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
@@ -57,14 +57,17 @@ def safety_metrics(request):
         qs.values("severity").annotate(count=Count("id"))
         .order_by("severity").values("severity", "count")
     )
-    by_status = list(
-        qs.values("status").annotate(count=Count("id"))
-        .order_by("status").values("status", "count")
-    )
+    total_incidents = qs.count()
+    open_incidents = qs.filter(resolved=False).count()
+    closed_incidents = qs.filter(resolved=True).count()
+    by_status = [
+        {"status": "open", "count": open_incidents},
+        {"status": "closed", "count": closed_incidents},
+    ]
     return Response({
-        "total_incidents":  qs.count(),
-        "open_incidents":   qs.filter(status="open").count(),
-        "closed_incidents": qs.filter(status="closed").count(),
-        "by_severity":      by_severity,
-        "by_status":        by_status,
+        "total_incidents": total_incidents,
+        "open_incidents": open_incidents,
+        "closed_incidents": closed_incidents,
+        "by_severity": by_severity,
+        "by_status": by_status,
     })
