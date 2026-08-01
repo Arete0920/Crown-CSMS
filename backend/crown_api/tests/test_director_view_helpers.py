@@ -107,3 +107,108 @@ def test_resolve_academic_year_uses_latest_current_year(monkeypatch):
 
 def test_priority_snapshot_requires_academic_year():
     assert views.build_director_priority_snapshot("school-a", None) is None
+
+
+def test_priority_snapshot_scopes_and_serializes_each_queue(monkeypatch):
+    academic_year = SimpleNamespace(id="year-a")
+    needs_family = SimpleNamespace(family_name="Needs Family")
+    review_family = SimpleNamespace(family_name="Review Family")
+    needs_app = SimpleNamespace(id="app-needs", family=needs_family, submitted_at="needs-at")
+    review_app = SimpleNamespace(id="app-review", family=review_family, submitted_at="review-at")
+
+    admissions_manager = MagicMock()
+    needs_qs = MagicMock()
+    review_qs = MagicMock()
+    admissions_manager.filter.side_effect = [needs_qs, review_qs]
+    needs_qs.select_related.return_value.order_by.return_value.__getitem__.return_value = [needs_app]
+    review_qs.select_related.return_value.order_by.return_value.__getitem__.return_value = [review_app]
+    monkeypatch.setattr(views.AdmissionsApplication, "objects", admissions_manager)
+
+    aid_apps_manager = MagicMock()
+    aid_apps_qs = MagicMock()
+    aid_apps_manager.filter.return_value = aid_apps_qs
+    aid_apps_qs.order_by.return_value.values.return_value.__getitem__.return_value = [
+        {"id": "aid-app", "status": views.AidApplication.STATUS_NEEDS_INFO}
+    ]
+    monkeypatch.setattr(views.AidApplication, "objects", aid_apps_manager)
+
+    awards_manager = MagicMock()
+    awards_qs = MagicMock()
+    awards_manager.filter.return_value = awards_qs
+    awards_qs.order_by.return_value.values.return_value.__getitem__.return_value = [
+        {"id": "award-a", "awarded_cents": 50000}
+    ]
+    monkeypatch.setattr(views.AidAward, "objects", awards_manager)
+
+    ledger_manager = MagicMock()
+    ledger_qs = MagicMock()
+    ledger_manager.filter.return_value = ledger_qs
+    ledger_qs.values.return_value.annotate.return_value.filter.return_value.order_by.return_value.__getitem__.return_value = [
+        {"family_id": "family-a", "family__family_name": "Balance Family", "balance_cents": 25000}
+    ]
+    monkeypatch.setattr(views.LedgerEntry, "objects", ledger_manager)
+
+    snapshot = views.build_director_priority_snapshot("school-a", academic_year)
+
+    assert snapshot == {
+        "aid": {
+            "needs_info": [
+                {"id": "aid-app", "status": views.AidApplication.STATUS_NEEDS_INFO}
+            ],
+            "accepted_not_posted": [
+                {"id": "award-a", "awarded_cents": 50000}
+            ],
+        },
+        "admissions": {
+            "needs_info_applications": [
+                {
+                    "application_id": "app-needs",
+                    "family": "Needs Family",
+                    "submitted_at": "needs-at",
+                }
+            ],
+            "under_review_applications": [
+                {
+                    "application_id": "app-review",
+                    "family": "Review Family",
+                    "submitted_at": "review-at",
+                }
+            ],
+        },
+        "finance": {
+            "balance_due": [
+                {
+                    "family_id": "family-a",
+                    "family__family_name": "Balance Family",
+                    "balance_cents": 25000,
+                }
+            ]
+        },
+    }
+
+    admissions_manager.filter.assert_any_call(
+        school_id="school-a",
+        academic_year=academic_year,
+        status=views.AdmissionsApplication.STATUS_NEEDS_INFO,
+    )
+    admissions_manager.filter.assert_any_call(
+        school_id="school-a",
+        academic_year=academic_year,
+        status=views.AdmissionsApplication.STATUS_UNDER_REVIEW,
+    )
+    aid_apps_manager.filter.assert_called_once_with(
+        school_id="school-a",
+        academic_year=academic_year,
+        status=views.AidApplication.STATUS_NEEDS_INFO,
+    )
+    awards_manager.filter.assert_called_once_with(
+        school_id="school-a",
+        academic_year=academic_year,
+        decision_status=views.AidAward.DECISION_ACCEPTED,
+        ledger_entry__isnull=True,
+    )
+    ledger_manager.filter.assert_called_once_with(
+        school_id="school-a",
+        academic_year=academic_year,
+        family__isnull=False,
+    )
