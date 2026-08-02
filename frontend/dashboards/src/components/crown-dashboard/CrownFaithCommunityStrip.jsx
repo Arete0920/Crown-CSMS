@@ -33,7 +33,7 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
       {/* Daily Devotion */}
       <CrownCard className="launch-faith-card launch-faith-card--devotion">
         <div className="launch-section-kicker">Daily Devotion</div>
-        <h3 className="launch-faith-title">Morning Word</h3>
+        <h2 className="launch-faith-title">Morning Word</h2>
         {devotion.scripture && (
           <blockquote className="launch-faith-scripture">
             {devotion.scripture}
@@ -55,7 +55,7 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
       {/* Prayer Requests */}
       <CrownCard className="launch-faith-card launch-faith-card--prayer">
         <div className="launch-section-kicker">Community prayer</div>
-        <h3 className="launch-faith-title">Prayer Requests</h3>
+        <h2 className="launch-faith-title">Prayer Requests</h2>
         {prayers.length > 0 ? (
           <ul className="launch-faith-list">
             {prayers.map((item) => (
@@ -73,7 +73,7 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
       {/* Announcements */}
       <CrownCard className="launch-faith-card launch-faith-card--announcements">
         <div className="launch-section-kicker">School announcements</div>
-        <h3 className="launch-faith-title">Announcements</h3>
+        <h2 className="launch-faith-title">Announcements</h2>
         {announcements.length > 0 ? (
           <ul className="launch-faith-list">
             {announcements.map((item) => (
@@ -91,7 +91,7 @@ export default function CrownFaithCommunityStrip({ faithCommunity = {} }) {
       {/* Celebrations */}
       <CrownCard className="launch-faith-card launch-faith-card--celebrations">
         <div className="launch-section-kicker">Community life</div>
-        <h3 className="launch-faith-title">Celebrations</h3>
+        <h2 className="launch-faith-title">Celebrations</h2>
         {celebrations.length > 0 ? (
           <ul className="launch-faith-celebration-list">
             {celebrations.map((item, idx) => (
