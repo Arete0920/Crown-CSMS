@@ -82,79 +82,15 @@ class SystemSchemaOpsSecurityTests(SimpleTestCase):
         self.assertEqual(response.status_code, 403)
         connection_mock.cursor.assert_not_called()
 
-    @override_settings(CROWN_OPS_SECRET="expected-secret", OPS_SECRET="")
     @patch("crown_api.system_views.call_command")
-    def test_fix_schema_drift_requires_post(self, call_command):
-        request = self.factory.get(
-            "/api/v1/system/fix-schema-drift/",
-            HTTP_X_OPS_SECRET="expected-secret",
-        )
-
-        response = fix_schema_drift_view(request)
-
-        self.assertEqual(response.status_code, 405)
-        call_command.assert_not_called()
-
-    @override_settings(CROWN_OPS_SECRET="", OPS_SECRET="")
-    @patch("crown_api.system_views.call_command")
-    def test_fix_schema_drift_fails_closed_when_secret_is_absent(self, call_command):
+    def test_fix_schema_drift_endpoint_is_retired_and_never_executes_command(self, call_command):
         response = fix_schema_drift_view(
-            self.factory.post("/api/v1/system/fix-schema-drift/")
+            self.factory.post(
+                "/api/v1/system/fix-schema-drift/",
+                HTTP_X_OPS_SECRET="expected-secret",
+            )
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 410)
+        self.assertIn(b"retired", response.content.lower())
         call_command.assert_not_called()
-
-    @override_settings(CROWN_OPS_SECRET="expected-secret", OPS_SECRET="")
-    @patch("crown_api.system_views.call_command")
-    def test_fix_schema_drift_rejects_missing_header(self, call_command):
-        response = fix_schema_drift_view(
-            self.factory.post("/api/v1/system/fix-schema-drift/")
-        )
-
-        self.assertEqual(response.status_code, 403)
-        call_command.assert_not_called()
-
-    @override_settings(CROWN_OPS_SECRET="expected-secret", OPS_SECRET="")
-    @patch("crown_api.system_views.call_command")
-    def test_fix_schema_drift_rejects_wrong_secret(self, call_command):
-        request = self.factory.post(
-            "/api/v1/system/fix-schema-drift/",
-            HTTP_X_OPS_SECRET="wrong-secret",
-        )
-
-        response = fix_schema_drift_view(request)
-
-        self.assertEqual(response.status_code, 403)
-        call_command.assert_not_called()
-
-    @override_settings(
-        CROWN_ENV="production",
-        CROWN_OPS_SECRET="expected-secret",
-        OPS_SECRET="",
-    )
-    @patch("crown_api.system_views.call_command")
-    def test_fix_schema_drift_rejects_non_dev_environment(self, call_command):
-        request = self.factory.post(
-            "/api/v1/system/fix-schema-drift/",
-            HTTP_X_OPS_SECRET="expected-secret",
-        )
-
-        response = fix_schema_drift_view(request)
-
-        self.assertEqual(response.status_code, 403)
-        call_command.assert_not_called()
-
-    @override_settings(CROWN_OPS_SECRET="expected-secret", OPS_SECRET="")
-    @patch("crown_api.system_views.call_command")
-    def test_fix_schema_drift_accepts_exact_secret(self, call_command):
-        request = self.factory.post(
-            "/api/v1/system/fix-schema-drift/",
-            HTTP_X_OPS_SECRET="expected-secret",
-        )
-
-        response = fix_schema_drift_view(request)
-
-        self.assertEqual(response.status_code, 200)
-        call_command.assert_called_once()
-        self.assertEqual(call_command.call_args.args, ("fix_schema_drift",))
