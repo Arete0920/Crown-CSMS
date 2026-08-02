@@ -79,16 +79,16 @@ try {
         python -m coverage erase
     }
 
-    & python -m coverage --rcfile=.coveragerc run -m pytest -q backend --junitxml=$pytestJunit *>&1 |
+    & python -m coverage run --rcfile=.coveragerc -m pytest -q backend --junitxml=$pytestJunit *>&1 |
         Tee-Object -FilePath $pytestLog
     $pytestExitCode = $LASTEXITCODE
 
     # Generate machine-readable reports even when the configured 75% threshold is not met.
-    & python -m coverage --rcfile=.coveragerc json --fail-under=0 -o $coverageJson
+    & python -m coverage json --rcfile=.coveragerc --fail-under=0 -o $coverageJson
     $coverageJsonExitCode = $LASTEXITCODE
-    & python -m coverage --rcfile=.coveragerc xml --fail-under=0 -o $coverageXml
+    & python -m coverage xml --rcfile=.coveragerc --fail-under=0 -o $coverageXml
     $coverageXmlExitCode = $LASTEXITCODE
-    & python -m coverage --rcfile=.coveragerc report *>&1 |
+    & python -m coverage report --rcfile=.coveragerc *>&1 |
         Tee-Object -FilePath $coverageText
     $coverageGateExitCode = $LASTEXITCODE
 
@@ -129,7 +129,7 @@ try {
         source_sha = $sourceSha
         worktree_clean_before_run = $true
         runner = "scripts/release/run_backend_coverage.ps1"
-        test_command = "python -m coverage --rcfile=.coveragerc run -m pytest -q backend --junitxml=<artifact-path>"
+        test_command = "python -m coverage run --rcfile=.coveragerc -m pytest -q backend --junitxml=<artifact-path>"
         coverage_config = ".coveragerc"
         coverage_threshold_percent = 75
         python_version = $pythonVersion
