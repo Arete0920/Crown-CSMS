@@ -133,16 +133,17 @@ jobs:
           VITE_BUILD_SHA: ${{ github.sha }}
           VITE_DEPLOY_TAG: ${{ github.ref_name }}
           VITE_LAUNCH_UI_TAKEOVER: '1'
+          VITE_API_BASE_URL: ${{ vars.CROWN_LIVE_API_BASE_URL || 'https://crown-api-prod.azurewebsites.net' }}
         run: |
           set -euo pipefail
           if [[ "${GITHUB_REF_TYPE:-}" != "tag" ]]; then
             export VITE_SANDBOX_MODE='1'
             export VITE_DEMO_MODE='sandbox'
-            export VITE_API_BASE_URL='https://crown-api-prod.azurewebsites.net'
             echo "Sandbox build env enabled for non-tag deploys"
           else
             echo "Production tag deploy: sandbox build env disabled"
           fi
+          echo "Dashboard API origin configured for deployment build"
           npm run build
 
       - name: Verify SWA config and build.json in dist

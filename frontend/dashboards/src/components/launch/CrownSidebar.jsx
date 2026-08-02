@@ -129,7 +129,7 @@ export default function CrownSidebar({
   const activeNavKey = resolveActiveNavKey(activePath);
 
   return (
-    <aside className="launch-sidebar">
+    <aside className="launch-sidebar" aria-label="Primary application sidebar">
       <BrandLockup />
 
       <nav className="launch-sidebar-nav" aria-label="Primary">
