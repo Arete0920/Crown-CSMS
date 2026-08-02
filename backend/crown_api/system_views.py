@@ -211,11 +211,11 @@ def diagnose_db_tables_view(request):
         if not has_table and has_migrations:
             diagnosis = "SCHEMA_DRIFT"
             message = "Migration ledger says 'applied' but table doesn't exist"
-            fix = "DELETE FROM django_migrations WHERE app = 'financial_aid'; then re-migrate"
+            fix = "Use the approved migration and recovery runbook; direct ledger repair is retired"
         elif has_table and not has_migrations:
             diagnosis = "PARTIAL_DRIFT"
             message = "Table exists but no migration ledger"
-            fix = "Fake applied migrations or re-sync"
+            fix = "Use the approved migration and recovery runbook"
         elif not has_table and not has_migrations:
             diagnosis = "CLEAN"
             message = "No table, no migrations (expected for fresh DB)"
@@ -257,40 +257,14 @@ def diagnose_db_tables_view(request):
 
 @csrf_exempt
 def fix_schema_drift_view(request):
-    """
-    Temporary endpoint to fix financial_aid schema drift.
-    DEV-only. Requires OPS secret in header.
-    Executes: DELETE FROM django_migrations WHERE app = 'financial_aid', then re-migrate.
-    """
-    if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-
-    if not _is_dev_env():
-        return JsonResponse({"error": "Only available in DEV"}, status=403)
-
-    if not _ops_request_is_authorized(request):
-        return JsonResponse({"error": "Forbidden"}, status=403)
-
-    try:
-        out = io.StringIO()
-        call_command("fix_schema_drift", stdout=out, stderr=out)
-        return JsonResponse(
-            {
-                "ok": True,
-                "message": "Schema drift fix completed successfully",
-                "output": out.getvalue(),
-            },
-            status=200,
-        )
-    except Exception:
-        logger.exception("fix_schema_drift_view failed")
-        return JsonResponse(
-            {
-                "ok": False,
-                "error": "Schema drift fix failed.",
-            },
-            status=500,
-        )
+    """Retired destructive schema-repair endpoint retained temporarily as an explicit tombstone."""
+    return JsonResponse(
+        {
+            "ok": False,
+            "error": "This endpoint is retired. Use the approved migration and recovery runbook.",
+        },
+        status=410,
+    )
 
 
 from rest_framework.decorators import api_view, permission_classes
