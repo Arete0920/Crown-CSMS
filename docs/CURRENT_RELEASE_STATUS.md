@@ -1,65 +1,74 @@
 # CROWN Current Release Status
 
-**Date:** 2026-07-31  
+**Date:** 2026-08-03  
 **Repository:** `tcmegahan/Crown2026`  
-**Last observed main before this documentation change:** `d725386a6cfbb48f9967e65e15cd92db27cdfde2`  
-**Status basis:** live repository state and controlling issue `#1619`
+**Last reconciled source snapshot:** `6f9bb70b63e099199f460bc0eb90837903a9f3bc`  
+**Live identity rule:** resolve the current `main`, immutable release tag, workflow runs, and deployed runtime directly from GitHub and the production endpoints; this document records posture and evidence boundaries, not a self-updating Git ref.  
+**Status basis:** exact repository commits, exact-head workflow evidence, deployed runtime evidence, and controlling issue `#1619`
 
 ## Canonical decision
 
-CROWN remains under **bounded remediation before selection of a future immutable release candidate**.
+CROWN remains under **bounded final remediation before selection of the final immutable release candidate**.
 
 - Production: **NOT APPROVED / NO-GO / HOLD**
 - Buyer operational turnover: **NOT APPROVED**
-- External payment processing: **DEFERRED, DISABLED, AND REQUIRED TO FAIL CLOSED**
+- External payment processing: **DEFERRED — NEW OWNER; DISABLED; REQUIRED TO FAIL CLOSED**
 - Controlled diligence and explicitly authorized demonstrations: permitted only with accurate disclosures
 
 GitHub issue `#1619` and its eight lane issues are the sole controlling production-readiness and buyer-handoff framework. Repository checks, issue closure, pull-request completion, documentation updates, or partial evidence do not establish production or buyer readiness.
 
-## Current program posture
+## Verified completed work — do not repeat
 
-The following evidence programs remain incomplete:
+- Governed request-serving coverage passed at `77.59659410394408%` against the unchanged 75% requirement.
+- Conservative operational-inclusive coverage passed at `77.26145725025994%`.
+- The accepted coverage execution completed with `4,319 passed`, `8 skipped`, and zero failures or errors; threshold, exclusions, source boundary, and `.coveragerc` were unchanged.
+- The production-surface inventory framework completed with `2,360` mapped surfaces across all `10` required domains, zero validation errors, zero duplicate identifiers, and zero `UNMAPPED` surfaces.
+- Production Deploy run `30812926506` successfully deployed backend SHA `e3eeebe461e1ecc626e2855cb680ec4eadc83c7d` with migration, build, scan, deployment, health, and identity checks.
+- The deployed frontend and backend both reported SHA `e3eeebe461e1ecc626e2855cb680ec4eadc83c7d` and tag `prod-deploy-20260803-e3eeebe`.
+- Exact-parity certification run `30817788322` passed deployment-identity validation and the Heritage passwordless school-administrator session, but failed the browser/runtime campaign. It is failure evidence, not production authorization.
+- Passwordless Heritage repository remediation and the supported open-session production configuration are complete. The obsolete invitation-secret path must not be recreated.
+- PR `#1866` merged at `ed620e0bdb4a24ad99bf50223d55a93cc785fd88` after exact-head terminal-success evidence. Its full backend run completed with `4,338 passed`, `8 skipped`, `132` subtests passed, and zero failures. The Sandbox evidence gate, tenant-isolation gate, production-surface inventory, route and duplicate checks, builds, security scans, and release gates also passed.
+- PR `#1868` merged at `6f9bb70b63e099199f460bc0eb90837903a9f3bc` after exact-head terminal-success evidence. The frontend dependency lock now resolves `brace-expansion` to patched version `5.0.9`; `npm ci`, high-severity `npm audit`, dependency integrity, dependency review, security scans, builds, and the required regression/evidence gates passed.
+- Production deployment, rollback, restore, evidence-contract, and release-identity mechanisms exist. Their existence is credited; the remaining operational exercises are not complete.
 
-1. authenticated deployed-runtime and complete production-surface certification;
-2. role, RBAC, tenant-isolation, canonical-identity, and audit certification;
-3. application rollback and isolated database restore drills with measured RTO/RPO;
-4. operational secret retrieval, rotation, failed-rotation recovery, revocation, and break-glass exercises;
-5. student-data privacy, contractual, jurisdiction-specific, incident-response, and qualified legal readiness;
-6. deterministic same-SHA CI, deployment, infrastructure, observability, and monitoring proof;
-7. final release documentation, evidence index, runbook, and buyer-handoff reconciliation;
-8. final Founder/Product Owner production authorization.
+## Current repository work
 
-## Repository identity and evidence boundary
+- This bounded two-file authority reconciliation is the final planned source change before release freeze.
+- No final immutable release candidate has been selected. The currently deployed `e3eeebe...` identity is valid historical deployment evidence but does not include the merged runtime and dependency repairs and cannot be the final release identity.
+- Exact release identity must be selected only after this authority reconciliation merges and after the final repository-distribution boundary is verified.
 
-The last observed `main` before this documentation change was:
+## Remaining completion evidence
 
-`d725386a6cfbb48f9967e65e15cd92db27cdfde2`
+The following evidence remains required before production authorization:
 
-That SHA includes the merged provider-neutral payment containment work from PR `#1796` and the tests-only tenant-safe export coverage tranche from PR `#1799`. It is not an approved production release candidate and has not been certified across deployment, runtime, recovery, secrets operations, privacy/legal readiness, or final authorization. Its authoritative exact coverage percentage remains subject to a dedicated coverage run against that unchanged SHA.
+1. verify the final current Git-history and distributable-bundle boundary;
+2. freeze one final SHA and immutable production tag;
+3. deploy backend and frontend from that exact SHA/tag and reconcile migration, build, configuration, and runtime identity;
+4. run one exact-parity production certification campaign for required personas, routes, tenant/RBAC denials, provenance, audit attribution, and payment containment;
+5. demonstrate monitoring, alert delivery, acknowledgement, escalation, drift detection, and incident response;
+6. execute application rollback and isolated database restore using an approved operational backup or accepted substitute, with measured and accepted RTO/RPO;
+7. complete the metadata-only inventory and representative lifecycle exercises for active credentials and privileged access, including rotation, failed-rotation recovery, revocation, and controlled break-glass access;
+8. verify active vendors, regions, agreements, DPAs, retention, support access, subprocessors, and incident obligations;
+9. execute representative synthetic correction, bounded export and denial, deletion or anonymization, legal-hold, and restored-backup handling exercises;
+10. reconcile the final evidence package and record separate limited-production, buyer-handoff, and payment decisions.
 
-Merging this or any later change necessarily creates a different `main` identity. Therefore, the live current `main` SHA must always be resolved directly from the repository and may not be inferred from this document. No documentation or source change may be represented as covered by evidence collected for `d725386a6cfbb48f9967e65e15cd92db27cdfde2` without fresh exact-SHA verification.
+## Security and repository-distribution boundary
 
-## Security containment boundary
-
-The historical Ed25519 private-key path remains a material unresolved history boundary:
+The historical Ed25519 private-key path was:
 
 `solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/crypto_attestation/ed25519_private_key_DO_NOT_SHARE.pem`
 
-The following must not be claimed complete without separate evidence:
+Accepted evidence records that a rewritten mirror previously removed the forbidden path, passed full repository verification, returned zero all-ref Gitleaks findings, and produced zero findings across reachable DOCX blobs. That proof is historical preparation and must be refreshed against the final authoritative refs and distributable artifacts.
 
-- exposed-key retirement or revocation;
-- replacement-key registration;
-- protected-ref history rewrite;
-- removal from all retained branches, tags, forks, mirrors, caches, artifacts, releases, or bundles;
-- creation and verification of a clean distributable diligence bundle.
+The Founder/Product Owner attested that the exposed Ed25519 key was repository-only and was not installed, registered, trusted, or used in an external production, signing, attestation, Azure, GitHub, Solomon, or other runtime system. Based on that attestation, no external revocation, downstream trust migration, or replacement production key is required solely for this incident unless contrary evidence is discovered.
 
-Pre-remediation evidence must remain restricted and must not be represented as a clean distribution artifact.
+The remaining boundary is limited to final authoritative-ref verification, exact-path absence, all-ref secret scanning, fresh-clone verification, stale artifact and bundle replacement, and production of a clean distributable diligence bundle.
 
 ## Payment-processing boundary
 
-No payment processor is approved for production operation. Card, ACH, autopay, processor webhook, refund, settlement, dispute, and external payment-confirmation paths must remain disabled unless a future owner-authorized program implements and certifies them.
+Payment-provider selection, contracting, credentialing, transaction certification, and activation are **DEFERRED — NEW OWNER**. No payment processor is approved for production operation. Card, ACH, autopay, processor webhook, refund, settlement, dispute, and external payment-confirmation paths must remain disabled unless a future owner-authorized processor-specific program implements and certifies them.
 
-Provider-neutral accounting, billing, ledger, invoice, balance, payment-record, and payment-plan source material may be retained for diligence. Its presence does not establish production fitness.
+Provider-neutral accounting, billing, ledger, invoice, balance, payment-record, and payment-plan source material may be retained for diligence. Its presence does not establish payment-processing readiness.
 
 ## Buyer and successor handoff
 
@@ -69,29 +78,23 @@ No buyer, successor, or new owner has been approved for operational turnover. Re
 
 CROWN may be described only as designed to support schools in meeting applicable student-data privacy and security obligations. It must not be described as FERPA certified, COPPA certified, universally compliant, regulator approved, or compliance guaranteed.
 
-## Repository operation during bounded remediation
+## Repository operation during final remediation
 
-Permitted changes are limited to:
+Permitted source changes are limited to:
 
-- security containment and factual correction;
-- removal or disabling of stale automation;
-- cleanup of obsolete, duplicate, generated, or misleading material;
-- preservation work that does not imply release approval;
-- owner-authorized diligence preparation;
-- bounded remediation explicitly tied to the open eight-lane program.
+- this bounded canonical-authority correction;
+- a bounded evidence-supported repair only if a final exact-SHA gate proves a new defect;
+- final evidence-index, limitations, runbook, and owner-handoff reconciliation before the immutable release freeze.
 
-A production restart requires:
+After the source freeze, permitted work is limited to exact-SHA deployment and certification evidence, execution and recording of the remaining operational lanes, and final decision records that do not alter the frozen release source.
 
-1. completion of all authorized repository-changing work;
-2. explicit re-establishment of repository freeze;
-3. selection of one immutable release candidate;
-4. fresh same-SHA repository, deployment, runtime, operational, privacy/legal, and recovery evidence;
-5. explicit Founder/Product Owner authorization and a new GO/NO-GO decision.
+Coverage development, another master plan, another production-surface inventory redesign, passwordless-access reconstruction, deployment-system reconstruction, broad speculative remediation, and payment-provider selection are excluded.
 
 ## Current final status
 
-**REPOSITORY STATE: BOUNDED REMEDIATION; NO IMMUTABLE RC SELECTED**  
+**REPOSITORY STATE: RUNTIME AND DEPENDENCY REPAIRS MERGED; FINAL BOUNDED AUTHORITY RECONCILIATION IN PROGRESS; NO FINAL IMMUTABLE RC SELECTED**  
 **PRODUCTION DECISION: NOT APPROVED / NO-GO / HOLD**  
 **BUYER TURNOVER: NOT APPROVED**  
 **PAYMENT PROCESSING: DISABLED / FAIL CLOSED**  
-**HISTORY REMEDIATION: NOT VERIFIED COMPLETE**
+**PAYMENT OWNERSHIP: DEFERRED — NEW OWNER**  
+**HISTORY REMEDIATION: FINAL CURRENT-REF AND DISTRIBUTION VERIFICATION REQUIRED**
