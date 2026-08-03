@@ -66,8 +66,10 @@ if [ -n "$bundle" ]; then
     echo "ERROR: bundle not found: $bundle" >&2
     exit 2
   fi
-  git bundle verify "$bundle" >/dev/null
+  bundle="$(realpath "$bundle")"
   cleanup_dir="$(mktemp -d)"
+  git init --bare "$cleanup_dir/verify.git" >/dev/null
+  git -C "$cleanup_dir/verify.git" bundle verify "$bundle" >/dev/null
   git clone --mirror "$bundle" "$cleanup_dir/repo.git" >/dev/null 2>&1
   repo="$cleanup_dir/repo.git"
 fi
