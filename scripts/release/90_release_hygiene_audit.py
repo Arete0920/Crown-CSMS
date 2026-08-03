@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import re
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,33 +29,50 @@ def result(level: str, code: str, message: str, path: str = "") -> dict:
 
 
 def check_canonical_release_status() -> list[dict]:
+    """Validate only the current canonical authority and controlling program.
+
+    Historical scorecards and dated execution boards are provenance, not current
+    release authority, and must not be required by this guard.
+    """
     out = []
-    status = read("docs/CURRENT_RELEASE_STATUS.md")
-    scorecard = read("docs/release/CURRENT_RELEASE_SCORECARD_20260528.md")
-    board = read("docs/release/P0_EXECUTION_BOARD_20260528.md")
+    path = "docs/CURRENT_RELEASE_STATUS.md"
+    status = read(path)
 
     if not status:
-        return [result(FAIL, "missing_current_release_status", "docs/CURRENT_RELEASE_STATUS.md is missing", "docs/CURRENT_RELEASE_STATUS.md")]
+        return [result(FAIL, "missing_current_release_status", f"{path} is missing", path)]
 
-    if "Repository-wide decision: CONDITIONAL GO" in status:
-        out.append(result(PASS, "canonical_decision_present", "Canonical release authority states CONDITIONAL GO", "docs/CURRENT_RELEASE_STATUS.md"))
-    elif "Repository-wide decision:" in status:
-        out.append(result(WARN, "canonical_decision_changed", "Canonical release decision changed; verify scorecard and P0 board match", "docs/CURRENT_RELEASE_STATUS.md"))
+    required_claims = {
+        "canonical_no_go": "NOT APPROVED / NO-GO / HOLD",
+        "buyer_turnover_not_approved": "Buyer operational turnover: **NOT APPROVED**",
+        "payments_deferred_fail_closed": "External payment processing: **DEFERRED — NEW OWNER; DISABLED; REQUIRED TO FAIL CLOSED**",
+        "payment_summary_fail_closed": "**PAYMENT PROCESSING: DISABLED / FAIL CLOSED**",
+        "payment_owner_deferred": "**PAYMENT OWNERSHIP: DEFERRED — NEW OWNER**",
+        "controlling_program": "GitHub issue `#1619` and its eight lane issues are the sole controlling",
+    }
+    for code, claim in required_claims.items():
+        if claim in status:
+            out.append(result(PASS, code, f"Canonical status contains required claim: {claim}", path))
+        else:
+            out.append(result(FAIL, code, f"Canonical status is missing required claim: {claim}", path))
+
+    obsolete_current_claims = (
+        "Repository-wide decision: CONDITIONAL GO",
+        "Current decision: CONDITIONAL GO",
+        "PRODUCTION DECISION: GO",
+        "BUYER TURNOVER: APPROVED",
+    )
+    found_obsolete = [claim for claim in obsolete_current_claims if claim in status]
+    if found_obsolete:
+        out.append(
+            result(
+                FAIL,
+                "obsolete_release_claim",
+                f"Canonical status contains obsolete authority text: {', '.join(found_obsolete)}",
+                path,
+            )
+        )
     else:
-        out.append(result(FAIL, "canonical_decision_missing", "Canonical release decision line missing", "docs/CURRENT_RELEASE_STATUS.md"))
-
-    if scorecard and "Current decision: CONDITIONAL GO" in scorecard and "Repository-wide decision: CONDITIONAL GO" in status:
-        out.append(result(PASS, "scorecard_decision_matches", "Scorecard and canonical status both state CONDITIONAL GO", "docs/release/CURRENT_RELEASE_SCORECARD_20260528.md"))
-    elif scorecard:
-        out.append(result(FAIL, "scorecard_decision_mismatch", "Scorecard decision does not clearly match canonical release authority", "docs/release/CURRENT_RELEASE_SCORECARD_20260528.md"))
-    else:
-        out.append(result(FAIL, "scorecard_missing", "Current release scorecard is missing", "docs/release/CURRENT_RELEASE_SCORECARD_20260528.md"))
-
-    if "Deploy SHA parity status: PARTIAL" in status and "P0-1" in board and "COMPLETE" in board:
-        out.append(result(WARN, "p0_board_parity_conflict", "P0 board appears to mark parity complete while canonical authority says partial", "docs/release/P0_EXECUTION_BOARD_20260528.md"))
-
-    if "Protected-spine runtime/policy gate status: PARTIAL" in status and "P0-3" in board and "COMPLETE" in board:
-        out.append(result(WARN, "p0_board_protected_spine_conflict", "P0 board appears to mark protected spine complete while canonical authority says partial", "docs/release/P0_EXECUTION_BOARD_20260528.md"))
+        out.append(result(PASS, "no_obsolete_release_claim", "Canonical status contains no obsolete GO authority text", path))
 
     return out
 
