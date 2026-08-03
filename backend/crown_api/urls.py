@@ -71,13 +71,13 @@ urlpatterns = [
     # Little Lambs is an operating alias of Aftercare; keep it before api_v1 catch-all.
     path("api/v1/little-lambs/", include("aftercare.urls")),
     path("api/little-lambs/", include("aftercare.urls")),
-    # Canonical API
+    # Canonical API. Specific dashboard routes must precede each broad alias.
     path("api/v1/dashboards/", include("crown_api.dashboards.urls")),
     path("api/v1/", include("crown_api.api_v1_urls")),
-    # Back-compat alias: /api/* behaves like /api/v1/*
-    path("api/", include("crown_api.api_v1_urls")),
-    # Back-compat alias: /api/dashboards/* (mirrors api/v1/dashboards/)
+    # Back-compat alias: /api/dashboards/* mirrors /api/v1/dashboards/*.
     path("api/dashboards/", include("crown_api.dashboards.urls")),
+    # Back-compat alias: /api/* behaves like /api/v1/*.
+    path("api/", include("crown_api.api_v1_urls")),
     # Curriculum (read-only, demo-safe)
     path("api/curriculum/", include("curriculum.urls")),
     # Classroom (read-only, demo-safe)

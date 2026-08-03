@@ -33,7 +33,7 @@ describe("dashboard API client", () => {
       response({ widgets: [] }, 200, { "x-correlation-id": "corr-1" }),
     );
 
-    await expect(fetchDashboardSummary("school-123", "teacher")).resolves.toEqual({
+    await expect(fetchDashboardSummary("school-123")).resolves.toEqual({
       ok: true,
       status: 200,
       data: { widgets: [] },
@@ -45,15 +45,15 @@ describe("dashboard API client", () => {
       credentials: "include",
       method: "GET",
       headers: {
-        "X-Demo-Role": "teacher",
         "X-School-Id": "school-123",
       },
     });
   });
 
-  it("uses the canonical client for all dashboard endpoints", async () => {
+  it("uses the canonical client for all dashboard endpoints without forwarding demo role authority", async () => {
     authenticatedFetch.mockResolvedValue(response({ ok: true }));
 
+    // Extra legacy role arguments are intentionally ignored by the production client.
     await fetchDashboardMe("school", "admin");
     await fetchDashboardDrilldown("attendance", "school", "admin");
     await fetchDashboardAlerts("school", "admin");
@@ -63,11 +63,14 @@ describe("dashboard API client", () => {
       "/api/dashboards/drilldown/?widget=attendance",
       "/api/dashboards/alerts/",
     ]);
-    expect(authenticatedFetch.mock.calls.map(([, init]) => init.headers["X-School-Id"])).toEqual([
-      "school",
-      "school",
-      "school",
+    expect(authenticatedFetch.mock.calls.map(([, init]) => init.headers)).toEqual([
+      { "X-School-Id": "school" },
+      { "X-School-Id": "school" },
+      { "X-School-Id": "school" },
     ]);
+    expect(
+      authenticatedFetch.mock.calls.some(([, init]) => Object.hasOwn(init.headers, "X-Demo-Role")),
+    ).toBe(false);
   });
 
   it("normalizes structured failures without throwing", async () => {
@@ -76,7 +79,7 @@ describe("dashboard API client", () => {
     error.body = JSON.stringify({ detail: "Not authorized" });
     authenticatedFetch.mockRejectedValue(error);
 
-    await expect(fetchDashboardSummary("school", "parent")).resolves.toEqual({
+    await expect(fetchDashboardSummary("school")).resolves.toEqual({
       ok: false,
       status: 403,
       data: { detail: "Not authorized" },

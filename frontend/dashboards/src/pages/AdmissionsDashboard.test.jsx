@@ -41,6 +41,7 @@ describe('AdmissionsDashboard data truth contract', () => {
     render(<AdmissionsDashboard />);
 
     expect(captured.roleKey).toBe('admissions');
+    expect(captured.config.disableLiveData).toBe(true);
     expect(Array.isArray(captured.config.metrics)).toBe(true);
     expect(captured.config.metrics.every((metric) => metric.dataState === 'fallback')).toBe(true);
     expect(captured.config.metrics.every((metric) => metric.sourceLabel === 'Admissions template fallback')).toBe(true);
@@ -80,6 +81,7 @@ describe('AdmissionsDashboard data truth contract', () => {
 
     render(<AdmissionsDashboard />);
 
+    expect(captured.config.disableLiveData).toBe(true);
     expect(captured.config.metrics.every((metric) => metric.dataState === 'live')).toBe(true);
     expect(captured.config.metrics.every((metric) => metric.sourceLabel === 'Admissions summary API')).toBe(true);
     expect(captured.config.commandModules.every((module) => module.dataState === 'live')).toBe(true);

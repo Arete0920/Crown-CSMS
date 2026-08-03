@@ -9,6 +9,7 @@ Checks:
   3. Every wizard in wizard_registry.WIZARDS appears in the response
   4. All entries have required keys and correct types
   5. slugs are unique — no double-registration
+  6. response identifies the active backend registry as its live source
 """
 
 from django.test import TestCase
@@ -57,6 +58,9 @@ class TestWizardDiscoveryShape(TestCase):
         self.assertIn("wizards", self.data)
         self.assertIsInstance(self.data["wizards"], list)
 
+    def test_live_registry_provenance(self):
+        self.assertEqual(self.data.get("meta", {}).get("served_from"), "live")
+
     def test_entry_required_fields(self):
         for entry in self.data["wizards"]:
             for field in ("key", "slug", "title", "enabled"):
@@ -101,6 +105,6 @@ class TestWizardDiscoveryCompleteness(TestCase):
     def test_expected_slugs_present(self):
         """Derive expected slugs from registry and confirm they all appear."""
         expected = {w["url_prefix"].split("/")[2] for w in WIZARDS}
-        actual   = {w["slug"] for w in self.wizards}
-        missing  = expected - actual
+        actual = {w["slug"] for w in self.wizards}
+        missing = expected - actual
         self.assertFalse(missing, f"Slugs present in registry but missing from response: {missing}")

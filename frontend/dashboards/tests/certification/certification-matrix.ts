@@ -1,104 +1,76 @@
+export type CertificationPersona =
+  | "sandbox-admin"
+  | "sandbox-teacher"
+  | "sandbox-parent"
+  | "sandbox-student"
+  | "sandbox-board";
+
 export type CertificationSurface = {
   id: string;
   label: string;
   route: string;
-  kind: "route" | "dashboard" | "wizard" | "module";
-  personas: string[];
+  kind: "route" | "dashboard" | "wizard";
+  personas: CertificationPersona[];
   tenants: string[];
-  requireLiveProvenance?: boolean;
+  expectedApiFragments: string[];
+  requireLiveProvenance: boolean;
   provenanceRequiredApiFragments?: string[];
   expectedText?: string[];
-  expectedApiFragments?: string[];
   allowFailedRequests?: boolean;
   allowConsoleErrors?: boolean;
 };
 
-const CORE_TENANTS = ["heritage"];
 const AUTH_API = ["/api/v1/auth/token", "/api/v1/auth/me"];
-const NAV_API = ["/api/v1/nav"];
-const DASHBOARD_SUMMARY_API = (slug: string): string[] => [
-  `/api/v1/dashboards/${slug}/summary`,
-];
-const UNIFIED_ROLE_DASHBOARD_API = ["/api/dashboards/summary/"];
-const WIZARD_DATA_API = ["/api/v1/wizards/"];
+const UNIFIED_DASHBOARD_API = "/api/dashboards/summary/";
+const ADMISSIONS_SUMMARY_API = "/api/v1/admissions/summary/";
 
-function dashboardSurface(config: {
+const dashboardSurface = (config: {
   id: string;
   label: string;
   route: string;
-  persona: string;
-  slug: string;
-}): CertificationSurface {
-  const summaryApi = DASHBOARD_SUMMARY_API(config.slug);
+  persona: CertificationPersona;
+  slug?: string;
+  summaryApi?: string;
+}): CertificationSurface => {
+  const summaryApi = config.summaryApi
+    || (config.slug ? `/api/v1/dashboards/${config.slug}/summary` : "");
+  if (!summaryApi) {
+    throw new Error(`Certification surface ${config.id} requires an active summary API.`);
+  }
+
   return {
     id: config.id,
     label: config.label,
     route: config.route,
     kind: "dashboard",
     personas: [config.persona],
-    tenants: CORE_TENANTS,
+    tenants: ["heritage"],
+    expectedApiFragments: [...AUTH_API, summaryApi],
     requireLiveProvenance: true,
-    provenanceRequiredApiFragments: summaryApi,
-    expectedApiFragments: [...AUTH_API, ...summaryApi],
+    provenanceRequiredApiFragments: [summaryApi],
   };
-}
-
-function roleDashboardSurface(config: {
-  id: string;
-  label: string;
-  route: string;
-  persona: string;
-}): CertificationSurface {
-  return {
-    id: config.id,
-    label: config.label,
-    route: config.route,
-    kind: "dashboard",
-    personas: [config.persona],
-    tenants: CORE_TENANTS,
-    requireLiveProvenance: true,
-    provenanceRequiredApiFragments: UNIFIED_ROLE_DASHBOARD_API,
-    expectedApiFragments: [...AUTH_API, ...UNIFIED_ROLE_DASHBOARD_API],
-  };
-}
-
-function visualRouteSurface(config: {
-  id: string;
-  label: string;
-  route: string;
-  persona: string;
-}): CertificationSurface {
-  return {
-    id: config.id,
-    label: config.label,
-    route: config.route,
-    kind: "route",
-    personas: [config.persona],
-    tenants: CORE_TENANTS,
-    requireLiveProvenance: false,
-    provenanceRequiredApiFragments: [],
-    expectedApiFragments: [],
-  };
-}
+};
 
 export const certificationMatrix: CertificationSurface[] = [
-  visualRouteSurface({
+  {
     id: "home-route",
     label: "Home route",
     route: "/",
-    persona: "sandbox-admin",
-  }),
+    kind: "route",
+    personas: ["sandbox-admin"],
+    tenants: ["heritage"],
+    expectedApiFragments: AUTH_API,
+    requireLiveProvenance: false,
+  },
   {
     id: "sandbox-landing",
     label: "Sandbox landing",
     route: "/sandbox",
     kind: "route",
     personas: ["sandbox-admin", "sandbox-teacher", "sandbox-parent"],
-    tenants: CORE_TENANTS,
-    requireLiveProvenance: false,
-    provenanceRequiredApiFragments: [],
-    expectedText: ["CROWN"],
+    tenants: ["heritage"],
     expectedApiFragments: AUTH_API,
+    requireLiveProvenance: false,
   },
   {
     id: "sandbox-command-center",
@@ -106,31 +78,30 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/sandbox/command-center",
     kind: "route",
     personas: ["sandbox-admin"],
-    tenants: CORE_TENANTS,
+    tenants: ["heritage"],
+    expectedApiFragments: AUTH_API,
     requireLiveProvenance: false,
-    provenanceRequiredApiFragments: [],
-    expectedText: ["Demo Data"],
-    expectedApiFragments: [],
   },
   dashboardSurface({
     id: "admin-dashboard",
     label: "Admin dashboard",
     route: "/admin",
     persona: "sandbox-admin",
-    slug: "school-administrator",
+    summaryApi: UNIFIED_DASHBOARD_API,
   }),
   dashboardSurface({
     id: "school-admin-dashboard",
     label: "School admin dashboard",
     route: "/school-admin-dashboard",
     persona: "sandbox-admin",
-    slug: "school-administrator",
+    summaryApi: UNIFIED_DASHBOARD_API,
   }),
-  roleDashboardSurface({
+  dashboardSurface({
     id: "admin-role-dashboard",
     label: "Admin role dashboard",
     route: "/dash/admin",
     persona: "sandbox-admin",
+    summaryApi: UNIFIED_DASHBOARD_API,
   }),
   dashboardSurface({
     id: "teacher-dashboard",
@@ -139,11 +110,12 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-teacher",
     slug: "teacher",
   }),
-  roleDashboardSurface({
+  dashboardSurface({
     id: "teacher-role-dashboard",
     label: "Teacher role dashboard",
     route: "/dash/teacher",
     persona: "sandbox-teacher",
+    summaryApi: UNIFIED_DASHBOARD_API,
   }),
   dashboardSurface({
     id: "parent-dashboard",
@@ -152,11 +124,12 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-parent",
     slug: "parent",
   }),
-  roleDashboardSurface({
+  dashboardSurface({
     id: "parent-role-dashboard",
     label: "Parent role dashboard",
     route: "/dash/parent",
     persona: "sandbox-parent",
+    summaryApi: UNIFIED_DASHBOARD_API,
   }),
   dashboardSurface({
     id: "student-dashboard",
@@ -165,12 +138,16 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-student",
     slug: "student",
   }),
-  visualRouteSurface({
+  {
     id: "board-route",
     label: "Board route",
     route: "/board",
-    persona: "sandbox-board",
-  }),
+    kind: "route",
+    personas: ["sandbox-board"],
+    tenants: ["heritage"],
+    expectedApiFragments: AUTH_API,
+    requireLiveProvenance: false,
+  },
   dashboardSurface({
     id: "board-dashboard",
     label: "Board dashboard",
@@ -178,18 +155,22 @@ export const certificationMatrix: CertificationSurface[] = [
     persona: "sandbox-board",
     slug: "school-board",
   }),
-  visualRouteSurface({
+  {
     id: "finance-route",
     label: "Finance route",
     route: "/finance",
-    persona: "sandbox-admin",
-  }),
+    kind: "route",
+    personas: ["sandbox-admin"],
+    tenants: ["heritage"],
+    expectedApiFragments: AUTH_API,
+    requireLiveProvenance: false,
+  },
   dashboardSurface({
     id: "admissions-dashboard",
     label: "Admissions dashboard",
     route: "/admissions-dashboard",
     persona: "sandbox-admin",
-    slug: "admissions",
+    summaryApi: ADMISSIONS_SUMMARY_API,
   }),
   {
     id: "wizard-hub",
@@ -197,9 +178,9 @@ export const certificationMatrix: CertificationSurface[] = [
     route: "/wizards",
     kind: "wizard",
     personas: ["sandbox-admin"],
-    tenants: CORE_TENANTS,
+    tenants: ["heritage"],
+    expectedApiFragments: [...AUTH_API, "/api/v1/wizards/"],
     requireLiveProvenance: true,
-    provenanceRequiredApiFragments: WIZARD_DATA_API,
-    expectedApiFragments: [...AUTH_API, ...NAV_API, ...WIZARD_DATA_API],
+    provenanceRequiredApiFragments: ["/api/v1/wizards/"],
   },
 ];

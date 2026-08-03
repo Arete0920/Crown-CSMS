@@ -90,6 +90,10 @@ export default function AdmissionsDashboard() {
   const topSourceLabel = topSource?.source ? `${topSource.source} (${topSource.total})` : 'No source data yet';
 
   const config = cloneConfig(baseConfig);
+  // This page owns its authoritative admissions API lifecycle through
+  // useAdmissionsDashboardData. Prevent CrownDashboardTemplate from issuing a
+  // second, obsolete /api/v1/dashboards/admissions/summary request.
+  config.disableLiveData = true;
   config.dataState = dataState;
   config.sourceLabel = dataSourceLabel;
   config.lastSyncLabel = hasLiveSummary ? 'Last synced just now' : dataStateLabel;
