@@ -68,16 +68,20 @@ describe("canonical authenticated client", () => {
     );
   });
 
-  it("adds auth, tenant, correlation, credentials, and query to relative API calls", async () => {
+  it("adds auth, tenant, credentials, and query to configured cross-origin API calls without an unsupported correlation preflight header", async () => {
     vi.stubEnv("VITE_API_BASE_URL", "https://crown-api-prod.azurewebsites.net");
     const response = new Response(JSON.stringify({ ok: true }), {
       status: 200,
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        "x-correlation-id": "server-corr",
+      },
     });
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
     await authenticatedFetch("/api/v1/dashboards/teacher/summary", {
       query: { term: "fall" },
       correlationId: "corr-123",
+      headers: { "X-Correlation-Id": "caller-corr" },
     });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(
@@ -86,7 +90,32 @@ describe("canonical authenticated client", () => {
     expect(init.credentials).toBe("include");
     expect(init.headers.get("Authorization")).toBe("Bearer token-123");
     expect(init.headers.get("X-School-Id")).toBe("school-123");
-    expect(init.headers.get("X-Correlation-Id")).toBe("corr-123");
+    expect(init.headers.has("X-Correlation-Id")).toBe(false);
+  });
+
+  it("retains client correlation headers when no API base is configured", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    const response = new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
+    await authenticatedFetch("/api/v1/nav/", { correlationId: "corr-local" });
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers.get("X-Correlation-Id")).toBe("corr-local");
+  });
+
+  it("retains client correlation headers for a configured same-origin API base", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", window.location.origin);
+    const response = new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(response);
+    await authenticatedFetch("/api/v1/nav/", { correlationId: "corr-same-origin" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${window.location.origin}/api/v1/nav/`);
+    expect(init.headers.get("X-Correlation-Id")).toBe("corr-same-origin");
   });
 
   it("does not forward Crown credentials or tenant context to caller-supplied external URLs", async () => {

@@ -185,7 +185,13 @@ export async function authenticatedFetch(input, init = {}) {
     if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
     const schoolId = getSelectedSchoolId();
     if (schoolId && !headers.has("X-School-Id")) headers.set("X-School-Id", schoolId);
-    if (!headers.has("X-Correlation-Id")) headers.set("X-Correlation-Id", correlationId);
+    const sameOriginCorrelation = !getApiBaseUrl()
+      || (typeof resolvedInput === "string" && isSameBrowserOrigin(resolvedInput));
+    if (!sameOriginCorrelation) {
+      headers.delete("X-Correlation-Id");
+    } else if (!headers.has("X-Correlation-Id")) {
+      headers.set("X-Correlation-Id", correlationId);
+    }
   }
 
   const controller = new AbortController();
