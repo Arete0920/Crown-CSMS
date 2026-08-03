@@ -1,4 +1,4 @@
-﻿"""
+"""
 Canonical API v1 routes.
 All /api/v1/* and /api/* routes resolve through here.
 """
@@ -10,7 +10,6 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from applications.views_admissions import (
-    admissions_summary,
     admissions_drilldown,
     admissions_submit,
     admissions_public_config,
@@ -22,6 +21,7 @@ from applications.views_admissions import (
     admissions_lifecycle_chain_update,
     admissions_application_event_replay,
 )
+from crown_api.admissions_runtime import admissions_summary
 from crown_api.system_views import SeedStatusView, demo_reset_view, diagnose_db_tables_view, fix_schema_drift_view
 from crown_api.ops_views import ensure_ci_user, demo_school
 from crown_api.release_gate_views import (
@@ -37,6 +37,7 @@ def _optional_module_exists(module_path: str) -> bool:
         return find_spec(module_path) is not None
     except (ModuleNotFoundError, ValueError):
         return False
+
 
 urlpatterns = [
     # DEV-only ops endpoints (must come early before includes)
@@ -143,4 +144,3 @@ urlpatterns = [
 if _optional_module_exists("crm_marketing.api.urls"):
     # CRM Marketing add-on (non-canonical core truth)
     urlpatterns.insert(-4, path("crm/", include("crm_marketing.api.urls")))
-

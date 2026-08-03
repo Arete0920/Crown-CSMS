@@ -5,12 +5,12 @@ const REQUIRED_AUTHENTICATED_DASHBOARD_ROUTES = [
   {
     route: "/school-admin-dashboard",
     persona: "sandbox-admin",
-    expectedApi: "/api/v1/dashboards/school-administrator/summary",
+    expectedApi: "/api/dashboards/summary/",
   },
   {
     route: "/admin",
     persona: "sandbox-admin",
-    expectedApi: "/api/v1/dashboards/school-administrator/summary",
+    expectedApi: "/api/dashboards/summary/",
   },
   {
     route: "/dash/admin",
@@ -37,11 +37,26 @@ const REQUIRED_AUTHENTICATED_DASHBOARD_ROUTES = [
     persona: "sandbox-parent",
     expectedApi: "/api/dashboards/summary/",
   },
+  {
+    route: "/student",
+    persona: "sandbox-student",
+    expectedApi: "/api/v1/dashboards/student/summary",
+  },
+  {
+    route: "/school-board-dashboard",
+    persona: "sandbox-board",
+    expectedApi: "/api/v1/dashboards/school-board/summary",
+  },
+  {
+    route: "/admissions-dashboard",
+    persona: "sandbox-admin",
+    expectedApi: "/api/v1/admissions/summary/",
+  },
 ];
 
 describe("authenticated dashboard proof matrix", () => {
   it.each(REQUIRED_AUTHENTICATED_DASHBOARD_ROUTES)(
-    "retains $route for $persona with its owning API contract",
+    "retains $route for $persona with its active owning API contract",
     ({ route, persona, expectedApi }) => {
       const surface = certificationMatrix.find((candidate) => candidate.route === route);
 
@@ -60,5 +75,17 @@ describe("authenticated dashboard proof matrix", () => {
 
     expect(matchingRows).toHaveLength(routes.length);
     expect(new Set(matchingRows.map((surface) => surface.route)).size).toBe(routes.length);
+  });
+
+  it("does not retain superseded dashboard-summary routes", () => {
+    const staleFragments = [
+      "/api/v1/dashboards/school-administrator/summary",
+      "/api/v1/dashboards/admissions/summary",
+    ];
+    const allExpected = certificationMatrix.flatMap((surface) => surface.expectedApiFragments);
+
+    for (const fragment of staleFragments) {
+      expect(allExpected).not.toContain(fragment);
+    }
   });
 });

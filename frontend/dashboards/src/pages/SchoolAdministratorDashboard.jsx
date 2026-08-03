@@ -40,6 +40,13 @@ function cloneDecisionPanel(decisionPanel) {
 function buildBaseConfig(baseConfig) {
   return {
     ...baseConfig,
+    // Preserve the established route/navigation contract used by the release
+    // proof while this page switches to its authoritative live-data lifecycle.
+    dashboardTitle: 'School Administrator Dashboard',
+    // This page already owns its authoritative live-data lifecycle through
+    // loadSchoolAdministratorLiveSnapshot. Prevent CrownDashboardTemplate from
+    // issuing a second obsolete role-specific summary request.
+    disableLiveData: true,
     metrics: cloneMetrics(baseConfig.metrics),
     commandModules: cloneCommandModules(baseConfig.commandModules),
     decisionPanel: cloneDecisionPanel(baseConfig.decisionPanel),
@@ -160,7 +167,7 @@ function applyLiveDashboardCommandModules(config, context) {
         { label: 'Route', value: routeLabel },
       ],
       details: [
-        `Dashboard identity loaded from /api/dashboards/me/.`,
+        'Dashboard identity loaded from /api/dashboards/me/.',
         `Summary widgets: ${widgetCount}`,
         `Alert count: ${alertCount}`,
       ],

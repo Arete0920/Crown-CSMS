@@ -22,4 +22,12 @@ _PERM = [IsAuthenticated]
 @authentication_classes(_AUTH)
 @permission_classes(_PERM)
 def wizard_discovery(request):
-    return Response({"wizards": list_wizards()})
+    # This response is generated from the active backend wizard registry at
+    # request time. Preserve explicit provenance so production certification
+    # can distinguish the live registry from frontend fallback or sample data.
+    return Response(
+        {
+            "wizards": list_wizards(),
+            "meta": {"served_from": "live"},
+        }
+    )

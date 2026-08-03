@@ -19,8 +19,14 @@ class DevOpenApiPermissions:
             return True
         return IsAuthenticated().has_permission(request, view)
 
+
 from core.permissions import user_has_permission
 
+from .live_personas import (
+    LIVE_PERSONA_DASHBOARDS,
+    PersonaDashboardPermissionDenied,
+    build_persona_dashboard_payload,
+)
 from .models import DashboardSnapshot
 from .payload_contract import validate_dashboard_payload
 from .sample_payloads import SAMPLE_PAYLOAD_BUILDERS
@@ -32,6 +38,13 @@ DASHBOARD_PAYLOAD_BUILDERS = {
     **SAMPLE_PAYLOAD_BUILDERS,
     **BATCH5_EXTRA_PAYLOAD_BUILDERS,
 }
+
+# These builders query authoritative runtime services and self-identify as
+# live/live_db only when that query succeeds. Production may execute them, but
+# it must still reject any sample fallback they return.
+LIVE_RUNTIME_DASHBOARDS = frozenset({
+    'school-board',
+})
 
 STAFF_ONLY_DASHBOARDS = frozenset({
     'dashboard-certification-center',
@@ -113,6 +126,7 @@ def _resolve_school_strict(
 ):
     """Resolve X-School-Id; an optional dev-open fallback may use the configured demo school."""
     from core.models import School
+
     raw = request.META.get('HTTP_X_SCHOOL_ID', '').strip()
     if not raw:
         if allow_dev_open_fallback and _dev_open_api_enabled():
@@ -142,6 +156,29 @@ def _resolve_school_strict(
     return school
 
 
+def _live_meta(*, school_id, source):
+    return {
+        'served_from': 'live',
+        'source': source,
+        'school_id': str(school_id),
+    }
+
+
+def _build_verified_live_payload(key, school_id):
+    if key not in LIVE_RUNTIME_DASHBOARDS:
+        return None
+
+    payload = deepcopy(DASHBOARD_PAYLOAD_BUILDERS[key](school_id))
+    payload.setdefault('meta', {})
+    payload['meta']['school_id'] = school_id
+    served_from = str(payload['meta'].get('served_from') or '').strip().lower()
+    if served_from not in {'live', 'live_db'}:
+        return None
+
+    validate_dashboard_payload(payload)
+    return payload
+
+
 @api_view(['GET'])
 @permission_classes([DevOpenApiPermissions])
 def dashboard_me(request):
@@ -166,6 +203,7 @@ def dashboard_me(request):
         "roles": roles,
         "default_route": "/director/",
         "features": [],
+        "meta": _live_meta(school_id=school.id, source='core_identity'),
     })
 
 
@@ -187,6 +225,7 @@ def dashboard_summary(request):
     return Response({
         "school_id": str(school.id),
         "widgets": widgets,
+        "meta": _live_meta(school_id=school.id, source='dashboard_service'),
     })
 
 
@@ -203,6 +242,7 @@ def dashboard_drilldown(request):
         "school_id": str(school.id),
         "rows": [],
         "page": 1,
+        "meta": _live_meta(school_id=school.id, source='dashboard_service'),
     })
 
 
@@ -210,9 +250,10 @@ def dashboard_drilldown(request):
 @permission_classes([DevOpenApiPermissions])
 def dashboard_alerts(request):
     """Return school-level alerts."""
-    _resolve_school_strict(request)
+    school = _resolve_school_strict(request)
     return Response({
         "alerts": [],
+        "meta": _live_meta(school_id=school.id, source='dashboard_service'),
     })
 
 
@@ -253,7 +294,7 @@ class DashboardSummaryView(APIView):
             )
             school_id = str(school.id)
 
-        if key not in DASHBOARD_PAYLOAD_BUILDERS:
+        if key not in DASHBOARD_PAYLOAD_BUILDERS and key not in LIVE_PERSONA_DASHBOARDS:
             return Response(
                 {
                     'code': 'unknown_dashboard',
@@ -261,6 +302,27 @@ class DashboardSummaryView(APIView):
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        if key in LIVE_PERSONA_DASHBOARDS:
+            school = _resolve_school_strict(request, allow_dev_open_fallback=False)
+            try:
+                payload = build_persona_dashboard_payload(
+                    dashboard_key=key,
+                    user=user,
+                    school=school,
+                )
+            except PersonaDashboardPermissionDenied:
+                return Response({'detail': 'Forbidden.'}, status=status.HTTP_403_FORBIDDEN)
+            validate_dashboard_payload(payload)
+            return Response(payload, status=status.HTTP_200_OK)
+
+        if key in LIVE_RUNTIME_DASHBOARDS:
+            school = _resolve_school_strict(request, allow_dev_open_fallback=False)
+            school_id = str(school.id)
+
+        live_payload = _build_verified_live_payload(key, school_id)
+        if live_payload is not None:
+            return Response(live_payload, status=status.HTTP_200_OK)
 
         snapshot = DashboardSnapshot.objects.filter(
             school_id=school_id,

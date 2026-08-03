@@ -16,7 +16,7 @@ afterEach(() => {
 });
 
 describe("SandboxCommandCenter", () => {
-  it("renders guided context from URL params", () => {
+  it("renders guided context from URL params with standalone page semantics", () => {
     globalThis.history.pushState(
       {},
       "",
@@ -25,12 +25,21 @@ describe("SandboxCommandCenter", () => {
 
     render(<SandboxCommandCenter />);
 
-    expect(screen.getByText("Guided proof path")).toBeTruthy();
+    expect(screen.getByRole("main", { name: "Sandbox command center" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Guided proof path" })).toBeTruthy();
     expect(screen.getByText("Camp Proof")).toBeTruthy();
     expect(screen.getByText("Camp / Summer Program Demo")).toBeTruthy();
     expect(screen.getByText("Program Director")).toBeTruthy();
     expect(screen.getAllByText("Cedar Ridge Summer Camp").length).toBeGreaterThan(0);
     expect(screen.getByText(/Demo data only/)).toBeTruthy();
+  });
+
+  it("uses section and h2 semantics when embedded compactly", () => {
+    render(<SandboxCommandCenter compact />);
+
+    expect(screen.queryByRole("main", { name: "Sandbox command center" })).toBeNull();
+    expect(screen.getByRole("region", { name: "Sandbox command center" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2 })).toBeTruthy();
   });
 
   it("renders self-guided mode without expanding checklist as the primary copy", () => {

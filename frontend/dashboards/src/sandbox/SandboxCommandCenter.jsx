@@ -37,6 +37,8 @@ export default function SandboxCommandCenter({ compact = false }) {
   const steps = Array.isArray(persona.steps) ? persona.steps : [];
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState("");
+  const Container = compact ? "section" : "main";
+  const Heading = compact ? "h2" : "h1";
 
   async function handleFeedbackSubmit(event) {
     event.preventDefault();
@@ -96,10 +98,10 @@ export default function SandboxCommandCenter({ compact = false }) {
         @media (max-width: 520px) { .sandbox-command-grid { grid-template-columns: 1fr; } .sandbox-command-header { display: grid; } }
       `}</style>
 
-      <section className="sandbox-command-center" aria-label="Sandbox command center">
+      <Container className="sandbox-command-center" aria-label="Sandbox command center">
         <div className="sandbox-command-header">
           <div>
-            <h2 className="sandbox-command-title">{guided ? "Guided proof path" : "Self-guided sandbox"}</h2>
+            <Heading className="sandbox-command-title">{guided ? "Guided proof path" : "Self-guided sandbox"}</Heading>
             <div className="sandbox-command-value">{tour}</div>
           </div>
           <span className="sandbox-command-badge">Demo Data</span>
@@ -158,7 +160,7 @@ export default function SandboxCommandCenter({ compact = false }) {
         <div className="sandbox-command-warning">
           Demo data only. Do not enter real student, child, camper, family, staff, financial, health, safety, or disciplinary records.
         </div>
-      </section>
+      </Container>
     </>
   );
 }

@@ -41,38 +41,39 @@ async function jsonRequest(path, init = {}) {
   }
 }
 
-function requestHeaders(schoolId, role) {
+function requestHeaders(schoolId) {
+  // Production role authority comes from the authenticated session/token.
+  // Never forward caller-controlled demo role headers across origins.
   return {
-    "X-Demo-Role": role,
     "X-School-Id": schoolId,
   };
 }
 
-export function fetchDashboardMe(schoolId, role) {
+export function fetchDashboardMe(schoolId) {
   return jsonRequest("/api/dashboards/me/", {
     method: "GET",
-    headers: requestHeaders(schoolId, role),
+    headers: requestHeaders(schoolId),
   });
 }
 
-export function fetchDashboardSummary(schoolId, role) {
+export function fetchDashboardSummary(schoolId) {
   return jsonRequest("/api/dashboards/summary/", {
     method: "GET",
-    headers: requestHeaders(schoolId, role),
+    headers: requestHeaders(schoolId),
   });
 }
 
-export function fetchDashboardDrilldown(widget, schoolId, role) {
+export function fetchDashboardDrilldown(widget, schoolId) {
   const query = new URLSearchParams({ widget: String(widget || "") });
   return jsonRequest(`/api/dashboards/drilldown/?${query.toString()}`, {
     method: "GET",
-    headers: requestHeaders(schoolId, role),
+    headers: requestHeaders(schoolId),
   });
 }
 
-export function fetchDashboardAlerts(schoolId, role) {
+export function fetchDashboardAlerts(schoolId) {
   return jsonRequest("/api/dashboards/alerts/", {
     method: "GET",
-    headers: requestHeaders(schoolId, role),
+    headers: requestHeaders(schoolId),
   });
 }
