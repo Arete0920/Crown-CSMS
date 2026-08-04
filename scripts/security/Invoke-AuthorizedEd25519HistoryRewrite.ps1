@@ -12,11 +12,11 @@ if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction Sile
 
 $Repository = 'tcmegahan/Crown2026'
 $AuthorizedBaseSha = [string]::Concat(@(
-    '0a03e825'
-    '2febe8da'
-    'ec7ff819'
-    '570fde98'
-    'bacd70b5'
+    'b78e36fc'
+    '1b5d5f4e'
+    'c2302831'
+    '913757e8'
+    'c2b23142'
 ))
 $AuthorizedRunnerPath = 'scripts/security/Invoke-AuthorizedEd25519HistoryRewrite.ps1'
 $ForbiddenPath = [string]::Concat(@(
@@ -28,6 +28,44 @@ $ForbiddenPath = [string]::Concat(@(
     'DO_NOT_SHARE'
     '.pem'
 ))
+
+# Exact SHA-256 hashes of the 24 candidate values observed in the source-locked
+# rewritten history. Values are intentionally not stored. The set was derived
+# from Gitleaks 8.30.1 at authoritative main b78e36fc... and separately reviewed.
+# The three opaque candidates were verified as inert dashboard widget slugs.
+$ApprovedCandidateHashChunks = @(
+    @('01907e11','fd696a1e','5bebe032','9221dc5c','0fc6525e','2cdc46a8','6f66d708','9ba9f9e4'),
+    @('034d630a','83014577','1433ac72','ab20d75c','5a903966','54d15c1f','74e0f98f','2153cdf8'),
+    @('0bd7ee7b','d6a86fa4','562930ed','f08336a2','4e2b8890','f2af1e24','3443ebc1','87b2b80b'),
+    @('365e9e41','11450392','6daabb90','6e2653ff','78b7cce4','75fbf7f7','e5c2100b','9f2876e7'),
+    @('3e8c7c25','c53af0e4','28f44adb','1775afec','c8208c9c','128a3098','3a2078e1','8079c233'),
+    @('41c76726','6fa5c53e','234ba342','bcc60327','05d3e6ce','99febf93','534ec028','7cc978d5'),
+    @('497f476b','1f6d0947','dfcdf571','6c3d60a8','504b4be9','65ac5d53','14763a83','d942c2d6'),
+    @('56ee6815','5bd371bd','972d96d8','d0ef880d','2d0359f1','3e0f0327','bb5ebf94','b4fa7ed6'),
+    @('644d0c3b','82bfe5e0','665a116b','2eb139d6','abd6c908','3ede0891','237b1723','e0010a14'),
+    @('7077786d','adbb5e2d','f0cbc0af','e3e3bc0d','cc84f9b6','280d70f5','6e79e7bc','8766d3ec'),
+    @('94ed1644','4a0fb498','9a806f19','6680caad','0b54418f','b3526522','052cf050','74e7239e'),
+    @('96c0a849','c2810b43','37e5182f','fb9e5dc4','579e72b0','a329e8aa','9c7ea8c6','926fa74b'),
+    @('9a11cf81','2cb05d44','9411d665','45d969dd','df2c86f4','84b5c5a9','35900bbc','1fd1fe7e'),
+    @('9ae33814','e39642b3','7c8a0ca4','8f2badbe','cdcc9a86','a20e847d','0f52f513','9ec0ea55'),
+    @('9fd52b76','eb4f5b14','96665b5e','bb116565','2204084e','b614669f','8f4082bd','b962b69e'),
+    @('a1e3545e','2f526ae8','9106eb5d','0ec09fe8','16bda1f4','cd1c96da','94c671a3','d30d3e9a'),
+    @('a22c78c4','41c5693b','405c5488','6b7c50d4','e267ff75','bd4384d6','eeedcf49','a676250a'),
+    @('bd67be1f','63382068','023b1f14','07818e0e','1d6b7c20','18e37205','cf1787fe','a67480e3'),
+    @('ce926de9','ba94272b','d7cf3d64','8fb6ce18','d6a44463','ba9bc6e7','59f611cb','ebf685ec'),
+    @('ce959c43','4b310a25','b10305af','21c4c539','fedc3a24','316ceaab','76cf6969','25c364d5'),
+    @('e1466187','c844c921','b622aff2','197444cf','dc2c8748','9f7a6e71','cef47b31','a1602ced'),
+    @('eda13789','0e6044b3','fa083c64','b8696ffb','6a356185','42c3ee7d','7912869e','8e74c9d3'),
+    @('ee659225','11bc1457','eb196ebc','b2643d29','27febaa6','147f54ae','56ac88a2','3b2c9bc3'),
+    @('fb9690e1','4273a10f','39f2281a','c64c4181','f3f10758','b9692133','a3cc8b3c','db448118')
+)
+$ApprovedCandidateHashes = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+foreach ($chunks in $ApprovedCandidateHashChunks) {
+    [void]$ApprovedCandidateHashes.Add(($chunks -join ''))
+}
+if ($ApprovedCandidateHashes.Count -ne 24) {
+    throw "Approved candidate hash manifest is malformed: expected 24 unique hashes, observed $($ApprovedCandidateHashes.Count)."
+}
 
 function Assert-Command {
     param([Parameter(Mandatory)][string]$Name)
@@ -56,73 +94,85 @@ function Invoke-Native {
     }
 }
 
+function Get-StringSha256 {
+    param([Parameter(Mandatory)][string]$Value)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($Value)
+    $digest = [System.Security.Cryptography.SHA256]::HashData($bytes)
+    return [Convert]::ToHexString($digest).ToLowerInvariant()
+}
+
 function Invoke-GitleaksAdjudicated {
     param(
         [Parameter(Mandatory)][string]$Source,
         [Parameter(Mandatory)][string]$ReportPath,
-        [Parameter(Mandatory)][string]$ApprovedIgnorePath,
         [Parameter(Mandatory)][string]$Stage
     )
 
-    if (-not (Test-Path -LiteralPath $ApprovedIgnorePath)) {
-        throw "Approved Gitleaks adjudication file not found: $ApprovedIgnorePath"
-    }
+    $rawReport = "$ReportPath.raw.json"
+    try {
+        & gitleaks detect --source $Source --no-banner '--log-opts=--all' --report-format json --report-path $rawReport
+        $scanExit = $LASTEXITCODE
+        if ($scanExit -notin @(0, 1)) {
+            throw "Gitleaks failed during $Stage with exit code $scanExit."
+        }
+        if (-not (Test-Path -LiteralPath $rawReport)) {
+            throw "Gitleaks did not create the expected report during $Stage."
+        }
 
-    & gitleaks detect --source $Source --no-banner --redact '--log-opts=--all' --report-format json --report-path $ReportPath
-    $scanExit = $LASTEXITCODE
-    if ($scanExit -notin @(0, 1)) {
-        throw "Gitleaks failed during $Stage with exit code $scanExit."
-    }
-    if (-not (Test-Path -LiteralPath $ReportPath)) {
-        throw "Gitleaks did not create the expected report during $Stage."
-    }
+        $raw = Get-Content -LiteralPath $rawReport -Raw
+        $findings = if ([string]::IsNullOrWhiteSpace($raw)) { @() } else { @($raw | ConvertFrom-Json) }
+        $safeFindings = [System.Collections.Generic.List[object]]::new()
+        $unmatched = [System.Collections.Generic.List[object]]::new()
+        $observedHashes = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
 
-    $raw = Get-Content -LiteralPath $ReportPath -Raw
-    $findings = if ([string]::IsNullOrWhiteSpace($raw)) { @() } else { @($raw | ConvertFrom-Json) }
-
-    $approvedSuffixes = @(
-        Get-Content -LiteralPath $ApprovedIgnorePath |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { $_ -and -not $_.StartsWith('#') } |
-            ForEach-Object {
-                if ($_ -match '^[0-9a-f]{40}:(.+:[^:]+:[0-9]+)$') {
-                    $Matches[1]
-                }
-                elseif ($_ -match '^(.+:[^:]+:[0-9]+)$') {
-                    $Matches[1]
-                }
-            } |
-            Where-Object { $_ } |
-            Sort-Object -Unique
-    )
-    if ($approvedSuffixes.Count -eq 0) {
-        throw 'Approved Gitleaks adjudication set is empty.'
-    }
-
-    $unmatched = @(
         foreach ($finding in $findings) {
-            $fingerprint = [string]$finding.Fingerprint
-            if ($fingerprint -notmatch '^[0-9a-f]{40}:(.+)$') {
-                $finding
-                continue
+            $candidate = [string]$finding.Secret
+            if ([string]::IsNullOrEmpty($candidate)) {
+                $candidate = [string]$finding.Match
             }
-            $stableSuffix = $Matches[1]
-            if ($stableSuffix -notin $approvedSuffixes) {
-                $finding
+            if ([string]::IsNullOrEmpty($candidate)) {
+                throw "Gitleaks finding lacks a candidate value during $Stage."
+            }
+
+            $candidateHash = Get-StringSha256 -Value $candidate
+            [void]$observedHashes.Add($candidateHash)
+            $safe = [pscustomobject]@{
+                RuleID = [string]$finding.RuleID
+                Description = [string]$finding.Description
+                File = [string]$finding.File
+                StartLine = [int]$finding.StartLine
+                EndLine = [int]$finding.EndLine
+                Commit = [string]$finding.Commit
+                Fingerprint = [string]$finding.Fingerprint
+                CandidateSha256 = $candidateHash
+            }
+            $safeFindings.Add($safe)
+            if (-not $ApprovedCandidateHashes.Contains($candidateHash)) {
+                $unmatched.Add($safe)
             }
         }
-    )
 
-    if ($unmatched.Count -ne 0) {
-        $safeReport = [System.IO.Path]::ChangeExtension($ReportPath, '.unmatched-metadata.json')
-        $unmatched |
-            Select-Object RuleID, Description, File, StartLine, EndLine, Commit, Fingerprint |
-            ConvertTo-Json -Depth 4 |
-            Set-Content -LiteralPath $safeReport -Encoding utf8
-        throw "Gitleaks reported $($unmatched.Count) unadjudicated findings during $Stage. Safe metadata: $safeReport"
+        $missingHashes = @($ApprovedCandidateHashes | Where-Object { -not $observedHashes.Contains($_) })
+        if ($unmatched.Count -ne 0 -or $missingHashes.Count -ne 0) {
+            $safeReport = [System.IO.Path]::ChangeExtension($ReportPath, '.unmatched-metadata.json')
+            [pscustomobject]@{
+                Stage = $Stage
+                FindingCount = $findings.Count
+                ObservedUniqueCandidateCount = $observedHashes.Count
+                UnmatchedFindings = @($unmatched)
+                MissingApprovedCandidateHashes = $missingHashes
+            } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $safeReport -Encoding utf8
+            throw "Candidate-hash adjudication failed during $Stage: unmatched=$($unmatched.Count), missing=$($missingHashes.Count). Safe metadata: $safeReport"
+        }
+
+        @($safeFindings) | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $ReportPath -Encoding utf8
+        Write-Host "Gitleaks $Stage PASS: $($findings.Count) findings resolved to exactly $($observedHashes.Count) source-locked approved candidates."
     }
-
-    Write-Host "Gitleaks $Stage PASS: $($findings.Count) findings matched the source-locked approved adjudication set."
+    finally {
+        if (Test-Path -LiteralPath $rawReport) {
+            Remove-Item -LiteralPath $rawReport -Force
+        }
+    }
 }
 
 Assert-Command git
@@ -166,11 +216,6 @@ if ($authorizedDelta.Count -ne 1 -or $authorizedDelta[0] -ne $AuthorizedRunnerPa
     throw "Unauthorized main delta. Expected only $AuthorizedRunnerPath."
 }
 
-$approvedIgnore = Join-Path $PSScriptRoot '..\..\.gitleaksignore'
-if (-not (Test-Path -LiteralPath $approvedIgnore)) {
-    throw "Approved Gitleaks adjudication file not found at $approvedIgnore"
-}
-
 & git -C $mirror for-each-ref '--format=%(refname) %(objectname)' refs/heads refs/tags |
     Sort-Object | Set-Content -Encoding utf8 (Join-Path $evidence 'refs-before.txt')
 
@@ -189,7 +234,7 @@ Invoke-Native bash @($verifier, '--repo', $mirror, '--forbidden-path', $Forbidde
 Invoke-Native git @('-C', $mirror, 'fsck', '--full', '--strict')
 
 $gitleaksReport = Join-Path $evidence 'gitleaks-before-push.json'
-Invoke-GitleaksAdjudicated -Source $mirror -ReportPath $gitleaksReport -ApprovedIgnorePath $approvedIgnore -Stage 'before-push'
+Invoke-GitleaksAdjudicated -Source $mirror -ReportPath $gitleaksReport -Stage 'before-push'
 
 $bundle = Join-Path $evidence 'Crown2026-remediated.bundle'
 Invoke-Native git @('-C', $mirror, 'bundle', 'create', $bundle, '--branches', '--tags')
@@ -212,6 +257,7 @@ $rewrittenMain = (& git -C $mirror rev-parse refs/heads/main).Trim()
     "source_main=$observedMain"
     "rewritten_main=$rewrittenMain"
     "forbidden_path=$ForbiddenPath"
+    "approved_candidate_hashes=$($ApprovedCandidateHashes.Count)"
     "prepared_at=$([DateTime]::UtcNow.ToString('o'))"
 ) | Set-Content -Encoding utf8 (Join-Path $evidence 'rewrite-summary.txt')
 
@@ -243,7 +289,7 @@ Invoke-Native bash @($verifier, '--repo', $fresh, '--forbidden-path', $Forbidden
 Invoke-Native git @('-C', $fresh, 'fsck', '--full', '--strict')
 
 $postReport = Join-Path $evidence 'gitleaks-after-push.json'
-Invoke-GitleaksAdjudicated -Source $fresh -ReportPath $postReport -ApprovedIgnorePath $approvedIgnore -Stage 'after-push'
+Invoke-GitleaksAdjudicated -Source $fresh -ReportPath $postReport -Stage 'after-push'
 
 $authoritativeMain = (& git -C $fresh rev-parse refs/heads/main).Trim()
 if ($authoritativeMain -ne $rewrittenMain) {
