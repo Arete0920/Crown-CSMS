@@ -5,7 +5,12 @@
 **Certified release source:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228`  
 **Immutable production tag:** `prod-deploy-20260804-17573fb`  
 **Production deployment run:** `30944978175`  
+**Post-release documentation commit:** `13c325cbb61aa4662999cad42b627d563396d8a6`  
 **Controlling authority:** GitHub issue `#1619`
+
+## Identity boundary
+
+The production release remains commit `17573fb649f74a3ba0f1b3fbc9e004108b3cf228` under immutable tag `prod-deploy-20260804-17573fb`. The later commit `13c325cbb61aa4662999cad42b627d563396d8a6` changes this status document only and is not a replacement release candidate, production artifact, or deployment identity.
 
 ## Canonical decision
 
@@ -91,7 +96,7 @@ The historically exposed Ed25519 private key is treated as compromised, permanen
 
 A replacement key pair was generated outside the repository. Replacement public-key fingerprint:
 
-`SHA256:LZFSVFlLCr3d1iFBB2yeLAiE2sCseSorgVvF+9Ymu70`
+`SHA256:LZFSVFlLCr3d1FBB2yeLAiE2sCseSorgVvF+9Ymu70`
 
 The replacement private key must remain outside Git and must not be uploaded to GitHub.
 
@@ -132,6 +137,7 @@ Final buyer acceptance, successor account creation, credential transfer, and sel
 ## Current final status
 
 **CERTIFIED RELEASE:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228` / `prod-deploy-20260804-17573fb`  
+**POST-RELEASE DOCUMENTATION COMMIT:** `13c325cbb61aa4662999cad42b627d563396d8a6` — DOCUMENTATION ONLY / NOT DEPLOYED  
 **REPOSITORY TECHNICAL CERTIFICATION:** PASS  
 **PRODUCTION DEPLOYMENT AND RUNTIME CERTIFICATION:** PASS  
 **BOUNDED ROLE / RBAC / TENANT CERTIFICATION:** PASS  
