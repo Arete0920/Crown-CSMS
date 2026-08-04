@@ -75,3 +75,27 @@ This adjudication does not close Lane 4:
 ## Review status
 
 `INDEPENDENT_REVIEW_REQUIRED`
+
+## Final current-ref refresh — 2026-08-04
+
+### Evidence basis
+
+Source SHA: `6df9f6b110bfb5584e000366a257efa56ae5617b`. The isolated mirror rewrite removed the exact forbidden Ed25519 path, passed repository and bundle verification, passed full `git fsck`, and restored a verified fresh clone. Predicted rewritten `main`: `fadc86b847c59f5f65c1d3ce43da4d35ff48299e`.
+
+### Re-adjudication result
+
+Every redacted finding was resolved against the rewritten objects. Unknown rules, paths, or structures fail closed.
+
+| Findings | Unique fingerprints | Classification |
+| ---: | ---: | --- |
+| 234 | 234 | Azure Kudu request-correlation UUIDs |
+| 29 | 1 | GitHub check-run and health metadata identifiers |
+| 7 | 7 | Git commit and release-authority identities |
+| 4 | 4 | SHA-256 integrity digests |
+| 2 | 2 | Azure public application/client identifier UUIDs |
+| 8 | 8 | Application, test, and documentation symbolic keys |
+| **284** | **256** | **Total** |
+
+No credential, private key, client secret, refresh token, password, session secret, connection secret, or signing material was identified. Only exact rewritten fingerprints are added; no detector or scan boundary is weakened.
+
+This refresh does not authorize an authoritative ref rewrite or close Lane 4. A green all-ref and reachable-DOCX preflight, separately authorized ref maintenance, and post-mutation fresh-clone verification remain required.

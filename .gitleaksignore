@@ -1,19 +1,19 @@
 # .gitleaksignore
 # False positive exclusions for gitleaks secret scanning
 # WARNING: Requires CODEOWNER review for changes (see .github/CODEOWNERS)
-# Format: <commit-hash>:<rule-id>:<file-path>
+# Accepted exact fingerprint formats:
+# - <commit-sha>:<file-path>:<rule-id>:<line> for full-history findings
+# - <file-path>:<rule-id>:<line> for current-tree or path-scoped findings
 
-# Example (do not use until you have a real false positive):
-# abc123def456:generic-api-key:docs/api-example.md
+# Examples (do not use until the specific result is adjudicated):
+# abc123def456:docs/api-example.md:generic-api-key:12
+# docs/api-example.md:generic-api-key:12
 
 # To add exclusions:
 # 1. Run: gitleaks detect --report-format json --report-path gitleaks-report.json
-# 2. Review report for false positives
-# 3. Add entry: <Commit>:<RuleID>:<File>
+# 2. Review the exact result and confirm it is a false positive
+# 3. Add the exact fingerprint in one of the accepted formats above
 # 4. Request CODEOWNER review for .gitleaksignore changes
-
-# Template:
-# <commit-sha>:<rule-id>:<file-path>
 
 # Current exclusions:
 # Documentation files with example/placeholder tokens and connection strings (not real credentials)
@@ -265,3 +265,274 @@ dc4f42b42cab4083d40c3b64e361ad0f49b351f3:backend/signals/seed.py:generic-api-key
 35b2aefbd071742b17e17b3bd0595a16daf9808b:frontend/dashboards/src/config/roleDashboards.config.js:generic-api-key:208
 35b2aefbd071742b17e17b3bd0595a16daf9808b:frontend/dashboards/src/config/roleDashboards.config.js:generic-api-key:279
 35b2aefbd071742b17e17b3bd0595a16daf9808b:frontend/dashboards/src/config/roleDashboards.config.js:generic-api-key:389
+# 2026-08-04 final-current-ref rewrite preflight adjudication.
+# Exact rewritten commit/path/rule/line fingerprints only. Unknown findings fail closed.
+# No rule, path, entropy threshold, scan mode, or future occurrence is disabled.
+
+# Azure Kudu request-correlation UUIDs (234 findings / 234 fingerprints)
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-02-08T00-35-54_e1d493_006_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T19-44-27_9a6ed4_002_GET_logstream-http_200_61s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T20-09-00_9a6ed4_002_GET_logstream_200_61s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T21-01-42_9a6ed4_002_GET_dump_200_4s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-05-28_279e26_002_GET_logstream_200_124s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_006_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_007_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_008_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-49_279e26_009_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_010_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_011_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_012_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_013_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-43_279e26_014_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-43_279e26_015_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-44_279e26_016_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-44_279e26_017_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-54_279e26_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-55_279e26_003_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-56_279e26_004_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-56_279e26_005_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-46-49_279e26_006_GET_dump_200_8s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T11-30-50_279e26_002_GET_dump_200_6s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T11-31-27_279e26_003_GET_dump_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+300c5deed53f58e9d7bf6f8dee865f4a4be18cb3:prod_logs_now/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-02-08T00-35-54_e1d493_006_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T19-44-27_9a6ed4_002_GET_logstream-http_200_61s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T20-09-00_9a6ed4_002_GET_logstream_200_61s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T21-01-42_9a6ed4_002_GET_dump_200_4s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-05-28_279e26_002_GET_logstream_200_124s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_006_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_007_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_008_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-49_279e26_009_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_010_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_011_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_012_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_013_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-43_279e26_014_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-43_279e26_015_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-44_279e26_016_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-44_279e26_017_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-54_279e26_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-55_279e26_003_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-56_279e26_004_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-56_279e26_005_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-46-49_279e26_006_GET_dump_200_8s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T11-30-50_279e26_002_GET_dump_200_6s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T11-31-27_279e26_003_GET_dump_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+79ef2aae1de113ea318d411d4c411f5ea1ec24cf:prod_logs_now/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-02-08T00-35-54_e1d493_006_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T19-44-27_9a6ed4_002_GET_logstream-http_200_61s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T20-09-00_9a6ed4_002_GET_logstream_200_61s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-01T21-01-42_9a6ed4_002_GET_dump_200_4s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-05-28_279e26_002_GET_logstream_200_124s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_006_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_007_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-48_279e26_008_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-14-49_279e26_009_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_010_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_011_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_012_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-29_279e26_013_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-43_279e26_014_POST_api-logs-docker_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-43_279e26_015_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-44_279e26_016_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T06-15-44_279e26_017_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-54_279e26_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-55_279e26_003_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_scm_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-56_279e26_004_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_default_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-41-56_279e26_005_POST_api-vfs-LogFiles-2026_03_09_lw0sdlwk000CX1_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T07-46-49_279e26_006_GET_dump_200_8s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T11-30-50_279e26_002_GET_dump_200_6s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_latest/LogFiles/kudu/trace/2026-03-09T11-31-27_279e26_003_GET_dump_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_002_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-03_012626_003_POST_api-logs-docker_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_004_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-20T06-21-04_012626_005_POST_api-vfs-LogFiles-2026_01_20_lw1sdlwk000DMZ_docker.log_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-13-53_012626_002_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-19-02_012626_003_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-21-03_012626_004_GET_dump_200_2s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-24T15-32-09_012626_002_GET_dump_200_7s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-24T17-49-56_012626_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-24T17-53-21_012626_003_GET_logstream_pending.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-52-52_a49e0f_002_GET_dump_200_2s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-53-24_a49e0f_003_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-55-02_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-56-42_a49e0f_003_GET_dump_200_0s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-26T23-59-13_a49e0f_004_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-27T00-02-52_a49e0f_002_GET_dump_200_3s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-01-27T00-41-23_a49e0f_002_GET_dump_200_1s.xml:generic-api-key:1
+c80f6ff8ad3fd0a4acdea05055d2cfc3e8fdb875:prod_logs_now/LogFiles/kudu/trace/2026-02-08T00-13-01_e1d493_002_GET_logstream_200_901s.xml:generic-api-key:1
+
+# GitHub check-run and health metadata identifiers (29 findings / 1 fingerprints)
+ce7675281189e3dcad824beaedb8b75d5d40eba8:AUDIT_PACK/13_HEALTH_PROBE.txt:generic-api-key:5334
+
+# Git commit and release-authority identities (7 findings / 7 fingerprints)
+04bfb0bcca022f079e27235d433aeb9ac1a66512:docs/release/live-audit/protected-spine/release_authority_sync_20260530_081421.md:generic-api-key:5
+394f1c8772023641cc9fd7164628d0284720c355:docs/release/CURRENT_RELEASE_SCORECARD_20260528.md:generic-api-key:9
+8df4873f3be44173acbb2607636f2922664d9e4d:docs/release/live-audit/protected-spine/release_authority_handoff_20260530_081510.md:generic-api-key:37
+8df4873f3be44173acbb2607636f2922664d9e4d:docs/release/live-audit/protected-spine/release_authority_handoff_20260530_081510.md:generic-api-key:5
+bdd070308b716bb93bea768260b511983f6a51db:docs/architecture/IDENTITY_MODEL_CONVERGENCE_LEDGER.md:generic-api-key:6
+d2533e32d0d1aba9795a2f177bbacb85ff4ee572:docs/release/live-audit/protected-spine/release_authority_sync_20260530_081215.md:generic-api-key:5
+ed90a15dd70b5aa1f4330b1adf3e2b1f1feb6a5d:docs/release/CURRENT_RELEASE_SCORECARD_20260528.md:generic-api-key:9
+
+# SHA-256 integrity digests (4 findings / 4 fingerprints)
+ce7675281189e3dcad824beaedb8b75d5d40eba8:solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T181641Z/99_BUNDLE_MANIFEST.json:generic-api-key:14
+ce7675281189e3dcad824beaedb8b75d5d40eba8:solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T181936Z/99_BUNDLE_MANIFEST.json:generic-api-key:14
+ce7675281189e3dcad824beaedb8b75d5d40eba8:solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T182250Z/99_BUNDLE_MANIFEST.json:generic-api-key:14
+ce7675281189e3dcad824beaedb8b75d5d40eba8:solomon_governance_c1/governance/c1/runtime/audit_pack/20260515T185051Z/99_BUNDLE_MANIFEST.json:generic-api-key:14
+
+# Azure public application/client identifier UUIDs (2 findings / 2 fingerprints)
+333d41d47ccdf2c6544e765b34ad55a625dac8af:scripts/recovery/fix_release_blockers_now.ps1:generic-api-key:17
+35a6d2dc1b2416820741788a0fb6745741214d3d:scripts/recovery/fix_release_blockers_now.ps1:generic-api-key:17
+
+# Application, test, and documentation symbolic keys (8 findings / 8 fingerprints)
+0602dfae59f71e1f14b9c192abfa5c732d188e57:docs/release/live-audit/protected-spine/tenant_isolation_hang_bisect_20260530_083612.md:generic-api-key:23
+36a1028c2c007cd5c49a9ba440a3cfe054f52084:backend/crm_marketing/tests/test_crm_api.py:generic-api-key:183
+993e0b34e381eaec71cffeed462694c015953145:backend/signals/seed.py:generic-api-key:41
+993e0b34e381eaec71cffeed462694c015953145:backend/signals/seed.py:generic-api-key:48
+d13ea3472864c00ab82f52b8f6ed3e74efb08451:backend/signals/seed.py:generic-api-key:40
+d13ea3472864c00ab82f52b8f6ed3e74efb08451:backend/signals/seed.py:generic-api-key:47
+f608f759cefec6461c2d2af36d779cceb8763b61:crown_audit_dump.txt:generic-api-key:152109
+f608f759cefec6461c2d2af36d779cceb8763b61:crown_audit_dump.txt:generic-api-key:152116
