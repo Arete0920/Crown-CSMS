@@ -200,16 +200,25 @@ if ($mirrorMain -ne $observedMain) {
     throw "Mirror identity mismatch. Remote advertised $observedMain but mirror resolved $mirrorMain."
 }
 
-$mainParents = @(& git -C $mirror rev-list --parents -n 1 refs/heads/main)
-if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect authoritative main ancestry.' }
-$parentParts = $mainParents[0] -split ' '
-if ($parentParts.Count -ne 2) {
-    throw 'Authorized runner commit must have exactly one parent.'
-}
-if ($parentParts[1] -ne $AuthorizedBaseSha) {
-    throw "Unauthorized main ancestry. Expected $AuthorizedBaseSha but observed $($parentParts[1])."
+# GitHub may produce a normal two-parent merge commit. Require the authorized
+# base to remain in main ancestry and every changed path since that base to
+# remain confined to the authorized runner file.
+& git -C $mirror merge-base --is-ancestor $AuthorizedBaseSha refs/heads/main
+if ($LASTEXITCODE -ne 0) {
+    throw "Authorized base $AuthorizedBaseSha is not an ancestor of authoritative main."
 }
 
+$commitChangedPaths = @(
+    & git -C $mirror log --format= --name-only "$AuthorizedBaseSha..refs/heads/main" |
+        Where-Object { $_ } |
+        Sort-Object -Unique
+)
+if ($LASTEXITCODE -ne 0) {
+    throw 'Unable to inspect authoritative main commit-path scope.'
+}
+if ($commitChangedPaths.Count -ne 1 -or $commitChangedPaths[0] -ne $AuthorizedRunnerPath) {
+    throw "Unauthorized commit-path scope since $AuthorizedBaseSha. Expected only $AuthorizedRunnerPath."
+}
 $authorizedDelta = @(& git -C $mirror diff --name-only $AuthorizedBaseSha refs/heads/main)
 if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect authorized main delta.' }
 if ($authorizedDelta.Count -ne 1 -or $authorizedDelta[0] -ne $AuthorizedRunnerPath) {
