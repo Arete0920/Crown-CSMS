@@ -125,6 +125,7 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-school-id",
     "x-crown-school-id",
     "x-demo-key",
+    "x-demo-role",
 ]
 
 # Azure reverse-proxy HTTPS handling
