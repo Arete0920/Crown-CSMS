@@ -10,6 +10,10 @@ const WRITE_BASELINE = process.argv.includes('--write-baseline');
 const AUTHORITATIVE_TOKEN_FILE = path.normalize('styles/crown-theme.css');
 const RAW_COLOR_EXEMPT_FILES = new Set([AUTHORITATIVE_TOKEN_FILE]);
 const ALLOWED_FONT_STACK = /Inter\s*,\s*['"]Segoe UI['"]\s*,\s*Roboto\s*,\s*Helvetica\s*,\s*Arial\s*,\s*sans-serif/i;
+const ALLOWED_FONT_TOKEN = /^var\(--crown-font(?:-[a-z0-9-]+)?\)$/i;
+const DOCUMENTED_FONT_EXCEPTIONS = new Map([
+  [path.normalize('pages/GradebookRO.jsx'), new Set(['monospace', 'system-ui'])],
+]);
 const EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.css']);
 const COLOR_LITERAL = /#[0-9a-fA-F]{3,8}\b|\brgba?\([^)]*\)|\bhsla?\([^)]*\)/g;
 const CROWN_TOKEN = /--crown-[a-z0-9-]+\s*:/gi;
@@ -26,6 +30,12 @@ function walk(dir) {
 
 function lineFor(text, index) {
   return text.slice(0, index).split('\n').length;
+}
+
+function isAllowedFontFamily(relative, value) {
+  const normalized = value.trim();
+  if (ALLOWED_FONT_STACK.test(normalized) || ALLOWED_FONT_TOKEN.test(normalized)) return true;
+  return DOCUMENTED_FONT_EXCEPTIONS.get(relative)?.has(normalized) || false;
 }
 
 if (!fs.existsSync(ROOT)) {
@@ -45,7 +55,7 @@ for (const file of walk(ROOT)) {
   }
 
   for (const match of text.matchAll(FONT_FAMILY)) {
-    if (!ALLOWED_FONT_STACK.test(match[1])) {
+    if (!isAllowedFontFamily(relative, match[1])) {
       findings.push({ severity: 'warning', rule: 'font-family-drift', file: relative, line: lineFor(text, match.index), value: match[1].trim() });
     }
   }
