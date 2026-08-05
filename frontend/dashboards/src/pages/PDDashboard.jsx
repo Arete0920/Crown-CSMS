@@ -131,40 +131,44 @@ export default function PDDashboard() {
         <CrownGrid>
           <Col span={8}>
             <CrownCard title="Upcoming Sessions">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ background: 'var(--crown-surface-2)' }}>
-                  {['Session', 'Date', 'Facilitator', 'Registered', 'Status'].map(h => <th key={h} style={TH}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {sessions.map((s, i) => (
-                    <tr key={i}>
-                      <td style={TD}>{s.title}</td>
-                      <td style={{ ...TD, color: 'var(--crown-muted)', whiteSpace: 'nowrap' }}>{s.date}</td>
-                      <td style={{ ...TD, color: 'var(--crown-muted)' }}>{s.facilitator}</td>
-                      <td style={{ ...TD, fontWeight: 600 }}>{s.registered}</td>
-                      <td style={TD}><Pill color={STATUS_MAP[s.status] || 'gray'}>{s.status}</Pill></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div style={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 680, borderCollapse: 'collapse' }}>
+                  <thead><tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Session', 'Date', 'Facilitator', 'Registered', 'Status'].map(h => <th key={h} style={TH}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {sessions.map((s, i) => (
+                      <tr key={i}>
+                        <td style={TD}>{s.title}</td>
+                        <td style={{ ...TD, color: 'var(--crown-muted)', whiteSpace: 'nowrap' }}>{s.date}</td>
+                        <td style={{ ...TD, color: 'var(--crown-muted)' }}>{s.facilitator}</td>
+                        <td style={{ ...TD, fontWeight: 600 }}>{s.registered}</td>
+                        <td style={TD}><Pill color={STATUS_MAP[s.status] || 'gray'}>{s.status}</Pill></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CrownCard>
           </Col>
           <Col span={4}>
             <CrownCard title="Certification Tracker">
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ background: 'var(--crown-surface-2)' }}>
-                  {['Cert', 'Staff', 'Expiring (90d)'].map(h => <th key={h} style={TH}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {certs.map((c, i) => (
-                    <tr key={i}>
-                      <td style={TD}>{c.name}</td>
-                      <td style={TD}>{c.staff_count}</td>
-                      <td style={{ ...TD, fontWeight: 700, color: c.expiring_90d > 0 ? 'var(--crown-danger)' : 'var(--crown-ok)' }}>{c.expiring_90d}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div style={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
+                  <thead><tr style={{ background: 'var(--crown-surface-2)' }}>
+                    {['Cert', 'Staff', 'Expiring (90d)'].map(h => <th key={h} style={TH}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {certs.map((c, i) => (
+                      <tr key={i}>
+                        <td style={TD}>{c.name}</td>
+                        <td style={TD}>{c.staff_count}</td>
+                        <td style={{ ...TD, fontWeight: 700, color: c.expiring_90d > 0 ? 'var(--crown-danger)' : 'var(--crown-ok)' }}>{c.expiring_90d}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CrownCard>
           </Col>
         </CrownGrid>
