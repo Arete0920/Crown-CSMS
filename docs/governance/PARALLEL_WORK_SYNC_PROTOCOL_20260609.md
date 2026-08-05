@@ -1,115 +1,63 @@
 # CROWN Parallel Work Sync Protocol
 
-Date: 2026-06-09
-Purpose: Keep VS Code Copilot, ChatGPT GitHub connector work, and local terminal work synchronized by repository evidence rather than hidden conversation memory.
+Date: 2026-06-09  
+Updated: 2026-08-05
+
+## Purpose
+
+Keep automated assistants, repository connectors, local terminals, and worktrees synchronized through durable repository evidence rather than hidden conversation state.
 
 ## Scope
 
-This protocol applies when more than one assistant, tool, terminal, connector, or local worktree is active around CROWN.
+This protocol applies whenever more than one assistant, tool, terminal, connector, or worktree is active around CROWN.
 
-The tools do not share private state. Synchronization must happen through durable evidence.
+Tools do not share private state. Synchronization must happen through retained evidence.
 
 ## Required synchronization anchors
 
-Use one or more of these anchors for any active lane:
+Use one or more of these anchors for every active lane:
 
-- PR body;
+- pull-request body;
 - GitHub issue comment;
 - `docs/CURRENT_RELEASE_STATUS.md` for release posture;
-- local audit packet under `audit-artifacts/repo-hygiene/`;
-- product/runtime evidence packet under the relevant proof directory;
-- pasted terminal output from the active local workspace.
+- audit packet under the relevant evidence directory;
+- product or runtime evidence tied to the evaluated SHA;
+- sanitized terminal output from the active workspace.
 
 ## Required pre-change packet
 
-Before changing files, capture and state:
+Before changing files, record:
 
 1. current branch;
-2. current HEAD;
-3. `git status --porcelain=v1` count and paths;
-4. governing issue or PR number;
+2. current HEAD SHA;
+3. worktree status and affected paths;
+4. governing issue or pull request;
 5. exact task;
-6. exact files expected to change;
+6. files expected to change;
 7. files explicitly out of scope;
-8. validation commands that will prove the work.
+8. validation that will prove the work.
 
-If those eight items cannot be named, do not edit.
+If these items cannot be stated, do not edit.
 
-## Hygiene gate
+## Product-lane isolation
 
-Product work may proceed only when local hygiene is controlled.
+A product pull request must contain only files required for its named lane. Do not mix unrelated hygiene cleanup, local backups, stale packets, or unrelated product surfaces into the same change set.
 
-Required proof:
+## Human-authority boundary
 
-- deleted tracked files count is zero unless deletion is explicitly scoped;
-- nested repository pending count is zero where nested repositories exist;
-- root untracked noise is absent, quarantined outside the product lane, or locally excluded by a reviewed local-only exclude;
-- every dirty root entry has an owner decision: KEEP, REVERT, COMMIT-READY, or NEEDS REVIEW;
-- NEEDS REVIEW count is zero before commit;
-- no audit packet, backup directory, local backup, or hygiene artifact enters a product PR unless explicitly scoped.
+Automated systems may assist with inspection, implementation, testing, analysis, drafting, and evidence organization. They are not human contributors, independent reviewers, approvers, certification authorities, acceptance authorities, or release authorities.
 
-## Product lane isolation
-
-A product PR must contain only product files for the named lane.
-
-Examples:
-
-- wizard lane: wizard pages, wizard route tests, wizard API contract tests, wizard docs when explicitly scoped;
-- release-certification lane: release-certification scripts and their tests only;
-- governance lane: governance docs or authority files only.
-
-Do not mix hygiene cleanup, release evidence, local backups, stale packets, or unrelated dashboards into a wizard PR.
-
-## Release posture rule
-
-Production, sandbox, and full-completion claims require current-head evidence.
-
-Allowed when proof is incomplete:
-
-- NO-GO;
-- REVIEW REQUIRED;
-- PARTIAL with row-level evidence;
-- NOT VERIFIED.
-
-Not allowed without current evidence:
-
-- production ready;
-- unrestricted GO;
-- all dashboards complete;
-- all wizards complete;
-- sandbox broadly approved;
-- latest head release-certified.
-
-## Wizard done definition
-
-A wizard is not done because a screen exists.
-
-A wizard is PASS only when evidence proves:
-
-1. registry/manifest entry;
-2. route/navigation wiring;
-3. frontend wizard flow;
-4. API/service contract;
-5. persistence/model contract where data is saved;
-6. role permission enforcement;
-7. tenant/school isolation;
-8. KPI or operational metric wiring where applicable;
-9. seed/demo/sandbox data where applicable;
-10. automated tests/proof;
-11. documentation/canon entry;
-12. audit/event trail where required.
-
-Anything less is REVIEW, FAIL_PARTIAL, or FAIL_MISSING.
+Independent review means review by a qualified person who did not author the work. Automated findings are supporting evidence only.
 
 ## Required reporting format
 
-Use this structure for work reports:
+Use:
 
-- Status;
-- Evidence found;
-- Files changed;
-- Validation run;
-- Risks;
-- Next exact command.
+- Status
+- Evidence
+- Files changed
+- Validation
+- Risks
+- Next controlled action
 
-Do not report completion without evidence.
+Do not report completion without evidence tied to the evaluated SHA.

@@ -1,253 +1,43 @@
-# Crown2026 Security Scripts
+# CROWN Security Scripts
 
-This directory contains PowerShell modules and scripts for safe credential handling.
+This directory contains scripts and modules for safe credential handling, redacted command execution, repository hygiene, and operational verification.
 
----
+## Secret-handling rules
 
-## Quick Start
+- Never place live credentials, tokens, connection strings, or private keys in repository files, issue comments, pull requests, chat transcripts, or retained evidence.
+- Use environment variables, approved secret stores, or ignored local secret files.
+- Redact outputs before sharing them with any person, automated assistant, connector, or support channel.
+- Confirm secret existence with boolean or name-only queries rather than dumping values.
+- Rotate any credential that may have been exposed and verify the old credential is invalid.
 
-```powershell
-# 1. Set up secrets file (ONCE)
-Copy-Item local.secrets.ps1.example local.secrets.ps1
-notepad local.secrets.ps1  # Fill in real values from Azure Portal
+## Core utilities
 
-# 2. Load secrets in your session
-. .\local.secrets.ps1
+### `Redact.psm1`
 
-# 3. Import redaction module
-Import-Module .\Scripts\Redact.psm1
+Provides redaction helpers for passwords, tokens, connection strings, authorization headers, and project-specific secret patterns.
 
-# 4. Use secure wrappers for commands
-.\Scripts\Invoke-SecureCommand.ps1 -Command "az webapp config appsettings list --name crown-api-dev --resource-group crown-rg"
-```
+### `Invoke-SecureCommand.ps1`
 
----
+Runs commands while redacting sensitive output. Raw-output bypasses are prohibited unless the output is independently verified as non-sensitive.
 
-## Files
+### `ops/root_legacy/`
 
-### `ops/root_legacy/` (Moved root helper scripts)
+Contains retained legacy helper scripts moved from the repository root. These helpers are not current release authority and must be used only when their behavior and dependencies are verified.
 
-These helper scripts were moved from repository root to reduce root clutter while keeping tooling available.
+## Sharing command evidence
 
-Examples now located here:
-- `_list_urls.py`
-- `check_a535_dupes.py`
-- `clean_a535_admissions.py`
-- `d3_smoke_tests.py`
-- `fetch_real_payload.py`
-- `get_grades_payload.py`
-- `phase2_verification.py`
-- `proof_b2_render.py`
-- `verify_api_routing.py`
-- `verify_invoices_schema.py`
-- `verify_seed.py`
-- `hex_audit.ps1`
+Before pasting output into any communication or evidence channel:
 
-Run from repo root, for example:
+1. remove secret values;
+2. remove personal or customer data;
+3. retain only the fields needed to prove the result;
+4. identify the command, evaluated SHA, environment, and timestamp where relevant;
+5. confirm the sanitized output cannot be used to reconstruct credentials.
 
-```bash
-python scripts/ops/root_legacy/verify_api_routing.py
-```
+## Pre-commit protection
 
-```powershell
-./scripts/ops/root_legacy/hex_audit.ps1
-```
+Secret scanning must run before commit. Do not bypass a secret-scanning hook or required repository check. Remove the sensitive value, rotate it where necessary, and recommit cleanly.
 
-### `Redact.psm1` (PowerShell Module)
+## Authority boundary
 
-**Functions**:
-- `Redact [string]` - Removes secrets from text
-- `Write-SafeHost [string]` - Auto-redacting Write-Host replacement
-- `Copy-SafeClipboard [string]` - Copies text with redaction
-- `Test-ContainsSecrets [string]` - Checks for secret patterns
-
-**Usage**:
-```powershell
-Import-Module .\Scripts\Redact.psm1
-
-# Redact a string
-Redact "DB_PASSWORD=example_password_123"
-# Returns: DB_PASSWORD=<REDACTED>
-
-# Safe host output
-Write-SafeHost "Token: Bearer abc123..." -ForegroundColor Green
-# Displays: Token: Bearer <REDACTED>
-
-# Safe clipboard copy
-Get-Content .\log.txt | Copy-SafeClipboard
-# Clipboard now contains redacted version
-
-# Check for secrets
-if (Test-ContainsSecrets $output) {
-    Write-Host "WARNING: Contains secrets!"
-}
-```
-
----
-
-### `Invoke-SecureCommand.ps1` (Command Wrapper)
-
-**Purpose**: Execute commands with automatic output redaction
-
-**Usage**:
-```powershell
-# Basic usage (auto-redacts output)
-.\Scripts\Invoke-SecureCommand.ps1 -Command "az webapp config appsettings list --name crown-api-dev --resource-group crown-rg"
-
-# Silent mode (no status messages)
-.\Scripts\Invoke-SecureCommand.ps1 -Command "psql -c 'SELECT 1;'" -Silent
-
-# Raw output (DANGEROUS - use only when certain no secrets)
-.\Scripts\Invoke-SecureCommand.ps1 -Command "az group list" -AllowRawOutput
-```
-
-**What it redacts**:
-- Passwords (any format)
-- API keys / tokens
-- Postgres connection strings
-- Bearer tokens
-- Crown-specific patterns (CrownPG*, DevOpsSecret_*, CrownCi*)
-
----
-
-## No-Secrets Command Patterns
-
-### ✅ SAFE - Paste these to chat
-```powershell
-# Check setting EXISTS (boolean only)
-az webapp config appsettings list `
-  --name crown-api-dev `
-  --resource-group crown-rg `
-  --query "[?name=='DATABASE_URL'] | length(@)" -o tsv
-# Output: 0 or 1
-
-# List setting NAMES only (no values)
-az webapp config appsettings list `
-  --name crown-api-dev `
-  --resource-group crown-rg `
-  --query "[].name" -o table
-
-# Health check (non-sensitive fields)
-curl.exe -s https://crown-api-dev.azurewebsites.net/api/health/ |
-  ConvertFrom-Json |
-  Select-Object ok,status,build_sha
-```
-
-### ❌ DANGEROUS - Never paste these
-```powershell
-# BAD: Dumps all settings with values
-az webapp config appsettings list --name crown-api-dev --resource-group crown-rg
-
-# BAD: Shows connection string
-$env:DATABASE_URL
-
-# BAD: Shows password
-psql "postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}/${DB_NAME}" -c "SELECT 1;"
-
-# BAD: Logs token
-$token = "Bearer abc..."
-Write-Host "Token: $token"
-```
-
----
-
-## Integration with Chat/Copilot
-
-### Before pasting to chat:
-```powershell
-# Option 1: Use secure wrapper
-.\Scripts\Invoke-SecureCommand.ps1 -Command "az ..." | Copy-SafeClipboard
-
-# Option 2: Redact manually
-$output = az webapp config appsettings list --name crown-api-dev --resource-group crown-rg
-Redact $output | Set-Clipboard
-
-# Option 3: Paste command only, never output
-# Share: "Ran: az webapp config appsettings list ..."
-# Share: "Result: <REDACTED - VERIFIED LOCALLY>"
-```
-
----
-
-## Secret Rotation
-
-If secrets are exposed:
-1. **STOP** - Do not continue in same chat thread
-2. Follow `ROTATE_SECRETS.md` runbook
-3. Start new conversation after rotation
-4. Verify old secrets invalid
-
----
-
-## Pre-Commit Hook
-
-Automatically scans staged files for secrets before commit.
-
-**Setup** (already configured):
-```bash
-# Hook location
-.git/hooks/pre-commit
-
-# Test manually
-gitleaks detect --no-git --staged
-```
-
-**If hook blocks commit**:
-1. Remove secrets from staged files
-2. Use `local.secrets.ps1` or env vars instead
-3. Never use `git commit --no-verify` (bypasses safety)
-
----
-
-## Maintenance
-
-### Update Redaction Patterns
-Edit `Scripts/Redact.psm1` to add new patterns:
-```powershell
-# Add to Redact function
-$result = $result -replace 'NewPattern\d{4}', '<REDACTED>'
-```
-
-### Update Gitleaks Config
-Edit `.gitleaks.toml` to add new rules:
-```toml
-[[rules]]
-id = "new-pattern"
-description = "New secret pattern"
-regex = '''NewPattern\d{4}'''
-tags = ["secret"]
-```
-
----
-
-## Troubleshooting
-
-**"gitleaks not found"**
-```powershell
-winget install gitleaks.gitleaks
-```
-
-**"Module not found"**
-```powershell
-# Use full path
-Import-Module C:\Users\JMega\OneDrive\Desktop\Crown2026\Scripts\Redact.psm1
-```
-
-**"Pre-commit hook not executing"**
-```bash
-# Make executable (Git Bash)
-chmod +x .git/hooks/pre-commit
-
-# Or reinstall
-cp .git/hooks/pre-commit.sample .git/hooks/pre-commit
-# Then paste new content
-```
-
----
-
-## Reference
-
-- Main guide: `ROTATE_SECRETS.md`
-- Config: `.gitleaks.toml`
-- Secrets template: `local.secrets.ps1.example`
-- Pre-commit hook: `.git/hooks/pre-commit`
+Automated systems may assist with inspection, implementation, testing, analysis, and evidence organization. They are not human authors, independent reviewers, approvers, certification authorities, or release authorities.

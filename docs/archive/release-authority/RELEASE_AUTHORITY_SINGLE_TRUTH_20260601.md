@@ -1,3 +1,11 @@
+# Historical / Superseded Authority Notice
+
+This dated record is retained only as historical provenance. Its rescue-mode, blocker, `NO-GO`, and single-source-of-truth statements do not describe current repository or release authority.
+
+Current authority is defined in `docs/archive/release-authority/README.md`.
+
+---
+
 # CROWN2026 RELEASE AUTHORITY - SINGLE SOURCE OF TRUTH
 
 **Date:** June 1, 2026
