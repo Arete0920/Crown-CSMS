@@ -78,7 +78,7 @@ export default function SandboxCommandCenter({ compact = false }) {
   return (
     <>
       <style>{`
-        .sandbox-command-center { border: 1px solid #d6e2ee; background: #ffffff; border-radius: 18px; box-shadow: 0 10px 28px rgba(11, 29, 49, 0.12); padding: ${compact ? "14px" : "18px"}; margin: ${compact ? "10px 0" : "18px 0"}; color: #102843; font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .sandbox-command-center { border: 1px solid #d6e2ee; background: #ffffff; border-radius: 18px; box-shadow: 0 10px 28px rgba(11, 29, 49, 0.12); padding: ${compact ? "14px" : "18px"}; margin: ${compact ? "10px 0" : "18px 0"}; color: #102843; font-family: var(--crown-font); }
         .sandbox-command-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
         .sandbox-command-title { font-weight: 900; font-size: ${compact ? "16px" : "20px"}; margin: 0; }
         .sandbox-command-badge { border-radius: 999px; border: 1px solid #c8daf5; background: #edf4ff; color: #183a63; padding: 5px 10px; font-size: 12px; font-weight: 800; white-space: nowrap; }

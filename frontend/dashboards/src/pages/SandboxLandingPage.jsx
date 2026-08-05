@@ -91,19 +91,17 @@ export default function SandboxLandingPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Spectral:wght@500;600&display=swap');
-
-        .sandbox-root { min-height: 100vh; font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: linear-gradient(150deg, #eef4fb 0%, #f8fbff 72%); color: #10243c; }
+        .sandbox-root { min-height: 100vh; font-family: var(--crown-font); background: linear-gradient(150deg, #eef4fb 0%, #f8fbff 72%); color: #10243c; }
         .sandbox-hero { display: grid; grid-template-columns: minmax(300px, 0.9fr) minmax(320px, 1.1fr); gap: 32px; max-width: 1180px; margin: 0 auto; padding: 42px 24px 28px; align-items: center; }
         .sandbox-brand-card { border-radius: 28px; background: radial-gradient(130% 130% at 10% 20%, #1e4a7a 0%, #0c223c 72%); color: white; min-height: 560px; padding: 34px; box-shadow: 0 18px 46px rgba(9, 31, 55, 0.22); display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; }
         .sandbox-logo-wrap { max-width: 260px; margin-bottom: 44px; }
-        .sandbox-brand-card h1 { font-family: 'Spectral', Georgia, serif; font-size: clamp(36px, 5vw, 58px); line-height: 1.02; margin: 0 0 16px; }
+        .sandbox-brand-card h1 { font-family: var(--crown-font); font-size: clamp(36px, 5vw, 58px); line-height: 1.02; margin: 0 0 16px; }
         .sandbox-brand-card p { color: rgba(255,255,255,0.86); font-size: 17px; line-height: 1.55; margin: 0; max-width: 520px; }
         .sandbox-proof-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
         .sandbox-pill { border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.92); }
         .sandbox-panel { background: white; border: 1px solid #dfe8f2; border-radius: 24px; box-shadow: 0 14px 38px rgba(11, 29, 49, 0.12); padding: 28px; }
         .sandbox-kicker { display: inline-flex; border-radius: 999px; background: #edf4ff; border: 1px solid #c8daf5; color: #183a63; padding: 6px 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.2px; margin-bottom: 14px; }
-        .sandbox-panel h2 { font-family: 'Spectral', Georgia, serif; font-size: 34px; line-height: 1.15; margin: 0 0 10px; color: #112a46; }
+        .sandbox-panel h2 { font-family: var(--crown-font); font-size: 34px; line-height: 1.15; margin: 0 0 10px; color: #112a46; }
         .sandbox-panel p { color: #3b526a; line-height: 1.55; margin: 0 0 18px; }
         .track-grid, .mode-grid, .persona-grid, .school-grid { display: grid; gap: 12px; }
         .track-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
