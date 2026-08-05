@@ -1,11 +1,28 @@
 from datetime import timedelta
 
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from sandbox_demo.catalog import SANDBOX_SCHOOLS, SANDBOX_TRACKS, catalog_payload, get_school
 from sandbox_demo.models import SandboxInvite
+
+
+class SandboxCatalogTests(SimpleTestCase):
+    def test_catalog_exposes_only_heritage_christian_academy(self):
+        self.assertEqual(list(SANDBOX_TRACKS), ["school"])
+        self.assertEqual(list(SANDBOX_SCHOOLS), ["heritage-core"])
+
+        payload = catalog_payload()
+        self.assertEqual(len(payload["schools"]), 1)
+        self.assertEqual(payload["schools"][0]["key"], "heritage-core")
+        self.assertEqual(payload["schools"][0]["name"], "Heritage Christian Academy")
+
+    def test_unknown_school_identifiers_fall_back_to_heritage(self):
+        heritage = get_school("heritage-core")
+        for value in [None, "heritage", "unknown-school-id", "legacy-school-key"]:
+            self.assertEqual(get_school(value), heritage)
 
 
 class SandboxInviteWorkflowTests(TestCase):
@@ -87,7 +104,7 @@ class SandboxInviteWorkflowTests(TestCase):
     @override_settings(CROWN_OPS_SECRET="test-ops-secret")
     def test_revoked_invite_blocks_session(self):
         invite = SandboxInvite.objects.create(
-            organization_label="Example Christian Academy",
+            organization_label="Heritage Christian Academy",
             track="school",
             allowed_roles=["school_admin"],
             allowed_seed_packs=["heritage-core"],
