@@ -18,11 +18,11 @@ CROWN has completed repository and production technical certification for the bo
 - Repository release technical gates: **PASS**
 - Production deployment and runtime technical gates: **PASS**
 - Bounded supported-role, RBAC, and tenant-isolation certification: **PASS**
+- Founder/Product Owner release authorization: **RECORDED / ACCEPTED**
 - Payment processing: **DEFERRED — NEW OWNER; DISABLED; FAIL CLOSED**
-- Buyer operational turnover: **NOT YET ACCEPTED — HANDOFF RECONCILIATION AND BUYER ACCEPTANCE PENDING**
-- Final production authorization: **PENDING FOUNDER/PRODUCT OWNER DECISION AND ACCEPTANCE OF DISCLOSED RESIDUAL OPERATIONAL RISKS**
+- Buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**
 
-This document records the current evidence-backed posture. GitHub issue `#1619` remains the sole controlling production-readiness and owner-handoff structure.
+This document records the current evidence-backed posture. GitHub issue `#1619` remains the sole controlling production-readiness and owner-handoff record.
 
 ## Certified release identity
 
@@ -45,17 +45,17 @@ Required exact-SHA CI was terminal with no required failed, cancelled, or pendin
 - CodeQL
 - dependency scanning and audit
 - schema governance
-- Sandbox Ready Evidence Gate
+- bounded sandbox evidence gate
 - Lockdown Golden Path Gate
 - CROWN Magus gate
 - current-main audit evidence
 - production health watch
 
-The accepted exact-SHA regression evidence includes `4,419 passed`, `8 skipped`, and zero failures in the bounded Sandbox evidence campaign. Frontend tests and production build also passed.
+The accepted exact-SHA regression evidence includes `4,419 passed`, `8 skipped`, and zero failures in the bounded sandbox evidence campaign. Frontend tests and production build also passed.
 
 ## Bounded supported-role, RBAC, and tenant certification
 
-The exact-SHA Sandbox evidence campaign passed:
+The exact-SHA sandbox evidence campaign passed:
 
 - mandatory tenant-boundary tripwires;
 - tenant fixture regression tests against the governed tenant keys;
@@ -124,21 +124,22 @@ These items must remain visible in diligence and handoff materials. They must no
 
 ## Buyer and successor handoff
 
-No buyer or successor has yet accepted operational turnover. The handoff package must distinguish:
+The handoff package is ready for buyer diligence and transaction-specific transfer. Actual buyer turnover remains pending until a buyer is identified and the parties complete acceptance, successor account creation, credential transfer, and seller-access removal.
+
+The handoff package must distinguish:
 
 - `SELLER COMPLETE`
 - `NEW OWNER ACTION`
 - `DEFERRED`
 - `OPTIONAL MATURITY`
 
-Final buyer acceptance, successor account creation, credential transfer, and seller-access removal occur only when a buyer is identified and the parties authorize the transfer.
-
 ## Current final status
 
 **CERTIFIED RELEASE:** `17573fb649f74a3ba0f1b3fbc9e004108b3cf228` / `prod-deploy-20260804-17573fb`  
-**REPOSITORY TECHNICAL CERTIFICATION:** PASS  
-**PRODUCTION DEPLOYMENT AND RUNTIME CERTIFICATION:** PASS  
-**BOUNDED ROLE / RBAC / TENANT CERTIFICATION:** PASS  
+**REPOSITORY TECHNICAL CERTIFICATION:** PASS / COMPLETE  
+**PRODUCTION DEPLOYMENT AND RUNTIME CERTIFICATION:** PASS / COMPLETE  
+**BOUNDED ROLE / RBAC / TENANT CERTIFICATION:** PASS / COMPLETE  
+**FOUNDER/PRODUCT OWNER RELEASE AUTHORIZATION:** RECORDED / ACCEPTED  
 **PAYMENT PROCESSING:** DISABLED / FAIL CLOSED / DEFERRED TO NEW OWNER  
-**FINAL PRODUCTION AUTHORIZATION:** PENDING FOUNDER/PRODUCT OWNER DECISION AND RESIDUAL-RISK ACCEPTANCE  
-**BUYER TURNOVER:** PENDING HANDOFF RECONCILIATION AND BUYER ACCEPTANCE
+**HANDOFF PACKAGE:** READY FOR BUYER DILIGENCE AND TRANSACTION-SPECIFIC TRANSFER  
+**ACTUAL BUYER TURNOVER:** PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE

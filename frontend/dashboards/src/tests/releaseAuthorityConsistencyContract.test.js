@@ -13,17 +13,20 @@ function readRepoFile(relativePath) {
 }
 
 describe('release authority consistency contract', () => {
-  it('keeps the canonical production decision at not approved / no-go / hold', () => {
+  it('keeps the canonical technical certification and release authorization aligned', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Production: **NOT APPROVED / NO-GO / HOLD**')).toBe(true);
-    expect(source.includes('**PRODUCTION DECISION: NOT APPROVED / NO-GO / HOLD**')).toBe(true);
-    expect(source.includes('**CURRENT DECISION: PRODUCTION AUTHORIZED**')).toBe(false);
+    expect(source.includes('Repository release technical gates: **PASS**')).toBe(true);
+    expect(source.includes('Production deployment and runtime technical gates: **PASS**')).toBe(true);
+    expect(source.includes('Founder/Product Owner release authorization: **RECORDED / ACCEPTED**')).toBe(true);
+    expect(source.includes('Production: **NOT APPROVED / NO-GO / HOLD**')).toBe(false);
+    expect(source.includes('**PRODUCTION DECISION: NOT APPROVED / NO-GO / HOLD**')).toBe(false);
+    expect(source.includes('Final production authorization: **PENDING')).toBe(false);
   });
 
-  it('keeps buyer turnover and payment processing unapproved', () => {
+  it('keeps actual buyer turnover pending and payment processing disabled', () => {
     const source = readRepoFile('docs/CURRENT_RELEASE_STATUS.md');
-    expect(source.includes('Buyer operational turnover: **NOT APPROVED**')).toBe(true);
-    expect(source.includes('**PAYMENT PROCESSING: DISABLED / FAIL CLOSED**')).toBe(true);
+    expect(source.includes('Buyer operational turnover: **PENDING IDENTIFIED BUYER AND PARTY ACCEPTANCE**')).toBe(true);
+    expect(source.includes('**PAYMENT PROCESSING:** DISABLED / FAIL CLOSED / DEFERRED TO NEW OWNER')).toBe(true);
   });
 
   it('keeps the canonical index pointed at the current release authority', () => {
