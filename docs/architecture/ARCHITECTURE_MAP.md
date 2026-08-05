@@ -2,11 +2,11 @@
 
 **Status:** CANONICAL  
 **Owner:** CROWN Engineering  
-**Effective date:** 2026-07-28
+**Effective date:** 2026-08-04
 
 ## Purpose
 
-This document defines the owner-facing architectural shape of CROWN. It describes durable boundaries and accepted decisions visible in the repository. It does not certify production readiness or override `docs/CURRENT_RELEASE_STATUS.md`.
+This document defines the owner-facing architectural shape of CROWN. It describes durable boundaries and accepted decisions visible in the repository. Release and production status are governed by `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue #1619.
 
 ## Architectural principles
 
@@ -88,25 +88,30 @@ External credentials and provider state are never architectural proof. Microsoft
 | Frontend platform | `frontend/dashboards/` | Shared shell, routing, role surfaces, request contracts, components, state and accessibility |
 | Operations | `.github/workflows/`, `docs/operations/`, deployment configuration | Build, test, deploy, health, monitoring, rollback, restore, maintenance |
 
-App presence establishes structure, not completion or production authorization.
+App presence establishes structure, not completion of every optional capability.
 
 ## Accepted architecture decisions
 
-- `decisions/ADR-0001-tenant-resolution-and-enforcement.md` — accepted canonical tenant contract; implementation convergence remains incomplete.
+- `decisions/ADR-0001-tenant-resolution-and-enforcement.md` — accepted canonical tenant contract; bounded tenant and RBAC release certification passed, while compatibility convergence remains incomplete.
 - `ADR-001-CANONICAL-HOUSEHOLD-GUARDIAN-STUDENT.md` — accepted canonical operational write identity for `core.Family`, `core.Guardian`, and `core.Student`; compatibility convergence remains incomplete.
 
 The authoritative decision list is `DECISION_INDEX.md`.
 
+## Certification reference
+
+The bounded release certification record is maintained in `docs/CURRENT_RELEASE_STATUS.md` and GitHub issue #1619. Those sources govern exact release identity, deployment, health, tenant and RBAC evidence, and payment containment. This architecture map intentionally avoids duplicating that evidence to reduce authority drift.
+
 ## Open architectural convergence
 
-1. Complete migration to the canonical tenant context and retire redundant middleware only after equivalence proof.
+1. Complete migration to the canonical tenant context and retire redundant middleware only after equivalence and consumer proof.
 2. Establish one canonical frontend request contract for API base URL, authentication, tenant headers, cookies, timeout, retries, error normalization, and cancellation.
 3. Complete tenant-by-tenant reconciliation of identity compatibility domains through an expand-contract migration with rollback proof.
-4. Produce a complete domain ownership and dependency graph for models, services, tasks, imports, exports, reports, APIs, and frontend consumers.
-5. Consolidate overlapping CI, deployment, certification, and runtime verification paths into a small documented pipeline.
-6. Prove asynchronous tenant binding and cleanup for every active task path.
+4. Maintain a current domain ownership and dependency graph for models, services, tasks, imports, exports, reports, APIs, and frontend consumers.
+5. Consolidate overlapping CI, deployment, certification, and runtime-verification paths only after required-check and operational dependencies are mapped.
+6. Prove asynchronous tenant binding, idempotency, retry behavior, and cleanup for every active task path.
 7. Verify external integration ownership and configuration without committing credentials.
-8. Demonstrate exact-commit deployment identity, rollback, database restore, monitoring, and secret rotation before production authorization.
+8. Execute the deferred full rollback, isolated restore, credential-rotation, and expanded monitoring exercises when required by operations, diligence, contract, or a future owner.
+9. Create the missing ADRs listed in `DECISION_INDEX.md` before making material changes to those architectural boundaries.
 
 ## Change rules
 
@@ -114,3 +119,4 @@ The authoritative decision list is `DECISION_INDEX.md`.
 - Compatibility layers are removed only after consumer inventory, migration rehearsal, rollback design, and representative verification.
 - Runtime changes and documentation-only authority changes should remain in separate pull requests.
 - No architecture document may describe an unimplemented target as verified source behavior.
+- Post-release hardening must not silently redefine the immutable certified production identity.
