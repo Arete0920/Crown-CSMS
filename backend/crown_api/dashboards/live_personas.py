@@ -43,7 +43,7 @@ def _has_required_role(user, school, dashboard_key: str) -> bool:
 def _base_meta(*, dashboard_key: str, user, school) -> dict:
     return {
         "served_from": "live_db",
-        "source": "core_identity",
+        "source": "live_db",
         "dashboard_key": dashboard_key,
         "school_id": str(school.id),
         "user_id": str(user.id),

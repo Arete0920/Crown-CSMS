@@ -21,7 +21,7 @@ from core.models import (
 )
 from crown_api.admissions_runtime import admissions_summary
 from crown_api.dashboards.payload_contract import build_dashboard_payload, metric
-from crown_api.dashboards.views import DASHBOARD_PAYLOAD_BUILDERS
+from crown_api.dashboards.views import DASHBOARD_PAYLOAD_BUILDERS, _sample_dashboard_payloads_allowed
 from crown_api.models_households import (
     Person,
     Student as IdentityStudent,
@@ -504,3 +504,41 @@ def test_school_board_summary_rejects_invalid_tenant_header():
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Invalid X-School-Id (must be a UUID)."
+
+
+@override_settings(CROWN_ENV="production", CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS=False)
+@pytest.mark.django_db
+def test_sample_payload_fallback_allows_authenticated_heritage_demo_session_only():
+    school = School.objects.create(id=DEMO_SCHOOL_ID, name="Heritage Christian Academy")
+    user = _create_user(
+        school=school,
+        username="heritage-admin@example.org",
+        role_code="HEAD_OF_SCHOOL",
+    )
+    request = RequestFactory().get(
+        "/api/v1/dashboards/admin/summary/",
+        HTTP_X_DEMO_ROLE="school_admin",
+        HTTP_X_SCHOOL_ID=DEMO_SCHOOL_ID,
+    )
+    request.user = user
+
+    assert _sample_dashboard_payloads_allowed(request) is True
+
+
+@override_settings(CROWN_ENV="production", CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS=False)
+@pytest.mark.django_db
+def test_sample_payload_fallback_rejects_non_heritage_user_with_demo_header():
+    school = School.objects.create(name="Non Heritage School")
+    user = _create_user(
+        school=school,
+        username="other-admin@example.org",
+        role_code="SCHOOL_ADMIN",
+    )
+    request = RequestFactory().get(
+        "/api/v1/dashboards/admin/summary/",
+        HTTP_X_DEMO_ROLE="school_admin",
+        HTTP_X_SCHOOL_ID=str(school.id),
+    )
+    request.user = user
+
+    assert _sample_dashboard_payloads_allowed(request) is False

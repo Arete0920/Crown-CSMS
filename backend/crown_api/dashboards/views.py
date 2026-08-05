@@ -21,6 +21,7 @@ class DevOpenApiPermissions:
 
 
 from core.permissions import user_has_permission
+from sandbox_demo.catalog import DEMO_SCHOOL_ID, SANDBOX_PERSONAS
 
 from .live_personas import (
     LIVE_PERSONA_DASHBOARDS,
@@ -88,15 +89,37 @@ def _dev_open_api_enabled() -> bool:
     return bool(getattr(settings, 'CROWN_DEV_OPEN_API', False)) and not _is_production_runtime()
 
 
-def _sample_dashboard_payloads_allowed() -> bool:
+def _sample_dashboard_payloads_allowed(request=None) -> bool:
     """
-    Allow sample dashboard payloads only when the environment explicitly says so
-    or when the runtime is clearly non-production.
+    Allow sample dashboard payloads when explicitly enabled, in clearly
+    non-production runtimes, or for an authenticated Heritage sandbox session
+    whose requested persona matches an assigned user role.
 
-    This prevents a production or full-completion certification lane from getting
-    HTTP 200 dashboard summaries backed only by SAMPLE_PAYLOAD_BUILDERS.
+    Production tenants outside the bounded Heritage sandbox exception remain
+    live/snapshot-only.
     """
     if _env_flag('CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', default=False):
+        return True
+
+    user = getattr(request, 'user', None) if request is not None else None
+    demo_role = str(request.headers.get('X-Demo-Role', '') or '').strip() if request is not None else ''
+    request_school_id = str(request.headers.get('X-School-ID', '') or '').strip() if request is not None else ''
+    user_school_id = str(getattr(user, 'school_id', '') or '').strip() if user is not None else ''
+    persona = SANDBOX_PERSONAS.get(demo_role)
+    role_matches = bool(
+        persona
+        and user
+        and getattr(user, 'is_authenticated', False)
+        and user.roles.filter(
+            school_id=DEMO_SCHOOL_ID,
+            role_code=persona.role_code,
+        ).exists()
+    )
+    if (
+        role_matches
+        and request_school_id == str(DEMO_SCHOOL_ID)
+        and user_school_id == str(DEMO_SCHOOL_ID)
+    ):
         return True
 
     if bool(getattr(settings, 'CROWN_ALLOW_SAMPLE_DASHBOARD_PAYLOADS', False)):
@@ -143,8 +166,6 @@ def _resolve_school_strict(
     school = School.objects.filter(pk=school_id).first()
     if school is None:
         raise NotFound({"detail": "School not found."})
-    # Cross-tenant check: non-staff users may only access their own school.
-    # master-control additionally requires an explicit user-school binding.
     user = getattr(request, 'user', None)
     if user and getattr(user, 'is_authenticated', False):
         if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
@@ -193,7 +214,6 @@ def dashboard_me(request):
             UserRole.objects.filter(user=user, school=school).values_list('role_code', flat=True)
         )
         if not roles:
-            # User associated with school via school_id field — include implicit identity
             user_school_id = getattr(user, 'school_id', None)
             if user_school_id and str(user_school_id) == str(school.id):
                 roles = ['SCHOOL_MEMBER']
@@ -264,10 +284,6 @@ class DashboardSummaryView(APIView):
         key = str(dashboard_key).strip().lower()
         user = getattr(request, 'user', None)
 
-        # Summary payloads are data-bearing surfaces. They must never use the
-        # local dev-open bypass because doing so can expose sample or snapshot
-        # data before authentication and can return tenant-validation errors
-        # before the authentication boundary is evaluated.
         if not user or not getattr(user, 'is_authenticated', False):
             return Response(
                 {'detail': 'Authentication credentials were not provided.'},
@@ -339,7 +355,7 @@ class DashboardSummaryView(APIView):
             validate_dashboard_payload(payload)
             return Response(payload, status=status.HTTP_200_OK)
 
-        if not _sample_dashboard_payloads_allowed():
+        if not _sample_dashboard_payloads_allowed(request):
             return Response(
                 {
                     'code': 'dashboard_live_data_required',
