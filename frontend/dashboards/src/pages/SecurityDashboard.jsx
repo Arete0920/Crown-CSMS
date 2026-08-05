@@ -132,26 +132,28 @@ export default function SecurityDashboard() {
         <CrownGrid>
           <Col span={8}>
             <CrownCard title="Incident Log (Redacted)">
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                  <tr style={{ background: 'var(--crown-surface-2)' }}>
-                    {['Date', 'Type', 'Location', 'Severity', 'Status'].map(h => (
-                      <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {incidents.map((inc, i) => (
-                    <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
-                      <td style={{ padding: '6px 8px', color: 'var(--crown-muted)', whiteSpace: 'nowrap' }}>{inc.date}</td>
-                      <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{inc.type}</td>
-                      <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{inc.location}</td>
-                      <td style={{ padding: '6px 8px' }}><Pill color={SEV_COLOR[inc.severity] || 'gray'}>{inc.severity}</Pill></td>
-                      <td style={{ padding: '6px 8px' }}><Pill color={inc.status === 'resolved' ? 'green' : 'yellow'}>{inc.status}</Pill></td>
+              <div style={{ width: '100%', maxWidth: '100%', overflowX: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--crown-surface-2)' }}>
+                      {['Date', 'Type', 'Location', 'Severity', 'Status'].map(h => (
+                        <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: 'var(--crown-muted)', fontSize: 12 }}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {incidents.map((inc, i) => (
+                      <tr key={i} style={{ borderTop: '1px solid var(--crown-border)' }}>
+                        <td style={{ padding: '6px 8px', color: 'var(--crown-muted)', whiteSpace: 'nowrap' }}>{inc.date}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 500, color: 'var(--crown-ink)' }}>{inc.type}</td>
+                        <td style={{ padding: '6px 8px', color: 'var(--crown-ink)' }}>{inc.location}</td>
+                        <td style={{ padding: '6px 8px' }}><Pill color={SEV_COLOR[inc.severity] || 'gray'}>{inc.severity}</Pill></td>
+                        <td style={{ padding: '6px 8px' }}><Pill color={inc.status === 'resolved' ? 'green' : 'yellow'}>{inc.status}</Pill></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CrownCard>
           </Col>
           <Col span={4}>
