@@ -32,6 +32,12 @@ import SetupWizardC from '../pages/SetupWizardC.jsx';
 import AttendanceSetupWizard from '../pages/AttendanceSetupWizard.jsx';
 import CategoriesWizard from '../pages/CategoriesWizard.jsx';
 
+import DisciplinePage from '../pages/DisciplinePage.jsx';
+import FinanceDashboard from '../pages/FinanceDashboard.jsx';
+import CrownLaunchModulePage from '../pages/CrownLaunchModulePage.jsx';
+import SchoolSettingsPage from '../pages/SchoolSettingsPage.jsx';
+import OpsCommandCenter from '../components/OpsCommandCenter.jsx';
+
 const readyReadiness = () => ({ shellReady: true, uxReady: true, accessReady: true, dataReady: true });
 const placeholderReadiness = () => ({ shellReady: true, uxReady: false, accessReady: true, dataReady: false });
 const readyWizardEvidence = () => ({
@@ -91,8 +97,39 @@ function buildWizardElement(route) {
   return wrappedElement;
 }
 
+const FINANCE_ALIAS_ROLES = ['super_admin', 'school_admin', 'head_of_school', 'finance_admin', 'finance', 'biz_office', 'finance_director', 'admin', 'director', 'principal'];
+const ACADEMIC_ALIAS_ROLES = ['super_admin', 'school_admin', 'head_of_school', 'academic_admin', 'teacher', 'registrar', 'admin'];
+const OPS_ALIAS_ROLES = ['super_admin', 'master_control', 'school_admin', 'head_of_school'];
+const SCHOOL_SETTINGS_ALIAS_ROLES = ['super_admin', 'master_control', 'head_of_school'];
+const IS_SANDBOX = Boolean(import.meta.env.VITE_DEMO_MODE === 'sandbox' || import.meta.env.VITE_SANDBOX_MODE === '1');
+const IS_LAUNCH_PREVIEW = Boolean(import.meta.env.DEV || IS_SANDBOX || import.meta.env.VITE_LAUNCH_UI_TAKEOVER === '1');
+
+function guarded(roles, child) {
+  return createElement(RoleRouteGuard, { allowedRoles: roles }, child);
+}
+
+function financeAlias(path) {
+  const child = IS_LAUNCH_PREVIEW
+    ? createElement(CrownLaunchModulePage, { moduleKey: 'finance', activePath: path })
+    : createElement(FinanceDashboard);
+  return guarded(FINANCE_ALIAS_ROLES, child);
+}
+
+const ADVERTISED_ALIAS_ROUTES = [
+  { path: '/discipline', element: guarded(ACADEMIC_ALIAS_ROLES, createElement(DisciplinePage)) },
+  { path: '/finance/bank-reconciliation', element: financeAlias('/finance/bank-reconciliation') },
+  { path: '/finance/dispute-workbench', element: financeAlias('/finance/dispute-workbench') },
+  { path: '/finance/disputes', element: financeAlias('/finance/disputes') },
+  { path: '/finance/payout-reconciliation', element: financeAlias('/finance/payout-reconciliation') },
+  { path: '/ops', element: guarded(OPS_ALIAS_ROLES, createElement(OpsCommandCenter)) },
+  { path: '/profile', element: guarded(SCHOOL_SETTINGS_ALIAS_ROLES, createElement(SchoolSettingsPage)) },
+];
+
 export function wizardRoutes() {
-  return WIZARD_ROUTE_DEFINITIONS.map((route) => ({ path: route.path, element: buildWizardElement(route) }));
+  return [
+    ...WIZARD_ROUTE_DEFINITIONS.map((route) => ({ path: route.path, element: buildWizardElement(route) })),
+    ...ADVERTISED_ALIAS_ROUTES,
+  ];
 }
 
 export default wizardRoutes;

@@ -1,0 +1,79 @@
+name: Exhaustive Route Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/dashboards/**"
+      - ".github/workflows/exhaustive-route-certification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exhaustive-route-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exhaustive-route-certification:
+    name: Every frontend route in Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "1"
+      VITE_DEMO_MODE: "sandbox"
+      VITE_SANDBOX_MODE: "1"
+      VITE_SANDBOX_READY_ONLY: ""
+      VITE_HIDE_UNREADY_NAV: ""
+    defaults:
+      run:
+        working-directory: frontend/dashboards
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/dashboards/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run exhaustive route and Heritage role-launch certification
+        run: npx playwright test tests/certification/exhaustive-route-certification.spec.js --workers=1
+
+      - name: Verify exhaustive evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="test-results/exhaustive-route-certification/manifest.json"
+          test -f "$manifest"
+          node - <<'NODE'
+          const fs = require("fs");
+          const manifest = JSON.parse(fs.readFileSync("test-results/exhaustive-route-certification/manifest.json", "utf8"));
+          if (manifest.schemaVersion !== 3) throw new Error(`Expected schema version 3; found ${manifest.schemaVersion}`);
+          if (manifest.routeCount < 196) throw new Error(`Expected at least 196 registered routes; found ${manifest.routeCount}`);
+          if (manifest.failedRoutes !== 0) throw new Error(`Route failures: ${manifest.failedRoutes}`);
+          if (manifest.passedRoutes !== manifest.routeCount) throw new Error("Passed route count does not match route inventory");
+          if (manifest.unregisteredPathConstantCount !== 0) throw new Error(`Unregistered PATHS constants: ${manifest.unregisteredPathConstants.join(", ")}`);
+          console.log(`Verified ${manifest.passedRoutes}/${manifest.routeCount} registered frontend routes with zero unregistered PATHS constants.`);
+          NODE
+
+      - name: Upload exhaustive route evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: exhaustive-route-certification-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            frontend/dashboards/test-results/exhaustive-route-certification
+            frontend/dashboards/playwright-report
