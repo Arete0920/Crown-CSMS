@@ -239,8 +239,6 @@ export default function LoginPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Spectral:wght@500;600&display=swap');
-
         :root {
           --lp-navy-900: var(--crown-primary-deep, #173F91);
           --lp-navy-700: var(--crown-primary-strong, #1E4FAF);
@@ -260,7 +258,7 @@ export default function LoginPage() {
           min-height: 100vh;
           display: grid;
           grid-template-columns: minmax(280px, 42%) minmax(320px, 58%);
-          font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family: var(--crown-font);
           background: linear-gradient(150deg, #EFF4FB 0%, #F8FBFF 70%);
           color: #0E1D30;
         }
@@ -309,7 +307,7 @@ export default function LoginPage() {
         }
 
         .brand-title {
-          font-family: 'Spectral', Georgia, serif;
+          font-family: var(--crown-font);
           font-weight: 600;
           font-size: 24px;
           line-height: 1;
@@ -322,7 +320,7 @@ export default function LoginPage() {
         }
 
         .brand-heading {
-          font-family: 'Spectral', Georgia, serif;
+          font-family: var(--crown-font);
           font-size: 33px;
           line-height: 1.2;
           margin: 0 0 12px;
@@ -395,7 +393,7 @@ export default function LoginPage() {
 
         .login-title {
           margin: 0;
-          font-family: 'Spectral', Georgia, serif;
+          font-family: var(--crown-font);
           font-size: 31px;
           color: #112A46;
           line-height: 1.15;
